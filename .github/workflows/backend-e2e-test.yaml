@@ -47,8 +47,15 @@ jobs:
           pwd
           ls -la
           # Enter the directory
-          cd assistant/backend
+          cd assistant
+          
+          pwd
+          ls -la
+          cd backend
 
+          pwd
+          ls -la
+          
           # Build the Docker image
           docker build \
             --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" \
