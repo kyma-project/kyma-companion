@@ -4,27 +4,31 @@ FROM python:3.11-slim-buster
 ARG JFROG_USER
 ARG JFROG_TOKEN
 
+# Create a group and user
+RUN groupadd -r kymaaiuser && useradd -r -g kymaaiuser kymaaiuser
+
+# Set the home directory variable
+ENV HOME=/home/kymaaiuser
+
 # Set a working directory
 WORKDIR /app
 
-# RUN apk add python3-dev build-base linux-headers pcre-dev
+# Copy your application code
+COPY . .
 
-# # Update package lists
-# RUN apk update
+# Change ownership of the working directory
+RUN chown -R kymaaiuser:kymaaiuser /app
 
-# # Install dependencies
-# RUN apk add --no-cache uwsgi python3-dev py-pip
+# Switch to the non-root user
+USER kymaaiuser
 
 # Add trusted host and extra index url to pip.conf
-RUN mkdir -p ~/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > ~/.config/pip/pip.conf
+RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
 # RUN echo "[global]\nextra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > /etc/pip.conf
 
-# ENV PIP_CONFIG_FILE /etc/pip.conf
-
-# RUN echo $(pip config list)
 
 # Copy requirements.txt and install dependencies
-COPY requirements.txt ./
+# COPY requirements.txt ./
 RUN pip install unstructured --no-deps urllib3
 RUN pip install -r requirements.txt
 RUN pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
@@ -37,8 +41,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/local/bin
 
-# Copy your application code
-COPY . .
+
 
 # Expose Flask's default port (5000)
 EXPOSE 5000
