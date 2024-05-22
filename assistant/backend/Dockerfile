@@ -5,10 +5,14 @@ ARG JFROG_USER
 ARG JFROG_TOKEN
 
 # Create a group and user
-RUN groupadd -r kymaaiuser && useradd -r -g kymaaiuser kymaaiuser
+RUN groupadd -r myuser && useradd -r -g myuser -d /home/myuser myuser
+
+
+# Create the user's home directory and set appropriate permissions
+RUN mkdir -p /home/myuser/.config/pip && chown -R myuser:myuser /home/myuser
 
 # Set the home directory variable
-ENV HOME=/home/kymaaiuser
+ENV HOME=/home/myuser
 
 # Set a working directory
 WORKDIR /app
@@ -17,15 +21,17 @@ WORKDIR /app
 COPY . .
 
 # Change ownership of the working directory
-RUN chown -R kymaaiuser:kymaaiuser /app
+RUN chown -R myuser:myuser /app
 
 # Switch to the non-root user
-USER kymaaiuser
+USER myuser
 
 # Add trusted host and extra index url to pip.conf
 RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@common.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = common.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
 # RUN echo "[global]\nextra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > /etc/pip.conf
 
+# Change ownership of the application directory and the pip config directory to the non-root user
+RUN chown -R myuser:myuser /app /home/myuser/.config/pip
 
 # Copy requirements.txt and install dependencies
 # COPY requirements.txt ./
