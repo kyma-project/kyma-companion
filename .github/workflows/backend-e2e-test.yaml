@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     name: Backend E2E test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions: write-all
     steps:
       # Get the code
@@ -22,75 +22,22 @@ jobs:
 
       # Install Python 3.11
       - name: Install Python 3.11
-        if: github.event_name != 'pull_request'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          
-      - name: mydaemon
-        run: |
-          mkdir -p ~/.local/bin
-          mkdir -p ~/.config/systemd/user
-          cp scripts/mydaemon.sh ~/.local/bin/mydaemon.sh
-          chmod +x ~/.local/bin/mydaemon.sh
-          cp scripts/mydaemon.service ~/.config/systemd/user/mydaemon.service
-          ls -la ~/.local/bin
-          ls -la ~/.config/systemd/user
-          loginctl enable-linger $USER
-          export XDG_RUNTIME_DIR=/run/user/$(id -u)
-          echo $XDG_RUNTIME_DIR
 
-      - name: reload systemd user daemon
+      # Pip settings
+      - name: Set up pip
         run: |
-          systemctl --user daemon-reload
-      - name: run mydaemon
-        run: |
-          systemctl --user enable --now mydaemon.service
-          systemctl --user start mydaemon.service
-          systemctl --user status mydaemon.service
-          sleep 5
-          systemctl --user status mydaemon.service
-          sleep 5
-          systemctl --user status mydaemon.service
-          sleep 5
-          systemctl --user status mydaemon.service
-          sleep 5
+          mkdir -p ~/.pip
 
-
-      - name: Download k3s binary
-        run: |
-          cat /etc/default/grub
-          mkdir -p ~/.local/bin
-          curl -sfL https://get.k3s.io -o ~/.local/bin/k3s
-          chmod +x ~/.local/bin/k3s
-    
-      - name: Create systemd user service directory
-        run: mkdir -p ~/.config/systemd/user
-    
-      - name: Download k3s-rootless.service file
-        run: wget -P ~/.config/systemd/user/ https://raw.githubusercontent.com/k3s-io/k3s/v1.30.1-rc1%2Bk3s1/k3s-rootless.service
-    
-      - name: Modify k3s-rootless.service ExecStart line
-        run: |
-          sed -i 's|ExecStart=/usr/local/bin/k3s server --rootless|ExecStart=/home/runner/.local/bin/k3s server --rootless|' ~/.config/systemd/user/k3s-rootless.service
-          cat ~/.config/systemd/user/k3s-rootless.service
-    
-      - name: Reload systemd user daemon
-        run: |
-          systemctl --user daemon-reload
-    
-      - name: Enable and start k3s service
-        run: |
-          systemctl --user enable --now k3s-rootless
-          systemctl --user start k3s-rootless.service
-    
-      - name: Verify k3s service status
-        run: systemctl --user status k3s-rootless.servic
-      
+          echo "[global]" > ~/.pip/pip.conf
+          echo "extra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple" >> ~/.pip/pip.conf
+          echo "trusted-host = int.repositories.cloud.sap" >> ~/.pip/pip.conf
+          cat ~/.pip/pip.conf
 
       # Build local Docker image
       - name: Build Docker image
-        if: github.event_name != 'pull_request'
         run: |
           # Check Docker version
           docker --version
