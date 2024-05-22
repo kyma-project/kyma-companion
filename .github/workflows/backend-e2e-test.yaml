@@ -47,7 +47,10 @@ jobs:
           cd assistant/backend
 
           # Build the Docker image
-          docker build -t ai-backend .
+          docker build \
+            --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" \
+            --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" \  
+            -t ai-backend .
 
           cd ..
           cd ..
