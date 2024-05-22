@@ -40,6 +40,7 @@ jobs:
 
       # Build local Docker image
       - name: Build Docker image
+        if: github.event_name == 'push'
         run: |
           # Check Docker version
           docker --version
