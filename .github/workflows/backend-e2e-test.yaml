@@ -44,26 +44,16 @@ jobs:
           # Check Docker version
           docker --version
 
-          pwd
-          ls -la
           # Enter the directory
-          cd assistant
-          
-          pwd
-          ls -la
-          cd backend
+          cd assistant/backend
 
           pwd
           ls -la
-          
+
+
           # Build the Docker image
-          docker build \
-            --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" \
-            --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" \  
-            -t ai-backend .
+          docker build --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" -t ai-backend .
 
-          cd ..
-          cd ..
           # Check the Docker image
           docker images ai-backend
 
