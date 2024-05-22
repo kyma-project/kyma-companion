@@ -36,7 +36,7 @@ jobs:
           echo "extra-index-url = https://${{ secrets.JFROG_IDENTITY_USER }}:${{ secrets.JFROG_IDENTITY_TOKEN }}@common.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple" >> ~/.pip/pip.conf
           echo "trusted-host = int.repositories.cloud.sap" >> ~/.pip/pip.conf
           cat ~/.pip/pip.conf
-          pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
+          #pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
 
       # Build local Docker image
       - name: Build Docker image
