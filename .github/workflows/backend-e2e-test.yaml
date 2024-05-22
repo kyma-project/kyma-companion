@@ -40,7 +40,6 @@ jobs:
 
       # Build local Docker image
       - name: Build Docker image
-        if: github.event_name == 'push'
         run: |
           # Check Docker version
           docker --version
@@ -71,4 +70,5 @@ jobs:
       - name: Verify K3s cluster
         run: |
           kubectl get nodes
-          kubectl get pods --all-namespaces
+          kubectl get ns
+          kubectl get All --all-namespaces
