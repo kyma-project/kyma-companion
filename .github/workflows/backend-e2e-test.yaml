@@ -43,11 +43,13 @@ jobs:
           docker --version
 
           # Enter the directory
-          cd assistant/flow
+          cd assistant/backend
 
           # Build the Docker image
           docker build -t ai-backend .
 
+          cd ..
+          cd ..
           # Check the Docker image
           docker images ai-backend
 
