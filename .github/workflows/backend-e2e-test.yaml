@@ -44,6 +44,8 @@ jobs:
           # Check Docker version
           docker --version
 
+          pwd
+          ls -la
           # Enter the directory
           cd assistant/backend
 
