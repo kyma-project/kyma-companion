@@ -60,7 +60,6 @@ jobs:
 
       # Install and configure K3s cluster
       - name: Install and configure K3s cluster
-        if: runner.os == 'Windows'
         run: |
           # K3s installation
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.27.4+k3s1" K3S_KUBECONFIG_MODE=644 INSTALL_K3S_EXEC="server --docker --disable traefik" sh -
@@ -79,10 +78,11 @@ jobs:
         run: |
             kubectl appy -f .reuse/deployment/01-ai-backend-namespace.yaml
             kubectl get ns
-
+            echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
+            cat .reuse/deployment/02-ai-backend-configmap.yaml
             kubectl appy -f .reuse/deployment/02-ai-backend-configmap.yaml
             kubectl get cm -n ai-core
-            
+
             kubectl appy -f .reuse/deployment/03-ai-backend-deployment.yaml
             kubectl get deploy -n ai-core
             kubectl get pods -n ai-core
