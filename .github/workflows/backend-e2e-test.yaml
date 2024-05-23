@@ -112,7 +112,8 @@ jobs:
             sleep 15
             POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
             DOCKER_EXECUTION_TIME=0
-            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ $DOCKER_TIMEOUT -lt $DOCKER_EXECUTION_TIME ]]; do
+            kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -ge "$DOCKER_EXECUTION_TIME" ]]; do
               sleep 1
               DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
               echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
