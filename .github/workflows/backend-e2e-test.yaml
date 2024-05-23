@@ -86,6 +86,11 @@ jobs:
             kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
             kubectl get deploy -n ai-core
             sleep 15
-            kubectl get pods -n ai-core
+            POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
+            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do
+              sleep 1
+              kubectl get pods $POD -n aicore -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+            done
+            
             kubectl get svc -n ai-core
 
