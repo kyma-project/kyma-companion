@@ -120,8 +120,12 @@ jobs:
           done
 
           kubectl get svc -n ai-core
+          kubectl port-forward pod/$POD 30001:5000 -n ai-core
+
           kubectl get pods -n ai-core
-          kubectl get networkpolicies -n ai-core
+          kubectl inspect pod $POD -n ai-core
+          kubeclt logs $POD -n ai-core
+
       # Check backend
       - name: Check backend
         run: |
