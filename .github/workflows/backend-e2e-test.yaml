@@ -60,7 +60,28 @@ jobs:
       - name: Check Docker image
         run: docker images ai-backend
 
-      # Install and configure K3s cluster
+      - name: Local Image registry
+        run: |
+          docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+
+      # Convert image to tar
+      - name: Push image to local registry
+        run: |
+          docker tag ai-backend:latest localhost:5000/ai-backend:latest
+          docker push localhost:5000/ai-backend:latest
+
+      - name: Configure local registry for k3s
+        run: |
+          mkdir -p ~/.k3s
+          cat <<EOF > ~/.k3s/registries.yaml
+          mirrors:
+            "localhost:5000":
+              endpoint:
+                - "http://localhost:5000"
+          EOF
+      
+          # Install and configure K3s cluster
       - name: Install and configure K3s cluster
         run: |
           # K3s installation
@@ -74,12 +95,7 @@ jobs:
         run: |
           kubectl get nodes
           kubectl get ns
-            
-      # Convert image to tar
-      - name: Convert image to tar
-        run: |
-          docker save ai-backend:latest -o ai-backend.tar
-          k3s ctr images import ai-backend.tar
+              
 
       # Deploy the Docker image to the K3s cluster
       - name: Deploy the Docker image to the K3s cluster
