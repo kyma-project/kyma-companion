@@ -65,6 +65,7 @@ jobs:
       # Convert image to tar
       - name: Push image to local registry
         run: |
+          sleep 10
           docker tag ai-backend:latest localhost:5000/ai-backend:latest
           docker push localhost:5000/ai-backend:latest
 
