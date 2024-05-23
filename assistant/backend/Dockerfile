@@ -27,7 +27,7 @@ RUN chown -R actionuser:actionuser /app
 USER actionuser
 
 # Add trusted host and extra index url to pip.conf
-RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@common.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = common.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
+RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@common.repositories.cloud.sap/artifactory/api/pypi/deploy-releases-hyperspace-pypi/simple\ntrusted-host = common.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
 # RUN echo "[global]\nextra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > /etc/pip.conf
 
 # Change ownership of the application directory and the pip config directory to the non-root user
