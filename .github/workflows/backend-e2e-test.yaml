@@ -76,14 +76,14 @@ jobs:
       # Deploy the Docker image to the K3s cluster
       - name: Deploy the Docker image to the K3s cluster
         run: |
-            kubectl appy -f .reuse/deployment/01-ai-backend-namespace.yaml
+            kubectl apply -f .reuse/deployment/01-ai-backend-namespace.yaml
             kubectl get ns
             echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
             cat .reuse/deployment/02-ai-backend-configmap.yaml
-            kubectl appy -f .reuse/deployment/02-ai-backend-configmap.yaml
+            kubectl apply -f .reuse/deployment/02-ai-backend-configmap.yaml
             kubectl get cm -n ai-core
 
-            kubectl appy -f .reuse/deployment/03-ai-backend-deployment.yaml
+            kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
             kubectl get deploy -n ai-core
             kubectl get pods -n ai-core
             kubeclt get svc -n ai-core
