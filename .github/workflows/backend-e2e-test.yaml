@@ -29,12 +29,15 @@ jobs:
       # Install Kyma CLI
       - name: Install Kyma CLI
         run: |
-          curl -Lo - https://storage.googleapis.com/kyma-cli-stable/latest/install.sh | bash
+          curl -Lo - https://storage.googleapis.com/kyma-cli-stable/kyma-linux
+          chmod +x kyma-linux
+          mkdir -p ~/.kyma-cli/bin
+          mv kyma-linux ~/.kyma-cli/bin/kyma
           export PATH=$PATH:~/.kyma-cli/bin
     
       - name: Check Kyma CLI
         run: kyma version
-        
+
       # Build local Docker image
       - name: Build Docker image
         working-directory: ./assistant/backend
