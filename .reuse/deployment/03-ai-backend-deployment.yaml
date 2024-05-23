@@ -64,6 +64,6 @@ spec:
     app: ai-backend
   ports:
     - protocol: TCP
-      port: 5000
+      port: 8080
       targetPort: 5000
-      nodePort: 30001  # You can specify a port in the range 30000-32767
+      nodePort: 32000  # You can specify a port in the range 30000-32767
