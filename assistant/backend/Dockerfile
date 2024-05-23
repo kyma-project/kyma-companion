@@ -1,5 +1,5 @@
 # Use a specific Python base image based on your requirements
-FROM python:3.11-slim-buster
+FROM python:3.11-buster
 
 ARG JFROG_USER
 ARG JFROG_TOKEN
@@ -39,17 +39,6 @@ RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JF
 # Change ownership of the application directory and the pip config directory to the non-root user
 RUN chown -R actionuser:actionuser /app $HOME/.config/pip
 
-
-# Download and install curl as a non-root user
-RUN cd $HOME/.local/bin && \
-    wget https://curl.se/download/curl-8.8.0.tar.gz && \
-    tar -xzf curl-8.8.0.tar.gz && \
-    cd curl-8.8.0 && \
-    ./configure --prefix=$HOME && \
-    make && \
-    make install && \
-    ls -la && \
-    rm -rf $HOME/.local/bin/curl-8.8.0 $HOME/.local/bin/curl-8.8.0.tar.gz
 
 # Install kubectl
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
