@@ -119,8 +119,11 @@ jobs:
           done
 
           kubectl get svc -n ai-core
+          kubectl get pods -n ai-core
+          kubectl get networkpolicies -n ai-core
       # Check backend
       - name: Check backend
         run: |
-          curl --request GET --url http://localhost:30001/api/v1/resources
           sleep 5
+          curl --request GET --url http://localhost:30001/api/v1/resources
+          

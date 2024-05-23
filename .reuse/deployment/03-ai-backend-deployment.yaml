@@ -56,20 +56,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ai-backend-clusterip
-  namespace: ai-core
-spec:
-  selector:
-    app: ai-backend
-  ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
   name: ai-backend-service
   namespace: ai-core
 spec:
