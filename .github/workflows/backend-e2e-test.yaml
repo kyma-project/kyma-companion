@@ -34,9 +34,10 @@ jobs:
           mkdir -p ~/.kyma-cli/bin
           mv kyma ~/.kyma-cli/bin
           export PATH=$PATH:~/.kyma-cli/bin
+          ls -la ~/.kyma-cli/bin
     
       - name: Check Kyma CLI
-        run: kyma version
+        run: ~/.kyma-cli/bin/kyma version
 
       # Build local Docker image
       - name: Build Docker image
