@@ -2,7 +2,7 @@ name: Backend - E2E test
 
 on:
   push:
-    branches: ["*"]
+    branches: ["main"]
     paths:
       - "assistant/backend/**"
   pull_request:
@@ -26,36 +26,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Pip settings
-      - name: Set up pip
-        run: |
-          mkdir -p ~/.pip
-
-          echo "${{ secrets.JFROG_IDENTITY_USER }}"
-          echo "[global]" > ~/.pip/pip.conf
-          echo "extra-index-url = https://${{ secrets.JFROG_IDENTITY_USER }}:${{ secrets.JFROG_IDENTITY_TOKEN }}@common.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple" >> ~/.pip/pip.conf
-          echo "trusted-host = int.repositories.cloud.sap" >> ~/.pip/pip.conf
-          cat ~/.pip/pip.conf
-          #pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
-
       # Build local Docker image
       - name: Build Docker image
+        working-directory: ./assistant/backend
         run: |
-          # Check Docker version
-          docker --version
-
-          # Enter the directory
-          cd assistant/backend
-
           pwd
           ls -la
-
 
           # Build the Docker image
           docker build --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" -t ai-backend .
 
-          # Check the Docker image
-          docker images ai-backend
+      # Check the Docker image
+      - name: Check Docker image
+        run: docker images ai-backend
 
       # Install and configure K3s cluster
       - name: Install and configure K3s cluster
@@ -71,4 +54,3 @@ jobs:
         run: |
           kubectl get nodes
           kubectl get ns
-          kubectl get All --all-namespaces

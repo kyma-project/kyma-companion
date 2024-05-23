@@ -26,6 +26,9 @@ RUN chown -R actionuser:actionuser /app
 # Switch to the non-root user
 USER actionuser
 
+# Add .local/bin to the PATH environment variable
+ENV PATH=/home/actionuser/.local/bin:$PATH
+
 # Add trusted host and extra index url to pip.conf
 RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@common.repositories.cloud.sap/artifactory/api/pypi/deploy-releases-hyperspace-pypi/simple\ntrusted-host = common.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
 # RUN echo "[global]\nextra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > /etc/pip.conf
@@ -43,9 +46,9 @@ RUN pip install gunicorn
 #RUN apt-get update
 #RUN apt-get install -y curl
 
-#RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-#RUN chmod +x ./kubectl
-#RUN mv ./kubectl /usr/local/bin
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin
 
 
 
