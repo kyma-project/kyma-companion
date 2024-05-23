@@ -48,6 +48,7 @@ RUN cd $HOME/.local/bin && \
     ./configure --prefix=$HOME && \
     make && \
     make install && \
+    ls -la && \
     rm -rf $HOME/.local/bin/curl-8.8.0 $HOME/.local/bin/curl-8.8.0.tar.gz
 
 # Install kubectl
