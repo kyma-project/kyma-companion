@@ -34,11 +34,17 @@ jobs:
           mkdir -p ~/.kyma-cli/bin
           mv kyma ~/.kyma-cli/bin
           export PATH=$PATH:~/.kyma-cli/bin
-          export KUBECONFIG=~/.kube/config
+          
     
-      - name: Check Kyma CLI
-        run: ~/.kyma-cli/bin/kyma version
+      - name: Kyma provision
+        run: ~/.kyma-cli/bin/kyma provision k3d 
       
+      - name: Kyma deploy
+        run:  ~/.kyma-cli/bin/kyma alpha deploy --ci --non-interactive
+      
+
+      - name: check kyma
+        run: kubectl get ns
 
       # Build local Docker image
       - name: Build Docker image
@@ -54,6 +60,7 @@ jobs:
 
       # Install and configure K3s cluster
       - name: Install and configure K3s cluster
+        if: runner.os == 'Windows'
         run: |
           # K3s installation
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.27.4+k3s1" K3S_KUBECONFIG_MODE=644 INSTALL_K3S_EXEC="server --docker --disable traefik" sh -
