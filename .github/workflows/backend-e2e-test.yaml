@@ -123,7 +123,6 @@ jobs:
 
           kubectl get pods -n ai-core
           kubectl describe pod $POD -n ai-core
-          kubeclt logs $POD -n ai-core
 
       # Check backend
       - name: Check backend
