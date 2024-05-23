@@ -26,15 +26,36 @@ RUN chown -R actionuser:actionuser /app
 # Switch to the non-root user
 USER actionuser
 
+# Create a .local/bin directory in the user's home directory
+RUN mkdir -p $HOME/.local/bin
+
 # Add .local/bin to the PATH environment variable
-ENV PATH=/home/actionuser/.local/bin:$PATH
+ENV PATH=$HOME/.local/bin:$PATH
 
 # Add trusted host and extra index url to pip.conf
 RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JFROG_USER}:${JFROG_TOKEN}@common.repositories.cloud.sap/artifactory/api/pypi/deploy-releases-hyperspace-pypi/simple\ntrusted-host = common.repositories.cloud.sap" > $HOME/.config/pip/pip.conf
 # RUN echo "[global]\nextra-index-url = https://int.repositories.cloud.sap/artifactory/api/pypi/proxy-deploy-releases-hyperspace-pypi/simple\ntrusted-host = int.repositories.cloud.sap" > /etc/pip.conf
 
 # Change ownership of the application directory and the pip config directory to the non-root user
-RUN chown -R actionuser:actionuser /app /home/actionuser/.config/pip
+RUN chown -R actionuser:actionuser /app $HOME/.config/pip
+
+
+# Download and install curl as a non-root user
+RUN cd $HOME/.local/bin && \
+    curl -LO https://curl.se/download/curl-8.8.0.tar.gz && \
+    tar -xzf curl-8.8.0.tar.gz && \
+    cd curl-8.8.0 && \
+    ./configure --prefix=$HOME && \
+    make && \
+    make install && \
+    rm -rf $HOME/.local/bin/curl-8.8.0 $HOME/.local/bin/curl-8.8.0.tar.gz
+
+# Install kubectl
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl $HOME/.local/bin
+
+RUN kubectl version --client
 
 # Copy requirements.txt and install dependencies
 # COPY requirements.txt ./
@@ -42,15 +63,6 @@ RUN pip install unstructured --no-deps urllib3
 RUN pip install -r requirements.txt
 RUN pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
 RUN pip install gunicorn
-
-#RUN apt-get update
-#RUN apt-get install -y curl
-
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-RUN chmod +x ./kubectl
-RUN mv ./kubectl /usr/local/bin
-
-
 
 # Expose Flask's default port (5000)
 EXPOSE 5000

@@ -30,9 +30,6 @@ jobs:
       - name: Build Docker image
         working-directory: ./assistant/backend
         run: |
-          pwd
-          ls -la
-
           # Build the Docker image
           docker build --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" -t ai-backend .
 
