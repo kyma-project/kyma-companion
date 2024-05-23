@@ -102,8 +102,10 @@ jobs:
         run: |
             kubectl apply -f .reuse/deployment/01-ai-backend-namespace.yaml
             kubectl get ns
+            echo "${{ secrets.K3S_SECRET }}" > .reuse/deployment/00-ai-backend-secret.yaml
+            kubectl apply -f .reuse/deployment/00-ai-backend-secret.yaml
+            kubectl get secret -n ai-core
             echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
-            cat .reuse/deployment/02-ai-backend-configmap.yaml
             kubectl apply -f .reuse/deployment/02-ai-backend-configmap.yaml
             kubectl get cm -n ai-core
 
@@ -113,7 +115,7 @@ jobs:
             POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
             DOCKER_EXECUTION_TIME=0
             kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -ge "$DOCKER_EXECUTION_TIME" ]]; do
+            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$DOCKER_EXECUTION_TIME" ]]; do
               sleep 1
               DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
               echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
