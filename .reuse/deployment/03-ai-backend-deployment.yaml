@@ -66,3 +66,18 @@ spec:
     port: 5000
     targetPort: 5000
   type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-backend-service
+  namespace: ai-core
+spec:
+  type: NodePort
+  selector:
+    app: ai-backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30001  # You can specify a port in the range 30000-32767

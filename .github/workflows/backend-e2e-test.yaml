@@ -37,14 +37,12 @@ jobs:
       #     mkdir -p ~/.kyma-cli/bin
       #     mv kyma ~/.kyma-cli/bin
       #     export PATH=$PATH:~/.kyma-cli/bin
-          
-    
+
       # - name: Kyma provision
-      #   run: ~/.kyma-cli/bin/kyma provision k3d 
-      
+      #   run: ~/.kyma-cli/bin/kyma provision k3d
+
       # - name: Kyma deploy
       #   run:  ~/.kyma-cli/bin/kyma alpha deploy --ci --non-interactive
-      
 
       # - name: check kyma
       #   run: kubectl get ns
@@ -64,7 +62,6 @@ jobs:
         run: |
           docker run -d -p 5000:5000 --restart=always --name registry registry:2
 
-
       # Convert image to tar
       - name: Push image to local registry
         run: |
@@ -80,7 +77,7 @@ jobs:
               endpoint:
                 - "http://localhost:5000"
           EOF
-      
+
           # Install and configure K3s cluster
       - name: Install and configure K3s cluster
         run: |
@@ -95,32 +92,35 @@ jobs:
         run: |
           kubectl get nodes
           kubectl get ns
-              
 
       # Deploy the Docker image to the K3s cluster
       - name: Deploy the Docker image to the K3s cluster
         run: |
-            kubectl apply -f .reuse/deployment/01-ai-backend-namespace.yaml
-            kubectl get ns
-            echo "${{ secrets.K3S_SECRET }}" > .reuse/deployment/00-ai-backend-secret.yaml
-            kubectl apply -f .reuse/deployment/00-ai-backend-secret.yaml
-            kubectl get secret -n ai-core
-            echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
-            kubectl apply -f .reuse/deployment/02-ai-backend-configmap.yaml
-            kubectl get cm -n ai-core
+          kubectl apply -f .reuse/deployment/01-ai-backend-namespace.yaml
+          kubectl get ns
+          echo "${{ secrets.K3S_SECRET }}" > .reuse/deployment/00-ai-backend-secret.yaml
+          kubectl apply -f .reuse/deployment/00-ai-backend-secret.yaml
+          kubectl get secret -n ai-core
+          echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
+          kubectl apply -f .reuse/deployment/02-ai-backend-configmap.yaml
+          kubectl get cm -n ai-core
 
-            kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
-            kubectl get deploy -n ai-core
-            sleep 15
-            POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
-            DOCKER_EXECUTION_TIME=0
+          kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
+          kubectl get deploy -n ai-core
+          sleep 15
+          POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
+          DOCKER_EXECUTION_TIME=0
+          kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+          while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$DOCKER_EXECUTION_TIME" ]]; do
+            sleep 1
+            DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
+            echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
             kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$DOCKER_EXECUTION_TIME" ]]; do
-              sleep 1
-              DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
-              echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
-              kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-            done
-            
-            kubectl get svc -n ai-core
+          done
 
+          kubectl get svc -n ai-core
+      # Check backend
+      - name: Check backend
+        run: |
+          curl --request GET --url http://localhost:30001/api/v1/resources
+          sleep 5
