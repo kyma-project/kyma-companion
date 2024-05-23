@@ -85,6 +85,7 @@ jobs:
 
             kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
             kubectl get deploy -n ai-core
+            sleep 15
             kubectl get pods -n ai-core
-            kubeclt get svc -n ai-core
+            kubectl get svc -n ai-core
 
