@@ -29,10 +29,10 @@ jobs:
       # Install Kyma CLI
       - name: Install Kyma CLI
         run: |
-          curl -Lo - https://storage.googleapis.com/kyma-cli-stable/kyma-linux
-          chmod +x kyma-linux
+          curl -o kyma https://storage.googleapis.com/kyma-cli-stable/kyma-linux
+          chmod +x kyma
           mkdir -p ~/.kyma-cli/bin
-          mv kyma-linux ~/.kyma-cli/bin/kyma
+          mv kyma ~/.kyma-cli/bin
           export PATH=$PATH:~/.kyma-cli/bin
     
       - name: Check Kyma CLI
