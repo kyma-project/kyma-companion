@@ -26,6 +26,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Install Kyma CLI
+      - name: Install Kyma CLI
+        run: |
+          curl -Lo - https://storage.googleapis.com/kyma-cli-stable/latest/install.sh | bash
+          export PATH=$PATH:~/.kyma-cli/bin
+    
+      - name: Check Kyma CLI
+        run: kyma version
+        
       # Build local Docker image
       - name: Build Docker image
         working-directory: ./assistant/backend
@@ -37,15 +46,6 @@ jobs:
       - name: Check Docker image
         run: docker images ai-backend
 
-
-      # Install Kyma CLI
-      - name: Install Kyma CLI
-        run: |
-          curl -Lo - https://storage.googleapis.com/kyma-cli-stable/latest/install.sh | bash
-          export PATH=$PATH:~/.kyma-cli/bin
-
-      - name: Check Kyma CLI
-        run: kyma version
 
       # Install and configure K3s cluster
       - name: Install and configure K3s cluster
