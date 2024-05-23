@@ -42,7 +42,7 @@ RUN chown -R actionuser:actionuser /app $HOME/.config/pip
 
 # Download and install curl as a non-root user
 RUN cd $HOME/.local/bin && \
-    curl -LO https://curl.se/download/curl-8.8.0.tar.gz && \
+    wget https://curl.se/download/curl-8.8.0.tar.gz && \
     tar -xzf curl-8.8.0.tar.gz && \
     cd curl-8.8.0 && \
     ./configure --prefix=$HOME && \
