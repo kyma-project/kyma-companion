@@ -1,4 +1,4 @@
-# Use a specific Python base image based on your requirements
+# Use a specific Python base image based on your requirements (slim cannot be used due to missing dependencies. e.g. curl)
 FROM python:3.11-buster
 
 ARG JFROG_USER
@@ -6,7 +6,6 @@ ARG JFROG_TOKEN
 
 # Create a group and user
 RUN groupadd -r actionuser && useradd -r -g actionuser -d /home/actionuser actionuser
-
 
 # Create the user's home directory and set appropriate permissions
 RUN mkdir -p /home/actionuser/.config/pip && chown -R actionuser:actionuser /home/actionuser
@@ -39,13 +38,10 @@ RUN mkdir -p $HOME/.config/pip && echo "[global]\nextra-index-url = https://${JF
 # Change ownership of the application directory and the pip config directory to the non-root user
 RUN chown -R actionuser:actionuser /app $HOME/.config/pip
 
-
 # Install kubectl
-# RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-#RUN chmod +x ./kubectl
-#RUN mv ./kubectl $HOME/.local/bin
-
-RUN kubectl version --client
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl $HOME/.local/bin
 
 # Copy requirements.txt and install dependencies
 # COPY requirements.txt ./
@@ -60,9 +56,6 @@ EXPOSE 5000
 # Set the Flask app command using environment variable (optional)
 # This prevents hardcoding Flask's location within the container
 ENV FLASK_APP=main.py
-
-# Start the Flask app using uWSGI (recommended for production)
-# CMD ["uwsgi", "--ini", "uwsgi.ini"]
 
 # Alternative startup command for development (optional)
 # Use this only for development, not production, due to security concerns
