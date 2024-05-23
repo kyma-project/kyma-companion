@@ -60,7 +60,6 @@ jobs:
       - name: Check Docker image
         run: docker images ai-backend
 
-
       # Install and configure K3s cluster
       - name: Install and configure K3s cluster
         run: |
@@ -75,7 +74,13 @@ jobs:
         run: |
           kubectl get nodes
           kubectl get ns
-      
+            
+      # Convert image to tar
+      - name: Convert image to tar
+        run: |
+          docker save ai-backend:latest -o ai-backend.tar
+          k3s ctr images import ai-backend.tar
+
       # Deploy the Docker image to the K3s cluster
       - name: Deploy the Docker image to the K3s cluster
         run: |
@@ -91,10 +96,10 @@ jobs:
             sleep 15
             POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
             DOCKER_EXECUTION_TIME=0
-            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] || [[ $DOCKER_TIMEOUT -gt $DOCKER_EXECUTION_TIME ]]; do
+            while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ $DOCKER_TIMEOUT -lt $DOCKER_EXECUTION_TIME ]]; do
               sleep 1
               DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
-              echo "$DOCKER_EXECUTION_TIME - Waiting for the pod to be ready"
+              echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
               kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
             done
             
