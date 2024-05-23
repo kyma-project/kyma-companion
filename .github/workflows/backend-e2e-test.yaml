@@ -120,7 +120,7 @@ jobs:
           done
 
           kubectl get svc -n ai-core
-          kubectl port-forward pod/$POD 30001:5000 -n ai-core
+          kubectl port-forward pod/$POD 25000:5000 -n ai-core
 
           kubectl get pods -n ai-core
           kubectl inspect pod $POD -n ai-core
@@ -130,5 +130,5 @@ jobs:
       - name: Check backend
         run: |
           sleep 5
-          curl --request GET --url http://localhost:30001/api/v1/resources
+          curl --request GET --url http://localhost:25000/api/v1/resources
           
