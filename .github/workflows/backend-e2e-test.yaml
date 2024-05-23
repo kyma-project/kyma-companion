@@ -27,24 +27,24 @@ jobs:
           python-version: "3.11"
 
       # Install Kyma CLI
-      - name: Install Kyma CLI
-        run: |
-          curl -o kyma https://storage.googleapis.com/kyma-cli-stable/kyma-linux
-          chmod +x kyma
-          mkdir -p ~/.kyma-cli/bin
-          mv kyma ~/.kyma-cli/bin
-          export PATH=$PATH:~/.kyma-cli/bin
+      # - name: Install Kyma CLI
+      #   run: |
+      #     curl -o kyma https://storage.googleapis.com/kyma-cli-stable/kyma-linux
+      #     chmod +x kyma
+      #     mkdir -p ~/.kyma-cli/bin
+      #     mv kyma ~/.kyma-cli/bin
+      #     export PATH=$PATH:~/.kyma-cli/bin
           
     
-      - name: Kyma provision
-        run: ~/.kyma-cli/bin/kyma provision k3d 
+      # - name: Kyma provision
+      #   run: ~/.kyma-cli/bin/kyma provision k3d 
       
-      - name: Kyma deploy
-        run:  ~/.kyma-cli/bin/kyma alpha deploy --ci --non-interactive
+      # - name: Kyma deploy
+      #   run:  ~/.kyma-cli/bin/kyma alpha deploy --ci --non-interactive
       
 
-      - name: check kyma
-        run: kubectl get ns
+      # - name: check kyma
+      #   run: kubectl get ns
 
       # Build local Docker image
       - name: Build Docker image
@@ -73,3 +73,18 @@ jobs:
         run: |
           kubectl get nodes
           kubectl get ns
+      
+      # Deploy the Docker image to the K3s cluster
+      - name: Deploy the Docker image to the K3s cluster
+        run: |
+            kubectl appy -f .reuse/deployment/01-ai-backend-namespace.yaml
+            kubectl get ns
+
+            kubectl appy -f .reuse/deployment/02-ai-backend-configmap.yaml
+            kubectl get cm -n ai-core
+            
+            kubectl appy -f .reuse/deployment/03-ai-backend-deployment.yaml
+            kubectl get deploy -n ai-core
+            kubectl get pods -n ai-core
+            kubeclt get svc -n ai-core
+

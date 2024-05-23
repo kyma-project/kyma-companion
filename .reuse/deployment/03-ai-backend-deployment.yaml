@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-backend
+  namespace: ai-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-backend
+  template:
+    metadata:
+      labels:
+        app: ai-backend
+    spec:
+      containers:
+      - name: ai-backend
+        image: ai-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            memory: "256Mi" # Minimum amount of memory guaranteed
+            cpu: "500m" # Equivalent to 0.5 of a CPU
+          limits:
+            memory: "3Gi" # Maximum amount of memory the container can use
+            cpu: "4" # Equivalent to 4 of a CPU
+        env:
+        - name: AICORE_LLM_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: clientsecret
+        - name: AICORE_LLM_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: clientid
+        - name: AICORE_LLM_AUTH_URL
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: url
+        - name: AICORE_SERVICE_URLS
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: serviceurls
+        envFrom:
+        - configMapRef:
+            name: ai-backend-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-backend-clusterip
+  namespace: ai-core
+spec:
+  selector:
+    app: ai-backend
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+  type: ClusterIP
