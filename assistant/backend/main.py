@@ -298,6 +298,14 @@ def get_all_resourceNames():
 
     return jsonify({"results": resourceNames})
 
+@app.route("/api/v1/health/check", methods=["GET"])
+def health_check():
+    """
+    This function is used to check the health of the backend service.
+    Returns:
+    flask.Response: health status
+    """
+    return jsonify({"status": "healthy"})
 
 if __name__ == "__main__":
     # DEV mode

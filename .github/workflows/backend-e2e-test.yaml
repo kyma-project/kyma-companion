@@ -110,5 +110,5 @@ jobs:
       - name: Check backend
         run: |
           sleep 5
-          curl --request GET --url "http://localhost:32000/api/v1/resources"
+          curl --request GET --url "http://localhost:32000/api/v1/health/check"
           
