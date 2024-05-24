@@ -20,11 +20,15 @@ jobs:
     permissions: write-all
     steps:
       # Get the code
-      - name: Checkout code
+      - name: Prep - Checkout code
         uses: actions/checkout@v4
 
+      # Create local Docker image registry
+      - name: Prep - Local Image registry
+        run: |
+          docker run -d -p 5000:5000 --restart=always --name registry registry:2
       # Build local Docker image
-      - name: Build Docker image
+      - name: Build - Docker image
 
         working-directory: ./assistant/backend
         run: |
@@ -32,21 +36,16 @@ jobs:
           docker build --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" -t ai-backend .
 
       # Check the Docker image
-      - name: Check Docker image
+      - name: Build - Check Docker image
         run: docker images ai-backend
 
-      - name: Local Image registry
-        run: |
-          docker run -d -p 5000:5000 --restart=always --name registry registry:2
-
       # Convert image to tar
-      - name: Push image to local registry
+      - name: Publish - Push image to local registry
         run: |
-          sleep 10
           docker tag ai-backend:latest localhost:5000/ai-backend:latest
           docker push localhost:5000/ai-backend:latest
 
-      - name: Configure local registry for k3s
+      - name: K3s - Configure local registry for k3s
         run: |
           mkdir -p ~/.k3s
           cat <<EOF > ~/.k3s/registries.yaml
@@ -57,37 +56,37 @@ jobs:
           EOF
 
       # Install and configure K3s cluster
-      - name: Install and configure K3s cluster
+      - name: K3s - Install and configure K3s cluster
         run: .scripts/shell/k3s-installation.sh
 
       # Verify K3s cluster
-      - name: Verify K3s cluster
+      - name: K3s - Verify K3s cluster
         run: |
           kubectl get nodes
           kubectl get ns
 
       # Deploy the Docker image to the K3s cluster
       ## Ceare namespace
-      - name: Create namespace
+      - name: Deploy - Create namespace
         run: |
           kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
 
       ## Create secret
-      - name: Create secret on K3s
+      - name: Deploy - Create secret on K3s
         run: |
           echo "${{ secrets.K3S_SECRET }}" > .scripts/kubernetes/ai-backend-secret.yaml
           kubectl apply -f .scripts/kubernetes/ai-backend-secret.yaml
           rm -f .scripts/kubernetes/ai-backend-secret.yaml
 
       ## Create configmap
-      - name: Create configmap on K3s
+      - name: Deploy - Create configmap on K3s
         run: |
           echo "${{ secrets.K3S_CONFIGMAP }}" > .scripts/kubernetes/ai-backend-configmap.yaml
           kubectl apply -f .scripts/kubernetes/ai-backend-configmap.yaml
           rm -f .scripts/kubernetes/ai-backend-configmap.yaml
 
       ## Deploy pod and service (NodePort)
-      - name: Deploy the Docker image to the K3s cluster
+      - name: Deploy - Backend and NodePort service
         run: |
           kubectl apply -f .scripts/kubernetes/ai-backend-deployment.yaml
       ## Check the deployment
@@ -114,7 +113,7 @@ jobs:
           kubectl get pods -n ai-core
 
       # Backend health check - /api/v1/health/check
-      - name: Check - Health check
+      - name: Test - Health check
         run: |
           sleep 5
           { # try
@@ -128,7 +127,7 @@ jobs:
             kubectl logs $POD -n ai-core
           }
       # Backend resources check - /api/v1/resources
-      - name: Check - Health check
+      - name: Test - Health check
         run: |
           sleep 5
           { # try
