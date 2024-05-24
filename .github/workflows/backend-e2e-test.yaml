@@ -27,9 +27,9 @@ jobs:
       - name: Prep - Local Image registry
         run: |
           docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
       # Build local Docker image
       - name: Build - Docker image
-
         working-directory: ./assistant/backend
         run: |
           # Build the Docker image
@@ -50,7 +50,6 @@ jobs:
         run: |
           mkdir -p ~/.k3s
           cp .scripts/kubernetes/registries.yaml ~/.k3s/registries.yaml
-          ls -la ~/.k3s
 
       # Install and configure K3s cluster
       - name: K3s - Install and configure K3s cluster
@@ -95,5 +94,5 @@ jobs:
         run: .scripts/shell/test-health-check.sh
 
       # Backend resources check - /api/v1/resources
-      - name: Test - Health check
+      - name: Test - Cluster resources
         run: .scripts/shell/test-api-v1-resources.sh

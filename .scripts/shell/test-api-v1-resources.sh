@@ -3,7 +3,7 @@
 # Test - API v1 resources: GET /api/v1/resources
 { # try
 
-    curl --request GET --url "http://localhost:32000/api/v1/resources" --header "Content-Type: application/json"
+    curl -s --request GET --url "http://localhost:32000/api/v1/resources" --header "Content-Type: application/json" | jq .
     #save your output
 
 } || { # catch
