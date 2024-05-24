@@ -92,8 +92,8 @@ jobs:
 
           kubectl get svc -n python-app
 
-          kubectl get pods -n python-app
           kubectl describe pod $POD -n python-app
+          kubectl get pods -n python-app
 
       # Check backend
       - name: Check backend
@@ -101,5 +101,5 @@ jobs:
           sleep 5
           clusterIP=$(kubectl get svc python-app-service -n python-app -o 'jsonpath={.spec.clusterIP}')
           echo "Cluster IP: $clusterIP"
-          curl --request GET --url "http://$clusterIP:30800/hello"
+          curl --request GET --url "http://localhost:30800/hello"
           
