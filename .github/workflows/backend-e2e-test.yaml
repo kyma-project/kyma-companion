@@ -86,36 +86,16 @@ jobs:
           rm -f .scripts/kubernetes/ai-backend-configmap.yaml
 
       ## Deploy pod and service (NodePort)
-      - name: Deploy - Backend and NodePort service
+      - name: Deploy - Create Backend and NodePort service
         run: |
           kubectl apply -f .scripts/kubernetes/ai-backend-deployment.yaml
       ## Check the deployment
-      - name: Check the deployment
-        run: |
-          # Wait for deployment
-          sleep 15
-          # Get deployed pod name
-          POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
-          # Set running counter
-          RUN_COUNTER=0
-          # Get pod status
-          kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-          # Wait for pod to be ready or timeout
-          while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$RUN_COUNTER" ]]; do
-            sleep 1
-            RUN_COUNTER=$((RUN_COUNTER+1))
-            echo "$RUN_COUNTER / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
-            kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-          done
-          # Get service
-          kubectl get svc -n ai-core
-          # Get pods
-          kubectl get pods -n ai-core
+      - name: Deploy - Wait for deployment
+        run: .scripts/shell/deploy-wait-for-deployment.sh $DOCKER_TIMEOUT
 
       # Backend health check - /api/v1/health/check
       - name: Test - Health check
         run: |
-          sleep 5
           { # try
 
             curl --request GET --url "http://localhost:32000/api/v1/health/check" --header "Content-Type: application/json"
@@ -129,7 +109,6 @@ jobs:
       # Backend resources check - /api/v1/resources
       - name: Test - Health check
         run: |
-          sleep 5
           { # try
 
             curl --request GET --url "http://localhost:32000/api/v1/resources" --header "Content-Type: application/json"
