@@ -103,15 +103,12 @@ jobs:
           done
 
           kubectl get svc -n ai-core
-
-          kubectl get pods -n ai-core
           kubectl describe pod $POD -n ai-core
+          kubectl get pods -n ai-core
 
       # Check backend
       - name: Check backend
         run: |
           sleep 5
-          clusterIP=$(kubectl get svc ai-backend-service -n ai-core -o 'jsonpath={.spec.clusterIP}')
-          echo "Cluster IP: $clusterIP"
-          curl --request GET --url "http://$clusterIP:32000/api/v1/resources"
+          curl --request GET --url "http://localhost:32000/api/v1/resources"
           
