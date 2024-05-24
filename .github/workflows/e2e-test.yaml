@@ -1,0 +1,105 @@
+name: Backend - E2E test
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "example/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "example/**"
+
+env:
+  DOCKER_TIMEOUT: 30
+
+jobs:
+  build:
+    name: Backend E2E test
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      # Get the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Build local Docker image
+      - name: Build Docker image
+      
+        working-directory: ./example
+        run: |
+          # Build the Docker image
+          docker build -t python-app .
+
+      # Check the Docker image
+      - name: Check Docker image
+        run: docker images python-app
+
+      - name: Local Image registry
+        run: |
+          docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+      # Convert image to tar
+      - name: Push image to local registry
+        run: |
+          sleep 10
+          docker tag python-app:latest localhost:5000/python-app:latest
+          docker push localhost:5000/python-app:latest
+
+      - name: Configure local registry for k3s
+        run: |
+          mkdir -p ~/.k3s
+          cat <<EOF > ~/.k3s/registries.yaml
+          mirrors:
+            "localhost:5000":
+              endpoint:
+                - "http://localhost:5000"
+          EOF
+
+          # Install and configure K3s cluster
+      - name: Install and configure K3s cluster
+        run: |
+          # K3s installation
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.27.4+k3s1" K3S_KUBECONFIG_MODE=644 INSTALL_K3S_EXEC="server --docker --disable traefik" sh -
+          mkdir -p ~/.kube
+          cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # Verify K3s cluster
+      - name: Verify K3s cluster
+        run: |
+          kubectl get nodes
+          kubectl get ns
+
+      # Deploy the Docker image to the K3s cluster
+      - name: Deploy the Docker image to the K3s cluster
+        run: |
+          kubectl apply -f example/namespace.yaml
+          kubectl get ns
+          
+          kubectl apply -f example/deployment.yaml
+          kubectl get deploy -n python-app
+          sleep 15
+          POD=$(kubectl get pod -n python-app -l app=python-app -o jsonpath="{.items[0].metadata.name}")
+          DOCKER_EXECUTION_TIME=0
+          kubectl get pods $POD -n python-app -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+          while [[ $(kubectl get pods $POD -n python-app -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$DOCKER_EXECUTION_TIME" ]]; do
+            sleep 1
+            DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
+            echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
+            kubectl get pods $POD -n python-app -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+          done
+
+          kubectl get svc -n python-app
+
+          kubectl get pods -n python-app
+          kubectl describe pod $POD -n python-app
+
+      # Check backend
+      - name: Check backend
+        run: |
+          sleep 5
+          clusterIP=$(kubectl get svc python-app-service -n python-app -o 'jsonpath={.spec.clusterIP}')
+          echo "Cluster IP: $clusterIP"
+          curl --request GET --url "http://$clusterIP:30800/hello"
+          

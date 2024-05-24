@@ -29,26 +29,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Install Kyma CLI
-      # - name: Install Kyma CLI
-      #   run: |
-      #     curl -o kyma https://storage.googleapis.com/kyma-cli-stable/kyma-linux
-      #     chmod +x kyma
-      #     mkdir -p ~/.kyma-cli/bin
-      #     mv kyma ~/.kyma-cli/bin
-      #     export PATH=$PATH:~/.kyma-cli/bin
-
-      # - name: Kyma provision
-      #   run: ~/.kyma-cli/bin/kyma provision k3d
-
-      # - name: Kyma deploy
-      #   run:  ~/.kyma-cli/bin/kyma alpha deploy --ci --non-interactive
-
-      # - name: check kyma
-      #   run: kubectl get ns
-
       # Build local Docker image
       - name: Build Docker image
+      
         working-directory: ./assistant/backend
         run: |
           # Build the Docker image
