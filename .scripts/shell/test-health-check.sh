@@ -3,7 +3,7 @@
 # Test - Health check: GET /api/v1/health/check
 { # try
 
-    curl -s --request GET --url "http://localhost:32000/api/v1/health/check" --header "Content-Type: application/json" | jq .
+    curl -s --request GET --url "http://localhost:32000/api/v1/health/check" --header "Content-Type: application/json"
     #save your output
 
 } || { # catch
