@@ -23,15 +23,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Python 3.11
-      - name: Install Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       # Build local Docker image
       - name: Build Docker image
-      
+
         working-directory: ./assistant/backend
         run: |
           # Build the Docker image
@@ -62,14 +56,9 @@ jobs:
                 - "http://localhost:5000"
           EOF
 
-          # Install and configure K3s cluster
+      # Install and configure K3s cluster
       - name: Install and configure K3s cluster
-        run: |
-          # K3s installation
-          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.27.4+k3s1" K3S_KUBECONFIG_MODE=644 INSTALL_K3S_EXEC="server --docker --disable traefik" sh -
-          mkdir -p ~/.kube
-          cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-          chmod 600 ~/.kube/config
+        run: .scripts/shell/k3s-installation.sh
 
       # Verify K3s cluster
       - name: Verify K3s cluster
@@ -78,36 +67,54 @@ jobs:
           kubectl get ns
 
       # Deploy the Docker image to the K3s cluster
+      ## Ceare namespace
+      - name: Create namespace
+        run: |
+          kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
+
+      ## Create secret
+      - name: Create secret on K3s
+        run: |
+          echo "${{ secrets.K3S_SECRET }}" > .scripts/kubernetes/ai-backend-secret.yaml
+          kubectl apply -f .scripts/kubernetes/ai-backend-secret.yaml
+          rm -f .scripts/kubernetes/ai-backend-secret.yaml
+
+      ## Create configmap
+      - name: Create configmap on K3s
+        run: |
+          echo "${{ secrets.K3S_CONFIGMAP }}" > .scripts/kubernetes/ai-backend-configmap.yaml
+          kubectl apply -f .scripts/kubernetes/ai-backend-configmap.yaml
+          rm -f .scripts/kubernetes/ai-backend-configmap.yaml
+
+      ## Deploy pod and service (NodePort)
       - name: Deploy the Docker image to the K3s cluster
         run: |
-          kubectl apply -f .reuse/deployment/01-ai-backend-namespace.yaml
-          kubectl get ns
-          echo "${{ secrets.K3S_SECRET }}" > .reuse/deployment/00-ai-backend-secret.yaml
-          kubectl apply -f .reuse/deployment/00-ai-backend-secret.yaml
-          kubectl get secret -n ai-core
-          echo "${{ secrets.K3S_CONFIGMAP }}" > .reuse/deployment/02-ai-backend-configmap.yaml
-          kubectl apply -f .reuse/deployment/02-ai-backend-configmap.yaml
-          kubectl get cm -n ai-core
-
-          kubectl apply -f .reuse/deployment/03-ai-backend-deployment.yaml
-          kubectl get deploy -n ai-core
+          kubectl apply -f .scripts/kubernetes/ai-backend-deployment.yaml
+      ## Check the deployment
+      - name: Check the deployment
+        run: |
+          # Wait for deployment
           sleep 15
+          # Get deployed pod name
           POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
-          DOCKER_EXECUTION_TIME=0
+          # Set running counter
+          RUN_COUNTER=0
+          # Get pod status
           kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
-          while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$DOCKER_EXECUTION_TIME" ]]; do
+          # Wait for pod to be ready or timeout
+          while [[ $(kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]] && [[ "$DOCKER_TIMEOUT" -gt "$RUN_COUNTER" ]]; do
             sleep 1
-            DOCKER_EXECUTION_TIME=$((DOCKER_EXECUTION_TIME+1))
-            echo "$DOCKER_EXECUTION_TIME / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
+            RUN_COUNTER=$((RUN_COUNTER+1))
+            echo "$RUN_COUNTER / $DOCKER_TIMEOUT - Waiting for the pod to be ready"
             kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
           done
-
+          # Get service
           kubectl get svc -n ai-core
-          kubectl describe pod $POD -n ai-core
+          # Get pods
           kubectl get pods -n ai-core
 
-      # Check backend
-      - name: Check backend
+      # Backend health check - /api/v1/health/check
+      - name: Check - Health check
         run: |
           sleep 5
           { # try
@@ -116,7 +123,21 @@ jobs:
             #save your output
 
           } || { # catch
+            POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
             kubectl describe pod $POD -n ai-core
+            kubectl logs $POD -n ai-core
           }
-          
-          
+      # Backend resources check - /api/v1/resources
+      - name: Check - Health check
+        run: |
+          sleep 5
+          { # try
+
+            curl --request GET --url "http://localhost:32000/api/v1/resources" --header "Content-Type: application/json"
+            #save your output
+
+          } || { # catch
+            POD=$(kubectl get pod -n ai-core -l app=ai-backend -o jsonpath="{.items[0].metadata.name}")
+            kubectl describe pod $POD -n ai-core
+            kubectl logs $POD -n ai-core
+          }
