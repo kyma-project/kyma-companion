@@ -39,7 +39,7 @@ jobs:
       - name: Build - Check Docker image
         run: docker images ai-backend
 
-      # Convert image to tar
+      # Push image to local registry
       - name: Publish - Push image to local registry
         run: |
           docker tag ai-backend:latest localhost:5000/ai-backend:latest
