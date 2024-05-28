@@ -8,7 +8,7 @@
 > - `Code of Conduct` - do not change this!
 > - `Licensing` - do not change this!
 
-# {Project Title}
+# Kyma Companion
 <!--- mandatory --->
 > Modify the title and insert the name of your project. Use Heading 1 (H1).
 
@@ -55,21 +55,4 @@ See the [Code of Conduct](CODE_OF_CONDUCT.md) document.
 See the [license](./LICENSE) file.
 
 
-
-Steps in backend-e2e-test.yaml:
-
-1. Get the code
-2. Create local Docker image registry
-3. Build local Docker image
-4. Push image to local registry
-5. Configure K3s for local Docker image registry
-6. Install and configure K3s cluster
-7. Verify K3s cluster
-8. Deploy - Create namespace
-9. Deploy - Create Secret for backend
-10. Deploy - Create ConfigMap for backend
-11. Deploy - Create Backend and NodePort service
-12. Deploy - Wait for deployment
-13. Test - Health check
-14. Test - Cluster resources
 
