@@ -8,9 +8,10 @@
 > - `Code of Conduct` - do not change this!
 > - `Licensing` - do not change this!
 
-# Kyma Companion
-<!--- mandatory --->
-> Modify the title and insert the name of your project. Use Heading 1 (H1).
+# Kyma companion
+
+## Status
+[![REUSE status](https://api.reuse.software/badge/github.com/kyma-project/kyma-companion)](https://api.reuse.software/info/github.com/kyma-project/kyma-companion)
 
 ## Overview
 <!--- mandatory section --->
