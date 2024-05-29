@@ -1,12 +1,9 @@
 name: Backend - E2E test
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "assistant/backend/**"
-  pull_request:
-    branches: ["main"]
+  pull_request_target:
+    branches:
+      - main
     paths:
       - "assistant/backend/**"
 
