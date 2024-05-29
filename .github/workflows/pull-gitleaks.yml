@@ -18,6 +18,6 @@ jobs:
       - name: Run gitleaks
         # Scan commits between base and head of the pull request
         run: ./gitleaks detect --log-opts=${PULL_BASE_SHA}...${PULL_HEAD_SHA} --verbose --redact
-        env: 
+        env:
           PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PULL_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
