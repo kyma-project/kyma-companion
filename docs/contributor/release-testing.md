@@ -4,7 +4,7 @@ This documentation provides a step-by-step guide to setting up and running the r
 
 ## Overview
 
-The GitHub Action is triggered on pushes and pull requests to the `main` branch within the `assistant/backend` directory. The workflow sets up a local Docker image registry, builds and pushes a Docker image, configures and installs a K3s cluster, deploys the image to the cluster, and performs health checks and resource tests.
+The GitHub Action is triggered on pull requests to the `main` branch within the `assistant/backend` directory. The workflow sets up a local Docker image registry, builds and pushes a Docker image, configures and installs a K3s cluster, deploys the image to the cluster, and performs health checks and resource tests.
 
 ## Files and folders
 
