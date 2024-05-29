@@ -65,7 +65,7 @@ If you've already created your Kyma environment, you can also apply the custom I
     > ```
     >  "oidc": {
     >     "issuerURL": "https://kyma.accounts.ondemand.com",
-    >     "clientID": "{client id}",
+    >     "clientID": "{clientID}",
     >     "groupsClaim": "groups",
     >     "signingAlgs": ["RS256"],
     >     "usernamePrefix": "-",
