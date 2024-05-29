@@ -49,7 +49,7 @@ You have access to short-term logs of every container in your Kyma runtime.
 **Related Information**  
 
 
-[Auditing and Logging Information in Kyma](auditing-and-logging-information-in-kyma-935e241.md "Kyma runtime collects audit and application logs.")
+[Auditing and Logging Information in Kyma](../60-security/auditing-and-logging-information-in-kyma-935e241.md "Kyma runtime collects audit and application logs.")
 
 [Create an SAP Cloud Logging Instance through SAP BTP Service Operator](https://help.sap.com/docs/cloud-logging/cloud-logging/create-sap-cloud-logging-instance-through-sap-btp-service-operator?locale=en-US&version=Cloud)
 

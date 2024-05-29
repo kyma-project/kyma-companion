@@ -988,7 +988,7 @@ type: string
 </td>
 <td valign="top">
 
-Look up the available Kyma modules and their technical names at [Kyma Modules](kyma-modules-0dda141.md).
+Look up the available Kyma modules and their technical names at [Kyma Modules](../10-concepts/kyma-modules-0dda141.md).
 
 </td>
 <td valign="top">
@@ -1429,7 +1429,7 @@ The following example shows the default configuration of the *OIDC* parameter. W
 
 ```
  "oidc": {
-        "clientID": "{clientID}",
+        "clientID": "12b13a26-d993-4d0c-aa08-5f5852bbdff6",
         "groupsClaim": "groups",
         "issuerURL": "https://kyma.accounts.ondemand.com",
         "signingAlgs": ["RS256"],
@@ -1817,9 +1817,9 @@ Here is an example of the JSON input for the *Region* parameter:
 
 [Available Plans in the Kyma Environment](available-plans-in-the-kyma-environment-befe01d.md "Depending on your global account type, you have access to a different plan that specifies the cluster parameters for the Kyma environment.")
 
-[Regions for the Kyma Environment](regions-for-the-kyma-environment-557ec3a.md "To work with the Kyma environment, you need to specify the region for both your subaccount and the cluster.")
+[Regions for the Kyma Environment](../10-concepts/regions-for-the-kyma-environment-557ec3a.md "To work with the Kyma environment, you need to specify the region for both your subaccount and the cluster.")
 
-[Kyma Modules](kyma-modules-0dda141.md "With Kyma's modular approach, you can install just the modules you need, instead of a predefined set of components.")
+[Kyma Modules](../10-concepts/kyma-modules-0dda141.md "With Kyma's modular approach, you can install just the modules you need, instead of a predefined set of components.")
 
 [Account Administration Using the SAP BTP Command Line Interface \(btp CLI\)](account-administration-using-the-sap-btp-command-line-interface-btp-cli-7c6df2d.md "Use the SAP BTP command line interface (btp CLI) for all account administration tasks, such as creating or updating subaccounts, authorization management, and working with service brokers and platforms. It is an alternative to the SAP BTP cockpit for users who like to work in a terminal or want to automate operations using scripts.")
 

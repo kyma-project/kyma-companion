@@ -15,7 +15,7 @@ Audit logs are records that provide evidence of events, actions, or operations. 
 -   Security and system events that include administrative activities, potential threats, and evidence in the case of a breach.
 -   Changes introduced to the system, applications, and components.
 
-Kyma runtime collects audit logs for configuration changes to the runtime setup itself and Kubernetes resources managed by the Kubernetes API server of the runtime. Usually, those logs contain the user account \(technical account or email address\) and the client IP address of the subject who triggered the changes. No other personal data is stored in the audit logs. On average, the logs store the data for 90 days. If you want to store any other personal data, be cautious and bear in mind the recommendations provided in Data Protection and Privacy.
+Kyma runtime collects audit logs for configuration changes to the runtime setup itself and Kubernetes resources managed by the Kubernetes API server of the runtime. Usually, those logs contain the user account \(technical account or email address\) and the client IP address of the subject who triggered the changes. No other personal data is stored in the audit logs. On average, the logs store the data for 90 days. If you want to store any other personal data, be cautious and bear in mind the recommendations provided in [Data Protection and Privacy](data-protection-and-privacy-7e513d3.md).
 
 
 
@@ -242,5 +242,5 @@ Kyma runtime collects application logs provided by the Kyma system components. T
 
 [Audit Logging in the Neo Environment](https://help.sap.com/viewer/ea72206b834e4ace9cd834feed6c0e09/Cloud/en-US/02c39712c1064c96b37c1ea5bc9420dc.html)
 
-[Access Kyma Application Logs](access-kyma-application-logs-25180f4.md "Get insights into your applications, microservices, and Functions by viewing the respective logs. To check out real-time logs immediately, use the Kubernetes functionalities - either in Kyma dashboard, or with kubectl.")
+[Access Kyma Application Logs](../50-administration-and-ops/access-kyma-application-logs-25180f4.md "Get insights into your applications, microservices, and Functions by viewing the respective logs. To check out real-time logs immediately, use the Kubernetes functionalities - either in Kyma dashboard, or with kubectl.")
 
