@@ -23,6 +23,8 @@ The GitHub Action is triggered on pushes and pull requests to the `main` branch 
 
 ## Workflow Steps
 
+![Release Testing Workflow Steps](../images/release-testing-workflow-steps.png)
+
 ### 1. Workflow Trigger
 
 The workflow is triggered by:
