@@ -1,0 +1,9 @@
+[Unit]
+Description=My User Mode Daemon
+
+[Service]
+ExecStart=~/.local/bin/mydaemon.sh
+Restart=always
+
+[Install]
+WantedBy=default.target

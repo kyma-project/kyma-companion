@@ -1,0 +1,63 @@
+
+
+# Access a Kyma Instance Using kubectl
+
+As an alternative to managing Kyma with a graphical user interface, Kyma dashboard, you can also use the Kubernetes command-line tool, kubectl.
+
+
+
+
+
+## Prerequisites
+
+You have a Kyma instance created in your subaccount of the SAP BTP cockpit.
+
+
+
+## Context
+
+To start using kubectl, follow these steps:
+
+
+
+## Procedure
+
+1.  Install [kubectl oidc-login](https://github.com/int128/kubelogin). Follow the original instruction from the project repository. Use the relevant commands for macOS, Linux, or Windows users.
+
+    > ### Recommendation:  
+    > On Windows, we recommend using the release binaries to install the kubectl oidc-login plugin. The installation of the kubectl oidc-login plugin using Chocolatey and Krew could cause issues.
+
+2.  In the SAP BTP cockpit, in your subaccount *Overview*, go to the *Kyma Environment* section, and click on the *KubeconfigURL* link to download `kubeconfig.yaml`.
+
+3.  In the terminal, export the kubeconfig file.
+
+    -   On macOS, run:
+
+        ```
+        export KUBECONFIG={KUBECONFIG_FILE_PATH}
+        ```
+
+    -   On Windows \(PowerShell\), run:
+
+        ```
+        $ENV:KUBECONFIG="{KUBECONFIG_FILE_PATH}"
+        ```
+
+
+
+
+
+
+
+## Results
+
+Now you can manage your Kyma instance using kubectl.
+
+> ### Tip:  
+> If you authenticate in the Kyma environment with an Identity Provider using OpenID Connect, the downloaded `kubeconfig.yaml` can be used indefinitely to re-authenticate.
+
+**Related Information**  
+
+
+[Configure a Custom Identity Provider for Kyma](../60-security/configure-a-custom-identity-provider-for-kyma-67bcc6e.md "Enable the Kyma environment with a custom identity provider (IdP).")
+
