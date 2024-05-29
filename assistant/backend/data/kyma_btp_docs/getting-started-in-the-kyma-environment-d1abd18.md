@@ -10,7 +10,7 @@ As an administrator, you must perform several steps to set up a fully operationa
 
 ## Prerequisites
 
--   To perform administrative and development tasks, you need a global account and one or several subaccounts for which you can provision the Kyma environment. For details, see [Create the Kyma Instance](../50-administration-and-ops/create-the-kyma-instance-09dd313.md).
+-   To perform administrative and development tasks, you need a global account and one or several subaccounts for which you can provision the Kyma environment. For details, see [Create the Kyma Instance](create-the-kyma-instance-09dd313.md).
 
 -   The subaccount must have the following entitlements assigned:
 
@@ -19,7 +19,7 @@ As an administrator, you must perform several steps to set up a fully operationa
     -   Service Manager \(added by default\). However, if you removed the entitlement, you must add it again in your subaccount
 
 
-    For details, see [Configure Entitlements and Quotas for Subaccounts](../50-administration-and-ops/configure-entitlements-and-quotas-for-subaccounts-5ba357b.md).
+    For details, see [Configure Entitlements and Quotas for Subaccounts](configure-entitlements-and-quotas-for-subaccounts-5ba357b.md).
 
 
 
@@ -28,11 +28,11 @@ As an administrator, you must perform several steps to set up a fully operationa
 
 ## Procedure
 
-1.  Set up a Kubernetes cluster with the project "Kyma" to connect and extend SAP systems: [Create the Kyma Instance](../50-administration-and-ops/create-the-kyma-instance-09dd313.md)
+1.  Set up a Kubernetes cluster with the project "Kyma" to connect and extend SAP systems: [Create the Kyma Instance](create-the-kyma-instance-09dd313.md)
 
-2.  Add the modules you'd like to use: [Kyma Modules](../10-concepts/kyma-modules-0dda141.md).
+2.  Add the modules you'd like to use: [Kyma Modules](kyma-modules-0dda141.md).
 
-3.  Assign the roles to users to allow the administrators to manage Kyma and the developers to create Functions: [Assign Roles in the Kyma Environment](../50-administration-and-ops/assign-roles-in-the-kyma-environment-148ae38.md)
+3.  Assign the roles to users to allow the administrators to manage Kyma and the developers to create Functions: [Assign Roles in the Kyma Environment](assign-roles-in-the-kyma-environment-148ae38.md)
 
     > ### Caution:  
     > Assign the roles before the users start using the Kyma dashboard. Not granting the roles results in an error.
@@ -67,5 +67,5 @@ You have set up the Kyma environment and connected it as required.
 
 ## Next Steps
 
-After the administrator has set up the Kyma environment, the developers can access it through the Kyma dashboard. After logging on, developers can start creating extensions for the SAP systems either from the Kyma dashboard or from the terminal after downloading the kubeconfig file with the cluster configuration. For details, see [Development in the Kyma Environment](../30-development/development-in-the-kyma-environment-606ec61.md).
+After the administrator has set up the Kyma environment, the developers can access it through the Kyma dashboard. After logging on, developers can start creating extensions for the SAP systems either from the Kyma dashboard or from the terminal after downloading the kubeconfig file with the cluster configuration. For details, see [Development in the Kyma Environment](development-in-the-kyma-environment-606ec61.md).
 

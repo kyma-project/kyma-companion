@@ -10,7 +10,7 @@ Learn more about developing applications in the Kyma environment.
 
 ## Overview
 
-The [Kyma Environment](../10-concepts/kyma-environment-468c2f3.md) enables you to build simple Functions, develop, and deploy more complex microservices, or mixtures of those, depending on your use case complexity level. Both, Functions and microservices, can act as stand-alone applications or extensions of these SAP systems:
+The [Kyma Environment](kyma-environment-468c2f3.md) enables you to build simple Functions, develop, and deploy more complex microservices, or mixtures of those, depending on your use case complexity level. Both, Functions and microservices, can act as stand-alone applications or extensions of these SAP systems:
 
 -   SAP S/4HANA
 
@@ -56,7 +56,7 @@ For those who prefer to work with command-line tools, the Kyma environment also 
 
 ## SAP Cloud Application Programming Model
 
-The SAP Cloud Application Programming Model \(CAP\) is the recommended framework for application and service development in the Kyma environment. To learn more, see [SAP Cloud Application Programming Model](../10-concepts/sap-cloud-application-programming-model-042061d.md).
+The SAP Cloud Application Programming Model \(CAP\) is the recommended framework for application and service development in the Kyma environment. To learn more, see [SAP Cloud Application Programming Model](sap-cloud-application-programming-model-042061d.md).
 
 
 

@@ -6,7 +6,7 @@ With Kyma's modular approach, you can install just the modules you need, instead
 
 
 
-You can choose to add any modules as required. To learn how, see [Add and Delete a Kyma Module](../50-administration-and-ops/add-and-delete-a-kyma-module-1b548e9.md#loio1b548e9ad4744b978b8b595288b0cb5c). To find out which module version is running in your cluster, go to Kyma dashboard.
+You can choose to add any modules as required. To learn how, see [Add and Delete a Kyma Module](add-and-delete-a-kyma-module-1b548e9.md#loio1b548e9ad4744b978b8b595288b0cb5c). To find out which module version is running in your cluster, go to Kyma dashboard.
 
 > ### Tip:  
 > A release of a new module’s version is announced with a release note in [What’s New for SAP Business Technology Platform](https://help.sap.com/whats-new/cf0cb2cb149647329b5d02aa96303f56?locale=en-US&version=Cloud) for both, the fast and regular channels:
@@ -99,7 +99,7 @@ Within the SAP BTP Operator module, BTP Manager installs the SAP BTP service ope
 </td>
 <td valign="top">
 
--   [Using SAP BTP Services in the Kyma Environment](../30-development/using-sap-btp-services-in-the-kyma-environment-ea4dd81.md#loioea4dd81e49254dd482d32e3c20f4477a)
+-   [Using SAP BTP Services in the Kyma Environment](using-sap-btp-services-in-the-kyma-environment-ea4dd81.md#loioea4dd81e49254dd482d32e3c20f4477a)
 -   [kyma-project.io: SAP BTP Operator module](https://kyma-project.io/#/btp-manager/user/README)
 -   [GitHub: BTP Manager releases](https://github.com/kyma-project/btp-manager/releases)
 -   [GitHub: SAP BTP service operator releases](https://github.com/SAP/sap-btp-service-operator/releases)
@@ -199,7 +199,7 @@ With the Serverless module, you can define simple code snippets \(Functions\) wi
 </td>
 <td valign="top">
 
--   [Deploy Workloads in the Kyma Environment to Extend SAP Systems](../30-development/deploy-workloads-in-the-kyma-environment-to-extend-sap-systems-fe4ba5b.md)
+-   [Deploy Workloads in the Kyma Environment to Extend SAP Systems](deploy-workloads-in-the-kyma-environment-to-extend-sap-systems-fe4ba5b.md)
 -   [kyma-project.io: What is Serverless in Kyma?](https://kyma-project.io/#/serverless-manager/user/README)
 -   [kyma-project.io: Serverless Configuration](https://kyma-project.io/#/serverless-manager/user/00-20-configure-serverless)
 -   [GitHub repository: Serverless](https://github.com/kyma-project/serverless-manager)
@@ -270,7 +270,7 @@ At the moment, the SAP Event Mesh default plan and NATS are supported. If you ch
 </td>
 <td valign="top">
 
--   [Configure SAP Event Mesh for Kyma Eventing](../30-development/configure-sap-event-mesh-for-kyma-eventing-407d126.md)
+-   [Configure SAP Event Mesh for Kyma Eventing](configure-sap-event-mesh-for-kyma-eventing-407d126.md)
 -   [kyma-project.io: Eventing module](https://kyma-project.io/#/eventing-manager/user/README)
 -   [GitHub repository: Eventing](https://github.com/kyma-project/eventing-manager) 
 
