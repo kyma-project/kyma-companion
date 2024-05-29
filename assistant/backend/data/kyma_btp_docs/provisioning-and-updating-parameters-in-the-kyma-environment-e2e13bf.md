@@ -1429,7 +1429,7 @@ The following example shows the default configuration of the *OIDC* parameter. W
 
 ```
  "oidc": {
-        "clientID": "12b13a26-d993-4d0c-aa08-5f5852bbdff6",
+        "clientID": "{clientID}",
         "groupsClaim": "groups",
         "issuerURL": "https://kyma.accounts.ondemand.com",
         "signingAlgs": ["RS256"],
