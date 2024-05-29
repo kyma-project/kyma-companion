@@ -58,6 +58,4 @@ EXPOSE 5000
 ENV FLASK_APP=main.py
 
 # Alternative startup command for development (optional)
-# Use this only for development, not production, due to security concerns
-# CMD ["flask", "run", "--host", "0.0.0.0", "--debug"]
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "--timeout", "180", "main:app", "-w", "1", "--limit-request-line", "4096", "--limit-request-fields", "100", "--limit-request-field_size", "0", "--worker-class", "gevent"]
