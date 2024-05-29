@@ -37,4 +37,5 @@
 # https://help.github.com/articles/about-codeowners/
 # https://github.com/blog/2392-introducing-code-owners/
 
-assistant/backend/* @kyma-project/ai-force
+/assistant/backend/ @kyma-project/ai-force
+docs/ @kyma-project/ai-force
