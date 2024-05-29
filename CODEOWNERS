@@ -37,5 +37,5 @@
 # https://help.github.com/articles/about-codeowners/
 # https://github.com/blog/2392-introducing-code-owners/
 
-/assistant/backend/ @grischperl
+assistant/ @grischperl
 docs/ @kyma-project/ai-force
