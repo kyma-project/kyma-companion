@@ -1,4 +1,4 @@
-name: pull-gitleaks
+name: Pull Gitleaks
 on:
   pull_request_target:
     types: [opened, edited, synchronize, reopened, ready_for_review]
