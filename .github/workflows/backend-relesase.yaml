@@ -1,0 +1,58 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Backend - release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ '*.*.*' ]
+    paths:
+      - 'assistant/backend/**'
+
+# Define the environment variables
+env:
+  REGISTRY: ghcr.io
+  ORGANIZATION: kyma-project
+  REPOSITORY_NAME: kyma-companion
+  IMAGE_NAME: ai-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+        
+    # Get the code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Log into the registry
+    - name: Log into registry ${{ env.REGISTRY }}
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.GH_CR_USER }}
+        password: ${{ secrets.GH_CR_PAT }}
+
+    # Extract Docker metadata
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.IMAGE_REGISTRY }}/${{ env.ORGANIZATION }}/${{ env.REPOSITORY_NAME }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          type=raw,value=latest,event=push
+          type=semver,pattern={{version}},event=tag
+    
+    # Build and push Docker image
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+        context: ./assistant/backend
+        file: ./assistant/backend/Dockerfile
+        platforms: linux/amd64
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
