@@ -40,6 +40,10 @@
 
 > Add instructions on how to develop the project or example. It must be clear what to do and, for example, how to trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions or provide links to related documentation.
 
+## Release process
+
+Release testing and release creation are two separate processes. You can find the release testing documentation in the [Contributor Readme](./docs/contributor/README.md) file.
+
 ## Contributing
 <!--- mandatory section - do not change this! --->
 

@@ -19,6 +19,8 @@ The GitHub Action is triggered on pull requests to the `main` branch within the 
 - Configmap for Backend (K3S_CONFIGMAP)
 - User for `sap-llm-commons` (JFROG_IDENTITY_USER)
 - Token for `sap-llm-commons` (JFROG_IDENTITY_TOKEN)
+- GitHub PAT user for container registry (GH_CR_USER) - requires for release process
+- GitHub PAT token for container registry (GH_CR_PAT) - requires for release process
 
 
 ## Workflow Steps
@@ -36,15 +38,14 @@ The paths filter ensures that only changes within the `assistant/backend` direct
 
 ```yaml
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "assistant/backend/**"
-  pull_request:
-    branches: ["main"]
+  pull_request_target:
+    branches:
+      - main
     paths:
       - "assistant/backend/**"
 ```
+
+We use `pull_request_target` to run the workflow on the base branch of the pull request. This allows us to access the base branch's secrets and environment variables.
 
 ### 2. Environment Variables
 
