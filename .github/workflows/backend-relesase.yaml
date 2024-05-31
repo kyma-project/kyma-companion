@@ -12,7 +12,7 @@ on:
 
 # Define the environment variables
 env:
-  REGISTRY: ghcr.io
+  IMAGE_REGISTRY: ghcr.io
   ORGANIZATION: kyma-project
   REPOSITORY_NAME: kyma-companion
   IMAGE_NAME: ai-backend
