@@ -44,10 +44,7 @@ RUN chmod +x ./kubectl
 RUN mv ./kubectl $HOME/.local/bin
 
 # Copy requirements.txt and install dependencies
-RUN pip install --upgrade pip
-RUN pip install urllib3
-RUN pip install unstructured
-# RUN pip install unstructured --no-deps urllib3
+RUN pip install unstructured --no-deps urllib3
 RUN pip install -r requirements.txt
 RUN pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
 RUN pip install gunicorn
