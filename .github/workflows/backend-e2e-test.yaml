@@ -19,6 +19,9 @@ jobs:
       # Get the code
       - name: Prep - Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       # Create local Docker image registry
       - name: Prep - Local Image registry
