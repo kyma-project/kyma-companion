@@ -46,7 +46,7 @@ RUN mv ./kubectl $HOME/.local/bin
 # Copy requirements.txt and install dependencies
 #RUN pip install unstructured --no-deps urllib3
 
-# Copy requirements.txt and install dependencies
+# Upgrade pip to the latest version
 RUN pip install --upgrade pip
 
 # Debugging step: Show Python and pip versions
@@ -62,6 +62,7 @@ RUN pip install unstructured --no-deps urllib3 || { echo "Failed to install unst
 # Debugging step: List installed packages after attempted installation
 RUN pip list
 
+# Copy requirements.txt and install dependencies
 RUN pip install -r requirements.txt
 RUN pip install --no-cache-dir "sap-llm-commons[all]"==0.2.0
 RUN pip install gunicorn
