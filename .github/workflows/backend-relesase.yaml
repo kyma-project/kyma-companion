@@ -50,6 +50,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
+          push: true
           context: ./assistant/backend
           file: ./assistant/backend/Dockerfile
           build-args: |
