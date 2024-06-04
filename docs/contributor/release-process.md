@@ -2,14 +2,26 @@
 
 This documentation provides a step-by-step guide to the release process workflow for building and pushing a Go project using GitHub Actions. This workflow is triggered on pushes to the `main` branch and tags, specifically for changes within the `assistant/backend` directory.
 
-
 ## Prerequisites
 
 - PR to the `main` branch:
-    - label: `lgtm`
-    - Approved by at least one reviewer
-    - Passes all checks (Bckend E2E tests, Linting, Git Leaks)
+  - label: `lgtm`
+  - Approved by at least one reviewer
+  - Passes all checks (Bckend E2E tests, Linting, Git Leaks)
 
+## Files and folders
+
+- GitHub Action Workflow: `.github/workflows`
+- Backend code: `assistant/backend`
+- Kubernetes related scripts and deployment files: `.scripts/kubernetes`
+- Shell scripts (k3s installation, deployment verification, test scripts): `.scripts/shell`
+
+## Secrets
+
+- User for `sap-llm-commons` (JFROG_IDENTITY_USER)
+- Token for `sap-llm-commons` (JFROG_IDENTITY_TOKEN)
+- GitHub PAT user for container registry (GH_CR_USER) - requires for release process
+- GitHub PAT token for container registry (GH_CR_PAT) - requires for release process
 
 ## Workflow Overview
 
@@ -88,7 +100,6 @@ Check out the code from the repository.
 Log into the Docker registry using the provided credentials.
 
 ```yaml
-
 - name: Log into registry ${{ env.IMAGE_REGISTRY }}
   uses: docker/login-action@v3
   with:
@@ -136,4 +147,3 @@ Build and push the Docker image using the specified build arguments, context, an
 ## Conclusion
 
 This documentation outlines the steps to set up and run the release process workflow for your backend service. Ensure that all the required secrets and configurations are properly set in your GitHub repository for the workflow to execute successfully. If you encounter any issues, review the logs for each step to identify and resolve errors.
-
