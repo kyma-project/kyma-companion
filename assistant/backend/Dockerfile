@@ -49,18 +49,8 @@ RUN mv ./kubectl $HOME/.local/bin
 # Upgrade pip to the latest version
 RUN pip install --upgrade pip
 
-# Debugging step: Show Python and pip versions
-RUN python --version
-RUN pip --version
-
-# Debugging step: List installed packages
-RUN pip list
-
 # Attempt to install unstructured and urllib3 without dependencies
-RUN pip install unstructured --no-deps urllib3 || { echo "Failed to install unstructured and urllib3"; exit 1; }
-
-# Debugging step: List installed packages after attempted installation
-RUN pip list
+RUN pip install unstructured --no-deps urllib3
 
 # Copy requirements.txt and install dependencies
 RUN pip install -r requirements.txt

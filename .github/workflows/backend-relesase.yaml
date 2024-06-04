@@ -52,5 +52,9 @@ jobs:
         with:
           context: ./assistant/backend
           file: ./assistant/backend/Dockerfile
+          build-args: |
+            JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}
+            JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
