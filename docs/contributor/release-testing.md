@@ -73,7 +73,7 @@ jobs:
 
 Steps in `.github/workflows/backend-e2e-test.yaml`:
 
-- Get the code
+- Get the code (PR)
 - Create local Docker image registry
 - Build local Docker image
 - Push image to local registry
@@ -90,11 +90,14 @@ Steps in `.github/workflows/backend-e2e-test.yaml`:
 
 #### Step 4.1: Checkout Code
 
-Checkout the code from the repository.
+Checkout the code from the repository. (PR version)
 
 ```yaml
 - name: Prep - Checkout code
   uses: actions/checkout@v4
+  with:
+    ref: ${{ github.event.pull_request.head.ref }}
+    repository: ${{ github.event.pull_request.head.repo.full_name }}
 ```
 
 #### Step 4.2: Create Local Docker Image Registry
