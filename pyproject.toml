@@ -28,6 +28,6 @@ asgi-correlation-id = "^4.3.1"
 pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.group.dev.dependencies]
+ruff = "v0.4.10"
+flake8-bugbear = "^24.4.26"
