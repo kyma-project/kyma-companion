@@ -41,7 +41,7 @@ select = [
     "ANN003", # Missing type annotation for **kwargs
     "ANN201", # Missing return type annotation for public function
     "ANN202", # Missing return type annotation for private function
-    "ANN204", # Missing return type annotation for special method
+    # "ANN204", # Missing return type annotation for special method, e.g. constructor
     "ANN205", # Missing return type annotation for staticmethod
     "ANN206", # Missing return type annotation for classmethod
     "C901", # checks for functions with a high McCabe complexity.
@@ -54,6 +54,19 @@ select = [
     "C417", # Unnecessary map usage (rewrite using a generator expression)
     "PLR2004", # magic value used in comparison, consider replacing {value} with a constant variable
     "PLR0915", # keeping functions and methods short and focused
+]
+
+[per-file-ignores]
+"tests/*" = [
+    "D", # Ignore all docstring rules for files in the "tests" directory
+    "ANN001", # Missing type annotation for function argument
+    "ANN002", # Missing type annotation for *args
+    "ANN003", # Missing type annotation for **kwargs
+    "ANN201", # Missing return type annotation for public function
+    "ANN202", # Missing return type annotation for private function
+    "ANN204", # Missing return type annotation for special method
+    "ANN205", # Missing return type annotation for staticmethod
+    "ANN206", # Missing return type annotation for classmethod
 ]
 
 extend-safe-fixes = ["F601"]
