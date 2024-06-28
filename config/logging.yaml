@@ -1,0 +1,23 @@
+version: 1
+disable_existing_loggers: False  # Prevent overriding of previously defined loggers (optional)
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  error:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    stream: ext://sys.stdout
+
+  file_handler:
+    class: logging.FileHandler
+    filename: ../app.log
+    formatter: standard
+
+root:
+  level: INFO
+  handlers: [console, file_handler]
