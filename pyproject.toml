@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "kyma-companion"
+version = "0.1.0"
+description = "Kyma Companion is AI Kyma assistant that helps you to manage your Kyma runtime"
+authors = [
+    "Muhammad Faizan muhammad.faizan@sap.com",
+    "Aleksei Chernyshov aleksei.chernyshov@sap.com",
+    "Carina Kothe carina.kothe@sap.com",
+    "Friedrich Wilken jens.wilken@sap.com",
+    "Tibor Kiss tibor.kiss01@sap.com",
+    "Marco Bebway marco.bebway@sap.com",
+    "Piotr Bochynski piotr.bochynski@sap.com",
+    "Mansur Uralov m.uralov@sap.com",
+]
+readme = "README.md"
+packages = [{ include = "src" }]
+license = "Apache-2.0"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+# Add your production dependencies here
+fastapi = "^0.111.0"
+uvicorn = { extras = ["standard"], version = "^0.30.1" }
+asgi-correlation-id = "^4.3.1"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.2"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
