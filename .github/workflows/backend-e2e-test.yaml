@@ -3,7 +3,7 @@ name: Backend - E2E test
 on:
   pull_request_target:
     branches:
-      - main
+      - main-1
     paths:
       - "src/**"
 
