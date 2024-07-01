@@ -1,12 +1,13 @@
 import uvicorn
-from routes.api import app
+
+from src.routes.api import app  # noqa: F401 - uvicorn needs to import the app
 
 if __name__ == "__main__":
     config = uvicorn.Config(
         app="main:app",
         port=8000,
         log_level="info",
-        reload_dirs=["src", "config", ".env"],
+        use_colors=True,
     )
     server = uvicorn.Server(config)
     server.run()

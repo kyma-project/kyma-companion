@@ -128,6 +128,36 @@ the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 > trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions
 > or provide links to related documentation.
 
+### Configuration
+For local development LLM models can be configured inside the config/models.json file.  
+**NOTE:** Don't use it to configure models for in k8s cluster for dev, stage or prod environments.
+
+## Linting
+It is recommended to execute the Ruff linting check with the poe lint task with the following command:
+```bash
+$ poetry poe lint
+```
+Or, by running the following command:
+```bash
+$ poetry run ruff check
+```
+Alternatively, it can also be done with `ruff check` directly, where ruff may have a different version in a different virtual environment.
+
+Linting errors can be fixed with the following command, which by default applies only the safe fixes. However, it should be used with caution, as it may change the code in an unexpected way:
+```bash
+$ poetry run ruff fix
+```
+
+## Tests
+It is recommended to execute the tests with the poe test task with the following command:
+```bash
+$ poetry poe test
+```
+Or, with the following command:
+```bash
+$ poetry run pytest tests/
+```
+
 ## Release process
 
 Release testing and release creation are two separate processes. You can find the release testing documentation in
