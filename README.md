@@ -128,6 +128,10 @@ the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 > trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions
 > or provide links to related documentation.
 
+### Configuration
+For local development LLM models can be configured inside the config/models.json file.  
+**NOTE:** Don't use it to configure models for in k8s cluster for dev, stage or prod environments.
+
 ## Linting
 It is recommended to execute the Ruff linting check with the poe lint task with the following command:
 ```bash
