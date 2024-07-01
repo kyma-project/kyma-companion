@@ -30,6 +30,7 @@ hdbcli = "^2.21.26"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
+pytest-asyncio = "^0.23.7"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "v0.4.10"
