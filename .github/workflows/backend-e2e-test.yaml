@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "assistant/backend/**"
+      - "src/**"
 
 env:
   DOCKER_TIMEOUT: 30
@@ -30,7 +30,7 @@ jobs:
 
       # Build local Docker image
       - name: Build - Docker image
-        working-directory: ./assistant/backend
+        working-directory: ./src
         run: |
           # Build the Docker image
           docker build --build-arg "JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}" --build-arg "JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}" -t ai-backend .
