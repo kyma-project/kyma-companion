@@ -19,10 +19,11 @@ def get_models(file_path: str) -> list[Model]:
     """
     with open(file_path) as f:
         data = json.load(f)
+
     return [Model(**item) for item in data]
 
 
-models = get_models("../config/models.json")
+models = get_models("config/models.json")
 
 
 def get_model(name: str) -> Model:

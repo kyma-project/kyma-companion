@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from utils.logging import get_logger
-from utils.models import get_model
+from src.utils.logging import get_logger
+from src.utils.models import get_model
 
 logger = get_logger(__name__)
 

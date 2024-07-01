@@ -1,6 +1,6 @@
 import uvicorn
 
-from routes.api import app  # noqa: F401 - uvicorn needs to import the app
+from src.routes.api import app  # noqa: F401 - uvicorn needs to import the app
 
 if __name__ == "__main__":
     config = uvicorn.Config(
