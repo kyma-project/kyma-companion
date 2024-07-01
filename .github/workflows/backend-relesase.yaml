@@ -5,10 +5,10 @@ name: Backend - release
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main-1"]
     tags: ["*.*.*"]
     paths:
-      - "assistant/backend/**"
+      - "src/**"
 
 # Define the environment variables
 env:
@@ -51,8 +51,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          context: ./assistant/backend
-          file: ./assistant/backend/Dockerfile
+          context: ./src
+          file: ./Dockerfile
           build-args: |
             JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}
             JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}
