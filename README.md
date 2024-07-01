@@ -129,7 +129,11 @@ the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 > or provide links to related documentation.
 
 ## Linting
-It is recommended to execute the Ruff linting check with the following command:
+It is recommended to execute the Ruff linting check with the poe lint task with the following command:
+```bash
+$ poetry poe lint
+```
+Or, by running the following command:
 ```bash
 $ poetry run ruff check
 ```
@@ -138,6 +142,16 @@ Alternatively, it can also be done with `ruff check` directly, where ruff may ha
 Linting errors can be fixed with the following command, which by default applies only the safe fixes. However, it should be used with caution, as it may change the code in an unexpected way:
 ```bash
 $ poetry run ruff fix
+```
+
+## Tests
+It is recommended to execute the tests with the poe test task with the following command:
+```bash
+$ poetry poe test
+```
+Or, with the following command:
+```bash
+$ poetry run pytest tests/
 ```
 
 ## Release process

@@ -1,4 +1,4 @@
-from routes.api import chatting, init_chat
+from src.routes.api import chatting, init_chat
 
 
 def test_init_chat():
