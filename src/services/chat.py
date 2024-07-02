@@ -1,6 +1,6 @@
-from src.utils.logging import get_logger
-from src.utils.models import get_model
-from src.utils.utils import create_ndjson_str
+from utils.logging import get_logger
+from utils.models import get_model
+from utils.utils import create_ndjson_str
 
 from typing import AsyncGenerator
 import asyncio
@@ -22,10 +22,10 @@ async def process_chat_request() -> AsyncGenerator[str, None]:
     logger.info(f"LLM model {llm} is created.")
 
     # dummy implementation
-    for i in range(8):        
+    for i in range(8):
         # return event with status
         yield create_ndjson_str({
-            "step": "action", 
+            "step": "action",
             "result": "Doing Step \n" + str(i+1)
         })
 
@@ -35,6 +35,6 @@ async def process_chat_request() -> AsyncGenerator[str, None]:
 
     # return final response.
     yield create_ndjson_str({
-            "step": "output", 
+            "step": "output",
             "result": "Completed!}\n"
     })
