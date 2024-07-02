@@ -21,7 +21,6 @@ package-mode = false
 python = "^3.12"
 # Add your production dependencies here
 fastapi = "^0.111.0"
-asgi-correlation-id = "^4.3.1"
 pytest = "^8.2.2"
 langchain-community = "^0.2.6"
 hdbcli = "^2.21.26"
@@ -46,9 +45,8 @@ testpaths = [
     "tests",
 ]
 
-#[tool.pytest.ini_options]
-#pythonpath = "."
-
 [tool.poe.tasks]
 lint = "ruff check ."
 test = "pytest tests"
+run = "fastapi run src/main.py --port 8000"
+run-local = "fastapi dev src/main.py --port 8000"

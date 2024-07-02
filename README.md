@@ -103,14 +103,7 @@ poetry shell
 You can now run Python and any installed packages in this shell, and they will use the virtual environment. To exit the
 virtual environment, simply `exit` command.
 
-### Using the Virtual Environment
-
-Poetry automatically uses the virtual environment when you run commands like `poetry run`. For example, to run a Python
-script:
-
-```bash
-poetry run python src/main.py
-```
+Poetry automatically uses the virtual environment when you run commands like `poetry run`.
 
 Remember to run these commands in the root directory of your project where the `pyproject.toml` file is located.
 
@@ -123,37 +116,69 @@ the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 > the related documentation.
 
 ## Development
+This sections describes how to develop and run the kyma-companion fastapi app.
 
-> Add instructions on how to develop the project or example. It must be clear what to do and, for example, how to
-> trigger the tests so that other contributors know how to make their pull requests acceptable. Include the instructions
-> or provide links to related documentation.
+### Running
+You can start the FastApi application with the following options:
+```bash
+poetry run fastapi dev src/main.py --port 8000
+```
+or, directly with FastApi:
+```bash
+fastapi dev src/main.py --port 8000
+```
+or, with a poe task:
+```bash
+$ poetry poe run-local
+```
+Prefer running it with poetry as it activates and uses its virtual environment if not activated yet.  
+**NOTE:** it cannot be run with python directly.
+
+### Debugging
+
+The FastAPI application can be debugged with PyCharm or VS Code. Follow the following guidelines for these IDEs:
+
+- PyCharm: https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project
+- VS Code: https://code.visualstudio.com/docs/python/tutorial-fastapi
 
 ### Configuration
 For local development LLM models can be configured inside the config/models.json file.  
-**NOTE:** Don't use it to configure models for in k8s cluster for dev, stage or prod environments.
+**NOTE:** Don't use it to configure models in dev, stage or prod clusters.
 
 ## Linting
+
 It is recommended to execute the Ruff linting check with the poe lint task with the following command:
+
 ```bash
 $ poetry poe lint
 ```
+
 Or, by running the following command:
+
 ```bash
 $ poetry run ruff check
 ```
-Alternatively, it can also be done with `ruff check` directly, where ruff may have a different version in a different virtual environment.
 
-Linting errors can be fixed with the following command, which by default applies only the safe fixes. However, it should be used with caution, as it may change the code in an unexpected way:
+Alternatively, it can also be done with `ruff check` directly, where ruff may have a different version in a different
+virtual environment.
+
+Linting errors can be fixed with the following command, which by default applies only the safe fixes. However, it should
+be used with caution, as it may change the code in an unexpected way:
+
 ```bash
 $ poetry run ruff fix
 ```
 
 ## Tests
+
 It is recommended to execute the tests with the poe test task with the following command:
+
 ```bash
 $ poetry poe test
 ```
+
 Or, with the following command:
+
 ```bash
 $ poetry run pytest tests/
 ```
