@@ -15,7 +15,7 @@ handlers:
 
   file_handler:
     class: logging.FileHandler
-    filename: ../app.log
+    filename: app.log
     formatter: standard
 
 root:
