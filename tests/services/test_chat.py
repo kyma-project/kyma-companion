@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from src.routes.api import process_chat_request, init_chat
+from services.chat import init_chat, process_chat_request
 
 pytestmark = pytest.mark.asyncio(scope="module")
 
