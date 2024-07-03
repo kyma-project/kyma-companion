@@ -25,6 +25,7 @@ async def test_init_chat():
 
 async def test_process_chat_request():
     global loop
-    expected_result = {"message": "Hello I am Kyma Companion!"}
-    actual_result = await process_chat_request()
-    assert expected_result == actual_result
+    async for event in process_chat_request():
+        assert isinstance(event, str)
+        assert event.startswith('{"step":')
+        assert event.endswith('}\n')
