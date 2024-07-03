@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from services.chat import init_chat, process_chat_request
+from services.chat import handle_request, init_chat
 
 pytestmark = pytest.mark.asyncio(scope="module")
 
@@ -17,15 +17,15 @@ loop: asyncio.AbstractEventLoop
 
 
 async def test_init_chat():
-    global loop
+    global loop  # noqa F811
     actual_result = await init_chat()
     expected_result = {"message": "Chat is initialized!"}
     assert expected_result == actual_result
 
 
 async def test_process_chat_request():
-    global loop
-    async for event in process_chat_request():
+    global loop  # noqa F811
+    async for event in handle_request():
         assert isinstance(event, str)
         assert event.startswith('{"step":')
         assert event.endswith('}\n')

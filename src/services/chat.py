@@ -1,9 +1,9 @@
+import asyncio
+from collections.abc import AsyncGenerator
+
 from utils.logging import get_logger
 from utils.models import get_model
 from utils.utils import create_ndjson_str
-
-from typing import AsyncGenerator
-import asyncio
 
 logger = get_logger(__name__)
 
@@ -14,7 +14,7 @@ async def init_chat() -> dict:
     return {"message": "Chat is initialized!"}
 
 
-async def process_chat_request() -> AsyncGenerator[str, None]:
+async def handle_request() -> AsyncGenerator[str, None]:
     """ Chat with the Kyma companion """
     logger.info("Processing request...")
 
@@ -26,7 +26,7 @@ async def process_chat_request() -> AsyncGenerator[str, None]:
         # return event with status
         yield create_ndjson_str({
             "step": "action",
-            "result": "Doing Step \n" + str(i+1)
+            "result": "Doing Step \n" + str(i + 1)
         })
 
         if i < 4:
@@ -35,6 +35,6 @@ async def process_chat_request() -> AsyncGenerator[str, None]:
 
     # return final response.
     yield create_ndjson_str({
-            "step": "output",
-            "result": "Completed!}\n"
+        "step": "output",
+        "result": "Completed!}\n"
     })
