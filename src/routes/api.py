@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
 from src.utils.logging import get_logger
 from src.services.chat import init_chat, process_chat_request
@@ -17,4 +18,4 @@ async def init() -> dict:
 @app.get("/chat")
 async def chat() -> dict:
     """ Endpoint to chat with the Kyma companion """
-    return await process_chat_request()
+    return StreamingResponse(process_chat_request(), media_type='text/event-stream')

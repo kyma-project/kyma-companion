@@ -3,7 +3,7 @@ name = "kyma-companion"
 version = "0.1.0"
 description = "Kyma Companion is AI Kyma assistant that helps you to manage your Kyma runtime"
 authors = [
-    "Muhammad Faizan muhammad.faizan@sap.com",
+    "Muhammad Faizan m.faizan@sap.com",
     "Aleksei Chernyshov aleksei.chernyshov@sap.com",
     "Carina Kothe carina.kothe@sap.com",
     "Friedrich Wilken jens.wilken@sap.com",
