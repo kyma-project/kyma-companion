@@ -28,8 +28,8 @@ async def handle_request() -> AsyncGenerator[str, None]:
             "step": "action",
             "result": "Doing Step \n" + str(i + 1)
         })
-
-        if i < 4:
+        max_wait_count = 4
+        if i < max_wait_count:
             # wait for 1 seconds
             await asyncio.sleep(1.0)
 
