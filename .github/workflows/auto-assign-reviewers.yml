@@ -1,0 +1,26 @@
+name: Auto-Assign Random Reviewer
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign-reviewers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Assign Random Reviewer
+        id: assign
+        run: |
+          reviewers=("friedrichwilken" "grischperl" "marcobebway" "mfaizanse" "muralov" "the1bit")
+          selected_reviewer=$(shuf -n 1 -e "${reviewers[@]}")
+          echo "reviewer=$selected_reviewer" >> $GITHUB_ENV
+
+      - name: Add Reviewer
+        uses: kentaro-m/auto-assign-action@v2
+        with:
+          reviewers: ${{ env.reviewer }}
+
