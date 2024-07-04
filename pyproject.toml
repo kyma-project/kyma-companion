@@ -21,8 +21,6 @@ package-mode = false
 python = "^3.12"
 # Add your production dependencies here
 fastapi = "^0.111.0"
-uvicorn = { extras = ["standard"], version = "^0.30.1" }
-asgi-correlation-id = "^4.3.1"
 pytest = "^8.2.2"
 langchain-community = "^0.2.6"
 hdbcli = "^2.21.26"
@@ -38,8 +36,17 @@ flake8-bugbear = "^24.4.26"
 poethepoet = "^0.27.0"
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+minversion = "6.0"
+addopts = "-ra"
+pythonpath = [
+    "src"
+]
+testpaths = [
+    "tests",
+]
 
 [tool.poe.tasks]
 lint = "ruff check ."
 test = "pytest tests"
+run = "fastapi run src/main.py --port 8000"
+run-local = "fastapi dev src/main.py --port 8000"
