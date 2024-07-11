@@ -24,6 +24,10 @@ fastapi = "^0.111.0"
 pytest = "^8.2.2"
 langchain-community = "^0.2.6"
 hdbcli = "^2.21.26"
+langchain-google-genai = "^1.0.7"
+langchain-openai = "^0.1.14"
+ai-core-sdk = "^2.3.11"
+generative-ai-hub-sdk = "^1.11.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
@@ -34,6 +38,7 @@ pytest-asyncio = "^0.23.7"
 ruff = "v0.4.10"
 flake8-bugbear = "^24.4.26"
 poethepoet = "^0.27.0"
+langfuse = "^2.38.0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
