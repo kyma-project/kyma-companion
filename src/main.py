@@ -11,9 +11,9 @@ async def root() -> dict:  # noqa E302
     return {"message": "Hello from Kyma Companion!"}
 
 @app.get("/readyz")
-async def root() -> dict:  # noqa E302
+async def readyz() -> dict:  # noqa E302
     return {"ready": "true"}
 
 @app.get("/healthz")
-async def root() -> dict:  # noqa E302
+async def healthz() -> dict:  # noqa E302
     return {"healthy": "true"}
