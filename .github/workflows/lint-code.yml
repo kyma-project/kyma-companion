@@ -1,0 +1,42 @@
+name: Lint Python code
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "release-**"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - CODEOWNERS
+      - LICENSE
+
+permissions:
+  contents: read
+
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+  # Optional: Allow write access to checks to allow the action to annotate code in the PR.
+  checks: write
+
+jobs:
+  code-linter:
+    name: "Run mypy linting"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python # needs to be changed to python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy
+
+      - name: Run mypy
+        run: mypy .
