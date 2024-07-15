@@ -1,5 +1,5 @@
+from agents.supervisor.agent import Message, astream
 from utils.logging import get_logger
-from utils.models import get_model
 
 logger = get_logger(__name__)
 
@@ -10,11 +10,9 @@ async def init_chat() -> dict:
     return {"message": "Chat is initialized!"}
 
 
-async def process_chat_request() -> dict:
-    """ Chat with the Kyma companion """
+async def handle_request(message: Message):  # noqa: ANN201
+    """ Handle a request """
     logger.info("Processing request...")
 
-    llm = get_model("gpt-4o")
-    logger.info(f"LLM model {llm} is created.")
-
-    return {"message": "Hello I am Kyma Companion!"}
+    async for chunk in astream(message):
+        yield f"{chunk}\n\n".encode()
