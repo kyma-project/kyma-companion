@@ -41,8 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          poetry install
-          poetry add -D mypy types-pydantic types-PyYAML types-pytest types-fastapi types-starlette
+          poetry install --with dev
 
       - name: Run mypy
         run: |

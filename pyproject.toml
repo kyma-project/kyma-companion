@@ -25,6 +25,11 @@ pytest = "^8.2.2"
 langchain-community = "^0.2.6"
 hdbcli = "^2.21.26"
 
+[tool.poetry.dev-dependencies]
+mypy = "^1.10.1"
+types-PyYAML = "^6.0.12.10"
+types-pytest = "^7.0.1"
+
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
