@@ -1,7 +1,6 @@
 import json
 
 from pydantic import BaseModel
-from typing import Optional
 
 
 class Model(BaseModel):
@@ -27,7 +26,7 @@ def get_models(file_path: str) -> list[Model]:
 models = get_models("config/models.json")
 
 
-def get_model(name: str) -> Optional[Model]:
+def get_model(name: str) -> Model | None:
     """
     Retrieve a model by its name.
 
