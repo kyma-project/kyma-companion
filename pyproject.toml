@@ -53,6 +53,7 @@ testpaths = [
 lint = "ruff check ."
 typecheck = "mypy ."
 format = "black . --check"
+format-fix = "black ."
 test = "pytest tests"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"

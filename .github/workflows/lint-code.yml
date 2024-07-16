@@ -46,3 +46,6 @@ jobs:
 
       - name: Run type checking
         run: poetry run poe typecheck
+
+      - name: Run code formatting check
+        run: poetry run poe format
