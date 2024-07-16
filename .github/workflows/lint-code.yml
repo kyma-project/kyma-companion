@@ -41,5 +41,5 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run mypy
-        run: poetry run mypy .
+      - name: Run type checking
+        run: poetry run poe typecheck
