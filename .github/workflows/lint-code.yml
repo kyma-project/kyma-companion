@@ -28,7 +28,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python # needs to be changed to python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
@@ -36,14 +36,10 @@ jobs:
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          export PATH="$HOME/.local/bin:$PATH"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          poetry install --with dev
+        run: poetry install --with dev
 
       - name: Run mypy
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          poetry run mypy .
+        run: poetry run mypy .
