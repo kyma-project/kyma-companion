@@ -57,8 +57,9 @@ def initialize_async_pool(url: str = "redis://localhost", **kwargs: Any) -> Asyn
 
 
 @asynccontextmanager
-async def _get_async_connection(connection: AsyncRedis | AsyncConnectionPool | None) -> (
+async def get_async_connection(connection: AsyncRedis | AsyncConnectionPool | None) -> (
         AsyncGenerator)[AsyncRedis, None]:
+    """Get an asynchronous Redis connection."""
     conn = None
     try:
         if isinstance(connection, AsyncRedis):
@@ -89,9 +90,9 @@ class RedisSaver(BaseCheckpointSaver):
         """Saves a checkpoint."""
         thread_id = config["configurable"]["thread_id"]
         parent_ts = config["configurable"].get("thread_ts")
-        key = f"checkpoint:{thread_id}:{checkpoint['ts']}"
+        key = f"checkpoint:{thread_id}:{checkpoint['id']}"
         try:
-            async with _get_async_connection(self.async_connection) as conn:
+            async with get_async_connection(self.async_connection) as conn:
                 await conn.hset(key, mapping={
                     "checkpoint": self.serde.dumps(checkpoint),
                     "metadata": self.serde.dumps(metadata),
@@ -105,7 +106,7 @@ class RedisSaver(BaseCheckpointSaver):
         return {
             "configurable": {
                 "thread_id": thread_id,
-                "thread_ts": checkpoint["ts"],
+                "thread_ts": checkpoint["id"],
             },
         }
 
@@ -114,7 +115,7 @@ class RedisSaver(BaseCheckpointSaver):
         thread_id = config["configurable"]["thread_id"]
         thread_ts = config["configurable"].get("thread_ts", None)
         try:
-            async with _get_async_connection(self.async_connection) as conn:
+            async with get_async_connection(self.async_connection) as conn:
                 if thread_ts:
                     key = f"checkpoint:{thread_id}:{thread_ts}"
                 else:
@@ -142,40 +143,4 @@ class RedisSaver(BaseCheckpointSaver):
                                        parent_config=parent_config)
         except Exception as e:
             logger.error(f"Failed to get checkpoint tuple: {e}")
-            raise
-
-    async def alist(self, config: RunnableConfig | None, *, filter: dict[str, Any] | None = None,
-                    before: RunnableConfig | None = None, limit: int | None = None) -> (
-            AsyncGenerator)[CheckpointTuple, None]:
-        """List checkpoints."""
-        thread_id = config["configurable"]["thread_id"] if config else "*"
-        pattern = f"checkpoint:{thread_id}:*"
-        try:
-            async with _get_async_connection(self.async_connection) as conn:
-                keys = await conn.keys(pattern)
-                if before:
-                    keys = [k for k in keys if k.decode().split(":")[-1]
-                            < before["configurable"]["thread_ts"]]
-                keys = sorted(keys, key=lambda k: k.decode().split(":")[-1], reverse=True)
-                if limit:
-                    keys = keys[:limit]
-                for key in keys:
-                    data = await conn.hgetall(key)
-                    if data and "checkpoint" in data and "metadata" in data:
-                        thread_ts = key.decode().split(":")[-1]
-                        yield CheckpointTuple(
-                            config={"configurable": {"thread_id": thread_id,
-                                                     "thread_ts": thread_ts}},
-                            checkpoint=self.serde.loads(data["checkpoint"].decode()),
-                            metadata=self.serde.loads(data["metadata"].decode()),
-                            parent_config={"configurable": {
-                                "thread_id": thread_id,
-                                "thread_ts": data.get("parent_ts", b"").decode()
-                            }} if data.get(
-                                "parent_ts") else None,
-                        )
-                        logger.info(f"Checkpoint listed for thread_id: {thread_id}, "
-                                    f"ts: {thread_ts}")
-        except Exception as e:
-            logger.error(f"Failed to list checkpoints: {e}")
             raise
