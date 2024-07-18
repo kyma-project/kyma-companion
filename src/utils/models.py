@@ -4,11 +4,12 @@ from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from utils.config import Model, get_config
 
 proxy_client = get_proxy_client('gen-ai-hub')
+llms: dict[str, ChatOpenAI] = {}
 
 
 def get_model(name: str) -> Model:
     """
-    Retrieve a model by its name.
+    Retrieve a model data by its name.
 
     Args:
         name (str): The name of the model to find.
@@ -25,6 +26,15 @@ def create_llm(name: str, temperature: int = 0) -> ChatOpenAI:
     Create a ChatOpenAI instance.
     """
     model = get_model(name)
-    return ChatOpenAI(deployment_id=model.deployment_id,
-                      proxy_client=proxy_client,
-                      temperature=temperature)
+    llm = ChatOpenAI(deployment_id=model.deployment_id,
+                     proxy_client=proxy_client,
+                     temperature=temperature)
+    llms[name] = llm
+    return llm
+
+
+def get_llm(name: str) -> ChatOpenAI:
+    """
+    Get a ChatOpenAI instance.
+    """
+    return llms.get(name)
