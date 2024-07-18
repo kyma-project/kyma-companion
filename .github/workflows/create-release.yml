@@ -9,6 +9,20 @@ run-name: Create release ${{ inputs.name }}
 # - GIT_BOT_EMAIL
 # - GIT_BOT_NAME
 
+# This workflow creates a release for kyma-companion.
+# The steps are:
+# 1. Get release tag as user input.
+# 2. Validate the release tag if its formated like x.y.z.
+# 3. Check if the release branch `release-x.y` already exists. If not, fail the workflow.
+# 4. Check if release tag already exists. If yes, fail the workflow.
+# 5. Run unit tests from the release branch.
+# 6. Create a git tag from the release branch.
+# 7. Build a container image against the git tag and push it to registry.
+# 8. Create a draft release against the git tag.
+# 9. Create a PR to bump image in sec-scanners-config in main branch and wait until the PR is approved and merged.
+# 10. Check if all the pre-requisites are met for publishing the release.
+# NOTE: The draft release needs to be manually reviewed and published.
+
 on:
   workflow_dispatch:
     inputs:
@@ -25,6 +39,7 @@ on:
 env:
   REPOSITORY_FULL_NAME: ${{ github.repository_owner }}/kyma-compannion
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
+  RELEASE_TAG: ${{ inputs.name }}
 
 jobs:
   validate-input-params:
@@ -38,21 +53,20 @@ jobs:
           ref: main
 
       - name: Check if that release tag is valid
-        run: "./hack/scripts/check_release_tag.sh ${{ inputs.name }}"
+        run: "./hack/scripts/check_release_tag.sh "${RELEASE_TAG}"
 
       - name: Check if release tag already exists
         run: |
-          if [ $(git tag -l ${{ inputs.name }}) ]; then
-            echo "Error: Release tag ${{ inputs.name }} already exists"
+          if [ $(git tag -l "${RELEASE_TAG}") ]; then
+            echo "Error: Release tag "${RELEASE_TAG}" already exists"
             exit 1
           fi
 
       - name: Export release branch name as action output
         id: export-branch-name
         run: |
-          export RELEASE_VERSION=${{ inputs.name }}
-          MAJOR=$(echo "$RELEASE_VERSION" | cut -d. -f1)
-          MINOR=$(echo "$RELEASE_VERSION" | cut -d. -f2)
+          MAJOR=$(echo "$RELEASE_TAG" | cut -d. -f1)
+          MINOR=$(echo "$RELEASE_TAG" | cut -d. -f2)
           export RELEASE_BRANCH="release-$MAJOR.$MINOR"
           echo "exporting branch name: $RELEASE_BRANCH"
           echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
@@ -96,8 +110,8 @@ jobs:
 
       - name: Create lightweight tag
         run: |
-          git tag ${{ github.event.inputs.name }}
-          git push origin ${{ github.event.inputs.name }}
+          git tag "${RELEASE_TAG}"
+          git push origin "${RELEASE_TAG}"
 
   build-image:
     name: Build image for kyma-companion
@@ -106,8 +120,8 @@ jobs:
     steps:
       - name: Build image
         run: |
-          echo "Building image with tag: ${{ inputs.name }}"
-          echo "TODO: Dummy run - it will be replaced with reuseable build job!"
+          echo "Building image with tag: ${RELEASE_TAG}"
+          echo "TODO: Dummy run - it will be replaced with re-useable build job!"
 
   create-draft:
     name: Create draft release
@@ -124,7 +138,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository_owner }}/kyma-compannion
-          RELEASE_TAG: ${{ github.event.inputs.name }}
         run: |
           RELEASE_ID=$(./hack/scripts/create_draft_release.sh)
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
@@ -143,7 +156,7 @@ jobs:
 
       - name: Update sec-scanners-config.yaml
         if: ${{ inputs.sec-scanners-config }}
-        run: ./hack/scripts/create_scan_config.sh "sec-scanners-config.yaml" ${{ inputs.name }}
+        run: ./hack/scripts/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
 
       - name: Create PR if anything changed
         if: ${{ inputs.sec-scanners-config }}
@@ -161,7 +174,7 @@ jobs:
             echo "Nothing changed, no need to create PR"
             echo "PR_NUMBER=-1" >> $GITHUB_ENV
           else
-            PR_STATUS=$(./hack/scripts/create_sec_scanner_bump_pr.sh ${{ inputs.name }})
+            PR_STATUS=$(./hack/scripts/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
             echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> $GITHUB_ENV
           fi
 
@@ -189,4 +202,4 @@ jobs:
           ref: main
 
       - name: Check pre-requisites before publishing release
-        run: ./hack/scripts/check_publish_release_prerequisites.sh ${{ inputs.name }}
+        run: ./hack/scripts/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
