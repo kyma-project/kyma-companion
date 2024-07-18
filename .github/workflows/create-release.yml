@@ -1,11 +1,10 @@
 name: "Create release"
 run-name: Create release ${{ inputs.name }}
 
-# Required secrets:
+# Required repository secrets:
 # - GITHUB_TOKEN
-# - BOT_TOKEN
 # - GIT_BOT_TOKEN
-# Required variables:
+# Required repository variables:
 # - GIT_BOT_EMAIL
 # - GIT_BOT_NAME
 
