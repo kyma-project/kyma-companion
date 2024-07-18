@@ -30,13 +30,11 @@ def load(file_path: str) -> Config:
     return Config(**data)
 
 
-config = load("config/config.yml")
-
-
 def get_config() -> Config:
     """
     Get the configuration of the application
     Returns:
         Config: The configuration of the application
     """
+    config = load("config/config.yml")
     return config
