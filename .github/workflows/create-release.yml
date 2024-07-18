@@ -1,0 +1,192 @@
+name: "Create release"
+run-name: Create release ${{ inputs.name }}
+
+# Required secrets:
+# - GITHUB_TOKEN
+# - BOT_TOKEN
+# - GIT_BOT_TOKEN
+# Required variables:
+# - GIT_BOT_EMAIL
+# - GIT_BOT_NAME
+
+on:
+  workflow_dispatch:
+    inputs:
+      name: # release tag
+        description: 'Release tag (i.e. x.y.z). Make sure that branch with name release-x.y exists.'
+        default: ""
+        required: true
+      sec-scanners-config:
+        type: boolean
+        description: 'Create PR with sec-scanners-config bump'
+        default: true
+
+# global env variables.
+env:
+  REPOSITORY_FULL_NAME: ${{ github.repository_owner }}/kyma-compannion
+  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
+
+jobs:
+  validate-input-params:
+    name: Validate input parameters
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Check if that release tag is valid
+        run: "./hack/scripts/check_release_tag.sh ${{ inputs.name }}"
+
+      - name: Check if release tag already exists
+        run: |
+          if [ $(git tag -l ${{ inputs.name }}) ]; then
+            echo "Error: Release tag ${{ inputs.name }} already exists"
+            exit 1
+          fi
+
+      - name: Export release branch name as action output
+        id: export-branch-name
+        run: |
+          export RELEASE_VERSION=${{ inputs.name }}
+          MAJOR=$(echo "$RELEASE_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$RELEASE_VERSION" | cut -d. -f2)
+          export RELEASE_BRANCH="release-$MAJOR.$MINOR"
+          echo "exporting branch name: $RELEASE_BRANCH"
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+    outputs:
+      release_branch: ${{ steps.export-branch-name.outputs.release_branch }}
+
+  run-unit-tests:
+    name: Run unit tests
+    needs: validate-input-params
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Run unit tests
+        run: |
+          echo "Running unit tests"
+          echo "TODO: Dummy run - it will be replaced with actual unit tests!"
+
+  create-git-tag:
+    name: Create git tag for release
+    needs: run-unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch. This is the branch where the release tag will be created.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Create lightweight tag
+        run: |
+          git tag ${{ github.event.inputs.name }}
+          git push origin ${{ github.event.inputs.name }}
+
+  build-image:
+    name: Build image for kyma-companion
+    needs: [ validate-input-params, create-git-tag ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build image
+        run: |
+          echo "Building image with tag: ${{ inputs.name }}"
+          echo "TODO: Dummy run - it will be replaced with reuseable build job!"
+
+  create-draft:
+    name: Create draft release
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # draft release is linked to the release tag. So we run the release scripts from main branch.
+          ref: main
+
+      - name: Create draft release
+        id: create-draft
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository_owner }}/kyma-compannion
+          RELEASE_TAG: ${{ github.event.inputs.name }}
+        run: |
+          RELEASE_ID=$(./hack/scripts/create_draft_release.sh)
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+    outputs:
+      release_id: ${{ steps.create-draft.outputs.release_id }}
+
+  bump-sec-scanners-main-branch:
+    name: Bump image in sec-scanners-config
+    needs: [ validate-input-params, build-image ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update sec-scanners-config.yaml
+        if: ${{ inputs.sec-scanners-config }}
+        run: ./hack/scripts/create_scan_config.sh "sec-scanners-config.yaml" ${{ inputs.name }}
+
+      - name: Create PR if anything changed
+        if: ${{ inputs.sec-scanners-config }}
+        env:
+          BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}
+          GIT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+          GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+        run: |
+          prs=$(gh pr list -A ${{ env.GIT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
+          if echo $prs | tr " " '\n' | grep -F -q -x ${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}; then
+            echo "PR already exists, no need to create a new one"
+            echo "PR_NUMBER=$(gh pr list --search "base:main head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> $GITHUB_ENV
+          elif [ -z "$(git status --porcelain)" ]; then
+            echo "Nothing changed, no need to create PR"
+            echo "PR_NUMBER=-1" >> $GITHUB_ENV
+          else
+            PR_STATUS=$(./hack/scripts/create_sec_scanner_bump_pr.sh ${{ inputs.name }})
+            echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> $GITHUB_ENV
+          fi
+
+      - name: Await PR merge (user input required)
+        if: ${{ inputs.sec-scanners-config }}
+        timeout-minutes: 45
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$PR_NUMBER" -gt 0 ]; then
+            ./hack/scripts/await_pr_merge.sh
+          else
+            echo "Step skipped"
+          fi
+
+  check-prerequisites:
+    name: Check release pre-requisites
+    needs: [ create-draft, build-image, bump-sec-scanners-main-branch ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check pre-requisites before publishing release
+        run: ./hack/scripts/check_publish_release_prerequisites.sh ${{ inputs.name }}
