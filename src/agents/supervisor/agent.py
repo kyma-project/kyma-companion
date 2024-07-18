@@ -9,9 +9,9 @@ from langgraph.graph.graph import CompiledGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
 
+from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from utils.logging import get_logger
 from utils.models import create_llm
-from utils.redis_checkpointer import RedisSaver, initialize_async_pool
 
 logger = get_logger(__name__)
 

@@ -10,7 +10,7 @@ from langgraph.serde.jsonplus import JsonPlusSerializer
 from redis import ConnectionError
 from redis.asyncio import ConnectionPool, Redis
 
-from utils.redis_checkpointer import (
+from agents.memory.redis_checkpointer import (
     JsonAndBinarySerializer,
     RedisSaver,
     get_async_connection,
