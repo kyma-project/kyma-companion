@@ -31,5 +31,3 @@ jobs:
       name: kyma-companion
       dockerfile: Dockerfile
       context: .
-      env-file: "envs"
-      tags: ${{ needs.compute-tag.outputs.tag }}
