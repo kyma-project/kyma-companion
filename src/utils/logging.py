@@ -16,5 +16,6 @@ with open(config_path) as f:
 
 def get_logger(name: str) -> Logger:  # noqa: D103
     logger = logging.getLogger(name)
+    # dummy change
     logger.setLevel(level)
     return logger
