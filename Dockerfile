@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir poetry \
     && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
-FROM python:3.12.4-slim-bullseye
+FROM python:3.12.3-alpine3.20
 
 WORKDIR /app
 
