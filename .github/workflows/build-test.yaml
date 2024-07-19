@@ -1,0 +1,17 @@
+name: Kyma Companion Build Test
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+jobs:
+  build-image:
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: kyma-companion
+      dockerfile: Dockerfile
+      context: .
