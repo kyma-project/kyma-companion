@@ -38,7 +38,7 @@ def test_initialize_async_pool(mock_from_url, url, kwargs, expected_pool, expect
         assert result == expected_pool
 
 
-@pytest.mark.asyncio(scope="module")
+@pytest.mark.asyncio
 @pytest.mark.parametrize("connection, expected_type, expected_exception", [
     (AsyncMock(spec=Redis), Redis, None),
     (AsyncMock(spec=ConnectionPool, connection_kwargs={"protocol": 3}), Redis, None),
@@ -55,7 +55,7 @@ async def test_get_async_connection(connection, expected_type, expected_exceptio
             assert isinstance(conn, expected_type)
 
 
-@pytest.mark.asyncio(scope="module")
+@pytest.mark.asyncio
 @patch('redis.asyncio.Redis.__init__', side_effect=ConnectionError("Connection failed"))
 async def test_get_async_connection_connection_error(mock_redis):
     with pytest.raises(ConnectionError, match="Connection failed"):
@@ -119,7 +119,7 @@ class TestJsonAndBinarySerializer:
             assert result == expected_output
 
 
-@pytest.mark.asyncio(scope="class")
+@pytest.mark.asyncio
 class TestRedisSaver:
     serde = JsonPlusSerializer()
 

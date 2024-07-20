@@ -1,7 +1,8 @@
 from unittest.mock import mock_open, patch
 
 import pytest
-from src.utils.config import Config, Model, get_config
+
+from utils.config import Config, Model, get_config
 
 
 @pytest.mark.parametrize("yaml_content, expected_config", [

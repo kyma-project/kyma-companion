@@ -7,22 +7,27 @@ from utils.models import create_llm
 
 logger = get_logger(__name__)
 
-llm = create_llm("gpt-4o")
 
-checkpointer = RedisSaver(async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0"))
+class Chat:
+    """Chat service."""
 
-supervisor_agent = SupervisorAgent(llm, checkpointer)
+    supervisor_agent = None
 
+    def __init__(self):
+        llm = create_llm("gpt-4o")
+        memory = RedisSaver(
+            async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
+        )
+        self.supervisor_agent = SupervisorAgent(llm, memory)
 
-async def init_chat() -> dict:
-    """ Initialize the chat """
-    logger.info("Initializing chat...")
-    return {"message": "Chat is initialized!"}
+    async def init_chat(self) -> dict:
+        """ Initialize the chat """
+        logger.info("Initializing chat...")
+        return {"message": "Chat is initialized!"}
 
+    async def handle_request(self, message: Message):  # noqa: ANN201
+        """ Handle a request """
+        logger.info("Processing request...")
 
-async def handle_request(message: Message):  # noqa: ANN201
-    """ Handle a request """
-    logger.info("Processing request...")
-
-    async for chunk in supervisor_agent.astream(message):
-        yield f"{chunk}\n\n".encode()
+        async for chunk in self.supervisor_agent.astream(message):
+            yield f"{chunk}\n\n".encode()

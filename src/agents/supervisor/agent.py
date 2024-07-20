@@ -57,7 +57,7 @@ def should_continue(state: MessagesState) -> Literal["action", "__end__"]:
 
 def filter_messages(messages: list) -> list:
     """This is very simple helper function which only ever uses the last four messages"""
-    return messages[-4:]
+    return messages[-10:]
 
 
 def agent_node(state: dict[str, any], agent: AgentExecutor, name: str) -> dict[str, any]:
@@ -72,13 +72,13 @@ class SupervisorAgent:
     """Supervisor agent."""
 
     llm = None
-    checkpointer: BaseCheckpointSaver = None
+    memory: BaseCheckpointSaver = None
     kyma_agent = None
     tools = None
 
-    def __init__(self, llm: ChatOpenAI, checkpointer: BaseCheckpointSaver):
+    def __init__(self, llm: ChatOpenAI, memory: BaseCheckpointSaver):
         self.llm = llm
-        self.checkpointer = checkpointer
+        self.memory = memory
         self.tools = [search]
         self.kyma_agent = functools.partial(
             agent_node,
@@ -98,7 +98,7 @@ class SupervisorAgent:
         workflow.add_edge(START, "agent")
         workflow.add_edge("agent", END)
 
-        graph = workflow.compile(checkpointer=self.checkpointer)
+        graph = workflow.compile(checkpointer=self.memory)
         return graph
 
     async def astream(self, message: Message) -> AsyncGenerator[dict, None]:
