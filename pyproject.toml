@@ -51,9 +51,11 @@ testpaths = [
 
 [tool.poe.tasks]
 lint = "ruff check ."
-typecheck = "mypy ."
+typecheck = "mypy . --pretty"
 format = "black . --check"
+codecheck = ["lint", "typecheck", "format"]
 format-fix = "black ."
+lint-fix = "ruff check . --fix"
 test = "pytest tests"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
