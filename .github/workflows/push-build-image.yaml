@@ -1,4 +1,4 @@
-name: Build Image Prod
+name: Push Build Image
 
 on:
   push:
@@ -31,11 +31,11 @@ jobs:
             echo "${{ github.ref_name}}"
             echo EOF
           } >> "$GITHUB_OUTPUT"
-  build-image:
+  build:
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
-      name: build-image
+      name: kyma-companion
       dockerfile: Dockerfile
       context: .
       tags: ${{ needs.compute-tags.outputs.tags }}
