@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class Model(BaseModel):
     """Model for the deployment request"""
+
     name: str
     deployment_id: str
 
@@ -26,7 +27,7 @@ def get_models(file_path: str) -> list[Model]:
 models = get_models("config/models.json")
 
 
-def get_model(name: str) -> Model:
+def get_model(name: str) -> Model | None:
     """
     Retrieve a model by its name.
 

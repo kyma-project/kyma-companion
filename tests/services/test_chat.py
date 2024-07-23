@@ -28,4 +28,4 @@ async def test_process_chat_request():
     async for event in handle_request():
         assert isinstance(event, str)
         assert event.startswith('{"step":')
-        assert event.endswith('}\n')
+        assert event.endswith("}\n")
