@@ -20,4 +20,4 @@ jobs:
     needs: build
     steps:
       - name: Test image
-        run: ./.github/scripts/run-and-check-container.sh ${{ needs.build.outputs.images }}"
+        run: ./.github/scripts/run-and-check-container.sh ${{ needs.build.outputs.images }} PR-${{ github.event.number }}-container
