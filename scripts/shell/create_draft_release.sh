@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+##############################################################################
+# NOTE: This script is used in the GitHub Actions workflow.
+# Make sure any changes are compatible with the existing workflows.
+##############################################################################
+
 # This script returns the id of the draft release
 
 # standard bash error handling

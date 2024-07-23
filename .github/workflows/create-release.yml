@@ -54,7 +54,7 @@ jobs:
       - name: Check if that release tag is valid
         id: check-release-tag
         run: |
-          ./hack/scripts/check_release_tag.sh "${RELEASE_TAG}"
+          ./scripts/shell/check_release_tag.sh "${RELEASE_TAG}"
 
       - name: Check if release tag already exists
         run: |
@@ -146,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          RELEASE_ID=$(./hack/scripts/create_draft_release.sh)
+          RELEASE_ID=$(./scripts/shell/create_draft_release.sh)
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
     outputs:
       release_id: ${{ steps.create-draft.outputs.release_id }}
@@ -163,7 +163,7 @@ jobs:
 
       - name: Update sec-scanners-config.yaml
         if: ${{ inputs.sec-scanners-config }}
-        run: ./hack/scripts/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
+        run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
 
       - name: Create PR if anything changed
         if: ${{ inputs.sec-scanners-config }}
@@ -181,7 +181,7 @@ jobs:
             echo "Nothing changed, no need to create PR"
             echo "PR_NUMBER=-1" >> $GITHUB_ENV
           else
-            PR_STATUS=$(./hack/scripts/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
+            PR_STATUS=$(./scripts/shell/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
             echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> $GITHUB_ENV
           fi
 
@@ -192,7 +192,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "$PR_NUMBER" -gt 0 ]; then
-            ./hack/scripts/await_pr_merge.sh
+            ./scripts/shell/await_pr_merge.sh
           else
             echo "Step skipped"
           fi
@@ -209,4 +209,4 @@ jobs:
           ref: main
 
       - name: Check pre-requisites before publishing release
-        run: ./hack/scripts/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
+        run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
