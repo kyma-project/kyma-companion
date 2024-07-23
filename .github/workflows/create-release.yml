@@ -120,19 +120,23 @@ jobs:
           git tag "${RELEASE_TAG}"
           git push origin "${RELEASE_TAG}"
 
-  build-image:
+  wait-for-build:
     name: Build container image
     needs: [ validate-input-params, create-git-tag ]
     runs-on: ubuntu-latest
     steps:
-      - name: Build image
+      - name: wait
+        env:
+          GIT_REF: ${{ inputs.name }}
+          GIT_CHECK_RUN_NAME: "build-${{ inputs.name }} / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
         run: |
-          echo "Building image with tag: ${RELEASE_TAG}"
-          echo "TODO: Dummy run - it will be replaced with re-useable build job!"
+          ./scripts/shell/wait_for_commit_check_run.sh
 
   create-draft:
     name: Create draft release
-    needs: build-image
+    needs: wait-for-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -153,7 +157,7 @@ jobs:
 
   bump-sec-scanners-main-branch:
     name: Bump image in sec-scanners-config
-    needs: [ validate-input-params, build-image, create-draft ]
+    needs: [ validate-input-params, wait-for-build, create-draft ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -199,7 +203,7 @@ jobs:
 
   check-prerequisites:
     name: Check release pre-requisites
-    needs: [ create-draft, build-image, bump-sec-scanners-main-branch ]
+    needs: [ create-draft, wait-for-build, bump-sec-scanners-main-branch ]
     runs-on: ubuntu-latest
 
     steps:
