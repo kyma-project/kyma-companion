@@ -101,12 +101,14 @@ jobs:
     needs: [ validate-input-params, run-unit-tests]
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with: # checkout the release branch. This is the branch where the release tag will be created.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
+          token: ${{ secrets.GIT_BOT_TOKEN }} # cloning repo using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
 
       - name: Check if the checked out branch is the release branch.
         run: |
