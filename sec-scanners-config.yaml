@@ -1,0 +1,10 @@
+module-name: kyma-companion
+rc-tag: 0.0.1
+protecode:
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:0.0.1
+whitesource:
+  language: python
+  subprojects: false
+  exclude:
+    - "**/test/**"
+    - "**/*_test"
