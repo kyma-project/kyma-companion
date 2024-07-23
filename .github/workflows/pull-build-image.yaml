@@ -9,6 +9,11 @@ permissions:
   contents: read # This is required for actions/checkout
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test
+        run: echo "Test"
   build:
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
