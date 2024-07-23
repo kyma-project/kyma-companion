@@ -18,7 +18,7 @@ license = "Apache-2.0"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.12.4"
 # Add your production dependencies here
 fastapi = "^0.111.0"
 pytest = "^8.2.2"
@@ -29,11 +29,15 @@ hdbcli = "^2.21.26"
 pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
 pytest-asyncio = "^0.23.7"
+types-pyyaml = "^6.0.12.20240311"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "v0.4.10"
 flake8-bugbear = "^24.4.26"
 poethepoet = "^0.27.0"
+mypy = "^1.10.1"
+flake8 = "^7.1.0"
+black = "^24.4.2"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -47,6 +51,11 @@ testpaths = [
 
 [tool.poe.tasks]
 lint = "ruff check ."
+typecheck = "mypy . --pretty"
+format = "black . --check"
+codecheck = ["lint", "typecheck", "format"]
+format-fix = "black ."
+lint-fix = "ruff check . --fix"
 test = "pytest tests"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"

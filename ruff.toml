@@ -56,7 +56,7 @@ select = [
     "PLR0915", # keeping functions and methods short and focused
 ]
 
-[per-file-ignores]
+[lint.per-file-ignores]
 "tests/*" = [
     "D", # Ignore all docstring rules for files in the "tests" directory
     "ANN001", # Missing type annotation for function argument
@@ -75,9 +75,9 @@ extend-unsafe-fixes = ["UP034"]
 [lint.pydocstyle]
 convention = "google"
 
-[mccabe]
+[lint.mccabe]
 max-complexity = 10 # sets the maximum allowed complexity for function to 10
 
-[pylint]
+[lint.pylint]
 max-statements = 50 # keeping functions and methods short and focused (aiming for under 50 lines)
 
