@@ -24,6 +24,7 @@ async def handle_request() -> AsyncGenerator[str, None]:
     # dummy implementation
     for i in range(8):
         # return event with status
+        # dummy change
         yield create_ndjson_str(
             {"step": "action", "result": "Doing Step \n" + str(i + 1)}
         )
