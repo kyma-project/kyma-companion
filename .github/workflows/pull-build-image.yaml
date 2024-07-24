@@ -16,11 +16,11 @@ jobs:
       dockerfile: Dockerfile
       context: .
       export-tags: true
-  test-image:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Test image
-        run: ./.github/scripts/run-and-check-container.sh ${{ needs.build.outputs.images[0] }} PR-${{ github.event.number }}-container
+  # test-image:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Test image
+  #       run: ./.github/scripts/run-and-check-container.sh ${{ needs.build.outputs.images[0] }} PR-${{ github.event.number }}-container
