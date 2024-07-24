@@ -121,11 +121,11 @@ This sections describes how to develop and run the kyma-companion fastapi app.
 ### Running
 You can start the FastApi application with the following options:
 ```bash
-poetry run fastapi dev src/run.py --port 8000
+poetry run fastapi dev src/main.py --port 8000
 ```
 or, directly with FastApi:
 ```bash
-fastapi dev src/run.py --port 8000
+fastapi dev src/main.py --port 8000
 ```
 or, with a poe task:
 ```bash

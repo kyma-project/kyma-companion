@@ -144,6 +144,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ inputs.name }}
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
           GIT_CHECK_RUN_NAME: "build-${{ inputs.name }} / Build image"
           INTERVAL: 60
           TIMEOUT: 900
