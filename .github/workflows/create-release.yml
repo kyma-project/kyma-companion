@@ -148,7 +148,7 @@ jobs:
           INTERVAL: 60
           TIMEOUT: 900
         run: |
-          python ./scripts/python/wait-for-commit-check/main.py
+          python ./scripts/python/wait-for-commit-check/run.py
 
   create-draft:
     name: Create draft release
