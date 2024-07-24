@@ -8,17 +8,11 @@ set -o errexit  # exit immediately when a command fails.
 set -E          # needs to be set if we want the ERR trap
 set -o pipefail # prevents errors in a pipeline from being masked
 
-# Check for required arguments
-if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 <image_name> <container_name>"
-  exit 1
-fi
-
 # Define the image name and optional container name
 IMAGE_NAME="$1"
 CONTAINER_NAME="$2"
 CHECK_INTERVAL=5  # seconds between checks
-CHECK_RETRIES=3   # number of checks
+TIMEOUT=30        # total timeout in seconds
 
 # Define a cleanup function
 cleanup() {
@@ -37,22 +31,21 @@ check_status() {
     docker inspect --format='{{.State.Status}}' "$CONTAINER_NAME"
 }
 
-# Repeatedly check the container status
-for ((i=0; i<CHECK_RETRIES; i++)); do
+# Initialize elapsed time
+elapsed=0
+
+# Repeatedly check the container status until it is "running" or timeout occurs
+while [ "$elapsed" -lt "$TIMEOUT" ]; do
     STATUS=$(check_status)
+    echo "Check: Container $CONTAINER_NAME status: $STATUS."
     if [ "$STATUS" == "running" ]; then
         echo "Container $CONTAINER_NAME is running."
-    else
-        echo "Container $CONTAINER_NAME is not running yet. Status: $STATUS. Retrying in $CHECK_INTERVAL seconds..."
+        exit 0
     fi
     sleep $CHECK_INTERVAL
+    elapsed=$((elapsed + CHECK_INTERVAL))
 done
 
-# Final status check
-STATUS=$(check_status)
-if [ "$STATUS" == "running" ]; then
-    echo "Container $CONTAINER_NAME is running and stable."
-else
-    echo "Container $CONTAINER_NAME failed to start properly. Status: $STATUS"
-    exit 1
-fi
+# If we reach here, the container did not reach the "running" state within the timeout
+echo "Container $CONTAINER_NAME did not start properly within $TIMEOUT seconds. Final status: $STATUS"
+exit 1
