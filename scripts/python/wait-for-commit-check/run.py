@@ -46,16 +46,22 @@ def read_inputs() -> dict:
         exit('ERROR: Env GIT_CHECK_RUN_NAME is missing')
 
     # read and convert to integer.
-    timeout = os.environ.get('TIMEOUT') # seconds
+    timeout_str = os.environ.get('TIMEOUT') # seconds
     try:
-        timeout = int(timeout)
+        if timeout_str is not None:
+            timeout = int(timeout_str)
+        else:
+            exit('ERROR: Env TIMEOUT is missing')
     except Exception:
-        exit('ERROR: Env TIMEOUT is missing or not an integer')
+        exit('ERROR: Env TIMEOUT is not an integer')
 
     # read and convert to integer.
-    interval = os.environ.get('INTERVAL') # seconds
+    interval_str = os.environ.get('INTERVAL') # seconds
     try:
-        interval = int(interval)
+        if interval_str is not None:
+            interval = int(interval_str)
+        else:
+            exit('ERROR: Env INTERVAL is missing')
     except Exception:
         exit('ERROR: Env INTERVAL is missing or not an integer')
 
@@ -97,7 +103,7 @@ def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
     return response.json()
 
 
-def get_latest_check_run(check_run_name: str, check_runs: dict) -> dict:
+def get_latest_check_run(check_run_name: str, check_runs: dict) -> dict | None:
     """Returns the latest check run by name."""
     result = None
     latest_start_time = None
