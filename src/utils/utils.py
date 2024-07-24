@@ -10,4 +10,4 @@ def create_ndjson_str(obj: dict) -> str:
     Returns:
         str: A stringified Newline-delimited JSON.
     """
-    return f'{json.dumps(obj)}\n'
+    return f"{json.dumps(obj)}\n"
