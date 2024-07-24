@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script get the python version from the pyproject.toml file
+# This script gets the python version from the pyproject.toml file
 
 # Error handling.
 set -o nounset  # treat unset variables as an error and exit immediately.
