@@ -48,7 +48,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: "main"
 
       - name: Check if that release tag is valid
@@ -59,8 +59,7 @@ jobs:
       - name: Check if release tag already exists
         run: |
           if [ $(git tag -l "${RELEASE_TAG}") ]; then
-            echo "Error: Release tag "${RELEASE_TAG}" already exists"
-            exit 1
+            echo "Warning: Release tag ${RELEASE_TAG} already exists"
           fi
 
       - name: Export release branch name as action output
@@ -107,6 +106,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with: # checkout the release branch. This is the branch where the release tag will be created.
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
           token: ${{ secrets.GIT_BOT_TOKEN }} # cloning repo using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
 
@@ -117,22 +117,38 @@ jobs:
 
       - name: Create git tag
         run: |
-          git tag "${RELEASE_TAG}"
-          git push origin "${RELEASE_TAG}"
+          ./scripts/shell/create_git_tag.sh "${RELEASE_TAG}"
+          
 
   wait-for-build:
-    name: Build container image
+    name: Wait for image build job
     needs: [ validate-input-params, create-git-tag ]
     runs-on: ubuntu-latest
     steps:
-      - name: wait
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # release scripts are used from main branch.
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ inputs.name }}
           GIT_CHECK_RUN_NAME: "build-${{ inputs.name }} / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
-          ./scripts/shell/wait_for_commit_check_run.sh
+          python ./scripts/python/wait-for-commit-check/main.py
 
   create-draft:
     name: Create draft release
@@ -142,6 +158,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with: # draft release is linked to the release tag. So we run the release scripts from main branch.
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: main
 
       - name: Create draft release
@@ -150,7 +167,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          RELEASE_ID=$(./scripts/shell/create_draft_release.sh)
+          ./scripts/shell/create_draft_release.sh
+          RELEASE_ID=$(cat release_id.txt)
+          echo "Release ID: $RELEASE_ID"
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
     outputs:
       release_id: ${{ steps.create-draft.outputs.release_id }}
