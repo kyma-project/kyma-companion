@@ -3,9 +3,7 @@ name: Tag Build Image
 on:
   push:
     tags:
-      - '^[0-9]+\.[0-9]+\.[0-9]+$'
-    paths-ignore:
-      - "docs/**"
+      - '[0-9]+.[0-9]+.[0-9]+' # This will trigger the workflow when a tag (x.y.z) is pushed.
 
 permissions:
   id-token: write # This is required for requesting the JWT token
@@ -29,6 +27,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
   build:
+    name: build-${{ github.ref_name }} # The release pipeline will check the status of this job by this name format (e.g. build-1.0.1).
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:

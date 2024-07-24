@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# move changes to the dedicated branch created from the remote main
+
+##############################################################################
+# NOTE: This script is used in the GitHub Actions workflow.
+# Make sure any changes are compatible with the existing workflows.
+##############################################################################
 
 # standard bash error handling
 set -o nounset  # treat unset variables as an error and exit immediately.

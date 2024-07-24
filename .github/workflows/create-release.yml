@@ -48,19 +48,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: "main"
 
       - name: Check if that release tag is valid
         id: check-release-tag
         run: |
-          ./hack/scripts/check_release_tag.sh "${RELEASE_TAG}"
+          ./scripts/shell/check_release_tag.sh "${RELEASE_TAG}"
 
       - name: Check if release tag already exists
         run: |
           if [ $(git tag -l "${RELEASE_TAG}") ]; then
-            echo "Error: Release tag "${RELEASE_TAG}" already exists"
-            exit 1
+            echo "Warning: Release tag ${RELEASE_TAG} already exists"
           fi
 
       - name: Export release branch name as action output
@@ -101,12 +100,15 @@ jobs:
     needs: [ validate-input-params, run-unit-tests]
     runs-on: ubuntu-latest
     env:
+      GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with: # checkout the release branch. This is the branch where the release tag will be created.
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
+          token: ${{ secrets.GIT_BOT_TOKEN }} # cloning repo using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
 
       - name: Check if the checked out branch is the release branch.
         run: |
@@ -115,27 +117,49 @@ jobs:
 
       - name: Create git tag
         run: |
-          git tag "${RELEASE_TAG}"
-          git push origin "${RELEASE_TAG}"
+          ./scripts/shell/create_git_tag.sh "${RELEASE_TAG}"
+          
 
-  build-image:
-    name: Build container image
+  wait-for-build:
+    name: Wait for image build job
     needs: [ validate-input-params, create-git-tag ]
     runs-on: ubuntu-latest
     steps:
-      - name: Build image
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # release scripts are used from main branch.
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install requirements
         run: |
-          echo "Building image with tag: ${RELEASE_TAG}"
-          echo "TODO: Dummy run - it will be replaced with re-useable build job!"
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ inputs.name }}
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build-${{ inputs.name }} / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
 
   create-draft:
     name: Create draft release
-    needs: build-image
+    needs: wait-for-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with: # draft release is linked to the release tag. So we run the release scripts from main branch.
+          fetch-depth: 0 # fetch all the branches and tags.
           ref: main
 
       - name: Create draft release
@@ -144,14 +168,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          RELEASE_ID=$(./hack/scripts/create_draft_release.sh)
+          ./scripts/shell/create_draft_release.sh
+          RELEASE_ID=$(cat release_id.txt)
+          echo "Release ID: $RELEASE_ID"
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
     outputs:
       release_id: ${{ steps.create-draft.outputs.release_id }}
 
   bump-sec-scanners-main-branch:
     name: Bump image in sec-scanners-config
-    needs: [ validate-input-params, build-image, create-draft ]
+    needs: [ validate-input-params, wait-for-build, create-draft ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -161,7 +187,7 @@ jobs:
 
       - name: Update sec-scanners-config.yaml
         if: ${{ inputs.sec-scanners-config }}
-        run: ./hack/scripts/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
+        run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
 
       - name: Create PR if anything changed
         if: ${{ inputs.sec-scanners-config }}
@@ -179,7 +205,7 @@ jobs:
             echo "Nothing changed, no need to create PR"
             echo "PR_NUMBER=-1" >> $GITHUB_ENV
           else
-            PR_STATUS=$(./hack/scripts/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
+            PR_STATUS=$(./scripts/shell/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
             echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> $GITHUB_ENV
           fi
 
@@ -190,14 +216,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "$PR_NUMBER" -gt 0 ]; then
-            ./hack/scripts/await_pr_merge.sh
+            ./scripts/shell/await_pr_merge.sh
           else
             echo "Step skipped"
           fi
 
   check-prerequisites:
     name: Check release pre-requisites
-    needs: [ create-draft, build-image, bump-sec-scanners-main-branch ]
+    needs: [ create-draft, wait-for-build, bump-sec-scanners-main-branch ]
     runs-on: ubuntu-latest
 
     steps:
@@ -207,4 +233,4 @@ jobs:
           ref: main
 
       - name: Check pre-requisites before publishing release
-        run: ./hack/scripts/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
+        run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
