@@ -29,7 +29,8 @@
 > dependencies.
 > Required software:
 > - Python 3.12.*
-> - [Poetry 1.8.3]()
+> - [Poetry](https://python-poetry.org/)
+> - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis)
 
 ## Installation
 
@@ -118,7 +119,15 @@ the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 ## Development
 This sections describes how to develop and run the kyma-companion fastapi app.
 
+### Redis Server
+Before running the application, the Redis server must be provided that is used to store the conversation with a LLM.
+Therefore, REDIS_URL has to be provided as an environment variable.
+
+Here is the [documentation](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) how to create a Redis server. For example,
+`REDIS_URL="redis://{host or ip}:6379"`
+
 ### Running
+
 You can start the FastApi application with the following options:
 ```bash
 poetry run fastapi dev src/main.py --port 8000
