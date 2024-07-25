@@ -23,4 +23,4 @@ jobs:
   #     - name: Checkout code
   #       uses: actions/checkout@v4
   #     - name: Test image
-  #       run: ./.github/scripts/run-and-check-container.sh ${{ needs.build.outputs.images[0] }} PR-${{ github.event.number }}-container
+  #       run: ./scripts/shell/run-and-check-container.sh ${{ needs.build.outputs.images[0] }} PR-${{ github.event.number }}-container

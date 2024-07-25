@@ -23,7 +23,7 @@ jobs:
 
       - name: Extract Python version
         id: python-version
-        run: ./.github/scripts/extract-python-version.sh
+        run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
         uses: actions/setup-python@v4
