@@ -32,4 +32,4 @@ jobs:
           echo "IMAGE_NAME=$(echo '${{ needs.build.outputs.images }}' | jq -r '.[0]')" >> $GITHUB_ENV
 
       - name: Test image
-        run: ./.github/scripts/run-and-check-container.sh "$IMAGE_NAME" PR-${{ github.event.number }}-container
+        run: ./scripts/shell/run-and-check-container.sh "$IMAGE_NAME" PR-${{ github.event.number }}-container
