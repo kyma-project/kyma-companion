@@ -22,6 +22,12 @@ jobs:
         id: python-version
         run: ./.github/scripts/extract-python-version.sh
 
+      - name: test step
+        env:
+            PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+        run: |
+          echo "Detected Python version: ${PYTHON_VERSION}"
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
