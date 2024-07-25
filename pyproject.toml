@@ -18,7 +18,7 @@ license = "Apache-2.0"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.11.1"
+python = "^3.11.9"
 # Add your production dependencies here
 fastapi = "^0.111.0"
 pytest = "^8.2.2"
