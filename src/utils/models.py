@@ -3,7 +3,6 @@ from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 
 from utils.config import Model, get_config
 
-proxy_client = get_proxy_client('gen-ai-hub')
 llms: dict[str, ChatOpenAI] = {}
 
 
@@ -25,6 +24,7 @@ def create_llm(name: str, temperature: int = 0) -> ChatOpenAI:
     """
     Create a ChatOpenAI instance.
     """
+    proxy_client = get_proxy_client('gen-ai-hub')
     model = get_model(name)
     llm = ChatOpenAI(deployment_id=model.deployment_id,
                      proxy_client=proxy_client,

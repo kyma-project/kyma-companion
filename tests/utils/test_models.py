@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from utils.config import Config, Model
-from utils.models import create_llm, get_llm, get_model, proxy_client
+from utils.models import create_llm, get_llm, get_model
 
 
 @pytest.fixture
@@ -34,13 +34,15 @@ def test_get_model(mocker, mock_config, model_name, expected_deployment_id):
     ("model2", 0.5, "dep2"),
 ])
 def test_create_llm(mock_config, model_name, temperature, deployment_id):
+    mock_proxy_client = MagicMock()
     with (patch('utils.models.get_config', return_value=mock_config),
+          patch('utils.models.get_proxy_client', return_value=mock_proxy_client),
           patch('utils.models.ChatOpenAI') as mock_chat_openai):
         create_llm(model_name, temperature)
 
         mock_chat_openai.assert_called_once_with(
             deployment_id=deployment_id,
-            proxy_client=proxy_client,
+            proxy_client=mock_proxy_client,
             temperature=temperature
         )
 

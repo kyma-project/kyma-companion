@@ -1,8 +1,5 @@
 import yaml
-from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from pydantic import BaseModel
-
-proxy_client = get_proxy_client('gen-ai-hub')
 
 
 class Model(BaseModel):

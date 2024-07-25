@@ -8,6 +8,7 @@ from services.chat import Chat
 
 @pytest.mark.asyncio(scope="class")
 class TestChat:
+
     @pytest.fixture
     def mock_supervisor_agent(self):
         mock_supervisor = MagicMock()
@@ -20,7 +21,7 @@ class TestChat:
         with patch("services.chat.Chat.__init__", return_value=None):
             chat_object = Chat()
             chat_object.supervisor_agent = mock_supervisor_agent
-            return chat_object
+            yield chat_object
 
     @pytest.mark.asyncio
     async def test_init_chat(self, chat_instance):
