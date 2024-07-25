@@ -90,10 +90,25 @@ jobs:
           git branch --show-current
           git branch --show-current | grep -q ${RELEASE_BRANCH}
 
-      - name: Run unit tests
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
         run: |
-          echo "Running unit tests"
-          echo "TODO: Dummy run - it will be replaced with actual unit tests!"
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run tests
+        run: poetry run poe test
 
   create-git-tag:
     name: Create git tag for release

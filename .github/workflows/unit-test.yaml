@@ -11,6 +11,9 @@ on:
       - CODEOWNERS
       - LICENSE
 
+## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
+## in the create-release.yml workflow as well.
+
 jobs:
   unit-test:
     runs-on: ubuntu-latest
@@ -20,7 +23,7 @@ jobs:
 
       - name: Extract Python version
         id: python-version
-        run: ./.github/scripts/extract-python-version.sh
+        run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
         uses: actions/setup-python@v4
