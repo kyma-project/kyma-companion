@@ -1,0 +1,42 @@
+name: Unit Test
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "release-**"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - CODEOWNERS
+      - LICENSE
+
+## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
+## in the create-release.yml workflow as well.
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run tests
+        run: poetry run poe test

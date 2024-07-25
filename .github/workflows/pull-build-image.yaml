@@ -1,0 +1,35 @@
+name: Pull Build Image
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+jobs:
+  build:
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: kyma-companion
+      dockerfile: Dockerfile
+      context: .
+      export-tags: true
+  test-image:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      - name: Extract image name from JSON
+        id: extract-image
+        run: |
+          echo "IMAGE_NAME=$(echo '${{ needs.build.outputs.images }}' | jq -r '.[0]')" >> $GITHUB_ENV
+
+      - name: Test image
+        run: ./scripts/shell/run-and-check-container.sh "$IMAGE_NAME" PR-${{ github.event.number }}-container
