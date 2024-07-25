@@ -7,6 +7,7 @@ from utils.models import create_llm
 
 logger = get_logger(__name__)
 
+GPT4O_MODEL = "gpt-4o"
 
 class Chat:
     """Chat service."""
@@ -14,7 +15,7 @@ class Chat:
     supervisor_agent = None
 
     def __init__(self):
-        llm = create_llm("gpt-4o")
+        llm = create_llm(GPT4O_MODEL)
         memory = RedisSaver(
             async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
         )

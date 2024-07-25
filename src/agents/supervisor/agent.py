@@ -69,7 +69,10 @@ def agent_node(state: dict[str, any], agent: AgentExecutor, name: str) -> dict[s
 
 
 class SupervisorAgent:
-    """Supervisor agent."""
+    """Supervisor agent.
+    Currently, it has just prelimiary implementation.
+    I'll be adding more features to it in the future.
+    """
 
     llm = None
     memory: BaseCheckpointSaver = None
