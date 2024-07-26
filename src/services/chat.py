@@ -1,36 +1,35 @@
-import asyncio
-from collections.abc import AsyncGenerator
+import os
 
+from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
+from agents.supervisor.agent import Message, SupervisorAgent
 from utils.logging import get_logger
-from utils.models import get_model
-from utils.utils import create_ndjson_str
+from utils.models import create_llm
 
 logger = get_logger(__name__)
 
-
-async def init_chat() -> dict:
-    """Initialize the chat"""
-    logger.info("Initializing chat...")
-    return {"message": "Chat is initialized!"}
+GPT4O_MODEL = "gpt-4"
 
 
-async def handle_request() -> AsyncGenerator[str, None]:
-    """Chat with the Kyma companion"""
-    logger.info("Processing request...")
+class Chat:
+    """Chat service."""
 
-    llm = get_model("gpt-4o")
-    logger.info(f"LLM model {llm} is created.")
+    supervisor_agent = None
 
-    # dummy implementation
-    for i in range(8):
-        # return event with status
-        yield create_ndjson_str(
-            {"step": "action", "result": "Doing Step \n" + str(i + 1)}
+    def __init__(self):
+        llm = create_llm(GPT4O_MODEL)
+        memory = RedisSaver(
+            async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
         )
-        max_wait_count = 4
-        if i < max_wait_count:
-            # wait for 1 seconds
-            await asyncio.sleep(1.0)
+        self.supervisor_agent = SupervisorAgent(llm, memory)
 
-    # return final response.
-    yield create_ndjson_str({"step": "output", "result": "Completed!}\n"})
+    async def init_chat(self) -> dict:
+        """Initialize the chat"""
+        logger.info("Initializing chat...")
+        return {"message": "Chat is initialized!"}
+
+    async def handle_request(self, message: Message):  # noqa: ANN201
+        """Handle a request"""
+        logger.info("Processing request...")
+
+        async for chunk in self.supervisor_agent.astream(message):
+            yield f"{chunk}\n\n".encode()

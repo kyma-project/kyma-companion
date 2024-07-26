@@ -1,0 +1,7 @@
+models:
+  - name: gpt-4o
+    deployment_id: da6c36722292c60
+  - name: claude-sonnet-3.5
+    deployment_id: 21111sojsglsfsfsfdsjgls22392j2s
+  - name: gemini-1.0-pro
+    deployment_id: 23590sojsglsfsfsfdsjgls215933ff

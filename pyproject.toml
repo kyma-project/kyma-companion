@@ -18,24 +18,33 @@ license = "Apache-2.0"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12.4"
+python = "3.12.4"
 # Add your production dependencies here
 fastapi = "^0.111.0"
 pytest = "^8.2.2"
 langchain-community = "^0.2.6"
 hdbcli = "^2.21.26"
+langchain-google-genai = "^1.0.7"
+langchain-openai = "^0.1.14"
+ai-core-sdk = "^2.3.11"
+generative-ai-hub-sdk = "^1.11.1"
+langfuse = "^2.39.1"
+langgraph = "^0.1.7"
+redis = "^5.0.7"
 requests = "^2.32.3"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
 pytest-asyncio = "^0.23.7"
+fakeredis = "^2.23.3"
 types-pyyaml = "^6.0.12.20240311"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "v0.4.10"
 flake8-bugbear = "^24.4.26"
 poethepoet = "^0.27.0"
+langfuse = "^2.38.0"
 mypy = "^1.10.1"
 flake8 = "^7.1.0"
 black = "^24.4.2"
@@ -61,3 +70,21 @@ lint-fix = "ruff check . --fix"
 test = "pytest tests"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
+
+[tool.mypy]
+check_untyped_defs = true
+warn_return_any = true
+show_error_codes = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+disallow_any_expr = false
+ignore_missing_imports = true
+show_column_numbers = true
+allow_redefinition = true
+disable_error_code = ["union-attr"]
+
+# Exclude specific files or directories
+exclude = [
+    'tests',
+    'scripts'
+]

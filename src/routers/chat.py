@@ -1,8 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from starlette.responses import StreamingResponse
 
-from services.chat import handle_request, init_chat
+from agents.supervisor.agent import Message
+from services.chat import Chat
 
+chat_service = Chat()
 router = APIRouter(
     prefix="/chat",
     tags=["chat"],
@@ -12,10 +14,15 @@ router = APIRouter(
 @router.get("/init")
 async def init() -> dict:
     """Endpoint to initialize the chat with the Kyma companion"""
-    return await init_chat()
+    return await chat_service.init_chat()
 
 
-@router.get("/")
-async def chat() -> StreamingResponse:
+@router.post("/")
+async def chat(message: Message) -> StreamingResponse:
     """Endpoint to chat with the Kyma companion"""
-    return StreamingResponse(handle_request(), media_type="text/event-stream")
+    try:
+        return StreamingResponse(
+            chat_service.handle_request(message), media_type="text/event-stream"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500) from e

@@ -1,31 +1,39 @@
-import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from services.chat import handle_request, init_chat
-
-pytestmark = pytest.mark.asyncio(scope="module")
-
-"""
-It’s highly recommended for neighboring tests to use the same event loop scope. For example, 
-all tests in a class or module should use the same scope. Assigning neighboring tests to different 
-event loop scopes is discouraged as it can make test code hard to follow. For references:
-- https://pytest-asyncio.readthedocs.io/en/latest/concepts.html#test-discovery-modes
-- https://pytest-asyncio.readthedocs.io/en/latest/how-to-guides/run_module_tests_in_same_loop.html
-"""
-loop: asyncio.AbstractEventLoop
+from agents.supervisor.agent import Message
+from services.chat import Chat
 
 
-async def test_init_chat():
-    global loop  # noqa F811
-    actual_result = await init_chat()
-    expected_result = {"message": "Chat is initialized!"}
-    assert expected_result == actual_result
+@pytest.mark.asyncio(scope="class")
+class TestChat:
 
+    @pytest.fixture
+    def mock_supervisor_agent(self):
+        mock_supervisor = MagicMock()
+        mock_supervisor.astream.return_value = AsyncMock()
+        mock_supervisor.astream.return_value.__aiter__.return_value = [
+            "chunk1",
+            "chunk2",
+        ]
+        return mock_supervisor
 
-async def test_process_chat_request():
-    global loop  # noqa F811
-    async for event in handle_request():
-        assert isinstance(event, str)
-        assert event.startswith('{"step":')
-        assert event.endswith("}\n")
+    @pytest.fixture
+    def chat_instance(self, mock_supervisor_agent):
+        with patch("services.chat.Chat.__init__", return_value=None):
+            chat_object = Chat()
+            chat_object.supervisor_agent = mock_supervisor_agent
+            yield chat_object
+
+    @pytest.mark.asyncio
+    async def test_init_chat(self, chat_instance):
+        result = await chat_instance.init_chat()
+        assert result == {"message": "Chat is initialized!"}
+
+    @pytest.mark.asyncio
+    async def test_handle_request(self, chat_instance, mock_supervisor_agent):
+        message = Message(input="Test message", session_id="123")
+        result = [chunk async for chunk in chat_instance.handle_request(message)]
+        mock_supervisor_agent.astream.assert_called_once_with(message)
+        assert result == [b"chunk1\n\n", b"chunk2\n\n"]

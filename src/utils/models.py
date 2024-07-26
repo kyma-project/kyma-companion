@@ -1,35 +1,14 @@
-import json
+from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
+from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 
-from pydantic import BaseModel
+from utils.config import Model, get_config
 
-
-class Model(BaseModel):
-    """Model for the deployment request"""
-
-    name: str
-    deployment_id: str
-
-
-def get_models(file_path: str) -> list[Model]:
-    """
-    Read models from a JSON file
-    Args:
-        file_path (str): The path to the JSON file.
-    Returns:
-        list[Model]: A list of models.
-    """
-    with open(file_path) as f:
-        data = json.load(f)
-
-    return [Model(**item) for item in data]
-
-
-models = get_models("config/models.json")
+llms: dict[str, ChatOpenAI] = {}
 
 
 def get_model(name: str) -> Model | None:
     """
-    Retrieve a model by its name.
+    Retrieve a model data by its name.
 
     Args:
         name (str): The name of the model to find.
@@ -37,4 +16,27 @@ def get_model(name: str) -> Model | None:
     Returns:
         Model | None: The matching model if found, otherwise None.
     """
-    return next((model for model in models if model.name == name), None)
+    config = get_config()
+    return next((model for model in config.models if model.name == name), None)
+
+
+def create_llm(name: str, temperature: int = 0) -> ChatOpenAI:
+    """
+    Create a ChatOpenAI instance.
+    """
+    proxy_client = get_proxy_client("gen-ai-hub")
+    model = get_model(name)
+    llm = ChatOpenAI(
+        deployment_id=model.deployment_id,
+        proxy_client=proxy_client,
+        temperature=temperature,
+    )
+    llms[name] = llm
+    return llm
+
+
+def get_llm(name: str) -> ChatOpenAI:
+    """
+    Get a ChatOpenAI instance.
+    """
+    return llms.get(name)
