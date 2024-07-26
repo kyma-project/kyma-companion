@@ -2,7 +2,9 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import (
+    Any,
+)
 
 import redis
 from langchain_core.runnables import RunnableConfig
@@ -169,3 +171,15 @@ class RedisSaver(BaseCheckpointSaver):
         except Exception as e:
             logger.error(f"Failed to get checkpoint tuple: {e}")
             raise
+
+    async def aput_writes(
+        self,
+        config: RunnableConfig,
+        writes: list[tuple[str, Any]],
+        task_id: str,
+    ) -> None:
+        """Put writes asynchronously."""
+        # TODO: let's implement missing checkpointer method later.
+        #  Currently, only necessary methods are
+        #  implemented.
+        return None
