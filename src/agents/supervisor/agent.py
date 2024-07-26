@@ -1,11 +1,12 @@
 import functools
 import os
 from collections.abc import AsyncGenerator
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor
 from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langfuse.callback import CallbackHandler
 from langgraph.checkpoint import BaseCheckpointSaver
@@ -28,6 +29,7 @@ langfuse_handler = CallbackHandler(
 
 class Message(BaseModel):
     """Message data model."""
+
     input: str
     session_id: str
 
@@ -35,8 +37,8 @@ class Message(BaseModel):
 class Agent(Protocol):
     """Agent interface."""
 
-    async def astream(self, message: Message) -> dict[str, any]:
-        """ Stream the input to the supervisor asynchronously. """
+    async def astream(self, message: Message) -> dict[str, Any]:
+        """Stream the input to the supervisor asynchronously."""
         ...
 
 
@@ -44,9 +46,11 @@ class Agent(Protocol):
 def search(query: str) -> list[str]:
     """Call to get information about Kyma."""
     # This is a placeholder for the actual implementation
-    return ["Kyma is an opinionated set of Kubernetes-based modular building blocks, "
-            "including all necessary capabilities to develop and run "
-            "enterprise-grade cloud-native applications."]
+    return [
+        "Kyma is an opinionated set of Kubernetes-based modular building blocks, "
+        "including all necessary capabilities to develop and run "
+        "enterprise-grade cloud-native applications."
+    ]
 
 
 def should_continue(state: MessagesState) -> Literal["action", "__end__"]:
@@ -60,7 +64,9 @@ def filter_messages(messages: list) -> list:
     return messages[-10:]
 
 
-def agent_node(state: dict[str, any], agent: AgentExecutor, name: str) -> dict[str, any]:
+def agent_node(
+    state: dict[str, Any], agent: AgentExecutor, name: str
+) -> dict[str, Any]:
     """It filters the messages and invokes the agent."""
     state["messages"] = filter_messages(state["messages"])
 
@@ -75,7 +81,7 @@ class SupervisorAgent:
     """
 
     llm = None
-    memory: BaseCheckpointSaver = None
+    memory: BaseCheckpointSaver
     kyma_agent = None
     tools = None
 
@@ -88,16 +94,18 @@ class SupervisorAgent:
             agent=create_agent(
                 llm,
                 self.tools,
-                "You are Kyma expert. You assist users with Kyma related questions."),
-            name="KymaAgent")
+                "You are Kyma expert. You assist users with Kyma related questions.",
+            ),
+            name="KymaAgent",
+        )
         self.graph = self._build_graph()
 
     def _build_graph(self) -> CompiledGraph:
-        """ Create a supervisor agent. """
+        """Create a supervisor agent."""
         kyma_agent_node = self.kyma_agent
 
         workflow = StateGraph(MessagesState)
-        workflow.add_node("agent", kyma_agent_node)
+        workflow.add_node("agent", kyma_agent_node)  # type: ignore
         workflow.add_edge(START, "agent")
         workflow.add_edge("agent", END)
 
@@ -105,18 +113,16 @@ class SupervisorAgent:
         return graph
 
     async def astream(self, message: Message) -> AsyncGenerator[dict, None]:
-        """ Stream the input to the supervisor asynchronously. """
-        config = {
-            "configurable": {"thread_id": message.session_id},
-            "callbacks": [langfuse_handler]
-        }
+        """Stream the input to the supervisor asynchronously."""
+        config = RunnableConfig(
+            {
+                "configurable": {"thread_id": message.session_id},
+                "callbacks": [langfuse_handler],
+            }
+        )
         async for chunk in self.graph.astream(
-                input={
-                    "messages": [
-                        HumanMessage(content=message.input)
-                    ]
-                },
-                config=config,
+            input={"messages": [HumanMessage(content=message.input)]},
+            config=config,
         ):
             if "__end__" not in chunk:
                 yield chunk

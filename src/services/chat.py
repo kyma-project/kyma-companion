@@ -7,7 +7,8 @@ from utils.models import create_llm
 
 logger = get_logger(__name__)
 
-GPT4O_MODEL = "gpt-4o"
+GPT4O_MODEL = "gpt-4"
+
 
 class Chat:
     """Chat service."""
@@ -22,12 +23,12 @@ class Chat:
         self.supervisor_agent = SupervisorAgent(llm, memory)
 
     async def init_chat(self) -> dict:
-        """ Initialize the chat """
+        """Initialize the chat"""
         logger.info("Initializing chat...")
         return {"message": "Chat is initialized!"}
 
     async def handle_request(self, message: Message):  # noqa: ANN201
-        """ Handle a request """
+        """Handle a request"""
         logger.info("Processing request...")
 
         async for chunk in self.supervisor_agent.astream(message):

@@ -6,7 +6,7 @@ from utils.config import Model, get_config
 llms: dict[str, ChatOpenAI] = {}
 
 
-def get_model(name: str) -> Model:
+def get_model(name: str) -> Model | None:
     """
     Retrieve a model data by its name.
 
@@ -24,11 +24,13 @@ def create_llm(name: str, temperature: int = 0) -> ChatOpenAI:
     """
     Create a ChatOpenAI instance.
     """
-    proxy_client = get_proxy_client('gen-ai-hub')
+    proxy_client = get_proxy_client("gen-ai-hub")
     model = get_model(name)
-    llm = ChatOpenAI(deployment_id=model.deployment_id,
-                     proxy_client=proxy_client,
-                     temperature=temperature)
+    llm = ChatOpenAI(
+        deployment_id=model.deployment_id,
+        proxy_client=proxy_client,
+        temperature=temperature,
+    )
     llms[name] = llm
     return llm
 

@@ -13,7 +13,10 @@ class TestChat:
     def mock_supervisor_agent(self):
         mock_supervisor = MagicMock()
         mock_supervisor.astream.return_value = AsyncMock()
-        mock_supervisor.astream.return_value.__aiter__.return_value = ["chunk1", "chunk2"]
+        mock_supervisor.astream.return_value.__aiter__.return_value = [
+            "chunk1",
+            "chunk2",
+        ]
         return mock_supervisor
 
     @pytest.fixture

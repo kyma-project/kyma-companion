@@ -1,4 +1,5 @@
 """Implementation of a langgraph checkpoint saver using Redis."""
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -21,10 +22,12 @@ class JsonAndBinarySerializer(JsonPlusSerializer):
 
     def _default(self, obj: Any) -> Any:
         if isinstance(obj, bytes | bytearray):
-            return self._encode_constructor_args(obj.__class__, method="fromhex", args=[obj.hex()])
+            return self._encode_constructor_args(
+                obj.__class__, method="fromhex", args=[obj.hex()]
+            )
         return super()._default(obj)
 
-    def dumps(self, obj: Any) -> bytes | str:
+    def dumps(self, obj: Any) -> Any:
         """Serialize an object to a string."""
         try:
             if isinstance(obj, bytes | bytearray):
@@ -34,7 +37,7 @@ class JsonAndBinarySerializer(JsonPlusSerializer):
             logger.error(f"Serialization error: {e}")
             raise
 
-    def loads(self, s: str | bytes, is_binary: bool = False) -> Any:
+    def loads(self, s: Any, is_binary: bool = False) -> Any:
         """Deserialize a string to an object."""
         try:
             if is_binary:
@@ -45,7 +48,9 @@ class JsonAndBinarySerializer(JsonPlusSerializer):
             raise
 
 
-def initialize_async_pool(url: str = "redis://localhost", **kwargs: Any) -> AsyncConnectionPool:
+def initialize_async_pool(
+    url: str = "redis://localhost", **kwargs: Any
+) -> AsyncConnectionPool:
     """Initialize an asynchronous Redis connection pool."""
     try:
         pool = AsyncConnectionPool.from_url(url, **kwargs)
@@ -57,8 +62,9 @@ def initialize_async_pool(url: str = "redis://localhost", **kwargs: Any) -> Asyn
 
 
 @asynccontextmanager
-async def get_async_connection(connection: AsyncRedis | AsyncConnectionPool | None) -> (
-        AsyncGenerator)[AsyncRedis, None]:
+async def get_async_connection(
+    connection: AsyncRedis | AsyncConnectionPool | None,
+) -> (AsyncGenerator)[AsyncRedis, None]:
     """Get an asynchronous Redis connection."""
     conn = None
     try:
@@ -79,27 +85,39 @@ async def get_async_connection(connection: AsyncRedis | AsyncConnectionPool | No
 
 class RedisSaver(BaseCheckpointSaver):
     """Implementation of a langgraph checkpoint saver using Redis."""
+
     async_connection: AsyncRedis | AsyncConnectionPool | None = None
 
-    def __init__(self, async_connection: AsyncRedis | AsyncConnectionPool | None = None):
+    def __init__(
+        self, async_connection: AsyncRedis | AsyncConnectionPool | None = None
+    ):
         super().__init__(serde=JsonAndBinarySerializer())
         self.async_connection = async_connection
 
-    async def aput(self, config: RunnableConfig, checkpoint: Checkpoint,
-                   metadata: CheckpointMetadata) -> RunnableConfig:
+    async def aput(
+        self,
+        config: RunnableConfig,
+        checkpoint: Checkpoint,
+        metadata: CheckpointMetadata,
+    ) -> RunnableConfig:
         """Saves a checkpoint."""
         thread_id = config["configurable"]["thread_id"]
         parent_ts = config["configurable"].get("thread_ts")
         key = f"checkpoint:{thread_id}:{checkpoint['id']}"
         try:
             async with get_async_connection(self.async_connection) as conn:
-                await conn.hset(key, mapping={
-                    "checkpoint": self.serde.dumps(checkpoint),
-                    "metadata": self.serde.dumps(metadata),
-                    "parent_ts": parent_ts if parent_ts else ""
-                })
-                logger.info(f"Checkpoint stored successfully for thread_id: {thread_id}, "
-                            f"ts: {checkpoint['ts']}")
+                await conn.hset(
+                    key,
+                    mapping={
+                        "checkpoint": self.serde.dumps(checkpoint),
+                        "metadata": self.serde.dumps(metadata),
+                        "parent_ts": parent_ts if parent_ts else "",
+                    },
+                )  # type: ignore
+                logger.info(
+                    f"Checkpoint stored successfully for thread_id: {thread_id}, "
+                    f"ts: {checkpoint['ts']}"
+                )
         except Exception as e:
             logger.error(f"Failed to aput checkpoint: {e}")
             raise
@@ -126,21 +144,28 @@ class RedisSaver(BaseCheckpointSaver):
                     # convert all_keys to list and sort and get the latest key
                     all_keys.sort(key=lambda k: k.decode())
                     key = all_keys[-1]
-                checkpoint_data = await conn.hgetall(key)
+                checkpoint_data = await conn.hgetall(key)  # type: ignore
                 if not checkpoint_data:
                     logger.info(f"No valid checkpoint data found for key: {key}")
                     return None
                 checkpoint = self.serde.loads(checkpoint_data[b"checkpoint"].decode())
                 metadata = self.serde.loads(checkpoint_data[b"metadata"].decode())
                 parent_ts = checkpoint_data.get(b"parent_ts", b"").decode()
-                parent_config = {
-                    "configurable": {
-                        "thread_id": thread_id,
-                        "thread_ts": parent_ts}} if parent_ts else None
-                logger.info(f"Checkpoint retrieved successfully for thread_id: {thread_id}, "
-                            f"ts: {thread_ts}")
-                return CheckpointTuple(config=config, checkpoint=checkpoint, metadata=metadata,
-                                       parent_config=parent_config)
+                parent_config = (
+                    {"configurable": {"thread_id": thread_id, "thread_ts": parent_ts}}
+                    if parent_ts
+                    else None
+                )
+                logger.info(
+                    f"Checkpoint retrieved successfully for thread_id: {thread_id}, "
+                    f"ts: {thread_ts}"
+                )
+                return CheckpointTuple(
+                    config=config,
+                    checkpoint=checkpoint,
+                    metadata=metadata,
+                    parent_config=parent_config,  # type: ignore
+                )
         except Exception as e:
             logger.error(f"Failed to get checkpoint tuple: {e}")
             raise

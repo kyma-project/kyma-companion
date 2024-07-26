@@ -4,12 +4,14 @@ from pydantic import BaseModel
 
 class Model(BaseModel):
     """Model for the deployment request"""
+
     name: str
     deployment_id: str
 
 
 class Config(BaseModel):
     """Configuration of the application"""
+
     models: list[Model]
 
 

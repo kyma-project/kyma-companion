@@ -7,7 +7,7 @@ import yaml
 
 level = os.getenv("LOG_LEVEL", "INFO")
 
-config_path = Path(__file__).parent.parent.parent / 'config' / 'logging.yml'
+config_path = Path(__file__).parent.parent.parent / "config" / "logging.yml"
 
 with open(config_path) as f:
     config = yaml.safe_load(f.read())
