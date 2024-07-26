@@ -1,4 +1,4 @@
-FROM python:3.12.2-slim-bullseye as builder
+FROM python:3.12.4-slim-bullseye as builder
 
 # Set the working directory in the container
 WORKDIR /app
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir poetry \
     && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
-FROM python:3.12.2-slim-bullseye
+FROM python:3.12.4-slim-bullseye
 
 WORKDIR /app
 
