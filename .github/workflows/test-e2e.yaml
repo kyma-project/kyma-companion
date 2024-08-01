@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
-          $(pwd)/bin/kyma@v2 version
+          version=$(bin/kyma@v2 version)
           status=$?
           echo "Command result: $status"
           if [ status == -1 ]; then
@@ -48,3 +48,8 @@ jobs:
             echo "Kyma CLI installed successfully"
           fi
         continue-on-error: true
+      - name: Check Kyma CLI version
+        id: check-kyma-cli-version
+        run: |
+          echo "Kyma CLI version: ${{ steps.install-kyma-cli.outputs.version }}"
+        
