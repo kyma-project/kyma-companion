@@ -111,6 +111,18 @@ Remember to run these commands in the root directory of your project where the `
 Pycharm users can also use the virtual environment created by Poetry. To do this follow
 the [guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
+## Using Poe the Poet as Task Runner
+
+[Poe the Poet](https://poethepoet.natn.io/index.html) is a task runner that simplifies running common tasks in a Python project.
+
+To have the command availalbe as `poetry poe <command>` as seen in the following examples, you need to install Poe as a plugin to poetry:
+
+```bash
+poetry self add 'poethepoet[poetry_plugin]'
+```
+
+If this plugin is not installed you may have to run Poe as a script within the Poetry environment using `poetry run poe <command>`.
+
 ## Usage
 
 > Explain how to use the project. You can create multiple subsections (H3). Include the instructions or provide links to
@@ -154,18 +166,28 @@ The FastAPI application can be debugged with PyCharm or VS Code. Follow the foll
 For local development LLM models can be configured inside the config/models.json file.  
 **NOTE:** Don't use it to configure models in dev, stage or prod clusters.
 
-## Linting
+## Codechecks
 
-It is recommended to execute the Ruff linting check with the poe lint task with the following command:
+To execute linting, formatting and type checking using ruff, black and mypy respectively use the following command:
 
 ```bash
-$ poetry poe lint
+poetry poe codecheck
 ```
 
-Or, by running the following command:
+To fix linting and formatting issues use the following command:
 
 ```bash
-$ poetry run ruff check
+poetry poe codefix
+```
+
+Mypy does not support automatically fixing issues.
+
+### Linting
+
+It is recommended to execute the [Ruff](https://docs.astral.sh/ruff/) linting check with the poe lint task with the following command:
+
+```bash
+poetry poe lint
 ```
 
 Alternatively, it can also be done with `ruff check` directly, where ruff may have a different version in a different
@@ -175,21 +197,46 @@ Linting errors can be fixed with the following command, which by default applies
 be used with caution, as it may change the code in an unexpected way:
 
 ```bash
-$ poetry run ruff fix
+poetry poe lint-fix
 ```
+
+### Formatting
+
+To execute the [Black](https://black.readthedocs.io/en/stable/) formatting check with the poe format task use the following command:
+
+```bash
+poetry poe format
+```
+
+Formatting errros can be fixed with the following command:
+
+```bash
+poetry poe format-fix
+```
+
+### Type Checking
+
+To execute type checking with [mypy](https://mypy-lang.org/) use the following command:
+
+```bash
+poetry poe typecheck
+```
+
+Mypy does not support automatically fixing issues.
+
 
 ## Tests
 
-It is recommended to execute the tests with the poe test task with the following command:
+The tests written in the [pytest framework](https://docs.pytest.org/en/stable/) can be executed with the following command:
 
 ```bash
-$ poetry poe test
+poetry poe test
 ```
 
 Or, with the following command:
 
 ```bash
-$ poetry run pytest tests/
+poetry run pytest tests
 ```
 
 ## Release process
