@@ -39,3 +39,12 @@ jobs:
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
           $(pwd)/bin/kyma@v2 version
+          status=$?
+          echo "Command result: $status"
+          if [ status -eq -1 ]; then
+            
+            echo "Failed to install Kyma CLI"
+            exit 1
+          else
+            echo "Kyma CLI installed successfully"
+          fi
