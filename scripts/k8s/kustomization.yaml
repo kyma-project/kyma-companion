@@ -1,8 +1,0 @@
-# scripts/k8s/kustomization.yaml
-resources:
-  - companion-deployment.yaml
-
-images:
-  - name: example.com/ai-backend
-    newName: example.com/ai-backend
-    newTag: stable # Default tag that can be overridden

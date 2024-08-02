@@ -9,7 +9,6 @@ app = FastAPI()
 app.include_router(chat.router)
 
 
-# Routes
 @app.get("/")
 async def root() -> dict:  # noqa E302
     return {"message": "Hello from Kyma Companion!"}

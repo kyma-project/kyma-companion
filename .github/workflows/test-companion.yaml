@@ -1,24 +1,14 @@
-name: "Companion E2E test"
-run-name: "Companion E2E test - Phase 1"
+name: "Companion Test on Kyma"
+run-name: "Companion Test on Kyma"
 
-# On Production you must use pull_request_target on main branch
-# on:
-#   pull_request_target:
-#     branches:
-#       - main
-#     paths:
-#       - "src/**"
-
-# on:
-#   workflow_run:
-#     workflows: [Pull Build Image]
-#     types:
-#       - completed
+# Required repository secrets:
+# - AICORE_SECRET
+# - COMPANION_CONFIGMAP
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
-      - "*"
+      - main
     paths:
       - "src/**"
 
@@ -29,7 +19,7 @@ env:
   K3D_VERSION: "v5.7.2" # Required K3d version.
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   GITHUB_EVENT_ACTION: "${{ github.event.action }}"
-  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
+  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
 
 jobs:
   wait-for-build:
@@ -55,14 +45,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ github.sha }}
+          REPOSITORY_FULL_NAME: "${{ github.repository }}"
           # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
           GIT_CHECK_RUN_NAME: "build / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
           python ./scripts/python/wait-for-commit-check/run.py
-  test-e2e:
-    name: Run E2E tests
+  test-companion:
+    name: Run Companion tests
+    needs: wait-for-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -74,14 +66,12 @@ jobs:
       - name: Install Kyma CLI
         id: install-kyma-cli
         run: |
-          echo ${GITHUB_EVENT_ACTION}
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
           echo "::set-output name=version::$(bin/kyma@v2 version)"
         continue-on-error: true
 
       - name: Check Kyma CLI version
-        id: check-kyma-cli-version
         run: |
           kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
           if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
@@ -89,6 +79,12 @@ jobs:
             exit 1
           fi
           echo "Kyma CLI version is correct: $kyma_cli_version"
+
+      - name: Install Kubernetes CLI
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          ./kubectl version --client
 
       - name: Install K3d
         id: install-k3d
@@ -98,7 +94,6 @@ jobs:
         continue-on-error: true
 
       - name: Check K3d version
-        id: check-k3d-version
         run: |
           k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
           if [ "$k3d_version" != "${K3D_VERSION}" ]; then
@@ -108,7 +103,6 @@ jobs:
           echo "K3d version is correct: $k3d_version"
 
       - name: Deploy Kyma
-        id: deploy-kyma
         run: |
           echo "::group::Kyma - Provision"
           bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
@@ -119,10 +113,9 @@ jobs:
           echo "::endgroup::"
 
       - name: Verify Kyma deployment
-        id: verify-kyma-deployment
         run: |
           echo "::group::Kyma - Context"
-          context_name=$(kubectl config current-context)
+          context_name=$(./kubectl config current-context)
           if [ "$context_name" != "k3d-kyma" ]; then
             echo "Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
             exit 1
@@ -131,7 +124,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Kyma - Verify Kyma deployment"
-          kyma_status=$(kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]')
+          kyma_status=$(./kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]')
           echo "::debug::Kyma status: $kyma_status"
           if [ "$kyma_status" != "Ready" ]; then
             echo "Kyma is not Ready. Expected: Ready, got: $kyma_status"
@@ -141,28 +134,30 @@ jobs:
           echo "::endgroup::"
 
       - name: Companion Deploy - Create namespace
-        id: companion-deploy-namespace
         run: |
-          kubectl apply -f scripts/k8s/companion-namespace.yaml
+          ./kubectl apply -f scripts/k8s/companion-namespace.yaml
 
       - name: Companion Deploy - Create secret on Kyma
-        id: companion-deploy-secret
         run: |
-          echo "${{ secrets.K3S_SECRET }}" > scripts/k8s/companiond-secret.yaml
-          kubectl apply -f scripts/k8s/companiond-secret.yaml
-          rm -f scripts/k8s/companiond-secret.yaml
+          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > scripts/k8s/aicore-secret.yaml
+          ./kubectl apply -f scripts/k8s/aicore-secret.yaml
+          rm -f scripts/k8s/aicore-secret.yaml
 
       - name: Companion Deploy - Create configmap on Kyma
-        id: companion-deploy-configmap
         run: |
-          echo "${{ secrets.K3S_CONFIGMAP }}" > scripts/k8s/companiond-configmap.yaml
-          kubectl apply -f scripts/k8s/companiond-configmap.yaml
-          rm -f scripts/k8s/companiond-configmap.yaml
+          echo "${{ secrets.COMPANION_CONFIGMAP }}" | base64 -d > scripts/k8s/companion-configmap.yaml
+          ./kubectl apply -f scripts/k8s/companion-configmap.yaml
+          rm -f scripts/k8s/companion-configmap.yaml
+
+      - name: Companion Deploy - Update image name in Deployment
+        working-directory:
+        run: |
+          sed -i "s|example.com/ai-backend:stable|${{env.IMAGE_NAME}}|g" scripts/k8s/companion-deployment.yaml
 
       - name: Companion Deploy - Create Backend and NodePort service
-        id: companion-deploy-backend
+        if: success() # Only run if previous steps succeeded
         run: |
-          kubectl apply -f scripts/k8s/companiond-deployment.yaml
+          ./kubectl apply -f scripts/k8s/companion-deployment.yaml
 
       - name: Companion Deploy - Wait for deployment
         id: companion-deploy-wait
