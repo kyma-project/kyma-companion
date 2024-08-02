@@ -52,6 +52,7 @@ jobs:
           TIMEOUT: 900
         run: |
           python ./scripts/python/wait-for-commit-check/run.py
+
   test-companion:
     name: Run Companion tests
     needs: wait-for-build
