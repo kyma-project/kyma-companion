@@ -83,6 +83,7 @@ jobs:
             echo "Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
             exit 1
           fi
+          echo "Kyma context is correct"
           echo "::endgroup::"
 
           echo "::group::Kyma - Verify Kyma deployment"
@@ -92,10 +93,13 @@ jobs:
             echo "Kyma is not Ready. Expected: Ready, got: $kyma_status"
             exit 1
           fi
+          echo "Kyma is Ready"
           echo "::endgroup::"
       - name: Companion Deploy - Create namespace
         id: companion-deploy-namespace
         run: |
-          pwd
-          ls -la
-          kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
+          kubectl apply -f .scripts/k8s/ai-backend-namespace.yaml
+      - name: Check namespace
+        run: |
+          kubectl get ns
+          
