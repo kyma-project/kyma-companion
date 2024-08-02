@@ -77,8 +77,10 @@ jobs:
         id: verify-kyma-deployment
         run: |
           echo "::group::Kyma - Context"
-          kubectl config get-contexts k3d-kyma
-          kubectl config current-context
+          context_name = $(kubectl config current-context)
+          if [ "$context_name" != "k3d-kyma2" ]; then
+            echo "::error::Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
+          fi
           echo "::endgroup::"
 
           echo "::group::Kyma - Verify Kyma deployment"
@@ -93,3 +95,7 @@ jobs:
           kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
           kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
           echo "::endgroup::"
+      - name: Companion Deploy - Create namespace
+        id: companion-deploy-namespace
+        run: |
+            kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
