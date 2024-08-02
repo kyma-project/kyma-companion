@@ -98,7 +98,7 @@ jobs:
       - name: Companion Deploy - Create namespace
         id: companion-deploy-namespace
         run: |
-          kubectl apply -f .scripts/k8s/ai-backend-namespace.yaml
+          kubectl apply -f scripts/k8s/companion-namespace.yaml
       - name: Check namespace
         run: |
           kubectl get ns
