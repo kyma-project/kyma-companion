@@ -9,11 +9,18 @@ run-name: "Companion E2E test - Phase 1"
 #     paths:
 #       - "src/**"
 
+# on:
+#   workflow_run:
+#     workflows: [Pull Build Image]
+#     types:
+#       - completed
+
 on:
-  workflow_run:
-    workflows: ["Pull Build Image"]
-    types:
-      - completed
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "src/**"
 
 # global env variables.
 env:
@@ -126,8 +133,8 @@ jobs:
       - name: Companion Deploy - Create Backend and NodePort service
         id: companion-deploy-backend
         run: |
-            kubectl apply -f scripts/k8s/companiond-deployment.yaml
-        
+          kubectl apply -f scripts/k8s/companiond-deployment.yaml
+
       - name: Companion Deploy - Wait for deployment
         id: companion-deploy-wait
         run: scripts/shell/deploy-wait-for-deployment.sh $DOCKER_TIMEOUT
