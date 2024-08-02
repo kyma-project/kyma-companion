@@ -38,7 +38,8 @@ jobs:
         run: |
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
-          version=$(bin/kyma@v2 version)
+          echo "::set-output name=version::$(bin/kyma@v2 version)"
+          ver=$(bin/kyma@v2 version)
           status=$?
           echo "Command result: $status"
           if [ status == -1 ]; then
