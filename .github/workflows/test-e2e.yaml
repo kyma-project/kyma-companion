@@ -39,18 +39,29 @@ jobs:
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
           echo "::set-output name=version::$(bin/kyma@v2 version)"
-          ver=$(bin/kyma@v2 version)
-          status=$?
-          echo "Command result: $status"
-          if [ status == -1 ]; then
-            echo "Failed to install Kyma CLI"
-            exit 1
-          else
-            echo "Kyma CLI installed successfully"
-          fi
         continue-on-error: true
       - name: Check Kyma CLI version
         id: check-kyma-cli-version
         run: |
-          echo "Kyma CLI version: ${{ steps.install-kyma-cli.outputs.version }}"
+            kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
+            if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
+              echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
+              exit 1
+            fi
+      - name: Deploy Kyma
+        id: deploy-kyma
+        run: |
+          bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer --registry-use localhost:5000
+          bin/kyma@v2 alpha deploy --ci --non-interactive
+
+          kubectl get po -A
+          kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]'
+          kubectl get kyma -A -ojson | jq -r '[(.items[].status)]'
+
+          kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
+          kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
+          
+          echo $KUBECONFIG
+            
+            
         
