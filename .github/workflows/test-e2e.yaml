@@ -44,7 +44,6 @@ jobs:
       - name: Check Kyma CLI version
         id: check-kyma-cli-version
         run: |
-          ::notice title={Check Kyma CLI verion}::{Required version: ${KYMA_VERSION}}
           kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
           if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
             echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
@@ -59,7 +58,6 @@ jobs:
       - name: Check K3d version
         id: check-k3d-version
         run: |
-          ::notice title={Check K3d verion}::{Required version: ${K3D_VERSION}}
           k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
           if [ "$k3d_version" != "${K3D_VERSION}" ]; then
             echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
@@ -93,5 +91,3 @@ jobs:
           kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
           kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
           ::endgroup::
-          ::notice title={Kubeconfig}::{Kubeconfig file path: $KUBECONFIG}}
-          ::debug::{Kubeconfig file path: $KUBECONFIG}
