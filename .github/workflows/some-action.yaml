@@ -1,0 +1,34 @@
+name: gardener-test-cluster-setup
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  # workflow_dispatch:
+
+jobs:
+  gardener-test-cluster-setup:
+    # Sets up the Gardener cluster with the namespace-scoped test cases for the companion blackbox test
+    # The steps of the job are:
+    # 1. Authenticate and connect with the previously created Gardener cluster
+    # 2. Clean up any existing resources in the Gardener cluster
+    # 3. Deploy Kyma on the Gardener cluster
+    # 4. Iteratively deploy the namespace-scoped test cases using the prepared shell script for the companion blackbox test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Connect to Gardener cluster
+        env:
+          GARDENER_KYMATUNAS: ${{ secrets.GARDENER_KYMATUNAS }}
+        run: |
+          # setup Gardener kubeconfig
+          mkdir -p "${HOME}/.gardener"
+          export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
+          echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
+          # generate cluster name and export it to Github env for cleanup step to access it.
+          export CLUSTER_NAME="${CLUSTER_PREFIX}$(openssl rand -hex 2)"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
+          kubectl get ns
