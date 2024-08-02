@@ -68,18 +68,18 @@ jobs:
         run: |
           echo "::group::Kyma - Provision"
           bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
-          ::endgroup::
-            
+          echo "::endgroup::"
+
           echo "::group::Kyma - Deploy"
           bin/kyma@v2 alpha deploy --ci --non-interactive
-          ::endgroup::
+          echo "::endgroup::"
       - name: Verify Kyma deployment
         id: verify-kyma-deployment
         run: |
           echo "::group::Kyma - Context"
           kubectl config get-contexts k3d-kyma
           kubectl config current-context
-          ::endgroup::
+          echo "::endgroup::"
 
           echo "::group::Kyma - Verify Kyma deployment"
           kubectl get nodes
@@ -87,9 +87,9 @@ jobs:
           kubectl get po -A
           kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]'
           kubectl get kyma -A -ojson | jq -r '[(.items[].status)]'
-          ::endgroup::
+          echo "::endgroup::"
 
           echo "::group::Kyma - Verify BTP Operator"
           kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
           kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
-          ::endgroup::
+          echo "::endgroup::"
