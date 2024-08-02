@@ -28,10 +28,39 @@ env:
   KYMA_VERSION: "2.20.5" # Required Kyma version.
   K3D_VERSION: "v5.7.2" # Required K3d version.
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
-  TRIGGER_ACTION_EVENT: "${{ github.event.action }}"
+  GITHUB_EVENT_ACTION: "${{ github.event.action }}"
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
 
 jobs:
+  wait-for-build:
+    name: Wait for image build job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # release scripts are used from main branch.
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ inputs.name }}
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
   test-e2e:
     name: Run E2E tests
     runs-on: ubuntu-latest
@@ -45,7 +74,7 @@ jobs:
       - name: Install Kyma CLI
         id: install-kyma-cli
         run: |
-          echo "${TRIGGER_ACTION_EVENT}"
+          echo ${GITHUB_EVENT_ACTION}
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
           echo "::set-output name=version::$(bin/kyma@v2 version)"
