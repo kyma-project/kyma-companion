@@ -18,6 +18,7 @@ on:
 
 # global env variables.
 env:
+  DOCKER_TIMEOUT: 30
   KYMA_VERSION: "2.20.5" # Required Kyma version.
   K3D_VERSION: "v5.7.2" # Required K3d version.
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
@@ -78,24 +79,23 @@ jobs:
         run: |
           echo "::group::Kyma - Context"
           context_name=$(kubectl config current-context)
-          if [ "$context_name" != "k3d-kyma2" ]; then
-            echo "::error::Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
+          if [ "$context_name" != "k3d-kyma" ]; then
+            echo "Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
+            exit 1
           fi
           echo "::endgroup::"
 
           echo "::group::Kyma - Verify Kyma deployment"
-          kubectl get nodes
-          kubectl get ns
-          kubectl get po -A
-          kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]'
-          kubectl get kyma -A -ojson | jq -r '[(.items[].status)]'
-          echo "::endgroup::"
-
-          echo "::group::Kyma - Verify BTP Operator"
-          kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
-          kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
+          kyma_status=$(kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]')
+          echo "::debug::Kyma status: $kyma_status"
+          if [ "$kyma_status" != "Ready" ]; then
+            echo "Kyma is not Ready. Expected: Ready, got: $kyma_status"
+            exit 1
+          fi
           echo "::endgroup::"
       - name: Companion Deploy - Create namespace
         id: companion-deploy-namespace
         run: |
-            kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
+          pwd
+          ls -la
+          kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
