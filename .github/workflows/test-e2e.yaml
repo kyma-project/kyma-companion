@@ -19,6 +19,7 @@ on:
 # global env variables.
 env:
   KYMA_VERSION: "2.20.5" # Kyma version.
+  K3D_VERSION: "v5.7.2" # K3d version.
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
 
@@ -51,18 +52,21 @@ jobs:
       - name: Install K3d
         id: install-k3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
           echo "::set-output name=version::$(k3d --version)"
         continue-on-error: true
       - name: Check K3d version
         id: check-k3d-version
         run: |
             k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
-            echo "K3d version: $k3d_version"
+            if [ "$k3d_version" != "${K3D_VERSION}" ]; then
+              echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
+              exit 1
+            fi
       - name: Deploy Kyma
         id: deploy-kyma
         run: |
-          bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer --registry-use localhost:5000
+          bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
           bin/kyma@v2 alpha deploy --ci --non-interactive
 
           kubectl get po -A
