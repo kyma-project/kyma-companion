@@ -10,6 +10,10 @@ run-name: "Companion E2E test - Phase 1"
 #       - "src/**"
 
 on:
+  workflow_run:
+    workflows: ["Backend - E2E test"]
+    types:
+      - completed
   pull_request:
     branches:
       - "*"
@@ -42,6 +46,7 @@ jobs:
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
           echo "::set-output name=version::$(bin/kyma@v2 version)"
         continue-on-error: true
+
       - name: Check Kyma CLI version
         id: check-kyma-cli-version
         run: |
@@ -50,12 +55,15 @@ jobs:
             echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
             exit 1
           fi
+          echo "Kyma CLI version is correct: $kyma_cli_version"
+
       - name: Install K3d
         id: install-k3d
         run: |
           curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
           echo "::set-output name=version::$(k3d --version)"
         continue-on-error: true
+
       - name: Check K3d version
         id: check-k3d-version
         run: |
@@ -64,6 +72,8 @@ jobs:
             echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
             exit 1
           fi
+          echo "K3d version is correct: $k3d_version"
+
       - name: Deploy Kyma
         id: deploy-kyma
         run: |
@@ -74,6 +84,7 @@ jobs:
           echo "::group::Kyma - Deploy"
           bin/kyma@v2 alpha deploy --ci --non-interactive
           echo "::endgroup::"
+
       - name: Verify Kyma deployment
         id: verify-kyma-deployment
         run: |
@@ -95,11 +106,31 @@ jobs:
           fi
           echo "Kyma is Ready"
           echo "::endgroup::"
+
       - name: Companion Deploy - Create namespace
         id: companion-deploy-namespace
         run: |
           kubectl apply -f scripts/k8s/companion-namespace.yaml
-      - name: Check namespace
+
+      - name: Companion Deploy - Create secret on Kyma
+        id: companion-deploy-secret
         run: |
-          kubectl get ns
-          
+          echo "${{ secrets.K3S_SECRET }}" > scripts/k8s/companiond-secret.yaml
+          kubectl apply -f scripts/k8s/companiond-secret.yaml
+          rm -f scripts/k8s/companiond-secret.yaml
+
+      - name: Companion Deploy - Create configmap on Kyma
+        id: companion-deploy-configmap
+        run: |
+          echo "${{ secrets.K3S_CONFIGMAP }}" > scripts/k8s/companiond-configmap.yaml
+          kubectl apply -f scripts/k8s/companiond-configmap.yaml
+          rm -f scripts/k8s/companiond-configmap.yaml
+
+      - name: Companion Deploy - Create Backend and NodePort service
+        id: companion-deploy-backend
+        run: |
+            kubectl apply -f scripts/k8s/companiond-deployment.yaml
+        
+      - name: Companion Deploy - Wait for deployment
+        id: companion-deploy-wait
+        run: scripts/shell/deploy-wait-for-deployment.sh $DOCKER_TIMEOUT
