@@ -48,6 +48,17 @@ jobs:
               echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
               exit 1
             fi
+      - name: Install K3d
+        id: install-k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          echo "::set-output name=version::$(k3d --version)"
+        continue-on-error: true
+      - name: Check K3d version
+        id: check-k3d-version
+        run: |
+            k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
+            echo "K3d version: $k3d_version"
       - name: Deploy Kyma
         id: deploy-kyma
         run: |
