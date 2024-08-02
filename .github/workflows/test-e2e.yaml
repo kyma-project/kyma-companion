@@ -18,8 +18,8 @@ on:
 
 # global env variables.
 env:
-  KYMA_VERSION: "2.20.5" # Kyma version.
-  K3D_VERSION: "v5.7.2" # K3d version.
+  KYMA_VERSION: "2.20.5" # Required Kyma version.
+  K3D_VERSION: "v5.7.2" # Required K3d version.
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
 
@@ -44,11 +44,12 @@ jobs:
       - name: Check Kyma CLI version
         id: check-kyma-cli-version
         run: |
-            kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
-            if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
-              echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
-              exit 1
-            fi
+          ::notice title={Check Kyma CLI verion}::{Required version: ${KYMA_VERSION}}
+          kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
+          if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
+            echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
+            exit 1
+          fi
       - name: Install K3d
         id: install-k3d
         run: |
@@ -58,25 +59,39 @@ jobs:
       - name: Check K3d version
         id: check-k3d-version
         run: |
-            k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
-            if [ "$k3d_version" != "${K3D_VERSION}" ]; then
-              echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
-              exit 1
-            fi
+          ::notice title={Check K3d verion}::{Required version: ${K3D_VERSION}}
+          k3d_version=$(echo "${{ steps.install-k3d.outputs.version }}" | cut -d " " -f 3 | xargs)
+          if [ "$k3d_version" != "${K3D_VERSION}" ]; then
+            echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
+            exit 1
+          fi
       - name: Deploy Kyma
         id: deploy-kyma
         run: |
+          ::group::{Kyma - Provision}
           bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
+          ::endgroup::
+          ::group::{Kyma - Deploy}
           bin/kyma@v2 alpha deploy --ci --non-interactive
-
+          ::endgroup::
+      - name: Verify Kyma deployment
+        id: verify-kyma-deployment
+        run: |
+          ::group::{Kyma - Context}
+          kubectl config get-contexts k3d-kyma
+          kubectl config current-context
+          ::endgroup::
+          ::group::{Kyma - Verify}
+          kubectl get nodes
+          kubectl get ns
           kubectl get po -A
           kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]'
           kubectl get kyma -A -ojson | jq -r '[(.items[].status)]'
+          ::endgroup::
 
+          ::group::{Kyma - Verify BTP Operator}  
           kubectl get kymas.operator.kyma-project.io -n kyma-system default-kyma -o=jsonpath='{.status}' | jq
           kubectl get kyma -A -ojson | jq -r --arg MODULE_NAME "btp-operator" '[(.items[].status.modules[]?) | select(.name==$MODULE_NAME)]' | jq -r '.[].state'
-          
-          echo $KUBECONFIG
-            
-            
-        
+          ::endgroup::
+          ::notice title={Kubeconfig}::{Kubeconfig file path: $KUBECONFIG}}
+          ::debug::{Kubeconfig file path: $KUBECONFIG}
