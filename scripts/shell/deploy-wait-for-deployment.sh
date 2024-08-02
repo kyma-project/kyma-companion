@@ -17,6 +17,8 @@ while [[ $(./kubectl get pods $POD -n ai-core -o 'jsonpath={..status.conditions[
     RUN_COUNTER=$((RUN_COUNTER + 1))
     echo "$RUN_COUNTER / $MAX_RUN - Waiting for the pod to be ready"
     ./kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0]}' | jq .
+    ./kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0].ready}'
+    ./kubectl get pods $POD -n ai-core -o 'jsonpath={.status.containerStatuses[0].started}'
 done
 # Get service
 ./kubectl get svc -n ai-core
