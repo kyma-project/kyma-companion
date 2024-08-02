@@ -77,7 +77,7 @@ jobs:
         id: verify-kyma-deployment
         run: |
           echo "::group::Kyma - Context"
-          context_name = $(kubectl config current-context)
+          context_name=$(kubectl config current-context)
           if [ "$context_name" != "k3d-kyma2" ]; then
             echo "::error::Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
           fi
