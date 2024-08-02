@@ -36,14 +36,9 @@ jobs:
           mkdir -p "${HOME}/.gardener"
           export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
           echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
-          # generate cluster name and export it to Github env for cleanup step to access it.
-          export CLUSTER_NAME="${CLUSTER_PREFIX}$(openssl rand -hex 2)"
+          # export cluster name and export it to Github env for cleanup step to access it.
+          export CLUSTER_NAME="comp-tests-2"
           echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
-          # set random region for AWS.
-          export GARDENER_REGION=$(./scripts/gardener/aws/get_random_region.sh)
-          export GARDENER_ZONES="${GARDENER_REGION}a"
-          # provision gardener cluster.
-          make -C hack/ci/ provision-gardener-cluster
           kubectl version
           kubectl cluster-info
           kubectl get nodes
