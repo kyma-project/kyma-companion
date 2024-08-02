@@ -8,6 +8,7 @@ from routers import chat  # noqa E402
 app = FastAPI()
 app.include_router(chat.router)
 
+
 # Routes
 @app.get("/")
 async def root() -> dict:  # noqa E302
