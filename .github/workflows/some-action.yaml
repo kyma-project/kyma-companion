@@ -1,8 +1,10 @@
 name: gardener-test-cluster-setup
 
 on:
-  workflow_dispatch:
-    
+  pull_request:
+    branches:
+      - "main"
+  # workflow_dispatch:
 
 jobs:
   gardener-test-cluster-setup:
