@@ -22,8 +22,8 @@ jobs:
 
       - name: Connect to Gardener cluster
         env:
-          GARDENER_PROJECT_NAME: "kymatunas"
-          GARDENER_PROVIDER_SECRET_NAME: "tunas-aws"
+          GARDENER_PROJECT_NAME: ${{ vars.GARDENER_PROJECT_NAME }}
+          GARDENER_PROVIDER_SECRET_NAME: ${{ vars.GARDENER_PROVIDER_SECRET_NAME_AWS }}
           RETRY_ATTEMPTS: "1"
           GARDENER_KYMATUNAS: ${{ secrets.GARDENER_KYMATUNAS }}
         run: |
