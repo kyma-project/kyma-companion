@@ -1,7 +1,6 @@
 name: gardener-test-cluster-setup
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   gardener-test-cluster-setup:
