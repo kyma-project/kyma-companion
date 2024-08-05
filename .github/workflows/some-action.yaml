@@ -36,9 +36,24 @@ jobs:
           mkdir -p "${HOME}/.gardener"
           export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
           echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
-          # export cluster name and export it to Github env for cleanup step to access it.
-          export CLUSTER_NAME="comp-tests-2"
+          
+          # generate cluster name and export it to Github env for cleanup step to access it.
+          export CLUSTER_NAME="${CLUSTER_PREFIX}$(openssl rand -hex 2)"
           echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
+
+          # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
+          kubectl create --kubeconfig="${GARDENER_KUBECONFIG}" \
+             -f <(printf '{"spec":{"expirationSeconds":86400}}') \
+             --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${GARDENER_PROJECT_NAME}/shoots/${CLUSTER_NAME}/adminkubeconfig | \
+             jq -r ".status.kubeconfig" | \
+             base64 -d > ${CLUSTER_NAME}_kubeconfig.yaml
+          
+          # merge with the existing kubeconfig settings
+          mkdir -p ~/.kube
+          KUBECONFIG="~/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
+          mv merged_kubeconfig.yaml ~/.kube/config
+          
+          # display cluster information.
           kubectl version
           kubectl cluster-info
           kubectl get nodes
