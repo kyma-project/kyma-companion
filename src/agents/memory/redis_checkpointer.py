@@ -14,6 +14,7 @@ from langgraph.serde.jsonplus import JsonPlusSerializer
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 
+# Importing logger from utils
 from utils import logging
 
 logger = logging.get_logger(__name__)
