@@ -15,12 +15,12 @@ class Chat:
 
     supervisor_agent = None
 
-    def __init__(self):
-        llm = create_llm(GPT4O_MODEL)
-        memory = RedisSaver(
-            async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
-        )
-        self.supervisor_agent = SupervisorAgent(llm, memory)
+    # def __init__(self):
+        # llm = create_llm(GPT4O_MODEL)
+        # memory = RedisSaver(
+        #     async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
+        # )
+        # self.supervisor_agent = SupervisorAgent(llm, memory)
 
     async def init_chat(self) -> dict:
         """Initialize the chat"""

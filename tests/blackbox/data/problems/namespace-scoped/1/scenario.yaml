@@ -1,0 +1,17 @@
+id: "1"
+description: "Test cases 1"
+resource:
+  type: "Deployment"
+  name: "epp"
+  namespace: "kyma-system"
+expectations:
+  - name: "Test case 1 exp 2"
+    statement: "This is a test statement 1"
+    categories:
+      - "kyma"
+    complexity: "medium"
+  - name: "Test case 1 exp 2"
+    statement: "This is a test statement 2"
+    categories:
+      - "kubernetes"
+    complexity: "low"
