@@ -37,8 +37,8 @@ jobs:
           export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
           echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
           
-          # generate cluster name and export it to Github env for cleanup step to access it.
-          export CLUSTER_NAME="${CLUSTER_PREFIX}$(openssl rand -hex 2)"
+          # set cluster name and export it to Github env for cleanup step to access it.
+          export CLUSTER_NAME="comp-tests-0"
           echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
 
           # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
