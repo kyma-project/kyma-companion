@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: ai-backend
-        image: localhost:5000/ai-backend:latest
+        image: example.com/ai-backend:stable
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
