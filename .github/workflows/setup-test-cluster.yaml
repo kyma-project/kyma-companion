@@ -1,0 +1,57 @@
+name: gardener-test-cluster-setup
+
+on: workflow_dispatch
+
+jobs:
+  gardener-test-cluster-setup:
+    # Sets up the Gardener cluster with the namespace-scoped test cases for the companion blackbox test
+    # The steps of the job are:
+    # 1. Authenticate and connect with the previously created Gardener cluster
+    # 2. TBD: Clean up any existing resources in the Gardener cluster
+    # 3. TBD: Deploy Kyma on the Gardener cluster
+    # 4. TBD: Iteratively deploy the namespace-scoped test cases using the prepared shell script for the companion blackbox test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Connect to Gardener cluster - setup kubeconfig
+        env:
+          GARDENER_KYMATUNAS: ${{ secrets.GARDENER_KYMATUNAS }}
+        run: |
+          # setup Gardener kubeconfig.
+          mkdir -p "${HOME}/.gardener"
+          export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
+          echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
+          echo "GARDENER_KUBECONFIG=${GARDENER_KUBECONFIG}" >> $GITHUB_ENV
+
+      - name: Export Github env
+        run: |
+          # set cluster name and export it to Github env to access it later
+          export CLUSTER_NAME="comp-tests-0"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
+
+      - name: Create kubeconfig request
+        env:
+          GARDENER_PROJECT_NAME: ${{ vars.GARDENER_PROJECT_NAME }}
+        run: |
+          # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
+          kubectl create --kubeconfig="${GARDENER_KUBECONFIG}" \
+             -f <(printf '{"spec":{"expirationSeconds":86400}}') \
+             --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${GARDENER_PROJECT_NAME}/shoots/${CLUSTER_NAME}/adminkubeconfig | \
+             jq -r ".status.kubeconfig" | \
+             base64 -d > ${CLUSTER_NAME}_kubeconfig.yaml
+          
+          # merge with the existing kubeconfig settings
+          mkdir -p ~/.kube
+          KUBECONFIG="~/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
+          mv merged_kubeconfig.yaml ~/.kube/config
+
+      - name: Display cluster information
+        run: |
+          # display cluster information.
+          kubectl version
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get ns
