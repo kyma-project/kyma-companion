@@ -138,7 +138,7 @@ def main() -> None:
         # check if timeout has reached.
         elapsed_time = time.time() - start_time
         print(
-            "Elapsed time: {} secs (timout: {} secs)".format(
+            "Elapsed time: {} secs (timeout: {} secs)".format(
                 elapsed_time, inputs["timeout"]
             ),
             flush=True,
