@@ -4,6 +4,7 @@ import json
 import requests
 from typing import List
 from langchain.prompts import PromptTemplate
+from langchain.output_parsers.boolean import BooleanOutputParser
 # from langchain.chains import LLMChain
 
 # from gen_ai_hub.proxy.langchain.init_models import init_llm
@@ -24,7 +25,7 @@ AICORE_DEPLOYMENT_ID_GPT4 = os.environ.get("AICORE_DEPLOYMENT_ID_GPT4")
 AICORE_CONFIGURATION_ID_GPT4 = os.environ.get("AICORE_CONFIGURATION_ID_GPT4")
 
 TEMPLATE = PromptTemplate(
-    template="""Please only answer with one word, true or false:
+    template="""Please only answer with one word, YES or NO:
     Does the following statement apply for the following text? 
     The fact: 'The text {expectation}'. 
     The text: '{response}'""",
@@ -43,7 +44,11 @@ def create_llm_instance() -> ChatOpenAI:
 
 
 def compute_score(scenario_list: ScenarioList) -> None:
-    pass
+    for scenario in scenario_list.items:
+        print(f"Scenario: {scenario.id}")
+        print(f"\tScenario status: {scenario.evaluation.status}")
+        print(f"\tScenario mean_weighted_performance: {scenario.evaluation.compute_mean_weighted_performance()}")
+        print(f"\tScenario standard_deviation: {scenario.evaluation.compute_standard_deviation()}")
 
 
 def main() -> None:
@@ -110,11 +115,14 @@ def main() -> None:
         # print(f"Response: {response.text}")
         for line in response.iter_lines():
             scenario.evaluation.actual_response = line
+            print("Response from companion: ")
             print(line)
             break  # TODO: remove this and parse line to check if it is the AI response.
 
     # STAGE 3
     llm_model = create_llm_instance()
+    boolean_parser = BooleanOutputParser()
+    chain = TEMPLATE | llm_model | boolean_parser
 
     for scenario in scenario_list.items:
         print(f"Scenario: {scenario.id}")
@@ -126,39 +134,19 @@ def main() -> None:
             continue
 
         for expectation in scenario.expectations:
-            template = TEMPLATE.invoke(expectation.statement, scenario.evaluation.actual_response)
-            response = llm_model.invoke(template)
-            print(response['text'])
+            result = chain.invoke({"expectation": expectation.statement,
+                                     "response": scenario.evaluation.actual_response})
 
-            scenario.evaluation.add_expectation_result(expectation.name, response['text'] == 'true')
+            print("Result:", result)
+
+            scenario.evaluation.add_expectation_result(expectation.name, expectation.complexity, result)
 
         # compute the overall success of test scenario.
-        # scenario.evaluation.compute_status()
+        scenario.evaluation.compute_status()
 
-    # # Traverse the responses and evaluate the results using the evaluation model.
-    # llm = init_llm('gpt-4', max_tokens=10000, top_p=1)
-    # for scenario in scenario_list.items:
-    #     print(f"Scenario: {scenario.id}")
-    #     print(f"Scenario status: {scenario.evaluation.status}")
-    #     print(f"Scenario actual_response: {scenario.evaluation.actual_response}")
-    #
-    #     if scenario.evaluation.status == TestStatus.FAILED:
-    #         print(f"skipping scenario {scenario.id} due to previous failure.")
-    #         continue
-    #
-    #     llm_chain = LLMChain(prompt=TEMPLATE, llm=llm)
-    #     for expectation in scenario.expectations.items:
-    #         response = llm_chain.invoke(expectation.statement, scenario.evaluation.actual_response)
-    #         print(response['text'])
-    #
-    #         scenario.evaluation.add_expectation_result(expectation.name, response['text'] == 'true')
-    #
-    #     # compute the overall success of test scenario.
-    #     # scenario.evaluation.compute_status()
-
-    # # STAGE 4
-    # # Compute the scores.
-    # # compute_score(scenario_list)
+    # STAGE 4
+    # Compute the scores.
+    compute_score(scenario_list)
 
 
 if __name__ == "__main__":

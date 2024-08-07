@@ -10,6 +10,7 @@ class ExpectationResult(BaseModel):
     an expectation with the assistant_response."""
 
     expectation_name: str
+    complexity: Complexity
     success: bool
 
 
@@ -23,11 +24,12 @@ class Evaluation(BaseModel):
     mean_weighted_performance: float = 0.0
     standard_deviation: float = 0.0
 
-    def add_expectation_result(self, expectation_name: str, success: bool) -> None:
+    def add_expectation_result(self, expectation_name: str, complexity: Complexity, success: bool) -> None:
         """Add a new expectation result to the list."""
         self.expectations_result.append(
             ExpectationResult(
                 expectation_name=expectation_name,
+                complexity=complexity,
                 success=success,
             )
         )
@@ -51,16 +53,16 @@ class Evaluation(BaseModel):
                 self.status = TestStatus.FAILED
                 self.status_reason += f"Expectation {result.expectation_name} failed.\n"
 
-    def compute_mean_weighted_performance(self, complexity: Complexity) -> float:
+    def compute_mean_weighted_performance(self) -> float:
         total_sum: float = 0.0
         for result in self.expectations_result:
-            total_sum += int(result.success) * complexity.to_int()
+            total_sum += int(result.success) * result.complexity.to_int()
 
         self.mean_weighted_performance = total_sum / len(self.expectations_result)
         return self.mean_weighted_performance
 
-    def compute_standard_deviation(self, complexity: Complexity) -> float:
-        mean = self.compute_mean_weighted_performance(complexity)
+    def compute_standard_deviation(self) -> float:
+        mean = self.compute_mean_weighted_performance()
         total_sum: float = 0.0
         for result in self.expectations_result:
             total_sum += math.pow(int(result.success) - mean, 2)
