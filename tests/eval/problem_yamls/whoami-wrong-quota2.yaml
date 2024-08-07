@@ -1,0 +1,33 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"ResourceQuota","metadata":{"annotations":{},"name":"whoami-resource-quota","namespace":"whoami-wrong-quota"},"spec":{"hard":{"limits.cpu":"50m","limits.memory":"128Mi","requests.cpu":"25m","requests.memory":"96Mi"}}}
+    creationTimestamp: "2024-06-10T18:03:35Z"
+    name: whoami-resource-quota
+    namespace: whoami-wrong-quota
+    resourceVersion: "50191294"
+    uid: eca03fb8-b292-459b-80b6-039929c8ecbe
+  spec:
+    hard:
+      limits.cpu: 50m
+      limits.memory: 128Mi
+      requests.cpu: 25m
+      requests.memory: 96Mi
+  status:
+    hard:
+      limits.cpu: 50m
+      limits.memory: 128Mi
+      requests.cpu: 25m
+      requests.memory: 96Mi
+    used:
+      limits.cpu: "0"
+      limits.memory: "0"
+      requests.cpu: "0"
+      requests.memory: "0"
+kind: List
+metadata:
+  resourceVersion: ""

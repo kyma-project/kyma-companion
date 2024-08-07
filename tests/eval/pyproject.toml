@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "eval"
+version = "0.1.0"
+description = "Evaluator Validation is a tool to validate the evaluator models"
+authors = []
+
+[tool.poetry.dependencies]
+python = "~3.12"
+
+python-dotenv = "^1.0.1"
+ruff = "^0.4.5"
+pydantic = "^2.8.2"
+termcolor = "^2.4.0"
+generative-ai-hub-sdk = { version = "^1.11.1", extras = ["langchain"] }

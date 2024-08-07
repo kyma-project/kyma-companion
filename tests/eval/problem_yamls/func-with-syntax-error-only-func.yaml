@@ -1,0 +1,50 @@
+apiVersion: serverless.kyma-project.io/v1alpha2
+kind: Function
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"serverless.kyma-project.io/v1alpha2","kind":"Function","metadata":{"annotations":{},"labels":{"app":"restapi"},"name":"func1","namespace":"kyma-app-no-function"},"spec":{"runtime":"nodejs20","source":{"inline":{"dependencies":"{ \n  \"name\": \"func1\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {}\n}","source":"module.exports = {\n  main: async function (event, context) {\n      // Return a response.\n      const now = new Dates();\n      const response = {\n      statusCode: 200,\n      result: {\n        message: 'Serverless function is up and running',\n        status: 'success',\n        utcDatetime: now\n      }\n    };\n    console.log('Response:', response);\n    return response;\n  } \n}\n"}}}}
+  creationTimestamp: "2024-06-10T18:44:20Z"
+  generation: 1
+  labels:
+    app: restapi
+  name: func1
+  namespace: kyma-app-no-function
+  resourceVersion: "50222394"
+  uid: 392cec36-4cac-497f-b300-c81526955870
+spec:
+  replicas: 1
+  runtime: nodejs20
+  source:
+    inline:
+      dependencies: "{ \n  \"name\": \"func1\",\n  \"version\": \"1.0.0\",\n  \"dependencies\":
+        {}\n}"
+      source: "module.exports = {\n  main: async function (event, context) {\n      //
+        Return a response.\n      const now = new Dates();\n      const response =
+        {\n      statusCode: 200,\n      result: {\n        message: 'Serverless function
+        is up and running',\n        status: 'success',\n        utcDatetime: now\n
+        \     }\n    };\n    console.log('Response:', response);\n    return response;\n
+        \ } \n}\n"
+status:
+  buildResourceProfile: normal
+  conditions:
+  - lastTransitionTime: "2024-06-10T18:49:45Z"
+    message: Deployment func1-x4f4q is ready
+    reason: DeploymentReady
+    status: "True"
+    type: Running
+  - lastTransitionTime: "2024-06-10T18:44:33Z"
+    message: Job func1-build-z8b8l finished
+    reason: JobFinished
+    status: "True"
+    type: BuildReady
+  - lastTransitionTime: "2024-06-10T18:44:20Z"
+    message: ConfigMap func1-5dpvv created
+    reason: ConfigMapCreated
+    status: "True"
+    type: ConfigurationReady
+  functionResourceProfile: L
+  podSelector: serverless.kyma-project.io/function-name=func1,serverless.kyma-project.io/managed-by=function-controller,serverless.kyma-project.io/resource=deployment,serverless.kyma-project.io/uuid=392cec36-4cac-497f-b300-c81526955870
+  replicas: 1
+  runtime: nodejs20
+  runtimeImage: europe-docker.pkg.dev/kyma-project/prod/function-runtime-nodejs20:1.5.0
