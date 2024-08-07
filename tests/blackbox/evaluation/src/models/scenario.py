@@ -30,7 +30,7 @@ class Expectation(BaseModel):
 
 
 class Scenario(BaseModel):
-    """Scenario is a class that contains the information of a Kyma companion test scenario."""
+    """Scenario is a class that contains the information of a Kyma utils test scenario."""
 
     id: str
     description: str

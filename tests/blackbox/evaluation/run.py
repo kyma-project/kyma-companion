@@ -1,28 +1,16 @@
 import os
 import yaml
 import json
-import requests
 from typing import List
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers.boolean import BooleanOutputParser
-# from langchain.chains import LLMChain
-
-# from gen_ai_hub.proxy.langchain.init_models import init_llm
-
-from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 
+from tests.blackbox.evaluation.src.utils.config import Config
+from tests.blackbox.evaluation.src.utils.companion import get_companion_response
 from tests.blackbox.evaluation.src.models.scenario import ScenarioList, Scenario
 from tests.blackbox.evaluation.src.models.evaluation import TestStatus
 
-EVALUATION_PATH = "/Users/I546341/git/kyma-project/kyma-companion/tests/blackbox/data/problems/namespace-scoped"
-COMPANION_API_URL = os.environ.get("COMPANION_API_URL")
-COMPANION_TOKEN = os.environ.get("COMPANION_TOKEN")
-TEST_CLUSTER_URL = os.environ.get("TEST_CLUSTER_URL")
-TEST_CLUSTER_CA_DATA = os.environ.get("TEST_CLUSTER_CA_DATA")
-TEST_CLUSTER_AUTH_TOKEN = os.environ.get("TEST_CLUSTER_AUTH_TOKEN")
-AICORE_DEPLOYMENT_ID_GPT4 = os.environ.get("AICORE_DEPLOYMENT_ID_GPT4")
-AICORE_CONFIGURATION_ID_GPT4 = os.environ.get("AICORE_CONFIGURATION_ID_GPT4")
 
 TEMPLATE = PromptTemplate(
     template="""Please only answer with one word, YES or NO:
@@ -33,12 +21,12 @@ TEMPLATE = PromptTemplate(
 )
 
 
-def create_llm_instance() -> ChatOpenAI:
+def create_llm_instance(config: Config) -> ChatOpenAI:
     model = ChatOpenAI(
         model_name="gpt4.o",
         temperature=0,
-        deployment_id=AICORE_DEPLOYMENT_ID_GPT4,
-        config_id=AICORE_CONFIGURATION_ID_GPT4,
+        deployment_id=config.aicore_deployment_id_gpt4,
+        config_id=config.aicore_configuration_id_gpt4,
     )
     return model
 
@@ -52,18 +40,18 @@ def compute_score(scenario_list: ScenarioList) -> None:
 
 
 def main() -> None:
+    # Load the configuration.
+    config = Config()
+    config.init()
+
     # STAGE 1
     scenario_list = ScenarioList()
 
-    # main_model_schema = Scenario.model_json_schema()
-    #
-    # print(json.dumps(main_model_schema, indent=2))
-
     # list out names of all directories in the specified path.
-    test_scenario_dirs: List[str] = os.listdir(EVALUATION_PATH)
+    test_scenario_dirs: List[str] = os.listdir(config.namespace_scoped_test_data_path)
     # loop over all the directory names
     for dir_name in test_scenario_dirs:
-        scenario_file = EVALUATION_PATH + "/" + dir_name + "/scenario.yaml"
+        scenario_file = config.namespace_scoped_test_data_path + "/" + dir_name + "/scenario.yaml"
         print(scenario_file)
 
         scenario_yaml = None
@@ -85,42 +73,21 @@ def main() -> None:
     print(f"Number of scenarios: {len(scenario_list.items)}")
 
     # STAGE 2
-    # for each scenario in the list, make a call to the companion API.
-    print(f"API URL: {COMPANION_API_URL}")
+    # for each scenario in the list, make a call to the utils API.
     for scenario in scenario_list.items:
         print(f"Scenario: {scenario.id}")
 
-        # make a call to the companion API.
+        # make a call to the utils API.
         try:
-            headers = {
-                "Authorization": f"Bearer {COMPANION_TOKEN}",
-                "X-Cluster-Certificate-Authority-Data": TEST_CLUSTER_CA_DATA,
-                "X-Cluster-Url": TEST_CLUSTER_URL,
-                "X-K8s-Authorization": f"Bearer {TEST_CLUSTER_AUTH_TOKEN}",
-            }
-            req_session = requests.Session()
-            response = req_session.get(COMPANION_API_URL, headers=headers, stream=True)
-            if response.status_code != 200:
-                print(f"failed to get response from the companion API (status: {response.status_code}).")
-                scenario.evaluation.status = TestStatus.FAILED
-                scenario.evaluation.status_reason = \
-                    f"failed to get response from the companion API (status: {response.status_code}). {response.text}"
-                continue
+            scenario.evaluation.actual_response = get_companion_response(config, scenario.description)
         except Exception as e:
             print(f"failed to get response from the companion API. {e}")
             scenario.evaluation.status = TestStatus.FAILED
             scenario.evaluation.status_reason = f"failed to get response from the companion API. {e}"
             continue
 
-        # print(f"Response: {response.text}")
-        for line in response.iter_lines():
-            scenario.evaluation.actual_response = line
-            print("Response from companion: ")
-            print(line)
-            break  # TODO: remove this and parse line to check if it is the AI response.
-
     # STAGE 3
-    llm_model = create_llm_instance()
+    llm_model = create_llm_instance(config)
     boolean_parser = BooleanOutputParser()
     chain = TEMPLATE | llm_model | boolean_parser
 
