@@ -1,6 +1,9 @@
 from tests.blackbox.evaluation.src.common.config import Config
 from tests.blackbox.evaluation.src.validator.enums import AIModel
-from tests.blackbox.evaluation.src.validator.validator import ValidatorInterface, ChatOpenAIValidator
+from tests.blackbox.evaluation.src.validator.validator import (
+    ChatOpenAIValidator,
+    ValidatorInterface,
+)
 
 
 def create_validator(config: Config) -> ValidatorInterface:

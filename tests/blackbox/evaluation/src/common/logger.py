@@ -1,5 +1,5 @@
 import os
-from logging import Logger, getLogger, StreamHandler, Formatter
+from logging import Formatter, Logger, StreamHandler, getLogger
 
 level = os.getenv("LOG_LEVEL", "INFO")
 
@@ -9,7 +9,7 @@ def get_logger(name: str) -> Logger:  # noqa: D103
     formatter = Formatter(
         fmt="{asctime} - {levelname} - {name} - {message}",
         style="{",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     console_handler = StreamHandler()
     console_handler.setFormatter(formatter)

@@ -22,7 +22,9 @@ class Config:
         self.test_data_path = os.environ.get("TEST_DATA_PATH")
         if self.test_data_path is None or self.test_data_path == "":
             raise ValueError("ERROR: Env TEST_DATA_PATH is missing")
-        self.namespace_scoped_test_data_path = f"{self.test_data_path}/problems/namespace-scoped"
+        self.namespace_scoped_test_data_path = (
+            f"{self.test_data_path}/problems/namespace-scoped"
+        )
 
         self.companion_api_url = os.environ.get("COMPANION_API_URL")
         if self.companion_api_url is None or self.companion_api_url == "":
@@ -45,11 +47,19 @@ class Config:
             raise ValueError("ERROR: Env TEST_CLUSTER_AUTH_TOKEN is missing")
 
         self.aicore_deployment_id_gpt4 = os.environ.get("AICORE_DEPLOYMENT_ID_GPT4")
-        if self.aicore_deployment_id_gpt4 is None or self.aicore_deployment_id_gpt4 == "":
+        if (
+            self.aicore_deployment_id_gpt4 is None
+            or self.aicore_deployment_id_gpt4 == ""
+        ):
             raise ValueError("ERROR: Env AICORE_DEPLOYMENT_ID_GPT4 is missing")
 
-        self.aicore_configuration_id_gpt4 = os.environ.get("AICORE_CONFIGURATION_ID_GPT4")
-        if self.aicore_configuration_id_gpt4 is None or self.aicore_configuration_id_gpt4 == "":
+        self.aicore_configuration_id_gpt4 = os.environ.get(
+            "AICORE_CONFIGURATION_ID_GPT4"
+        )
+        if (
+            self.aicore_configuration_id_gpt4 is None
+            or self.aicore_configuration_id_gpt4 == ""
+        ):
             raise ValueError("ERROR: Env AICORE_CONFIGURATION_ID_GPT4 is missing")
 
         self.model_name = os.getenv("MODEL_NAME", "gpt4.o")

@@ -1,6 +1,6 @@
 import math
+
 from pydantic import BaseModel
-from typing import List
 
 from tests.blackbox.evaluation.src.scenario.enums import Complexity, TestStatus
 
@@ -20,11 +20,13 @@ class Evaluation(BaseModel):
     status: TestStatus = TestStatus.PENDING
     status_reason: str = ""
     actual_response: str = ""
-    expectations_result: List[ExpectationResult] = []
+    expectations_result: list[ExpectationResult] = []
     mean_weighted_performance: float = 0.0
     standard_deviation: float = 0.0
 
-    def add_expectation_result(self, expectation_name: str, complexity: Complexity, success: bool) -> None:
+    def add_expectation_result(
+        self, expectation_name: str, complexity: Complexity, success: bool
+    ) -> None:
         """Add a new expectation result to the list."""
         self.expectations_result.append(
             ExpectationResult(
@@ -71,5 +73,7 @@ class Evaluation(BaseModel):
         for result in self.expectations_result:
             total_sum += math.pow(int(result.success) - mean, 2)
 
-        self.standard_deviation = math.pow(total_sum / len(self.expectations_result), 0.5)
+        self.standard_deviation = math.pow(
+            total_sum / len(self.expectations_result), 0.5
+        )
         return self.standard_deviation

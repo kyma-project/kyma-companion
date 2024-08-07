@@ -1,7 +1,7 @@
 # Linting configuration for Ruff
 target-version = "py312"
 # Set the maximum line length to 100.
-line-length = 100
+line-length = 120
 # Set the indentation width to 4.
 indent-width = 4
 
