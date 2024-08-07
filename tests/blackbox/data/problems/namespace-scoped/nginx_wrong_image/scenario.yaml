@@ -3,7 +3,7 @@ description: "The name of the image in the Deployment is misspelled to 'ngix' in
 resource:
   type: "Deployment"
   name: "nginx"
-  namespace: "nginx"
+  namespace: "nginx_wrong_image"
 expectations:
   - name: "image_not_found"
     statement: "points out that the image 'ngix' does not exist"  
