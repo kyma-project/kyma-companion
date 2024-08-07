@@ -2,7 +2,7 @@ import math
 from pydantic import BaseModel
 from typing import List
 
-from tests.blackbox.evaluation.src.models.enums import Complexity, TestStatus
+from tests.blackbox.evaluation.src.scenario.enums import Complexity, TestStatus
 
 
 class ExpectationResult(BaseModel):
@@ -34,7 +34,7 @@ class Evaluation(BaseModel):
             )
         )
 
-    def compute_status(self) -> None:
+    def evaluate(self) -> None:
         if self.status == TestStatus.FAILED:
             return
 
@@ -52,6 +52,10 @@ class Evaluation(BaseModel):
             if not result.success:
                 self.status = TestStatus.FAILED
                 self.status_reason += f"Expectation {result.expectation_name} failed.\n"
+
+        # compute the mean weighted performance and standard deviation.
+        self.compute_mean_weighted_performance()
+        self.compute_standard_deviation()
 
     def compute_mean_weighted_performance(self) -> float:
         total_sum: float = 0.0

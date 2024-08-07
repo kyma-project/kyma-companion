@@ -23,20 +23,20 @@ class Complexity(StrEnum):
             return 2
         if self == Complexity.HIGH:
             return 3
-        return ValueError(f"Invalid complexity: {self}")
+        raise ValueError(f"Invalid complexity: {self}")
 
 
 class Category(StrEnum):
     """Category represents enum for the category of an expectation."""
 
     COMPLETENESS = "completeness"
-    PARTIAL_ANSWER = "partial Answer"
+    PARTIAL_ANSWER = "partial_answer"
     KYMA = "kyma"
     KUBERNETES = "kubernetes"
     OTHER = "other"
-    PROBLEM_FINDING = "problem finding"
-    SOLUTION_FINDING = "solution finding"
-    GENERAL_INQUIRY = "general inquiry"
-    STEP_BY_STEP_GUIDANCE = "step-by-step guidance"
+    PROBLEM_FINDING = "problem_finding"
+    SOLUTION_FINDING = "solution_finding"
+    GENERAL_INQUIRY = "general_inquiry"
+    STEP_BY_STEP_GUIDANCE = "step-by-step_guidance"
     DEFINITION_OR_EXPLANATION = "definition/explanation"
     YAML = "yaml"
