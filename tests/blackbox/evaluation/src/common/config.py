@@ -23,7 +23,7 @@ class Config:
         if self.test_data_path is None or self.test_data_path == "":
             raise ValueError("ERROR: Env TEST_DATA_PATH is missing")
         self.namespace_scoped_test_data_path = (
-            f"{self.test_data_path}/problems/namespace-scoped"
+            f"{self.test_data_path}/evaluation/namespace-scoped"
         )
 
         self.companion_api_url = os.environ.get("COMPANION_API_URL")
