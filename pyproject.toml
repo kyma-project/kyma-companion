@@ -38,7 +38,10 @@ pytest = "^8.2.2"
 pytest-mock = "^3.14.0"
 pytest-asyncio = "^0.23.7"
 fakeredis = "^2.23.3"
+pyyaml = "^6.0.1"
 types-pyyaml = "^6.0.12.20240311"
+prettytable = "^3.10.2"
+termcolor = "^2.4.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "v0.4.10"
