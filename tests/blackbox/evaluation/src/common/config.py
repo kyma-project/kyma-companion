@@ -1,4 +1,4 @@
-import os
+from tests.blackbox.evaluation.src.common.utils import get_env
 
 
 class Config:
@@ -20,49 +20,18 @@ class Config:
     iterations: int
 
     def init(self) -> None:
-        self.test_data_path = os.environ.get("TEST_DATA_PATH")
-        if self.test_data_path is None or self.test_data_path == "":
-            raise ValueError("ERROR: Env TEST_DATA_PATH is missing")
+        self.test_data_path = get_env("TEST_DATA_PATH")
         self.namespace_scoped_test_data_path = (
             f"{self.test_data_path}/evaluation/namespace-scoped"
         )
 
-        self.companion_api_url = os.environ.get("COMPANION_API_URL")
-        if self.companion_api_url is None or self.companion_api_url == "":
-            raise ValueError("ERROR: Env COMPANION_API_URL is missing")
-
-        self.companion_token = os.environ.get("COMPANION_TOKEN")
-        if self.companion_token is None or self.companion_token == "":
-            raise ValueError("ERROR: Env COMPANION_TOKEN is missing")
-
-        self.test_cluster_url = os.environ.get("TEST_CLUSTER_URL")
-        if self.test_cluster_url is None or self.test_cluster_url == "":
-            raise ValueError("ERROR: Env TEST_CLUSTER_URL is missing")
-
-        self.test_cluster_ca_data = os.environ.get("TEST_CLUSTER_CA_DATA")
-        if self.test_cluster_ca_data is None or self.test_cluster_ca_data == "":
-            raise ValueError("ERROR: Env TEST_CLUSTER_CA_DATA is missing")
-
-        self.test_cluster_auth_token = os.environ.get("TEST_CLUSTER_AUTH_TOKEN")
-        if self.test_cluster_auth_token is None or self.test_cluster_auth_token == "":
-            raise ValueError("ERROR: Env TEST_CLUSTER_AUTH_TOKEN is missing")
-
-        self.aicore_deployment_id_gpt4 = os.environ.get("AICORE_DEPLOYMENT_ID_GPT4")
-        if (
-            self.aicore_deployment_id_gpt4 is None
-            or self.aicore_deployment_id_gpt4 == ""
-        ):
-            raise ValueError("ERROR: Env AICORE_DEPLOYMENT_ID_GPT4 is missing")
-
-        self.aicore_configuration_id_gpt4 = os.environ.get(
-            "AICORE_CONFIGURATION_ID_GPT4"
-        )
-        if (
-            self.aicore_configuration_id_gpt4 is None
-            or self.aicore_configuration_id_gpt4 == ""
-        ):
-            raise ValueError("ERROR: Env AICORE_CONFIGURATION_ID_GPT4 is missing")
-
-        self.model_name = os.getenv("MODEL_NAME", "gpt4.o")
+        self.companion_api_url = get_env("COMPANION_API_URL")
+        self.companion_token = get_env("COMPANION_TOKEN")
+        self.test_cluster_url = get_env("TEST_CLUSTER_URL")
+        self.test_cluster_ca_data = get_env("TEST_CLUSTER_CA_DATA")
+        self.test_cluster_auth_token = get_env("TEST_CLUSTER_AUTH_TOKEN")
+        self.aicore_deployment_id_gpt4 = get_env("AICORE_DEPLOYMENT_ID_GPT4")
+        self.aicore_configuration_id_gpt4 = get_env("AICORE_CONFIGURATION_ID_GPT4")
+        self.model_name = get_env("MODEL_NAME", False, "gpt4.o")
         self.model_temperature = 0
         self.iterations = 3
