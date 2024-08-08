@@ -64,7 +64,7 @@ jobs:
 
       - name: Cleanup existing resources
         run: |
-          ./scripts/shell/clean-up-cluster.sh
+          ./scripts/shell/clean_up_cluster.sh
 
       - name: Install Kyma CLI
         id: install-kyma-cli
