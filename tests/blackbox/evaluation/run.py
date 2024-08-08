@@ -20,8 +20,10 @@ async def process_scenario(
             f"Getting response from the companion API for scenario: {scenario.id}"
         )
         # get the response from the companion API multiple iterations to check idempotency.
-        for i in range(config.iterations):
-            response = await get_companion_response(config, scenario.description, logger)
+        for _ in range(config.iterations):
+            response = await get_companion_response(
+                config, scenario.description, logger
+            )
             scenario.evaluation.add_actual_response(response)
     except Exception as e:
         logger.error(

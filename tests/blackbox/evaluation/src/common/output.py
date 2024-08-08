@@ -1,8 +1,8 @@
 from prettytable import PrettyTable
+from termcolor import colored
 
 from tests.blackbox.evaluation.src.scenario.enums import TestStatus
 from tests.blackbox.evaluation.src.scenario.scenario import ScenarioList
-from termcolor import colored
 
 
 def print_header(name: str) -> None:
@@ -57,10 +57,14 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
 
         print("\t Expectations:")
         for expectation in scenario.expectations:
-            print(f"\t\t - [SUCCESS RATE: {expectation.get_success_rate()}%] Expectation: {expectation.name}")
+            print(
+                f"\t\t - [SUCCESS RATE: {expectation.get_success_rate()}%] Expectation: {expectation.name}"
+            )
         print(f"\t Scenario score: {scenario.get_scenario_score()}%")
         print("\n")
 
 
 def print_overall_results(scenario_list: ScenarioList) -> None:
-    print_header(f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%")
+    print_header(
+        f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%"
+    )

@@ -5,7 +5,13 @@ from logging import Logger
 import yaml
 from pydantic import BaseModel
 
-from tests.blackbox.evaluation.src.scenario.enums import Category, Complexity, TestStatus
+from tests.blackbox.evaluation.src.scenario.enums import (
+    Category,
+    Complexity,
+    TestStatus,
+)
+
+PASSING_SCORE = 100
 
 
 class Resource(BaseModel):
@@ -72,9 +78,13 @@ class Evaluation(BaseModel):
         ideal_sum: int = 0
         count: int = 0
         for expectation in expectations:
-            actual_sum += expectation.get_success_count() * expectation.complexity.to_int()
+            actual_sum += (
+                expectation.get_success_count() * expectation.complexity.to_int()
+            )
             # ideal sum is the sum when all the results would be successful.
-            ideal_sum += expectation.get_results_count() * expectation.complexity.to_int()
+            ideal_sum += (
+                expectation.get_results_count() * expectation.complexity.to_int()
+            )
             count += expectation.get_results_count()
 
         if count == 0:
@@ -104,7 +114,7 @@ class Scenario(BaseModel):
 
         self.evaluation.status = TestStatus.COMPLETED
         # if the scenario score is 100, the scenario is passed.
-        if self.get_scenario_score() == 100:
+        if self.get_scenario_score() == PASSING_SCORE:
             self.evaluation.status = TestStatus.PASSED
 
 
@@ -139,7 +149,9 @@ class ScenarioList(BaseModel):
             if total_count[category] == 0:
                 success_rate[category] = 0.0
             else:
-                success_rate[category] = round(float((success_count[category] / total_count[category]) * 100), 2)
+                success_rate[category] = round(
+                    float((success_count[category] / total_count[category]) * 100), 2
+                )
 
         return success_rate
 
