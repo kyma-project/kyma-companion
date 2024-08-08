@@ -17,6 +17,7 @@ class Config:
     aicore_configuration_id_gpt4: str
     model_name: str
     model_temperature: int
+    iterations: int
 
     def init(self) -> None:
         self.test_data_path = os.environ.get("TEST_DATA_PATH")
@@ -64,3 +65,4 @@ class Config:
 
         self.model_name = os.getenv("MODEL_NAME", "gpt4.o")
         self.model_temperature = 0
+        self.iterations = 3

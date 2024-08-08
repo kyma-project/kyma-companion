@@ -5,8 +5,8 @@ from tests.blackbox.evaluation.src.common.config import Config
 from tests.blackbox.evaluation.src.common.logger import get_logger
 from tests.blackbox.evaluation.src.common.output import print_test_results
 from tests.blackbox.evaluation.src.companion.companion import get_companion_response
+from tests.blackbox.evaluation.src.scenario.enums import TestStatus
 from tests.blackbox.evaluation.src.scenario.scenario import Scenario, ScenarioList
-from tests.blackbox.evaluation.src.validator.evaluation import TestStatus
 from tests.blackbox.evaluation.src.validator.utils import create_validator
 from tests.blackbox.evaluation.src.validator.validator import ValidatorInterface
 
@@ -19,10 +19,12 @@ async def process_scenario(
         logger.debug(
             f"Getting response from the companion API for scenario: {scenario.id}"
         )
-        response = await get_companion_response(config, scenario.description, logger)
-        scenario.evaluation.actual_response = response
+        # get the response from the companion API multiple iterations to check idempotency.
+        for i in range(config.iterations):
+            response = await get_companion_response(config, scenario.description, logger)
+            scenario.evaluation.add_actual_response(response)
     except Exception as e:
-        logger.debug(
+        logger.error(
             f"failed to get response from the companion API for scenario: {scenario.id}. Error: {e}"
         )
         scenario.evaluation.status = TestStatus.FAILED
@@ -30,26 +32,22 @@ async def process_scenario(
             f"failed to get response from the companion API. {e}"
         )
 
+    # skip the evaluation if the scenario has already failed.
     if scenario.evaluation.status == TestStatus.FAILED:
-        logger.debug(f"skipping scenario {scenario.id} due to previous failure.")
+        logger.warning(f"skipping scenario {scenario.id} due to previous failure.")
         return
 
     # evaluate the expectations.
-    logger.debug(
-        f"evaluating expectations for scenario: {scenario.id}, "
-        f"actual_response: {scenario.evaluation.actual_response}"
-    )
-
     for expectation in scenario.expectations:
         try:
-            result = validator.is_response_as_expected(
-                expectation.statement, scenario.evaluation.actual_response
-            )
-            scenario.evaluation.add_expectation_result(
-                expectation.name, expectation.complexity, result
-            )
+            # for each response, validate the expectation.
+            for response in scenario.evaluation.actual_responses:
+                result = validator.is_response_as_expected(
+                    expectation.statement, response
+                )
+                expectation.add_result(result)
         except Exception as e:
-            logger.debug(
+            logger.error(
                 f"failed to validate expectation: {expectation.name} for scenario: {scenario.id}. Error: {e}"
             )
             scenario.evaluation.status = TestStatus.FAILED
@@ -57,8 +55,8 @@ async def process_scenario(
                 f"failed to validate expectation {expectation.name}, {e}."
             )
 
-    # compute the overall results of test scenario.
-    scenario.evaluation.evaluate()
+    # set the status to complete.
+    scenario.complete()
 
 
 async def main() -> None:

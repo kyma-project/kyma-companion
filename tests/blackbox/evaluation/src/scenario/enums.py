@@ -7,6 +7,7 @@ class TestStatus(StrEnum):
     PASSED = "passed"
     FAILED = "failed"
     PENDING = "pending"
+    COMPLETED = "completed"
 
 
 class Complexity(StrEnum):
