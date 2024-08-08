@@ -1,15 +1,18 @@
-name: gardener-test-cluster-setup
+name: "Setup Gardener Test Cluster"
 
 on: workflow_dispatch
 
 jobs:
-  gardener-test-cluster-setup:
+  setup-gardener-cluster:
+    name: Setup Gardener cluster
     # Sets up the Gardener cluster with the namespace-scoped test cases for the companion blackbox test
     # The steps of the job are:
     # 1. Authenticate and connect with the previously created Gardener cluster
     # 2. TBD: Clean up any existing resources in the Gardener cluster
     # 3. TBD: Deploy Kyma on the Gardener cluster
     # 4. TBD: Iteratively deploy the namespace-scoped test cases using the prepared shell script for the companion blackbox test
+    outputs:
+      KUBECONFIG: ${{ steps.create-kubeconfig.outputs.KUBECONFIG }}
     runs-on: ubuntu-latest
 
     steps:
@@ -55,3 +58,64 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
           kubectl get ns
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cleanup existing resources
+        run: |
+          ./scripts/shell/clean-up-cluster.sh
+
+      - name: Install Kyma CLI
+        id: install-kyma-cli
+        run: |
+          mkdir -p bin
+          curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
+          echo "::set-output name=version::$(bin/kyma@v2 version)"
+        continue-on-error: true
+
+      - name: Check Kyma CLI version
+        run: |
+          kyma_cli_version=$(echo "${{ steps.install-kyma-cli.outputs.version }}" | cut -d ":" -f 2 | xargs)
+          if [ "$kyma_cli_version" != "${KYMA_VERSION}" ]; then
+            echo "Kyma CLI version is not correct. Expected: ${KYMA_VERSION}, got: $kyma_cli_version"
+            exit 1
+          fi
+          echo "Kyma CLI version is correct: $kyma_cli_version"
+
+#      - name: Install Kubernetes CLI
+#        run: |
+#          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+#          chmod +x ./kubectl
+#          ./kubectl version --client
+
+      - name: Deploy Kyma
+        run: |
+          echo "::group::Kyma - Provision"
+          bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
+          echo "::endgroup::"
+
+          echo "::group::Kyma - Deploy"
+          bin/kyma@v2 alpha deploy --ci --non-interactive
+          echo "::endgroup::"
+
+      - name: Verify Kyma deployment
+        run: |
+          echo "::group::Kyma - Context"
+          context_name=$(./kubectl config current-context)
+          if [ "$context_name" != "k3d-kyma" ]; then
+            echo "Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
+            exit 1
+          fi
+          echo "Kyma context is correct"
+          echo "::endgroup::"
+
+          echo "::group::Kyma - Verify Kyma deployment"
+          kyma_status=$(./kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]')
+          echo "::debug::Kyma status: $kyma_status"
+          if [ "$kyma_status" != "Ready" ]; then
+            echo "Kyma is not Ready. Expected: Ready, got: $kyma_status"
+            exit 1
+          fi
+          echo "Kyma is Ready"
+          echo "::endgroup::"
