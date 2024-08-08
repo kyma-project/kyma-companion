@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 
 class TestStatus(StrEnum):
@@ -10,21 +10,17 @@ class TestStatus(StrEnum):
     COMPLETED = "completed"
 
 
-class Complexity(StrEnum):
+class Complexity(IntEnum):
     """Category represents enum for the category of an expectation."""
 
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
 
-    def to_int(self) -> int:
-        if self == Complexity.LOW:
-            return 1
-        if self == Complexity.MEDIUM:
-            return 2
-        if self == Complexity.HIGH:
-            return 3
-        raise ValueError(f"Invalid complexity: {self}")
+    def to_string(self) -> str:
+        """Convert the complexity to a string."""
+        names = {1: "low", 2: "medium", 3: "high"}
+        return names[self]
 
 
 class Category(StrEnum):

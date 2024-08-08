@@ -10,44 +10,44 @@ expectations:
     categories:
       - "kubernetes"
       - "problem_finding"
-    complexity: "low"
+    complexity: 1
   - name: "insufficient_memory" 
     statement: "points out that the container has an insufficient amount of memory"  
     categories:
       - "kubernetes"
       - "problem_finding"
-    complexity: "low"
+    complexity: 1
   - name: "propose_memory_increase" 
     statement: "points out that either the memory limit or the memory request should be increased"  
     categories:
       - "kubernetes"
       - "solution_finding"
-    complexity: "low"
+    complexity: 1
   - name: "some_yaml" 
     statement: "provides some yaml formatted code"  
     categories:
       - "kubernetes"
       - "yaml"
       - "solution_finding"
-    complexity: "low"
+    complexity: 1
   - name: "yaml_with_resources" 
     statement: "provides some yaml formatted manifest for a Deployment, that contains a container with resource limits and/or resource requests"  
     categories:
       - "kubernetes"
       - "yaml"
       - "solution_finding"
-    complexity: "medium"
+    complexity: 2
   - name: "yaml_with_resources" 
     statement: "provides a complete yaml formatted manifest for a Deployment, that contains all required fields and that contains the settings for a container with resource limits and/or resource requests"  
     categories:
       - "kubernetes"
       - "yaml"
       - "solution_finding"
-    complexity: "medium"
+    complexity: 2
   - name: "yaml_" 
     statement: "provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'nginx_oom', that contains all required fields and that contains the settings for a container with resource limits and/or resource requests"  
     categories:
       - "kubernetes"
       - "yaml"
       - "solution_finding"
-    complexity: "high"
+    complexity: 3

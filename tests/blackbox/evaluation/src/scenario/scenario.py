@@ -78,13 +78,9 @@ class Evaluation(BaseModel):
         ideal_sum: int = 0
         count: int = 0
         for expectation in expectations:
-            actual_sum += (
-                expectation.get_success_count() * expectation.complexity.to_int()
-            )
+            actual_sum += expectation.get_success_count() * expectation.complexity
             # ideal sum is the sum when all the results would be successful.
-            ideal_sum += (
-                expectation.get_results_count() * expectation.complexity.to_int()
-            )
+            ideal_sum += expectation.get_results_count() * expectation.complexity
             count += expectation.get_results_count()
 
         if count == 0:
