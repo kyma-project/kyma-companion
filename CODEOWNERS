@@ -37,4 +37,11 @@
 # https://help.github.com/articles/about-codeowners/
 # https://github.com/blog/2392-introducing-code-owners/
 
+# Default owners of the "kyma-companion" repository
 * @kyma-project/ai-force
+
+# Owners of documentation files in the "kyma-companion" repository
+*.md @kyma-project/technical-writers
+
+# All files and subdirectories in /docs
+/docs/ @kyma-project/technical-writers
