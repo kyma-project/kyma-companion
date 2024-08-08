@@ -1,14 +1,14 @@
 import asyncio
 from logging import Logger
 
-from tests.blackbox.evaluation.src.common.config import Config
-from tests.blackbox.evaluation.src.common.logger import get_logger
-from tests.blackbox.evaluation.src.common.output import print_test_results
-from tests.blackbox.evaluation.src.companion.companion import get_companion_response
-from tests.blackbox.evaluation.src.scenario.enums import TestStatus
-from tests.blackbox.evaluation.src.scenario.scenario import Scenario, ScenarioList
-from tests.blackbox.evaluation.src.validator.utils import create_validator
-from tests.blackbox.evaluation.src.validator.validator import ValidatorInterface
+from src.common.config import Config
+from src.common.logger import get_logger
+from src.common.output import print_test_results
+from src.companion.companion import get_companion_response
+from src.scenario.enums import TestStatus
+from src.scenario.scenario import Scenario, ScenarioList
+from src.validator.utils import create_validator
+from src.validator.validator import ValidatorInterface
 
 
 async def process_scenario(

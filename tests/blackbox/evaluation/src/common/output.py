@@ -1,8 +1,7 @@
 from prettytable import PrettyTable
+from src.scenario.enums import TestStatus
+from src.scenario.scenario import ScenarioList
 from termcolor import colored
-
-from tests.blackbox.evaluation.src.scenario.enums import TestStatus
-from tests.blackbox.evaluation.src.scenario.scenario import ScenarioList
 
 
 def print_header(name: str) -> None:

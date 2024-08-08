@@ -2,8 +2,7 @@ from http import HTTPStatus
 from logging import Logger
 
 import requests
-
-from tests.blackbox.evaluation.src.common.config import Config
+from src.common.config import Config
 
 
 async def get_companion_response(config: Config, query: str, logger: Logger) -> str:

@@ -1,4 +1,4 @@
-from tests.blackbox.evaluation.src.common.utils import get_env
+from src.common.utils import get_env
 
 
 class Config:

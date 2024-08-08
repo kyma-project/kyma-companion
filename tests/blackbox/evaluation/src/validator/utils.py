@@ -1,6 +1,6 @@
-from tests.blackbox.evaluation.src.common.config import Config
-from tests.blackbox.evaluation.src.validator.enums import AIModel
-from tests.blackbox.evaluation.src.validator.validator import (
+from src.common.config import Config
+from src.validator.enums import AIModel
+from src.validator.validator import (
     ChatOpenAIValidator,
     ValidatorInterface,
 )

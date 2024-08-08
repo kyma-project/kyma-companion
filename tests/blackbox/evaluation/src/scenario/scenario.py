@@ -4,8 +4,7 @@ from logging import Logger
 
 import yaml
 from pydantic import BaseModel
-
-from tests.blackbox.evaluation.src.scenario.enums import (
+from src.scenario.enums import (
     Category,
     Complexity,
     TestStatus,

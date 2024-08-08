@@ -1,8 +1,7 @@
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from langchain.output_parsers.boolean import BooleanOutputParser
 from langchain.prompts import PromptTemplate
-
-from tests.blackbox.evaluation.src.common.config import Config
+from src.common.config import Config
 
 TEMPLATE = PromptTemplate(
     template="""Please only answer with one word, YES or NO:
