@@ -1,11 +1,10 @@
+import os
 from typing import List
 
 import yaml
 from pydantic import BaseModel
 
 from scenario.scenario import Scenario
-
-COMPANION_FOLDER = "/Users/I504380/Go/src/github.com/muralov/kyma-companion"
 
 
 class MockResponse(BaseModel):
@@ -24,7 +23,8 @@ class ScenarioMockResponses(BaseModel):
 
     @property
     def scenario(self):
-        with open(f"{COMPANION_FOLDER}/tests/blackbox/data/evaluation/namespace-scoped/{self.scenario_id}/scenario.yml",
+        evaluation_data_dir = os.getenv("EVALUATION_DATA_DIR", "./tests/blackbox/data/evaluation")
+        with open(f"{evaluation_data_dir}/namespace-scoped/{self.scenario_id}/scenario.yml",
                   'r') as file:
             scenario_yaml = yaml.safe_load(file)
         return Scenario(**scenario_yaml)
