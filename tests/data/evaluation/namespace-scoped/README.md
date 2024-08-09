@@ -1,4 +1,9 @@
 # Test data
+
+You can read about the testing framework here. This section contains all the namespace-scoped testing data.
+The testing framework will iteratate through the directories in `kyma-companion/tests/data/evaluation/namespaced-scope`.
+The name of the dir should reflect the `name` of the scenario. In it we will
+
 ## Categories
 At this moment we support the following categories:
 
