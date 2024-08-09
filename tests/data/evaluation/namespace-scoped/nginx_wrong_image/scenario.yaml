@@ -5,8 +5,14 @@ resource:
   name: "nginx"
   namespace: "nginx_wrong_image"
 expectations:
+  - name: step_by_step_guide
+    statement: contains a step-by-step guide
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 1
   - name: "image_not_found"
-    statement: "points out that the image 'ngix' does not exist"  
+    statement: "points out that the image 'ngix' does not exist"
     categories:
       - "kubernetes"
       - "problem_finding"

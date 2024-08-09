@@ -52,4 +52,5 @@ expectations:
       - kubernetes
       - yaml
       - solution_finding
+      - completeness
     complexity: 3
