@@ -2,6 +2,9 @@ name: "Setup Gardener Test Cluster"
 
 on: workflow_dispatch
 
+env:
+  KYMA_VERSION: "2.20.5" # Required Kyma version.
+
 jobs:
   setup-gardener-cluster:
     name: Setup Gardener cluster
@@ -83,33 +86,20 @@ jobs:
           fi
           echo "Kyma CLI version is correct: $kyma_cli_version"
 
-#      - name: Install Kubernetes CLI
-#        run: |
-#          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-#          chmod +x ./kubectl
-#          ./kubectl version --client
+      - name: Install Kubernetes CLI
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          ./kubectl version --client
 
       - name: Deploy Kyma
         run: |
-          echo "::group::Kyma - Provision"
-          bin/kyma@v2 provision k3d --ci --non-interactive -p 9080:80@loadbalancer -p 9443:443@loadbalancer
-          echo "::endgroup::"
-
           echo "::group::Kyma - Deploy"
           bin/kyma@v2 alpha deploy --ci --non-interactive
           echo "::endgroup::"
 
       - name: Verify Kyma deployment
         run: |
-          echo "::group::Kyma - Context"
-          context_name=$(./kubectl config current-context)
-          if [ "$context_name" != "k3d-kyma" ]; then
-            echo "Kyma context is not correct. Expected: k3d-kyma, got: $context_name"
-            exit 1
-          fi
-          echo "Kyma context is correct"
-          echo "::endgroup::"
-
           echo "::group::Kyma - Verify Kyma deployment"
           kyma_status=$(./kubectl get kyma -A -ojson | jq -r '[(.items[].status.state)] | .[0]')
           echo "::debug::Kyma status: $kyma_status"
