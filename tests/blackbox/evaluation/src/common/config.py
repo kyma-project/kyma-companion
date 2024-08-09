@@ -26,7 +26,7 @@ class Config:
         )
 
         self.companion_api_url = get_env("COMPANION_API_URL")
-        self.companion_token = get_env("COMPANION_TOKEN")
+        self.companion_token = get_env("COMPANION_TOKEN", False, "not-needed")
         self.test_cluster_url = get_env("TEST_CLUSTER_URL")
         self.test_cluster_ca_data = get_env("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = get_env("TEST_CLUSTER_AUTH_TOKEN")
