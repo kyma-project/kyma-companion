@@ -1,46 +1,52 @@
-id: "nginx_wrong_image"
-description: "The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'"
+id: nginx_wrong_image
+description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'
 resource:
-  type: "Deployment"
-  name: "nginx"
-  namespace: "nginx_wrong_image"
+  type: Deployment
+  name: nginx
+  namespace: nginx_wrong_image
 expectations:
-  - name: "image_not_found"
-    statement: "points out that the image 'ngix' does not exist"  
+  - name: step_by_step_guide
+    statement: contains a step-by-step guide
     categories:
-      - "kubernetes"
-      - "problem_finding"
+      - solution_finding
+      - step-by-step_guidance
     complexity: 1
-  - name: "image_typo"
-    statement: "points out that the image name might have a type"
+  - name: image_not_found
+    statement: points out that the image 'ngix' does not exist
     categories:
-      - "kubernetes"
-      - "problem_finding"
+      - kubernetes
+      - problem_finding
     complexity: 1
-  - name: "should_be_nginx"
-    statement: "points out that the image name should be 'nginx'"
+  - name: image_typo
+    statement: points out that the image name might have a type
     categories:
-      - "kubernetes"
-      - "solution_finding"
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: should_be_nginx
+    statement: points out that the image name should be 'nginx'
+    categories:
+      - kubernetes
+      - solution_finding
     complexity: 2
-  - name: "uses_yaml"
-    statement: "contains some yaml formatted code"
+  - name: uses_yaml
+    statement: contains some yaml formatted code
     categories:
-      - "kubernetes"
-      - "solution_finding"
-      - "yaml"
+      - kubernetes
+      - solution_finding
+      - yaml
     complexity: 1
-  - name: "complete_yaml"
-    statement: "contains a yaml formatted deployment manifest with all the required fields"
+  - name: complete_yaml
+    statement: contains a yaml formatted deployment manifest with all the required fields
     categories:
-      - "kubernetes"
-      - "solution_finding"
-      - "yaml"
+      - kubernetes
+      - solution_finding
+      - yaml
     complexity: 2
-  - name: "useable_yaml"
-    statement: "contains a yaml formatted deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'"
+  - name: useable_yaml
+    statement: contains a yaml formatted deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'
     categories:
-      - "kubernetes"
-      - "solution_finding"
-      - "yaml"
+      - kubernetes
+      - solution_finding
+      - yaml
     complexity: 3
