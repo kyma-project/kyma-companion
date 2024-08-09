@@ -13,7 +13,7 @@ jobs:
     # 1. Authenticate and connect with the previously created Gardener cluster
     # 2. Clean up any existing resources in the Gardener cluster
     # 3. Deploy Kyma on the Gardener cluster
-    # 4. TBD: Iteratively deploy the namespace-scoped test cases using the prepared shell script for the companion blackbox test
+    # 4. Iteratively deploy the namespace-scoped test cases using the prepared shell script for the companion blackbox test
     outputs:
       KUBECONFIG: ${{ steps.create-kubeconfig.outputs.KUBECONFIG }}
     runs-on: ubuntu-latest
