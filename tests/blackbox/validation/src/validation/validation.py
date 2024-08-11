@@ -1,26 +1,44 @@
+import asyncio
 from typing import List
 
-from gen_ai_hub.proxy.langchain import ChatOpenAI
+from prettytable import PrettyTable
 
+from utils.models import Model
 from validation.scenario_mock_responses import ScenarioMockResponses
-from validation.validator import ModelValidator
-
-COMPANION_FOLDER = "/Users/I504380/Go/src/github.com/muralov/kyma-companion"
+from validation.validator import ModelValidator, Validator
 
 
 class Validation:
-    validators: List[ModelValidator]
+    validators: List[Validator]
     _model_scores: dict[str, float] = {}
 
-    def __init__(self, llms: List[ChatOpenAI], data: List[ScenarioMockResponses]):
-        self.validators = [ModelValidator(llm, data) for llm in llms]
+    def __init__(self, models: List[Model], data: List[ScenarioMockResponses]):
+        self.validators = [ModelValidator(model, data) for model in models]
 
-    # TODO: this should start a new coroutine per model
-    def validate(self):
-        for validator in self.validators:
-            score = validator.run()
-            self._model_scores[validator.model.model_name] = score
+    async def validate(self):
+        tasks = [validator.run() for validator in self.validators]
+        await asyncio.gather(*tasks)
 
     @property
-    def model_scores(self):
+    def model_scores(self) -> dict[str, float]:
+        self.validators.sort(key=lambda x: x.score, reverse=True)
+        for validator in self.validators:
+            self._model_scores[validator.model.name] = validator.score
         return self._model_scores
+
+    def get_best_rated_model(self) -> str:
+        return max(self.model_scores, key=self.model_scores.get)
+
+    def print_report(self):
+        table = PrettyTable()
+        table.field_names = ["Model", "Score", "Short Report"]
+        for validator in self.validators:
+            table.add_row([validator.model.name, validator.score, validator.report])
+        print(table)
+
+    def print_full_report(self):
+        table = PrettyTable()
+        table.field_names = ["Model", "Score", "Full Report"]
+        for validator in self.validators:
+            table.add_row([validator.model.name, validator.score, validator.full_report])
+        print(table)
