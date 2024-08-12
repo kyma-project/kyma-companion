@@ -230,4 +230,5 @@ scripts/k8s/aicore-secret.yaml
 scripts/k8s/companion-configmap.yaml
 
 commands.md
+.env.dev
 .env.companion.evaluation.tests
