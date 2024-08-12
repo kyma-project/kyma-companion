@@ -14,7 +14,7 @@ Required software:
 
  - Python 3.12.\*
  - [Poetry](https://python-poetry.org/)
- - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis)
+ - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--it's a prerequisite, so the link must be replaced with one pointing to some OS docu -->
 
 ## Manage Dependencies
 
@@ -72,19 +72,19 @@ poetry shell
 ```
 
 You can now run Python and any installed packages in this shell. They will use the virtual environment. 
-To exit the virtual environment, simply use the  `exit` command.
+To exit the virtual environment, simply use the `deactivate` command.
 
 Poetry automatically uses the virtual environment when you run, for example, the `poetry run` command.
 
-Remember to run these commands in the root directory of your project where the `pyproject.toml` file is located.
+Remember to run these commands in the root directory of your project, where the `pyproject.toml` file is located.
 
-If you are a PyCharm user and you want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
+If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
 ## Use Poe the Poet as Task Runner
 
 [Poe the Poet](https://poethepoet.natn.io/index.html) is a task runner that simplifies running common tasks in a Python project.
 
-To have the command availalbe as `poetry poe <command>` as seen in the following examples, you need to install poe as a plugin to Poetry:
+To have the command available as `poetry poe <command>` as seen in the following examples, you need to install poe as a plugin to Poetry:
 
 ```bash
 poetry self add 'poethepoet[poetry_plugin]'
@@ -94,26 +94,20 @@ If this plugin is not installed, you may have to run poe as a script within the 
 
 ## Development
 
-### Redis Server
+### Redis Server <!--if the instructions on creating it are in the internal docu, should this section be here? Is there an alternative source?-->
 
 Before running the application, the Redis server must be provided. It is used to store the conversation with a large language model (LLM).
-Therefore, **REDIS_URL** has to be provided as an environment variable.
+Therefore, **REDIS_URL** must be provided as an environment variable.
 
 Here is the [documentation](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) on how to create a Redis server. For example,
 `REDIS_URL="redis://{host or ip}:6379"`
 
-### Running <!--maybe Run, but then what? FastAPI application? -->
+### Running Kyma Companion Locally
 
 You can start the FastAPI application with the following options:
 
 ```bash
 poetry run fastapi dev src/main.py --port 8000
-```
-
-Or, directly with FastAPI:
-
-```bash
-fastapi dev src/main.py --port 8000
 ```
 
 Or, with a poe task:
@@ -122,25 +116,25 @@ Or, with a poe task:
 $ poetry poe run-local
 ```
 
-It is recommended <!--not sure if that's the intended meaning--> to run it <!--not sure what exactly "it" refers to; the sentence is ambiguous with two differenf its--> with Poetry as it activates and uses its virtual environment if not activated yet.
+It is recommended to run Kyma Companion with Poetry as it activates and uses its virtual environment if not activated yet.
 
 > [!NOTE] You cannot run it with Python directly.
 
 ### Debugging
 
-The FastAPI application can be debugged with PyCharm or VS Code. Follow the guidelines for these IDEs:
+As the companion uses the FastAPI framework, refer to the following documentation on how to debug the application with the respective IDE:
 
-- [PyCharm](https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project)
-- [VS Code](https://code.visualstudio.com/docs/python/tutorial-fastapi)
+* [PyCharm](https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project)
+* [VS Code](https://code.visualstudio.com/docs/python/tutorial-fastapi)
 
 ### Configuration
 
-For local development LLM models can be configured inside the config/models.json file.  
-**NOTE:** Don't use the file to configure models in dev, stage or prod clusters.
+For local development, LLM models can be configured inside the `config/models.json` file.  
+> [!NOTE] Don't use the <code>config/models.json</code> file to configure models in dev, stage, or prod clusters.
 
-## Codechecks
+## Code Checks
 
-To execute linting, formatting, and type checking using Ruff, Black and mypy <!--or `ruff`, `black`, and `mypy`?--> respectively, use the following commands:
+To execute linting, formatting, and type checking using Ruff, Black, and mypy, respectively use the following command:
 
 ```bash
 poetry poe codecheck
@@ -182,7 +176,7 @@ To execute the [Black](https://black.readthedocs.io/en/stable/) formatting check
 poetry poe format
 ```
 
-You can fix formatting errros with the following command:
+You can fix formatting erros with the following command:
 
 ```bash
 poetry poe format-fix

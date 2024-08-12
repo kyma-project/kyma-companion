@@ -78,7 +78,7 @@ jobs:
 
 The `.github/workflows/backend-e2e-test.yaml` job performs the following actions:
 
-1. Checkout the code from the repository. (PR version)
+1. Check out the code from the repository. (PR version)
 
     ```yaml
     - name: Prep - Checkout code
@@ -121,8 +121,7 @@ The `.github/workflows/backend-e2e-test.yaml` job performs the following actions
         docker push localhost:5000/ai-backend:latest
     ```
 
-6. Configure K3s for local Docker image registry. 
-   ~~Copy the local registry configuration for K3s.~~ <!--??-->
+6. Configure K3s for the local Docker image registry. 
 
     ```yaml
     - name: K3s - Configure local registry for k3s
@@ -138,7 +137,7 @@ The `.github/workflows/backend-e2e-test.yaml` job performs the following actions
       run: .scripts/shell/k3s-installation.sh
     ```
    
-8. Verify the K3s cluster by checking nodes and namespaces.
+8. Verify the K3s cluster by checking Nodes and namespaces.
    
     ```yaml
     - name: K3s - Verify K3s cluster
@@ -155,8 +154,7 @@ The `.github/workflows/backend-e2e-test.yaml` job performs the following actions
         kubectl apply -f .scripts/kubernetes/ai-backend-namespace.yaml
     ```
 
-10. Deploy: Create Secret for backend. <!--which one?-->
-    Create a secret in the K3s cluster.
+10. Deploy: Create a Secret in the K3s cluster.
 
     ```yaml
     - name: Deploy - Create secret on K3s
@@ -166,8 +164,7 @@ The `.github/workflows/backend-e2e-test.yaml` job performs the following actions
         rm -f .scripts/kubernetes/ai-backend-secret.yaml
     ```
 
-11. Deploy - Create a ConfigMap for backend.  <!--which one?-->
-    Create a ConfigMap in the K3s cluster.
+11. Deploy: Create a ConfigMap in the K3s cluster.
 
     ```yaml
     - name: Deploy - Create configmap on K3s
@@ -177,8 +174,7 @@ The `.github/workflows/backend-e2e-test.yaml` job performs the following actions
         rm -f .scripts/kubernetes/ai-backend-configmap.yaml
     ```
 
-12. Deploy - Create Backend and NodePort service.  <!--which one?-->
-    Deploy the Docker image and create a NodePort service.
+12. Deploy the Docker image and create a NodePort service.
 
     ```yaml
     - name: Deploy - Create Backend and NodePort service

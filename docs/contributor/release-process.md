@@ -7,7 +7,7 @@ This document provides a step-by-step guide to the release process workflow for 
 A pull request (PR) to the `main` branch must:
   * Have the `lgtm` label
   * Get approval from at least one reviewer <!--code owner?-->
-  * Pass all checks (Bckend E2E tests, Linting, Git Leaks)
+  * Pass all checks (Backend E2E tests, Linting, Git Leaks)
 
 ## Files and Folders
 <!--what is this list?-->
