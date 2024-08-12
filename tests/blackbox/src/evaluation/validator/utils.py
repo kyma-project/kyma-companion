@@ -1,9 +1,10 @@
+from common.config import Config
+
 from evaluation.validator.enums import AIModel
 from evaluation.validator.validator import (
     ChatOpenAIValidator,
     ValidatorInterface,
 )
-from common.config import Config
 
 
 def create_validator(config: Config) -> ValidatorInterface:

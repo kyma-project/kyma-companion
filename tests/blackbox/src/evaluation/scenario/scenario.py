@@ -4,6 +4,7 @@ from logging import Logger
 
 import yaml
 from pydantic import BaseModel
+
 from evaluation.scenario.enums import (
     Category,
     Complexity,

@@ -1,12 +1,12 @@
 import logging
-from typing import Protocol, List
+from typing import Protocol
 
 from langchain.prompts import PromptTemplate
 from termcolor import colored
 
+from validation.scenario_mock_responses import ScenarioMockResponses
 from validation.utils.models import Model
 from validation.utils.utils import string_to_bool
-from validation.scenario_mock_responses import ScenarioMockResponses
 
 TEMPLATE = PromptTemplate(
     template="""Please only answer with one word, true or false:
@@ -20,34 +20,29 @@ TEMPLATE = PromptTemplate(
 
 
 class Validator(Protocol):
-    async def run(self):
-        ...
+    async def run(self): ...
 
     @property
-    def score(self) -> float:
-        ...
+    def score(self) -> float: ...
 
     @property
-    def report(self) -> str:
-        ...
+    def report(self) -> str: ...
 
     @property
-    def full_report(self) -> str:
-        ...
+    def full_report(self) -> str: ...
 
     @property
-    def model(self) -> Model:
-        ...
+    def model(self) -> Model: ...
 
 
 class ModelValidator:
     _model: Model
-    data: List[ScenarioMockResponses]
+    data: list[ScenarioMockResponses]
     _score: float = 0
     _short_report: str = ""
     _report: str = ""
 
-    def __init__(self, model: Model, data: List[ScenarioMockResponses]):
+    def __init__(self, model: Model, data: list[ScenarioMockResponses]):
         self._model = model
         self.data = data
 
@@ -78,8 +73,14 @@ class ModelValidator:
             total_count += len(scenario_mock_response.expected_evaluations)
             scenario_report = ""
             for mock_response in scenario_mock_response.expected_evaluations:
-                expectation = next((item for item in scenario_mock_response.scenario.expectations
-                                    if item.name == mock_response.scenario_expectation_name), None)
+                expectation = next(
+                    (
+                        item
+                        for item in scenario_mock_response.scenario.expectations
+                        if item.name == mock_response.scenario_expectation_name
+                    ),
+                    None,
+                )
                 # actual evaluation response
                 model_validation_response = self.model.invoke(
                     TEMPLATE.format(
@@ -96,19 +97,25 @@ class ModelValidator:
                     total_score += expectation.complexity * 1
                     success_count += 1
                     scenario_success_count += 1
-                scenario_report += (
-                    f"""
+                scenario_report += f"""
                     expectation: {colored(expectation.statement, 'yellow')}
                     actual result: {colored(model_validation_response, 'yellow')}
                     expected result: {colored(expected_result, 'yellow')}"""
-                )
 
-            success_rate = round(scenario_success_count / len(scenario_mock_response.expected_evaluations) * 100, 2)
-            self._short_report += (f"scenario: {colored(scenario_mock_response.scenario_id, 'yellow')}\n"
-                                   f"success rate: {colored(success_rate, 'yellow')}\n")
+            success_rate = round(
+                scenario_success_count
+                / len(scenario_mock_response.expected_evaluations)
+                * 100,
+                2,
+            )
+            self._short_report += (
+                f"scenario: {colored(scenario_mock_response.scenario_id, 'yellow')}\n"
+                f"success rate: {colored(success_rate, 'yellow')}\n"
+            )
 
-            self._report += (f"{self._short_report}\n"
-                             f"expectation report: {colored(scenario_report, 'yellow')}\n"
-                             )
+            self._report += (
+                f"{self._short_report}\n"
+                f"expectation report: {colored(scenario_report, 'yellow')}\n"
+            )
 
         self._score = total_score

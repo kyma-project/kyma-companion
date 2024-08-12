@@ -2,12 +2,11 @@ import os
 from typing import Protocol
 
 import yaml
+from common.logger import get_logger
 from gen_ai_hub.proxy import get_proxy_client
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from gen_ai_hub.proxy.native.google.clients import GenerativeModel
 from pydantic import BaseModel
-
-from common.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -20,12 +19,10 @@ class ModelConfig(BaseModel):
 
 
 class Model(Protocol):
-    def invoke(self, content: str) -> str:
-        ...
+    def invoke(self, content: str) -> str: ...
 
     @property
-    def name(self) -> str:
-        ...
+    def name(self) -> str: ...
 
 
 class OpenAIModel(Model):
@@ -34,7 +31,9 @@ class OpenAIModel(Model):
 
     def __init__(self, config: ModelConfig):
         self._name = config.name
-        self.model = ChatOpenAI(deployment_id=config.deployment_id, proxy_client=proxy_client, temperature=0)
+        self.model = ChatOpenAI(
+            deployment_id=config.deployment_id, proxy_client=proxy_client, temperature=0
+        )
 
     def invoke(self, content: str) -> str:
         response = self.model.invoke(content)
@@ -51,16 +50,14 @@ class GeminiModel(Model):
 
     def __init__(self, config: ModelConfig):
         self._name = config.name
-        self.model = GenerativeModel(proxy_client=proxy_client, model_name=config.name,
-                                     deployment_id=config.deployment_id)
+        self.model = GenerativeModel(
+            proxy_client=proxy_client,
+            model_name=config.name,
+            deployment_id=config.deployment_id,
+        )
 
     def invoke(self, content: str) -> str:
-        content = [{
-            "role": "user",
-            "parts": [{
-                "text": content
-            }]
-        }]
+        content = [{"role": "user", "parts": [{"text": content}]}]
         response = self.model.generate_content(content)
         return response.text
 
@@ -70,7 +67,9 @@ class GeminiModel(Model):
 
 
 def get_models() -> list:
-    models_config_path = os.getenv("MODEL_CONFIG_PATH", "./config/validation/models.yml")
+    models_config_path = os.getenv(
+        "MODEL_CONFIG_PATH", "./config/validation/models.yml"
+    )
     logger.info(f"Loading models from the config file{models_config_path}")
     try:
         with open(models_config_path) as file:
@@ -86,5 +85,7 @@ def get_models() -> list:
                     raise ValueError(f"Model {config.name} not supported.")
             return llms
     except Exception:
-        logger.exception(f"Failed to load models data from the config file: {models_config}")
+        logger.exception(
+            f"Failed to load models data from the config file: {models_config}"
+        )
         raise

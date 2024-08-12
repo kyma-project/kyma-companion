@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 from prettytable import PrettyTable
 
@@ -9,10 +8,10 @@ from validation.validator import ModelValidator, Validator
 
 
 class Validation:
-    validators: List[Validator]
+    validators: list[Validator]
     _model_scores: dict[str, float] = {}
 
-    def __init__(self, models: List[Model], data: List[ScenarioMockResponses]):
+    def __init__(self, models: list[Model], data: list[ScenarioMockResponses]):
         self.validators = [ModelValidator(model, data) for model in models]
 
     async def validate(self):
@@ -40,5 +39,7 @@ class Validation:
         table = PrettyTable()
         table.field_names = ["Model", "Score", "Full Report"]
         for validator in self.validators:
-            table.add_row([validator.model.name, validator.score, validator.full_report])
+            table.add_row(
+                [validator.model.name, validator.score, validator.full_report]
+            )
         print(table)

@@ -1,20 +1,18 @@
 import asyncio
 from logging import Logger
 
-from dotenv import load_dotenv
-
+from common.config import Config
+from common.logger import get_logger
+from common.output import print_test_results
 from evaluation.companion.companion import get_companion_response
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario, ScenarioList
 from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import ValidatorInterface
-from common.config import Config
-from common.logger import get_logger
-from common.output import print_test_results
 
 
 async def process_scenario(
-        scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
+    scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
 ) -> None:
     # make a call to the Companion API and get response from Companion.
     try:
