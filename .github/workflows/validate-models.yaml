@@ -9,15 +9,18 @@ on:
         default: 'main'
 
 jobs:
-  unit-test:
+  model-validation:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/blackbox
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Extract Python version
         id: python-version
-        run: ./scripts/shell/extract-python-version.sh
+        run: ./../../scripts/shell/extract-python-version.sh
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -33,4 +36,4 @@ jobs:
         run: poetry install
 
       - name: Run Evaluator Validation
-        run: poetry run python main.py
+        run: poetry run python src/run_validation.py

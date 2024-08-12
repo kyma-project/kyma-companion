@@ -70,7 +70,7 @@ def get_models() -> list:
     models_config_path = os.getenv(
         "MODEL_CONFIG_PATH", "./config/validation/models.yml"
     )
-    logger.info(f"Loading models from the config file{models_config_path}")
+    logger.info(f"Loading models from the config file: {models_config_path}")
     try:
         with open(models_config_path) as file:
             yaml_data = yaml.safe_load(file)
@@ -86,6 +86,6 @@ def get_models() -> list:
             return llms
     except Exception:
         logger.exception(
-            f"Failed to load models data from the config file: {models_config}"
+            f"Failed to load/initialize models specified in the config file: {models_config}"
         )
         raise
