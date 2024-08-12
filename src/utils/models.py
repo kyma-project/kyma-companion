@@ -26,6 +26,8 @@ def create_llm(name: str, temperature: int = 0) -> ChatOpenAI:
     """
     proxy_client = get_proxy_client("gen-ai-hub")
     model = get_model(name)
+    if model is None:
+        raise ValueError(f"Model {name} not found")
     llm = ChatOpenAI(
         deployment_id=model.deployment_id,
         proxy_client=proxy_client,
