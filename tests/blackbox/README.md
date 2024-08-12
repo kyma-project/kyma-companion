@@ -12,7 +12,7 @@ to the given expectations. This comparison will either result in a match or no m
 can be more or less complex, this boolean value is multiplied by a complexity factor. Every expectation must be
 evaluated multiple times so the idempotency performance of Kyma Companion can be calculated.
 
-Refer to [Evaluation](./evavluation.md) documentation for more details.
+Refer to [Evaluation](./evaluation.md) documentation for more details.
 
 
 ## Validation
