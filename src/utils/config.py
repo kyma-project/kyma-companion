@@ -1,6 +1,8 @@
-import yaml
 import os
+
+import yaml
 from pydantic import BaseModel
+
 
 class Model(BaseModel):
     """Model for the deployment request"""
