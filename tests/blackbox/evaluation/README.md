@@ -1,8 +1,8 @@
 # Blackbox Testing Framework
 
-To measure any improvement of Kyma Companion, we need a blackbox test. This test is referred to as Evaluation tests.
+To measure any improvement of Kyma Companion, we need a black box test. This test is referred to as an Evaluation test.
 
-For the Evaluation, we need to define a set of scenarios with each scenario further divided into expectations. The Kyma Companion is prompted via its endpoints to evaluate the given scenario. In the Evaluation, the response is compared to the given expectations. This comparison will either result in a match or no match. But as different expectations can be more or less complex, this boolean value is multiplied by a complexity factor. Every expectation needs to be evaluated multiple times so idempotency performance of the Kyma Companion can be calculated.
+For the Evaluation, we need to define a set of scenarios, with each scenario further divided into expectations. Kyma Companion is prompted through its endpoints to evaluate the given scenario. In the Evaluation, the response is compared to the given expectations. This comparison will either result in a match or no match. However, as different expectations can be more or less complex, this boolean value is multiplied by a complexity factor. Every expectation must be evaluated multiple times so the idempotency performance of Kyma Companion can be calculated.
 
 ## Usage
 
