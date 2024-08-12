@@ -1,5 +1,5 @@
 > **TIP:** Apart from the {Module Name} heading, you can use your own titles for the remaining sections. You can also add more module-specific sections.
-
+<!--to be removed if the docs/README stays; should the whole user folder be deleted (for the time being)?-->
 # {Module Name}
 > Modify the title and insert the name of your module. Use Heading 1 (H1).
 

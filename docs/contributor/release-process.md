@@ -1,50 +1,50 @@
-# Backend - Release Workflow Documentation
+# Backend - Release Workflow
 
-This documentation provides a step-by-step guide to the release process workflow for building and pushing a Go project using GitHub Actions. This workflow is triggered on pushes to the `main` branch and tags, specifically for changes within the `assistant/backend` directory.
+This document provides a step-by-step guide to the release process workflow for building and pushing a Go project using GitHub Actions. This workflow is triggered on pushes to the `main` branch and tags, specifically for changes within the `assistant/backend` directory.
 
 ## Prerequisites
 
-- PR to the `main` branch:
-  - label: `lgtm`
-  - Approved by at least one reviewer
-  - Passes all checks (Bckend E2E tests, Linting, Git Leaks)
+A pull request (PR) to the `main` branch must:
+  * Have the `lgtm` label
+  * Get approval from at least one reviewer <!--code owner?-->
+  * Pass all checks (Bckend E2E tests, Linting, Git Leaks)
 
-## Files and folders
-
+## Files and Folders
+<!--what is this list?-->
 - GitHub Action Workflow: `.github/workflows`
 - Backend code: `assistant/backend`
 - Kubernetes related scripts and deployment files: `.scripts/kubernetes`
 - Shell scripts (k3s installation, deployment verification, test scripts): `.scripts/shell`
 
 ## Secrets
-
+<!--what is this list?-->
 - User for `sap-llm-commons` (JFROG_IDENTITY_USER)
 - Token for `sap-llm-commons` (JFROG_IDENTITY_TOKEN)
-- GitHub PAT user for container registry (GH_CR_USER) - requires for release process
-- GitHub PAT token for container registry (GH_CR_PAT) - requires for release process
+- GitHub PAT user for container registry (GH_CR_USER) - requires <!--required? or who requires?--> for the release process
+- GitHub PAT token for container registry (GH_CR_PAT) - requires <!--required? or who requires?--> for the release process
 
 ## Workflow Overview
 
 The workflow performs the following key steps:
 
-- Trigger the workflow on push events to the `main` branch and tags.
-- Set up environment variables.
-- Check out the code from the repository.
-- Log in to the Docker registry.
-- Extract Docker metadata.
-- Build and push the Docker image.
+* Triggers the workflow on push events to the `main` branch and tags.
+* Sets up environment variables.
+* Checks out the code from the repository.
+* Logs in to the Docker registry.
+* Extracts Docker metadata.
+* Builds and pushes the Docker image.
 
-## Workflow Details
+## Release Process Workflow Details
 
-![Release Process Workflow Steps](../images/release-process-workflow-steps.png)
+![Release Process Workflow Steps](../images/release-process-workflow-steps.drawio.svg)
 
 ### Workflow Trigger
 
 The workflow is triggered by:
 
-- Push events to the `main` branch.
-- Tags matching the pattern `*.*.*`.
-- Changes within the `assistant/backend` directory.
+* Push events to the `main` branch.
+* Tags matching the pattern `*.*.*`.
+* Changes within the `assistant/backend` directory.
 
 ```yaml
 on:
@@ -59,10 +59,10 @@ on:
 
 Define the following environment variables:
 
-IMAGE_REGISTRY: The Docker image registry (e.g., ghcr.io).
-ORGANIZATION: The organization name (e.g., kyma-project).
-REPOSITORY_NAME: The repository name (e.g., kyma-companion).
-IMAGE_NAME: The Docker image name (e.g., ai-backend).
+**IMAGE_REGISTRY**: The Docker image registry (for example, `ghcr.io`).
+**ORGANIZATION**: The organization name (for example, `kyma-project`).
+**REPOSITORY_NAME**: The repository name (for example, `kyma-companion`).
+**IMAGE_NAME**: The Docker image name (for example, `ai-backend`).
 
 ```yaml
 env:
@@ -86,63 +86,55 @@ jobs:
 
 ### Steps in the Job
 
-**1. Checkout Code**
+1. Check out the code from the repository.
 
-Check out the code from the repository.
+    ```yaml
+    - name: Checkout code
+      uses: actions/checkout@v4
+    ```
 
-```yaml
-- name: Checkout code
-  uses: actions/checkout@v4
-```
+1. Log into the Docker registry using the provided credentials.
 
-**2. Log into Registry**
+    ```yaml
+    - name: Log into registry ${{ env.IMAGE_REGISTRY }}
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.GH_CR_USER }}
+        password: ${{ secrets.GH_CR_PAT }}
+    ```
 
-Log into the Docker registry using the provided credentials.
+1. Extract metadata for the Docker image, including tags and labels.
 
-```yaml
-- name: Log into registry ${{ env.IMAGE_REGISTRY }}
-  uses: docker/login-action@v3
-  with:
-    registry: ${{ env.IMAGE_REGISTRY }}
-    username: ${{ secrets.GH_CR_USER }}
-    password: ${{ secrets.GH_CR_PAT }}
-```
+    ```yaml
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.IMAGE_REGISTRY }}/${{ env.ORGANIZATION }}/${{ env.REPOSITORY_NAME }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          type=raw,value=latest,event=push
+          type=semver,pattern={{version}},event=tag
+    ```
 
-**3. Extract Docker Metadata**
+1. Build and push the Docker image using the specified build arguments, context, and Dockerfile.
 
-Extract metadata for the Docker image, including tags and labels.
-
-```yaml
-- name: Extract Docker metadata
-  id: meta
-  uses: docker/metadata-action@v5
-  with:
-    images: ${{ env.IMAGE_REGISTRY }}/${{ env.ORGANIZATION }}/${{ env.REPOSITORY_NAME }}/${{ env.IMAGE_NAME }}
-    tags: |
-      type=sha
-      type=raw,value=latest,event=push
-      type=semver,pattern={{version}},event=tag
-```
-
-**4. Build and Push Docker Image**
-
-Build and push the Docker image using the specified build arguments, context, and Dockerfile.
-
-```yaml
-- name: Build and push Docker image
-  id: build-and-push
-  uses: docker/build-push-action@v5
-  with:
-    push: true
-    context: ./assistant/backend
-    file: ./assistant/backend/Dockerfile
-    build-args: |
-      JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}
-      JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}
-    platforms: linux/amd64
-    tags: ${{ steps.meta.outputs.tags }}
-    labels: ${{ steps.meta.outputs.labels }}
-```
+    ```yaml
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+        push: true
+        context: ./assistant/backend
+        file: ./assistant/backend/Dockerfile
+        build-args: |
+          JFROG_USER=${{ secrets.JFROG_IDENTITY_USER }}
+          JFROG_TOKEN=${{ secrets.JFROG_IDENTITY_TOKEN }}
+        platforms: linux/amd64
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+    ```
 
 ## Conclusion
 

@@ -1,7 +1,6 @@
 # Contributor Documentation
 
-In this folder, you can add any developer-related documentation, for example, advanced installation options, testing strategy, governance, etc.
-
+You can find the developer-related Kyma Companion documentation in this folder.
 
 ## Release Testing
 
