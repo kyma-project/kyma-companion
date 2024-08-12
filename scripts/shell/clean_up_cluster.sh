@@ -44,7 +44,7 @@ delete_custom_resources() {
         crs=$(kubectl get "$resource_kind" -n "$namespace" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
         for cr in $crs; do
             echo "Deleting $resource_kind $cr in namespace $namespace"
-            kubectl delete "$resource_kind" "$cr" -n "$namespace" --timeout=10s || true
+            kubectl delete "$resource_kind" "$cr" -n "$namespace" --timeout=10s --ignore-not-found --now || true
         done
     done
 }
@@ -54,7 +54,7 @@ delete_custom_resource_definitions() {
     local crd=$1
 
     echo "Deleting Custom Resource Definition: $crd"
-    kubectl delete crd "$crd" --timeout="10s" || true
+    kubectl delete crd "$crd" --timeout="10s" --ignore-not-found --now
 }
 
 ## Main script starts here ##
@@ -90,17 +90,17 @@ for namespace in $(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}
     if ! is_excluded_namespace "$namespace"; then
         echo "## Cleaning up resources in namespace: $namespace. ##"
         echo "Deleting all resources."
-        kubectl delete all --all --namespace="$namespace" || true
+        kubectl delete all --all --ignore-not-found --now --namespace="$namespace"
         echo "Deleting all pvcs."
-        kubectl delete pvc --all --namespace="$namespace" || true
+        kubectl delete pvc --all --ignore-not-found --now --namespace="$namespace"
         echo "Deleting all configmaps."
-        kubectl delete configmap --all --namespace="$namespace" || true
+        kubectl delete configmap --all --ignore-not-found --now --namespace="$namespace"
         echo "Deleting all secrets."
-        kubectl delete secret --all --namespace="$namespace" || true
+        kubectl delete secret --all --ignore-not-found --now --namespace="$namespace"
         echo "Deleting all serviceaccounts."
-        kubectl delete serviceaccount --all --namespace="$namespace" || true
+        kubectl delete serviceaccount --all --ignore-not-found --now --namespace="$namespace"
         echo "Deleting all roles."
-        kubectl delete networkpolicy --all --namespace="$namespace" || true
+        kubectl delete networkpolicy --all --ignore-not-found --now --namespace="$namespace"
     fi
 done
 
