@@ -3,7 +3,7 @@ from typing import List
 
 import yaml
 
-from utils.logger import get_logger
+from common.logger import get_logger
 from validation.scenario_mock_responses import ScenarioMockResponses
 
 logger = get_logger(__name__)

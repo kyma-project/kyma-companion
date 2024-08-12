@@ -7,7 +7,7 @@ from gen_ai_hub.proxy.langchain import ChatOpenAI
 from gen_ai_hub.proxy.native.google.clients import GenerativeModel
 from pydantic import BaseModel
 
-from utils.logger import get_logger
+from common.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -73,7 +73,7 @@ def get_models() -> list:
     models_config = os.getenv("MODEL_CONFIG", "./config/models.yml")
     logger.info(f"Loading models from the config file{models_config}")
     try:
-        with open("./config/models.yml") as file:
+        with open("./config/validation/models.yml") as file:
             yaml_data = yaml.safe_load(file)
             models_config = [ModelConfig(**model) for model in yaml_data]
             llms: list[Model] = []

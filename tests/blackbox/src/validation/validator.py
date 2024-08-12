@@ -4,8 +4,8 @@ from typing import Protocol, List
 from langchain.prompts import PromptTemplate
 from termcolor import colored
 
-from utils.models import Model
-from utils.utils import string_to_bool
+from validation.utils.models import Model
+from validation.utils.utils import string_to_bool
 from validation.scenario_mock_responses import ScenarioMockResponses
 
 TEMPLATE = PromptTemplate(
@@ -91,9 +91,9 @@ class ModelValidator:
                 expected_result = mock_response.expected_evaluation
 
                 if actual_evaluation != expected_result:
-                    total_score += expectation.complexity.to_int() * 0
+                    total_score += expectation.complexity * 0
                 else:
-                    total_score += expectation.complexity.to_int() * 1
+                    total_score += expectation.complexity * 1
                     success_count += 1
                     scenario_success_count += 1
                 scenario_report += (
@@ -108,7 +108,7 @@ class ModelValidator:
                                    f"success rate: {colored(success_rate, 'yellow')}\n")
 
             self._report += (f"{self._short_report}\n"
-                f"expectation report: {colored(scenario_report, 'yellow')}\n"
-            )
+                             f"expectation report: {colored(scenario_report, 'yellow')}\n"
+                             )
 
         self._score = total_score

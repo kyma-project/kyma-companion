@@ -1,4 +1,3 @@
-id: "nginx_wrong_image"
 description: "Mock responses for a scenario when ngix image is not found"
 scenario_id: "nginx_wrong_image"
 mock_response_content: "The image you try to use does not exist. You might have misspelled the image name. The correct image name would 'nginx'. "

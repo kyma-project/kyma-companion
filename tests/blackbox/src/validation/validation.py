@@ -3,8 +3,8 @@ from typing import List
 
 from prettytable import PrettyTable
 
-from utils.models import Model
 from validation.scenario_mock_responses import ScenarioMockResponses
+from validation.utils.models import Model
 from validation.validator import ModelValidator, Validator
 
 

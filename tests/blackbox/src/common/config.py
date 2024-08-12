@@ -1,4 +1,8 @@
+from dotenv import load_dotenv
+
 from src.common.utils import get_env
+
+load_dotenv()
 
 
 class Config:
@@ -19,14 +23,14 @@ class Config:
     model_temperature: int
     iterations: int
 
-    def init(self) -> None:
-        self.test_data_path = get_env("TEST_DATA_PATH")
+    def __init__(self) -> None:
+        self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
         self.namespace_scoped_test_data_path = (
             f"{self.test_data_path}/evaluation/namespace-scoped"
         )
 
         self.companion_api_url = get_env("COMPANION_API_URL")
-        self.companion_token = get_env("COMPANION_TOKEN")
+        self.companion_token = get_env("COMPANION_TOKEN", False)
         self.test_cluster_url = get_env("TEST_CLUSTER_URL")
         self.test_cluster_ca_data = get_env("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = get_env("TEST_CLUSTER_AUTH_TOKEN")

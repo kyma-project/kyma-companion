@@ -5,17 +5,18 @@ import os
 
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
-from utils.data_loader import load_data  # noqa
+from validation.utils.data_loader import load_data # noqa
 from validation.validation import Validation  # noqa
-from utils.models import get_models  # noqa
-from src.validation.validator import ModelValidator  # noqa
+from validation.utils.models import get_models  # noqa
+from validation.validator import ModelValidator  # noqa
 
 
 async def main(full_report: bool = False):
     models = get_models()
-    data = load_data(os.getenv("VALIDATION_DATA_DIR", "./tests/blackbox/data/validation"))
+    data = load_data(os.getenv("VALIDATION_DATA_DIR", "./data/validation"))
     validation = Validation(models, data)
     await validation.validate()
     validation.print_report()

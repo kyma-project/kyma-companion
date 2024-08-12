@@ -4,7 +4,7 @@ from typing import List
 import yaml
 from pydantic import BaseModel
 
-from scenario.scenario import Scenario
+from evaluation.scenario.scenario import Scenario
 
 
 class MockResponse(BaseModel):
@@ -13,7 +13,6 @@ class MockResponse(BaseModel):
 
 
 class ScenarioMockResponses(BaseModel):
-    id: str
     description: str
     scenario_id: str
     mock_response_content: str
@@ -23,7 +22,7 @@ class ScenarioMockResponses(BaseModel):
 
     @property
     def scenario(self):
-        evaluation_data_dir = os.getenv("EVALUATION_DATA_DIR", "./tests/blackbox/data/evaluation")
+        evaluation_data_dir = os.getenv("EVALUATION_DATA_DIR", "./data/evaluation")
         with open(f"{evaluation_data_dir}/namespace-scoped/{self.scenario_id}/scenario.yml",
                   'r') as file:
             scenario_yaml = yaml.safe_load(file)

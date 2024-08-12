@@ -1,18 +1,20 @@
 import asyncio
 from logging import Logger
 
-from src.common.config import Config
-from src.common.logger import get_logger
-from src.common.output import print_test_results
-from src.companion.companion import get_companion_response
-from src.scenario.enums import TestStatus
-from src.scenario.scenario import Scenario, ScenarioList
-from src.validator.utils import create_validator
-from src.validator.validator import ValidatorInterface
+from dotenv import load_dotenv
+
+from evaluation.companion.companion import get_companion_response
+from evaluation.scenario.enums import TestStatus
+from evaluation.scenario.scenario import Scenario, ScenarioList
+from evaluation.validator.utils import create_validator
+from evaluation.validator.validator import ValidatorInterface
+from common.config import Config
+from common.logger import get_logger
+from common.output import print_test_results
 
 
 async def process_scenario(
-    scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
+        scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
 ) -> None:
     # make a call to the Companion API and get response from Companion.
     try:
@@ -67,7 +69,6 @@ async def main() -> None:
 
     # load the configuration.
     config = Config()
-    config.init()
 
     # initialize the response validator.
     validator = create_validator(config)

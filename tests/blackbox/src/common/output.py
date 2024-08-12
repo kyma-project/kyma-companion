@@ -1,6 +1,6 @@
 from prettytable import PrettyTable
-from src.scenario.enums import TestStatus
-from src.scenario.scenario import ScenarioList
+from evaluation.scenario.enums import TestStatus
+from evaluation.scenario.scenario import ScenarioList
 from termcolor import colored
 
 
