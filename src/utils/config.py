@@ -1,6 +1,6 @@
 import yaml
+import os
 from pydantic import BaseModel
-
 
 class Model(BaseModel):
     """Model for the deployment request"""
@@ -21,7 +21,9 @@ def get_config() -> Config:
     Returns:
         Config: The configuration of the application
     """
-    with open("config/config.yml") as f:
+
+    config_file = os.environ.get("MODELS_CONFIG_FILE_PATH", "config/config.yml")
+    with open(config_file) as f:
         data = yaml.safe_load(f)
     config = Config(**data)
     return config

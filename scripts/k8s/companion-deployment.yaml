@@ -19,7 +19,7 @@ spec:
         image: example.com/ai-backend:stable
         imagePullPolicy: Always
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
         resources:
           requests:
             memory: "256Mi" # Minimum amount of memory guaranteed
@@ -28,22 +28,27 @@ spec:
             memory: "3Gi" # Maximum amount of memory the container can use
             cpu: "4" # Equivalent to 4 of a CPU
         env:
-        - name: AICORE_LLM_CLIENT_SECRET
+        - name: AICORE_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: ai-core
               key: clientsecret
-        - name: AICORE_LLM_CLIENT_ID
+        - name: AICORE_CLIENT_ID
           valueFrom:
             secretKeyRef:
               name: ai-core
               key: clientid
-        - name: AICORE_LLM_AUTH_URL
+        - name: AICORE_AUTH_URL
           valueFrom:
             secretKeyRef:
               name: ai-core
               key: url
         - name: AICORE_SERVICE_URLS
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: serviceurls
+        - name: AICORE_BASE_URL
           valueFrom:
             secretKeyRef:
               name: ai-core

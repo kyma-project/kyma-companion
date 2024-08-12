@@ -7,7 +7,7 @@ from utils.models import create_llm
 
 logger = get_logger(__name__)
 
-GPT4O_MODEL = "gpt-4"
+GPT4O_MODEL = "gpt-4o"
 
 
 class Chat:
