@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from src.common.utils import get_env
+from common.utils import get_env
 
 load_dotenv()
 

@@ -3,7 +3,7 @@ from evaluation.validator.validator import (
     ChatOpenAIValidator,
     ValidatorInterface,
 )
-from src.common.config import Config
+from common.config import Config
 
 
 def create_validator(config: Config) -> ValidatorInterface:

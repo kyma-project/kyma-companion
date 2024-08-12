@@ -70,10 +70,10 @@ class GeminiModel(Model):
 
 
 def get_models() -> list:
-    models_config = os.getenv("MODEL_CONFIG", "./config/models.yml")
-    logger.info(f"Loading models from the config file{models_config}")
+    models_config_path = os.getenv("MODEL_CONFIG_PATH", "./config/validation/models.yml")
+    logger.info(f"Loading models from the config file{models_config_path}")
     try:
-        with open("./config/validation/models.yml") as file:
+        with open(models_config_path) as file:
             yaml_data = yaml.safe_load(file)
             models_config = [ModelConfig(**model) for model in yaml_data]
             llms: list[Model] = []

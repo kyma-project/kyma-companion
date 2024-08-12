@@ -16,7 +16,7 @@ from validation.validator import ModelValidator  # noqa
 
 async def main(full_report: bool = False):
     models = get_models()
-    data = load_data(os.getenv("VALIDATION_DATA_DIR", "./data/validation"))
+    data = load_data(os.getenv("VALIDATION_DATA_PATH", "./data/validation"))
     validation = Validation(models, data)
     await validation.validate()
     validation.print_report()
