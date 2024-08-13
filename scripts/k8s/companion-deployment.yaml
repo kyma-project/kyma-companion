@@ -42,20 +42,40 @@ spec:
           valueFrom:
             secretKeyRef:
               name: ai-core
-              key: url
+              key: auth_url
         - name: AICORE_SERVICE_URLS
           valueFrom:
             secretKeyRef:
               name: ai-core
-              key: serviceurls
+              key: base_url
         - name: AICORE_BASE_URL
           valueFrom:
             secretKeyRef:
               name: ai-core
-              key: serviceurls
+              key: base_url
+        - name: AICORE_RESOURCE_GROUP
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: resource_group
+        - name: REDIS_URL
+          value: "redis://redis-master.redis.svc.cluster.local:6379"
+        - name: MODELS_CONFIG_FILE_PATH
+          value: "/mnt/config/models-config.yml"
         envFrom:
-        - configMapRef:
+          - configMapRef:
+              name: ai-backend-config
+        volumeMounts:
+          - name: models-config
+            mountPath: /mnt/config/models-config.yml
+            subPath: models-config.yml
+      volumes:
+        - name: models-config
+          configMap:
             name: ai-backend-config
+            items:
+              - key: models-config.yml
+                path: models-config.yml
 
 ---
 apiVersion: v1
@@ -70,5 +90,5 @@ spec:
   ports:
     - protocol: TCP
       port: 8080
-      targetPort: 5000
+      targetPort: 8000
       nodePort: 32000  # You can specify a port in the range 30000-32767
