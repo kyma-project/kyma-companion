@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from utils.logging import get_logger
 
+logger = get_logger("config")
+
 
 class Model(BaseModel):
     """Model for the deployment request"""
@@ -27,7 +29,7 @@ def get_config() -> Config:
     """
 
     config_file = os.environ.get("MODELS_CONFIG_FILE_PATH", "config/config.yml")
-    get_logger("config").info(f"Loading models config from: {config_file}")
+    logger.info(f"Loading models config from: {config_file}")
     with open(config_file) as f:
         data = yaml.safe_load(f)
     config = Config(**data)
