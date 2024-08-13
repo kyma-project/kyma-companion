@@ -1,6 +1,6 @@
 # Evaluation
 
-To find out a model that can judge the test scenarios, we need to validation the best LLM model. This can be done by running the validation tests.
+To find a model that can evaluate the test scenarios, we need to validate the best large language model (LLM) model. This can be done by running the validation tests.
 
 ## Usage
 
