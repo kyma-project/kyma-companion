@@ -7,6 +7,9 @@ on:
         description: 'Branch to run the workflow on'
         required: true
         default: 'main'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   model-validation:
@@ -36,4 +39,17 @@ jobs:
         run: poetry install
 
       - name: Run Evaluator Validation
-        run: poetry run python src/run_validation.py
+        run: |
+          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > aicore-secret.yaml
+          AICORE_CLIENT_ID=$(yq eval '.data.clientid' aicore-secret.yaml)
+          echo "AI Core ID: $AICORE_CLIENT_ID"
+          AICORE_CLIENT_SECRET=$(yq eval '.data.clientsecret' aicore-secret.yaml)
+          AICORE_AUTH_URL=$(yq eval '.data.url' aicore-secret.yaml)
+          echo $AICORE_AUTH_URL
+          AICORE_BASE_URL=$(yq eval '.data.serviceurls' aicore-secret.yaml)
+          echo $AICORE_BASE_URL
+          AICORE_RESOURCE_GROUP=default
+          echo "${{ secrets.MODELS_TO_VALIDATE }}" | base64 -d > config/validation/models.yaml
+          # cleanup
+          rm -f aicore-secret.yaml
+          poetry run python src/run_validation.py
