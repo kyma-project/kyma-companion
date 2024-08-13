@@ -1,4 +1,4 @@
-description: "Mock responses for a scenario where a nginx deployment is configured to an insufficient amount of memory and will run out of memory"
+description: "Mock responses for a scenario where a nginx deployment is configured to an insufficient amount of memory that will lead to a pod that runs out of memory."
 mock_response_content: "The pod has an OOM (out of memory) error. The container has an insufficient amount of memory. You should increase the memory limit or the memory request."
 scenario_id: "nginx_oom"
 expected_evaluations:

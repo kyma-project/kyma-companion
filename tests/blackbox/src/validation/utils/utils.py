@@ -1,6 +1,3 @@
-"""Utility functions for the logic module."""
-
-
 def string_to_bool(value: str) -> bool:
     """Convert a string to a boolean value."""
     if value.lower() in ["true", "1", "t", "y", "yes"]:
