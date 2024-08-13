@@ -104,7 +104,7 @@ For example, `REDIS_URL="redis://{host or ip}:6379"`
 
 ### Running Kyma Companion Locally
 
-You can start the FastAPI application with the following options:
+You can execute the Kyma Companion locally using the FastAPI framework with the following command:
 
 ```bash
 poetry run fastapi dev src/main.py --port 8000
