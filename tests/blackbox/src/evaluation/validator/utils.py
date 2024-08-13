@@ -1,6 +1,7 @@
-from src.common.config import Config
-from src.validator.enums import AIModel
-from src.validator.validator import (
+from common.config import Config
+
+from evaluation.validator.enums import AIModel
+from evaluation.validator.validator import (
     ChatOpenAIValidator,
     ValidatorInterface,
 )
