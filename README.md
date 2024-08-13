@@ -14,7 +14,7 @@ Required software:
 
  - Python 3.12.\*
  - [Poetry](https://python-poetry.org/)
- - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--it's a prerequisite, so the link must be replaced with one pointing to some OS docu -->
+ - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available -->
 
 ## Manage Dependencies
 
@@ -94,13 +94,13 @@ If this plugin is not installed, you may have to run poe as a script within the 
 
 ## Development
 
-### Redis Server <!--if the instructions on creating it are in the internal docu, should this section be here? Is there an alternative source?-->
+### Redis Server 
 
 Before running the application, the Redis server must be provided. It is used to store the conversation with a large language model (LLM).
 Therefore, **REDIS_URL** must be provided as an environment variable.
 
-Here is the [documentation](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) on how to create a Redis server. For example,
-`REDIS_URL="redis://{host or ip}:6379"`
+Here is the [documentation](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available --> on how to create a Redis server. 
+For example, `REDIS_URL="redis://{host or ip}:6379"`
 
 ### Running Kyma Companion Locally
 
