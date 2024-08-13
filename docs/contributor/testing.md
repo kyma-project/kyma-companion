@@ -22,16 +22,16 @@ Further information about the setup of Poetry and Poe the Poet can be found in t
 
 ## Blackbox Tests
 
-The blackbox tests are executed using GitHub Actions and consists of multiple steps.
+The blackbox tests are set up and executed in two different steps.
 
 ### Setup
 
-- examples deployed on a cluster
-- using Gardener cluster
-- is set-up by hand
-- here is the configuration of the cluster <--configuration only in private repo?-->
-- action first cleans the cluster
-- then deploys the examples
+The test cases are deployed on a Gardener cluster. The cluster is set up by hand and is not deleted unless necessary.
+
+Once the cluster is set up, the [Setup Gardener Test Cluster](https://github.com/kyma-project/kyma-companion/actions/workflows/setup-test-cluster.yaml) GitHub Action can be manually triggered.
+The action automatically connects to the Gardener cluster, cleans it and deploys all the examples in the [tests/data/evaluation/namespace-scoped](../../tests/data/evaluation/namespace-scoped) directory.
+
+The GitHub Action provides a summary of any missing scenarios or ones that failed to be deployed. These need to be fixed within their own `deploy.sh` script.
 
 ### Execution
 
