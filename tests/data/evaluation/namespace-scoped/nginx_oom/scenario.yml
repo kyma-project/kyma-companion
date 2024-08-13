@@ -36,21 +36,21 @@ expectations:
       - yaml
       - solution_finding
     complexity: 1
-  - name: yaml_with_resources
+  - name: yaml_with_deployment
     statement: provides some yaml formatted manifest for a Deployment, that contains a container with resource limits and/or resource requests
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
-  - name: yaml_with_resources
+  - name: yaml_with_deployment_and_resources
     statement: provides a complete yaml formatted manifest for a Deployment, that contains all required fields and that contains the settings for a container with resource limits and/or resource requests
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
-  - name: yaml_
+  - name: fully_deployable_yaml
     statement: provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'nginx_oom', that contains all required fields and that contains the settings for a container with resource limits and/or resource requests
     categories:
       - kubernetes
