@@ -25,8 +25,8 @@ jobs:
           echo "::set-output name=AICORE_CLIENT_ID::$(yq eval '.stringData.clientid' aicore-secret.yaml)"
           echo "::set-output name=AICORE_CLIENT_SECRET::$(yq eval '.stringData.clientsecret' aicore-secret.yaml)"
           echo "::set-output name=AICORE_AUTH_URL::$(yq eval '.stringData.auth_url' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.stringData.base_url' aicore-secret.yaml')"
-          echo "::set-output name=AICORE_RESOURCE_GROUP::$(yq eval '.stringData.resource_group' aicore-secret.yaml')"
+          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.stringData.base_url' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_RESOURCE_GROUP::$(yq eval '.stringData.resource_group' aicore-secret.yaml)"
           # cleanup
           rm -f aicore-secret.yaml
 
