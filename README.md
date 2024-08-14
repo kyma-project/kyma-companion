@@ -6,7 +6,7 @@
 
 ## Overview
 
-Kyma Companion is designed to provide in-app context-sensitive help and general assistance to Kyma users.
+Kyma Companion provides in-app context-sensitive help and general assistance to Kyma users.
 
 ## Prerequisites
 
@@ -18,24 +18,24 @@ Required software:
 
 ## Manage Dependencies
 
-We use Poetry to manage dependencies in the project. Poetry is a powerful tool for managing dependencies in Python projects. 
+We use [Poetry](https://python-poetry.org/) to manage dependencies in the project.
 Here's a quick guide on how to add, remove, and update dependencies using Poetry.
 
 ### Add and Update Dependencies
 
-To install all the dependencies listed in the `pyproject.toml` file, you can use the following command:
+To install all the dependencies listed in the `pyproject.toml` file, use the following command:
 
 ```bash
 poetry install
 ```
 
-To update a specific dependency to its latest version, you can use the `poetry update` command followed by the name of the package:
+To update a specific dependency to its latest version, use the `poetry update` command followed by the name of the package:
 
 ```bash
 poetry update {package_name}
 ```
 
-To add a new dependency to your project, you can use the `poetry add` command followed by the name of the package you want to add:
+To add a new dependency to your project, use the `poetry add` command followed by the name of the package you want to add:
 
 ```bash
 poetry add {package_name}
@@ -55,23 +55,23 @@ poetry remove {package_name}
 
 ## Create and Use Virtual Environments with Poetry
 
-You can create a virtual environment for the project by navigating to the project's root directory and running the following command:
+To create a virtual environment for the project, navigate to the project's root directory and run the following command:
 
 ```bash
 poetry install
 ```
 
-This will create a new virtual environment and install the project's dependencies.
+This creates a new virtual environment and installs the project's dependencies.
 
 ### Activate the Virtual Environment
 
-To activate the virtual environment, use `poetry shell`. This will start a new shell session with the virtual environment activated:
+To activate the virtual environment, use `poetry shell`. This starts a new shell session with the virtual environment activated:
 
 ```bash
 poetry shell
 ```
 
-You can now run Python and any installed packages in this shell. They will use the virtual environment. 
+Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
 To exit the virtual environment, simply use the `deactivate` command.
 
 Poetry automatically uses the virtual environment when you run, for example, the `poetry run` command.
@@ -84,7 +84,7 @@ If you are a PyCharm user and want to use the virtual environment created by Poe
 
 [Poe the Poet](https://poethepoet.natn.io/index.html) is a task runner that simplifies running common tasks in a Python project.
 
-To have the command available as `poetry poe <command>` as seen in the following examples, you need to install poe as a plugin to Poetry:
+To have the command available as `poetry poe <command>` (as seen in the following examples), install poe as a plugin to Poetry:
 
 ```bash
 poetry self add 'poethepoet[poetry_plugin]'
@@ -96,10 +96,10 @@ If this plugin is not installed, you may have to run poe as a script within the 
 
 ### Redis Server 
 
-Before running the application, the Redis server must be provided. It is used to store the conversation with a large language model (LLM).
-Therefore, **REDIS_URL** must be provided as an environment variable.
+Before running the application, you must provide the Redis server. It stores the conversation with a large language model (LLM).
+Therefore, provide **REDIS_URL** as an environment variable.
 
-Here is the [documentation](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available --> on how to create a Redis server. 
+For details on how to create a Redis server, read [Create Redis](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available --> on how to create a Redis server. 
 For example, `REDIS_URL="redis://{host or ip}:6379"`
 
 ### Running Kyma Companion Locally
@@ -116,13 +116,13 @@ Or, with a poe task:
 $ poetry poe run-local
 ```
 
-It is recommended to run Kyma Companion with Poetry as it activates and uses its virtual environment if not activated yet.
+It is recommended to run Kyma Companion with Poetry because it activates and uses its virtual environment if not activated yet.
 
 > [!NOTE] You cannot run it with Python directly.
 
 ### Debugging
 
-As the companion uses the FastAPI framework, refer to the following documentation on how to debug the application with the respective IDE:
+Because the companion uses the FastAPI framework, read the following documentation on how to debug the application with the respective IDE:
 
 * [PyCharm](https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project)
 * [VS Code](https://code.visualstudio.com/docs/python/tutorial-fastapi)
@@ -156,10 +156,9 @@ It is recommended to execute the [Ruff](https://docs.astral.sh/ruff/) linting ch
 poetry poe lint
 ```
 
-Alternatively, you can also do it with `ruff check` directly, 
-where Ruff may have a different version in a different virtual environment.
+Alternatively, you can also do it with `ruff check` directly, where Ruff may have a different version in a different virtual environment.
 
-Linting errors can be fixed with the following command, which by default applies only the safe fixes:
+Linting errors can be fixed with the following command, which applies only the safe fixes by default:
 
 ```bash
 poetry poe lint-fix
@@ -210,7 +209,7 @@ poetry run pytest tests
 ## Release Process
 
 Release testing and release creation are two separate processes. 
-You can find the release testing documentation in the [Contributor README](./docs/contributor/README.md) file.
+For details about release testing, read the [Contributor README](./docs/contributor/README.md) file.
 
 ## Contributing
 
