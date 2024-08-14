@@ -1,4 +1,8 @@
-from src.common.utils import get_env
+from dotenv import load_dotenv
+
+from common.utils import get_env
+
+load_dotenv()
 
 
 class Config:
@@ -19,8 +23,8 @@ class Config:
     model_temperature: int
     iterations: int
 
-    def init(self) -> None:
-        self.test_data_path = get_env("TEST_DATA_PATH")
+    def __init__(self) -> None:
+        self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
         self.namespace_scoped_test_data_path = (
             f"{self.test_data_path}/evaluation/namespace-scoped"
         )

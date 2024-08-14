@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "evaluation"
+version = "0.1.0"
+description = "Evaluation Framework"
+authors = []
+
+[tool.poetry.dependencies]
+python = "~3.12"
+
+python-dotenv = "^1.0.1"
+pydantic = "^2.8.2"
+termcolor = "^2.4.0"
+generative-ai-hub-sdk = { version = "^1.11.1", extras = ["langchain"] }
+prettytable = "^3.10.2"
+wcwidth = "^0.2.13"

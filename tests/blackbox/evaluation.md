@@ -14,7 +14,7 @@ To run the Evaluation tests, follow these steps:
     poetry install
     ```
 
-2. Prepare the `.env.companion.evaluation.tests` file based on the following template:
+2. Prepare the `.env.evaluation` file based on the following template:
 
     ```
    LOG_LEVEL=                           # Allowed values: "INFO", "DEBUG", "ERROR", "WARNING"
@@ -37,14 +37,14 @@ To run the Evaluation tests, follow these steps:
 3. Run the following command to set up the environment variables in your system:
 
     ```bash
-    export $(xargs < .env.companion.evaluation.tests)
+    export $(xargs < .env.evaluation)
     ```
 
 4. Run the Evaluation tests:
 
     ```bash
-   poetry run python tests/blackbox/evaluation/run.py
+   poetry run python src/run_evaluation.py
    # OR
    poetry shell
-   python tests/blackbox/evaluation/run.py
+   python src/run_evaluation.py
     ```

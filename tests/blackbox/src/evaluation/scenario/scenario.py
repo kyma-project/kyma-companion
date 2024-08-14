@@ -4,7 +4,8 @@ from logging import Logger
 
 import yaml
 from pydantic import BaseModel
-from src.scenario.enums import (
+
+from evaluation.scenario.enums import (
     Category,
     Complexity,
     TestStatus,
@@ -174,7 +175,7 @@ class ScenarioList(BaseModel):
 
         # loop over all the directory names
         for dir_name in directories:
-            scenario_file = path + "/" + dir_name + "/scenario.yaml"
+            scenario_file = path + "/" + dir_name + "/scenario.yml"
             logger.debug(f"Loading scenario file: {scenario_file}")
 
             try:

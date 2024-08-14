@@ -1,0 +1,59 @@
+name: Validate Model Evaluator
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the workflow on'
+        required: true
+        default: 'main'
+
+jobs:
+  model-validation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/blackbox
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize AI Core Credentials and Models to Validate
+        id: aicore-creds
+        run: |
+          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > aicore-secret.yaml
+          echo "::set-output name=AICORE_CLIENT_ID::$(yq eval '.data.clientid' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_CLIENT_SECRET::$(yq eval '.data.clientsecret' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_AUTH_URL::$(yq eval '.data.url' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.data.serviceurls' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_RESOURCE_GROUP::default"
+          # cleanup
+          rm -f aicore-secret.yaml
+
+      - name: Extract Python version
+        id: python-version
+        run: ./../../scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run Evaluator Validation
+        run: |
+          echo "${{ secrets.MODELS_TO_VALIDATE }}" > config/validation/models.yml
+          poetry run python src/run_validation.py
+        env:
+          AICORE_CLIENT_ID: ${{ steps.aicore-creds.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.aicore-creds.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ steps.aicore-creds.outputs.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ steps.aicore-creds.outputs.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ steps.aicore-creds.outputs.AICORE_RESOURCE_GROUP }}
