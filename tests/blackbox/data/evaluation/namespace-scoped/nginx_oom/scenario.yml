@@ -1,53 +1,59 @@
-id: "nginx_oom"
-description: "The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory"
+id: nginx_oom
+description: The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory
 resource:
-  type: "Deployment"
-  name: "nginx"
-  namespace: "nginx_oom"
+  type: Deployment
+  name: nginx
+  namespace: nginx_oom
 expectations:
-  - name: "oom_error" 
-    statement: "points out that the pod has an OOM (out of memory) error"  
+  - name: step_by_step_guide
+    statement: contains a step-by-step guide
     categories:
-      - "kubernetes"
-      - "problem_finding"
+      - solution_finding
+      - step-by-step_guidance
     complexity: 1
-  - name: "insufficient_memory"
-    statement: "points out that the container has an insufficient amount of memory"
+  - name: oom_error
+    statement: points out that the pod has an OOM (out of memory) error
     categories:
-      - "kubernetes"
-      - "problem_finding"
+      - kubernetes
+      - problem_finding
     complexity: 1
-  - name: "propose_memory_increase"
-    statement: "points out that either the memory limit or the memory request should be increased"
+  - name: insufficient_memory
+    statement: points out that the container has an insufficient amount of memory
     categories:
-      - "kubernetes"
-      - "solution_finding"
+      - kubernetes
+      - problem_finding
     complexity: 1
-  - name: "some_yaml"
-    statement: "provides some yaml formatted code"
+  - name: propose_memory_increase
+    statement: points out that either the memory limit or the memory request should be increased
     categories:
-      - "kubernetes"
-      - "yaml"
-      - "solution_finding"
+      - kubernetes
+      - solution_finding
     complexity: 1
-  - name: "yaml_with_resources"
-    statement: "provides some yaml formatted manifest for a Deployment, that contains a container with resource limits and/or resource requests"
+  - name: some_yaml
+    statement: provides some yaml formatted code
     categories:
-      - "kubernetes"
-      - "yaml"
-      - "solution_finding"
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: yaml_with_deployment
+    statement: provides some yaml formatted manifest for a Deployment, that contains a container with resource limits and/or resource requests
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
     complexity: 2
-  - name: "yaml_with_resources"
-    statement: "provides a complete yaml formatted manifest for a Deployment, that contains all required fields and that contains the settings for a container with resource limits and/or resource requests"
+  - name: yaml_with_deployment_and_resources
+    statement: provides a complete yaml formatted manifest for a Deployment, that contains all required fields and that contains the settings for a container with resource limits and/or resource requests
     categories:
-      - "kubernetes"
-      - "yaml"
-      - "solution_finding"
+      - kubernetes
+      - yaml
+      - solution_finding
     complexity: 2
-  - name: "yaml_"
-    statement: "provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'nginx_oom', that contains all required fields and that contains the settings for a container with resource limits and/or resource requests"
+  - name: fully_deployable_yaml
+    statement: provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'nginx_oom', that contains all required fields and that contains the settings for a container with resource limits and/or resource requests
     categories:
-      - "kubernetes"
-      - "yaml"
-      - "solution_finding"
+      - kubernetes
+      - yaml
+      - solution_finding
     complexity: 3
