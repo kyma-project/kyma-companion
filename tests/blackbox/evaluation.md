@@ -8,10 +8,10 @@ For the evaluation, we need to define a set of scenarios, with each scenario fur
 
 The test cases are deployed on a Gardener cluster. The cluster is set up by hand and is not deleted unless necessary.
 
-Once the cluster is set up, the [Setup Gardener Test Cluster](https://github.com/kyma-project/kyma-companion/actions/workflows/setup-test-cluster.yaml) GitHub Action can be manually triggered.
-The action automatically connects to the Gardener cluster, cleans it and deploys all the examples in the [tests/data/evaluation/namespace-scoped](../../tests/data/evaluation/namespace-scoped) directory.
+When the cluster is set up, manually trigger the GitHub Action [Setup Gardener Test Cluster](https://github.com/kyma-project/kyma-companion/actions/workflows/setup-test-cluster.yaml).
+The action automatically connects to the Gardener cluster, cleans it and deploys all the examples in the [tests/blackbox/data/evaluation/namespace-scoped](../../tests/blackbox/data/evaluation/namespace-scoped) directory.
 
-The GitHub Action provides a summary of any missing scenarios or ones that failed to be deployed. These need to be fixed within their own `deploy.sh` script.
+The GitHub Action provides a summary of any missing scenarios or ones that failed to be deployed. You must fix these within their own `deploy.sh` script.
 
 ## Usage
 
