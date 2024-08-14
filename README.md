@@ -65,7 +65,10 @@ This creates a new virtual environment and installs the project's dependencies.
 
 ### Activate the Virtual Environment
 
-To use the virtual environment, follow these steps:
+To use the virtual environment, follow this procedure.
+
+> [!NOTE] Run these commands in the root directory of your project, where the `pyproject.toml` file is located.
+
 1. Use `poetry shell` to start a new shell session with the virtual environment activated:
 
         ```bash
@@ -75,8 +78,6 @@ To use the virtual environment, follow these steps:
    Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
 2. Use `poetry run` to execute a command.
 3. Use the `deactivate` command to exit the virtual environment.
-
-> [!NOTE] Run these commands in the root directory of your project, where the `pyproject.toml` file is located.
 
 If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
@@ -99,7 +100,7 @@ If you don't install this plugin, you must run poe as a script within the Poetry
 Before running the application, you must provide the Redis server. It stores the conversation with a large language model (LLM).
 Therefore, provide **REDIS_URL** as an environment variable.
 
-For details on how to create a Redis server, read [Create Redis](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available --> on how to create a Redis server. 
+For details on how to create a Redis server, read [Create Redis](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis). <!--the link must be replaced when the OS documentation is available -->
 For example, `REDIS_URL="redis://{host or ip}:6379"`
 
 ### Running Kyma Companion Locally
