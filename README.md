@@ -65,18 +65,18 @@ This creates a new virtual environment and installs the project's dependencies.
 
 ### Activate the Virtual Environment
 
-To activate the virtual environment, use `poetry shell`. This starts a new shell session with the virtual environment activated:
+To use the virtual environment, follow these steps:
+1. Use `poetry shell` to start a new shell session with the virtual environment activated:
 
-```bash
-poetry shell
-```
+        ```bash
+        poetry shell
+        ```
 
-Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
-To exit the virtual environment, simply use the `deactivate` command.
+   Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
+2. Use `poetry run` to execute a command.
+3. Use the `deactivate` command to exit the virtual environment.
 
-Poetry automatically uses the virtual environment when you run, for example, the `poetry run` command.
-
-Remember to run these commands in the root directory of your project, where the `pyproject.toml` file is located.
+> [!NOTE] Run these commands in the root directory of your project, where the `pyproject.toml` file is located.
 
 If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
@@ -90,7 +90,7 @@ To have the command available as `poetry poe <command>` (as seen in the followin
 poetry self add 'poethepoet[poetry_plugin]'
 ```
 
-If this plugin is not installed, you may have to run poe as a script within the Poetry environment using `poetry run poe <command>`.
+If you don't install this plugin, you must run poe as a script within the Poetry environment using `poetry run poe <command>`.
 
 ## Development
 
@@ -129,8 +129,7 @@ Because the companion uses the FastAPI framework, read the following documentati
 
 ### Configuration
 
-For local development, LLM models can be configured inside the `config/models.json` file.  
-> [!NOTE] Don't use the <code>config/models.json</code> file to configure models in dev, stage, or prod clusters.
+For local development, LLMs can be configured inside the `config/models.json` file.
 
 ## Code Checks
 
