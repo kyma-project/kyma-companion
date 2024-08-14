@@ -1,4 +1,4 @@
-# Evaluation
+# Validation
 
 To find a model that can evaluate the test scenarios, we need to validate the best large language model (LLM) model. This can be done by running the validation tests.
 
