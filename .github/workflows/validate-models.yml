@@ -22,11 +22,11 @@ jobs:
         id: aicore-creds
         run: |
           echo "${{ secrets.AICORE_SECRET }}" | base64 -d > aicore-secret.yaml
-          echo "::set-output name=AICORE_CLIENT_ID::$(yq eval '.data.clientid' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_CLIENT_SECRET::$(yq eval '.data.clientsecret' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_AUTH_URL::$(yq eval '.data.url' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.data.serviceurls' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_RESOURCE_GROUP::default"
+          echo "::set-output name=AICORE_CLIENT_ID::$(yq eval '.stringData.clientid' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_CLIENT_SECRET::$(yq eval '.stringData.clientsecret' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_AUTH_URL::$(yq eval '.stringData.auth_url' aicore-secret.yaml)"
+          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.stringData.base_url' aicore-secret.yaml')"
+          echo "::set-output name=AICORE_RESOURCE_GROUP::$(yq eval '.stringData.resource_group' aicore-secret.yaml')"
           # cleanup
           rm -f aicore-secret.yaml
 
