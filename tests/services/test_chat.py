@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from agents.supervisor.agent import Message
-from services.chat import Chat
+from services.messages import MessagesService
 
 
 @pytest.mark.asyncio(scope="class")
@@ -22,7 +22,7 @@ class TestChat:
     @pytest.fixture
     def chat_instance(self, mock_supervisor_agent):
         with patch("services.chat.Chat.__init__", return_value=None):
-            chat_object = Chat()
+            chat_object = MessagesService()
             chat_object.supervisor_agent = mock_supervisor_agent
             yield chat_object
 
@@ -33,7 +33,7 @@ class TestChat:
 
     @pytest.mark.asyncio
     async def test_handle_request(self, chat_instance, mock_supervisor_agent):
-        message = Message(input="Test message", session_id="123")
+        message = Message(input="Test message")
         result = [chunk async for chunk in chat_instance.handle_request(message)]
         mock_supervisor_agent.astream.assert_called_once_with(message)
         assert result == [b"chunk1\n\n", b"chunk2\n\n"]

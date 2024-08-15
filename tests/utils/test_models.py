@@ -2,16 +2,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from utils.config import Config, Model
-from utils.models import create_llm, get_llm, get_model
+from utils.config import Config, ModelConfig
+from utils.models import create_model, get_model, get_model_config
 
 
 @pytest.fixture
 def mock_config():
     return Config(
         models=[
-            Model(name="model1", deployment_id="dep1"),
-            Model(name="model2", deployment_id="dep2"),
+            ModelConfig(name="model1", deployment_id="dep1"),
+            ModelConfig(name="model2", deployment_id="dep2"),
         ]
     )
 
@@ -22,7 +22,7 @@ def mock_config():
 )
 def test_get_model(mocker, mock_config, model_name, expected_deployment_id):
     with patch("utils.models.get_config", return_value=mock_config):
-        result = get_model(model_name)
+        result = get_model_config(model_name)
         if expected_deployment_id:
             assert result.name == model_name
             assert result.deployment_id == expected_deployment_id
@@ -44,7 +44,7 @@ def test_create_llm(mock_config, model_name, temperature, deployment_id):
         patch("utils.models.get_proxy_client", return_value=mock_proxy_client),
         patch("utils.models.ChatOpenAI") as mock_chat_openai,
     ):
-        create_llm(model_name, temperature)
+        create_model(model_name, temperature)
 
         mock_chat_openai.assert_called_once_with(
             deployment_id=deployment_id,
@@ -66,5 +66,5 @@ mock_llm1, mock_llm2 = MagicMock(), MagicMock()
 )
 def test_get_llms(mocker, model_name, llms, expected_llm):
     mocker.patch("utils.models.llms", llms)
-    result = get_llm(model_name)
+    result = get_model(model_name)
     assert result == expected_llm

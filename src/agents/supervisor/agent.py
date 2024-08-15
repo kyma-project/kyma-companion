@@ -6,7 +6,6 @@ from typing import Any, Literal, Protocol
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor
 from langchain_core.messages import HumanMessage
-from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langfuse.callback import CallbackHandler
 from langgraph.checkpoint import BaseCheckpointSaver
@@ -17,6 +16,7 @@ from pydantic import BaseModel
 
 from utils.agents import create_agent
 from utils.logging import get_logger
+from utils.models import Model
 
 logger = get_logger(__name__)
 
@@ -31,15 +31,6 @@ class Message(BaseModel):
     """Message data model."""
 
     input: str
-    session_id: str
-
-
-class Agent(Protocol):
-    """Agent interface."""
-
-    async def astream(self, message: Message) -> dict[str, Any]:
-        """Stream the input to the supervisor asynchronously."""
-        ...
 
 
 @tool
@@ -74,9 +65,19 @@ def agent_node(
     return {"messages": [HumanMessage(content=result["output"], name=name)]}
 
 
+class Agent(Protocol):
+    """Agent interface."""
+
+    async def astream(
+        self, conversation_id: int, message: Message
+    ) -> AsyncGenerator[dict, None]:
+        """Stream the input to the supervisor asynchronously."""
+        ...
+
+
 class SupervisorAgent:
     """Supervisor agent.
-    Currently, it has just prelimiary implementation.
+    Currently, it has just preliminary implementation.
     I'll be adding more features to it in the future.
     """
 
@@ -85,20 +86,30 @@ class SupervisorAgent:
     kyma_agent = None
     tools = None
 
-    def __init__(self, llm: ChatOpenAI, memory: BaseCheckpointSaver):
-        self.llm = llm
+    def __init__(self, model: Model, memory: BaseCheckpointSaver):
+        self.llm = model
         self.memory = memory
         self.tools = [search]
         self.kyma_agent = functools.partial(
             agent_node,
             agent=create_agent(
-                llm,
+                model.model,
                 self.tools,
                 "You are Kyma expert. You assist users with Kyma related questions.",
             ),
             name="KymaAgent",
         )
         self.graph = self._build_graph()
+
+    def _plan(self, state: MessagesState) -> MessagesState:
+        """Breaks down the given user query into sub-tasks."""
+        # TODO: implement this method
+        return state
+
+    def _route(self, state: MessagesState) -> MessagesState:
+        """Route the each sub-task to the appropriate agent."""
+        # TODO: Implement the logic to route each sub-task to the appropriate agent.
+        return state
 
     def _build_graph(self) -> CompiledGraph:
         """Create a supervisor agent."""
@@ -112,17 +123,16 @@ class SupervisorAgent:
         graph = workflow.compile(checkpointer=self.memory)
         return graph
 
-    async def astream(self, message: Message) -> AsyncGenerator[dict, None]:
+    async def astream(
+        self, conversation_id: int, message: Message
+    ) -> AsyncGenerator[dict, None]:
         """Stream the input to the supervisor asynchronously."""
-        config = RunnableConfig(
-            {
-                "configurable": {"thread_id": message.session_id},
-                "callbacks": [langfuse_handler],
-            }
-        )
         async for chunk in self.graph.astream(
             input={"messages": [HumanMessage(content=message.input)]},
-            config=config,
+            config={
+                "configurable": {"thread_id": conversation_id},
+                "callbacks": [langfuse_handler],
+            },
         ):
             if "__end__" not in chunk:
                 yield chunk

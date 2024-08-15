@@ -8,17 +8,18 @@ from utils.logging import get_logger
 logger = get_logger("config")
 
 
-class Model(BaseModel):
+class ModelConfig(BaseModel):
     """Model for the deployment request"""
 
     name: str
     deployment_id: str
+    temperature: float
 
 
 class Config(BaseModel):
     """Configuration of the application"""
 
-    models: list[Model]
+    models: list[ModelConfig]
 
 
 def get_config() -> Config:

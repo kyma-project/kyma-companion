@@ -1,35 +1,40 @@
 import os
+from collections.abc import AsyncIterator
+from typing import Any
 
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from agents.supervisor.agent import Message, SupervisorAgent
 from utils.logging import get_logger
-from utils.models import create_llm
+from utils.models import ModelFactory
 
 logger = get_logger(__name__)
 
 GPT4O_MODEL = "gpt-4o"
 
 
-class Chat:
+class MessagesService:
     """Chat service."""
 
-    supervisor_agent = None
+    supervisor_agent: SupervisorAgent
+    model_factory = ModelFactory()
 
     def __init__(self):
-        llm = create_llm(GPT4O_MODEL)
+        model = self.model_factory.create_model(GPT4O_MODEL)
         memory = RedisSaver(
             async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
         )
-        self.supervisor_agent = SupervisorAgent(llm, memory)
+        self.supervisor_agent = SupervisorAgent(model, memory)
 
     async def init_chat(self) -> dict:
         """Initialize the chat"""
         logger.info("Initializing chat...")
         return {"message": "Chat is initialized!"}
 
-    async def handle_request(self, message: Message):  # noqa: ANN201
+    async def handle_request(
+        self, conversation_id: int, message: Message
+    ) -> AsyncIterator[Any]:
         """Handle a request"""
         logger.info("Processing request...")
 
-        async for chunk in self.supervisor_agent.astream(message):
+        async for chunk in self.supervisor_agent.astream(conversation_id, message):
             yield f"{chunk}\n\n".encode()
