@@ -11,7 +11,7 @@ app.include_router(chat.router)
 
 @app.get("/")
 async def root() -> dict:  # noqa E302
-    return {"message": "Hello from Kyma Companion!"}
+    return {"message": "Hello world from Kyma Companion!"}
 
 
 @app.get("/readyz")
