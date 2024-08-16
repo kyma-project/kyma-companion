@@ -20,6 +20,18 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
             memory: "256Mi" # Minimum amount of memory guaranteed
