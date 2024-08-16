@@ -231,4 +231,4 @@ scripts/k8s/companion-configmap.yaml
 
 commands.md
 .env.dev
-.env.companion.evaluation.tests
+tests/blackbox/.env.evaluation
