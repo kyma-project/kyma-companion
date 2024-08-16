@@ -4,6 +4,9 @@ run-name: "Evaluation tests"
 # Required repository secrets:
 # - AICORE_SECRET
 # - COMPANION_CONFIGMAP
+# - GARDENER_TEST_CLUSTER_URL
+# - GARDENER_TEST_CLUSTER_AUTH_TOKEN
+# - GARDENER_TEST_CLUSTER_CA_DATA
 
 on:
   pull_request_target:
