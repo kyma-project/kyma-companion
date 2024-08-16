@@ -21,14 +21,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Test step
-        env:
-          GIT_REF: ${{ github.sha }}
-          GIT_PR_REF: ${{ github.event.pull_request.head.sha }}
-        run: |
-          echo "GIT_REF: $GIT_REF"
-          echo "GIT_PR_REF: $GIT_PR_REF"
-
       - name: Extract Python version
         id: python-version
         run: ./scripts/shell/extract-python-version.sh
