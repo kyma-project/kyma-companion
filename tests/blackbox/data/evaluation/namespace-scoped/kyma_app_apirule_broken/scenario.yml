@@ -1,5 +1,5 @@
 id: kyma_app_apirule_broken
-description: The Application uses an API Rule that has two accessStragegies handler, which will lead to an error stead
+description: The Application uses an API Rule that has two accessStrategies handler, which will lead to an error stead
 resource:
   type: apirule
   name: restapi

@@ -251,7 +251,7 @@ spec:
     name: restapi
     namespace: kyma_app_apirule_broken
     port: 80
-  gateway: kyma-system/kyma-gatewa
+  gateway: kyma-system/kyma-gateway
   rules:
     - path: /.*
       methods: ["GET", "POST"]
