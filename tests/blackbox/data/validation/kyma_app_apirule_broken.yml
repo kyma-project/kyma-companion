@@ -1,29 +1,29 @@
-description: This mock response contains a incomplete yaml-formatted manifest for an APIRule
-scenario_id: kyma_app_apirule_broken
-mock_response_content: |-
-  "There seems to be a syntax error in the APIRule. It contains two accessStrategies but it should only contain one accessStrategy. Here is a corrected version of the APIRule:
-  ```yaml
-  apiVersion: gateway.kyma-project.io/v1beta1
-  kind: APIRule
-  spec:
-    rules:
-      - path: /.*
-        methods: ["GET", "POST"]
-        accessStrategies:
-          - handler: no_auth
-  ```"
-expected_evaluations:
-  - scenario_expectation_name: apirule_error
-    expected_evaluation: true
-  - scenario_expectation_name: apirule_with_two_accessStrategies
-    expected_evaluation: true
-  - scenario_expectation_name: step_by_step_guide
-    expected_evaluation: false
-  - scenario_expectation_name: some_yaml
-    expected_evaluation: true
-  - scenario_expectation_name: partial_yaml_for_apirule
-    expected_evaluation: true
-  - scenario_expectation_name: complete_yaml_for_apirule
-    expected_evaluation: false
-  - scenario_expectation_name: deployable_yaml_for_apirule
-    expected_evaluation: false
+- description: This mock response contains a incomplete yaml-formatted manifest for an APIRule
+  scenario_id: kyma_app_apirule_broken
+  mock_response_content: |-
+    "There seems to be a syntax error in the APIRule. It contains two accessStrategies but it should only contain one accessStrategy. Here is a corrected version of the APIRule:
+      ```yaml
+      apiVersion: gateway.kyma-project.io/v1beta1
+      kind: APIRule
+      spec:
+        rules:
+          - path: /.*
+          methods: ["GET", "POST"]
+          accessStrategies:
+            - handler: no_auth
+            ```"
+  expected_evaluations:
+    - scenario_expectation_name: apirule_error
+      expected_evaluation: true
+    - scenario_expectation_name: apirule_with_two_accessStrategies
+      expected_evaluation: true
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: false
+    - scenario_expectation_name: some_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml_for_apirule
+      expected_evaluation: true
+    - scenario_expectation_name: complete_yaml_for_apirule
+      expected_evaluation: false
+    - scenario_expectation_name: deployable_yaml_for_apirule
+      expected_evaluation: false
