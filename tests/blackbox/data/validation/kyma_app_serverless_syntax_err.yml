@@ -15,27 +15,27 @@
         source:
           inline:
             dependencies: |-
-            {
-              "name": "func1",
-              "version": "1.0.0",
-              "dependencies": {}
-            }
-          source: |
-            module.exports = {
-              main: async function (event, context) {
-                const now = new Date();
-                const response = {
-                statusCode: 200,
-                result: {
-                  message: 'Serverless function is up and running',
-                  status: 'success',
-                  utcDatetime: now
+              {
+                "name": "func1",
+                "version": "1.0.0",
+                "dependencies": {}
                 }
-            };
-              console.log('Response:', response);
-              return response;
+            source: |
+              module.exports = {
+                main: async function (event, context) {
+                  const now = new Date();
+                  const response = {
+                  statusCode: 200,
+                  result: {
+                    message: 'Serverless function is up and running',
+                    status: 'success',
+                    utcDatetime: now
+                  }
+                };
+                console.log('Response:', response);
+                return response;
+              }
             }
-          }
       ```"
   expected_evaluations:
     - scenario_expectation_name: step_by_step_guide
