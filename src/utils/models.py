@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Protocol
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
@@ -6,6 +7,14 @@ from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from gen_ai_hub.proxy.native.google.clients import GenerativeModel
 
 from utils.config import ModelConfig, get_config
+
+
+class LLM(str, Enum):
+    """Enum for LLM model names."""
+
+    GPT4O_MODEL = "gpt-4o"
+    GPT35_MODEL = "gpt-3.5"
+    GEMINI_10_PRO = "gemini-1.0-pro"
 
 
 class Model(Protocol):
@@ -29,7 +38,7 @@ class Model(Protocol):
     """The name of the model."""
 
     @property
-    def model(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GenerativeModel:
         """The instance of the model."""
         ...
 
@@ -38,11 +47,11 @@ class OpenAIModel:
     """OpenAI Model."""
 
     _name: str
-    _model: ChatOpenAI
+    _llm: ChatOpenAI
 
     def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
         self._name = config.name
-        self._model = ChatOpenAI(
+        self._llm = ChatOpenAI(
             deployment_id=config.deployment_id,
             proxy_client=proxy_client,
             temperature=config.temperature,
@@ -50,7 +59,7 @@ class OpenAIModel:
 
     def invoke(self, content: str):  # noqa
         """Generate content using the model"""
-        response = self.model.invoke(content)
+        response = self.llm.invoke(content)
         return response
 
     @property
@@ -59,9 +68,9 @@ class OpenAIModel:
         return self._name
 
     @property
-    def model(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GenerativeModel:
         """Returns the instance of OpenAI model."""
-        return self._model
+        return self._llm
 
 
 class GeminiModel:
@@ -82,7 +91,7 @@ class GeminiModel:
     def invoke(self, content: str):  # noqa
         """Generate content using the model"""
         content = [{"role": "user", "parts": [{"text": content}]}]
-        response = self.model.generate_content(content)
+        response = self.llm.generate_content(content)
         return response
 
     @property
@@ -91,7 +100,7 @@ class GeminiModel:
         return self._name
 
     @property
-    def model(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GenerativeModel:
         """Returns the instance of Gemini model."""
         return self._model
 

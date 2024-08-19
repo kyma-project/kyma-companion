@@ -31,6 +31,8 @@ langfuse = "^2.39.1"
 langgraph = "^0.1.7"
 redis = "^5.0.7"
 requests = "^2.32.3"
+langchain-experimental = "^0.0.64"
+black = "^24.8.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"

@@ -5,11 +5,9 @@ from typing import Any
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from agents.supervisor.agent import Message, SupervisorAgent
 from utils.logging import get_logger
-from utils.models import ModelFactory
+from utils.models import LLM, ModelFactory
 
 logger = get_logger(__name__)
-
-GPT4O_MODEL = "gpt-4o"
 
 
 class MessagesService:
@@ -19,7 +17,7 @@ class MessagesService:
     model_factory = ModelFactory()
 
     def __init__(self):
-        model = self.model_factory.create_model(GPT4O_MODEL)
+        model = self.model_factory.create_model(LLM.GPT4O_MODEL)
         memory = RedisSaver(
             async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
         )
