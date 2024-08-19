@@ -11,7 +11,7 @@
           methods: ["GET", "POST"]
           accessStrategies:
             - handler: no_auth
-            ```"
+      ```"
   expected_evaluations:
     - scenario_expectation_name: apirule_error
       expected_evaluation: true
