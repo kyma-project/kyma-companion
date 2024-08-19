@@ -21,7 +21,7 @@ expectations:
     statement: points out that the serverless function 'func1' should call Date() instead of Dates()
     categories:
       - kyma
-      - problem_findings
+      - problem_finding
       - solution_finding
     complexity: 2
   - name: some_yaml
@@ -46,8 +46,8 @@ expectations:
       - solution_finding
     complexity: 3
   - name: deployable_yaml_with_complete_serverless_function
-    statement:
-      provides a complete yaml formatted manifest for a serverless function with all required fields, name set to 'func1', namespace set to 'kyma_app_serverless_syntax_err' and  that calls 'Date()'
+    statement: provides a complete yaml formatted manifest for a serverless function with all required fields, name set to 'func1', namespace set to 'kyma_app_serverless_syntax_err' and  that calls 'Date()'
+    categories:
       - kubernetes
       - yaml
       - solution_finding
