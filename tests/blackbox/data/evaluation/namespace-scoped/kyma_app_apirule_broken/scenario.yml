@@ -47,7 +47,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml_for_apirule
-    statement: provides a complete yaml formatted manifest for a apirule, with the name set to 'restapi', the namespace set to 'kyma_app_apirule_broken', that contains all required fields and that contains onlyy one accessStrategyy
+    statement: provides a complete yaml formatted manifest for a apirule, with the name set to 'restapi', the namespace set to 'kyma_app_apirule_broken', that contains all required fields and that contains only one accessStrategyy
     categories:
       - kubernetes
       - yaml
