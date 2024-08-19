@@ -36,8 +36,7 @@ mock_response_content: |-
               return response;
             }
           }
-  ```
-  "
+  ```"
 expected_evaluations:
   - scenario_expectation_name: step_by_step_guide
     expected_evaluation: false
