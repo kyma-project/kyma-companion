@@ -12,8 +12,11 @@ on:
   pull_request_target:
     branches:
       - main
-    paths:
-      - "src/**"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - CODEOWNERS
+      - LICENSE
 
 # global env variables.
 env:
