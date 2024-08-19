@@ -1,0 +1,213 @@
+name: "Evaluation tests"
+run-name: "Evaluation tests"
+
+# Required repository secrets:
+# - AICORE_SECRET
+# - COMPANION_CONFIGMAP
+# - GARDENER_TEST_CLUSTER_URL
+# - GARDENER_TEST_CLUSTER_AUTH_TOKEN
+# - GARDENER_TEST_CLUSTER_CA_DATA
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - CODEOWNERS
+      - LICENSE
+
+# global env variables.
+env:
+  DOCKER_TIMEOUT: 30
+  K3D_VERSION: "v5.7.2" # Required K3d version.
+  REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
+  GITHUB_EVENT_ACTION: "${{ github.event.action }}"
+  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
+
+jobs:
+  wait-for-build:
+    name: Wait for image build job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # Note: 'github.event.pull_request.head.sha' is not same as 'github.sha' on pull requests.
+          GIT_REF: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY_FULL_NAME: "${{ github.repository }}"
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+
+  evaluation-tests:
+    name: Run evaluation tests
+    needs: wait-for-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: K3d Setup - Install Kubectl CLI
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: K3d Setup - Install K3d CLI
+        id: install-k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
+          k3d --version
+          k3d_version=$(k3d --version | cut -d " " -f 3 | head -1 | xargs)
+          if [ "$k3d_version" != "${K3D_VERSION}" ]; then
+            echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
+            exit 1
+          fi
+          echo "K3d version is correct: $k3d_version"
+
+      - name: K3d Setup - Provision K3d cluster
+        run: |
+          echo "::group::K3d - Provision"
+          k3d cluster create test-cluster --verbose --agents=1 -p 9080:80@loadbalancer -p 9443:443@loadbalancer -p "32000:32000@agent:0"
+          echo "::endgroup::"
+
+      - name: K3d Setup - Verify K3d context
+        run: |
+          echo "::group::K3d - Context"
+          context_name=$(kubectl config current-context)
+          if [ "$context_name" != "k3d-test-cluster" ]; then
+            echo "K3d context is not correct. Expected: k3d-test-cluster, got: $context_name"
+            exit 1
+          fi
+          echo "K3d context is correct"
+          echo "::endgroup::"
+
+      - name: Redis Setup - Deploy Redis using Helm
+        run: |
+          kubectl create namespace redis
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          echo "Installing Redis using Helm..."
+          helm install --wait redis bitnami/redis --set auth.enabled=false -n redis
+
+      - name: Companion Deploy - Create namespace
+        run: |
+          kubectl apply -f scripts/k8s/companion-namespace.yaml
+
+      - name: Companion Deploy - Create secret
+        run: |
+          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > scripts/k8s/aicore-secret.yaml
+          kubectl apply -f scripts/k8s/aicore-secret.yaml
+          rm -f scripts/k8s/aicore-secret.yaml
+
+      - name: Companion Deploy - Create ConfigMap
+        run: |
+          echo "${{ secrets.COMPANION_CONFIGMAP }}" | base64 -d > scripts/k8s/companion-configmap.yaml
+          kubectl apply -f scripts/k8s/companion-configmap.yaml
+          rm -f scripts/k8s/companion-configmap.yaml
+
+      - name: Companion Deploy - Update image name in Deployment
+        run: |
+          sed -i "s|example.com/ai-backend:stable|${{env.IMAGE_NAME}}|g" scripts/k8s/companion-deployment.yaml
+
+      - name: Companion Deploy - Create Deployment and NodePort Service
+        run: |
+          kubectl apply -f scripts/k8s/companion-deployment.yaml
+
+      - name: Companion Deploy - Wait for deployment
+        run: |
+          echo "Waiting for backend pods (labels: app=ai-backend) to be ready..."
+          kubectl wait --for=condition=Ready pod -l 'app=ai-backend' -n ai-core --timeout=300s
+          sleep 30
+
+      - name: Companion Deploy - Test reachability through NodePort
+        run: |
+          curl http://localhost:32000/readyz
+
+      - name: Companion Deploy - Debug information
+        if: failure()
+        run: |
+          kubectl get deploy -n ai-core
+          kubectl get pod -n ai-core
+          kubectl logs -n ai-core -l app=ai-backend
+
+      - name: Evaluation Tests Setup - Extract project Python version
+        working-directory: tests/blackbox
+        id: python-version
+        run: |
+          ./../../scripts/shell/extract-python-version.sh
+
+      - name: Evaluation Tests Setup - Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Evaluation Tests Setup - Install Poetry
+        working-directory: tests/blackbox
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Evaluation Tests Setup - Install dependencies
+        working-directory: tests/blackbox
+        run: poetry install
+
+      - name: Evaluation Tests Setup - Prepare test configurations
+        id: eval-tests-configs
+        env:
+          AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
+        run: |
+          echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
+          echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_CLIENT_SECRET=$(yq eval '.stringData.clientsecret' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_CONFIGURATION_ID_GPT4=$(yq eval '.stringData.configuration_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_DEPLOYMENT_ID_GPT4=$(yq eval '.stringData.deployment_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          # cleanup
+          rm -f aicore-secret.yaml
+
+      - name: Run Evaluation Tests
+        working-directory: tests/blackbox
+        env:
+          LOG_LEVEL: "DEBUG"
+          TEST_DATA_PATH: "./data"
+          COMPANION_API_URL: "http://localhost:32000"
+          # Gardener test cluster configurations.
+          TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
+          TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
+          TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
+          # AI Core configurations.
+          AICORE_CLIENT_ID: ${{ steps.eval-tests-configs.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.eval-tests-configs.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ steps.eval-tests-configs.outputs.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ steps.eval-tests-configs.outputs.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ steps.eval-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
+          AICORE_CONFIGURATION_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4 }}
+          AICORE_DEPLOYMENT_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4 }}
+        run: |
+          poetry run python src/run_evaluation.py
