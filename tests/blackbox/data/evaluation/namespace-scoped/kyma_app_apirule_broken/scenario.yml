@@ -33,7 +33,7 @@ expectations:
       - solution_finding
     complexity: 1
   - name: partial_yaml_for_apirule
-    statement: provides some yaml formatted manifest for an apirule, that only contains one accessStrategy
+    statement: provides some yaml formatted manifest for an apirule that only contains one accessStrategy
     categories:
       - kubernetes
       - yaml

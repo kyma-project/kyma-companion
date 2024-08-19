@@ -22,7 +22,7 @@ expected_evaluations:
   - scenario_expectation_name: some_yaml
     expected_evaluation: true
   - scenario_expectation_name: partial_yaml_for_apirule
-    expected_evaluation: false
+    expected_evaluation: true
   - scenario_expectation_name: complete_yaml_for_apirule
     expected_evaluation: false
   - scenario_expectation_name: deployable_yaml_for_apirule
