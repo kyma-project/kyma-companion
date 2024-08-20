@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 import yaml
 from common.logger import get_logger
