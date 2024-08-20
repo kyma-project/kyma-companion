@@ -17,7 +17,9 @@ def load_data(data_dir) -> list[ScenarioMockResponses]:
                 file_path = os.path.join(data_dir, filename)
                 with open(file_path) as file:
                     yaml_data = yaml.safe_load(file)
-                    mock_responses = [ScenarioMockResponses(**data) for data in yaml_data]
+                    mock_responses = [
+                        ScenarioMockResponses(**data) for data in yaml_data
+                    ]
                     for mock_response in mock_responses:
                         results.append(mock_response)
     except Exception:
