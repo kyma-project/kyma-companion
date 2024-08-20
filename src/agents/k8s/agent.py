@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 model_factory = ModelFactory()
 model = model_factory.create_model(LLM.GPT4O_MODEL)
 
-K8S_AGENT_NAME = "KubernetesAgent"
+K8S_AGENT = "KubernetesAgent"
 
 
 @tool
@@ -34,5 +34,5 @@ k8s_agent_node = functools.partial(
         [search_kubernetes_doc],
         "You are Kubernetes expert. You assist users with Kubernetes related questions.",
     ),
-    name=K8S_AGENT_NAME,
+    name=K8S_AGENT,
 )

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, HTTPException, Path
 from starlette.responses import StreamingResponse
 
-from agents.supervisor.agent import Message
+from agents.common.data import Message
 from services.messages import MessagesService
 
 messages_service = MessagesService()

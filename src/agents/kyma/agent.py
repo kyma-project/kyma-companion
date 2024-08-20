@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 model_factory = ModelFactory()
 model = model_factory.create_model(LLM.GPT4O_MODEL)
 
-KYMA_AGENT_NAME = "KymaAgent"
+KYMA_AGENT = "KymaAgent"
 
 
 @tool
@@ -32,5 +32,5 @@ kyma_agent_node = functools.partial(
         [search_kyma_doc],
         "You are Kyma expert. You assist users with Kyma related questions.",
     ),
-    name=KYMA_AGENT_NAME,
+    name=KYMA_AGENT,
 )

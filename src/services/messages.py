@@ -28,11 +28,10 @@ class MessagesService:
         logger.info("Initializing chat...")
         return {"message": "Chat is initialized!"}
 
-    async def handle_request(
-        self, conversation_id: int, message: Message
-    ) -> AsyncIterator[Any]:
+    async def handle_request(self, conversation_id: int, message: Message):
         """Handle a request"""
         logger.info("Processing request...")
 
         async for chunk in self.supervisor_agent.astream(conversation_id, message):
+            logger.debug(f"Sending chunk: {chunk}")
             yield f"{chunk}\n\n".encode()
