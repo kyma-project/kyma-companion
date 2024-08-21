@@ -20,8 +20,9 @@ from agents.kyma.agent import KYMA_AGENT, kyma_agent_node
 from utils.logging import get_logger
 from utils.models import Model
 
+PLANNER = "Planner"
 SUPERVISOR = "Supervisor"
-FINALIZE = "Finalize"
+FINALIZER = "Finalize"
 
 logger = get_logger(__name__)
 
@@ -79,7 +80,7 @@ class SupervisorAgent:
         self.model = model
         self.memory = memory
 
-        options: list[str] = [FINALIZE] + self.members
+        options: list[str] = [FINALIZER] + self.members
         function_def = {
             "name": "assign_and_route",
             "description": "Assign subtasks to agents.",
@@ -111,14 +112,14 @@ class SupervisorAgent:
                     "Given the subtasks, assign each subtask to an appropriate agent, "
                     "and supervise conversation between the agents to a achieve the goal given in the query. "
                     "You also decide when the work should be finalized. When all subtasks are completed, "
-                    f"respond with {FINALIZE}. ",
+                    f"respond with {FINALIZER}. ",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
                 (
                     "system",
                     "Given the conversation above, who should act next? "
                     "Or should we finalize? Select one of: {options}\n"
-                    f"Set {FINALIZE} if only if all the subtasks statuses are 'completed'.",
+                    f"Set {FINALIZER} if only if all the subtasks statuses are 'completed'.",
                 ),
             ]
         ).partial(options=str(options), members=", ".join(options))
@@ -153,18 +154,36 @@ class SupervisorAgent:
             members=", ".join(self.members),
             output_format=self.parser.get_format_instructions(),
         )
-
         planner = planner_prompt | self.model.llm
-
-        plan = planner.invoke(
-            {
-                "messages": state.messages,
-            },
-            config={"callbacks": [langfuse_handler]},
-        )
-
-        state.subtasks = self.parser.parse(plan.content).subtasks
-        return state.dict()  # type: ignore
+        try:
+            plan = planner.invoke(
+                {
+                    "messages": state.messages[-1:],
+                },  # last message is the user query
+                config={"callbacks": [langfuse_handler]},
+            )
+            state.subtasks = self.parser.parse(plan.content).subtasks
+            return {
+                "subtasks": state.subtasks,
+                "messages": (
+                    [
+                        AIMessage(
+                            content=f"Task decomposed into subtasks and assigned to agents: {state.subtasks}",
+                            name=PLANNER,
+                        )
+                    ]
+                ),
+            }
+        except Exception as e:
+            logger.error(f"Error in planning: {e}")
+            return {
+                "messages": [
+                    AIMessage(
+                        content=f"Error in planning: {e}",
+                        name="Planner",
+                    )
+                ],
+            }
 
     def generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""
@@ -201,18 +220,6 @@ class SupervisorAgent:
 
     def supervisor_node(self, state: AgentState) -> dict[str, Any]:
         """Supervisor node."""
-
-        first_supervisor_message: AIMessage | None
-        if not state.subtasks:
-            self._plan(state)
-            first_supervisor_message = AIMessage(
-                content=f"Task decomposed into subtasks and assigned to agents: {state.subtasks}",
-                name="Supervisor",
-            )
-        else:
-            first_supervisor_message = None
-
-        # given the plan (subtasks), route the subtasks to the appropriate agents
         result = self.supervisor_chain.invoke(
             state.dict()
         )  # langchain needs pydantic v1
@@ -220,30 +227,33 @@ class SupervisorAgent:
         return {
             "next": result["next"],
             "subtasks": state.subtasks,
-            "messages": (
-                [first_supervisor_message] if first_supervisor_message else []
-            ),  # TODO: maybe set message from supervisor here
         }
 
     def _build_graph(self) -> CompiledGraph:
         """Create a supervisor agent."""
 
         workflow = StateGraph(AgentState)
+        workflow.add_node(FINALIZER, self.generate_final_response)
         workflow.add_node(KYMA_AGENT, kyma_agent_node)
         workflow.add_node(K8S_AGENT, k8s_agent_node)
-        workflow.add_node(FINALIZE, self.generate_final_response)
         workflow.add_node(SUPERVISOR, self.supervisor_node)
+        workflow.add_node(PLANNER, self._plan)
 
+        # pass the subtasks to supervisor to route to agents
+        workflow.add_edge(PLANNER, SUPERVISOR)
         for member in self.members:
             # We want our workers to ALWAYS "report back" to the supervisor when done
             workflow.add_edge(member, SUPERVISOR)
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
-        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [FINALIZE]}
+        conditional_map: dict[Hashable, str] = {
+            k: k for k in self.members + [FINALIZER]
+        }
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
-        workflow.add_edge(FINALIZE, END)
-        # Finally, add entrypoint
-        workflow.add_edge(START, SUPERVISOR)
+        # Add end node
+        workflow.add_edge(FINALIZER, END)
+        # Add entrypoint
+        workflow.add_edge(START, PLANNER)
 
         graph = workflow.compile(checkpointer=self.memory)
         return graph
