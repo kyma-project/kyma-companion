@@ -29,7 +29,7 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
         if subtask.assigned_to == name:
             # TODO: add messages next to input for agent invocation
             result = agent.invoke({"input": subtask.description})
-            subtask.update_result(result["output"])
+            subtask.complete()
             return {
                 "messages": [AIMessage(content=result["output"], name=name)],
             }

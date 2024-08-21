@@ -22,9 +22,8 @@ class SubTask(BaseModel):
     status: str = Field(default=SubTaskStatus.PENDING)
     result: str | None
 
-    def update_result(self, result: str) -> None:
+    def complete(self) -> None:
         """Update the result of the task."""
-        self.result = result
         self.status = SubTaskStatus.COMPLETED
 
 

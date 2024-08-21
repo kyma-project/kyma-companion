@@ -1,25 +1,27 @@
+import json
 import os
 from collections.abc import AsyncGenerator, Hashable, Sequence
-from typing import Any, Literal, Protocol
+from typing import Any, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.output_parsers.openai_functions import JsonOutputFunctionsParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langfuse.callback import CallbackHandler
-from langgraph.checkpoint import BaseCheckpointSaver
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END, START
 from langgraph.graph import MessagesState, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.data import Message
-from agents.common.state import AgentState, Plan
+from agents.common.state import AgentState, Plan, SubTask
 from agents.k8s.agent import K8S_AGENT, k8s_agent_node
 from agents.kyma.agent import KYMA_AGENT, kyma_agent_node
 from utils.logging import get_logger
 from utils.models import Model
 
 SUPERVISOR = "Supervisor"
+FINALIZE = "Finalize"
 
 logger = get_logger(__name__)
 
@@ -53,6 +55,15 @@ class Agent(Protocol):
         ...
 
 
+class CustomJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder."""
+
+    def default(self, obj):  # noqa D102
+        if isinstance(obj, AIMessage | HumanMessage | SubTask):
+            return obj.__dict__
+        return super().default(obj)
+
+
 class SupervisorAgent:
     """Supervisor agent class."""
 
@@ -61,13 +72,14 @@ class SupervisorAgent:
     kyma_agent = None
     tools = None
     members = [KYMA_AGENT, K8S_AGENT]
+
     parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
     def __init__(self, model: Model, memory: BaseCheckpointSaver):
         self.model = model
         self.memory = memory
 
-        options: list[str] = ["FINISH"] + self.members
+        options: list[str] = [FINALIZE] + self.members
         function_def = {
             "name": "assign_and_route",
             "description": "Assign subtasks to agents.",
@@ -85,7 +97,7 @@ class SupervisorAgent:
                             "required": ["description", "assigned_to"],
                         },
                     },
-                    "next": {"type": "string", "enum": ["FINISH"] + options},
+                    "next": {"type": "string", "enum": options},
                 },
                 "required": ["subtasks", "next"],
             },
@@ -96,16 +108,17 @@ class SupervisorAgent:
                 (
                     "system",
                     "You are a supervisor tasked with managing a conversation between the agents: {members}.\n"
-                    " Given the subtasks, assign each subtask to an appropriate agent,"
-                    " and supervise conversation between the agents to a achieve the goal given in the query."
-                    " You also decide when the work is finished. When all subtasks are completed, respond with FINISH.",
+                    "Given the subtasks, assign each subtask to an appropriate agent, "
+                    "and supervise conversation between the agents to a achieve the goal given in the query. "
+                    "You also decide when the work should be finalized. When all subtasks are completed, "
+                    f"respond with {FINALIZE}. ",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
                 (
                     "system",
-                    "Given the conversation above, who should act next?"
-                    " Or should we FINISH? Select one of: {options}\n"
-                    " Set FINISH if only if all the subtasks statuses are 'completed'.",
+                    "Given the conversation above, who should act next? "
+                    "Or should we finalize? Select one of: {options}\n"
+                    f"Set {FINALIZE} if only if all the subtasks statuses are 'completed'.",
                 ),
             ]
         ).partial(options=str(options), members=", ".join(options))
@@ -143,7 +156,6 @@ class SupervisorAgent:
 
         planner = planner_prompt | self.model.llm
 
-        state.messages = filter_messages(state.messages)
         plan = planner.invoke(
             {
                 "messages": state.messages,
@@ -152,7 +164,40 @@ class SupervisorAgent:
         )
 
         state.subtasks = self.parser.parse(plan.content).subtasks
-        return state.dict()
+        return state.dict()  # type: ignore
+
+    def generate_final_response(self, state: AgentState) -> dict[str, Any]:
+        """Generate the final response."""
+
+        state.messages = filter_messages(state.messages)
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                MessagesPlaceholder(variable_name="messages"),
+                (
+                    "system",
+                    "You are Kyma, Kubernetes and SAP Business Technology Platform expert. "
+                    "Generate a final comprehensive response based on the responses of the {members} agents.",
+                ),
+            ]
+        ).partial(members=", ".join(self.members))
+
+        final_response_chain = prompt | self.model.llm
+        state.final_response = final_response_chain.invoke(
+            {"messages": [m for m in state.messages if m.name in self.members]},
+            config={"callbacks": [langfuse_handler]},
+        ).content
+
+        return {
+            "final_response": state.final_response,
+            "messages": [
+                AIMessage(
+                    content=state.final_response,
+                    name="Finalize",
+                )
+            ],
+            "next": END,
+        }
 
     def supervisor_node(self, state: AgentState) -> dict[str, Any]:
         """Supervisor node."""
@@ -186,6 +231,7 @@ class SupervisorAgent:
         workflow = StateGraph(AgentState)
         workflow.add_node(KYMA_AGENT, kyma_agent_node)
         workflow.add_node(K8S_AGENT, k8s_agent_node)
+        workflow.add_node(FINALIZE, self.generate_final_response)
         workflow.add_node(SUPERVISOR, self.supervisor_node)
 
         for member in self.members:
@@ -193,9 +239,9 @@ class SupervisorAgent:
             workflow.add_edge(member, SUPERVISOR)
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
-        conditional_map: dict[Hashable, str] = {k: k for k in self.members}
-        conditional_map["FINISH"] = END
+        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [FINALIZE]}
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
+        workflow.add_edge(FINALIZE, END)
         # Finally, add entrypoint
         workflow.add_edge(START, SUPERVISOR)
 
@@ -204,14 +250,17 @@ class SupervisorAgent:
 
     async def astream(
         self, conversation_id: int, message: Message
-    ) -> AsyncGenerator[dict, None]:
+    ) -> AsyncGenerator[str, None]:
         """Stream the input to the supervisor asynchronously."""
         async for chunk in self.graph.astream(
-            input={"messages": [HumanMessage(content=message.input)]},
+            input={"messages": [HumanMessage(content=message.question)]},
             config={
-                "configurable": {"thread_id": conversation_id},
+                "configurable": {
+                    "thread_id": str(conversation_id),
+                },
                 "callbacks": [langfuse_handler],
             },
         ):
+            chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
-                yield chunk
+                yield chunk_json

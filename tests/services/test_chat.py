@@ -33,7 +33,7 @@ class TestChat:
 
     @pytest.mark.asyncio
     async def test_handle_request(self, chat_instance, mock_supervisor_agent):
-        message = Message(input="Test message")
+        message = Message(question="Test message")
         result = [chunk async for chunk in chat_instance.handle_request(message)]
         mock_supervisor_agent.astream.assert_called_once_with(message)
         assert result == [b"chunk1\n\n", b"chunk2\n\n"]
