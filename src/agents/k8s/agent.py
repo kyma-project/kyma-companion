@@ -1,15 +1,14 @@
 import functools
+from typing import Any
 
 from langchain_core.tools import tool
 
+from agents.common.state import AgentState
 from agents.common.utils import agent_node, create_agent
 from utils.logging import get_logger
-from utils.models import LLM, ModelFactory
+from utils.models import Model
 
 logger = get_logger(__name__)
-
-model_factory = ModelFactory()
-model = model_factory.create_model(LLM.GPT4O_MODEL)
 
 K8S_AGENT = "KubernetesAgent"
 
@@ -27,12 +26,23 @@ def search_kubernetes_doc(query: str) -> str:
     )
 
 
-k8s_agent_node = functools.partial(
-    agent_node,
-    agent=create_agent(
-        model.llm,
-        [search_kubernetes_doc],
-        "You are Kubernetes expert. You assist users with Kubernetes related questions.",
-    ),
-    name=K8S_AGENT,
-)
+class KubernetesAgent:
+    """Supervisor agent class."""
+
+    name: str = K8S_AGENT
+
+    def __init__(self, model: Model):
+        self.k8s_agent_node = functools.partial(
+            agent_node,
+            agent=create_agent(
+                model.llm,
+                [search_kubernetes_doc],
+                "You are Kubernetes expert. You assist users with Kubernetes related questions.",
+            ),
+            name=K8S_AGENT,
+        )
+
+    def agent_node(self, state: AgentState) -> dict[str, Any]:
+        """Agent node."""
+
+        return self.k8s_agent_node(state)

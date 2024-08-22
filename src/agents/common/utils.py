@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
