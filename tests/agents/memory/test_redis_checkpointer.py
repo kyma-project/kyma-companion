@@ -6,7 +6,7 @@ import fakeredis
 import pytest
 import pytest_asyncio
 from langgraph.checkpoint.base import Checkpoint
-from langgraph.serde.jsonplus import JsonPlusSerializer
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from redis import ConnectionError
 from redis.asyncio import ConnectionPool, Redis
 

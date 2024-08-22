@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.supervisor.agent import Message
+from agents.common.data import Message
 from services.messages import MessagesService
 
 
@@ -21,7 +21,7 @@ class TestChat:
 
     @pytest.fixture
     def chat_instance(self, mock_supervisor_agent):
-        with patch("services.chat.Chat.__init__", return_value=None):
+        with patch("services.messages.MessagesService.__init__", return_value=None):
             chat_object = MessagesService()
             chat_object.kyma_graph = mock_supervisor_agent
             yield chat_object

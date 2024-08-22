@@ -10,8 +10,10 @@ from langgraph.constants import END, START
 from langgraph.graph import MessagesState, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
+from agents.common.agent import Agent
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask
+from agents.common.utils import filter_messages
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
@@ -29,13 +31,6 @@ def should_continue(state: MessagesState) -> Literal["action", "__end__"]:
     """Return the next node to execute."""
     last_message = state["messages"][-1]
     return "action" if last_message.tool_calls else "__end__"
-
-
-def filter_messages(
-    messages: Sequence[BaseMessage], last_messages_number: int = 10
-) -> Sequence[BaseMessage]:
-    """This is very simple helper function which only ever uses the last four messages"""
-    return messages[-last_messages_number:]
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -60,9 +55,9 @@ class KymaGraph:
 
     model: Model
     memory: BaseCheckpointSaver
-    supervisor_agent: SupervisorAgent
-    kyma_agent: KymaAgent
-    k8s_agent: KubernetesAgent
+    supervisor_agent: Agent
+    kyma_agent: Agent
+    k8s_agent: Agent
     members: list[str] = []
 
     parser = PydanticOutputParser(pydantic_object=Plan)
@@ -168,9 +163,9 @@ class KymaGraph:
 
         workflow = StateGraph(AgentState)
         workflow.add_node(FINALIZER, self.generate_final_response)
-        workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node)
-        workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node)
-        workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node)
+        workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
+        workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
+        workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(PLANNER, self._plan)
 
         # pass the subtasks to supervisor to route to agents
