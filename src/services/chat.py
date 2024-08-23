@@ -1,4 +1,7 @@
 import os
+from abc import ABC, abstractmethod
+
+from pydantic import BaseModel, field_validator
 
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from agents.supervisor.agent import Message, SupervisorAgent
@@ -9,8 +12,29 @@ logger = get_logger(__name__)
 
 GPT4O_MODEL = "gpt-4o"
 
+class ConversationContext(BaseModel):
+    resource_type: str
+    resource_name: str = ""
+    namespace: str = "default"
 
-class Chat:
+    @field_validator("resource_type")
+    def _check_not_empty(cls, value: str) -> str:
+        if not value.strip(): # Check if the string is empty or only contains whitespace.
+            raise ValueError("resource_type cannot be empty")
+        return value
+
+class ChatInterface(ABC):
+    """Interface for Chat service."""
+    @abstractmethod
+    async def conversations(self, ctx: ConversationContext) -> dict:
+        """Initialize the chat"""
+
+    @abstractmethod
+    async def handle_request(self, message: Message):
+        """Handle a request"""
+
+
+class Chat(ChatInterface):
     """Chat service."""
 
     supervisor_agent = None
@@ -22,9 +46,10 @@ class Chat:
         )
         self.supervisor_agent = SupervisorAgent(llm, memory)
 
-    async def init_chat(self) -> dict:
+    async def conversations(self, ctx: ConversationContext) -> dict:
         """Initialize the chat"""
-        logger.info("Initializing chat...")
+        logger.info(f"Initializing chat with namespace '{ctx.namespace}', resource_type '{ctx.resource_type}' and resource name {ctx.resource_name}")
+        
         return {"message": "Chat is initialized!"}
 
     async def handle_request(self, message: Message):  # noqa: ANN201

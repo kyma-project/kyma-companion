@@ -1,20 +1,28 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from starlette.responses import StreamingResponse
 
 from agents.supervisor.agent import Message
-from services.chat import Chat
+from services.chat import Chat, ChatInterface, ConversationContext
 
-chat_service = Chat()
+chat_service: ChatInterface = None
+
+def set_chat_service(chat: ChatInterface = Depends(Chat)) -> None:
+    global chat_service
+    chat_service = chat
+
+set_chat_service()
+
 router = APIRouter(
     prefix="/chat",
     tags=["chat"],
 )
 
 
-@router.get("/init")
-async def init() -> dict:
-    """Endpoint to initialize the chat with the Kyma companion"""
-    return await chat_service.init_chat()
+@router.post("/conversations")
+async def conversations(ctx: ConversationContext) -> dict:
+    """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
+
+    return await chat_service.conversations(ctx=ctx)
 
 
 @router.post("/")
