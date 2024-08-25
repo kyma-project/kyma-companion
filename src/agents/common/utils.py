@@ -1,8 +1,9 @@
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
-from langchain_core.messages import AIMessage, SystemMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState

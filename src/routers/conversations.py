@@ -1,10 +1,15 @@
+import json
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, Path
+from fastapi import APIRouter, Body, Path
 from starlette.responses import StreamingResponse
 
 from agents.common.data import Message
 from services.messages import MessagesService
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 messages_service = MessagesService()
 router = APIRouter(
@@ -27,10 +32,18 @@ async def messages(
     message: Annotated[Message, Body(title="The message to send")],
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
-    try:
-        return StreamingResponse(
-            messages_service.handle_request(conversation_id, message),
-            media_type="text/event-stream",
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500) from e
+
+    async def error_handling_generator() -> AsyncGenerator[bytes, None]:
+        try:
+            async for chunk in messages_service.handle_request(
+                conversation_id, message
+            ):
+                yield json.dumps({"status": 200, "data": f"{chunk.decode()}"}).encode()
+        except Exception as e:
+            logger.exception(f"An error occurred: {str(e)}")
+            yield json.dumps({"status": 500, "message": f"Error: {e}"}).encode()
+
+    return StreamingResponse(
+        error_handling_generator(),
+        media_type="text/event-stream",
+    )

@@ -1,11 +1,12 @@
+from collections.abc import Sequence
 from unittest.mock import Mock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState, SubTask
-from agents.common.utils import agent_node, create_agent
+from agents.common.utils import agent_node, create_agent, filter_messages
 
 # Mock the logging setup
 mock_logger = Mock()
@@ -152,3 +153,89 @@ def test_agent_node(
     # Check that only the first matching subtask was processed
     if len(subtasks) > 1 and subtasks[1].assigned_to == name:
         subtasks[1].complete.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "messages, last_messages_number, expected_output",
+    [
+        # Test case 1: Less messages than the limit
+        (
+            [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
+            10,
+            [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
+        ),
+        # Test case 2: Exactly the number of messages as the limit
+        (
+            [
+                HumanMessage(content="A"),
+                AIMessage(content="B"),
+                HumanMessage(content="C"),
+            ],
+            3,
+            [
+                HumanMessage(content="A"),
+                AIMessage(content="B"),
+                HumanMessage(content="C"),
+            ],
+        ),
+        # Test case 3: More messages than the limit
+        (
+            [
+                SystemMessage(content="System"),
+                HumanMessage(content="1"),
+                AIMessage(content="2"),
+                HumanMessage(content="3"),
+                AIMessage(content="4"),
+            ],
+            2,
+            [HumanMessage(content="3"), AIMessage(content="4")],
+        ),
+        # Test case 4: Empty input
+        ([], 5, []),
+        # Test case 5: Custom last_messages_number
+        (
+            [
+                HumanMessage(content="A"),
+                AIMessage(content="B"),
+                HumanMessage(content="C"),
+                AIMessage(content="D"),
+                HumanMessage(content="E"),
+            ],
+            4,
+            [
+                AIMessage(content="B"),
+                HumanMessage(content="C"),
+                AIMessage(content="D"),
+                HumanMessage(content="E"),
+            ],
+        ),
+        # Test case 6: last_messages_number = 1
+        (
+            [
+                HumanMessage(content="First"),
+                AIMessage(content="Second"),
+                HumanMessage(content="Third"),
+            ],
+            1,
+            [HumanMessage(content="Third")],
+        ),
+    ],
+)
+def test_filter_messages(
+    messages: Sequence[BaseMessage],
+    last_messages_number: int,
+    expected_output: Sequence[BaseMessage],
+):
+    result = filter_messages(messages, last_messages_number)
+
+    assert len(result) == len(expected_output)
+    for res_msg, exp_msg in zip(result, expected_output, strict=False):
+        assert type(res_msg) == type(exp_msg)
+        assert res_msg.content == exp_msg.content
+
+
+def test_filter_messages_default_parameter():
+    messages = [HumanMessage(content=str(i)) for i in range(15)]
+    result = filter_messages(messages)  # Using default last_messages_number
+    assert len(result) == 10
+    assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]

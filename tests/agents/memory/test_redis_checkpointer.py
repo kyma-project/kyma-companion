@@ -180,7 +180,7 @@ class TestRedisSaver:
         self, config, checkpoint, metadata, expected_parent_ts, fake_async_redis
     ):
         checkpoint_obj = create_checkpoint(checkpoint)
-        await self.redis_saver.aput(config, checkpoint_obj, metadata)
+        await self.redis_saver.aput(config, checkpoint_obj, metadata, {})
 
         key = f"checkpoint:{config['configurable']['thread_id']}:{checkpoint}"
         actual_result = await fake_async_redis.hgetall(key)
@@ -219,7 +219,9 @@ class TestRedisSaver:
         self, put_config, get_config, checkpoints, metadata, expected_checkpoint
     ):
         for chk in checkpoints:
-            await self.redis_saver.aput(put_config, create_checkpoint(chk), metadata)
+            await self.redis_saver.aput(
+                put_config, create_checkpoint(chk), metadata, {}
+            )
 
         saved_data = await self.redis_saver.aget_tuple(get_config)
 

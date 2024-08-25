@@ -1,5 +1,6 @@
 import os
 from collections.abc import AsyncIterator
+from typing import AsyncGenerator
 
 from agents.common.data import Message
 from agents.graph import Graph, KymaGraph
@@ -14,10 +15,10 @@ class MessagesService:
     """Chat service."""
 
     kyma_graph: Graph
-    model_factory = ModelFactory()
 
     def __init__(self):
-        model = self.model_factory.create_model(LLM.GPT4O_MODEL)
+        model_factory = ModelFactory()
+        model = model_factory.create_model(LLM.GPT4O_MODEL)
         memory = RedisSaver(
             async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
         )
@@ -30,10 +31,9 @@ class MessagesService:
 
     async def handle_request(
         self, conversation_id: int, message: Message
-    ) -> AsyncIterator[bytes]:
+    ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
         logger.info("Processing request...")
-
         async for chunk in self.kyma_graph.astream(conversation_id, message):
             logger.debug(f"Sending chunk: {chunk}")
             yield f"{chunk}\n\n".encode()

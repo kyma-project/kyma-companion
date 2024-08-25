@@ -1,8 +1,8 @@
 import json
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.checkpoint.base import BaseCheckpointSaver

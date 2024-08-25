@@ -95,18 +95,25 @@ class SupervisorAgent:
 
         def supervisor_node(state: AgentState) -> dict[str, Any]:
             """Supervisor node."""
-            result = self.supervisor_chain.invoke(
-                {
-                    "messages": filter_messages(state.messages),
-                    "subtasks": json.dumps(
-                        [subtask.dict() for subtask in state.subtasks]
-                    ),
+            try:
+                result = self.supervisor_chain.invoke(
+                    {
+                        "messages": filter_messages(state.messages),
+                        "subtasks": json.dumps(
+                            [subtask.dict() for subtask in state.subtasks]
+                        ),
+                    }
+                )
+                return {
+                    "next": result["next"],
+                    "subtasks": state.subtasks,
                 }
-            )
-
-            return {
-                "next": result["next"],
-                "subtasks": state.subtasks,
-            }
+            except Exception as e:
+                logger.exception("Error occurred in Supervisor agent.")
+                return {
+                    "next": None,
+                    "subtasks": state.subtasks,
+                    "error": str(e),
+                }
 
         return supervisor_node

@@ -13,13 +13,15 @@ from utils.config import Config, ModelConfig, get_config
             models:
               - name: model1
                 deployment_id: dep1
+                temperature: 0.0
               - name: model2
                 deployment_id: dep2
+                temperature: 0.5
             """,
             Config(
                 models=[
-                    ModelConfig(name="model1", deployment_id="dep1"),
-                    ModelConfig(name="model2", deployment_id="dep2"),
+                    ModelConfig(name="model1", deployment_id="dep1", temperature=0.0),
+                    ModelConfig(name="model2", deployment_id="dep2", temperature=0.5),
                 ]
             ),
         ),
@@ -28,9 +30,14 @@ from utils.config import Config, ModelConfig, get_config
             models:
               - name: single_model
                 deployment_id: single_dep
+                temperature: 1
             """,
             Config(
-                models=[ModelConfig(name="single_model", deployment_id="single_dep")]
+                models=[
+                    ModelConfig(
+                        name="single_model", deployment_id="single_dep", temperature=1
+                    )
+                ]
             ),
         ),
         (
