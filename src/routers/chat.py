@@ -3,6 +3,7 @@ from starlette.responses import StreamingResponse
 
 from agents.supervisor.agent import Message
 from services.chat import Chat, ChatInterface, ConversationContext
+from services.k8s import K8s_Access
 
 chat_service: ChatInterface = None
 
@@ -18,9 +19,15 @@ router = APIRouter(
 )
 
 
+
 @router.post("/conversations")
 async def conversations(ctx: ConversationContext) -> dict:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
+    ### TODO: read token from header
+    k8s_client = K8s_Access() ### TODO: pass K8s data
+    k8s_client.listResources(api_version="v1", kind="Pod", namespace=ctx.namespace)
+
+    # handle prompt template
 
     return await chat_service.conversations(ctx=ctx)
 

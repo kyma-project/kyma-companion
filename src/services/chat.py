@@ -49,7 +49,9 @@ class Chat(ChatInterface):
     async def conversations(self, ctx: ConversationContext) -> dict:
         """Initialize the chat"""
         logger.info(f"Initializing chat with namespace '{ctx.namespace}', resource_type '{ctx.resource_type}' and resource name {ctx.resource_name}")
+        ### TODO: How do we handle the K8S token?
         
+
         return {"message": "Chat is initialized!"}
 
     async def handle_request(self, message: Message):  # noqa: ANN201
