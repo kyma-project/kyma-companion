@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from starlette.responses import StreamingResponse
-
+from typing import Annotated
 from agents.supervisor.agent import Message
 from services.chat import Chat, ChatInterface, ConversationContext
-from services.k8s import K8s_Access
+from services.k8s import K8sClientInterface, K8sClient
 
 chat_service: ChatInterface = None
 
@@ -18,19 +18,27 @@ router = APIRouter(
     tags=["chat"],
 )
 
-
-
 @router.post("/conversations")
-async def conversations(ctx: ConversationContext) -> dict:
+async def conversations(ctx: ConversationContext,
+                        x_cluster_url: Annotated[str, Header()],
+                        x_k8s_authorization: Annotated[str, Header()],
+                        x_cluster_certificate_authority_data: Annotated[str, Header()]) -> dict:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
-    ### TODO: read token from header
-    k8s_client = K8s_Access() ### TODO: pass K8s data
-    k8s_client.listResources(api_version="v1", kind="Pod", namespace=ctx.namespace)
+    # initialize k8s client for the request.
+    try:
+        k8s_client: K8sClientInterface = K8sClient(
+            api_server=x_cluster_url,
+            user_token=x_k8s_authorization,
+            certificate_authority_data=x_cluster_certificate_authority_data
+        )
+    except Exception as e:
+        # TODO: add message to say that failed to connect to k8s.
+        raise HTTPException(status_code=400) from e
 
-    # handle prompt template
-
-    return await chat_service.conversations(ctx=ctx)
-
+    try:
+        return await chat_service.conversations(ctx=ctx)
+    except Exception as e:
+        raise HTTPException(status_code=500) from e
 
 @router.post("/")
 async def chat(message: Message) -> StreamingResponse:
