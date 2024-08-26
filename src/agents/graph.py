@@ -13,7 +13,7 @@ from langgraph.graph.graph import CompiledGraph
 from agents.common.agent import Agent
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask
-from agents.common.utils import filter_messages
+from agents.common.utils import EXIT, exit_node, should_exit
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
@@ -76,18 +76,23 @@ class KymaGraph:
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """Breaks down the given user query into sub-tasks."""
 
-        state.messages = filter_messages(state.messages)
-
         planner_prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    "For the given query, come up with a simple step by step plan. "
-                    "Each step/subtask should be assigned to one of these agents: {members}.\n"
-                    "This plan should involve individual subtasks, that if executed correctly will yield "
-                    "the correct answer. Do not add any superfluous steps."
-                    "The result of the final step should be the final answer. "
+                    "You are a specialized planner for Kyma and Kubernetes-related queries. "
+                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan. "
+                    "Each step/subtask should be assigned to one of these agents: KymaAgent, KubernetesAgent. "
+                    "The plan should involve individual subtasks that, when executed correctly, "
+                    "will yield the correct answer. "
+                    "Do not add any superfluous steps. The result of the final step should be the final answer. "
+                    "Ensure that each step has all the information needed - do not skip steps. "
+                    "If the question is not related to Kyma or Kubernetes, respond with: "
+                    "'I'm sorry, but I can only answer questions related to Kyma or Kubernetes. "
+                    "Please ask a question specific to these topics.' "
+                    "Before planning, always verify if the question is about Kyma or Kubernetes."
                     "Make sure that each step has all the information needed - do not skip steps.\n"
+                    "Format your response as follows:\n"
                     "{output_format}",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
@@ -115,10 +120,12 @@ class KymaGraph:
                         )
                     ]
                 ),
+                "error": None,
             }
         except Exception as e:
             logger.error(f"Error in planning: {e}")
             return {
+                "error": str(e),
                 "messages": [
                     AIMessage(
                         content=f"Error in planning: {e}",
@@ -167,9 +174,14 @@ class KymaGraph:
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(PLANNER, self._plan)
+        workflow.add_node(EXIT, exit_node)
 
-        # pass the subtasks to supervisor to route to agents
-        workflow.add_edge(PLANNER, SUPERVISOR)
+        # routing to the exit node in case of an error
+        workflow.add_conditional_edges(
+            PLANNER, should_exit, {"exit": EXIT, "continue": SUPERVISOR}
+        )
+        workflow.add_edge(EXIT, END)
+
         for member in self.members:
             # We want our workers to ALWAYS "report back" to the supervisor when done
             workflow.add_edge(member, SUPERVISOR)

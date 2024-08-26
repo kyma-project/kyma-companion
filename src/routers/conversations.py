@@ -38,10 +38,12 @@ async def messages(
             async for chunk in messages_service.handle_request(
                 conversation_id, message
             ):
-                yield json.dumps({"status": 200, "data": f"{chunk.decode()}"}).encode()
+                json_chunk = json.dumps({"status": 200, "data": f"{chunk.decode()}"})
+                yield f"{json_chunk}\n".encode()
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
-            yield json.dumps({"status": 500, "message": f"Error: {e}"}).encode()
+            json_chunk = json.dumps({"status": 500, "message": f"Error: {e}"})
+            yield f"{json_chunk}\n".encode()
 
     return StreamingResponse(
         error_handling_generator(),

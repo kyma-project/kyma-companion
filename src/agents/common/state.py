@@ -21,7 +21,6 @@ class SubTask(BaseModel):
     assigned_to: str = Field(description="agent to whom the task is assigned")
     status: str = Field(default=SubTaskStatus.PENDING)
     result: str | None
-    error: str | None
 
     def complete(self) -> None:
         """Update the result of the task."""
@@ -35,6 +34,7 @@ class AgentState(BaseModel):
     next: str | None
     subtasks: list[SubTask] | None = []
     final_response: str | None = ""
+    error: str | None
 
     def all_tasks_completed(self) -> bool:
         """Check if all the sub-tasks are completed."""
