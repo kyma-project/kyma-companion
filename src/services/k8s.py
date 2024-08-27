@@ -14,7 +14,7 @@ class K8sClientInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_resource(self, api_version: str, kind: str, namespace: str) -> list:
+    def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         raise NotImplementedError
 
     @abstractmethod
@@ -103,7 +103,7 @@ class K8sClient(K8sClientInterface):
 
         return response.json()
 
-    def list_resource(self, api_version: str, kind: str, namespace: str) -> list:
+    def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         """List resources of a specific kind in a namespace.
         Provide empty string for namespace to list resources in all namespaces."""
         result = self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(namespace=namespace)
@@ -129,7 +129,7 @@ class K8sClient(K8sClientInterface):
     def list_not_running_pods(self, namespace: str) -> list:
         """List all pods that are not in the Running phase.
         Provide empty string for namespace to list all pods."""
-        all_pods = self.list_resource("v1", "Pod", namespace)
+        all_pods = self.list_resources("v1", "Pod", namespace)
         return [pod for pod in all_pods if pod.status.phase != "Running"]
 
     def list_nodes_metrics(self) -> list:
