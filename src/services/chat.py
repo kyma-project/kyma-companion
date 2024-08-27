@@ -52,6 +52,7 @@ class Chat(ChatInterface):
         ### TODO: How do we handle the K8S token?
         
 
+
         return {"message": "Chat is initialized!"}
 
     async def handle_request(self, message: Message):  # noqa: ANN201

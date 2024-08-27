@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from starlette.responses import StreamingResponse
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException
+from starlette.responses import StreamingResponse
+
 from agents.supervisor.agent import Message
 from services.chat import Chat, ChatInterface, ConversationContext
-from services.k8s import K8sClientInterface, K8sClient
+from services.k8s import K8sClient, K8sClientInterface
 
 chat_service: ChatInterface = None
 
