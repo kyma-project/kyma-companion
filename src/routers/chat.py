@@ -38,7 +38,7 @@ async def conversations(ctx: ConversationContext,
         raise HTTPException(status_code=400) from e
 
     try:
-        return await chat_service.conversations(ctx=ctx)
+        return await chat_service.conversations(ctx=ctx, k8s_client=k8s_client)
     except Exception as e:
         raise HTTPException(status_code=500) from e
 

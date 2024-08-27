@@ -1,12 +1,16 @@
 import os
 from abc import ABC, abstractmethod
+from typing import Protocol
 
-from pydantic import BaseModel, field_validator
+import yaml
+from pydantic import BaseModel
 
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from agents.supervisor.agent import Message, SupervisorAgent
+from services.k8s import K8sClientInterface
 from utils.logging import get_logger
 from utils.models import create_llm
+from services.conversations import get_questions
 
 logger = get_logger(__name__)
 
@@ -14,27 +18,19 @@ GPT4O_MODEL = "gpt-4o"
 
 class ConversationContext(BaseModel):
     resource_type: str
-    resource_name: str = ""
-    namespace: str = "default"
+    resource_name: str
+    namespace: str = ""
 
-    @field_validator("resource_type")
-    def _check_not_empty(cls, value: str) -> str:
-        if not value.strip(): # Check if the string is empty or only contains whitespace.
-            raise ValueError("resource_type cannot be empty")
-        return value
-
-class ChatInterface(ABC):
+class ChatInterface(Protocol):
     """Interface for Chat service."""
-    @abstractmethod
-    async def conversations(self, ctx: ConversationContext) -> dict:
-        """Initialize the chat"""
+    async def conversations(self, ctx: ConversationContext, k8s_client: K8sClientInterface) -> dict:
+        ...
 
-    @abstractmethod
     async def handle_request(self, message: Message):
-        """Handle a request"""
+        ...
 
 
-class Chat(ChatInterface):
+class Chat:
     """Chat service."""
 
     supervisor_agent = None
@@ -46,14 +42,65 @@ class Chat(ChatInterface):
         )
         self.supervisor_agent = SupervisorAgent(llm, memory)
 
-    async def conversations(self, ctx: ConversationContext) -> dict:
+    async def conversations(self, ctx: ConversationContext, k8s_client: K8sClientInterface) -> dict:
         """Initialize the chat"""
         logger.info(f"Initializing chat with namespace '{ctx.namespace}', resource_type '{ctx.resource_type}' and resource name {ctx.resource_name}")
-        ### TODO: How do we handle the K8S token?
-        
 
+        if ctx.resource_type == "namespace":
+            ctx.namespace = ctx.resource_name
 
-        return {"message": "Chat is initialized!"}
+        # create the `kubectl` command for the given resource
+        # define conditions
+        is_cluster_scoped_resource = ctx.namespace == "" and ctx.resource_type != ""
+        is_namespace_scoped_resource = ctx.namespace != "" and ctx.resource_type != ""
+        is_namespace_overview = ctx.namespace != "" and ctx.resource_type == "namespace"
+        is_cluster_overview = ctx.namespace == "" and ctx.resource_type == "cluster"
+
+        context = list[str]
+        if is_cluster_overview:
+            # cluster overview
+            context.append(yaml.dump(
+                k8s_client.list_not_running_pods(namespace=ctx.namespace)
+                ))
+            context.append(
+                yaml.dump(
+                    k8s_client.list_nodes_metrics()
+                    ))
+            context.append(
+                yaml.dump(
+                    k8s_client.list_k8s_warning_events(namespace=ctx.namespace)
+                    ))
+        elif is_namespace_overview:
+            # namespace overview
+            context.append(
+                yaml.dump(
+                    k8s_client.list_k8s_warning_events(namespace=ctx.namespace)
+                    ))
+        elif is_cluster_scoped_resource:
+            # cluster-scoped detail view
+            context.append(
+                yaml.dump(
+                    k8s_client.list_resources(api_version="v1", kind='Pod', namespace=ctx.namespace)
+                    ))
+            context.append(
+                yaml.dump(
+                    k8s_client.list_k8s_events_for_resource(kind=ctx, name=ctx.resource_name, namespace=ctx.namespace)
+                    ))
+        elif is_namespace_scoped_resource:
+            # namespace-scoped detail view
+            context.append(
+                yaml.dump(
+                    k8s_client.get_resource(api_version="v1", kind='Pod', name=ctx.resource_name, namespace=ctx.namespace)
+                    ))
+            context.append(
+                yaml.dump(
+                    k8s_client.list_k8s_events_for_resource(kind='Pod', name=ctx.resource_name, namespace=ctx.namespace)
+                    ))
+
+        context = "\n".join(context)
+        question = get_questions(context)
+
+        return {"message: ": question}
 
     async def handle_request(self, message: Message):  # noqa: ANN201
         """Handle a request"""
