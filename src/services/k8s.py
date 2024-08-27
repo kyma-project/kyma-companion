@@ -2,41 +2,39 @@ import base64
 import os
 import copy
 import tempfile
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 import requests
 from kubernetes import client, dynamic
 
 
-class K8sClientInterface(ABC):
-    @abstractmethod
+class K8sClientInterface(Protocol):
     def execute_get_api_request(self, uri: str) -> dict:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def get_resource(self, api_version: str, kind: str, name: str, namespace: str) -> dict:
-        raise NotImplementedError
+        ... 
 
-    @abstractmethod
+    def describe_resource(self, api_version: str, kind: str, name: str, namespace: str) -> list:
+        ...
+
     def list_not_running_pods(self, namespace: str) -> list:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def list_nodes_metrics(self) -> list:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def list_k8s_events(self, namespace: str) -> list:
-        raise NotImplementedError
+        ...
 
-    @abstractmethod
     def list_k8s_warning_events(self, namespace: str) -> list:
-        raise NotImplementedError
+        ...
 
+    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+        ...
 
 class K8sClient(K8sClientInterface):
     api_server: str
