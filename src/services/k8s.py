@@ -10,30 +10,39 @@ from kubernetes import client, dynamic
 
 class K8sClientInterface(Protocol):
     def execute_get_api_request(self, uri: str) -> dict:
+        """Execute a GET request to the Kubernetes API."""
         ...
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
+        """List resources of a specific kind in a namespace."""
         ...
 
     def get_resource(self, api_version: str, kind: str, name: str, namespace: str) -> dict:
+        """Get a specific resource by name in a namespace."""
         ... 
 
     def describe_resource(self, api_version: str, kind: str, name: str, namespace: str) -> list:
+        """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         ...
 
     def list_not_running_pods(self, namespace: str) -> list:
+        """List all pods that are not in the Running phase"""
         ...
 
     def list_nodes_metrics(self) -> list:
+        """List all nodes metrics."""
         ...
 
     def list_k8s_events(self, namespace: str) -> list:
+        """List all Kubernetes events."""
         ...
 
     def list_k8s_warning_events(self, namespace: str) -> list:
+        """List all Kubernetes warning events."""
         ...
 
     def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+        """List all Kubernetes events for a specific resource."""
         ...
 
 class K8sClient(K8sClientInterface):
