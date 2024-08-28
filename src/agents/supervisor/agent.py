@@ -7,13 +7,11 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from agents.common.state import AgentState, Plan
 from agents.common.utils import filter_messages
-from agents.k8s.agent import K8S_AGENT
-from agents.kyma.agent import KYMA_AGENT
 from utils.logging import get_logger
 from utils.models import Model
 
-PLANNER = "Planner"
 SUPERVISOR = "Supervisor"
+COMMON = "Common"
 FINALIZER = "Finalize"
 
 logger = get_logger(__name__)
@@ -23,16 +21,13 @@ class SupervisorAgent:
     """Supervisor agent class."""
 
     model: Model
-    tools = None
-    members = [KYMA_AGENT, K8S_AGENT]
     _name: str = SUPERVISOR
     parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, model: Model, tools: list | None = None):
+    def __init__(self, model: Model, members: list[str]):
         self.model = model
-        self.tools = tools
 
-        options: list[str] = [FINALIZER] + self.members
+        options: list[str] = [FINALIZER] + members
         function_def = {
             "name": "assign_and_route",
             "description": "Assign subtasks to agents.",
@@ -60,19 +55,20 @@ class SupervisorAgent:
             [
                 (
                     "system",
-                    "You are a supervisor tasked with managing a conversation between the agents: {members}.\n"
-                    "Given the subtasks and messages, supervise conversation between the agents to a achieve "
-                    "the goal. Check the subtask statuses to decide who should act next."
-                    "You also decide when the work should be finalized. When all the subtasks are completed, "
-                    f"respond with {FINALIZER}. ",
+                    "You are a supervisor managing a conversation between the agents: {members}.\n"
+                    "Your task is to oversee the conversation to achieve the goal, checking subtasks "
+                    "and their statuses to decide the next action or finalization.",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
-                ("system", "subtasks: {subtasks}"),
+                ("assistant", "Subtasks and their current statuses: {subtasks}"),
                 (
                     "system",
-                    "Given the messages, subtasks and subtasks statuses above, who should act next? "
-                    "Or should we finalize? Select one of: {options}\n"
-                    f"Set {FINALIZER} if only if all the subtasks statuses are 'completed'.",
+                    "1. Review and summarize the LATEST status of all subtasks.\n"
+                    "2. Check if the latest subtasks have the status 'completed'.\n"
+                    "3. Decide on the next action:\n"
+                    f"   a) If the latest subtasks are 'completed', you MUST set {FINALIZER}.\n"
+                    "   b) Otherwise, select the next agent to act from: {options}.\n"
+                    "Provide your decision and a brief explanation.",
                 ),
             ]
         ).partial(options=str(options), members=", ".join(options))

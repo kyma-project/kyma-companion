@@ -37,6 +37,7 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
         if subtask.assigned_to == name and subtask.status != "completed":
             try:
                 # TODO: move to a specific agent folder and extend it for each agent
+                # TODO: can improved to query all the subtasks at once
                 result = agent.invoke(
                     {"messages": state.messages, "input": subtask.description}
                 )
@@ -49,12 +50,19 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
                 return {
                     "messages": [
                         AIMessage(
-                            content=f"Error in agent {name}: {e}",
+                            content=f"Error occurred: {e}",
                             name=name,
                         )
                     ],
                 }
-    return {"messages": []}
+    return {
+        "messages": [
+            AIMessage(
+                content="All my subtasks are already completed.",
+                name=name,
+            )
+        ]
+    }
 
 
 def filter_messages(

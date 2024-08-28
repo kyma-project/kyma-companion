@@ -16,7 +16,7 @@ from agents.common.state import AgentState, Plan, SubTask
 from agents.common.utils import EXIT, exit_node, should_exit
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
+from agents.supervisor.agent import COMMON, FINALIZER, SUPERVISOR, SupervisorAgent
 from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models import Model
@@ -24,7 +24,6 @@ from utils.models import Model
 logger = get_logger(__name__)
 
 PLANNER = "Planner"
-FINALIZER = "Finalize"
 
 
 def should_continue(state: MessagesState) -> Literal["action", "__end__"]:
@@ -68,9 +67,11 @@ class KymaGraph:
 
         self.kyma_agent = KymaAgent(model)
         self.k8s_agent = KubernetesAgent(model)
-        self.supervisor_agent = SupervisorAgent(model)
+        self.supervisor_agent = SupervisorAgent(
+            model, members=[KYMA_AGENT, K8S_AGENT, COMMON]
+        )
 
-        self.members = [self.kyma_agent.name, self.k8s_agent.name]
+        self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self.graph = self._build_graph()
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
@@ -81,19 +82,81 @@ class KymaGraph:
                 (
                     "system",
                     "You are a specialized planner for Kyma and Kubernetes-related queries. "
-                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan. "
-                    "Each step/subtask should be assigned to one of these agents: KymaAgent, KubernetesAgent. "
-                    "The plan should involve individual subtasks that, when executed correctly, "
-                    "will yield the correct answer. "
-                    "Do not add any superfluous steps. The result of the final step should be the final answer. "
-                    "Ensure that each step has all the information needed - do not skip steps. "
-                    "If the question is not related to Kyma or Kubernetes, respond with: "
-                    "'I'm sorry, but I can only answer questions related to Kyma or Kubernetes. "
-                    "Please ask a question specific to these topics.' "
-                    "Before planning, always verify if the question is about Kyma or Kubernetes."
-                    "Make sure that each step has all the information needed - do not skip steps.\n"
+                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan without additional steps."
+                    "Keep the plan concise and focused on the key phases or elements from the query. "
                     "Format your response as follows:\n"
-                    "{output_format}",
+                    "{output_format}\n"
+                    "Here are the Kyma terminologies, you should consider for you task:"
+                    "- Kyma"
+                    "- Kubernetes"
+                    "- Serverless"
+                    "- Service Mesh"
+                    "- API Gateway"
+                    "- API Rule"
+                    "- Istio"
+                    "- Service Mesh"
+                    "- Function"
+                    "- Service Catalog"
+                    "- Application Connector"
+                    "- Eventing"
+                    "- Telemetry"
+                    "- Tracing"
+                    "- Logging"
+                    "- Kyma Runtime"
+                    "- module"
+                    "- Service Management"
+                    "Here are the Kubernetes terminologies, you should consider for your task:"
+                    "- Pod"
+                    "- Node"
+                    "- Cluster"
+                    "- Namespace"
+                    "- Container"
+                    "- Deployment"
+                    "- ReplicaSet"
+                    "- Service"
+                    "- Ingress"
+                    "- ConfigMap"
+                    "- Secret"
+                    "- Volume"
+                    "- PersistentVolume"
+                    "- PersistentVolumeClaim"
+                    "- StatefulSet"
+                    "- DaemonSet"
+                    "- Job"
+                    "- CronJob"
+                    "- HorizontalPodAutoscaler"
+                    "- NetworkPolicy"
+                    "- ResourceQuota"
+                    "- LimitRange"
+                    "- ServiceAccount"
+                    "- Role"
+                    "- RoleBinding"
+                    "- ClusterRole"
+                    "- ClusterRoleBinding"
+                    "- CustomResourceDefinition"
+                    "- Operator"
+                    "- Helm Chart"
+                    "- Taint"
+                    "- Toleration"
+                    "- Affinity"
+                    "- InitContainer"
+                    "- Sidecar"
+                    "- Kubelet"
+                    "- Kube-proxy"
+                    "- etcd"
+                    "- Kube-apiserver"
+                    "- Kube-scheduler"
+                    "- Kube-controller-manager"
+                    "- Container Runtime"
+                    "Each step/subtask should be assigned to one of these agents: {members}. "
+                    "Follow these guidelines to create the plan: "
+                    "- Carefully read and understand the given query. "
+                    "- Identify the distinct questions or tasks within the given query. "
+                    "- Use the exact wording from the original query for each list item. "
+                    "- Maintain the order of the questions as they appear in the original query. "
+                    "- Avoid too many subtasks; keep it simple and concise. "
+                    "- Avoid detailed steps; focus on the key phases or elements from the query. "
+                    "- Do not add any additional steps or explanations. ",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]
@@ -134,6 +197,61 @@ class KymaGraph:
                 ],
             }
 
+    def common_node(self, state: AgentState) -> dict[str, Any]:
+        """Breaks down the given user query into sub-tasks."""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "Given the conversation and the last user query, "
+                    "you are tasked with generating a response. ",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+                ("human", "query: {query}"),
+            ]
+        )
+        chain = prompt | self.model.llm
+
+        for subtask in state.subtasks:
+            if subtask.assigned_to == COMMON and subtask.status != "completed":
+                try:
+                    response = chain.invoke(
+                        {
+                            "messages": state.messages,
+                            "query": subtask.description,
+                        },
+                        config={"callbacks": [handler]},
+                    ).content
+                    subtask.complete()
+                    return {
+                        "messages": [
+                            AIMessage(
+                                content=response,
+                                name=COMMON,
+                            )
+                        ],
+                    }
+                except Exception as e:
+                    logger.error(f"Error in common node: {e}")
+                    return {
+                        "error": str(e),
+                        "messages": [
+                            AIMessage(
+                                content=f"Error occurred: {e}",
+                                name=COMMON,
+                            )
+                        ],
+                    }
+        return {
+            "messages": [
+                AIMessage(
+                    content="All my subtasks are already completed.",
+                    name=COMMON,
+                )
+            ]
+        }
+
     def generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""
 
@@ -142,15 +260,16 @@ class KymaGraph:
                 MessagesPlaceholder(variable_name="messages"),
                 (
                     "system",
-                    "You are Kyma, Kubernetes and SAP Business Technology Platform expert. "
-                    "Generate a final comprehensive response based on the responses of the {members} agents.",
+                    "You are Kyma and Kubernetes expert. "
+                    "Your task is to generate a final comprehensive response for the last user query "
+                    "based on the responses of the {members} agents.",
                 ),
             ]
         ).partial(members=", ".join(self.members))
 
         final_response_chain = prompt | self.model.llm
         state.final_response = final_response_chain.invoke(
-            {"messages": [m for m in state.messages if m.name in self.members]},
+            {"messages": state.messages},
             config={"callbacks": [handler]},
         ).content
 
@@ -172,6 +291,8 @@ class KymaGraph:
         workflow.add_node(FINALIZER, self.generate_final_response)
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
+        workflow.add_node(COMMON, self.common_node)
+
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(PLANNER, self._plan)
         workflow.add_node(EXIT, exit_node)
