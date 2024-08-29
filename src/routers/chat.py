@@ -26,7 +26,10 @@ async def conversations(ctx: ConversationContext,
                         x_k8s_authorization: Annotated[str, Header()],
                         x_cluster_certificate_authority_data: Annotated[str, Header()]) -> dict:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
-    # initialize k8s client for the request.
+    
+    ### TODO: Add Validation for context here.
+    
+    # initialize k8s client for the request.    
     try:
         k8s_client: K8sClientInterface = K8sClient(
             api_server=x_cluster_url,
