@@ -59,7 +59,7 @@ class KymaGraph:
     k8s_agent: Agent
     members: list[str] = []
 
-    parser = PydanticOutputParser(pydantic_object=Plan)
+    parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
     def __init__(self, model: Model, memory: BaseCheckpointSaver):
         self.model = model
@@ -82,7 +82,8 @@ class KymaGraph:
                 (
                     "system",
                     "You are a specialized planner for Kyma and Kubernetes-related queries. "
-                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan without additional steps."
+                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan "
+                    "without additional steps. "
                     "Keep the plan concise and focused on the key phases or elements from the query. "
                     "Format your response as follows:\n"
                     "{output_format}\n"
@@ -277,7 +278,7 @@ class KymaGraph:
             "final_response": state.final_response,
             "messages": [
                 AIMessage(
-                    content=state.final_response,
+                    content=state.final_response if state.final_response else "",
                     name="Finalize",
                 )
             ],

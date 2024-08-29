@@ -128,21 +128,6 @@ def supervisor_node(state: AgentState) -> dict[str, Any]:
 
     plan_existed = False
     if not state["subtasks"]:
-        # planner_prompt = ChatPromptTemplate.from_messages(
-        #     [
-        #         (
-        #             "system",
-        #             "You are a planner tasked with decomposing the given query for the"
-        #             " following agents: {members}. Come up with a simple step by step plan for the given query."
-        #             " This plan should involve individual subtasks, that if executed correctly will yield the correct answer. "
-        #             " Do not add any superfluous steps."
-        #             " Each subtask should be assigned to one of the given agents and provide a brief description for each subtask.",
-        #         )
-        #     ]
-        # ).partial(members=", ".join(members))
-        #
-        # plan_chain = planner_prompt | llm.with_structured_output(Plan)
-
         if state["subtasks"] is None:
             state["subtasks"] = []
 

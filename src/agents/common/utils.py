@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from typing import Any, Literal
-from uuid import SafeUUID
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
@@ -65,8 +64,12 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
     }
 
 
+DEFAULT_NUMBER_OF_MESSAGES = 10
+
+
 def filter_messages(
-    messages: Sequence[BaseMessage], last_messages_number: int = 10
+    messages: Sequence[BaseMessage],
+    last_messages_number: int = DEFAULT_NUMBER_OF_MESSAGES,
 ) -> Sequence[BaseMessage]:
     """This is very simple helper function which only ever uses the last four messages"""
     return messages[-last_messages_number:]

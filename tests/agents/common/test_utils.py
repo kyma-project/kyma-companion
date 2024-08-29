@@ -6,7 +6,12 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState, SubTask
-from agents.common.utils import agent_node, create_agent, filter_messages
+from agents.common.utils import (
+    DEFAULT_NUMBER_OF_MESSAGES,
+    agent_node,
+    create_agent,
+    filter_messages,
+)
 
 # Mock the logging setup
 mock_logger = Mock()
@@ -237,5 +242,5 @@ def test_filter_messages(
 def test_filter_messages_default_parameter():
     messages = [HumanMessage(content=str(i)) for i in range(15)]
     result = filter_messages(messages)  # Using default last_messages_number
-    assert len(result) == 10
+    assert len(result) == DEFAULT_NUMBER_OF_MESSAGES
     assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]
