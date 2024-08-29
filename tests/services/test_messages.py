@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from agents.common.data import Message
-from services.messages import MessagesService
+from services.conversation import ConversationService
 
 
 @pytest.mark.asyncio(scope="class")
@@ -53,7 +53,7 @@ class TestChat:
     async def test_handle_request(
         self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
     ):
-        messaging_service = MessagesService()
+        messaging_service = ConversationService()
 
         message = Message(
             query="Test message",

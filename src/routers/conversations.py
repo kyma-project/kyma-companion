@@ -1,17 +1,23 @@
 import json
 from collections.abc import AsyncGenerator
+from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Path
+from fastapi import APIRouter, Body, Depends, Path
 from starlette.responses import StreamingResponse
 
 from agents.common.data import Message
-from services.messages import MessagesService
+from services.conversation import ConversationService, Service
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-messages_service = MessagesService()
+
+def get_conversation_service() -> Service:
+    """Dependency to get the conversation service instance"""
+    return ConversationService()
+
+
 router = APIRouter(
     prefix="/conversations",
     tags=["conversations"],
@@ -21,7 +27,7 @@ router = APIRouter(
 @router.get("/init")
 async def init() -> dict:
     """Endpoint to initialize the chat with the Kyma companion"""
-    return await messages_service.init_chat()
+    return {"message": "Chat is initialized!"}
 
 
 @router.post("/{conversation_id}/messages")
@@ -30,19 +36,20 @@ async def messages(
         int, Path(title="The ID of the conversation to continue")
     ],
     message: Annotated[Message, Body(title="The message to send")],
+    service: Service = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
     async def error_handling_generator() -> AsyncGenerator[bytes, None]:
         try:
-            async for chunk in messages_service.handle_request(
-                conversation_id, message
-            ):
+            async for chunk in service.handle_request(conversation_id, message):
                 json_chunk = json.dumps({"status": 200, "data": f"{chunk.decode()}"})
                 yield f"{json_chunk}\n".encode()
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
-            json_chunk = json.dumps({"status": 500, "message": f"Error: {e}"})
+            json_chunk = json.dumps(
+                {"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"}
+            )
             yield f"{json_chunk}\n".encode()
 
     return StreamingResponse(

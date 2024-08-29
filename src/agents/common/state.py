@@ -27,8 +27,24 @@ class SubTask(BaseModel):
         self.status = SubTaskStatus.COMPLETED
 
 
+# After upgrading generative-ai-hub-sdk we can message that use pydantic v2
+# Currently, we are using pydantic v1.
+class UserInput(BaseModel):
+    """User input data model."""
+
+    query: str
+    resource_kind: str | None
+    resource_api_version: str | None
+    resource_name: str | None
+    namespace: str | None
+
+
 class AgentState(BaseModel):
     """Agent state."""
+
+    input: UserInput | None = Field(
+        description="user input with user query and resource(s) contextual information"
+    )
 
     messages: Annotated[Sequence[BaseMessage], operator.add]
     next: str | None

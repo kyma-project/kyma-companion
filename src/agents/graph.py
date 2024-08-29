@@ -12,7 +12,7 @@ from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import Agent
 from agents.common.data import Message
-from agents.common.state import AgentState, Plan, SubTask
+from agents.common.state import AgentState, Plan, SubTask, UserInput
 from agents.common.utils import EXIT, exit_node, should_exit
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
@@ -325,7 +325,10 @@ class KymaGraph:
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         async for chunk in self.graph.astream(
-            input={"messages": [HumanMessage(content=message.query)]},
+            input={
+                "messages": [HumanMessage(content=message.query)],
+                "input": UserInput(**message.dict()),
+            },
             config={
                 "configurable": {
                     "thread_id": str(conversation_id),
