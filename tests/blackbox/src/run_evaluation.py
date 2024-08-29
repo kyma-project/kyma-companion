@@ -4,7 +4,11 @@ from logging import Logger
 from common.config import Config
 from common.logger import get_logger
 from common.output import print_test_results
-from evaluation.companion.companion import get_companion_response
+from evaluation.companion.companion import (
+    ConversationPayload,
+    fetch_initial_questions,
+    get_companion_response,
+)
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario, ScenarioList
 from evaluation.validator.utils import create_validator
@@ -14,15 +18,42 @@ from evaluation.validator.validator import ValidatorInterface
 async def process_scenario(
     scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
 ) -> None:
+    payload = ConversationPayload(
+        resource_kind=scenario.resource.kind,
+        resource_api_version=scenario.resource.api_version,
+        resource_name=scenario.resource.name,
+        namespace=scenario.resource.namespace,
+    )
+
+    # first make a call to the Companion API to initialize the conversation.
+    try:
+        logger.debug(
+            f"Getting response from the initial conversations endpoint for scenario: {scenario.id}"
+        )
+        init_questions_response = await fetch_initial_questions(config, payload, logger)
+        logger.debug(init_questions_response)
+    except Exception as e:
+        logger.error(
+            f"failed to call initialize conversation endpoint: {scenario.id}. Error: {e}"
+        )
+        scenario.evaluation.status = TestStatus.FAILED
+        scenario.evaluation.status_reason = (
+            f"failed to call initialize conversation endpoint. {e}"
+        )
+
     # make a call to the Companion API and get response from Companion.
     try:
         logger.debug(
             f"Getting response from the companion API for scenario: {scenario.id}"
         )
+
+        conversation_id = "1234-5678-9012"  # @TODO: get conversation_id from the init_questions_response.
+        payload.question = scenario.description
+
         # get the response from the companion API multiple iterations to check idempotency.
         for _ in range(config.iterations):
             response = await get_companion_response(
-                config, scenario.description, logger
+                config, conversation_id, payload, logger
             )
             scenario.evaluation.add_actual_response(response)
     except Exception as e:
