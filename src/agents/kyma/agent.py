@@ -3,8 +3,9 @@ import functools
 from langchain_core.tools import tool
 
 from agents.common.utils import agent_node, create_agent
+from agents.kyma.prompts import KYMA_AGENT_PROMPT
 from utils.logging import get_logger
-from utils.models import Model
+from utils.models import IModel
 
 logger = get_logger(__name__)
 KYMA_AGENT = "KymaAgent"
@@ -15,7 +16,7 @@ class KymaAgent:
 
     _name: str = KYMA_AGENT
 
-    def __init__(self, model: Model):
+    def __init__(self, model: IModel):
         self.model = model
 
     @staticmethod
@@ -39,7 +40,7 @@ class KymaAgent:
         kyma_agent_node = create_agent(
             self.model.llm,
             [self.search_kyma_doc],
-            "You are Kyma expert. You assist users with Kyma related questions.",
+            KYMA_AGENT_PROMPT,
         )
         return functools.partial(
             agent_node,

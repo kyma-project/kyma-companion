@@ -12,8 +12,6 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-EXIT = "Exit"
-
 
 def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str) -> AgentExecutor:
     """Create an AI agent."""
@@ -71,7 +69,14 @@ def filter_messages(
     messages: Sequence[BaseMessage],
     last_messages_number: int = DEFAULT_NUMBER_OF_MESSAGES,
 ) -> Sequence[BaseMessage]:
-    """This is very simple helper function which only ever uses the last four messages"""
+    """
+    Filter the last n number of messages given last_messages_number.
+    Args:
+        messages: list of messages
+        last_messages_number:  int: number of last messages to return, default is 10
+
+    Returns: list of last messages
+    """
     return messages[-last_messages_number:]
 
 

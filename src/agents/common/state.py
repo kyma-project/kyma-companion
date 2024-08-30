@@ -40,7 +40,17 @@ class UserInput(BaseModel):
 
 
 class AgentState(BaseModel):
-    """Agent state."""
+    """Agent state.
+
+    Attributes:
+        input: UserInput: user input with user query and resource(s) contextual information
+        messages: list[BaseMessage]: messages exchanged between agents and user
+        next: str: next LangGraph node to be called. It can be KymaAgent, KubernetesAgent, or Finalizer.
+        subtasks: list[SubTask]: different steps/subtasks to follow
+        final_response: str: final response to the user
+        error: str: error message if error occurred
+
+    """
 
     input: UserInput | None = Field(
         description="user input with user query and resource(s) contextual information"

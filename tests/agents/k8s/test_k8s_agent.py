@@ -5,6 +5,7 @@ import pytest
 from langchain.agents import AgentExecutor
 
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
+from agents.k8s.prompts import K8S_AGENT_PROMPT
 
 
 class TestKubernetesAgent:
@@ -60,7 +61,7 @@ class TestKubernetesAgent:
         mock_create_agent.assert_called_once_with(
             kubernetes_agent.model.llm,
             [KubernetesAgent.search_kubernetes_doc],
-            "You are Kubernetes expert. You assist users with Kubernetes related questions.",
+            K8S_AGENT_PROMPT,
         )
 
         assert isinstance(result, expected_type)

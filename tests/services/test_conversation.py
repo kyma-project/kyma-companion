@@ -7,23 +7,12 @@ from services.conversation import ConversationService
 
 
 @pytest.mark.asyncio(scope="class")
-class TestChat:
-
-    @pytest.mark.asyncio
-    async def test_init_chat(self, mock_messaging_service):
-        result = await mock_messaging_service.init_chat()
-        assert result == {"message": "Chat is initialized!"}
-
-    # @pytest.fixture
-    # def mock_model_factory(self, mocker):
-    #     mock_factory = MagicMock()
-    #     mocker.patch("services.messages.ModelFactory", return_value=mock_factory)
-    #     mock_factory.create_model.return_value = MagicMock()
+class TestConversation:
 
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
-        with patch("services.messages.ModelFactory") as mock:
+        with patch("services.conversation.ModelFactory") as mock:
             mock.return_value.create_model.return_value = mock_model
             yield mock
 
@@ -36,18 +25,28 @@ class TestChat:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.messages.KymaGraph", return_value=mock_kyma_graph) as mock:
+        with patch(
+            "services.conversation.KymaGraph", return_value=mock_kyma_graph
+        ) as mock:
             yield mock
 
     @pytest.fixture
     def mock_redis_saver(self):
-        with patch("services.messages.RedisSaver") as mock:
+        with patch("services.conversation.RedisSaver") as mock:
             yield mock
 
     @pytest.fixture
     def mock_init_pool(self):
-        with patch("services.messages.initialize_async_pool") as mock:
+        with patch("services.conversation.initialize_async_pool") as mock:
             yield mock
+
+    @pytest.mark.asyncio
+    async def test_init_chat(
+        self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
+    ):
+        messaging_service = ConversationService()
+        result = messaging_service.init_conversation()
+        assert result == {"message": "Chat is initialized!"}
 
     @pytest.mark.asyncio
     async def test_handle_request(
@@ -57,9 +56,10 @@ class TestChat:
 
         message = Message(
             query="Test message",
-            resource_type="Pod",
+            resource_kind="Pod",
+            resource_api_version="v1",
             resource_name="my-pod",
             namespace="default",
         )
         result = [chunk async for chunk in messaging_service.handle_request(1, message)]
-        assert result == [b"chunk1\n\n", b"chunk2\n\n", b"chunk3\n\n"]
+        assert result == [b"chunk1", b"chunk2", b"chunk3"]

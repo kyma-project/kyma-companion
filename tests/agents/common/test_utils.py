@@ -5,7 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 
-from agents.common.state import AgentState, SubTask
+from agents.common.state import AgentState, SubTask, SubTaskStatus
 from agents.common.utils import (
     DEFAULT_NUMBER_OF_MESSAGES,
     agent_node,
@@ -68,7 +68,7 @@ def mock_agent_executor():
 
 @pytest.fixture
 def mock_state():
-    return Mock(spec=AgentState)
+    return Mock(spec=AgentState, messages=[HumanMessage(content="Hello Test")])
 
 
 @pytest.mark.parametrize(
@@ -77,11 +77,21 @@ def mock_state():
         # Successful execution
         (
             "agent1",
-            [Mock(spec=SubTask, assigned_to="agent1", description="Test task")],
+            [
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent1",
+                    description="Test task",
+                    status=SubTaskStatus.PENDING,
+                )
+            ],
             {"output": "Task completed successfully"},
             {
                 "messages": [
-                    AIMessage(content="Task completed successfully", name="agent1")
+                    AIMessage(
+                        content="Task completed successfully",
+                        name="agent1",
+                    )
                 ]
             },
             True,
@@ -89,12 +99,20 @@ def mock_state():
         # Execution error
         (
             "agent2",
-            [Mock(spec=SubTask, assigned_to="agent2", description="Error task")],
+            [
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent2",
+                    description="Error task",
+                    status=SubTaskStatus.PENDING,
+                )
+            ],
             Exception("Test error"),
             {
                 "messages": [
                     AIMessage(
-                        content="Error in agent agent2: Test error", name="agent2"
+                        content="Error occurred: Test error",
+                        name="agent2",
                     )
                 ]
             },
@@ -103,21 +121,77 @@ def mock_state():
         # No matching subtask
         (
             "agent3",
-            [Mock(spec=SubTask, assigned_to="other_agent", description="Other task")],
+            [
+                Mock(
+                    spec=SubTask,
+                    assigned_to="other_agent",
+                    description="Other task",
+                    status=SubTaskStatus.PENDING,
+                )
+            ],
             None,
-            {"messages": []},
+            {
+                "messages": [
+                    AIMessage(
+                        content="All my subtasks are already completed.", name="agent3"
+                    )
+                ]
+            },
             False,
         ),
         # Multiple subtasks (only first one should be executed)
         (
             "agent4",
             [
-                Mock(spec=SubTask, assigned_to="agent4", description="Task 1"),
-                Mock(spec=SubTask, assigned_to="agent4", description="Task 2"),
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent4",
+                    description="Task 1",
+                    status=SubTaskStatus.COMPLETED,
+                ),
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent4",
+                    description="Task 2",
+                    status=SubTaskStatus.PENDING,
+                ),
+            ],
+            {"output": "Task 2 completed"},
+            {
+                "messages": [
+                    AIMessage(
+                        content="Task 2 completed",
+                        name="agent4",
+                    )
+                ]
+            },
+            True,
+        ),
+        (
+            "agent5",
+            [
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent4",
+                    description="Task 1",
+                    status=SubTaskStatus.COMPLETED,
+                ),
+                Mock(
+                    spec=SubTask,
+                    assigned_to="agent4",
+                    description="Task 2",
+                    status=SubTaskStatus.COMPLETED,
+                ),
             ],
             {"output": "Task 1 completed"},
-            {"messages": [AIMessage(content="Task 1 completed", name="agent4")]},
-            True,
+            {
+                "messages": [
+                    AIMessage(
+                        content="All my subtasks are already completed.", name="agent5"
+                    )
+                ]
+            },
+            False,
         ),
     ],
 )
@@ -144,20 +218,29 @@ def test_agent_node(
     # Assert
     assert result == expected_result
 
-    if subtasks and subtasks[0].assigned_to == name:
-        mock_agent_executor.invoke.assert_called_once_with(
-            {"input": subtasks[0].description}
-        )
-        if should_complete:
-            subtasks[0].complete.assert_called_once()
+    not_completed_subtasks = [
+        subtask for subtask in subtasks if subtask.status != SubTaskStatus.COMPLETED
+    ]
+    for not_completed_subtask in not_completed_subtasks:
+        if subtasks and not_completed_subtask.assigned_to == name:
+            mock_agent_executor.invoke.assert_called_once_with(
+                {
+                    "messages": mock_state.messages,
+                    "input": not_completed_subtask.description,
+                }
+            )
+            if should_complete:
+                not_completed_subtask.complete.assert_called_once()
+            else:
+                not_completed_subtask.complete.assert_not_called()
         else:
-            subtasks[0].complete.assert_not_called()
-    else:
-        mock_agent_executor.invoke.assert_not_called()
+            mock_agent_executor.invoke.assert_not_called()
 
-    # Check that only the first matching subtask was processed
-    if len(subtasks) > 1 and subtasks[1].assigned_to == name:
-        subtasks[1].complete.assert_not_called()
+    completed_subtasks = [
+        subtask for subtask in subtasks if subtask.status == SubTaskStatus.COMPLETED
+    ]
+    for completed_subtask in completed_subtasks:
+        completed_subtask.complete.assert_not_called()
 
 
 @pytest.mark.parametrize(

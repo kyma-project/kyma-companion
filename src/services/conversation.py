@@ -3,15 +3,17 @@ from collections.abc import AsyncGenerator
 from typing import Protocol
 
 from agents.common.data import Message
-from agents.graph import Graph, KymaGraph
+from agents.graph import IGraph, KymaGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from utils.logging import get_logger
 from utils.models import LLM, ModelFactory
 
 logger = get_logger(__name__)
 
+REDIS_URL = f"{os.getenv('REDIS_URL')}/0"
 
-class Service(Protocol):
+
+class IService(Protocol):
     """Service interface"""
 
     def init_conversation(self) -> dict:
@@ -49,14 +51,12 @@ class ConversationService(metaclass=SingletonMeta):
     This class is a singleton and should be used to handle the conversation.
     """
 
-    kyma_graph: Graph
+    kyma_graph: IGraph
 
     def __init__(self):
         model_factory = ModelFactory()
         model = model_factory.create_model(LLM.GPT4O_MODEL)
-        memory = RedisSaver(
-            async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
-        )
+        memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         self.kyma_graph = KymaGraph(model, memory)
 
     def init_conversation(self) -> dict:

@@ -5,6 +5,7 @@ import pytest
 from langchain.agents import AgentExecutor
 
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
+from agents.kyma.prompts import KYMA_AGENT_PROMPT
 
 
 class TestKymaAgent:
@@ -60,7 +61,7 @@ class TestKymaAgent:
         mock_create_agent.assert_called_once_with(
             kyma_agent.model.llm,
             [KymaAgent.search_kyma_doc],
-            "You are Kyma expert. You assist users with Kyma related questions.",
+            KYMA_AGENT_PROMPT,
         )
 
         assert isinstance(result, expected_type)

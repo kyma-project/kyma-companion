@@ -7,33 +7,30 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END, START
-from langgraph.graph import MessagesState, StateGraph
+from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from agents.common.agent import Agent
+from agents.common.agent import IAgent
+from agents.common.constants import COMMON, EXIT, PLANNER
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask, UserInput
-from agents.common.utils import EXIT, exit_node, should_exit
+from agents.common.utils import exit_node, should_exit
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.supervisor.agent import COMMON, FINALIZER, SUPERVISOR, SupervisorAgent
+from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
+from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import Model
+from utils.models import IModel
 
 logger = get_logger(__name__)
 
-PLANNER = "Planner"
-
-
-def should_continue(state: MessagesState) -> Literal["action", "__end__"]:
-    """Return the next node to execute."""
-    last_message = state["messages"][-1]
-    return "action" if last_message.tool_calls else "__end__"
-
 
 class CustomJSONEncoder(json.JSONEncoder):
-    """Custom JSON encoder."""
+    """
+    Custom JSON encoder for AIMessage, HumanMessage, and SubTask.
+    Default JSON cannot serialize these objects.
+    """
 
     def default(self, obj):  # noqa D102
         if isinstance(obj, AIMessage | HumanMessage | SubTask):
@@ -41,7 +38,7 @@ class CustomJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class Graph(Protocol):
+class IGraph(Protocol):
     """Graph interface."""
 
     def astream(self, conversation_id: int, message: Message) -> AsyncIterator[str]:
@@ -52,16 +49,16 @@ class Graph(Protocol):
 class KymaGraph:
     """Kyma graph class. Represents all the workflow of the application."""
 
-    model: Model
+    model: IModel
     memory: BaseCheckpointSaver
-    supervisor_agent: Agent
-    kyma_agent: Agent
-    k8s_agent: Agent
+    supervisor_agent: IAgent
+    kyma_agent: IAgent
+    k8s_agent: IAgent
     members: list[str] = []
 
     parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, model: Model, memory: BaseCheckpointSaver):
+    def __init__(self, model: IModel, memory: BaseCheckpointSaver):
         self.model = model
         self.memory = memory
 
@@ -79,86 +76,7 @@ class KymaGraph:
 
         planner_prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "You are a specialized planner for Kyma and Kubernetes-related queries. "
-                    "For questions about Kyma or Kubernetes, create a simple step-by-step plan "
-                    "without additional steps. "
-                    "Keep the plan concise and focused on the key phases or elements from the query. "
-                    "Format your response as follows:\n"
-                    "{output_format}\n"
-                    "Here are the Kyma terminologies, you should consider for you task:"
-                    "- Kyma"
-                    "- Kubernetes"
-                    "- Serverless"
-                    "- Service Mesh"
-                    "- API Gateway"
-                    "- API Rule"
-                    "- Istio"
-                    "- Service Mesh"
-                    "- Function"
-                    "- Service Catalog"
-                    "- Application Connector"
-                    "- Eventing"
-                    "- Telemetry"
-                    "- Tracing"
-                    "- Logging"
-                    "- Kyma Runtime"
-                    "- module"
-                    "- Service Management"
-                    "Here are the Kubernetes terminologies, you should consider for your task:"
-                    "- Pod"
-                    "- Node"
-                    "- Cluster"
-                    "- Namespace"
-                    "- Container"
-                    "- Deployment"
-                    "- ReplicaSet"
-                    "- Service"
-                    "- Ingress"
-                    "- ConfigMap"
-                    "- Secret"
-                    "- Volume"
-                    "- PersistentVolume"
-                    "- PersistentVolumeClaim"
-                    "- StatefulSet"
-                    "- DaemonSet"
-                    "- Job"
-                    "- CronJob"
-                    "- HorizontalPodAutoscaler"
-                    "- NetworkPolicy"
-                    "- ResourceQuota"
-                    "- LimitRange"
-                    "- ServiceAccount"
-                    "- Role"
-                    "- RoleBinding"
-                    "- ClusterRole"
-                    "- ClusterRoleBinding"
-                    "- CustomResourceDefinition"
-                    "- Operator"
-                    "- Helm Chart"
-                    "- Taint"
-                    "- Toleration"
-                    "- Affinity"
-                    "- InitContainer"
-                    "- Sidecar"
-                    "- Kubelet"
-                    "- Kube-proxy"
-                    "- etcd"
-                    "- Kube-apiserver"
-                    "- Kube-scheduler"
-                    "- Kube-controller-manager"
-                    "- Container Runtime"
-                    "Each step/subtask should be assigned to one of these agents: {members}. "
-                    "Follow these guidelines to create the plan: "
-                    "- Carefully read and understand the given query. "
-                    "- Identify the distinct questions or tasks within the given query. "
-                    "- Use the exact wording from the original query for each list item. "
-                    "- Maintain the order of the questions as they appear in the original query. "
-                    "- Avoid too many subtasks; keep it simple and concise. "
-                    "- Avoid detailed steps; focus on the key phases or elements from the query. "
-                    "- Do not add any additional steps or explanations. ",
-                ),
+                ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         ).partial(
@@ -193,21 +111,17 @@ class KymaGraph:
                 "messages": [
                     AIMessage(
                         content=f"Error in planning: {e}",
-                        name="Planner",
+                        name=PLANNER,
                     )
                 ],
             }
 
     def common_node(self, state: AgentState) -> dict[str, Any]:
-        """Breaks down the given user query into sub-tasks."""
+        """Common node to handle general queries."""
 
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "Given the conversation and the last user query, "
-                    "you are tasked with generating a response. ",
-                ),
+                ("system", COMMON_QUESTION_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
                 ("human", "query: {query}"),
             ]
@@ -259,12 +173,7 @@ class KymaGraph:
         prompt = ChatPromptTemplate.from_messages(
             [
                 MessagesPlaceholder(variable_name="messages"),
-                (
-                    "system",
-                    "You are Kyma and Kubernetes expert. "
-                    "Your task is to generate a final comprehensive response for the last user query "
-                    "based on the responses of the {members} agents.",
-                ),
+                ("system", FINALIZER_PROMPT),
             ]
         ).partial(members=", ".join(self.members))
 
@@ -279,7 +188,7 @@ class KymaGraph:
             "messages": [
                 AIMessage(
                     content=state.final_response if state.final_response else "",
-                    name="Finalize",
+                    name=FINALIZER,
                 )
             ],
             "next": END,

@@ -16,15 +16,15 @@ from agents.supervisor.agent import SupervisorAgent  # noqa: E402
 from utils.models import LLM, ModelFactory  # noqa: E402
 
 if not os.getenv("MODELS_CONFIG_FILE_PATH"):
-    os.environ["MODELS_CONFIG_FILE_PATH"] = "../config/config.yml"
+    os.environ["MODELS_CONFIG_FILE_PATH"] = "../../config/config.yml"
 
 supervisor_agent: SupervisorAgent
 model_factory = ModelFactory()
 
+REDIS_URL = f"{os.getenv('REDIS_URL')}/0"
+
 model = model_factory.create_model(LLM.GPT4O_MODEL)
-memory = RedisSaver(
-    async_connection=initialize_async_pool(url=f"{os.getenv('REDIS_URL')}/0")
-)
+memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
 graph = KymaGraph(model, memory)
 
 try:

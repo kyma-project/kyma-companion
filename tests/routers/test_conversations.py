@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 from agents.common.data import Message
 from main import app
 from routers.conversations import get_conversation_service
-from services.conversation import Service
+from services.conversation import IService
 
 
-class MockService(Service):
+class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
 

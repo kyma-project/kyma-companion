@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-class Agent(Protocol):
+class IAgent(Protocol):
     """Agent interface."""
 
     def agent_node(self):  # noqa ANN

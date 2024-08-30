@@ -17,7 +17,7 @@ class LLM(str, Enum):
     GEMINI_10_PRO = "gemini-1.0-pro"
 
 
-class Model(Protocol):
+class IModel(Protocol):
     """Model Interface."""
 
     def invoke(self, content: str):  # noqa
@@ -122,13 +122,13 @@ def get_model_config(name: str) -> ModelConfig | None:
 class ModelFactory:
     """Model Factory."""
 
-    _models: dict[str, Model] = {}
+    _models: dict[str, IModel] = {}
     _proxy_client: BaseProxyClient
 
     def __init__(self):
         self._proxy_client = get_proxy_client("gen-ai-hub")
 
-    def create_model(self, name: str, temperature: int = 0) -> Model:
+    def create_model(self, name: str, temperature: int = 0) -> IModel:
         """
         Create a ChatOpenAI instance.
         """
@@ -136,7 +136,7 @@ class ModelFactory:
         if model_config is None:
             raise ValueError(f"Model {name} not found in the configuration.")
 
-        model: Model
+        model: IModel
         if model_config.name.startswith("gpt"):
             model = OpenAIModel(model_config, self._proxy_client)
         else:
@@ -144,7 +144,7 @@ class ModelFactory:
         self._models[name] = model
         return model
 
-    def get_model(self, name: str) -> Model | None:
+    def get_model(self, name: str) -> IModel | None:
         """
         Get a ChatOpenAI instance.
         """

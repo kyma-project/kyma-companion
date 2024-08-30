@@ -1,18 +1,17 @@
 import json
 from typing import Any, Dict, Literal, Protocol  # noqa UP
 
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.output_parsers.openai_functions import JsonOutputFunctionsParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from agents.common.state import AgentState, Plan
+from agents.common.constants import FINALIZER
+from agents.common.state import AgentState
 from agents.common.utils import filter_messages
+from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
 from utils.logging import get_logger
-from utils.models import Model
+from utils.models import IModel
 
 SUPERVISOR = "Supervisor"
-COMMON = "Common"
-FINALIZER = "Finalize"
 
 logger = get_logger(__name__)
 
@@ -20,11 +19,10 @@ logger = get_logger(__name__)
 class SupervisorAgent:
     """Supervisor agent class."""
 
-    model: Model
+    model: IModel
     _name: str = SUPERVISOR
-    parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, model: Model, members: list[str]):
+    def __init__(self, model: IModel, members: list[str]):
         self.model = model
 
         options: list[str] = [FINALIZER] + members
@@ -53,25 +51,12 @@ class SupervisorAgent:
 
         supervisor_system_prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "You are a supervisor managing a conversation between the agents: {members}.\n"
-                    "Your task is to oversee the conversation to achieve the goal, checking subtasks "
-                    "and their statuses to decide the next action or finalization.",
-                ),
+                ("system", SUPERVISOR_ROLE_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
-                ("assistant", "Subtasks and their current statuses: {subtasks}"),
-                (
-                    "system",
-                    "1. Review and summarize the LATEST status of all subtasks.\n"
-                    "2. Check if the latest subtasks have the status 'completed'.\n"
-                    "3. Decide on the next action:\n"
-                    f"   a) If the latest subtasks are 'completed', you MUST set {FINALIZER}.\n"
-                    "   b) Otherwise, select the next agent to act from: {options}.\n"
-                    "Provide your decision and a brief explanation.",
-                ),
+                ("assistant", "Subtasks: {subtasks}"),
+                ("system", SUPERVISOR_TASK_PROMPT),
             ]
-        ).partial(options=str(options), members=", ".join(options))
+        ).partial(options=str(options), members=", ".join(options), finalizer=FINALIZER)
 
         self.supervisor_chain = (
             supervisor_system_prompt

@@ -7,13 +7,13 @@ from fastapi import APIRouter, Body, Depends, Path
 from starlette.responses import StreamingResponse
 
 from agents.common.data import Message
-from services.conversation import ConversationService, Service
+from services.conversation import ConversationService, IService
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def get_conversation_service() -> Service:
+def get_conversation_service() -> IService:
     """Dependency to get the conversation service instance"""
     return ConversationService()
 
@@ -36,7 +36,7 @@ async def messages(
         int, Path(title="The ID of the conversation to continue")
     ],
     message: Annotated[Message, Body(title="The message to send")],
-    service: Service = Depends(get_conversation_service),  # noqa B008
+    service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
