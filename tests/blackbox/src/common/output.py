@@ -3,6 +3,8 @@ from evaluation.scenario.scenario import ScenarioList
 from prettytable import PrettyTable
 from termcolor import colored
 
+from common.metrics import Metrics
+
 
 def print_header(name: str) -> None:
     print("\n************************************************************************")
@@ -24,6 +26,7 @@ def print_test_results(scenario_list: ScenarioList) -> None:
     print_results_per_scenario(scenario_list)
     print_results_per_category(scenario_list)
     print_overall_results(scenario_list)
+    print_response_times_summary()
 
 
 def print_results_per_category(scenario_list: ScenarioList) -> None:
@@ -67,3 +70,27 @@ def print_overall_results(scenario_list: ScenarioList) -> None:
     print_header(
         f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%"
     )
+
+
+def print_response_times_summary() -> None:
+    table = PrettyTable()
+    table.field_names = [
+        "API Endpoint",
+        "Response Time (seconds)",
+    ]
+
+    print_header("Response time per API Endpoint:")
+    metrics = Metrics.get_instance()
+    table.add_row(
+        [
+            "Initial Conversation",
+            metrics.get_init_conversation_response_summary(),
+        ]
+    )
+    table.add_row(
+        [
+            "Conversation",
+            metrics.get_conversation_response_summary(),
+        ]
+    )
+    print(table)

@@ -19,7 +19,8 @@ class Resource(BaseModel):
     Resource represents a K8s resource.
     """
 
-    type: str
+    kind: str
+    api_version: str
     name: str
     namespace: str
 
@@ -98,6 +99,7 @@ class Scenario(BaseModel):
 
     id: str
     description: str
+    resource: Resource
     expectations: list[Expectation]
     evaluation: Evaluation = Evaluation()
 
