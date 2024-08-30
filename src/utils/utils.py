@@ -1,4 +1,5 @@
 import json
+import uuid
 
 
 def create_ndjson_str(obj: dict) -> str:
@@ -11,3 +12,12 @@ def create_ndjson_str(obj: dict) -> str:
         str: A stringified Newline-delimited JSON.
     """
     return f"{json.dumps(obj)}\n"
+
+
+def create_session_id() -> str:
+    """
+    Generates a new session ID.
+    Returns:
+        str: A new session ID.
+    """
+    return str(uuid.uuid4())

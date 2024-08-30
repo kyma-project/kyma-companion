@@ -1,5 +1,5 @@
 from os import getenv
-from types import Protocol
+from typing import Protocol
 
 from dotenv import load_dotenv
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
