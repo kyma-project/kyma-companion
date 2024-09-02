@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI  # noqa E402
-from routers import chat  # noqa E402
+from routers import conversations  # noqa E402
 
 app = FastAPI()
-app.include_router(chat.router)
+app.include_router(conversations.router)
 
 
 @app.get("/")

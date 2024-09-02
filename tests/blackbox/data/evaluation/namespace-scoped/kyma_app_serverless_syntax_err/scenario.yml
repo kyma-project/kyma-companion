@@ -1,7 +1,8 @@
 id: kyma_app_serverless_syntax_err
 description: The serverless function has a syntax error; it calls Dates() instead of Date().
 resource:
-  type: function
+  kind: Function
+  api_version: "serverless.kyma-project.io/v1alpha2"
   name: func1
   namespace: kyma_app_serverless_syntax_err
 expectations:

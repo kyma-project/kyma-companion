@@ -2,7 +2,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from utils.config import Config, Model, get_config
+from utils.config import Config, ModelConfig, get_config
 
 
 @pytest.mark.parametrize(
@@ -13,13 +13,15 @@ from utils.config import Config, Model, get_config
             models:
               - name: model1
                 deployment_id: dep1
+                temperature: 0.0
               - name: model2
                 deployment_id: dep2
+                temperature: 0.5
             """,
             Config(
                 models=[
-                    Model(name="model1", deployment_id="dep1"),
-                    Model(name="model2", deployment_id="dep2"),
+                    ModelConfig(name="model1", deployment_id="dep1", temperature=0.0),
+                    ModelConfig(name="model2", deployment_id="dep2", temperature=0.5),
                 ]
             ),
         ),
@@ -28,8 +30,15 @@ from utils.config import Config, Model, get_config
             models:
               - name: single_model
                 deployment_id: single_dep
+                temperature: 1
             """,
-            Config(models=[Model(name="single_model", deployment_id="single_dep")]),
+            Config(
+                models=[
+                    ModelConfig(
+                        name="single_model", deployment_id="single_dep", temperature=1
+                    )
+                ]
+            ),
         ),
         (
             """

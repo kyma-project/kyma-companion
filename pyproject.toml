@@ -28,10 +28,12 @@ langchain-openai = "^0.1.14"
 ai-core-sdk = "^2.3.11"
 generative-ai-hub-sdk = "^1.11.1"
 langfuse = "^2.39.1"
-langgraph = "^0.1.7"
-redis = "^5.0.7"
+langgraph = "^0.2.5"
+redis = "^5.0.8"
 requests = "^2.32.3"
 kubernetes = "^30.1.0"
+langchain-experimental = "^0.0.64"
+black = "^24.8.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
@@ -52,6 +54,7 @@ mypy = "^1.10.1"
 flake8 = "^7.1.0"
 black = "^24.4.2"
 types-requests = "^2.32.0.20240712"
+ipython = "^8.26.0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
