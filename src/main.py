@@ -5,7 +5,9 @@ load_dotenv()
 from fastapi import FastAPI  # noqa E402
 from routers import conversations  # noqa E402
 
-app = FastAPI()
+app = FastAPI(
+    title="Kyma Companion",
+)
 app.include_router(conversations.router)
 
 

@@ -33,7 +33,7 @@ router = APIRouter(
 )
 
 
-@router.post("/")
+@router.post("/", response_model=InitialQuestionsResponse)
 async def init_conversation(
     data: InitConversationBody,
     x_cluster_url: Annotated[str, Header()],
