@@ -63,7 +63,7 @@ class ConversationService(metaclass=SingletonMeta):
         logger.info(f"Initializing new conversation id: {conversation_id}.")
 
         # Generate initial questions for the specified resource.
-        questions = self.generate_initial_questions(
+        questions = await self.generate_initial_questions(
             conversation_id, message, k8s_client
         )
 
@@ -109,7 +109,7 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Query the Kubernetes API to get the context.
-        context = list[str]
+        context: list[str] = []
         if is_cluster_overview:
             # cluster overview
             context.append(
@@ -170,7 +170,7 @@ class ConversationService(metaclass=SingletonMeta):
                 )
             )
 
-        return "\n".join(context)
+        return "\n---\n".join(context)
 
     async def handle_request(
         self, conversation_id: int, message: Message

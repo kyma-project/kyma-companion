@@ -9,6 +9,8 @@ from kubernetes import client, dynamic
 
 
 class K8sClientInterface(Protocol):
+    """Interface for the K8sClient class."""
+
     def execute_get_api_request(self, uri: str) -> dict:
         """Execute a GET request to the Kubernetes API."""
         ...
@@ -53,6 +55,8 @@ class K8sClientInterface(Protocol):
 
 
 class K8sClient(K8sClientInterface):
+    """Client to interact with the Kubernetes API."""
+
     api_server: str
     user_token: str
     certificate_authority_data: str
@@ -81,7 +85,7 @@ class K8sClient(K8sClientInterface):
             try:
                 os.remove(self.ca_temp_filename)
             except FileNotFoundError:
-                pass
+                return
 
     def _get_decoded_ca_data(self) -> str:
         """Decode the certificate authority data."""
@@ -123,15 +127,17 @@ class K8sClient(K8sClientInterface):
         result = self.dynamic_client.resources.get(
             api_version=api_version, kind=kind
         ).get(namespace=namespace)
-        return result.items
+        return result.items.to_dict()
 
     def get_resource(
         self, api_version: str, kind: str, name: str, namespace: str
     ) -> dict:
         """Get a specific resource by name in a namespace."""
-        return self.dynamic_client.resources.get(
-            api_version=api_version, kind=kind
-        ).get(name=name, namespace=namespace)
+        return (
+            self.dynamic_client.resources.get(api_version=api_version, kind=kind)
+            .get(name=name, namespace=namespace)
+            .to_dict()
+        )
 
     def describe_resource(
         self, api_version: str, kind: str, name: str, namespace: str

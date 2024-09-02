@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
+from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.data import Message
@@ -32,7 +33,7 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=InitialQuestionsResponse)
+@router.post("/")
 async def init_conversation(
     data: InitConversationBody,
     x_cluster_url: Annotated[str, Header()],
@@ -58,11 +59,12 @@ async def init_conversation(
     except Exception as e:
         logger.error(e)
         raise HTTPException(
-            status_code=400, detail=f"failed to connect to the cluster: {e}"
-        )
+            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
+        ) from e
 
     try:
-        questions = await get_conversation_service().new_conversation(
+        service = get_conversation_service()
+        questions = await service.new_conversation(
             conversation_id,
             Message(
                 query="",
@@ -75,15 +77,16 @@ async def init_conversation(
         )
 
         # return response with session_id in the header.
+        response = InitialQuestionsResponse(
+            initial_questions=questions, conversation_id=conversation_id
+        )
         return JSONResponse(
-            content=InitialQuestionsResponse(
-                initial_questions=questions, conversation_id=conversation_id
-            ),
+            content=jsonable_encoder(response),
             headers={SESSION_ID_HEADER: conversation_id},
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/{conversation_id}/messages")
