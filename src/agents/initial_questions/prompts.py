@@ -36,4 +36,4 @@ The only thing you return are the questions, without any numbering, each seperat
 The provided cluster information is:
 
 {context}
-"""
+"""  # noqa: E501

@@ -1,4 +1,5 @@
 import os
+import time
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
@@ -10,6 +11,7 @@ from agents.initial_questions.inital_questions import (
     IInitialQuestionsAgent,
     InitialQuestionsAgent,
 )
+from agents.memory.conversation_history import ConversationMessage, QueryType
 from agents.memory.redis_checkpointer import IMemory, RedisSaver, initialize_async_pool
 from services.k8s import K8sClientInterface
 from utils.logging import get_logger
@@ -25,7 +27,7 @@ class IService(Protocol):
     """Service interface"""
 
     async def new_conversation(
-        self, conversation_id: int, message: Message, k8s_client: K8sClientInterface
+        self, conversation_id: str, message: Message, k8s_client: K8sClientInterface
     ) -> list[str]:
         """Initialize a new conversation. Returns a list of initial questions."""
         ...
@@ -57,7 +59,7 @@ class ConversationService(metaclass=SingletonMeta):
         self.init_questions_agent = InitialQuestionsAgent(model=self.model)
 
     async def new_conversation(
-        self, conversation_id: int, message: Message, k8s_client: K8sClientInterface
+        self, conversation_id: str, message: Message, k8s_client: K8sClientInterface
     ) -> list[str]:
         """Initialize a new conversation."""
         logger.info(f"Initializing new conversation id: {conversation_id}.")
@@ -67,11 +69,21 @@ class ConversationService(metaclass=SingletonMeta):
             conversation_id, message, k8s_client
         )
 
-        # TODO: initialize the redis memory for the conversation.
+        # initialize the redis memory for the conversation.
+        await self.memory.add_conversation_message(
+            conversation_id,
+            ConversationMessage(
+                type=QueryType.INITIAL_QUESTIONS,
+                query="",
+                response="\n".join(questions),
+                timestamp=time.time(),
+            ),
+        )
+
         return questions
 
     async def generate_initial_questions(
-        self, conversation_id: int, message: Message, k8s_client: K8sClientInterface
+        self, conversation_id: str, message: Message, k8s_client: K8sClientInterface
     ) -> list[str]:
         """Initialize the chat"""
         logger.info(
