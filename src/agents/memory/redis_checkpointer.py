@@ -8,9 +8,14 @@ from typing import (
 
 import redis
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint import BaseCheckpointSaver
-from langgraph.checkpoint.base import Checkpoint, CheckpointMetadata, CheckpointTuple
-from langgraph.serde.jsonplus import JsonPlusSerializer
+from langgraph.checkpoint.base import (
+    BaseCheckpointSaver,
+    ChannelVersions,
+    Checkpoint,
+    CheckpointMetadata,
+    CheckpointTuple,
+)
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 
@@ -101,6 +106,7 @@ class RedisSaver(BaseCheckpointSaver):
         config: RunnableConfig,
         checkpoint: Checkpoint,
         metadata: CheckpointMetadata,
+        new_versions: ChannelVersions,
     ) -> RunnableConfig:
         """Saves a checkpoint."""
         thread_id = config["configurable"]["thread_id"]
