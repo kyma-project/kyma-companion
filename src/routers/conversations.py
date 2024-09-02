@@ -3,12 +3,20 @@ from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Path
-from starlette.responses import StreamingResponse
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
+from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.data import Message
+from routers.common import (
+    API_PREFIX,
+    SESSION_ID_HEADER,
+    InitConversationBody,
+    InitialQuestionsResponse,
+)
 from services.conversation import ConversationService, IService
+from services.k8s import K8sClient, K8sClientInterface
 from utils.logging import get_logger
+from utils.utils import create_session_id
 
 logger = get_logger(__name__)
 
@@ -19,15 +27,63 @@ def get_conversation_service() -> IService:
 
 
 router = APIRouter(
-    prefix="/conversations",
+    prefix=f"{API_PREFIX}/conversations",
     tags=["conversations"],
 )
 
 
-@router.get("/init")
-async def init() -> dict:
-    """Endpoint to initialize the chat with the Kyma companion"""
-    return {"message": "Chat is initialized!"}
+@router.post("/", response_model=InitialQuestionsResponse)
+async def init_conversation(
+    data: InitConversationBody,
+    x_cluster_url: Annotated[str, Header()],
+    x_k8s_authorization: Annotated[str, Header()],
+    x_cluster_certificate_authority_data: Annotated[str, Header()],
+    session_id: Annotated[str, Header()] = "",
+) -> dict:
+    """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
+    logger.info("Initializing new conversation.")
+
+    # initialize with the session_id. Create a new session_id if not provided.
+    conversation_id = create_session_id()
+    if session_id != "":
+        conversation_id = session_id
+
+    # initialize k8s client for the request.
+    try:
+        k8s_client: K8sClientInterface = K8sClient(
+            api_server=x_cluster_url,
+            user_token=x_k8s_authorization,
+            certificate_authority_data=x_cluster_certificate_authority_data,
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=400, detail=f"failed to connect to the cluster: {e}"
+        )
+
+    try:
+        questions = await get_conversation_service().new_conversation(
+            conversation_id,
+            Message(
+                query="",
+                resource_kind=data.resource_kind,
+                resource_name=data.resource_name,
+                resource_api_version=data.resource_api_version,
+                namespace=data.namespace,
+            ),
+            k8s_client=k8s_client,
+        )
+
+        # return response with session_id in the header.
+        return JSONResponse(
+            content=InitialQuestionsResponse(
+                initial_questions=questions, conversation_id=conversation_id
+            ),
+            headers={SESSION_ID_HEADER: conversation_id},
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=e)
 
 
 @router.post("/{conversation_id}/messages")

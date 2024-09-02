@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import (
     Any,
+    Protocol,
 )
 
 import redis
@@ -88,6 +89,20 @@ async def get_async_connection(
     finally:
         if conn:
             await conn.aclose()
+
+
+class IMemory(Protocol):
+    """Model Interface."""
+
+    def save(self, content: str):  # noqa
+        """
+        Args:
+            content:  query to generate content
+
+        Returns:
+            str: The generated content
+
+        """
 
 
 class RedisSaver(BaseCheckpointSaver):

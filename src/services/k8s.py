@@ -17,11 +17,15 @@ class K8sClientInterface(Protocol):
         """List resources of a specific kind in a namespace."""
         ...
 
-    def get_resource(self, api_version: str, kind: str, name: str, namespace: str) -> dict:
+    def get_resource(
+        self, api_version: str, kind: str, name: str, namespace: str
+    ) -> dict:
         """Get a specific resource by name in a namespace."""
-        ... 
+        ...
 
-    def describe_resource(self, api_version: str, kind: str, name: str, namespace: str) -> list:
+    def describe_resource(
+        self, api_version: str, kind: str, name: str, namespace: str
+    ) -> list:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         ...
 
@@ -41,9 +45,12 @@ class K8sClientInterface(Protocol):
         """List all Kubernetes warning events."""
         ...
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+    def list_k8s_events_for_resource(
+        self, kind: str, name: str, namespace: str
+    ) -> list:
         """List all Kubernetes events for a specific resource."""
         ...
+
 
 class K8sClient(K8sClientInterface):
     api_server: str
@@ -52,7 +59,9 @@ class K8sClient(K8sClientInterface):
     ca_temp_filename: str
     dynamic_client: dynamic.DynamicClient = None
 
-    def __init__(self, api_server: str, user_token: str, certificate_authority_data: str):
+    def __init__(
+        self, api_server: str, user_token: str, certificate_authority_data: str
+    ):
         """Initialize the K8sClient object."""
         self.api_server = api_server
         self.user_token = user_token
@@ -83,21 +92,19 @@ class K8sClient(K8sClientInterface):
         # Create configuration object for client.
         conf = client.Configuration()
         conf.host = self.api_server
-        conf.api_key['authorization'] = self.user_token
-        conf.api_key_prefix['authorization'] = 'Bearer'
+        conf.api_key["authorization"] = self.user_token
+        conf.api_key_prefix["authorization"] = "Bearer"
         conf.verify_ssl = True
         conf.ssl_ca_cert = self.ca_temp_filename
 
-        return dynamic.DynamicClient(
-            client.api_client.ApiClient(configuration=conf)
-        )
+        return dynamic.DynamicClient(client.api_client.ApiClient(configuration=conf))
 
     def _get_auth_headers(self) -> dict:
         """Get the authentication headers for the Kubernetes API request."""
         return {
             "Authorization": "Bearer " + self.user_token,
             "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def execute_get_api_request(self, uri: str) -> dict:
@@ -105,7 +112,7 @@ class K8sClient(K8sClientInterface):
         response = requests.get(
             url=f"{self.api_server}/{uri.lstrip('/')}",
             headers=self._get_auth_headers(),
-            verify=self.ca_temp_filename
+            verify=self.ca_temp_filename,
         )
 
         return response.json()
@@ -113,14 +120,22 @@ class K8sClient(K8sClientInterface):
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         """List resources of a specific kind in a namespace.
         Provide empty string for namespace to list resources in all namespaces."""
-        result = self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(namespace=namespace)
+        result = self.dynamic_client.resources.get(
+            api_version=api_version, kind=kind
+        ).get(namespace=namespace)
         return result.items
 
-    def get_resource(self, api_version: str, kind: str, name: str, namespace: str) -> dict:
+    def get_resource(
+        self, api_version: str, kind: str, name: str, namespace: str
+    ) -> dict:
         """Get a specific resource by name in a namespace."""
-        return self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(name=name, namespace=namespace)
+        return self.dynamic_client.resources.get(
+            api_version=api_version, kind=kind
+        ).get(name=name, namespace=namespace)
 
-    def describe_resource(self, api_version: str, kind: str, name:str, namespace: str) -> list:
+    def describe_resource(
+        self, api_version: str, kind: str, name: str, namespace: str
+    ) -> list:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         resource = self.get_resource(api_version, kind, name, namespace)
 
@@ -154,14 +169,23 @@ class K8sClient(K8sClientInterface):
 
     def list_k8s_warning_events(self, namespace: str) -> list:
         """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
-        return [event for event in self.list_k8s_events(namespace) if event["type"] == "Warning"]
+        return [
+            event
+            for event in self.list_k8s_events(namespace)
+            if event["type"] == "Warning"
+        ]
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+    def list_k8s_events_for_resource(
+        self, kind: str, name: str, namespace: str
+    ) -> list:
         """List all Kubernetes events for a specific resource. Provide empty string for namespace to list all events."""
         events = self.list_k8s_events(namespace)
         result = []
         for event in events:
-            if event["involvedObject"]["kind"] == kind and event["involvedObject"]["name"] == name:
+            if (
+                event["involvedObject"]["kind"] == kind
+                and event["involvedObject"]["name"] == name
+            ):
                 result.append(event)
 
         return result

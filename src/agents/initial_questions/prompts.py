@@ -1,12 +1,4 @@
-from os import getenv
-from typing import Protocol
-
-from dotenv import load_dotenv
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from langchain_core.messages.base import BaseMessage
-from langchain_core.prompts import PromptTemplate
-
-CONVERSATION_TEMPLATE = """
+INITIAL_QUESTIONS_PROMPT = """
 You are an AI-powered Kubernetes and Kyma assistant designed to efficiently troubleshoot cluster issues and provide insightful analysis for users.
 Complete the provided task. Your general task is to generate questions based on the given cluster information.
 
@@ -44,47 +36,4 @@ The only thing you return are the questions, without any numbering, each seperat
 The provided cluster information is:
 
 {context}
-""" 
-
-class ChatOpenAIInterface(Protocol):
-    def invoke(self, prompt: str) -> BaseMessage:
-        ...
-
-class InitialQuestionsInterface(Protocol):
-    def generate_questions(self, template: str, context: str) -> list[str]:
-        ...
-
-class InitialQuestions:
-    ChatOpenAI: ChatOpenAIInterface
-
-    def __init__(self, llm: ChatOpenAIInterface) -> None:
-        pass
-    
-    @staticmethod
-    def get_gpt4o_instance(temperature: float = 0.5) -> ChatOpenAIInterface:
-        load_dotenv()
-        model = ChatOpenAI(
-            model_name="gpt-4.o",
-            temperature=temperature,
-            deployment_id=getenv("AICORE_DEPLOYMENT_ID_GPT4"),
-            config_id=getenv("AICORE_CONFIGURATION_ID_GPT4"),
-        )
-        return model
-
-    def generate_questions(self, template: str, context: str) -> list[str]:
-        # Format promp and send to llm.
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=['context'],
-        )
-        prompt = prompt.format(context=context)
-        result = self.llm.invoke(prompt)
-        
-        # Extract questions from result.
-        lines: list[str] = []
-        for line in result.content.__str__().split("\n"):
-            if line.strip() == "":
-                continue
-            lines.append(line)
-
-        return lines
+"""

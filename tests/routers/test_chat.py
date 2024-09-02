@@ -12,14 +12,16 @@ class MockChat(ChatInterface):
         self.conversations.return_value = {"message": "Chat is initialized!"}
         self.handle_request = MagicMock()
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def client():
     test_app = app
     test_app.dependency_overrides[Chat] = MockChat
     return TestClient(test_app)
 
+
 @pytest.fixture
 def test_conversations(client):
     response = client.post("/chat/conversations")
-    
+
     assert response.status_code == 200
