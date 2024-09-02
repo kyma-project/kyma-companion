@@ -127,7 +127,7 @@ class K8sClient(K8sClientInterface):
         result = self.dynamic_client.resources.get(
             api_version=api_version, kind=kind
         ).get(namespace=namespace)
-        return result.items.to_dict()
+        return result.items
 
     def get_resource(
         self, api_version: str, kind: str, name: str, namespace: str

@@ -3,8 +3,6 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
-import yaml
-
 from agents.common.data import Message
 from agents.graph import IGraph, KymaGraph
 from agents.initial_questions.inital_questions import (
@@ -92,97 +90,14 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Fetch the Kubernetes context for the initial questions.
-        k8s_context = await self._fetch_k8s_context_for_initial_questions(
-            message, k8s_client
+        k8s_context = (
+            await self.init_questions_agent.fetch_relevant_data_from_k8s_cluster(
+                message, k8s_client
+            )
         )
 
         # Generate questions from the context using an LLM.
         return self.init_questions_agent.generate_questions(context=k8s_context)
-
-    async def _fetch_k8s_context_for_initial_questions(
-        self, message: Message, k8s_client: K8sClientInterface
-    ) -> str:
-        """Fetch the Kubernetes context for the initial questions."""
-        if message.resource_kind == "namespace":
-            message.namespace = message.resource_name
-
-        # Define the conditions to create the Kubernetes cluster context.
-        is_cluster_scoped_resource = (
-            message.namespace == "" and message.resource_kind != ""
-        )
-        is_namespace_scoped_resource = (
-            message.namespace != "" and message.resource_kind != ""
-        )
-        is_namespace_overview = (
-            message.namespace != "" and message.resource_kind == "namespace"
-        )
-        is_cluster_overview = (
-            message.namespace == "" and message.resource_kind == "cluster"
-        )
-
-        # Query the Kubernetes API to get the context.
-        context: list[str] = []
-        if is_cluster_overview:
-            # cluster overview
-            context.append(
-                yaml.dump(k8s_client.list_not_running_pods(namespace=message.namespace))
-            )
-            context.append(yaml.dump(k8s_client.list_nodes_metrics()))
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_warning_events(namespace=message.namespace)
-                )
-            )
-        elif is_namespace_overview:
-            # namespace overview
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_warning_events(namespace=message.namespace)
-                )
-            )
-        elif is_cluster_scoped_resource:
-            # cluster-scoped detail view
-            context.append(
-                yaml.dump(
-                    k8s_client.list_resources(
-                        api_version=message.resource_api_version,
-                        kind=message.resource_kind,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_events_for_resource(
-                        kind=message.resource_kind,
-                        name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-        elif is_namespace_scoped_resource:
-            # namespace-scoped detail view
-            context.append(
-                yaml.dump(
-                    k8s_client.get_resource(
-                        api_version=message.resource_api_version,
-                        kind=message.resource_kind,
-                        name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_events_for_resource(
-                        kind=message.resource_kind,
-                        name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-
-        return "\n---\n".join(context)
 
     async def handle_request(
         self, conversation_id: int, message: Message
