@@ -1,11 +1,11 @@
-from typing import Protocol
+from typing import Any, Protocol
 
 import yaml
 from langchain_core.prompts import PromptTemplate
 
 from agents.common.data import Message
 from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
-from services.k8s import K8sClientInterface
+from services.k8s import IK8sClient
 from utils.models import IModel
 
 
@@ -17,7 +17,7 @@ class IInitialQuestionsAgent(Protocol):
         ...
 
     async def fetch_relevant_data_from_k8s_cluster(
-        self, message: Message, k8s_client: K8sClientInterface
+        self, message: Message, k8s_client: IK8sClient
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
         ...
@@ -51,83 +51,77 @@ class InitialQuestionsAgent:
 
         return lines
 
-    async def fetch_relevant_data_from_k8s_cluster(
-        self, message: Message, k8s_client: K8sClientInterface
+    def fetch_relevant_data_from_k8s_cluster(
+        self, message: Message, k8s_client: IK8sClient
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
         # Query the Kubernetes API to get the context.
-        context: list[str] = []
-        if message.namespace == "" and message.resource_kind.lower() == "cluster":
-            # case: cluster overview.
-            # fetch all not running pods.
-            context.append(
-                yaml.dump(k8s_client.list_not_running_pods(namespace=message.namespace))
-            )
+        yaml_context: list[Any] = []
 
-            # fetch all K8s Nodes metrics.
-            context.append(yaml.dump(k8s_client.list_nodes_metrics()))
-
-            # fetch all K8s events with warning type.
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_warning_events(namespace=message.namespace)
+        # If namespace is not provided, and the resource Kind is 'cluster'
+        # get an overview of the cluster
+        # by fetching all not running pods,
+        # all K8s Nodes metrics, 
+        # and all K8s events with warning type.
+        if message.namespace is None and message.resource_kind.lower() == "cluster":
+            yaml_context.append(
+                k8s_client.list_not_running_pods(namespace=message.namespace)
                 )
-            )
-
-        elif message.namespace != "" and message.resource_kind.lower() == "namespace":
-            # case: namespace overview
-            # fetch all K8s events with warning type.
-            context.append(
-                yaml.dump(
-                    k8s_client.list_k8s_warning_events(namespace=message.namespace)
+            yaml_context.append(
+                k8s_client.list_nodes_metrics()
                 )
-            )
+            yaml_context.append(
+                k8s_client.list_k8s_warning_events(namespace=message.namespace)
+                )
+            
+        # If namespace is provided, and the resource Kind is 'namespace'
+        # get an overview of the namespace
+        # by fetching all K8s events with warning type.
+        elif message.namespace is not None and message.resource_kind.lower() == "namespace":
+            yaml_context.append(
+                    k8s_client.list_k8s_warning_events(namespace=message.namespace)
+                    )
 
-        elif message.namespace == "" and message.resource_kind != "":
-            # case: cluster-scoped detailed view.
-            # fetch all resources of the specified kind.
-            context.append(
-                yaml.dump(
+        # If namespace is not provided, but the resource Kind is
+        # get a detailed view of the cluster for the specified Kind
+        # by fetching all resources of the specified kind,
+        elif message.namespace is None and message.resource_kind is not None:
+            yaml_context.append(
                     k8s_client.list_resources(
                         api_version=message.resource_api_version,
                         kind=message.resource_kind,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-            # fetch all K8s events for the specified resource.
-            context.append(
-                yaml.dump(
+                        namespace=message.namespace
+                        ))
+            yaml_context.append(
                     k8s_client.list_k8s_events_for_resource(
                         kind=message.resource_kind,
                         name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-        elif message.namespace != "" and message.resource_kind != "":
-            # case: namespace-scoped detail view.
-            # fetch the specified resource.
-            context.append(
-                yaml.dump(
+                        namespace=message.namespace
+                        ))
+
+         # If namespace is provided, and the resource Kind is not 'namespace'
+         # get a detailed view of the namespace for the specified Kind
+         # by fetching the specified resource,
+         # and all K8s events for the specified resource.   
+        elif message.namespace is not None and message.resource_kind is not None:
+            yaml_context.append(
                     k8s_client.get_resource(
                         api_version=message.resource_api_version,
                         kind=message.resource_kind,
                         name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
-            # fetch all K8s events for the specified resource.
-            context.append(
-                yaml.dump(
+                        namespace=message.namespace
+                        ))
+            yaml_context.append(
                     k8s_client.list_k8s_events_for_resource(
                         kind=message.resource_kind,
                         name=message.resource_name,
-                        namespace=message.namespace,
-                    )
-                )
-            )
+                        namespace=message.namespace
+                        ))
+        else:
+            raise Exception("Invalid message provided.")
 
-        return "\n---\n".join(context)
+        text_context = yaml.dump(yaml_context)
+
+        #return "\n---\n".join(context)
+        return text_context

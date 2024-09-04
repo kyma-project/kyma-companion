@@ -8,7 +8,7 @@ import requests
 from kubernetes import client, dynamic
 
 
-class K8sClientInterface(Protocol):
+class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
 
     def execute_get_api_request(self, uri: str) -> dict:
@@ -66,7 +66,7 @@ class K8sClientInterface(Protocol):
         ...
 
 
-class K8sClient(K8sClientInterface):
+class K8sClient:
     """Client to interact with the Kubernetes API."""
 
     api_server: str

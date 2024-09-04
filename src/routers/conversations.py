@@ -15,7 +15,7 @@ from routers.common import (
     InitialQuestionsResponse,
 )
 from services.conversation import ConversationService, IService
-from services.k8s import K8sClient, K8sClientInterface
+from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
 from utils.utils import create_session_id
 
@@ -51,7 +51,7 @@ async def init_conversation(
 
     # initialize k8s client for the request.
     try:
-        k8s_client: K8sClientInterface = K8sClient(
+        k8s_client: IK8sClient = K8sClient(
             api_server=x_cluster_url,
             user_token=x_k8s_authorization,
             certificate_authority_data=x_cluster_certificate_authority_data,
