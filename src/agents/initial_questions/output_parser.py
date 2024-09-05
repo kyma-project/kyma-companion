@@ -1,4 +1,5 @@
 from typing import Protocol
+import re
 
 from langchain_core.output_parsers import BaseOutputParser
 
@@ -14,4 +15,11 @@ class QuestionOutputParser(BaseOutputParser[list[str]]):
 
     def parse(self, output: str) -> list[str]:
         """Parse the output and return the questions."""
-        return output.strip().split("\n")
+        # Split the output into lines.
+        output = output.strip().split("\n")
+        # Remove empty lines and leading and trailing whitespaces.
+        output = [line.strip() for line in output if line.strip()]
+        # Remove leading numbers.
+        output = [re.sub(r"^\d+\.", "", line).strip() for line in output]
+
+        return output
