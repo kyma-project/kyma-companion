@@ -50,39 +50,39 @@ class TestDataSanitizer:
         "test_description, given_data, expected_data, expected_error",
         [
             (
-                    "should return error if object type is not list or dict",
-                    "It is a string",
-                    "",
-                    ValueError("Data must be a list or a dictionary."),
+                "should return error if object type is not list or dict",
+                "It is a string",
+                "",
+                ValueError("Data must be a list or a dictionary."),
             ),
             (
-                    "should be able to sanitize a dict object and should remove data from secret",
+                "should be able to sanitize a dict object and should remove data from secret",
+                sample_k8s_secret(),
+                sample_k8s_sanitized_secret(),
+                None,
+            ),
+            (
+                "should be able to sanitize a list object and should remove data from secret",
+                [
                     sample_k8s_secret(),
+                    sample_k8s_secret(),
+                ],
+                [
+                    sample_k8s_sanitized_secret(),  # it should remove data from secret.
                     sample_k8s_sanitized_secret(),
-                    None,
+                ],
+                None,
             ),
             (
-                    "should be able to sanitize a list object and should remove data from secret",
-                    [
-                        sample_k8s_secret(),
-                        sample_k8s_secret(),
-                    ],
-                    [
-                        sample_k8s_sanitized_secret(),  # it should remove data from secret.
-                        sample_k8s_sanitized_secret(),
-                    ],
-                    None,
-            ),
-            (
-                    "should be able to sanitize a Pod resource",
-                    sample_k8s_pod(),
-                    sample_k8s_pod(),  # for pods, it is not removing anything.
-                    None,
+                "should be able to sanitize a Pod resource",
+                sample_k8s_pod(),
+                sample_k8s_pod(),  # for pods, it is not removing anything.
+                None,
             ),
         ],
     )
     def test_sanitize(
-            self, test_description, given_data, expected_data, expected_error
+        self, test_description, given_data, expected_data, expected_error
     ):
         # error cases:
         if expected_error is not None:

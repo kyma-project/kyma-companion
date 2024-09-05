@@ -1,5 +1,3 @@
-from langchain_core.prompts import PromptTemplate
-
 INITIAL_QUESTIONS_PROMPT = """
 You are an AI-powered Kubernetes and Kyma assistant designed to efficiently troubleshoot cluster issues and provide insightful analysis for users.
 Complete the provided task. Your general task is to generate questions based on the given cluster information.
@@ -39,9 +37,3 @@ The provided cluster information is:
 
 {context}
 """  # noqa: E501
-
-def get_initial_questions_prompt_template() -> PromptTemplate:
-	prompt = PromptTemplate(
-			template=INITIAL_QUESTIONS_PROMPT,
-			input_variables=["context"],
-	)
