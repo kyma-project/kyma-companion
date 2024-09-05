@@ -27,27 +27,24 @@ class IInitialQuestionsAgent(Protocol):
 class InitialQuestionsAgent:
     """Agent that generates initial questions."""
 
-    model: IModel
-    prompt_template: str = INITIAL_QUESTIONS_PROMPT
-    output_parser: QuestionOutputParser
+    chain: any
 
     def __init__(
         self,
         model: IModel,
     ) -> None:
-        self.model = model
-        self.output_parser = QuestionOutputParser()
+        prompt_template: str = INITIAL_QUESTIONS_PROMPT
+        prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=["context"],
+        )
+        output_parser = QuestionOutputParser()
+        self.chain = prompt | model.llm | output_parser
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
         # Format prompt and send to llm.
-        prompt = PromptTemplate(
-            template=self.prompt_template,
-            input_variables=["context"],
-        )
-        prompt = prompt.format(context=context)
-        result = self.model.invoke(prompt)
-        return self.output_parser.parse(result.content.__str__())
+        return self.chain.invoke({"context": context})
 
     def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
