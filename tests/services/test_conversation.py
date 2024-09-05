@@ -3,11 +3,20 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from agents.common.data import Message
+from agents.memory.conversation_history import ConversationMessage, QueryType
 from services.conversation import ConversationService
 
+TIME_STAMP = 1.8
+QUESTIONS = ["question1?", "question2?", "question3?"]
+CONVERSATION_ID = '1'
 
 @pytest.mark.asyncio(scope="class")
 class TestConversation:
+
+	@pytest.fixture
+	def mock_time(self):
+		with patch("time.time", return_value=TIME_STAMP):
+			yield	
 
 	@pytest.fixture
 	def mock_model_factory(self):
@@ -47,7 +56,7 @@ class TestConversation:
 	@pytest.fixture
 	def mock_generate_initial_questions(self):
 		async def async_mock(*args, **kwargs):
-			return ["question1?", "question2?", "question3?"]
+			return QUESTIONS
 		
 		with patch.object(
 				ConversationService,
@@ -59,6 +68,7 @@ class TestConversation:
 	@pytest.mark.asyncio
 	async def test_new_conversation(
 		self,
+		mock_time,
 		mock_model_factory,
 		mock_init_pool,
 		mock_redis_saver,
@@ -66,7 +76,13 @@ class TestConversation:
 		mock_generate_initial_questions,
 	):
 		# Arrange:
-		test_conversation_id = 1
+		expected_message = ConversationMessage(
+			type=QueryType.INITIAL_QUESTIONS,
+			query="",
+			response="\n".join(QUESTIONS),
+			timestamp=TIME_STAMP,
+		)
+
 		test_message = Message(
 				query="test query",
 				resource_kind="Pod",
@@ -79,19 +95,19 @@ class TestConversation:
 		# Act:
 		messaging_service = ConversationService()
 		result = await messaging_service.new_conversation(
-			conversation_id=test_conversation_id,
+			conversation_id=CONVERSATION_ID,
 			message=test_message,
 			k8s_client=test_k8s_client
 		)
 
 		# Assert:
 		mock_generate_initial_questions.assert_called_once_with(
-			conversation_id=test_conversation_id,
-			message=test_message,
-			k8s_client=test_k8s_client
+			CONVERSATION_ID, test_message, test_k8s_client
 		)
-		mock_redis_saver.return_value.add_conversation_message.assert_called_once()
-		assert result == ["question1?", "question2?", "question3?"]
+		mock_redis_saver.return_value.add_conversation_message.assert_called_once_with(
+			CONVERSATION_ID, expected_message
+		)
+		assert result == QUESTIONS
 
 	@pytest.mark.asyncio
 	async def test_handle_request(
