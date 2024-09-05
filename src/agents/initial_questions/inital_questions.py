@@ -4,7 +4,8 @@ import yaml
 from langchain_core.prompts import PromptTemplate
 
 from agents.common.data import Message
-from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT, IOutputParser, QuestionOutputParser
+from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
+from agents.initial_questions.output_parser import IOutputParser, QuestionOutputParser
 from services.k8s import IK8sClient
 from utils.models import IModel
 from langchain.chains.llm import LLMChain

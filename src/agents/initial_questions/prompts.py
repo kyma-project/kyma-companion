@@ -1,7 +1,3 @@
-from typing import Protocol
-
-from langchain_core.output_parsers import BaseOutputParser
-
 INITIAL_QUESTIONS_PROMPT = """
 You are an AI-powered Kubernetes and Kyma assistant designed to efficiently troubleshoot cluster issues and provide insightful analysis for users.
 Complete the provided task. Your general task is to generate questions based on the given cluster information.
@@ -41,18 +37,3 @@ The provided cluster information is:
 
 {context}
 """  # noqa: E501
-
-
-class IOutputParser(Protocol):
-    """Interface for OutputParser."""
-
-    def parse(self, output: str) -> list[str]:
-        """Parse the output and return the questions."""
-        ...
-
-class QuestionOutputParser(BaseOutputParser[list[str]]):
-    """OutputParser for InitialQuestionsAgent."""
-
-    def parse(self, output: str) -> list[str]:
-        """Parse the output and return the questions."""
-        return output.strip().split("\n")
