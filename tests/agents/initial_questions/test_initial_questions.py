@@ -1,9 +1,12 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from agents.common.data import Message
 from agents.initial_questions.inital_questions import InitialQuestionsAgent
+
+from langchain_core.language_models.llms import LLM
+from langchain.llms.fake import FakeLLM
 
 KEY: str = "key"
 LIST_NOT_RUNNING_PODS: str = "list_not_running_pods"
@@ -13,6 +16,30 @@ LIST_RESOURCES: str = "list_resources"
 LIST_K8S_EVENTS_FOR_RESOURCE: str = "list_k8s_events_for_resource"
 GET_RESOURCE: str = "get_resource"
 MOCK_DICT: dict = {KEY: "value"}
+
+
+    
+
+
+def test_generate_questions():
+    # Arrange:
+    excepted = ["Is this a test?"]
+
+    fake_llm = FakeLLM(result=excepted)
+    context = "test context"
+    prompt_template_string = "{context}"
+    
+
+    agent = InitialQuestionsAgent(
+        model=model,
+        prompt_template=prompt_template_string
+        )
+
+    # Act:
+    result = agent.generate_questions(context)
+    
+    # Assert:
+    assert result == excepted
 
 @pytest.fixture
 def mock_k8s_client():

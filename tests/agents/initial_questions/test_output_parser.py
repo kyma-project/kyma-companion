@@ -2,33 +2,33 @@ from agents.initial_questions.output_parser import IOutputParser, QuestionOutput
 import pytest
 
 @pytest.mark.parametrize(
-    "output,expected",
-    [
-        ("""Pod?
-            Error?""",
-         ["Pod?", "Error?"]),
-        
-        ("""1. Pod?
-            2. Error?
-            3. Namespace?
-            4. Node?""",
-         ["Pod?", "Error?", "Namespace?", "Node?"]),
+	"output,expected",
+	[
+		("""Pod?
+			Error?""",
+		 ["Pod?", "Error?"]),
+		
+		("""1. Pod?
+			2. Error?
+			3. Namespace?
+			4. Node?""",
+		 ["Pod?", "Error?", "Namespace?", "Node?"]),
 
-        ("""
-         
-              1. Pod?
-         
+		("""
+		 
+			  1. Pod?
+		 
 
-         """,
-        ["Pod?"]),
-    ]
+		 """,
+		["Pod?"]),
+	]
 )
-def test_QuestionOutputParser(output: str, expected: list[str]):
-    # Arrange:
-    parser = QuestionOutputParser()
+def test_question_output_parser(output: str, expected: list[str]):
+	# Arrange:
+	parser = QuestionOutputParser()
 
-    # Act:
-    result = parser.parse(output)
+	# Act:
+	result = parser.parse(output)
 
-    # Assert:
-    assert result == expected
+	# Assert:
+	assert result == expected
