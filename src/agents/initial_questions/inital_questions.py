@@ -4,10 +4,10 @@ import yaml
 from langchain_core.prompts import PromptTemplate
 
 from agents.common.data import Message
-from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
+from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT, IOutputParser, QuestionOutputParser
 from services.k8s import IK8sClient
 from utils.models import IModel
-
+from langchain.chains.llm import LLMChain
 
 class IInitialQuestionsAgent(Protocol):
     """Interface for InitialQuestionsAgent."""
@@ -27,29 +27,34 @@ class InitialQuestionsAgent:
     """Agent that generates initial questions."""
 
     model: IModel
-    prompt_template: str = INITIAL_QUESTIONS_PROMPT
+    prompt_template: str
+    output_parser: IOutputParser
 
-    def __init__(self, model: IModel) -> None:
+    def __init__(self, model: IModel,
+                 prompt_template: str = INITIAL_QUESTIONS_PROMPT,
+                 output_parser: IOutputParser = QuestionOutputParser
+                 ) -> None:
         self.model = model
+        self.prompt_template = prompt_template
+        self.output_parser = output_parser
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
-        # Format prompt and send to llm.
+        # Creae a prompt from the template.
         prompt = PromptTemplate(
             template=self.prompt_template,
             input_variables=["context"],
         )
-        prompt = prompt.format(context=context)
-        result = self.model.invoke(prompt)
+        
+        # Chain up all the components.
+        chain = LLMChain(
+            llm=self.model,
+            prompt=prompt,
+            output_parser=self.output_parser,
+        )
 
-        # Extract questions from result.
-        lines: list[str] = []
-        for line in result.content.__str__().split("\n"):
-            if line.strip() == "":
-                continue
-            lines.append(line)
-
-        return lines
+        # Run the chain.
+        return chain.run(context=context)
 
     def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
@@ -100,10 +105,10 @@ class InitialQuestionsAgent:
                         namespace=message.namespace
                         ))
 
-         # If namespace is provided, and the resource Kind is not 'namespace'
-         # get a detailed view of the namespace for the specified Kind
-         # by fetching the specified resource,
-         # and all K8s events for the specified resource.   
+        # If namespace is provided, and the resource Kind is not 'namespace'
+        # get a detailed view of the namespace for the specified Kind
+        # by fetching the specified resource,
+        # and all K8s events for the specified resource.   
         elif message.namespace is not None and message.resource_kind is not None:
             yaml_context.append(
                     k8s_client.get_resource(
