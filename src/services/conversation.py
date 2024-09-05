@@ -90,10 +90,8 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Fetch the Kubernetes context for the initial questions.
-        k8s_context = (
-            await self.init_questions_agent.fetch_relevant_data_from_k8s_cluster(
-                message, k8s_client
-            )
+        k8s_context = self.init_questions_agent.fetch_relevant_data_from_k8s_cluster(
+            message, k8s_client
         )
 
         # Generate questions from the context using an LLM.
