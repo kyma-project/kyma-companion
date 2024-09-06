@@ -1,10 +1,10 @@
-id: kyma_app_serverless_syntax_err
+id: kyma-app-serverless-syntax-err
 description: The serverless function has a syntax error; it calls Dates() instead of Date().
 resource:
   kind: Function
   api_version: "serverless.kyma-project.io/v1alpha2"
   name: func1
-  namespace: kyma_app_serverless_syntax_err
+  namespace: kyma-app-serverless-syntax-err
 expectations:
   - name: step_by_step_guide
     statement: contains step-by-step guidance
@@ -47,7 +47,7 @@ expectations:
       - solution_finding
     complexity: 3
   - name: deployable_yaml_with_complete_serverless_function
-    statement: provides a complete yaml formatted manifest for a serverless function with all required fields, name set to 'func1', namespace set to 'kyma_app_serverless_syntax_err' and  that calls 'Date()'
+    statement: provides a complete yaml formatted manifest for a serverless function with all required fields, name set to 'func1', namespace set to 'kyma-app-serverless-syntax-err' and  that calls 'Date()'
     categories:
       - kubernetes
       - yaml

@@ -1,5 +1,5 @@
 - description: This mock response contains a incomplete yaml-formatted manifest for an APIRule
-  scenario_id: kyma_app_apirule_broken
+  scenario_id: kyma-app-apirule-broken
   mock_response_content: |-
     "There seems to be a syntax error in the APIRule. It contains two accessStrategies but it should only contain one accessStrategy. Here is a corrected version of the APIRule:
       ```yaml

@@ -1,10 +1,10 @@
-id: kyma_app_apirule_broken
+id: kyma-app-apirule-broken
 description: The Application uses an API Rule that has two accessStrategies handler, which will lead to an error stead
 resource:
   kind: APIRule
   api_version: gateway.kyma-project.io/v1beta1
   name: restapi
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 expectations:
   - name: apirule_error
     statement: points out that the apirule is in an error state
@@ -48,7 +48,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml_for_apirule
-    statement: provides a complete yaml formatted manifest for a apirule, with the name set to 'restapi', the namespace set to 'kyma_app_apirule_broken', that contains all required fields and that contains only one accessStrategyy
+    statement: provides a complete yaml formatted manifest for a apirule, with the name set to 'restapi', the namespace set to 'kyma-app-apirule-broken', that contains all required fields and that contains only one accessStrategyy
     categories:
       - kubernetes
       - yaml

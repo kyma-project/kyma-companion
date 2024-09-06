@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kyma_app_apirule_broken
+  name: kyma-app-apirule-broken
   labels:
     istio-injection: enabled
 ---
@@ -11,7 +11,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   selector:
     app: redis
@@ -24,7 +24,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: redis-pv
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   capacity:
     storage: 10Mi
@@ -39,7 +39,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: redis
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 type: Opaque
 data:
   REDIS_PASSWORD: cGFzc3dvcmQ=
@@ -48,7 +48,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   serviceName: redis
   replicas: 1
@@ -89,7 +89,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: restapi
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   replicas: 1
   selector:
@@ -134,13 +134,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: restapi
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: restapi-access-role
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 rules:
   - apiGroups: [""]
     resources: ["pods", "services", "endpoints", "events", "configmaps"]
@@ -150,11 +150,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: restapi-access-role-binding
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 subjects:
   - kind: ServiceAccount
     name: restapi
-    namespace: kyma_app_apirule_broken
+    namespace: kyma-app-apirule-broken
 roleRef:
   kind: Role
   name: restapi-access-role
@@ -164,15 +164,15 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: restapi-config
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 data:
-  restapi-url: "http://func1.kyma_app_apirule_broken.svc.cluster.local:80"
+  restapi-url: "http://func1.kyma-app-apirule-broken.svc.cluster.local:80"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: restapi
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   selector:
     app: restapi
@@ -188,7 +188,7 @@ apiVersion: serverless.kyma-project.io/v1alpha2
 kind: Function
 metadata:
   name: func1
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
   labels:
     app: restapi
 spec:
@@ -230,11 +230,11 @@ metadata:
   labels:
     app.kubernetes.io/name: sub1
   name: sub1
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
   config:
     maxInFlightMessages: "10"
-  sink: http://restapi.kyma_app_apirule_broken.svc.cluster.local/api/v1/counter
+  sink: http://restapi.kyma-app-apirule-broken.svc.cluster.local/api/v1/counter
   source: noapp
   typeMatching: standard
   types:
@@ -244,12 +244,12 @@ apiVersion: gateway.kyma-project.io/v1beta1
 kind: APIRule
 metadata:
   name: restapi
-  namespace: kyma_app_apirule_broken
+  namespace: kyma-app-apirule-broken
 spec:
-  host: kyma_app_apirule_broken.c-5cb6076.stage.kyma.ondemand.com
+  host: kyma-app-apirule-broken.c-5cb6076.stage.kyma.ondemand.com
   service:
     name: restapi
-    namespace: kyma_app_apirule_broken
+    namespace: kyma-app-apirule-broken
     port: 80
   gateway: kyma-system/kyma-gateway
   rules:
