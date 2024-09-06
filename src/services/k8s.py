@@ -72,7 +72,7 @@ class K8sClient:
     api_server: str
     user_token: str
     certificate_authority_data: str
-    ca_temp_filename: str
+    ca_temp_filename: str = ""
     dynamic_client: dynamic.DynamicClient = None
 
     def __init__(
