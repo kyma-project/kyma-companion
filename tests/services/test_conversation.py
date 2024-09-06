@@ -8,7 +8,7 @@ from services.conversation import ConversationService
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
-CONVERSATION_ID = '1'
+CONVERSATION_ID = "1"
 POD_YAML = """
 apiVersion: v1
 kind: Pod
@@ -22,13 +22,14 @@ spec:
     - containerPort: 80
 """
 
+
 @pytest.mark.asyncio(scope="class")
 class TestConversation:
 
     @pytest.fixture
     def mock_time(self):
         with patch("time.time", return_value=TIME_STAMP):
-            yield	
+            yield
 
     @pytest.fixture
     def mock_model_factory(self):
@@ -50,7 +51,7 @@ class TestConversation:
             "services.conversation.KymaGraph", return_value=mock_kyma_graph
         ) as mock:
             yield mock
-    
+
     @pytest.fixture
     def mock_redis_saver(self):
         async def async_mock_add_conversation_message(*args, **kwargs):
@@ -72,7 +73,9 @@ class TestConversation:
         mock_instance = Mock()
         mock_instance.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
         mock_instance.generate_questions = Mock(return_value=QUESTIONS)
-        with patch("services.conversation.InitialQuestionsAgent", return_value=mock_instance):
+        with patch(
+            "services.conversation.InitialQuestionsAgent", return_value=mock_instance
+        ):
             yield mock_instance
 
     @pytest.mark.asyncio
@@ -83,7 +86,7 @@ class TestConversation:
         mock_init_pool,
         mock_redis_saver,
         mock_kyma_graph,
-        mock_initial_questions_agent
+        mock_initial_questions_agent,
     ):
         # Arrange:
         expected_conversation_message = ConversationMessage(
@@ -93,12 +96,12 @@ class TestConversation:
             timestamp=TIME_STAMP,
         )
         test_message = Message(
-                query="test query",
-                resource_kind="Pod",
-                resource_api_version="v1",
-                resource_name="my-pod",
-                namespace="default",
-            )
+            query="test query",
+            resource_kind="Pod",
+            resource_api_version="v1",
+            resource_name="my-pod",
+            namespace="default",
+        )
         test_k8s_client = MagicMock()
 
         # Act:
@@ -106,7 +109,7 @@ class TestConversation:
         result = await messaging_service.new_conversation(
             conversation_id=CONVERSATION_ID,
             message=test_message,
-            k8s_client=test_k8s_client
+            k8s_client=test_k8s_client,
         )
 
         # Assert:
@@ -119,16 +122,18 @@ class TestConversation:
         mock_initial_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
             test_message, test_k8s_client
         )
-        mock_initial_questions_agent.generate_questions.assert_called_with(context=POD_YAML)
+        mock_initial_questions_agent.generate_questions.assert_called_with(
+            context=POD_YAML
+        )
 
     @pytest.mark.asyncio
     async def test_generate_initial_questions(
-        self, 
-        mock_model_factory, 
-        mock_init_pool, 
-        mock_redis_saver, 
+        self,
+        mock_model_factory,
+        mock_init_pool,
+        mock_redis_saver,
         mock_kyma_graph,
-        mock_initial_questions_agent
+        mock_initial_questions_agent,
     ):
         # Arrange:
         k8s_client = MagicMock()
@@ -143,7 +148,7 @@ class TestConversation:
         # Act:
         messaging_service = ConversationService()
         result = await messaging_service.generate_initial_questions(
-            CONVERSATION_ID, message, k8s_client 
+            CONVERSATION_ID, message, k8s_client
         )
 
         # Assert:
@@ -153,7 +158,9 @@ class TestConversation:
         messaging_service.init_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
             message, k8s_client
         )
-        messaging_service.init_questions_agent.generate_questions.assert_called_with(context=POD_YAML)
+        messaging_service.init_questions_agent.generate_questions.assert_called_with(
+            context=POD_YAML
+        )
 
     @pytest.mark.asyncio
     async def test_handle_request(
