@@ -1,10 +1,10 @@
-id: nginx_wrong_image
+id: nginx-wrong-image
 description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'
 resource:
   kind: Deployment
   api_version: apps/v1
   name: nginx
-  namespace: nginx_wrong_image
+  namespace: nginx-wrong-image
 expectations:
   - name: step_by_step_guide
     statement: contains a step-by-step guide

@@ -1,5 +1,5 @@
 - description: This mock response contains a complete deployable yaml-formatted manifest for a serverless function
-  scenario_id: kyma_app_serverless_syntax_err
+  scenario_id: kyma-app-serverless-syntax-err
   mock_response_content: |-
     "There seems to be a syntax error in the serverless function 'func1'. The function calls Dates() instead of Date(). Here is a corrected version of the function:
       ```yaml
@@ -7,7 +7,7 @@
       kind: Function
       metadata:
         name: func1
-        namespace: kyma_app_serverless_syntax_err
+        namespace: kyma-app-serverless-syntax-err
         labels:
           app: restapi
       spec:
