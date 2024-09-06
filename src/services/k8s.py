@@ -7,8 +7,6 @@ from typing import Protocol
 import requests
 from kubernetes import client, dynamic
 
-from utils.logging import get_logger
-
 
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
