@@ -71,12 +71,15 @@ final_report() {
     if [ ${#missing_deploy_scripts[@]} -gt 0 ]; then
       echo "## Missing ##"
       echo "Missing deploy.sh in directories: ${missing_deploy_scripts[*]}"
+      exit 1
     fi
     if [ ${#failed_deploy_scripts[@]} -gt 0 ]; then
       echo "## Failed ##"
       echo "Failed to execute deploy.sh in directories: ${failed_deploy_scripts[*]}"
+      exit 1
     fi
   fi
+  exit 0
 }
 
 ## Main Script
