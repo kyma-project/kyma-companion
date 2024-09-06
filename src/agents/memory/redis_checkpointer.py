@@ -220,7 +220,7 @@ class RedisSaver(BaseCheckpointSaver):
         try:
             async with get_async_connection(self.async_connection) as conn:
                 key = f"history:{conversation_id}"
-                await conn.lpush(key, message.model_dump_json())
+                await conn.lpush(key, message.model_dump_json())  # type: ignore
 
         except Exception as e:
             raise Exception(f"Failed to add conversation message: {str(e)}") from e
@@ -233,8 +233,8 @@ class RedisSaver(BaseCheckpointSaver):
         try:
             async with get_async_connection(self.async_connection) as conn:
                 key = f"history:{conversation_id}"
-                count = await conn.llen(key)
-                messages = await conn.lrange(key, 0, count)
+                count = await conn.llen(key)  # type: ignore
+                messages = await conn.lrange(key, 0, count)  # type: ignore
                 # convert messages to ConversationMessage objects.
                 return [from_json(msg, allow_partial=True) for msg in messages]
 

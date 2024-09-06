@@ -1,3 +1,4 @@
+import typing
 from typing import Any, Protocol
 
 import yaml
@@ -27,7 +28,7 @@ class IInitialQuestionsAgent(Protocol):
 class InitialQuestionsAgent:
     """Agent that generates initial questions."""
 
-    chain: any
+    chain: typing.Any
 
     def __init__(
         self,
@@ -44,7 +45,7 @@ class InitialQuestionsAgent:
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
         # Format prompt and send to llm.
-        return self.chain.invoke({"context": context})
+        return self.chain.invoke({"context": context})  # type: ignore
 
     def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
@@ -60,13 +61,9 @@ class InitialQuestionsAgent:
         # all K8s Nodes metrics,
         # and all K8s events with warning type.
         if message.namespace is None and message.resource_kind.lower() == "cluster":
-            yaml_context.append(
-                k8s_client.list_not_running_pods(namespace=message.namespace)
-            )
+            yaml_context.append(k8s_client.list_not_running_pods(namespace=""))
             yaml_context.append(k8s_client.list_nodes_metrics())
-            yaml_context.append(
-                k8s_client.list_k8s_warning_events(namespace=message.namespace)
-            )
+            yaml_context.append(k8s_client.list_k8s_warning_events(namespace=""))
 
         # If namespace is provided, and the resource Kind is 'namespace'
         # get an overview of the namespace
@@ -85,16 +82,16 @@ class InitialQuestionsAgent:
         elif message.namespace is None and message.resource_kind is not None:
             yaml_context.append(
                 k8s_client.list_resources(
-                    api_version=message.resource_api_version,
+                    api_version=str(message.resource_api_version),
                     kind=message.resource_kind,
-                    namespace=message.namespace,
+                    namespace="",
                 )
             )
             yaml_context.append(
                 k8s_client.list_k8s_events_for_resource(
                     kind=message.resource_kind,
-                    name=message.resource_name,
-                    namespace=message.namespace,
+                    name=str(message.resource_name),
+                    namespace="",
                 )
             )
 
@@ -105,16 +102,16 @@ class InitialQuestionsAgent:
         elif message.namespace is not None and message.resource_kind is not None:
             yaml_context.append(
                 k8s_client.get_resource(
-                    api_version=message.resource_api_version,
+                    api_version=str(message.resource_api_version),
                     kind=message.resource_kind,
-                    name=message.resource_name,
+                    name=str(message.resource_name),
                     namespace=message.namespace,
                 )
             )
             yaml_context.append(
                 k8s_client.list_k8s_events_for_resource(
                     kind=message.resource_kind,
-                    name=message.resource_name,
+                    name=str(message.resource_name),
                     namespace=message.namespace,
                 )
             )

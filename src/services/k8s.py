@@ -39,7 +39,7 @@ class IK8sClient(Protocol):
         name: str,
         namespace: str,
         sanitize: bool = True,
-    ) -> list:
+    ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         ...
 
@@ -99,7 +99,7 @@ class K8sClient:
             except FileNotFoundError:
                 return
 
-    def _get_decoded_ca_data(self) -> str:
+    def _get_decoded_ca_data(self) -> bytes:
         """Decode the certificate authority data."""
         return base64.b64decode(self.certificate_authority_data)
 
@@ -131,7 +131,7 @@ class K8sClient:
             verify=self.ca_temp_filename,
         )
 
-        return response.json()
+        return response.json()  # type: ignore
 
     def list_resources(
         self, api_version: str, kind: str, namespace: str, sanitize: bool = True
@@ -142,8 +142,8 @@ class K8sClient:
             api_version=api_version, kind=kind
         ).get(namespace=namespace)
         if sanitize:
-            return DataSanitizer.sanitize(result.items)
-        return result.items
+            return DataSanitizer.sanitize(result.items)  # type: ignore
+        return result.items  # type: ignore
 
     def get_resource(
         self,
@@ -160,8 +160,8 @@ class K8sClient:
             .to_dict()
         )
         if sanitize:
-            return DataSanitizer.sanitize(resource)
-        return resource
+            return DataSanitizer.sanitize(resource)  # type: ignore
+        return resource  # type: ignore
 
     def describe_resource(
         self,
@@ -170,12 +170,12 @@ class K8sClient:
         name: str,
         namespace: str,
         sanitize: bool = True,
-    ) -> list:
+    ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         resource = self.get_resource(api_version, kind, name, namespace)
 
         # clone the object because we cannot modify the original object.
-        result = copy.deepcopy(resource.to_dict())
+        result = copy.deepcopy(resource.to_dict())  # type: ignore
 
         # get events for the resource.
         result["events"] = self.list_k8s_events_for_resource(kind, name, namespace)
@@ -183,8 +183,8 @@ class K8sClient:
             del event["involvedObject"]
 
         if sanitize:
-            return DataSanitizer.sanitize(result)
-        return result
+            return DataSanitizer.sanitize(result)  # type: ignore
+        return result  # type: ignore
 
     def list_not_running_pods(self, namespace: str) -> list:
         """List all pods that are not in the Running phase.

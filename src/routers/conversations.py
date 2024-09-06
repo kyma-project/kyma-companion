@@ -41,7 +41,7 @@ async def init_conversation(
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     session_id: Annotated[str, Header()] = "",
     service: IService = Depends(get_conversation_service),  # noqa B008
-) -> dict:
+) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
     logger.info("Initializing new conversation.")
 
