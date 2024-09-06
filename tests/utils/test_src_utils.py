@@ -1,6 +1,6 @@
 import re
 
-from src.utils.utils import create_session_id
+from utils.utils import create_session_id
 
 UUID4_LENGTH = 36
 UUID4_FORMAT_REGEX = (

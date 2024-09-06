@@ -17,7 +17,7 @@ class IInitialQuestionsAgent(Protocol):
         """Generates initial questions given a context with cluster data."""
         ...
 
-    async def fetch_relevant_data_from_k8s_cluster(
+    def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
