@@ -187,7 +187,7 @@ def test_messages_endpoint(
             },
         ),
         (
-            "should return error when copnversation service fails",
+            "should return error when conversation service fails",
             {
                 "x-k8s-authorization": "non-empty-auth",
                 "x-cluster-url": "https://api.k8s.example.com",
