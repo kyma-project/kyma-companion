@@ -109,4 +109,5 @@ jobs:
 
       - name: Deploy all single-namespace test-cases
         run: |
+          chmod +x ./scripts/shell/deploy_test_scenarios.sh
           ./scripts/shell/deploy_test_scenarios.sh
