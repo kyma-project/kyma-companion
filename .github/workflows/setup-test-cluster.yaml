@@ -109,4 +109,9 @@ jobs:
 
       - name: Deploy all single-namespace test-cases
         run: |
+          chmod +x ./scripts/shell/deploy_test_scenarios.sh
           ./scripts/shell/deploy_test_scenarios.sh
+          if [ $? -ne 0 ]; then
+              echo "Failed to deploy all single-namespace test-cases"
+              exit 1
+          fi
