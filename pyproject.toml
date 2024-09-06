@@ -77,6 +77,7 @@ codefix = ["format-fix", "lint-fix"]
 test = "pytest tests"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
+pre-commit-check = ["codefix", "codecheck", "test"]
 
 [tool.mypy]
 check_untyped_defs = true

@@ -9,6 +9,7 @@ from agents.initial_questions.output_parser import QuestionOutputParser
 from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
 from services.k8s import IK8sClient
 from utils.models import IModel
+from utils.utils import is_empty_str, is_non_empty_str
 
 
 class IInitialQuestionsAgent(Protocol):
@@ -60,7 +61,10 @@ class InitialQuestionsAgent:
         # by fetching all not running pods,
         # all K8s Nodes metrics,
         # and all K8s events with warning type.
-        if message.namespace is None and message.resource_kind.lower() == "cluster":
+        if (
+            is_empty_str(message.namespace)
+            and message.resource_kind.lower() == "cluster"
+        ):
             yaml_context.append(k8s_client.list_not_running_pods(namespace=""))
             yaml_context.append(k8s_client.list_nodes_metrics())
             yaml_context.append(k8s_client.list_k8s_warning_events(namespace=""))
@@ -69,27 +73,31 @@ class InitialQuestionsAgent:
         # get an overview of the namespace
         # by fetching all K8s events with warning type.
         elif (
-            message.namespace is not None
+            is_non_empty_str(message.namespace)
             and message.resource_kind.lower() == "namespace"
         ):
             yaml_context.append(
-                k8s_client.list_k8s_warning_events(namespace=message.namespace)
+                k8s_client.list_k8s_warning_events(namespace=str(message.namespace))
             )
 
         # If namespace is not provided, but the resource Kind is
         # get a detailed view of the cluster for the specified Kind
         # by fetching all resources of the specified kind,
-        elif message.namespace is None and message.resource_kind is not None:
+        elif (
+            is_empty_str(message.namespace)
+            and is_non_empty_str(message.resource_kind)
+            and is_non_empty_str(message.resource_api_version)
+        ):
             yaml_context.append(
                 k8s_client.list_resources(
                     api_version=str(message.resource_api_version),
-                    kind=message.resource_kind,
+                    kind=str(message.resource_kind),
                     namespace="",
                 )
             )
             yaml_context.append(
                 k8s_client.list_k8s_events_for_resource(
-                    kind=message.resource_kind,
+                    kind=str(message.resource_kind),
                     name=str(message.resource_name),
                     namespace="",
                 )
@@ -99,26 +107,28 @@ class InitialQuestionsAgent:
         # get a detailed view of the namespace for the specified Kind
         # by fetching the specified resource,
         # and all K8s events for the specified resource.
-        elif message.namespace is not None and message.resource_kind is not None:
+        elif (
+            is_non_empty_str(message.namespace)
+            and is_non_empty_str(message.resource_kind)
+            and message.resource_kind.lower() != "namespace"
+            and is_non_empty_str(message.resource_api_version)
+        ) and is_non_empty_str(message.resource_name):
             yaml_context.append(
                 k8s_client.get_resource(
                     api_version=str(message.resource_api_version),
-                    kind=message.resource_kind,
+                    kind=str(message.resource_kind),
                     name=str(message.resource_name),
-                    namespace=message.namespace,
+                    namespace=str(message.namespace),
                 )
             )
             yaml_context.append(
                 k8s_client.list_k8s_events_for_resource(
-                    kind=message.resource_kind,
+                    kind=str(message.resource_kind),
                     name=str(message.resource_name),
-                    namespace=message.namespace,
+                    namespace=str(message.namespace),
                 )
             )
         else:
             raise Exception("Invalid message provided.")
 
-        text_context = yaml.dump(yaml_context)
-
-        # return "\n---\n".join(context)
-        return text_context
+        return yaml.dump(yaml_context)

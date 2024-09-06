@@ -72,10 +72,10 @@ def mock_k8s_client():
         (
             Message(
                 query="test",
-                namespace=None,
+                namespace="",
                 resource_kind="cluster",
-                resource_name=None,
-                resource_api_version=None,
+                resource_name="",
+                resource_api_version="",
             ),
             [LIST_NOT_RUNNING_PODS, LIST_NODES_METRICS, LIST_K8S_WARNING_EVENTS],
         ),
@@ -92,10 +92,10 @@ def mock_k8s_client():
         (
             Message(
                 query="test",
-                namespace=None,
+                namespace="",
                 resource_kind="test-kind",
-                resource_name=None,
-                resource_api_version=None,
+                resource_name="test-name",
+                resource_api_version="v1",
             ),
             [LIST_RESOURCES, LIST_K8S_EVENTS_FOR_RESOURCE],
         ),
@@ -104,7 +104,7 @@ def mock_k8s_client():
                 query="test",
                 namespace="test-namespace",
                 resource_kind="test-kind",
-                resource_name=None,
+                resource_name="test-name",
                 resource_api_version="test-api-version",
             ),
             [GET_RESOURCE, LIST_K8S_EVENTS_FOR_RESOURCE],

@@ -25,6 +25,7 @@ Your tasks are as follows:
 	- Return questions from Step 2 and Step 3.
 
 In general:
+- Generate 5 questions in total.
 - Prioritize questions that identify potential issues using phrases like "wrong with," "causing," or "be improved."
 - Questions are sorted from general to more specific.
 - Prioritize quality over quantity; fewer questions but each highly relevant.

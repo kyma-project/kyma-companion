@@ -21,3 +21,13 @@ def create_session_id() -> str:
         str: A new session ID.
     """
     return str(uuid.uuid4())
+
+
+def is_empty_str(data: str | None) -> bool:
+    """Check if the string is None or empty."""
+    return data is None or data == "" or data.strip() == ""
+
+
+def is_non_empty_str(data: str | None) -> bool:
+    """Check if the string is not None and not empty."""
+    return data is not None and data.strip() != ""

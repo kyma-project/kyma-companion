@@ -189,7 +189,9 @@ class K8sClient:
     def list_not_running_pods(self, namespace: str) -> list:
         """List all pods that are not in the Running phase.
         Provide empty string for namespace to list all pods."""
-        all_pods = self.list_resources("v1", "Pod", namespace)
+        all_pods = self.list_resources(
+            api_version="v1", kind="Pod", namespace=namespace
+        )
         return [pod for pod in all_pods if pod.status.phase != "Running"]
 
     def list_nodes_metrics(self) -> list:
@@ -235,12 +237,10 @@ class DataSanitizer:
     @staticmethod
     def sanitize(data: dict | list[dict]) -> dict | list[dict]:
         """Sanitize the data by removing sensitive information."""
-        sanitized_data = copy.deepcopy(data)
-
-        if isinstance(sanitized_data, list):
-            return [DataSanitizer._sanitize_object(obj) for obj in sanitized_data]
-        elif isinstance(sanitized_data, dict):
-            return DataSanitizer._sanitize_object(sanitized_data)
+        if isinstance(data, list):
+            return [DataSanitizer._sanitize_object(obj) for obj in data]
+        elif isinstance(data, dict):
+            return DataSanitizer._sanitize_object(data)
         raise ValueError("Data must be a list or a dictionary.")
 
     @staticmethod
