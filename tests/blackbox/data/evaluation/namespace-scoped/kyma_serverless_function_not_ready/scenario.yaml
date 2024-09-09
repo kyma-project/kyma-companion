@@ -1,5 +1,5 @@
 id: kyma-serverless-function-not-ready
-description: The pod tries to list pods in the same namespace using kubectl but the image does not contain kubectl.
+description: The serverless function pod is not ready because the function is configured with 0 replicas.
 resource:
   kind: Function
   api_version: serverless.kyma-project.io/v1alpha2

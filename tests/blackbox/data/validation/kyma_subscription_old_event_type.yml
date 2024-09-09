@@ -1,0 +1,55 @@
+- description: This has a step-by-step guide on how to fix the issue.
+  scenario_id: kyma-subscription-old-event-type
+  mock_response_content: |-
+    "The subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
+    To solve this issue:
+    1. Open the Subscription resource to edit the event type.
+    2. Locate the field `types`.
+    3. Change the value of the field to `increase.counter.v1`.
+    "
+  expected_evaluations:
+    - scenario_expectation_name: subscription_config_error
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_correct_event_type
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_explanation
+      expected_evaluation: false
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: some_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: deployable_yaml
+      expected_evaluation: false
+- description: This has a step-by-step guide on how to fix the issue with a partial yaml.
+  scenario_id: kyma-subscription-old-event-type
+  mock_response_content: |-
+    "The subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
+    To solve this issue:
+    1. Open the Subscription resource to edit the event type.
+    2. Locate the field `types`.
+    3. Change the value of the field to `increase.counter.v1`:
+       ```yaml
+       types:
+       - increase.counter.v1
+       ```"
+  expected_evaluations:
+    - scenario_expectation_name: subscription_config_error
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_correct_event_type
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_explanation
+      expected_evaluation: false
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: some_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: deployable_yaml
+      expected_evaluation: false
