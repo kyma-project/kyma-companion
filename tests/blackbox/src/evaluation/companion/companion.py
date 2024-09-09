@@ -22,7 +22,7 @@ def get_headers(config: Config) -> dict:
         "Authorization": f"Bearer {config.companion_token}",
         "X-Cluster-Certificate-Authority-Data": config.test_cluster_ca_data,
         "X-Cluster-Url": config.test_cluster_url,
-        "X-K8s-Authorization": f"Bearer {config.test_cluster_auth_token}",
+        "X-K8s-Authorization": config.test_cluster_auth_token,
         "Content-Type": "application/json",
     }
 

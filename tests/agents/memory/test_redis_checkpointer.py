@@ -1,3 +1,5 @@
+import time
+import uuid
 from collections import defaultdict
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
@@ -7,9 +9,11 @@ import pytest
 import pytest_asyncio
 from langgraph.checkpoint.base import Checkpoint
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+from pydantic_core import from_json
 from redis import ConnectionError
 from redis.asyncio import ConnectionPool, Redis
 
+from agents.memory.conversation_history import ConversationMessage, QueryType
 from agents.memory.redis_checkpointer import (
     JsonAndBinarySerializer,
     RedisSaver,
@@ -230,3 +234,110 @@ class TestRedisSaver:
         assert saved_data.parent_config == (
             put_config if put_config["configurable"].get("thread_ts") else None
         )
+
+    @pytest.mark.parametrize(
+        "test_description, conversation_id, expected_error_type",
+        [
+            (
+                "should return error if conversation_id is empty string",
+                "",
+                ValueError,
+            ),
+            (
+                "should succeed to save message",
+                str(uuid.uuid4()),
+                None,
+            ),
+        ],
+    )
+    async def test_add_conversation_message(
+        self,
+        test_description,
+        conversation_id,
+        expected_error_type,
+        fake_async_redis,
+    ):
+        given_message = ConversationMessage(
+            type=QueryType.INITIAL_QUESTIONS,
+            query="",
+            response="list of initial questions",
+            timestamp=time.time(),
+        )
+        # error cases.
+        if expected_error_type is not None:
+            with pytest.raises(expected_error_type):
+                await self.redis_saver.add_conversation_message(
+                    conversation_id, given_message
+                )
+            # exit the test.
+            return
+
+        # normal test cases.
+        # given
+        # the redis store should be empty.
+        key = f"history:{conversation_id}"
+        actual_count = await fake_async_redis.llen(key)
+        assert actual_count == 0
+
+        # when
+        await self.redis_saver.add_conversation_message(conversation_id, given_message)
+
+        # then
+        # verify that the redis store have one message in storage.
+        actual_count = await fake_async_redis.llen(key)
+        assert actual_count == 1
+        # get and compare the actual message.
+        messages = await fake_async_redis.lrange(key, 0, actual_count)
+        assert len(messages) == 1
+        got_message = ConversationMessage.model_validate(
+            from_json(messages[0], allow_partial=True)
+        )
+        assert got_message == given_message
+
+    @pytest.mark.parametrize(
+        "test_description, conversation_id, given_messages",
+        [
+            (
+                "should return zero messages if the conversation is empty",
+                str(uuid.uuid4()),
+                [],
+            ),
+            (
+                "should return two messages",
+                str(uuid.uuid4()),
+                [
+                    ConversationMessage(
+                        type=QueryType.INITIAL_QUESTIONS,
+                        query="",
+                        response="list of initial questions",
+                        timestamp=time.time(),
+                    ),
+                    ConversationMessage(
+                        type=QueryType.USER_QUERY,
+                        query="What is kubernetes?",
+                        response="it is a kind of container orchestration tool",
+                        timestamp=time.time(),
+                    ),
+                ],
+            ),
+        ],
+    )
+    async def test_get_all_conversation_messages(
+        self,
+        test_description,
+        conversation_id,
+        given_messages,
+        fake_async_redis,
+    ):
+        # given
+        # add given messages to redis store.
+        for message in given_messages:
+            await self.redis_saver.add_conversation_message(conversation_id, message)
+
+        # when
+        got_messages = await self.redis_saver.get_all_conversation_messages(
+            conversation_id
+        )
+
+        # then
+        assert len(got_messages) == len(given_messages)

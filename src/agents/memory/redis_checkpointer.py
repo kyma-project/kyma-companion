@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import (
     Any,
+    Protocol,
 )
 
 import redis
@@ -16,9 +17,11 @@ from langgraph.checkpoint.base import (
     CheckpointTuple,
 )
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+from pydantic_core import from_json
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
 
+from agents.memory.conversation_history import ConversationMessage
 from utils import logging
 
 logger = logging.get_logger(__name__)
@@ -88,6 +91,22 @@ async def get_async_connection(
     finally:
         if conn:
             await conn.aclose()
+
+
+class IMemory(Protocol):
+    """Memory Interface."""
+
+    async def add_conversation_message(
+        self, conversation_id: str, message: ConversationMessage
+    ) -> None:
+        """Add a conversation message to the memory."""
+        ...
+
+    async def get_all_conversation_messages(
+        self, conversation_id: str
+    ) -> list[ConversationMessage]:
+        """Get all conversation messages from the memory."""
+        ...
 
 
 class RedisSaver(BaseCheckpointSaver):
@@ -189,3 +208,35 @@ class RedisSaver(BaseCheckpointSaver):
         #  Currently, only necessary methods are
         #  implemented.
         return None
+
+    async def add_conversation_message(
+        self, conversation_id: str, message: ConversationMessage
+    ) -> None:
+        """Add a conversation message to the memory.
+        Uses Redis Lists: https://redis.io/docs/latest/develop/data-types/lists/"""
+        if conversation_id == "":
+            raise ValueError("Conversation ID cannot be empty.")
+
+        try:
+            async with get_async_connection(self.async_connection) as conn:
+                key = f"history:{conversation_id}"
+                await conn.lpush(key, message.model_dump_json())  # type: ignore
+
+        except Exception as e:
+            raise Exception(f"Failed to add conversation message: {str(e)}") from e
+
+    async def get_all_conversation_messages(
+        self, conversation_id: str
+    ) -> list[ConversationMessage]:
+        """Get all conversation messages from the memory.
+        Uses Redis Lists: https://redis.io/docs/latest/develop/data-types/lists/"""
+        try:
+            async with get_async_connection(self.async_connection) as conn:
+                key = f"history:{conversation_id}"
+                count = await conn.llen(key)  # type: ignore
+                messages = await conn.lrange(key, 0, count)  # type: ignore
+                # convert messages to ConversationMessage objects.
+                return [from_json(msg, allow_partial=True) for msg in messages]
+
+        except Exception as e:
+            raise Exception(f"Failed to get all conversation messages: {str(e)}") from e
