@@ -4,7 +4,7 @@ from typing import Protocol
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from gen_ai_hub.proxy.native.google.clients import GenerativeModel
+from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
 
 from utils.config import ModelConfig, get_config
 

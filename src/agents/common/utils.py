@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
+from agents.common.constants import FILTER_MESSAGES_NUMBER
 from agents.common.state import AgentState
 from utils.logging import get_logger
 
@@ -62,12 +63,9 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
     }
 
 
-DEFAULT_NUMBER_OF_MESSAGES = 10
-
-
 def filter_messages(
     messages: Sequence[BaseMessage],
-    last_messages_number: int = DEFAULT_NUMBER_OF_MESSAGES,
+    last_messages_number: int = FILTER_MESSAGES_NUMBER,
 ) -> Sequence[BaseMessage]:
     """
     Filter the last n number of messages given last_messages_number.

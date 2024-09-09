@@ -7,7 +7,7 @@ from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState, SubTask, SubTaskStatus
 from agents.common.utils import (
-    DEFAULT_NUMBER_OF_MESSAGES,
+    FILTER_MESSAGES_NUMBER,
     agent_node,
     create_agent,
     filter_messages,
@@ -325,5 +325,5 @@ def test_filter_messages(
 def test_filter_messages_default_parameter():
     messages = [HumanMessage(content=str(i)) for i in range(15)]
     result = filter_messages(messages)  # Using default last_messages_number
-    assert len(result) == DEFAULT_NUMBER_OF_MESSAGES
+    assert len(result) == FILTER_MESSAGES_NUMBER
     assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]
