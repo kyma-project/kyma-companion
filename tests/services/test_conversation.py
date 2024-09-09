@@ -163,5 +163,10 @@ class TestConversation:
         messaging_service = ConversationService()
 
         # Assert:
-        result = [chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TESTMESSAGE)]
+        result = [
+            chunk
+            async for chunk in messaging_service.handle_request(
+                CONVERSATION_ID, TESTMESSAGE
+            )
+        ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]
