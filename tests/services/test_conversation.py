@@ -21,6 +21,13 @@ spec:
     ports:
     - containerPort: 80
 """
+TESTMESSAGE = Message(
+    query="test query",
+    resource_kind="Pod",
+    resource_api_version="v1",
+    resource_name="my-pod",
+    namespace="default",
+)
 
 
 @pytest.mark.asyncio(scope="class")
@@ -95,20 +102,13 @@ class TestConversation:
             response="\n".join(QUESTIONS),
             timestamp=TIME_STAMP,
         )
-        test_message = Message(
-            query="test query",
-            resource_kind="Pod",
-            resource_api_version="v1",
-            resource_name="my-pod",
-            namespace="default",
-        )
         test_k8s_client = MagicMock()
 
         # Act:
         messaging_service = ConversationService()
         result = await messaging_service.new_conversation(
             conversation_id=CONVERSATION_ID,
-            message=test_message,
+            message=TESTMESSAGE,
             k8s_client=test_k8s_client,
         )
 
@@ -120,7 +120,7 @@ class TestConversation:
         # Because the InitialQuestionsAgent is a singleton, we cannot guarantee in this test,
         # that its methods were called only once. Therefore, we need to check the last call.
         mock_initial_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
-            test_message, test_k8s_client
+            TESTMESSAGE, test_k8s_client
         )
         mock_initial_questions_agent.generate_questions.assert_called_with(
             context=POD_YAML
@@ -137,18 +137,11 @@ class TestConversation:
     ):
         # Arrange:
         k8s_client = MagicMock()
-        message = Message(
-            query="Test message",
-            resource_kind="Pod",
-            resource_api_version="v1",
-            resource_name="my-pod",
-            namespace="default",
-        )
 
         # Act:
         messaging_service = ConversationService()
         result = await messaging_service.generate_initial_questions(
-            CONVERSATION_ID, message, k8s_client
+            CONVERSATION_ID, TESTMESSAGE, k8s_client
         )
 
         # Assert:
@@ -156,7 +149,7 @@ class TestConversation:
         # Because the InitialQuestionsAgent is a singleton, we cannot guarantee in this test,
         # that its methods were called only once. Therefore, we need to check the last call.
         messaging_service.init_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
-            message, k8s_client
+            TESTMESSAGE, k8s_client
         )
         messaging_service.init_questions_agent.generate_questions.assert_called_with(
             context=POD_YAML
@@ -166,14 +159,9 @@ class TestConversation:
     async def test_handle_request(
         self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
     ):
+        # Act:
         messaging_service = ConversationService()
 
-        message = Message(
-            query="Test message",
-            resource_kind="Pod",
-            resource_api_version="v1",
-            resource_name="my-pod",
-            namespace="default",
-        )
-        result = [chunk async for chunk in messaging_service.handle_request(1, message)]
+        # Assert:
+        result = [chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TESTMESSAGE)]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]

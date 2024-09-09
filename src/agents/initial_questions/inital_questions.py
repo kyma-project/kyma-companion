@@ -56,7 +56,7 @@ class InitialQuestionsAgent:
         # Query the Kubernetes API to get the context.
         yaml_context: list[Any] = []
 
-        # If namespace is not provided, and the resource Kind is 'cluster'
+        # If the namespace is not provided, and the resource Kind is 'cluster'
         # get an overview of the cluster
         # by fetching all not running pods,
         # all K8s Nodes metrics,
@@ -69,7 +69,7 @@ class InitialQuestionsAgent:
             yaml_context.append(k8s_client.list_nodes_metrics())
             yaml_context.append(k8s_client.list_k8s_warning_events(namespace=""))
 
-        # If namespace is provided, and the resource Kind is 'namespace'
+        # If the namespace is provided, and the resource Kind is 'namespace'
         # get an overview of the namespace
         # by fetching all K8s events with warning type.
         elif (
@@ -80,7 +80,7 @@ class InitialQuestionsAgent:
                 k8s_client.list_k8s_warning_events(namespace=str(message.namespace))
             )
 
-        # If namespace is not provided, but the resource Kind is
+        # If the namespace is not provided, but the resource Kind is
         # get a detailed view of the cluster for the specified Kind
         # by fetching all resources of the specified kind,
         elif (
@@ -103,7 +103,7 @@ class InitialQuestionsAgent:
                 )
             )
 
-        # If namespace is provided, and the resource Kind is not 'namespace'
+        # If the namespace is provided, and the resource Kind is not 'namespace'
         # get a detailed view of the namespace for the specified Kind
         # by fetching the specified resource,
         # and all K8s events for the specified resource.
