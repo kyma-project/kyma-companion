@@ -11,6 +11,41 @@ set -o errexit  # exit immediately when a command fails.
 set -E          # needs to be set if we want the ERR trap
 set -o pipefail # prevents errors in a pipeline from being masked
 
+delete_kyma_modules() {
+    echo "## Delete Subscriptions ##"
+    kubectl delete --timeout=120s --wait=false -A subscriptions.eventing.kyma-project.io --all || true
+
+    echo "## Delete API Rules ##"
+    kubectl delete --timeout=120s --wait=false -A apirules.gateway.kyma-project.io --all || true
+
+    echo "## Delete Functions ##"
+    kubectl delete --timeout=120s --wait=false -A functions.serverless.kyma-project.io --all || true
+
+    echo "## Delete Eventing ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/eventing-manager/releases/latest/download/eventing-default-cr.yaml || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found -f https://github.com/kyma-project/eventing-manager/releases/latest/download/eventing-manager.yaml || true
+
+    echo "## Delete NATS ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/nats-manager/releases/latest/download/nats-default-cr.yaml || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found -f https://github.com/kyma-project/nats-manager/releases/latest/download/nats-manager.yaml || true
+
+    echo "## Delete Serverless ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/serverless-manager/releases/latest/download/default-serverless-cr.yaml -n kyma-system || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found -f https://github.com/kyma-project/serverless-manager/releases/latest/download/serverless-operator.yaml || true
+
+    echo "## Delete API Gateway ##"
+    kubectl patch apigateways.operator.kyma-project.io default -p '{"metadata":{"finalizers":null}}' --type=merge || true
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/api-gateway/releases/latest/download/apigateway-default-cr.yaml || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found -f https://github.com/kyma-project/api-gateway/releases/latest/download/api-gateway-manager.yaml || true
+
+    echo "## Delete Istio ##"
+    kubectl patch istios.operator.kyma-project.io -n kyma-system default -p '{"metadata":{"finalizers":null}}' --type=merge || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found peerauthentications.security.istio.io --all -A || true
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/istio/releases/latest/download/istio-default-cr.yaml || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found -f https://github.com/kyma-project/istio/releases/latest/download/istio-manager.yaml || true
+    kubectl label namespace kyma-system istio-injection- || true
+}
+
 # Define namespaces to exclude from deletion
 EXCLUDED_NAMESPACES=("default" "kube-system" "kube-public" "kube-node-lease")
 
@@ -58,6 +93,9 @@ delete_custom_resource_definitions() {
 }
 
 ## Main script starts here ##
+
+echo "### Deleting Kyma modules. ###"
+delete_kyma_modules
 
 # Remove Custom Resource Definitions (CRDs) that contain 'kyma-project'
 echo "### Removing CRDs related to 'kyma-project'. ###"
