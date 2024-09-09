@@ -4,7 +4,7 @@ import pytest
 
 from agents.common.data import Message
 from agents.memory.conversation_history import ConversationMessage, QueryType
-from services.conversation import ConversationService
+from services.conversations import ConversationService
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
@@ -163,5 +163,10 @@ class TestConversation:
         messaging_service = ConversationService()
 
         # Assert:
-        result = [chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TESTMESSAGE)]
+        result = [
+            chunk
+            async for chunk in messaging_service.handle_request(
+                CONVERSATION_ID, TESTMESSAGE
+            )
+        ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]

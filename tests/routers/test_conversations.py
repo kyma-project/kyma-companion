@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from agents.common.data import Message
 from main import app
 from routers.conversations import get_conversation_service
-from services.conversation import IService
+from services.conversations import IService
 from services.k8s import IK8sClient
 
 
