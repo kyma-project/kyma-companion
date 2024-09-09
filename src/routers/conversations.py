@@ -14,7 +14,7 @@ from routers.common import (
     InitConversationBody,
     InitialQuestionsResponse,
 )
-from services.conversations import ConversationService, IService
+from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
 from utils.utils import create_session_id
