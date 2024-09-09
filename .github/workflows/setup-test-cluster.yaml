@@ -107,11 +107,14 @@ jobs:
           echo "Kyma is Ready"
           echo "::endgroup::"
 
+      - name: Deploy Kyma modules
+        run: |
+          echo "::group::Kyma - Deploy Kyma modules"
+          chmod +x ./scripts/shell/deploy_kyma_modules.sh
+          ./scripts/shell/deploy_kyma_modules.sh
+          echo "::endgroup::"
+
       - name: Deploy all single-namespace test-cases
         run: |
           chmod +x ./scripts/shell/deploy_test_scenarios.sh
           ./scripts/shell/deploy_test_scenarios.sh
-          if [ $? -ne 0 ]; then
-              echo "Failed to deploy all single-namespace test-cases"
-              exit 1
-          fi
