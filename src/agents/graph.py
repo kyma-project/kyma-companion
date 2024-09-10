@@ -11,10 +11,10 @@ from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import IAgent
-from agents.common.constants import COMMON, EXIT, PLANNER
+from agents.common.constants import COMMON, CONTINUE, EXIT, PLANNER
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask, UserInput
-from agents.common.utils import exit_node, should_exit
+from agents.common.utils import exit_node, next_step
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
@@ -85,24 +85,38 @@ class KymaGraph:
         )
         planner = planner_prompt | self.model.llm
         try:
-            plan = planner.invoke(
+            plan_response = planner.invoke(
                 {
                     "messages": state.messages[-1:],
                 },  # last message is the user query
                 config={"callbacks": [handler]},
             )
-            state.subtasks = self.parser.parse(plan.content).subtasks
+            plan = self.parser.parse(plan_response.content)
+
+            if plan.response:
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=plan.response,
+                            name=PLANNER,
+                        )
+                    ],
+                    "next": FINALIZER,
+                }
+            if not plan.subtasks:
+                raise Exception(
+                    "No subtasks are created for the given query: {state.messages[-1].content}"
+                )
             return {
-                "subtasks": state.subtasks,
+                "subtasks": plan.subtasks,
                 "messages": (
                     [
                         AIMessage(
-                            content=f"Task decomposed into subtasks and assigned to agents: {state.subtasks}",
+                            content=f"Task decomposed into subtasks and assigned to agents: {plan.subtasks}",
                             name=PLANNER,
                         )
                     ]
                 ),
-                "error": None,
             }
         except Exception as e:
             logger.error(f"Error in planning: {e}")
@@ -208,7 +222,9 @@ class KymaGraph:
 
         # routing to the exit node in case of an error
         workflow.add_conditional_edges(
-            PLANNER, should_exit, {"exit": EXIT, "continue": SUPERVISOR}
+            PLANNER,
+            next_step,
+            {EXIT: EXIT, CONTINUE: SUPERVISOR, FINALIZER: FINALIZER},
         )
         workflow.add_edge(EXIT, END)
 

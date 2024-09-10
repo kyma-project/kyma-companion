@@ -70,6 +70,10 @@ class AgentState(BaseModel):
 class Plan(BaseModel):
     """Plan to follow in future"""
 
-    subtasks: list[SubTask] = Field(
+    subtasks: list[SubTask] | None = Field(
         description="different steps/subtasks to follow, should be in sorted order"
+    )
+
+    response: str | None = Field(
+        description="response to the user if plan is not necessary"
     )

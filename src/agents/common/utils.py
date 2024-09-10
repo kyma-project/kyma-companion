@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
-from agents.common.constants import FILTER_MESSAGES_NUMBER
+from agents.common.constants import CONTINUE, EXIT, FILTER_MESSAGES_NUMBER, FINALIZER
 from agents.common.state import AgentState
 from utils.logging import get_logger
 
@@ -78,9 +78,16 @@ def filter_messages(
     return messages[-last_messages_number:]
 
 
-def should_exit(state: AgentState) -> Literal["exit", "continue"]:
+def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
+    """Return EXIT if there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
+    if state.error:
+        return EXIT
+    return FINALIZER if state.next == FINALIZER else CONTINUE
+
+
+def should_finalize(state: AgentState) -> Literal["finalize", "continue"]:
     """Return the next node based on the state."""
-    return "exit" if state.error else "continue"
+    return "finalize" if not state.subtasks else "continue"
 
 
 def exit_node(state: AgentState) -> dict[str, Any]:
