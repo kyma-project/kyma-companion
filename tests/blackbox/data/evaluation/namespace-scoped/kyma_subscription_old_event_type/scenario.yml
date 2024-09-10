@@ -22,7 +22,7 @@ expectations:
     statement: explains the use of Subscriptions and how to configure them
     categories:
       - kyma
-      - explanation
+      - definition/explanation
     complexity: 1
   - name: step_by_step_guide
     statement: provides a step-by-step guide on how to fix the issue

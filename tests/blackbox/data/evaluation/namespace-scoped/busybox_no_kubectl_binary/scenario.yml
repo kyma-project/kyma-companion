@@ -28,7 +28,7 @@ expectations:
     statement: explains the connection between an image and included binaries
     categories:
       - kubernetes
-      - explanation
+      - definition/explanation
     complexity: 1
   - name: step_by_step_guide
     statement: provides a step-by-step guide on how to fix the issue
