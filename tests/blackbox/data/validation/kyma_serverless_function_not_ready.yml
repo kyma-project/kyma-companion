@@ -24,7 +24,7 @@
 - description: This mock response explains the pod is not ready because the function is configured with 0 replicas and contains some yaml.
   scenario_id: kyma-serverless-function-not-ready
   mock_response_content: |-
-    "The pod is not ready because the function is configured with 0 replicas. It should be configured with 1 replica.
+    "The pod is not ready because the function is configured with 0 replicas. The function should be configured with 1 replica.
     ```yaml
     replicas:
     ```"

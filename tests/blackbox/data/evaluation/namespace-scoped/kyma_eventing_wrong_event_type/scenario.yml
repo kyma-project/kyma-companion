@@ -57,7 +57,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml
-    statement: provides a complete yaml for the Pod, with the namespace set to 'kyma-eventing-wrong-event-type' and the event type set to "sap.kyma.custom.commerce.order.created.v1"
+    statement: provides a complete yaml for the Subscription, with the namespace set to 'kyma-eventing-wrong-event-type' and the event type set to "sap.kyma.custom.commerce.order.created.v1"
     categories:
       - kubernetes
       - kyma
