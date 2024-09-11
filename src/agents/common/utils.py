@@ -46,12 +46,8 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
             except Exception as e:
                 logger.error(f"Error in agent {name}: {e}")
                 return {
-                    "messages": [
-                        AIMessage(
-                            content=f"Error occurred: {e}",
-                            name=name,
-                        )
-                    ],
+                    "error": str(e),
+                    "next": EXIT,
                 }
     return {
         "messages": [
@@ -92,7 +88,7 @@ def should_finalize(state: AgentState) -> Literal["finalize", "continue"]:
 
 def exit_node(state: AgentState) -> dict[str, Any]:
     """Used in case of an error."""
-    logger.error(f"Error in subtasks: {state.error}")
+    logger.error(f"Exiting the workflow due to the error: {state.error}")
     return {
         "next": END,
     }

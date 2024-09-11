@@ -14,7 +14,7 @@ from agents.common.agent import IAgent
 from agents.common.constants import COMMON, CONTINUE, EXIT, PLANNER
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask, UserInput
-from agents.common.utils import exit_node, next_step
+from agents.common.utils import exit_node, filter_messages, next_step
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
@@ -56,7 +56,7 @@ class KymaGraph:
     k8s_agent: IAgent
     members: list[str] = []
 
-    parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
+    plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
     def __init__(self, model: IModel, memory: BaseCheckpointSaver):
         self.model = model
@@ -81,17 +81,16 @@ class KymaGraph:
             ]
         ).partial(
             members=", ".join(self.members),
-            output_format=self.parser.get_format_instructions(),
+            output_format=self.plan_parser.get_format_instructions(),
         )
-        planner = planner_prompt | self.model.llm
+        planner_chain = planner_prompt | self.model.llm
         try:
-            plan_response = planner.invoke(
-                {
-                    "messages": state.messages[-1:],
+            plan_response = planner_chain.invoke(
+                input={
+                    "messages": filter_messages(state.messages),
                 },  # last message is the user query
-                config={"callbacks": [handler]},
             )
-            plan = self.parser.parse(plan_response.content)
+            plan = self.plan_parser.parse(plan_response.content)
 
             if plan.response:
                 return {
@@ -122,12 +121,7 @@ class KymaGraph:
             logger.error(f"Error in planning: {e}")
             return {
                 "error": str(e),
-                "messages": [
-                    AIMessage(
-                        content=f"Error in planning: {e}",
-                        name=PLANNER,
-                    )
-                ],
+                "next": EXIT,
             }
 
     def common_node(self, state: AgentState) -> dict[str, Any]:
@@ -147,10 +141,9 @@ class KymaGraph:
                 try:
                     response = chain.invoke(
                         {
-                            "messages": state.messages,
+                            "messages": filter_messages(state.messages),
                             "query": subtask.description,
                         },
-                        config={"callbacks": [handler]},
                     ).content
                     subtask.complete()
                     return {
@@ -165,12 +158,7 @@ class KymaGraph:
                     logger.error(f"Error in common node: {e}")
                     return {
                         "error": str(e),
-                        "messages": [
-                            AIMessage(
-                                content=f"Error occurred: {e}",
-                                name=COMMON,
-                            )
-                        ],
+                        "next": EXIT,
                     }
         return {
             "messages": [
@@ -192,8 +180,7 @@ class KymaGraph:
         ).partial(members=", ".join(self.members), query=state.input.query)
         final_response_chain = prompt | self.model.llm
         state.final_response = final_response_chain.invoke(
-            {"messages": state.messages},
-            config={"callbacks": [handler]},
+            {"messages": filter_messages(state.messages)},
         ).content
 
         return {
@@ -234,7 +221,7 @@ class KymaGraph:
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
         conditional_map: dict[Hashable, str] = {
-            k: k for k in self.members + [FINALIZER]
+            k: k for k in self.members + [FINALIZER, EXIT]
         }
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
         # Add end node

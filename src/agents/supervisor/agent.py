@@ -3,13 +3,14 @@ from typing import Any, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnableSequence
-from pydantic import BaseModel
 
-from agents.common.constants import FINALIZER
+from agents.common.constants import EXIT, FINALIZER
 from agents.common.state import AgentState
 from agents.common.utils import filter_messages
 from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
+from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models import IModel
 
@@ -32,7 +33,9 @@ class SupervisorAgent:
 
     def _create_parser(self) -> PydanticOutputParser:
         class RouteResponse(BaseModel):
-            next: Literal[tuple(self.options)]  # noqa
+            next: Literal[*self.options] | None = Field(
+                description="next agent to be called"
+            )
 
         return PydanticOutputParser(pydantic_object=RouteResponse)
 
@@ -65,12 +68,12 @@ class SupervisorAgent:
             """Supervisor node."""
             try:
                 result = self.supervisor_chain.invoke(
-                    {
+                    input={
                         "messages": filter_messages(state.messages),
                         "subtasks": json.dumps(
                             [subtask.dict() for subtask in state.subtasks]
                         ),
-                    }
+                    },
                 )
                 route_result = self.parser.parse(result.content)
                 return {
@@ -80,9 +83,8 @@ class SupervisorAgent:
             except Exception as e:
                 logger.exception("Error occurred in Supervisor agent.")
                 return {
-                    "next": None,
-                    "subtasks": state.subtasks,
                     "error": str(e),
+                    "next": EXIT,
                 }
 
         return supervisor_node
