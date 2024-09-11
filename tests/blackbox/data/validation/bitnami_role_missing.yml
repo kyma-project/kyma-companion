@@ -1,7 +1,7 @@
 - description: This mock response contains an complete yaml-formatted manifest for a Role
   scenario_id: bitnami-role-missing
   mock_response_content: |-
-    "The Pod is in error state because there is no Role to grant access permissions to the Pod. Here is a corrected version of the Role:
+    "The Pod is in error state because there is no Role to grant access permissions to the Pod. Here is the Role you must create:
       ```yaml
       apiVersion: rbac.authorization.k8s.io/v1
       kind: Role

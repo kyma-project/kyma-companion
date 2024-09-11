@@ -59,7 +59,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml
-    statement: provides a complete yaml for the Role, with the namespace set to 'bitnami-wrong-rbac-permissions' and the verb set to 'watch'
+    statement: provides a complete yaml for the Role, with the namespace set to 'bitnami-wrong-rbac-permissions' and the verb set to 'list'
     categories:
       - kubernetes
       - yaml
