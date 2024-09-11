@@ -1,10 +1,10 @@
-id: bitnami-no-rbac-permissions
+id: bitnami-role-missing
 description: The pod tries to list pods in the same namespace using kubectl but it does not have the necessary RBAC permissions.
 resource:
   kind: Pod
   api_version: v1
   name: pod-check
-  namespace: bitnami-no-rbac-permissions
+  namespace: bitnami-role-missing
 expectations:
   - name: pod_error
     statement: points out that the pod is in an error state
@@ -59,7 +59,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml
-    statement: provides a complete yaml for the Role, with the namespace set to 'bitnami-no-rbac-permissions' and the verb set to 'watch'
+    statement: provides a complete yaml for the Role, with the namespace set to 'bitnami-role-missing' and the verb set to 'watch'
     categories:
       - kubernetes
       - yaml

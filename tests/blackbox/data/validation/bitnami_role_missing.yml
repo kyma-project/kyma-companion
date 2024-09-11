@@ -1,5 +1,5 @@
 - description: This mock response contains an complete yaml-formatted manifest for a Role
-  scenario_id: bitnami-no-rbac-permissions
+  scenario_id: bitnami-role-missing
   mock_response_content: |-
     "The Pod is in error state because there is no Role to grant access permissions to the Pod. Here is a corrected version of the Role:
       ```yaml
@@ -33,7 +33,7 @@
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: true
 - description: This mock response points out that the pod is in an error state due to missing permissions
-  scenario_id: bitnami-no-rbac-permissions
+  scenario_id: bitnami-role-missing
   mock_response_content: |-
     "The Pod is in error state because there is no Role to grant access permissions to the Pod."
   expected_evaluations:
