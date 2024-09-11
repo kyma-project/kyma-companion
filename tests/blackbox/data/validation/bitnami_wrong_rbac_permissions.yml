@@ -1,4 +1,4 @@
-- description: This mock response contains an complete yaml-formatted manifest for a Role
+- description: This mock response contains a deployable yaml-formatted manifest for a Role and points out that the Pod needs permissions to list instead of watch
   scenario_id: bitnami-wrong-rbac-permissions
   mock_response_content: |-
     "The Pod is in error state because the Role grants the wrong access permissions to the Pod. The permissions are `watch` when it should be `list`.

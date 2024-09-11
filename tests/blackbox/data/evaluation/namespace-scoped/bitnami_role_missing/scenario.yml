@@ -1,5 +1,5 @@
 id: bitnami-role-missing
-description: The pod tries to list pods in the same namespace using kubectl but it does not have the necessary RBAC permissions.
+description: The pod tries to list pods in the same namespace using kubectl but it does not have the necessary RBAC permissions because the Role is missing.
 resource:
   kind: Pod
   api_version: v1

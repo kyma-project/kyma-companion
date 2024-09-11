@@ -1,5 +1,5 @@
 id: bitnami-wrong-rbac-permissions
-description: The pod tries to list pods in the same namespace using kubectl but it does not have the necessary RBAC permissions.
+description: The pod tries to list pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.
 resource:
   kind: Pod
   api_version: v1
