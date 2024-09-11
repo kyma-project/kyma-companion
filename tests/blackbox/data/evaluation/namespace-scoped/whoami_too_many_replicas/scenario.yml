@@ -1,5 +1,5 @@
 id: whoami-too-many-replicas
-description: The pod tries to list pods in the same namespace using kubectl but the image does not contain kubectl.
+description: The HorizontalPodAutoscaler is configured with too high min and max replicas.
 resource:
   kind: HorizontalPodAutoscaler
   api_version: autoscaling/v2
