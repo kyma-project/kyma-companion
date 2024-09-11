@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 
 class ConversationPayload(BaseModel):
-    question: str = ""
+    query: str = ""
     resource_kind: str
     resource_api_version: str
     resource_name: str
@@ -84,4 +84,4 @@ async def get_companion_response(
     # record the response time.
     Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
 
-    return payload.question
+    return payload.query

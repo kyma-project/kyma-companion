@@ -1,5 +1,6 @@
 id: nginx-oom
 description: The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory
+user_query: Why is the Deployment not available?
 resource:
   kind: Deployment
   api_version: apps/v1

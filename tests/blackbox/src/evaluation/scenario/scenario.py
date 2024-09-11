@@ -99,6 +99,7 @@ class Scenario(BaseModel):
 
     id: str
     description: str
+    user_query: str
     resource: Resource
     expectations: list[Expectation]
     evaluation: Evaluation = Evaluation()
@@ -200,3 +201,20 @@ class ScenarioList(BaseModel):
                 ) from exception
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
+
+    def is_test_passed(self) -> tuple[bool, str]:
+        """Get the overall success across all scenarios."""
+        # if the overall success rate is 0.0, return False.
+        if self.get_overall_success_rate() == 0.0:
+            return False, "The overall success rate is 0.0"
+
+        # if any of the scenario failed, return False.
+        failed_scenarios_count: int = 0
+        for scenario in self.items:
+            scenario.complete()
+            if scenario.evaluation.status == TestStatus.FAILED:
+                failed_scenarios_count += 1
+        if failed_scenarios_count > 0:
+            return False, f"{failed_scenarios_count} scenarios failed"
+
+        return True, "All tests passed successfully"

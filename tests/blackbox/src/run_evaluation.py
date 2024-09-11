@@ -1,95 +1,11 @@
 import asyncio
-from logging import Logger
 
 from common.config import Config
 from common.logger import get_logger
 from common.output import print_test_results
-from evaluation.companion.companion import (
-    ConversationPayload,
-    fetch_initial_questions,
-    get_companion_response,
-)
-from evaluation.scenario.enums import TestStatus
-from evaluation.scenario.scenario import Scenario, ScenarioList
+from evaluation.scenario.scenario import ScenarioList
 from evaluation.validator.utils import create_validator
-from evaluation.validator.validator import ValidatorInterface
-
-
-async def process_scenario(
-    scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
-) -> None:
-    payload = ConversationPayload(
-        resource_kind=scenario.resource.kind,
-        resource_api_version=scenario.resource.api_version,
-        resource_name=scenario.resource.name,
-        namespace=scenario.resource.namespace,
-    )
-
-    # first make a call to the Companion API to initialize the conversation.
-    try:
-        logger.debug(
-            f"Getting response from the initial conversations endpoint for scenario: {scenario.id}"
-        )
-        init_questions_response = await fetch_initial_questions(config, payload, logger)
-        logger.debug(init_questions_response)
-    except Exception as e:
-        logger.error(
-            f"failed to call initialize conversation endpoint: {scenario.id}. Error: {e}"
-        )
-        scenario.evaluation.status = TestStatus.FAILED
-        scenario.evaluation.status_reason = (
-            f"failed to call initialize conversation endpoint. {e}"
-        )
-
-    # make a call to the Companion API and get response from Companion.
-    try:
-        logger.debug(
-            f"Getting response from the companion API for scenario: {scenario.id}"
-        )
-
-        conversation_id = "1234-5678-9012"  # @TODO: get conversation_id from the init_questions_response.
-        payload.question = scenario.description
-
-        # get the response from the companion API multiple iterations to check idempotency.
-        for _ in range(config.iterations):
-            response = await get_companion_response(
-                config, conversation_id, payload, logger
-            )
-            scenario.evaluation.add_actual_response(response)
-    except Exception as e:
-        logger.error(
-            f"failed to get response from the companion API for scenario: {scenario.id}. Error: {e}"
-        )
-        scenario.evaluation.status = TestStatus.FAILED
-        scenario.evaluation.status_reason = (
-            f"failed to get response from the companion API. {e}"
-        )
-
-    # skip the evaluation if the scenario has already failed.
-    if scenario.evaluation.status == TestStatus.FAILED:
-        logger.warning(f"skipping scenario {scenario.id} due to previous failure.")
-        return
-
-    # evaluate the expectations.
-    for expectation in scenario.expectations:
-        try:
-            # for each response, validate the expectation.
-            for response in scenario.evaluation.actual_responses:
-                result = validator.is_response_as_expected(
-                    expectation.statement, response
-                )
-                expectation.add_result(result)
-        except Exception as e:
-            logger.error(
-                f"failed to validate expectation: {expectation.name} for scenario: {scenario.id}. Error: {e}"
-            )
-            scenario.evaluation.status = TestStatus.FAILED
-            scenario.evaluation.status_reason += (
-                f"failed to validate expectation {expectation.name}, {e}."
-            )
-
-    # set the status to complete.
-    scenario.complete()
+from evaluation.process_scenario import process_scenario
 
 
 async def main() -> None:
@@ -117,6 +33,11 @@ async def main() -> None:
 
     # print out the results.
     print_test_results(scenario_list)
+
+    # Pass or fail the tests.
+    is_passed, reason = scenario_list.is_test_passed()
+    if not is_passed:
+        raise Exception(f"Tests failed: {reason}")
 
 
 if __name__ == "__main__":
