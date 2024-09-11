@@ -1,4 +1,4 @@
-- description: This mock response explains the pod is not ready because the function is configured with 0 replicas.
+- description: This mock response explains that the pod is not ready because the function is configured with 0 replicas.
   scenario_id: kyma-serverless-function-not-ready
   mock_response_content: |-
     "The pod is not ready because the function is configured with 0 replicas."
