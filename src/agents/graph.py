@@ -41,7 +41,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 class IGraph(Protocol):
     """Graph interface."""
 
-    def astream(self, conversation_id: int, message: Message) -> AsyncIterator[str]:
+    def astream(self, conversation_id: str, message: Message) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         ...
 
@@ -231,7 +231,7 @@ class KymaGraph:
         return graph
 
     async def astream(
-        self, conversation_id: int, message: Message
+        self, conversation_id: str, message: Message
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         async for chunk in self.graph.astream(
@@ -241,7 +241,7 @@ class KymaGraph:
             },
             config={
                 "configurable": {
-                    "thread_id": str(conversation_id),
+                    "thread_id": conversation_id,
                 },
                 "callbacks": [handler],
             },
