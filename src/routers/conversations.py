@@ -92,7 +92,7 @@ async def init_conversation(
 @router.post("/{conversation_id}/messages")
 async def messages(
     conversation_id: Annotated[
-        int, Path(title="The ID of the conversation to continue")
+        str, Path(title="The ID of the conversation to continue")
     ],
     message: Annotated[Message, Body(title="The message to send")],
     service: IService = Depends(get_conversation_service),  # noqa B008

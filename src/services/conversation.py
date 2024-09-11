@@ -31,7 +31,7 @@ class IService(Protocol):
         ...
 
     def handle_request(
-        self, conversation_id: int, message: Message
+        self, conversation_id: str, message: Message
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request for a conversation"""
         ...
@@ -98,7 +98,7 @@ class ConversationService(metaclass=SingletonMeta):
         return self.init_questions_agent.generate_questions(context=k8s_context)
 
     async def handle_request(
-        self, conversation_id: int, message: Message
+        self, conversation_id: str, message: Message
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
         logger.info("Processing request...")
