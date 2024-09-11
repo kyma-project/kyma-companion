@@ -18,7 +18,7 @@ expectations:
       - kubernetes
       - problem_finding
     complexity: 1
-  - name: pod_right_image
+  - name: pod_provide_right_image
     statement: provides the correct image to use with kubectl
     categories:
       - kubernetes

@@ -1,4 +1,4 @@
-- description: This mock response contains a complete yaml-formatted Pod with the correct image to use kubectl
+- description: This mock response contains a complete yaml-formatted Pod with the correct image containing the kubectl binary
   scenario_id: busybox-no-kubectl-binary
   mock_response_content: |-
     "The pod is in error state because the image does not contain kubectl. The correct image is `bitnami/kubectl:latest`.
@@ -21,7 +21,7 @@
       expected_evaluation: true
     - scenario_expectation_name: pod_wrong_image
       expected_evaluation: true
-    - scenario_expectation_name: pod_right_image
+    - scenario_expectation_name: pod_provide_right_image
       expected_evaluation: true
     - scenario_expectation_name: pod_image_explanation
       expected_evaluation: false
@@ -64,7 +64,7 @@
       expected_evaluation: true
     - scenario_expectation_name: pod_wrong_image
       expected_evaluation: true
-    - scenario_expectation_name: pod_right_image
+    - scenario_expectation_name: pod_provide_right_image
       expected_evaluation: true
     - scenario_expectation_name: pod_image_explanation
       expected_evaluation: false
