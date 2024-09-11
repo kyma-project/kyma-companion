@@ -64,7 +64,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: deployable_yaml
-    statement: provides a complete yaml for the Pod, with the namespace set to 'kyma-serverless-function-not-ready' and the replicas set to 1
+    statement: provides a complete yaml for the function, with the namespace set to 'kyma-serverless-function-not-ready' and the replicas set to 1
     categories:
       - kubernetes
       - kyma
