@@ -8,7 +8,7 @@ from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
 from agents.common.constants import CONTINUE, EXIT, FILTER_MESSAGES_NUMBER, FINALIZER
-from agents.common.state import AgentState
+from agents.common.state import AgentState, SubTask
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -76,19 +76,36 @@ def filter_messages(
 
 def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
     """Return EXIT if there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
+    if state.next == EXIT:
+        logger.debug("Ending the workflow.")
+        return EXIT
     if state.error:
+        logger.error(f"Exiting the workflow due to the error: {state.error}")
         return EXIT
     return FINALIZER if state.next == FINALIZER else CONTINUE
 
 
-def should_finalize(state: AgentState) -> Literal["finalize", "continue"]:
-    """Return the next node based on the state."""
-    return "finalize" if not state.subtasks else "continue"
-
-
 def exit_node(state: AgentState) -> dict[str, Any]:
     """Used in case of an error."""
-    logger.error(f"Exiting the workflow due to the error: {state.error}")
     return {
         "next": END,
+        "error": state.error,
+        "final_response": state.final_response,
+    }
+
+
+def create_node_output(
+    message: BaseMessage | None = None,
+    next: str | None = None,
+    subtasks: list[SubTask] | None = None,
+    final_response: str | None = None,
+    error: str | None = None,
+) -> dict[str, Any]:
+    """Create a LangGraph node output."""
+    return {
+        "messages": [message] if message else [],
+        "next": next,
+        "subtasks": subtasks,
+        "final_response": final_response,
+        "error": error,
     }

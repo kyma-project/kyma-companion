@@ -10,7 +10,6 @@ from agents.common.constants import EXIT, FINALIZER
 from agents.common.state import AgentState
 from agents.common.utils import filter_messages
 from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
-from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models import IModel
 
@@ -33,7 +32,7 @@ class SupervisorAgent:
 
     def _create_parser(self) -> PydanticOutputParser:
         class RouteResponse(BaseModel):
-            next: Literal[*self.options] | None = Field(
+            next: Literal[*self.options] | None = Field(  # type: ignore
                 description="next agent to be called"
             )
 

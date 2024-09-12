@@ -228,9 +228,12 @@ __pycache__
 .secrets
 scripts/k8s/aicore-secret.yaml
 scripts/k8s/companion-configmap.yaml
-# ignore files starting with _ everywhere
-_*
 
 commands.md
 .env.dev
 tests/blackbox/.env.evaluation
+
+# Ignore all files starting with _, but not __init__.py
+_*
+!__init__.py
+config/config.yml
