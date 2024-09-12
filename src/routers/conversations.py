@@ -48,8 +48,8 @@ async def init_conversation(
     # Create a new session_id if none was provided.
     conversation_id: str = session_id if session_id != "" else create_session_id()
 
+    # Initialize k8s client for the request.
     try:
-        # Initialize k8s client for the request.
         k8s_client: IK8sClient = K8sClient(
             api_server=x_cluster_url,
             user_token=x_k8s_authorization,
