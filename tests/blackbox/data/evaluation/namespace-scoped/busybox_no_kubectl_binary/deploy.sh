@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "## Deploying no-kubectl-binary scenario ##"
-kubectl apply -f deployment.yaml
+kubectl apply -f deployment.yml
