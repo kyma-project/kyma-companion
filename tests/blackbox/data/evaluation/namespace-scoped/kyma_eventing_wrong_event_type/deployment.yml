@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyma-eventing-wrong-event-type
+---
+# Eventing Manager CR with NATS backend
+---
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Eventing
+metadata:
+  labels:
+    app.kubernetes.io/name: eventing
+    app.kubernetes.io/instance: eventing
+    app.kubernetes.io/part-of: eventing-manager
+    app.kubernetes.io/created-by: eventing-manager
+  name: eventing
+  namespace: kyma-system
+spec:
+  backend:
+    type: NATS
+    config:
+      eventTypePrefix: "sap.kyma.custom"
+      natsStreamStorageType: File
+      natsStreamReplicas: 3
+      natsStreamMaxSize: 700M
+      natsMaxMsgsPerTopic: 1000000
+  publisher:
+    replicas:
+      min: 2
+      max: 2
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 40m
+        memory: 64Mi
+---
+# Sink Deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: test-sink
+    source: kyma-eventing-wrong-event-type
+  name: test-sink
+  namespace: kyma-eventing-wrong-event-type
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      name: test-sink
+      source: kyma-eventing-wrong-event-type
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        name: test-sink
+        source: kyma-eventing-wrong-event-type
+      name: test-sink
+    spec:
+      containers:
+      - args:
+        - subscriber
+        - --listen-port=8080
+        image: ghcr.io/kyma-project/eventing-manager/e2e-tests-sink:sha-8e81aae
+        imagePullPolicy: Always
+        name: test-sink
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 300m
+            memory: 312Mi
+          requests:
+            cpu: 100m
+            memory: 156Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+# Sink Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: test-sink
+    source: kyma-eventing-wrong-event-type
+  name: test-sink
+  namespace: kyma-eventing-wrong-event-type
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    name: test-sink
+    source: kyma-eventing-wrong-event-type
+  sessionAffinity: None
+  type: ClusterIP
+---
+# Subscription with wrong event type
+# type should be: sap.kyma.custom.commerce.order.created.v1
+---
+apiVersion: eventing.kyma-project.io/v1alpha2
+kind: Subscription
+metadata:
+  name: test-v1alpha2-exact1
+  namespace: kyma-eventing-wrong-event-type
+spec:
+  config:
+    maxInFlightMessages: "10"
+  sink: http://test-sink.kyma-eventing-wrong-event-type.svc.cluster.local
+  source: ""
+  typeMatching: exact
+  types:
+  - kyma.custom.commerce.order.created.v1

@@ -1,0 +1,67 @@
+id: kyma-eventing-wrong-event-type
+description: The subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
+resource:
+  kind: Subscription
+  api_version: eventing.kyma-project.io/v1alpha2
+  name: test-v1alpha2-exact1
+  namespace: kyma-eventing-wrong-event-type
+expectations:
+  - name: subscription_config_error
+    statement: points out that the Subscription is configured with the wrong event type
+    categories:
+      - kyma
+      - problem_finding
+    complexity: 1
+  - name: subscription_correct_event_type
+    statement: provides the correct event type to use, which would be "sap.kyma.custom.commerce.order.created.v1"
+    categories:
+      - kyma
+      - solution_finding
+    complexity: 2
+  - name: subscription_explanation
+    statement: explains the use of Subscriptions and how to configure them
+    categories:
+      - kyma
+      - definition/explanation
+    complexity: 1
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    categories:
+      - kubernetes
+      - kyma
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 2
+  - name: some_yaml
+    statement: provides some yaml formatted code
+    categories:
+      - kubernetes
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml with the correct event type "sap.kyma.custom.commerce.order.created.v1"
+    categories:
+      - kubernetes
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml with the correct event type "sap.kyma.custom.commerce.order.created.v1"
+    categories:
+      - kubernetes
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Subscription, with the namespace set to 'kyma-eventing-wrong-event-type' and the event type set to "sap.kyma.custom.commerce.order.created.v1"
+    categories:
+      - kubernetes
+      - kyma
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 3
