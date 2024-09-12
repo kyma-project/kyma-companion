@@ -1,11 +1,10 @@
 import logging.config
-import os
 from logging import Logger
 from pathlib import Path
 
 import yaml
 
-level = os.getenv("LOG_LEVEL", "INFO")
+from utils.settings import LOG_LEVEL
 
 config_path = Path(__file__).parent.parent.parent / "config" / "logging.yml"
 
@@ -16,5 +15,5 @@ with open(config_path) as f:
 
 def get_logger(name: str) -> Logger:  # noqa: D103
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(LOG_LEVEL)
     return logger

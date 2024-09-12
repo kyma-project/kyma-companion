@@ -15,11 +15,10 @@ from initial_questions.inital_questions import (
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import LLM, IModel, ModelFactory
+from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
-
-REDIS_URL = f"{os.getenv('REDIS_URL')}/0"
 
 
 class IService(Protocol):
