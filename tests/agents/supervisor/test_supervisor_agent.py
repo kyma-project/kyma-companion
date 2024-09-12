@@ -4,7 +4,9 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
+from agents.common.constants import COMMON, EXIT
 from agents.common.state import AgentState, SubTask
+from agents.common.utils import filter_messages
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, SupervisorAgent
@@ -14,7 +16,7 @@ class TestSupervisorAgent:
 
     @pytest.fixture
     def supervisor_agent(self):
-        agent = SupervisorAgent(Mock(), [])  # noqa
+        agent = SupervisorAgent(Mock(), [K8S_AGENT, KYMA_AGENT, COMMON])  # noqa
         agent.supervisor_chain = Mock()
         return agent  # noqa
 
@@ -22,13 +24,7 @@ class TestSupervisorAgent:
         "mock_supervisor_chain_invoke_return, subtasks, messages, expected_next, expected_subtasks, expected_error",
         [
             (
-                {
-                    "next": K8S_AGENT,
-                    "subtasks": [
-                        {"description": "Task 1", "assigned_to": K8S_AGENT},
-                        {"description": "Task 2", "assigned_to": KYMA_AGENT},
-                    ],
-                },
+                AIMessage(content=f"""{{"next": "{K8S_AGENT}"}}"""),
                 [
                     SubTask(
                         description="Task 1", assigned_to=K8S_AGENT, status="pending"
@@ -53,10 +49,7 @@ class TestSupervisorAgent:
                 None,
             ),
             (
-                {
-                    "next": KYMA_AGENT,
-                    "subtasks": [{"description": "Task 2", "assigned_to": KYMA_AGENT}],
-                },
+                AIMessage(content=f"""{{"next": "{KYMA_AGENT}"}}"""),
                 [
                     SubTask(
                         description="Task 2",
@@ -76,7 +69,7 @@ class TestSupervisorAgent:
                 None,
             ),
             (
-                {"next": FINALIZER, "subtasks": []},
+                AIMessage(content=f"""{{"next": "{FINALIZER}"}}"""),
                 [
                     SubTask(
                         description="Task 3", assigned_to=K8S_AGENT, status="completed"
@@ -99,7 +92,7 @@ class TestSupervisorAgent:
                     )
                 ],
                 [HumanMessage(content="Error test")],
-                None,
+                EXIT,
                 [
                     SubTask(
                         description="Task 4", assigned_to=KYMA_AGENT, status="pending"
@@ -138,14 +131,13 @@ class TestSupervisorAgent:
 
         # Assert
         supervisor_agent.supervisor_chain.invoke.assert_called_once_with(
-            {
-                "messages": messages,
+            input={
+                "messages": filter_messages(messages),
                 "subtasks": json.dumps([subtask.dict() for subtask in subtasks]),
             }
         )
 
         assert result["next"] == expected_next
-        assert result["subtasks"] == expected_subtasks
         if expected_error:
             assert result["error"] == expected_error
         else:

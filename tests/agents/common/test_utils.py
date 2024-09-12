@@ -109,12 +109,8 @@ def mock_state():
             ],
             Exception("Test error"),
             {
-                "messages": [
-                    AIMessage(
-                        content="Error occurred: Test error",
-                        name="agent2",
-                    )
-                ]
+                "error": "Test error",
+                "next": "Exit",
             },
             False,
         ),

@@ -53,7 +53,7 @@ class SupervisorAgent:
             output_format=self.parser.get_format_instructions(),
         )
 
-        return supervisor_system_prompt | self.model.llm
+        return supervisor_system_prompt | self.model.llm  # type: ignore
 
     @property
     def name(self) -> str:

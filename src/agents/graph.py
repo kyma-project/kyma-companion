@@ -2,6 +2,7 @@ import json
 from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
+from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -107,8 +108,8 @@ class KymaGraph:
                         final_response=plan.response,
                         next=EXIT,
                     )
-            except Exception as e:
-                logger.debug(f"Problem in parsing the plan: {e}")
+            except OutputParserException as ope:
+                logger.debug(f"Problem in parsing the plan: {ope}")
                 return create_node_output(
                     message=AIMessage(content=plan_response.content, name=PLANNER),
                     final_response=plan_response.content,
