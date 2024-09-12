@@ -77,11 +77,50 @@ async def get_companion_response(
             f"Response: {response.text}"
         )
 
-    # for line in response.iter_lines():
-    #     # TODO: remove this and parse line to check if it is the AI response.
-    #     return line
+    answer = await _extract_final_response(response)
 
     # record the response time.
     Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
 
-    return payload.query
+    return answer
+
+
+async def _extract_final_response(response) -> str:
+    start_time = time.time()
+    timeout = 10 * 60  # 10 minutes
+    # extract the final response from the response.
+    for chunk in response.iter_lines():
+        # check for timeout.
+        if time.time() - start_time > timeout:
+            raise Exception("timeout while waiting for the final response")
+
+        # sometimes it can return multiple chunks in the response.
+        # so we need to extract the last chunk.
+        lines = chunk.splitlines()
+        obj = json.loads(lines[-1])
+
+        # if the status is not OK, raise an exception.
+        if "status" not in obj:
+            raise Exception(f"status key not found in the response: {obj}")
+        if obj["status"] != HTTPStatus.OK:
+            raise Exception(f"companion response status: {obj}")
+
+        # if the data key is not found, continue.
+        if "data" not in obj:
+            continue
+
+        # if the data is a string, convert it to a json object.
+        data = obj["data"]
+        if isinstance(obj["data"], str):
+            data = json.loads(obj["data"])
+
+        # if the finalizer key is found, return the final answer.
+        if "Finalizer" in data:
+            messages = data["Finalizer"]["messages"]
+            if len(messages) == 0:
+                raise Exception("no final answer found by the companion")
+            return messages[-1]["content"]
+
+        # if the Exit key is found, raise an exception.
+        if "Exit" in obj["data"]:
+            raise Exception("kyma companion went into error node")

@@ -111,6 +111,7 @@ class Scenario(BaseModel):
         if self.evaluation.status == TestStatus.FAILED:
             return
 
+        # COMPLETED means that the test is completed but with score < 100%.
         self.evaluation.status = TestStatus.COMPLETED
         # if the scenario score is 100, the scenario is passed.
         if self.get_scenario_score() == PASSING_SCORE:
@@ -209,6 +210,7 @@ class ScenarioList(BaseModel):
             return False, "The overall success rate is 0.0"
 
         # if any of the scenario failed, return False.
+        # Failure means that the test failed to get response from companion.
         failed_scenarios_count: int = 0
         for scenario in self.items:
             scenario.complete()

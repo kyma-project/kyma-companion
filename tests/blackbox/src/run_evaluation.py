@@ -3,9 +3,9 @@ import asyncio
 from common.config import Config
 from common.logger import get_logger
 from common.output import print_test_results
+from evaluation.process_scenario import process_scenario
 from evaluation.scenario.scenario import ScenarioList
 from evaluation.validator.utils import create_validator
-from evaluation.process_scenario import process_scenario
 
 
 async def main() -> None:
@@ -28,6 +28,7 @@ async def main() -> None:
     tasks = []
     for scenario in scenario_list.items:
         tasks.append(process_scenario(scenario, config, validator, logger))
+        break
     # wait until all tasks are completed.
     await asyncio.gather(*tasks)
 

@@ -10,17 +10,20 @@ class Config:
     Config represent the test configurations.
     """
 
-    test_data_path: str
+    test_data_path: str  # Path to the test data directory e.g. "~kyma-companion/tests/blackbox/data"
     namespace_scoped_test_data_path: str
     companion_api_url: str
-    companion_token: str
-    test_cluster_url: str
-    test_cluster_ca_data: str
-    test_cluster_auth_token: str
+    companion_token: (
+        str  # Authentication token when the companion is deployed in MPS cluster.
+    )
+    test_cluster_url: str  # Gardener test cluster API server URL.
+    test_cluster_ca_data: str  # Gardener test cluster CA data.
+    test_cluster_auth_token: str  # Gardener test cluster authentication token.
     aicore_deployment_id_gpt4: str
     aicore_configuration_id_gpt4: str
     model_name: str
     model_temperature: int
+    # Number of times to get the companion response for the same scenario to check if the response is consistent.
     iterations: int
 
     def __init__(self) -> None:

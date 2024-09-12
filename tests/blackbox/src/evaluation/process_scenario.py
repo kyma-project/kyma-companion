@@ -2,6 +2,7 @@ import json
 from logging import Logger
 
 from common.config import Config
+
 from evaluation.companion.companion import (
     ConversationPayload,
     fetch_initial_questions,
@@ -13,7 +14,7 @@ from evaluation.validator.validator import ValidatorInterface
 
 
 async def process_scenario(
-        scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
+    scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
 ) -> None:
     payload = ConversationPayload(
         resource_kind=scenario.resource.kind,
