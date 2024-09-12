@@ -211,3 +211,10 @@ jobs:
           AICORE_DEPLOYMENT_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4 }}
         run: |
           poetry run python src/run_evaluation.py
+
+      - name: Evaluation Tests - Debug information
+        if: failure()
+        run: |
+          kubectl get deploy -n ai-core
+          kubectl get pod -n ai-core
+          kubectl logs -n ai-core -l app=ai-backend
