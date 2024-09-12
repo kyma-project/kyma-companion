@@ -57,7 +57,9 @@ async def init_conversation(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
+        raise HTTPException(
+            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
+        ) from e
 
     try:
         questions = await service.new_conversation(
@@ -88,7 +90,9 @@ async def init_conversation(
 
 @router.post("/{conversation_id}/messages")
 async def messages(
-    conversation_id: Annotated[str, Path(title="The ID of the conversation to continue")],
+    conversation_id: Annotated[
+        str, Path(title="The ID of the conversation to continue")
+    ],
     message: Annotated[Message, Body(title="The message to send")],
     service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
@@ -101,7 +105,9 @@ async def messages(
                 yield f"{json_chunk}\n".encode()
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
-            json_chunk = json.dumps({"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"})
+            json_chunk = json.dumps(
+                {"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"}
+            )
             yield f"{json_chunk}\n".encode()
 
     return StreamingResponse(
