@@ -1,5 +1,5 @@
-from dotenv import load_dotenv
 from decouple import config
+from dotenv import load_dotenv
 
 # Load all variables from .env into the environment
 # necessary to implicitly import AI Core Env Vars
