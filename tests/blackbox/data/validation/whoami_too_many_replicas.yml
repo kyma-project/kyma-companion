@@ -1,4 +1,4 @@
-- description: This mock response alerts to warning events in the HorizontalPodAutoscaler
+- description: This mock response alerts to warning events in the HorizontalPodAutoscaler.
   scenario_id: whoami-too-many-replicas
   mock_response_content: |-
     "The HorizontalPodAutoscaler has warning events due to too high min and max replicas."
@@ -21,7 +21,7 @@
       expected_evaluation: false
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: false
-- description: This mock provide a partial yaml with the correct min and max replicas
+- description: This mock response provides a partial yaml with the correct min and max replicas.
   scenario_id: whoami-too-many-replicas
   mock_response_content: |-
     "The HorizontalPodAutoscaler has warning events due to too high min and max replicas. The correct amount of min and max replicas would be 1 and 4.

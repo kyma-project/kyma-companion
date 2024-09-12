@@ -1,4 +1,4 @@
-- description: Mock responses for a scenario where the ngix image was not found
+- description: Mock responses for a scenario where the ngix image was not found.
   scenario_id: nginx-wrong-image
   mock_response_content: The image you try to use does not exist. You might have misspelled the image name. The correct image name would be 'nginx'.
   expected_evaluations:

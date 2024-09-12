@@ -1,5 +1,5 @@
 id: nginx-wrong-image
-description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'
+description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.
 resource:
   kind: Deployment
   api_version: apps/v1

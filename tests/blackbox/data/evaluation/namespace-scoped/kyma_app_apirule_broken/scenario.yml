@@ -1,5 +1,5 @@
 id: kyma-app-apirule-broken
-description: The Application uses an APIRule that has two accessStrategies handler, which will lead to an error stead
+description: The application uses an APIRule that has two accessStrategies handler, which will lead to an error instead.
 resource:
   kind: APIRule
   api_version: gateway.kyma-project.io/v1beta1
