@@ -33,7 +33,6 @@ expectations:
   - name: some_yaml
     statement: provides some yaml formatted code
     categories:
-      - kubernetes
       - yaml
       - solution_finding
     complexity: 1

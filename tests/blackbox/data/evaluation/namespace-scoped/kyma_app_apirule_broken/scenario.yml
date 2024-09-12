@@ -10,14 +10,12 @@ expectations:
     statement: points out that the apirule is in an error state
     categories:
       - kyma
-      - kubernetes
       - problem_finding
     complexity: 1
   - name: apirule_with_two_accessStrategies
     statement: points out that the apirule has two accessStrategies but should only have one
     categories:
       - kyma
-      - kubernetes
       - solution_finding
     complexity: 2
   - name: step_by_step_guide
@@ -29,7 +27,6 @@ expectations:
   - name: some_yaml
     statement: provides some yaml formatted code
     categories:
-      - kubernetes
       - yaml
       - solution_finding
     complexity: 1

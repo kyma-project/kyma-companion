@@ -27,23 +27,18 @@ expectations:
   - name: step_by_step_guide
     statement: provides a step-by-step guide on how to fix the issue
     categories:
-      - kubernetes
-      - kyma
       - solution_finding
       - step-by-step_guidance
     complexity: 2
   - name: some_yaml
     statement: provides some yaml formatted code
     categories:
-      - kubernetes
-      - kyma
       - yaml
       - solution_finding
     complexity: 1
   - name: partial_yaml
     statement: provides a partial yaml with the correct event type "increase.counter.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding
@@ -51,7 +46,6 @@ expectations:
   - name: complete_yaml
     statement: provides a complete yaml with the correct event type "increase.counter.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding
@@ -59,7 +53,6 @@ expectations:
   - name: deployable_yaml
     statement: provides a complete yaml for the Subscription, with the namespace set to 'kyma-subscription-old-event-type' and the event type set to "increase.counter.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding
