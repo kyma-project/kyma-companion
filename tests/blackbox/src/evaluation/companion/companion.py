@@ -17,7 +17,7 @@ class ConversationPayload(BaseModel):
     namespace: str
 
 
-def get_headers(config: Config) -> dict:
+def _get_headers(config: Config) -> dict:
     return {
         "Authorization": f"Bearer {config.companion_token}",
         "X-Cluster-Certificate-Authority-Data": config.test_cluster_ca_data,
@@ -39,7 +39,7 @@ async def fetch_initial_questions(
     response = req_session.post(
         f"{config.companion_api_url}/api/conversations",
         json.dumps(payload.model_dump()),
-        headers=get_headers(config),
+        headers=_get_headers(config),
     )
     if response.status_code != HTTPStatus.OK:
         raise ValueError(
@@ -62,7 +62,7 @@ async def get_companion_response(
         f"querying Companion: {config.companion_api_url} for api-server: {config.test_cluster_url}"
     )
 
-    headers = get_headers(config)
+    headers = _get_headers(config)
     headers["session-id"] = conversation_id
 
     uri = f"{config.companion_api_url}/api/conversations/{conversation_id}/messages"

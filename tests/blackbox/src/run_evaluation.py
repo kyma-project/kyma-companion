@@ -28,7 +28,7 @@ async def main() -> None:
     tasks = []
     for scenario in scenario_list.items:
         tasks.append(process_scenario(scenario, config, validator, logger))
-        break
+
     # wait until all tasks are completed.
     await asyncio.gather(*tasks)
 
