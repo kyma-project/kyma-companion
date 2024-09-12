@@ -37,14 +37,14 @@ expectations:
       - yaml
     complexity: 1
   - name: complete_yaml
-    statement: contains a yaml formatted deployment manifest with all the required fields
+    statement: contains a yaml formatted Deployment manifest with all the required fields
     categories:
       - kubernetes
       - solution_finding
       - yaml
     complexity: 2
   - name: useable_yaml
-    statement: contains a yaml formatted deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'
+    statement: contains a yaml formatted Deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'
     categories:
       - kubernetes
       - solution_finding

@@ -1,7 +1,7 @@
 - description: This mock response explains that the pod is not ready because the function is configured with 0 replicas.
   scenario_id: kyma-serverless-function-no-replicas
   mock_response_content: |-
-    "The pod is not ready because the function is configured with 0 replicas."
+    "The Pod is not ready because the Function is configured with 0 replicas."
   expected_evaluations:
     - scenario_expectation_name: function_error
       expected_evaluation: true
@@ -21,11 +21,11 @@
       expected_evaluation: false
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: false
-- description: This mock response explains that the pod and the deployment is not ready because the function is configured with 0 replicas.
+- description: This mock response explains that the Pod and the Deployment is not ready because the Function is configured with 0 replicas.
   scenario_id: kyma-serverless-function-no-replicas
   mock_response_content: |-
-    "The deployment has 0 available replicas from 0 desired replicas because the function is configured with 0 replicas. This also causes the pod to be not ready.
-    Change the function configuration to have 1 replica to make the pod ready."
+    "The Deployment has 0 available replicas from 0 desired replicas because the Function is configured with 0 replicas. This also causes the Pod to be not ready.
+    Change the Function configuration to have 1 replica to make the Pod ready."
   expected_evaluations:
     - scenario_expectation_name: function_error
       expected_evaluation: true
@@ -45,10 +45,10 @@
       expected_evaluation: false
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: false
-- description: This mock response explains the pod is not ready because the function is configured with 0 replicas and contains some yaml.
+- description: This mock response explains the Pod is not ready because the Function is configured with 0 replicas and contains some yaml.
   scenario_id: kyma-serverless-function-no-replicas
   mock_response_content: |-
-    "The pod is not ready because the function is configured with 0 replicas. The function should be configured with 1 replica as shown here:
+    "The Pod is not ready because the Function is configured with 0 replicas. The Function should be configured with 1 replica as shown here:
     ```yaml
     replicas:
     ```"

@@ -1,7 +1,7 @@
 - description: This has a step-by-step guide on how to fix the issue.
   scenario_id: kyma-subscription-old-event-type
   mock_response_content: |-
-    "The subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
+    "The Subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
     To solve this issue:
     1. Open the Subscription resource to edit the event type.
     2. Locate the field `types`.
@@ -27,7 +27,7 @@
 - description: This has a step-by-step guide on how to fix the issue with a partial yaml.
   scenario_id: kyma-subscription-old-event-type
   mock_response_content: |-
-    "The subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
+    "The Subscription is set-up with an old event type `increase.counter.v0` instead of `increase.counter.v1`.
     To solve this issue:
     1. Open the Subscription resource to edit the event type.
     2. Locate the field `types`.

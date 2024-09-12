@@ -1,5 +1,5 @@
 id: kyma-eventing-wrong-event-type
-description: The subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
+description: The Subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
 resource:
   kind: Subscription
   api_version: eventing.kyma-project.io/v1alpha2
