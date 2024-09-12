@@ -33,7 +33,6 @@ expectations:
   - name: step_by_step_guide
     statement: provides a step-by-step guide on how to fix the issue
     categories:
-      - kubernetes
       - solution_finding
       - step-by-step_guidance
     complexity: 2
