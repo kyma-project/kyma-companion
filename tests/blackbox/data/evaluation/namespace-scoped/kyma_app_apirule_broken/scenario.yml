@@ -1,5 +1,5 @@
 id: kyma-app-apirule-broken
-description: The Application uses an API Rule that has two accessStrategies handler, which will lead to an error stead
+description: The application uses an APIRule that has two accessStrategies handler, which will lead to an error instead.
 resource:
   kind: APIRule
   api_version: gateway.kyma-project.io/v1beta1
@@ -7,17 +7,15 @@ resource:
   namespace: kyma-app-apirule-broken
 expectations:
   - name: apirule_error
-    statement: points out that the apirule is in an error state
+    statement: points out that the APIRule is in an error state
     categories:
       - kyma
-      - kubernetes
       - problem_finding
     complexity: 1
   - name: apirule_with_two_accessStrategies
-    statement: points out that the apirule has two accessStrategies but should only have one
+    statement: points out that the APIRule has two accessStrategies but should only have one
     categories:
       - kyma
-      - kubernetes
       - solution_finding
     complexity: 2
   - name: step_by_step_guide
@@ -29,26 +27,25 @@ expectations:
   - name: some_yaml
     statement: provides some yaml formatted code
     categories:
-      - kubernetes
       - yaml
       - solution_finding
     complexity: 1
   - name: partial_yaml_for_apirule
-    statement: provides some yaml formatted manifest for an apirule that only contains one accessStrategy
+    statement: provides some yaml formatted manifest for an APIRule that only contains one accessStrategy
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
   - name: complete_yaml_for_apirule
-    statement: provides a complete yaml formatted manifest for an apirule, that contains all required fields and that only contains one accessStrategy
+    statement: provides a complete yaml formatted manifest for an APIRule, that contains all required fields and that only contains one accessStrategy
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
   - name: deployable_yaml_for_apirule
-    statement: provides a complete yaml formatted manifest for a apirule, with the name set to 'restapi', the namespace set to 'kyma-app-apirule-broken', that contains all required fields and that contains only one accessStrategyy
+    statement: provides a complete yaml formatted manifest for a APIRule, with the name set to 'restapi', the namespace set to 'kyma-app-apirule-broken', that contains all required fields and that contains only one accessStrategy
     categories:
       - kubernetes
       - yaml

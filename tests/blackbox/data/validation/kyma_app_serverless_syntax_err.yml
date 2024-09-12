@@ -1,7 +1,7 @@
-- description: This mock response contains a complete deployable yaml-formatted manifest for a serverless function
+- description: This mock response contains a complete deployable yaml-formatted manifest for a serverless Function.
   scenario_id: kyma-app-serverless-syntax-err
   mock_response_content: |-
-    "There seems to be a syntax error in the serverless function 'func1'. The function calls Dates() instead of Date(). Here is a corrected version of the function:
+    "There seems to be a syntax error in the Serverless Function 'func1'. The Function calls Dates() instead of Date(). Here is a corrected version of the Function:
       ```yaml
       apiVersion: serverless.kyma-project.io/v1alpha2
       kind: Function
