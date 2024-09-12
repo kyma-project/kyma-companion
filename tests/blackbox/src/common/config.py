@@ -25,6 +25,7 @@ class Config:
     model_temperature: int
     # Number of times to get the companion response for the same scenario to check if the response is consistent.
     iterations: int
+    streaming_response_timeout: int
 
     def __init__(self) -> None:
         self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
@@ -42,3 +43,4 @@ class Config:
         self.model_name = get_env("MODEL_NAME", False, "gpt4.o")
         self.model_temperature = 0
         self.iterations = 3
+        self.streaming_response_timeout = 10 * 60  # seconds

@@ -77,7 +77,7 @@ async def get_companion_response(
             f"Response: {response.text}"
         )
 
-    answer = await _extract_final_response(response)
+    answer = await _extract_final_response(response, config.streaming_response_timeout)
 
     # record the response time.
     Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
@@ -85,9 +85,9 @@ async def get_companion_response(
     return answer
 
 
-async def _extract_final_response(response) -> str:
+async def _extract_final_response(response, timeout=300) -> str:
+    """read the stream response and extract the final response from it. Default timeout is 600 seconds."""
     start_time = time.time()
-    timeout = 10 * 60  # 10 minutes
     # extract the final response from the response.
     for chunk in response.iter_lines():
         # check for timeout.

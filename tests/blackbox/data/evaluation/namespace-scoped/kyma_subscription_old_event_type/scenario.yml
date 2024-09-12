@@ -1,5 +1,6 @@
 id: kyma-subscription-old-event-type
 description: The subscription is set-up with an old event type "increase.counter.v0" instead of "increase.counter.v1".
+user_query: Why the events for the subscription are not being received?
 resource:
   kind: Subscription
   api_version: eventing.kyma-project.io/v1alpha2
