@@ -1,0 +1,80 @@
+- description: This mock response contains a complete yaml-formatted Pod with the correct image containing the kubectl binary
+  scenario_id: busybox-no-kubectl-binary
+  mock_response_content: |-
+    "The pod is in error state because the image does not contain kubectl. The correct image is `bitnami/kubectl:latest`.
+    Here is a corrected version of the Pod:
+      ```yaml
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: pod-check
+        namespace: busybox-no-kubectl-binary
+      spec:
+        containers:
+        - name: busybox
+          image: bitnami/kubectl:latest
+          command: [""]
+          args: [""]
+      ```"
+  expected_evaluations:
+    - scenario_expectation_name: pod_error
+      expected_evaluation: true
+    - scenario_expectation_name: pod_wrong_image
+      expected_evaluation: true
+    - scenario_expectation_name: pod_provide_right_image
+      expected_evaluation: true
+    - scenario_expectation_name: pod_image_explanation
+      expected_evaluation: false
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: false
+    - scenario_expectation_name: some_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: deployable_yaml
+      expected_evaluation: false
+- description: This mock response points out that the pod is in an error state due to the kubectl binary missing in the image and provides a deployable Pod manifest
+  scenario_id: bitnami-wrong-rbac-permissions
+  mock_response_content: |-
+    "The pod is in error state because the image does not contain kubectl. The correct image is `bitnami/kubectl:latest`.
+    Here is a corrected version of the Pod:
+      ```yaml
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: pod-check
+        namespace: busybox-no-kubectl-binary
+      spec:
+        serviceAccountName: pod-reader-sa
+        containers:
+        - name: kubectl-container
+          image: bitnami/kubectl:latest  # This image contains kubectl
+          command: ["sh", "-c", "kubectl get pods"]
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        restartPolicy: Never
+      ```"
+  expected_evaluations:
+    - scenario_expectation_name: pod_error
+      expected_evaluation: true
+    - scenario_expectation_name: pod_wrong_image
+      expected_evaluation: true
+    - scenario_expectation_name: pod_provide_right_image
+      expected_evaluation: true
+    - scenario_expectation_name: pod_image_explanation
+      expected_evaluation: false
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: false
+    - scenario_expectation_name: some_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: deployable_yaml
+      expected_evaluation: true
