@@ -44,21 +44,21 @@ expectations:
       - solution_finding
     complexity: 1
   - name: partial_yaml
-    statement: provides a partial yaml with the correct min and max replicas, which would be 1 and 4
+    statement: provides a partial yaml for the HorizontalPodAutoscaler with the correct min and max replicas, which would be 1 and 4
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
   - name: complete_yaml
-    statement: provides a complete yaml with the correct min and max replicas, which would be 1 and 4
+    statement: provides a complete yaml for the HorizontalPodAutoscaler with the correct min and max replicas, which would be 1 and 4
     categories:
       - kubernetes
       - yaml
       - solution_finding
     complexity: 2
   - name: deployable_yaml
-    statement: provides a complete yaml for the Pod, with the namespace set to 'whoami_too_many_replicas' and the min and max replicas set to 1 and 4
+    statement: provides a complete yaml for the HorizontalPodAutoscaler, with the namespace set to 'whoami_too_many_replicas' and the min and max replicas set to 1 and 4
     categories:
       - kubernetes
       - yaml

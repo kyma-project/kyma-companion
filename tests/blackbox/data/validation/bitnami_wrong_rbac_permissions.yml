@@ -33,7 +33,7 @@
       expected_evaluation: true
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: true
-- description: This mock response points out that the pod is in an error state due to wrong permissions
+- description: This mock response points out that the Pod is in an error state due to wrong permissions
   scenario_id: bitnami-wrong-rbac-permissions
   mock_response_content: |-
     "The Pod is in error state because the Role grants the wrong access permissions."

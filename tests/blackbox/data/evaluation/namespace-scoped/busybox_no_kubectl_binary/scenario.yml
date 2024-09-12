@@ -1,5 +1,5 @@
 id: busybox-no-kubectl-binary
-description: The pod tries to list pods in the same namespace using kubectl but the image does not contain kubectl.
+description: The Pod tries to list Pods in the same namespace using kubectl but the image does not contain kubectl.
 resource:
   kind: Pod
   api_version: v1
@@ -7,13 +7,13 @@ resource:
   namespace: busybox-no-kubectl-binary
 expectations:
   - name: pod_error
-    statement: points out that the pod is in an error state
+    statement: points out that the Pod is in an error state
     categories:
       - kubernetes
       - problem_finding
     complexity: 1
   - name: pod_wrong_image
-    statement: points out that the pod uses the wrong image
+    statement: points out that the Pod uses the wrong image
     categories:
       - kubernetes
       - problem_finding
@@ -51,7 +51,7 @@ expectations:
       - solution_finding
     complexity: 2
   - name: complete_yaml
-    statement: provides a complete yaml with the correct image 'bitnami/kubectl:latest'
+    statement: provides a complete yaml for the Pod with the correct image 'bitnami/kubectl:latest'
     categories:
       - kubernetes
       - yaml

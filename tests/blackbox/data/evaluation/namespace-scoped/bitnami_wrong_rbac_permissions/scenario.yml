@@ -1,5 +1,5 @@
 id: bitnami-wrong-rbac-permissions
-description: The pod tries to list pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.
+description: The Pod tries to list Pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.
 resource:
   kind: Pod
   api_version: v1
@@ -7,19 +7,19 @@ resource:
   namespace: bitnami-wrong-rbac-permissions
 expectations:
   - name: pod_error
-    statement: points out that the pod is in an error state
+    statement: points out that the Pod is in an error state
     categories:
       - kubernetes
       - problem_finding
     complexity: 1
   - name: pod_wrong_permissions
-    statement: points out that the pod has the wrong permissions
+    statement: points out that the Pod has the wrong permissions
     categories:
       - kubernetes
       - problem_finding
     complexity: 1
   - name: permission_should_be_watch
-    statement: points out that the Role gives permission to watch pods but the pod tries to list them
+    statement: points out that the Role gives permission to watch Pods but the Pod tries to list them
     categories:
       - kubernetes
       - solution_finding
