@@ -45,13 +45,11 @@ async def init_conversation(
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
     logger.info("Initializing new conversation.")
 
-    # initialize with the session_id. Create a new session_id if not provided.
-    conversation_id = create_session_id()
-    if session_id != "":
-        conversation_id = session_id
+    # Create a new session_id if none was provided.
+    conversation_id: str = session_id if session_id != "" else create_session_id()
 
-    # initialize k8s client for the request.
     try:
+        # Initialize k8s client for the request.
         k8s_client: IK8sClient = K8sClient(
             api_server=x_cluster_url,
             user_token=x_k8s_authorization,
@@ -59,9 +57,7 @@ async def init_conversation(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(
-            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
 
     try:
         questions = await service.new_conversation(
@@ -76,9 +72,10 @@ async def init_conversation(
             k8s_client=k8s_client,
         )
 
-        # return response with session_id in the header.
         response = InitialQuestionsResponse(
-            initial_questions=questions, conversation_id=conversation_id
+            # Return response with session_id in the header.
+            initial_questions=questions,
+            conversation_id=conversation_id,
         )
         return JSONResponse(
             content=jsonable_encoder(response),
@@ -91,9 +88,7 @@ async def init_conversation(
 
 @router.post("/{conversation_id}/messages")
 async def messages(
-    conversation_id: Annotated[
-        str, Path(title="The ID of the conversation to continue")
-    ],
+    conversation_id: Annotated[str, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
     service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
@@ -106,9 +101,7 @@ async def messages(
                 yield f"{json_chunk}\n".encode()
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
-            json_chunk = json.dumps(
-                {"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"}
-            )
+            json_chunk = json.dumps({"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"})
             yield f"{json_chunk}\n".encode()
 
     return StreamingResponse(
