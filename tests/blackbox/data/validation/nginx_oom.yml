@@ -1,5 +1,5 @@
-- description: Mock responses for a scenario where a nginx deployment is configured to an insufficient amount of memory that will lead to a pod that runs out of memory.
-  mock_response_content: The pod has an OOM (out of memory) error. The container has an insufficient amount of memory. You should increase the memory limit or the memory request.
+- description: Mock responses for a scenario where a nginx Deployment is configured to an insufficient amount of memory that will lead to a Pod that runs out of memory.
+  mock_response_content: The Pod has an OOM (out of memory) error. The Container has an insufficient amount of memory. You should increase the memory limit or the memory request.
   scenario_id: nginx-oom
   expected_evaluations:
     - scenario_expectation_name: oom_error
@@ -16,7 +16,7 @@
       expected_evaluation: false
     - scenario_expectation_name: fully_deployable_yaml
       expected_evaluation: false
-- description: False negative for the scenario where a nginx deployment is configured to an insufficient amount of memory that will lead to a pod that runs out of memory.
+- description: False negative for the scenario where a nginx Deployment is configured to an insufficient amount of memory that will lead to a Pod that runs out of memory.
   mock_response_content: There is no problem; everything is fine.
   scenario_id: nginx-oom
   expected_evaluations:

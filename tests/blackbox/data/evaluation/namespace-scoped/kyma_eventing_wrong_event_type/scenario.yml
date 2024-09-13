@@ -1,5 +1,5 @@
 id: kyma-eventing-wrong-event-type
-description: The subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
+description: The Subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
 user_query: Why is the subscription not working?
 resource:
   kind: Subscription
@@ -28,23 +28,18 @@ expectations:
   - name: step_by_step_guide
     statement: provides a step-by-step guide on how to fix the issue
     categories:
-      - kubernetes
-      - kyma
       - solution_finding
       - step-by-step_guidance
     complexity: 2
   - name: some_yaml
     statement: provides some yaml formatted code
     categories:
-      - kubernetes
-      - kyma
       - yaml
       - solution_finding
     complexity: 1
   - name: partial_yaml
     statement: provides a partial yaml with the correct event type "sap.kyma.custom.commerce.order.created.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding
@@ -52,7 +47,6 @@ expectations:
   - name: complete_yaml
     statement: provides a complete yaml with the correct event type "sap.kyma.custom.commerce.order.created.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding
@@ -60,7 +54,6 @@ expectations:
   - name: deployable_yaml
     statement: provides a complete yaml for the Subscription, with the namespace set to 'kyma-eventing-wrong-event-type' and the event type set to "sap.kyma.custom.commerce.order.created.v1"
     categories:
-      - kubernetes
       - kyma
       - yaml
       - solution_finding

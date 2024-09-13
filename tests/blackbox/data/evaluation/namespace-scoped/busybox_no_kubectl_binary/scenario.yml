@@ -1,0 +1,67 @@
+id: busybox-no-kubectl-binary
+description: The Pod tries to list Pods in the same namespace using kubectl but the image does not contain kubectl.
+resource:
+  kind: Pod
+  api_version: v1
+  name: pod-check
+  namespace: busybox-no-kubectl-binary
+expectations:
+  - name: pod_error
+    statement: points out that the Pod is in an error state
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: pod_wrong_image
+    statement: points out that the Pod uses the wrong image
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: pod_provide_right_image
+    statement: provides the correct image to use with kubectl
+    categories:
+      - kubernetes
+      - solution_finding
+    complexity: 2
+  - name: pod_image_explanation
+    statement: explains the connection between an image and included binaries
+    categories:
+      - kubernetes
+      - definition/explanation
+    complexity: 1
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 2
+  - name: some_yaml
+    statement: provides some yaml formatted code
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml with the correct image 'bitnami/kubectl:latest'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml for the Pod with the correct image 'bitnami/kubectl:latest'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Pod, with the namespace set to 'busybox-no-kubectl-binary', the serviceAccountName set to 'pod-reader-sa', the correct command and the image set to 'bitnami/kubectl:latest'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 3

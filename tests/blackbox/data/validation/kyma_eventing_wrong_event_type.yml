@@ -1,4 +1,4 @@
-- description: This mock response explains what a subscription is.
+- description: This mock response explains what a Subscription is.
   scenario_id: kyma-serverless-function-not-ready
   mock_response_content: |-
     "The `subscriptions.eventing.kyma-project.io` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to subscribe to events."
@@ -19,11 +19,11 @@
       expected_evaluation: false
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: false
-- description: This mock response explains what a subscription is and provides some yaml.
+- description: This mock response explains what a Subscription is and provides some yaml.
   scenario_id: kyma-serverless-function-not-ready
   mock_response_content: |-
     "The `subscriptions.eventing.kyma-project.io` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format used to subscribe to events.
-    Here is an example of a subscription yaml:
+    Here is an example of a Subscription yaml:
     ```yaml
     apiVersion: eventing.kyma-project.io/v1alpha2
     kind: Subscription
@@ -59,7 +59,7 @@
 - description: This mock response provides a deployable yaml.
   scenario_id: kyma-serverless-function-not-ready
   mock_response_content: |-
-    "Here is the correct subscription yaml:
+    "Here is the correct Subscription yaml:
     ```yaml
     apiVersion: eventing.kyma-project.io/v1alpha2
     kind: Subscription
