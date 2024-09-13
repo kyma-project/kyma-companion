@@ -1,4 +1,5 @@
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from common.config import Config
 from common.logger import get_logger
@@ -26,21 +27,18 @@ def main() -> None:
     # initialize the response validator.
     validator: ValidatorInterface = create_validator(config)
 
-    for scenario in scenario_list.items:
-        process_scenario(scenario, config, validator)
+    # add each scenario to the executor.
+    with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
+        futures = [
+            executor.submit(process_scenario, scenario, config, validator)
+            for scenario in scenario_list.items
+        ]
 
-    # # add each scenario to the executor.
-    # with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
-    #     futures = [
-    #         executor.submit(process_scenario, scenario, config, validator)
-    #         for scenario in scenario_list.items
-    #     ]
-    #
-    #     # wait for all the threads to complete.
-    #     for f in as_completed(futures):
-    #         exp = f.exception()
-    #         if exp is not None:
-    #             raise Exception(f"Failed to process scenario. Error: {exp}")
+        # wait for all the threads to complete.
+        for f in as_completed(futures):
+            exp = f.exception()
+            if exp is not None:
+                raise Exception(f"Failed to process scenario. Error: {exp}")
 
     # print out the results.
     print_test_results(scenario_list)
