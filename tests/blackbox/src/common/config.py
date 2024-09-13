@@ -26,6 +26,7 @@ class Config:
     # Number of times to get the companion response for the same scenario to check if the response is consistent.
     iterations: int
     streaming_response_timeout: int
+    max_workers: int
 
     def __init__(self) -> None:
         self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
@@ -44,3 +45,4 @@ class Config:
         self.model_temperature = 0
         self.iterations = 3
         self.streaming_response_timeout = 10 * 60  # seconds
+        self.max_workers = 10

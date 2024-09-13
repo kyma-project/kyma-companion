@@ -1,21 +1,29 @@
 import json
-from logging import Logger
 
 from common.config import Config
+from common.logger import get_logger
 
 from evaluation.companion.companion import (
+    CompanionClient,
     ConversationPayload,
-    fetch_initial_questions,
-    get_companion_response,
 )
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario
+from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import ValidatorInterface
 
 
-async def process_scenario(
-    scenario: Scenario, config: Config, validator: ValidatorInterface, logger: Logger
-) -> None:
+def process_scenario(scenario: Scenario, config: Config) -> None:
+    logger = get_logger(scenario.id)
+    logger.info("started processing of scenario.")
+
+    # initialize the response validator.
+    validator: ValidatorInterface = create_validator(config)
+
+    # initialize the companion client.
+    companion_client = CompanionClient(config)
+
+    # define payload for the companion API
     payload = ConversationPayload(
         resource_kind=scenario.resource.kind,
         resource_api_version=scenario.resource.api_version,
@@ -25,10 +33,10 @@ async def process_scenario(
 
     # first make a call to the Companion API to initialize the conversation.
     try:
-        logger.debug(
-            f"Getting response from the initial conversations endpoint for scenario: {scenario.id}"
+        logger.debug("getting response from the initial conversations endpoint.")
+        init_questions_response = companion_client.fetch_initial_questions(
+            payload, logger
         )
-        init_questions_response = await fetch_initial_questions(config, payload, logger)
         conversation_id = json.loads(init_questions_response.content)["conversation_id"]
     except Exception as e:
         scenario.evaluation.status = TestStatus.FAILED
@@ -36,25 +44,21 @@ async def process_scenario(
             f"failed to call initialize conversation endpoint. {e}"
         )
         logger.error(
-            f"skipping scenario {scenario.id} because failed to call initialize "
-            f"conversation endpoint: {scenario.id}. Error: {e}"
+            f"skipping scenario because failed to call initialize conversation endpoint. Error: {e}"
         )
-        # skip if the scenario has already failed.
+        # skip further processing if the scenario has already failed.
         return
 
     # make a call to the Companion API and get response from Companion.
     try:
-        logger.debug(
-            f"Getting response from the companion API for scenario: {scenario.id}"
-        )
-
         # set the query from the scenario.
         payload.query = scenario.user_query
         # get the response from the companion API multiple iterations to check idempotency.
         # i.e. we query the kyma companion multiple times with same question to check if the response is consistent.
         for _ in range(config.iterations):
-            response = await get_companion_response(
-                config, conversation_id, payload, logger
+            logger.debug(f"Getting response from companion for scenario: {scenario.id}")
+            response = companion_client.get_companion_response(
+                conversation_id, payload, logger
             )
             scenario.evaluation.add_actual_response(response)
     except Exception as e:
@@ -66,7 +70,7 @@ async def process_scenario(
             f"skipping scenario {scenario.id} because failed to get response from the "
             f"companion API for scenario: {scenario.id}. Error: {e}"
         )
-        # skip if the scenario has already failed.
+        # skip further processing if the scenario has already failed.
         return
 
     # evaluate the expectations.

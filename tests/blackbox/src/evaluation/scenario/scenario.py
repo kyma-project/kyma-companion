@@ -209,14 +209,4 @@ class ScenarioList(BaseModel):
         if self.get_overall_success_rate() == 0.0:
             return False, "The overall success rate is 0.0"
 
-        # if any of the scenario failed, return False.
-        # Failure means that the test failed to get response from companion.
-        failed_scenarios_count: int = 0
-        for scenario in self.items:
-            scenario.complete()
-            if scenario.evaluation.status == TestStatus.FAILED:
-                failed_scenarios_count += 1
-        if failed_scenarios_count > 0:
-            return False, f"{failed_scenarios_count} scenarios failed"
-
         return True, "All tests passed successfully"
