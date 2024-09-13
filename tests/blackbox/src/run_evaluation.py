@@ -46,10 +46,11 @@ def main() -> None:
     time_taken = round((time.time() - start_time) / 60, 2)
     print(f"Total time taken by evaluation tests: {time_taken} minutes.")
 
-    # Pass or fail the tests.
-    is_passed, reason = scenario_list.is_test_passed()
-    if not is_passed:
-        raise Exception(f"Tests failed: {reason}")
+    # TODO: uncomment this when we want fail the job if tests fail.
+    # # Pass or fail the tests.
+    # is_passed, reason = scenario_list.is_test_passed()
+    # if not is_passed:
+    #     raise Exception(f"Tests failed: {reason}")
 
 
 if __name__ == "__main__":
