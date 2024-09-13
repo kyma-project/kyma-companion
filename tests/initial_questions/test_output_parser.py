@@ -1,6 +1,6 @@
 import pytest
 
-from agents.initial_questions.output_parser import QuestionOutputParser
+from initial_questions.output_parser import QuestionOutputParser
 
 
 @pytest.mark.parametrize(
@@ -30,11 +30,11 @@ from agents.initial_questions.output_parser import QuestionOutputParser
     ],
 )
 def test_question_output_parser(output: str, expected: list[str]):
-    # Arrange:
+    # Given:
     parser = QuestionOutputParser()
 
-    # Act:
+    # When:
     result = parser.parse(output)
 
-    # Assert:
+    # Then:
     assert result == expected

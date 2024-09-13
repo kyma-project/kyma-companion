@@ -43,14 +43,13 @@ async def init_conversation(
     service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
+
     logger.info("Initializing new conversation.")
 
-    # initialize with the session_id. Create a new session_id if not provided.
-    conversation_id = create_session_id()
-    if session_id != "":
-        conversation_id = session_id
+    # Initialize with the session_id. Create a new session_id if not provided.
+    session_id = session_id if session_id != "" else create_session_id()
 
-    # initialize k8s client for the request.
+    # Initialize k8s client for the request.
     try:
         k8s_client: IK8sClient = K8sClient(
             api_server=x_cluster_url,
@@ -64,25 +63,26 @@ async def init_conversation(
         ) from e
 
     try:
-        questions = await service.new_conversation(
-            conversation_id,
-            Message(
+        # Create initial questions.
+        questions = service.new_conversation(
+            session_id=session_id,
+            k8s_client=k8s_client,
+            message=Message(
                 query="",
                 resource_kind=data.resource_kind,
                 resource_name=data.resource_name,
                 resource_api_version=data.resource_api_version,
                 namespace=data.namespace,
             ),
-            k8s_client=k8s_client,
         )
 
-        # return response with session_id in the header.
+        # Return response with session_id in the header.
         response = InitialQuestionsResponse(
-            initial_questions=questions, conversation_id=conversation_id
+            initial_questions=questions, conversation_id=session_id
         )
         return JSONResponse(
             content=jsonable_encoder(response),
-            headers={SESSION_ID_HEADER: conversation_id},
+            headers={SESSION_ID_HEADER: session_id},
         )
     except Exception as e:
         logger.error(e)

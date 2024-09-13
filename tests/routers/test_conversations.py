@@ -17,15 +17,15 @@ class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
 
-    async def new_conversation(
-        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+    def new_conversation(
+        self, session_id: str, k8s_client: IK8sClient, message: Message
     ) -> list[str]:
         if self.expected_error:
             raise self.expected_error
         return ["Test question 1", "Test question 2", "Test question 3"]
 
     async def handle_request(
-        self, conversation_id: int, message: Message
+        self, conversation_id: str, message: Message
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
