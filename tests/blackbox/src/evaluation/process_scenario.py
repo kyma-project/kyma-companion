@@ -9,16 +9,14 @@ from evaluation.companion.companion import (
 )
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario
-from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import ValidatorInterface
 
 
-def process_scenario(scenario: Scenario, config: Config) -> None:
+def process_scenario(
+    scenario: Scenario, config: Config, validator: ValidatorInterface
+) -> None:
     logger = get_logger(scenario.id)
     logger.info("started processing of scenario.")
-
-    # initialize the response validator.
-    validator: ValidatorInterface = create_validator(config)
 
     # initialize the companion client.
     companion_client = CompanionClient(config)
