@@ -91,7 +91,7 @@ class ConversationService(metaclass=SingletonMeta):
         history = RedisChatMessageHistory(session_id=session_id, redis_url=REDIS_URL)
         history.add_message(
             message=HumanMessage(
-                content=f"This is the infromation about my Kubernetes cluser:\n{k8s_context}"
+                content=f"These are the information I got from my Kubernetes cluster:\n{k8s_context}"
             )
         )
 
