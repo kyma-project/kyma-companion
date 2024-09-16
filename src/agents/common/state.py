@@ -75,5 +75,5 @@ class Plan(BaseModel):
     )
 
     response: str | None = Field(
-        description="direct response of planner if plan is unnecessary for unrelated queries"
+        description="direct response of planner if plan is unnecessary"
     )

@@ -7,8 +7,18 @@ from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
-from agents.common.constants import CONTINUE, EXIT, FILTER_MESSAGES_NUMBER, FINALIZER
-from agents.common.state import AgentState, SubTask
+from agents.common.constants import (
+    CONTINUE,
+    ERROR,
+    EXIT,
+    FINAL_RESPONSE,
+    FINALIZER,
+    MESSAGES,
+    NEXT,
+    RECENT_MESSAGES_LIMIT,
+    SUBTASKS,
+)
+from agents.common.state import AgentState, SubTask, SubTaskStatus
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -32,7 +42,7 @@ def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str) -> AgentExecu
 def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, Any]:
     """Agent node."""
     for subtask in state.subtasks:
-        if subtask.assigned_to == name and subtask.status != "completed":
+        if subtask.assigned_to == name and subtask.status != SubTaskStatus.COMPLETED:
             try:
                 # TODO: move to a specific agent folder and extend it for each agent
                 # TODO: can improved to query all the subtasks at once
@@ -41,16 +51,16 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
                 )
                 subtask.complete()
                 return {
-                    "messages": [AIMessage(content=result["output"], name=name)],
+                    MESSAGES: [AIMessage(content=result["output"], name=name)],
                 }
             except Exception as e:
                 logger.error(f"Error in agent {name}: {e}")
                 return {
-                    "error": str(e),
-                    "next": EXIT,
+                    ERROR: str(e),
+                    NEXT: EXIT,
                 }
     return {
-        "messages": [
+        MESSAGES: [
             AIMessage(
                 content="All my subtasks are already completed.",
                 name=name,
@@ -61,7 +71,7 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
 
 def filter_messages(
     messages: Sequence[BaseMessage],
-    last_messages_number: int = FILTER_MESSAGES_NUMBER,
+    last_messages_number: int = RECENT_MESSAGES_LIMIT,
 ) -> Sequence[BaseMessage]:
     """
     Filter the last n number of messages given last_messages_number.
@@ -75,7 +85,7 @@ def filter_messages(
 
 
 def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
-    """Return EXIT if there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
+    """Return EXIT if next is EXIT or there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
     if state.next == EXIT:
         logger.debug("Ending the workflow.")
         return EXIT
@@ -88,9 +98,9 @@ def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type:
 def exit_node(state: AgentState) -> dict[str, Any]:
     """Used in case of an error."""
     return {
-        "next": END,
-        "error": state.error,
-        "final_response": state.final_response,
+        NEXT: END,
+        ERROR: state.error,
+        FINAL_RESPONSE: state.final_response,
     }
 
 
@@ -101,11 +111,20 @@ def create_node_output(
     final_response: str | None = None,
     error: str | None = None,
 ) -> dict[str, Any]:
-    """Create a LangGraph node output."""
+    """
+    This function is used to create the output of a LangGraph node centrally.
+
+    Args:
+        message: BaseMessage | None: message to be sent to the user
+        next: str | None: next LangGraph node to be called
+        subtasks: list[SubTask] | None: different steps/subtasks to follow
+        final_response: str | None: final response to the user
+        error: str | None: error message if error occurred
+    """
     return {
-        "messages": [message] if message else [],
-        "next": next,
-        "subtasks": subtasks,
-        "final_response": final_response,
-        "error": error,
+        MESSAGES: [message] if message else [],
+        NEXT: next,
+        SUBTASKS: subtasks,
+        FINAL_RESPONSE: final_response,
+        ERROR: error,
     }

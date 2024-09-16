@@ -12,7 +12,16 @@ from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import IAgent
-from agents.common.constants import COMMON, CONTINUE, EXIT, PLANNER
+from agents.common.constants import (
+    COMMON,
+    CONTINUE,
+    ERROR,
+    EXIT,
+    FINAL_RESPONSE,
+    MESSAGES,
+    NEXT,
+    PLANNER,
+)
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask, UserInput
 from agents.common.utils import (
@@ -78,7 +87,17 @@ class KymaGraph:
         self.graph = self._build_graph()
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
-        """Breaks down the given user query into sub-tasks."""
+        """
+        Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
+        If the query is general, it returns the response directly.
+
+        Args:
+            state: AgentState: agent state of the Supervisor graph
+
+        Returns:
+            dict[str, Any]: output of the node with subtask if query is related to Kyma and K8s.
+            Returns response directly if query is general.
+        """
 
         # to prevent stored errors from previous runs
         state.error = None
@@ -118,7 +137,7 @@ class KymaGraph:
 
             if not plan.subtasks:
                 raise Exception(
-                    "No subtasks are created for the given query: {state.messages[-1].content}"
+                    f"No subtasks are created for the given query and conversation: {filter_messages(state.messages)}"
                 )
             return create_node_output(
                 message=AIMessage(
@@ -155,7 +174,7 @@ class KymaGraph:
                     ).content
                     subtask.complete()
                     return {
-                        "messages": [
+                        MESSAGES: [
                             AIMessage(
                                 content=response,
                                 name=COMMON,
@@ -165,11 +184,11 @@ class KymaGraph:
                 except Exception as e:
                     logger.error(f"Error in common node: {e}")
                     return {
-                        "error": str(e),
-                        "next": EXIT,
+                        ERROR: str(e),
+                        NEXT: EXIT,
                     }
         return {
-            "messages": [
+            MESSAGES: [
                 AIMessage(
                     content="All my subtasks are already completed.",
                     name=COMMON,
@@ -192,14 +211,14 @@ class KymaGraph:
         ).content
 
         return {
-            "messages": [
+            MESSAGES: [
                 AIMessage(
                     content=final_response if final_response else "",
                     name=FINALIZER,
                 )
             ],
-            "next": END,
-            "final_response": final_response,
+            NEXT: END,
+            FINAL_RESPONSE: final_response,
         }
 
     def _build_graph(self) -> CompiledGraph:

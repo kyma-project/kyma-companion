@@ -4,4 +4,14 @@ FINALIZER = "Finalizer"
 EXIT = "Exit"
 CONTINUE = "Continue"
 
-FILTER_MESSAGES_NUMBER = 10
+RECENT_MESSAGES_LIMIT = 10
+
+MESSAGES = "messages"
+
+ERROR = "error"
+
+NEXT = "next"
+
+SUBTASKS = "subtasks"
+
+FINAL_RESPONSE = "final_response"
