@@ -1,6 +1,6 @@
 id: nginx-wrong-image
 description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.
-user_query: What is causing the deployment to not have minimum availability?
+user_query: What is causing the Deployment to not have minimum availability?
 resource:
   kind: Deployment
   api_version: apps/v1
