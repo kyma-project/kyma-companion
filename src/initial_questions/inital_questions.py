@@ -30,7 +30,7 @@ class IInitialQuestionsHandler(Protocol):
 
 
 class InitialQuestionsHandler:
-    """Agent that generates initial questions."""
+    """Handler that generates initial questions."""
 
     chain: typing.Any
 
