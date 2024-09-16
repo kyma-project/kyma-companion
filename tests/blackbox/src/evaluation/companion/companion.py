@@ -19,8 +19,6 @@ class ConversationPayload(BaseModel):
 
 class CompanionClient:
     config: Config
-    init_conversation_response_times_sec: list[float] = []
-    conversation_response_times_sec: list[float] = []
 
     def __init__(self, config: Config):
         self.config = config
