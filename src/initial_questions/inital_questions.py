@@ -5,15 +5,18 @@ import yaml
 from langchain_core.prompts import PromptTemplate
 
 from agents.common.data import Message
-from agents.initial_questions.output_parser import QuestionOutputParser
-from agents.initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
+from initial_questions.output_parser import QuestionOutputParser
+from initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
 from services.k8s import IK8sClient
+from utils.logging import get_logger
 from utils.models import IModel
 from utils.utils import is_empty_str, is_non_empty_str
 
+logger = get_logger(__name__)
 
-class IInitialQuestionsAgent(Protocol):
-    """Interface for InitialQuestionsAgent."""
+
+class IInitialQuestionsHandler(Protocol):
+    """Protocol for InitialQuestionsHandler."""
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
@@ -26,8 +29,8 @@ class IInitialQuestionsAgent(Protocol):
         ...
 
 
-class InitialQuestionsAgent:
-    """Agent that generates initial questions."""
+class InitialQuestionsHandler:
+    """Handler that generates initial questions."""
 
     chain: typing.Any
 
@@ -53,6 +56,8 @@ class InitialQuestionsAgent:
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
+        logger.info("Fetching relevant data from k8s cluster")
+
         # Query the Kubernetes API to get the context.
         yaml_context: list[Any] = []
 
@@ -65,6 +70,9 @@ class InitialQuestionsAgent:
             is_empty_str(message.namespace)
             and message.resource_kind.lower() == "cluster"
         ):
+            logger.info(
+                "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
+            )
             yaml_context.append(k8s_client.list_not_running_pods(namespace=""))
             yaml_context.append(k8s_client.list_nodes_metrics())
             yaml_context.append(k8s_client.list_k8s_warning_events(namespace=""))
@@ -76,6 +84,7 @@ class InitialQuestionsAgent:
             is_non_empty_str(message.namespace)
             and message.resource_kind.lower() == "namespace"
         ):
+            logger.info("Fetching all K8s Events with warning type")
             yaml_context.append(
                 k8s_client.list_k8s_warning_events(namespace=str(message.namespace))
             )
@@ -88,6 +97,9 @@ class InitialQuestionsAgent:
             and is_non_empty_str(message.resource_kind)
             and is_non_empty_str(message.resource_api_version)
         ):
+            logger.info(
+                f"Fetching all entities of Kind {message.resource_kind} with API version {message.resource_api_version}"
+            )
             yaml_context.append(
                 k8s_client.list_resources(
                     api_version=str(message.resource_api_version),
@@ -113,6 +125,10 @@ class InitialQuestionsAgent:
             and message.resource_kind.lower() != "namespace"
             and is_non_empty_str(message.resource_api_version)
         ) and is_non_empty_str(message.resource_name):
+            logger.info(
+                f"Fetching info and Events for Kind {message.resource_kind} with API version"
+                + f"{message.resource_api_version} and name {message.resource_name} in namespace {message.namespace}"
+            )
             yaml_context.append(
                 k8s_client.get_resource(
                     api_version=str(message.resource_api_version),

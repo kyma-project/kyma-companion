@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from agents.common.data import Message
-from agents.memory.conversation_history import ConversationMessage, QueryType
 from services.conversation import ConversationService
 
 TIME_STAMP = 1.8
@@ -21,7 +20,7 @@ spec:
     ports:
     - containerPort: 80
 """
-TESTMESSAGE = Message(
+TEST_MESSAGE = Message(
     query="test query",
     resource_kind="Pod",
     resource_api_version="v1",
@@ -32,12 +31,6 @@ TESTMESSAGE = Message(
 
 @pytest.mark.asyncio(scope="class")
 class TestConversation:
-
-    @pytest.fixture
-    def mock_time(self):
-        with patch("time.time", return_value=TIME_STAMP):
-            yield
-
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
@@ -76,97 +69,56 @@ class TestConversation:
             yield mock
 
     @pytest.fixture
-    def mock_initial_questions_agent(self):
-        mock_instance = Mock()
-        mock_instance.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
-        mock_instance.generate_questions = Mock(return_value=QUESTIONS)
+    def mock_redis_history(self):
+        mock_history = Mock()
+        mock_history.add_message = Mock(return_value=None)
         with patch(
-            "services.conversation.InitialQuestionsAgent", return_value=mock_instance
+            "services.conversation.RedisChatMessageHistory", return_value=mock_history
         ):
-            yield mock_instance
+            yield mock_history
 
-    @pytest.mark.asyncio
-    async def test_new_conversation(
-        self,
-        mock_time,
-        mock_model_factory,
-        mock_init_pool,
-        mock_redis_saver,
-        mock_kyma_graph,
-        mock_initial_questions_agent,
-    ):
-        # Arrange:
-        expected_conversation_message = ConversationMessage(
-            type=QueryType.INITIAL_QUESTIONS,
-            query="",
-            response="\n".join(QUESTIONS),
-            timestamp=TIME_STAMP,
-        )
-        test_k8s_client = MagicMock()
-
-        # Act:
-        messaging_service = ConversationService()
-        result = await messaging_service.new_conversation(
-            conversation_id=CONVERSATION_ID,
-            message=TESTMESSAGE,
-            k8s_client=test_k8s_client,
-        )
-
-        # Assert:
-        assert result == QUESTIONS
-        mock_redis_saver.return_value.add_conversation_message.assert_called_once_with(
-            CONVERSATION_ID, expected_conversation_message
-        )
-        # Because the InitialQuestionsAgent is a singleton, we cannot guarantee in this test,
-        # that its methods were called only once. Therefore, we need to check the last call.
-        mock_initial_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
-            TESTMESSAGE, test_k8s_client
-        )
-        mock_initial_questions_agent.generate_questions.assert_called_with(
-            context=POD_YAML
-        )
-
-    @pytest.mark.asyncio
-    async def test_generate_initial_questions(
+    def test_new_conversation(
         self,
         mock_model_factory,
-        mock_init_pool,
-        mock_redis_saver,
         mock_kyma_graph,
-        mock_initial_questions_agent,
-    ):
-        # Arrange:
-        k8s_client = MagicMock()
-
-        # Act:
-        messaging_service = ConversationService()
-        result = await messaging_service.generate_initial_questions(
-            CONVERSATION_ID, TESTMESSAGE, k8s_client
+        mock_redis_saver,
+        mock_init_pool,
+        mock_redis_history,
+    ) -> None:
+        # Given:
+        mock_handler = Mock()
+        mock_handler.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
+        mock_handler.generate_questions = Mock(return_value=QUESTIONS)
+        conversation_service = ConversationService(
+            model=Mock(), initial_questions_handler=mock_handler
         )
 
-        # Assert:
+        mock_k8s_client = Mock()
+
+        # When:
+        result = conversation_service.new_conversation(
+            session_id=CONVERSATION_ID, k8s_client=mock_k8s_client, message=TEST_MESSAGE
+        )
+
+        # Then:
         assert result == QUESTIONS
-        # Because the InitialQuestionsAgent is a singleton, we cannot guarantee in this test,
-        # that its methods were called only once. Therefore, we need to check the last call.
-        messaging_service.init_questions_agent.fetch_relevant_data_from_k8s_cluster.assert_called_with(
-            TESTMESSAGE, k8s_client
+        mock_handler.fetch_relevant_data_from_k8s_cluster.assert_called_once_with(
+            message=TEST_MESSAGE, k8s_client=mock_k8s_client
         )
-        messaging_service.init_questions_agent.generate_questions.assert_called_with(
-            context=POD_YAML
-        )
+        mock_handler.generate_questions.assert_called_once_with(context=POD_YAML)
 
     @pytest.mark.asyncio
     async def test_handle_request(
         self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
     ):
-        # Act:
+        # When:
         messaging_service = ConversationService()
 
-        # Assert:
+        # Then:
         result = [
             chunk
             async for chunk in messaging_service.handle_request(
-                CONVERSATION_ID, TESTMESSAGE
+                CONVERSATION_ID, TEST_MESSAGE
             )
         ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]

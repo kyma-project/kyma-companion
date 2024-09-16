@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from agents.common.data import Message
-from agents.initial_questions.inital_questions import InitialQuestionsAgent
+from initial_questions.inital_questions import InitialQuestionsHandler
 
 KEY: str = "key"
 LIST_NOT_RUNNING_PODS: str = "list_not_running_pods"
@@ -16,13 +16,14 @@ MOCK_DICT: dict = {KEY: "value"}
 
 
 @patch(
-    "agents.initial_questions.inital_questions.InitialQuestionsAgent.__init__",
+    "initial_questions.inital_questions.InitialQuestionsHandler.__init__",
     return_value=None,
 )
 def test_generate_questions(mock_init):
     # The purpose of this test to verify that the generate_questions method
     # calls the chain.invoke method with the correct context.
-    # given
+
+    # Given:
     given_context = "This is a sample context with k8s data"
     expected_output = "question1\nquestion2\nquestion3"
 
@@ -32,19 +33,15 @@ def test_generate_questions(mock_init):
                 return expected_output
             raise ValueError("context was not passed correctly")
 
-    given_agent = InitialQuestionsAgent(
-        model=None,
-        prompt_template="",
-        output_parser=None,
-    )
+    given_handler = InitialQuestionsHandler(model=Mock())
 
-    # mock the invoke method.
-    given_agent.chain = MockChain()
+    # Mock the invoke method.
+    given_handler.chain = MockChain()
 
-    # when:
-    result = given_agent.generate_questions(given_context)
+    # When:
+    result = given_handler.generate_questions(given_context)
 
-    # then:
+    # Then:
     assert result == expected_output
 
 
@@ -112,13 +109,13 @@ def mock_k8s_client():
     ],
 )
 def test_fetch_relevant_data_from_k8s_cluster(message, expected_calls, mock_k8s_client):
-    # Arrange:
+    # Given:
     mock_model = Mock()
-    agent = InitialQuestionsAgent(model=mock_model)
+    handler = InitialQuestionsHandler(model=mock_model)
 
-    # Act:
-    result = agent.fetch_relevant_data_from_k8s_cluster(message, mock_k8s_client)
+    # When:
+    result = handler.fetch_relevant_data_from_k8s_cluster(message, mock_k8s_client)
 
-    # Assert:
+    # Then:
     for call in expected_calls:
         assert call in result

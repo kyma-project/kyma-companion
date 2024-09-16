@@ -451,6 +451,23 @@ files = [
 ]
 
 [[package]]
+name = "coloredlogs"
+version = "15.0.1"
+description = "Colored terminal output for Python's logging module"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
+    {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
+]
+
+[package.dependencies]
+humanfriendly = ">=9.1"
+
+[package.extras]
+cron = ["capturer (>=2.4)"]
+
+[[package]]
 name = "dataclasses-json"
 version = "0.6.7"
 description = "Easily serialize dataclasses to and from JSON."
@@ -1147,6 +1164,20 @@ socks = ["socksio (==1.*)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "humanfriendly"
+version = "10.0"
+description = "Human friendly output for text interfaces using Python"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
+    {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
+]
+
+[package.dependencies]
+pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_version >= \"3.8\""}
+
+[[package]]
 name = "idna"
 version = "3.8"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -1478,6 +1509,23 @@ files = [
 langchain-core = ">=0.2.35,<0.3.0"
 openai = ">=1.40.0,<2.0.0"
 tiktoken = ">=0.7,<1"
+
+[[package]]
+name = "langchain-redis"
+version = "0.0.4"
+description = "An integration package connecting Redis and LangChain"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "langchain_redis-0.0.4-py3-none-any.whl", hash = "sha256:0363fee1ce776081ca127d48a9cee6f7d8164c2572f9d14b72f02b522fb32cad"},
+    {file = "langchain_redis-0.0.4.tar.gz", hash = "sha256:791e7b000288e5d796c3afd55881487b86c148276175db28808be2c4dcef4477"},
+]
+
+[package.dependencies]
+langchain-core = ">=0.1.52,<0.3"
+numpy = ">=1,<2"
+python-ulid = ">=2.7.0,<3.0.0"
+redisvl = ">=0.3.3,<0.4.0"
 
 [[package]]
 name = "langchain-text-splitters"
@@ -2444,6 +2492,17 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
+name = "pyreadline3"
+version = "3.4.3"
+description = "A python implementation of GNU readline."
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyreadline3-3.4.3-py3-none-any.whl", hash = "sha256:f832c5898f4f9a0f81d48a8c499b39d0179de1a465ea3def1a7e7231840b4ed6"},
+    {file = "pyreadline3-3.4.3.tar.gz", hash = "sha256:ebab0baca37f50e2faa1dd99a6da1c75de60e0d68a3b229c134bbd12786250e2"},
+]
+
+[[package]]
 name = "pytest"
 version = "8.3.2"
 description = "pytest: simple powerful testing with Python"
@@ -2541,6 +2600,20 @@ files = [
 dev = ["atomicwrites (==1.4.1)", "attrs (==23.2.0)", "coverage (==7.4.1)", "hatch", "invoke (==2.2.0)", "more-itertools (==10.2.0)", "pbr (==6.0.0)", "pluggy (==1.4.0)", "py (==1.11.0)", "pytest (==8.0.0)", "pytest-cov (==4.1.0)", "pytest-timeout (==2.2.0)", "pyyaml (==6.0.1)", "ruff (==0.2.1)"]
 
 [[package]]
+name = "python-ulid"
+version = "2.7.0"
+description = "Universally unique lexicographically sortable identifier"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "python_ulid-2.7.0-py3-none-any.whl", hash = "sha256:c81658e382f69bad8c6d365155c4ae21843ae4226b94f72c12d7adcbb545a251"},
+    {file = "python_ulid-2.7.0.tar.gz", hash = "sha256:18eb595885140851a490a95b0da4447911ff69fa9f434732067b97f6956f9fe9"},
+]
+
+[package.extras]
+pydantic = ["pydantic (>=2.0)"]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 description = "YAML parser and emitter for Python"
@@ -2616,6 +2689,33 @@ files = [
 [package.extras]
 hiredis = ["hiredis (>1.0.0)"]
 ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+
+[[package]]
+name = "redisvl"
+version = "0.3.3"
+description = "Python client library and CLI for using Redis as a vector database"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "redisvl-0.3.3-py3-none-any.whl", hash = "sha256:0ec2c46d0f99dd41ae0761014a8cf299a8b590bd2148b2fda6586312616bf8c6"},
+    {file = "redisvl-0.3.3.tar.gz", hash = "sha256:679712d6c693839d6204b199b62f933d8b3d479434618f9dec7058cf8ca4e229"},
+]
+
+[package.dependencies]
+coloredlogs = "*"
+numpy = "*"
+pydantic = ">=2,<3"
+pyyaml = "*"
+redis = ">=5.0.0"
+tabulate = ">=0.9.0,<1"
+tenacity = ">=8.2.2"
+
+[package.extras]
+cohere = ["cohere (>=4.44)"]
+google-cloud-aiplatform = ["google-cloud-aiplatform (>=1.26)"]
+mistralai = ["mistralai (>=0.2.0)"]
+openai = ["openai (>=1.13.0)"]
+sentence-transformers = ["sentence-transformers (>=2.2.2)"]
 
 [[package]]
 name = "regex"
@@ -2968,6 +3068,20 @@ anyio = ">=3.4.0,<5"
 
 [package.extras]
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
+
+[[package]]
+name = "tabulate"
+version = "0.9.0"
+description = "Pretty-print tabular data"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f"},
+    {file = "tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c"},
+]
+
+[package.extras]
+widechars = ["wcwidth"]
 
 [[package]]
 name = "tenacity"
@@ -3665,4 +3779,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "4cb9b164f4472637d0b92e65e34261def0ad9107eef897e3ecb3758252c8f4c6"
+content-hash = "cc256dc56adb92468c0836a226d6dfb24c8f310bb0cbabf8e4322be73d26a122"
