@@ -19,7 +19,9 @@ def colored_status(status: TestStatus) -> str:
         return colored(status.upper(), "red")
     elif status == TestStatus.COMPLETED:
         return colored(status.upper(), "blue")
-    raise ValueError(f"Unknown status: {status}")
+    elif status == TestStatus.PENDING:
+        return colored(status.upper(), "yellow")
+    return colored(status.upper(), "red")
 
 
 def print_test_results(scenario_list: ScenarioList) -> None:

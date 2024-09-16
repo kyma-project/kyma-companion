@@ -1,5 +1,6 @@
 id: busybox-no-kubectl-binary
 description: The Pod tries to list Pods in the same namespace using kubectl but the image does not contain kubectl.
+user_query: Why is the Pod in error state?
 resource:
   kind: Pod
   api_version: v1

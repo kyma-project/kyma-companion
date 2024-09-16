@@ -1,5 +1,6 @@
 id: kyma-app-apirule-broken
 description: The application uses an APIRule that has two accessStrategies handler, which will lead to an error instead.
+user_query: Why is the APIRule status showing ERROR?
 resource:
   kind: APIRule
   api_version: gateway.kyma-project.io/v1beta1
