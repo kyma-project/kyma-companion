@@ -175,8 +175,7 @@ class KymaGraph:
                 MessagesPlaceholder(variable_name="messages"),
                 ("system", FINALIZER_PROMPT),
             ]
-        ).partial(members=", ".join(self.members))
-
+        ).partial(members=", ".join(self.members), query=state.input.query)
         final_response_chain = prompt | self.model.llm
         state.final_response = final_response_chain.invoke(
             {"messages": state.messages},
