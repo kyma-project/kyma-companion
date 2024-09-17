@@ -3,14 +3,10 @@ import json
 from agents.common.constants import EXIT
 
 
-def prepare_chunk_response(chunk: bytes) -> str:
-    """Prepare a chunk response in ndjson format."""
-
-    # TODO: don't add supervisor and finalizer actions
-    # TODO: convert SubTasks part of planner response to JSON
-
+def prepare_chunk_response(chunk: bytes) -> bytes:
+    """Converts and prepares a final chunk response."""
     data = json.loads(chunk)
-    agent = list(data.keys())[0]
+    agent = next(iter(data.keys()))
 
     if EXIT in data:
         return json.dumps(
@@ -20,7 +16,7 @@ def prepare_chunk_response(chunk: bytes) -> str:
                     "answer": data[EXIT]["final_response"],
                 },
             }
-        )
+        ).encode()
 
     return json.dumps(
         {
@@ -30,4 +26,4 @@ def prepare_chunk_response(chunk: bytes) -> str:
                 "answer": data[agent],
             },
         }
-    )
+    ).encode()
