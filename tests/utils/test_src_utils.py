@@ -5,7 +5,7 @@ import pytest
 from utils import utils
 from utils.utils import create_session_id
 
-UUID4_LENGTH = 36
+UUID4_LENGTH = 32
 UUID4_FORMAT_REGEX = "^[0-9a-f]{32}$"
 
 
