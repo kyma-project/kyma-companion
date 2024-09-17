@@ -139,9 +139,11 @@ class KymaGraph:
                 raise Exception(
                     f"No subtasks are created for the given query and conversation: {filter_messages(state.messages)}"
                 )
+
             return create_node_output(
                 message=AIMessage(
-                    content=f"Task decomposed into subtasks and assigned to agents: {plan.subtasks}",
+                    content=f"Task decomposed into subtasks and assigned to agents: "
+                    f"{json.dumps(plan.subtasks, cls=CustomJSONEncoder)}",
                     name=PLANNER,
                 ),
                 next=CONTINUE,

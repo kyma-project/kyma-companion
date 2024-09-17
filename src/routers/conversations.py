@@ -1,6 +1,5 @@
 import json
 from collections.abc import AsyncGenerator
-from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -17,6 +16,7 @@ from routers.common import (
 from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
+from utils.response import prepare_chunk_response
 from utils.utils import create_session_id
 
 logger = get_logger(__name__)
@@ -99,19 +99,10 @@ async def messages(
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
-    async def error_handling_generator() -> AsyncGenerator[bytes, None]:
-        try:
-            async for chunk in service.handle_request(conversation_id, message):
-                json_chunk = json.dumps({"status": 200, "data": f"{chunk.decode()}"})
-                yield f"{json_chunk}\n".encode()
-        except Exception as e:
-            logger.exception(f"An error occurred: {str(e)}")
-            json_chunk = json.dumps(
-                {"status": HTTPStatus.INTERNAL_SERVER_ERROR, "message": f"Error: {e}"}
-            )
-            yield f"{json_chunk}\n".encode()
-
     return StreamingResponse(
-        error_handling_generator(),
+        (
+            prepare_chunk_response(chunk)
+            async for chunk in service.handle_request(conversation_id, message)
+        ),
         media_type="text/event-stream",
     )

@@ -104,4 +104,4 @@ class ConversationService(metaclass=SingletonMeta):
 
         async for chunk in self._kyma_graph.astream(conversation_id, message):
             logger.debug(f"Sending chunk: {chunk}")
-            yield f"{chunk}".encode()
+            yield chunk.encode()
