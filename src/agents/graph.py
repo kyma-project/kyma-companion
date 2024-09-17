@@ -238,7 +238,7 @@ class KymaGraph:
         workflow.add_conditional_edges(
             PLANNER,
             next_step,
-            {EXIT: EXIT, CONTINUE: SUPERVISOR, FINALIZER: FINALIZER},
+            {EXIT: EXIT, CONTINUE: SUPERVISOR},
         )
         workflow.add_edge(EXIT, END)
 
