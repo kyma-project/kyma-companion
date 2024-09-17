@@ -20,7 +20,7 @@ def create_session_id() -> str:
     Returns:
         str: A new session ID.
     """
-    return str(uuid.uuid4())
+    return str(uuid.uuid4().hex)
 
 
 def is_empty_str(data: str | None) -> bool:
