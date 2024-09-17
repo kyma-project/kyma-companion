@@ -128,7 +128,7 @@ class KymaGraph:
                         next=EXIT,
                     )
             except OutputParserException as ope:
-                logger.debug(f"Problem in parsing the plan: {ope}")
+                logger.debug(f"Problem in parsing the planner response: {ope}")
                 return create_node_output(
                     message=AIMessage(content=plan_response.content, name=PLANNER),
                     final_response=plan_response.content,

@@ -71,17 +71,17 @@ def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, 
 
 def filter_messages(
     messages: Sequence[BaseMessage],
-    last_messages_number: int = RECENT_MESSAGES_LIMIT,
+    recent_message_limit: int = RECENT_MESSAGES_LIMIT,
 ) -> Sequence[BaseMessage]:
     """
     Filter the last n number of messages given last_messages_number.
     Args:
         messages: list of messages
-        last_messages_number:  int: number of last messages to return, default is 10
+        recent_message_limit:  int: number of last messages to return, default is 10
 
     Returns: list of last messages
     """
-    return messages[-last_messages_number:]
+    return messages[-recent_message_limit:]
 
 
 def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
@@ -96,7 +96,7 @@ def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type:
 
 
 def exit_node(state: AgentState) -> dict[str, Any]:
-    """Used in case of an error."""
+    """Used to end the workflow."""
     return {
         NEXT: END,
         ERROR: state.error,
