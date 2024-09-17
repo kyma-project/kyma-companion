@@ -6,9 +6,7 @@ from utils import utils
 from utils.utils import create_session_id
 
 UUID4_LENGTH = 36
-UUID4_FORMAT_REGEX = (
-    "^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"
-)
+UUID4_FORMAT_REGEX = "^[0-9a-f]{32}$"
 
 
 def test_create_session_id():
