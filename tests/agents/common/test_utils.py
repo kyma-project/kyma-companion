@@ -7,7 +7,7 @@ from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState, SubTask, SubTaskStatus
 from agents.common.utils import (
-    DEFAULT_NUMBER_OF_MESSAGES,
+    RECENT_MESSAGES_LIMIT,
     agent_node,
     create_agent,
     filter_messages,
@@ -109,12 +109,8 @@ def mock_state():
             ],
             Exception("Test error"),
             {
-                "messages": [
-                    AIMessage(
-                        content="Error occurred: Test error",
-                        name="agent2",
-                    )
-                ]
+                "error": "Test error",
+                "next": "Exit",
             },
             False,
         ),
@@ -325,5 +321,5 @@ def test_filter_messages(
 def test_filter_messages_default_parameter():
     messages = [HumanMessage(content=str(i)) for i in range(15)]
     result = filter_messages(messages)  # Using default last_messages_number
-    assert len(result) == DEFAULT_NUMBER_OF_MESSAGES
+    assert len(result) == RECENT_MESSAGES_LIMIT
     assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]
