@@ -6,6 +6,7 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
@@ -86,6 +87,18 @@ class KymaGraph:
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self.graph = self._build_graph()
 
+    def _create_planner_chain(self) -> RunnableSequence:
+        planner_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", PLANNER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        ).partial(
+            members=", ".join(self.members),
+            output_format=self.plan_parser.get_format_instructions(),
+        )
+        return planner_prompt | self.model.llm
+
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """
         Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
@@ -102,16 +115,7 @@ class KymaGraph:
         # to prevent stored errors from previous runs
         state.error = None
 
-        planner_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", PLANNER_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        ).partial(
-            members=", ".join(self.members),
-            output_format=self.plan_parser.get_format_instructions(),
-        )
-        planner_chain = planner_prompt | self.model.llm
+        planner_chain = self._create_planner_chain()
         try:
             plan_response = planner_chain.invoke(
                 input={
@@ -129,6 +133,7 @@ class KymaGraph:
                     )
             except OutputParserException as ope:
                 logger.debug(f"Problem in parsing the planner response: {ope}")
+                # sometimes the plan_response is without 'response' attribute
                 return create_node_output(
                     message=AIMessage(content=plan_response.content, name=PLANNER),
                     final_response=plan_response.content,
@@ -137,7 +142,7 @@ class KymaGraph:
 
             if not plan.subtasks:
                 raise Exception(
-                    f"No subtasks are created for the given query and conversation: {filter_messages(state.messages)}"
+                    f"No subtasks are created for the given query: {state.messages[-1].content}"
                 )
 
             return create_node_output(
@@ -153,8 +158,8 @@ class KymaGraph:
             logger.error(f"Error in planning: {e}")
             return create_node_output(next=EXIT, error=str(e))
 
-    def common_node(self, state: AgentState) -> dict[str, Any]:
-        """Common node to handle general queries."""
+    def _common_node_chain(self) -> RunnableSequence:
+        """Common node chain to handle general queries."""
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -163,7 +168,12 @@ class KymaGraph:
                 ("human", "query: {query}"),
             ]
         )
-        chain = prompt | self.model.llm
+        return prompt | self.model.llm
+
+    def common_node(self, state: AgentState) -> dict[str, Any]:
+        """Common node to handle general queries."""
+
+        chain = self._common_node_chain()
 
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
@@ -198,30 +208,41 @@ class KymaGraph:
             ]
         }
 
-    def generate_final_response(self, state: AgentState) -> dict[str, Any]:
-        """Generate the final response."""
-
+    def _final_response_chain(self, state: AgentState) -> RunnableSequence:
         prompt = ChatPromptTemplate.from_messages(
             [
                 MessagesPlaceholder(variable_name="messages"),
                 ("system", FINALIZER_PROMPT),
             ]
         ).partial(members=", ".join(self.members), query=state.input.query)
-        final_response_chain = prompt | self.model.llm
-        final_response = final_response_chain.invoke(
-            {"messages": filter_messages(state.messages)},
-        ).content
+        return prompt | self.model.llm
 
-        return {
-            MESSAGES: [
-                AIMessage(
-                    content=final_response if final_response else "",
-                    name=FINALIZER,
-                )
-            ],
-            NEXT: END,
-            FINAL_RESPONSE: final_response,
-        }
+    def generate_final_response(self, state: AgentState) -> dict[str, Any]:
+        """Generate the final response."""
+
+        final_response_chain = self._final_response_chain(state)
+
+        try:
+            final_response = final_response_chain.invoke(
+                {"messages": filter_messages(state.messages)},
+            ).content
+
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content=final_response if final_response else "",
+                        name=FINALIZER,
+                    )
+                ],
+                NEXT: END,
+                FINAL_RESPONSE: final_response,
+            }
+        except Exception as e:
+            logger.error(f"Error in generating final response: {e}")
+            return {
+                ERROR: str(e),
+                NEXT: EXIT,
+            }
 
     def _build_graph(self) -> CompiledGraph:
         """Create a supervisor agent."""
