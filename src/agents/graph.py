@@ -97,7 +97,7 @@ class KymaGraph:
             members=", ".join(self.members),
             output_format=self.plan_parser.get_format_instructions(),
         )
-        return planner_prompt | self.model.llm
+        return planner_prompt | self.model.llm  # type: ignore
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """
@@ -168,7 +168,7 @@ class KymaGraph:
                 ("human", "query: {query}"),
             ]
         )
-        return prompt | self.model.llm
+        return prompt | self.model.llm  # type: ignore
 
     def common_node(self, state: AgentState) -> dict[str, Any]:
         """Common node to handle general queries."""
@@ -215,7 +215,7 @@ class KymaGraph:
                 ("system", FINALIZER_PROMPT),
             ]
         ).partial(members=", ".join(self.members), query=state.input.query)
-        return prompt | self.model.llm
+        return prompt | self.model.llm  # type: ignore
 
     def generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""

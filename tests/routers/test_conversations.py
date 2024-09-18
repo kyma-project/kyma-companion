@@ -30,9 +30,22 @@ class MockService(IService):
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
-        yield b'{"KymaAgent": {"messages": [{"content": "To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
-        yield b'{"KubernetesAgent": {"messages": [{"content": "To create a kubernetes deployment", "additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
-        yield b'{"Exit": {"next": "__end__", "final_response": "To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}'
+        yield (
+            b'{"KymaAgent": {"messages": [{"content": '
+            b'"To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, '
+            b'"response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, '
+            b'"example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+        )
+        yield (
+            b'{"KubernetesAgent": {"messages": [{"content": "To create a kubernetes deployment", '
+            b'"additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", '
+            b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], '
+            b'"usage_metadata": null}]}}'
+        )
+        yield (
+            b'{"Exit": {"next": "__end__", "final_response": "To create a Kubernetes application '
+            b'and expose it when deployed in the Kyma runtime"}}'
+        )
 
 
 @pytest.fixture(scope="function")
@@ -98,15 +111,17 @@ def test_messages_endpoint(
     content = response.content
 
     assert (
-        b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"messages": [{"content": "To create an API Rule in Kyma to expose a service externally"}]}}}'
+        b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"messages": [{"content": '
+        b'"To create an API Rule in Kyma to expose a service externally"}]}}}'
         in content
     )
     assert (
-        b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"messages": [{"content": "To create a kubernetes deployment"}]}}}'
-        in content
+        b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"messages": [{"content": '
+        b'"To create a kubernetes deployment"}]}}}' in content
     )
     assert (
-        b'{"event": "final_response", "data": {"answer": "To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}'
+        b'{"event": "final_response", "data": {"answer": '
+        b'"To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}'
         in content
     )
 

@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, List
+from typing import Any
 
 from agents.common.constants import EXIT
 from utils.logging import get_logger
@@ -7,12 +7,12 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def extract_message_content(message: Dict[str, Any]) -> Dict[str, str]:
+def extract_message_content(message: dict[str, Any]) -> dict[str, str]:
     """Extract the content field from a message, handling potential missing keys."""
     return {"content": message.get("content", "")}
 
 
-def process_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+def process_messages(messages: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Process a list of messages, extracting only the content field."""
     return [extract_message_content(message) for message in messages]
 
