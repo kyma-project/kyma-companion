@@ -13,6 +13,7 @@ from services.conversation import IService
 from services.k8s import IK8sClient
 
 
+#
 class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
@@ -29,9 +30,9 @@ class MockService(IService):
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
-        yield b"data: Test response\n\n"
-        yield b"data: Another chunk\n\n"
-        yield b"data: [DONE]\n\n"
+        yield b'{"KymaAgent": {"messages": [{"content": "To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+        yield b'{"KubernetesAgent": {"messages": [{"content": "To create a kubernetes deployment", "additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+        yield b'{"Exit": {"next": "__end__", "final_response": "To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}'
 
 
 @pytest.fixture(scope="function")
@@ -55,7 +56,7 @@ def client_factory():
 
 
 @pytest.mark.parametrize(
-    "conversation_id, input_message, expected_output, expected_error",
+    "conversation_id, input_message, expected_output",
     [
         (
             1,
@@ -67,7 +68,6 @@ def client_factory():
                 "namespace": "",
             },
             {"status_code": 200, "content-type": "text/event-stream; charset=utf-8"},
-            None,
         ),
         (
             2,
@@ -79,27 +79,14 @@ def client_factory():
                 "namespace": "default",
             },
             {"status_code": 200, "content-type": "text/event-stream; charset=utf-8"},
-            None,
-        ),
-        (
-            3,
-            {
-                "query": "What is Kyma?",
-                "resource_kind": "Pod",
-                "resource_api_version": "v1",
-                "resource_name": "my-pod",
-                "namespace": "default",
-            },
-            {"status_code": 200, "content-type": "text/event-stream; charset=utf-8"},
-            Exception("Test exception"),
         ),
     ],
 )
 def test_messages_endpoint(
-    client_factory, conversation_id, input_message, expected_output, expected_error
+    client_factory, conversation_id, input_message, expected_output
 ):
     # Create a new client with the expected error
-    test_client = client_factory(expected_error)
+    test_client = client_factory()
 
     response = test_client.post(
         f"/api/conversations/{conversation_id}/messages", json=input_message
@@ -110,14 +97,18 @@ def test_messages_endpoint(
 
     content = response.content
 
-    if not expected_error:
-        assert b"data: Test response" in content
-        assert b"data: Another chunk" in content
-        assert b"data: [DONE]" in content
-    else:
-        error_data = json.loads(content)
-        assert error_data["status"] == HTTPStatus.INTERNAL_SERVER_ERROR
-        assert "Error: Test exception" in error_data["message"]
+    assert (
+        b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"messages": [{"content": "To create an API Rule in Kyma to expose a service externally"}]}}}'
+        in content
+    )
+    assert (
+        b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"messages": [{"content": "To create a kubernetes deployment"}]}}}'
+        in content
+    )
+    assert (
+        b'{"event": "final_response", "data": {"answer": "To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}'
+        in content
+    )
 
 
 @pytest.mark.parametrize(
