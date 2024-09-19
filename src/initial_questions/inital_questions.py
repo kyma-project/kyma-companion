@@ -68,7 +68,7 @@ class InitialQuestionsHandler:
         # and all K8s events with warning type.
         if (
             is_empty_str(message.namespace)
-            and message.resource_kind.lower() == "cluster"
+            and str(message.resource_kind).lower() == "cluster"
         ):
             logger.info(
                 "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
@@ -84,7 +84,7 @@ class InitialQuestionsHandler:
         # by fetching all K8s events with warning type.
         elif (
             is_non_empty_str(message.namespace)
-            and message.resource_kind.lower() == "namespace"
+            and str(message.resource_kind).lower() == "namespace"
         ):
             logger.info("Fetching all K8s Events with warning type")
             context = yaml.dump_all(
@@ -92,64 +92,32 @@ class InitialQuestionsHandler:
             )
 
         # If the namespace is not provided, but the resource Kind is
-        # get a detailed view of the cluster for the specified Kind
-        # by fetching all resources of the specified kind,
-        elif (
-            is_empty_str(message.namespace)
-            and is_non_empty_str(message.resource_kind)
-            and is_non_empty_str(message.resource_api_version)
+        # describe that resource.
+        # If the namespace is empty, query not-namespaced resources.
+        # Finally, get all events related to given resource.
+        elif is_non_empty_str(message.resource_kind) and is_non_empty_str(
+            message.resource_api_version
         ):
             logger.info(
                 f"Fetching all entities of Kind {message.resource_kind} with API version {message.resource_api_version}"
             )
-            resources = yaml.dump_all(
+            resources = yaml.dump(
                 k8s_client.describe_resource(
                     api_version=str(message.resource_api_version),
                     kind=str(message.resource_kind),
                     name=str(message.resource_name),
-                    namespace="",
+                    namespace=message.namespace if message.namespace else "",
                 )
             )
             events = yaml.dump_all(
                 k8s_client.list_k8s_events_for_resource(
                     kind=str(message.resource_kind),
                     name=str(message.resource_name),
-                    namespace="",
+                    namespace=message.namespace if message.namespace else "",
                 )
             )
 
             context = f"{resources}\n{events}"
-
-        # If the namespace is provided, and the resource Kind is not 'namespace'
-        # get a detailed view of the namespace for the specified Kind
-        # by fetching the specified resource,
-        # and all K8s events for the specified resource.
-        elif (
-            is_non_empty_str(message.namespace)
-            and is_non_empty_str(message.resource_kind)
-            and message.resource_kind.lower() != "namespace"
-            and is_non_empty_str(message.resource_api_version)
-        ) and is_non_empty_str(message.resource_name):
-            logger.info(
-                f"Fetching info and Events for Kind {message.resource_kind} with API version"
-                + f"{message.resource_api_version} and name {message.resource_name} in namespace {message.namespace}"
-            )
-            resource = yaml.dump(
-                k8s_client.describe_resource(
-                    api_version=str(message.resource_api_version),
-                    kind=str(message.resource_kind),
-                    name=str(message.resource_name),
-                    namespace=str(message.namespace),
-                )
-            )
-            events = yaml.dump_all(
-                k8s_client.list_k8s_events_for_resource(
-                    kind=str(message.resource_kind),
-                    name=str(message.resource_name),
-                    namespace=str(message.namespace),
-                )
-            )
-            context = f"{resource}\n{events}"
 
         else:
             raise Exception("Invalid message provided.")
