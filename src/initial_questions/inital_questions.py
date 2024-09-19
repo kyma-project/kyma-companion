@@ -89,9 +89,10 @@ class InitialQuestionsHandler:
                 f"Fetching all entities of Kind {message.resource_kind} with API version {message.resource_api_version}"
             )
             resources = yaml.dump_all(
-                k8s_client.list_resources(
+                k8s_client.describe_resource(
                     api_version=str(message.resource_api_version),
                     kind=str(message.resource_kind),
+                    name=str(message.resource_name),
                     namespace="",
                 )
             )
@@ -120,7 +121,7 @@ class InitialQuestionsHandler:
                 + f"{message.resource_api_version} and name {message.resource_name} in namespace {message.namespace}"
             )
             resource = yaml.dump(
-                k8s_client.get_resource(
+                k8s_client.describe_resource(
                     api_version=str(message.resource_api_version),
                     kind=str(message.resource_kind),
                     name=str(message.resource_name),
