@@ -66,12 +66,10 @@ class InitialQuestionsHandler:
         # Query the Kubernetes API to get the context.
         context = ""
 
-        # If the namespace is not provided, and the resource Kind is 'cluster'
-        # get an overview of the cluster
-        # by fetching all not running pods,
-        # all K8s Nodes metrics,
-        # and all K8s events with warning type.
         if is_empty_str(namespace) and kind.lower() == "cluster":
+            # Get an overview of the cluster
+            # by fetching all not running pods, all K8s Nodes metrics,
+            # and all K8s events with warning type.
             logger.info(
                 "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
             )
@@ -83,20 +81,17 @@ class InitialQuestionsHandler:
 
             context = f"{pods}\n{metrics}\n{events}"
 
-        # If the namespace is provided, and the resource Kind is 'namespace'
-        # get an overview of the namespace
-        # by fetching all K8s events with warning type.
         elif is_non_empty_str(namespace) and kind.lower() == "namespace":
+            # Get an overview of the namespace
+            # by fetching all K8s events with warning type.
             logger.info("Fetching all K8s Events with warning type")
             context = yaml.dump_all(
                 k8s_client.list_k8s_warning_events(namespace=namespace)
             )
 
-        # If the namespace is not provided, but the resource Kind is
-        # describe that resource.
-        # If the namespace is empty, query not-namespaced resources.
-        # Finally, get all events related to given resource.
         elif is_non_empty_str(kind) and is_non_empty_str(api_version):
+            # Describe a specific resource. Not-namespaced resources need the namespace
+            # field to be empty. Finally, get all events related to given resource.
             logger.info(
                 f"Fetching all entities of Kind {kind} with API version {api_version}"
             )
