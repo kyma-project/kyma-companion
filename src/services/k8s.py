@@ -15,7 +15,9 @@ class IK8sClient(Protocol):
         """Execute a GET request to the Kubernetes API."""
         ...
 
-    def list_resources(self, api_version: str, kind: str, namespace: str, sanitize: bool = True) -> list:
+    def list_resources(
+        self, api_version: str, kind: str, namespace: str, sanitize: bool = True
+    ) -> list:
         """List resources of a specific kind in a namespace."""
         ...
 
@@ -57,7 +59,9 @@ class IK8sClient(Protocol):
         """List all Kubernetes warning events."""
         ...
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+    def list_k8s_events_for_resource(
+        self, kind: str, name: str, namespace: str
+    ) -> list:
         """List all Kubernetes events for a specific resource."""
         ...
 
@@ -71,7 +75,9 @@ class K8sClient:
     ca_temp_filename: str = ""
     dynamic_client: dynamic.DynamicClient = None
 
-    def __init__(self, api_server: str, user_token: str, certificate_authority_data: str):
+    def __init__(
+        self, api_server: str, user_token: str, certificate_authority_data: str
+    ):
         """Initialize the K8sClient object."""
         self.api_server = api_server
         self.user_token = user_token
@@ -127,10 +133,14 @@ class K8sClient:
 
         return response.json()  # type: ignore
 
-    def list_resources(self, api_version: str, kind: str, namespace: str, sanitize: bool = True) -> list:
+    def list_resources(
+        self, api_version: str, kind: str, namespace: str, sanitize: bool = True
+    ) -> list:
         """List resources of a specific kind in a namespace.
         Provide empty string for namespace to list resources in all namespaces."""
-        result = self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(namespace=namespace)
+        result = self.dynamic_client.resources.get(
+            api_version=api_version, kind=kind
+        ).get(namespace=namespace)
 
         # convert objects to dictionaries.
         items = [item.to_dict() for item in result.items]
@@ -182,11 +192,17 @@ class K8sClient:
     def list_not_running_pods(self, namespace: str) -> list:
         """List all pods that are not in the Running phase.
         Provide empty string for namespace to list all pods."""
-        all_pods = self.list_resources(api_version="v1", kind="Pod", namespace=namespace)
+        all_pods = self.list_resources(
+            api_version="v1", kind="Pod", namespace=namespace
+        )
         # filter pods by status and convert object to dictionary.
         items = []
         for pod in all_pods:
-            if "status" not in pod or "phase" not in pod["status"] or pod["status"]["phase"] != "Running":
+            if (
+                "status" not in pod
+                or "phase" not in pod["status"]
+                or pod["status"]["phase"] != "Running"
+            ):
                 items.append(pod)
         return items
 
@@ -198,21 +214,32 @@ class K8sClient:
     def list_k8s_events(self, namespace: str) -> list:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
 
-        result = self.dynamic_client.resources.get(api_version="v1", kind="Event").get(namespace=namespace)
+        result = self.dynamic_client.resources.get(api_version="v1", kind="Event").get(
+            namespace=namespace
+        )
 
         # convert objects to dictionaries and return.
         return [event.to_dict() for event in result.items]
 
     def list_k8s_warning_events(self, namespace: str) -> list:
         """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
-        return [event for event in self.list_k8s_events(namespace) if event["type"] == "Warning"]
+        return [
+            event
+            for event in self.list_k8s_events(namespace)
+            if event["type"] == "Warning"
+        ]
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list:
+    def list_k8s_events_for_resource(
+        self, kind: str, name: str, namespace: str
+    ) -> list:
         """List all Kubernetes events for a specific resource. Provide empty string for namespace to list all events."""
         events = self.list_k8s_events(namespace)
         result = []
         for event in events:
-            if event["involvedObject"]["kind"] == kind and event["involvedObject"]["name"] == name:
+            if (
+                event["involvedObject"]["kind"] == kind
+                and event["involvedObject"]["name"] == name
+            ):
                 result.append(event)
 
         return result
