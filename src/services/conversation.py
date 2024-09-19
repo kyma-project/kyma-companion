@@ -54,15 +54,11 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
     ) -> None:
         # Set up the Model, which contains the llm.
-        self._model = (
-            model if model is not None else ModelFactory().create_model(LLM.GPT4O_MODEL)
-        )
+        self._model = model or ModelFactory().create_model(LLM.GPT4O_MODEL)
 
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
-            initial_questions_handler
-            if initial_questions_handler is not None
-            else InitialQuestionsHandler(model=self._model)
+            initial_questions_handler or InitialQuestionsHandler(model=self._model)
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
