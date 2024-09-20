@@ -5,13 +5,14 @@ import pytest
 from agents.common.data import Message
 from initial_questions.inital_questions import InitialQuestionsHandler
 
-KEY: str = "key"
-LIST_NOT_RUNNING_PODS: str = "list_not_running_pods"
-LIST_NODES_METRICS: str = "list_nodes_metrics"
-LIST_K8S_WARNING_EVENTS: str = "list_k8s_warning_events"
-LIST_RESOURCES: str = "list_resources"
-LIST_K8S_EVENTS_FOR_RESOURCE: str = "list_k8s_events_for_resource"
-GET_RESOURCE: str = "get_resource"
+KEY = "key"
+LIST_NOT_RUNNING_PODS = "list_not_running_pods"
+LIST_NODES_METRICS = "list_nodes_metrics"
+LIST_K8S_WARNING_EVENTS = "list_k8s_warning_events"
+LIST_RESOURCES = "list_resources"
+LIST_K8S_EVENTS_FOR_RESOURCE = "list_k8s_events_for_resource"
+GET_RESOURCE = "get_resource"
+DESCRIBE_RESOURCE = "describe_resource"
 MOCK_DICT: dict = {KEY: "value"}
 
 
@@ -60,6 +61,7 @@ def mock_k8s_client():
         MOCK_DICT,
     ]
     mock.get_resource.return_value = {KEY: GET_RESOURCE}
+    mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE}
     return mock
 
 
@@ -94,7 +96,7 @@ def mock_k8s_client():
                 resource_name="test-name",
                 resource_api_version="v1",
             ),
-            [LIST_RESOURCES, LIST_K8S_EVENTS_FOR_RESOURCE],
+            [DESCRIBE_RESOURCE, LIST_K8S_EVENTS_FOR_RESOURCE],
         ),
         (
             Message(
@@ -104,7 +106,7 @@ def mock_k8s_client():
                 resource_name="test-name",
                 resource_api_version="test-api-version",
             ),
-            [GET_RESOURCE, LIST_K8S_EVENTS_FOR_RESOURCE],
+            [DESCRIBE_RESOURCE, LIST_K8S_EVENTS_FOR_RESOURCE],
         ),
     ],
 )
