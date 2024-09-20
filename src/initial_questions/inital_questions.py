@@ -1,6 +1,7 @@
 import typing
 from typing import Protocol
 
+import tiktoken
 import yaml
 from langchain_core.prompts import PromptTemplate
 
@@ -28,23 +29,43 @@ class IInitialQuestionsHandler(Protocol):
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
         ...
 
+    def apply_token_limit(self, text: str, token_limit: int) -> str:
+        """Reduces the amount of tokens of a string by truncating exeeding tokens.
+        Takes the template into account."""
+        ...
+
 
 class InitialQuestionsHandler:
     """Handler that generates initial questions."""
 
     chain: typing.Any
+    _model: IModel
+    _template: str
 
-    def __init__(
-        self,
-        model: IModel,
-    ) -> None:
-        prompt_template: str = INITIAL_QUESTIONS_PROMPT
+    def __init__(self, model: IModel, template: str | None = None) -> None:
+        self._model = model
+        self._template = template or INITIAL_QUESTIONS_PROMPT
+
         prompt = PromptTemplate(
-            template=prompt_template,
+            template=self._template,
             input_variables=["context"],
         )
         output_parser = QuestionOutputParser()
         self.chain = prompt | model.llm | output_parser
+
+    def apply_token_limit(self, text: str, token_limit: int) -> str:
+        """Reduces the amount of tokens of a string by truncating exeeding tokens.
+        Takes the template into account."""
+        tokenizer = tiktoken.encoding_for_model(self._model.name)
+
+        tokens_template = tokenizer.encode(self._template)
+        tokens_text = tokenizer.encode(text)
+        token_limit -= len(tokens_template)
+
+        if len(tokens_text) > token_limit:
+            tokens_text = tokens_text[:token_limit]
+
+        return tokenizer.decode(tokens_text)
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
