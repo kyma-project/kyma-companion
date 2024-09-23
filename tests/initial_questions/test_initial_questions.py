@@ -9,7 +9,7 @@ from initial_questions.inital_questions import InitialQuestionsHandler
 KEY = "key"
 LIST_NOT_RUNNING_PODS = "list_not_running_pods"
 LIST_NODES_METRICS = "list_nodes_metrics"
-LIST_K8S_WARNING_EVENTS = "list_k8s_warning_eventlist_resourcess"
+LIST_K8S_WARNING_EVENTS = "list_k8s_warning_events"
 LIST_RESOURCES = "list_resources"
 LIST_K8S_EVENTS_FOR_RESOURCE = "list_k8s_events_for_resource"
 GET_RESOURCE = "get_resource"
