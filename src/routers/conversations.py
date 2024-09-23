@@ -5,6 +5,11 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.data import Message
+from agents.graph import KymaGraph
+from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
+from initial_questions.inital_questions import (
+    InitialQuestionsHandler,
+)
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -14,7 +19,9 @@ from routers.common import (
 from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
+from utils.models import LLM, ModelFactory
 from utils.response import prepare_chunk_response
+from utils.settings import REDIS_URL
 from utils.utils import create_session_id
 
 logger = get_logger(__name__)
@@ -22,7 +29,15 @@ logger = get_logger(__name__)
 
 def get_conversation_service() -> IService:
     """Dependency to get the conversation service instance"""
-    return ConversationService()
+    model = ModelFactory().create_model(LLM.GPT4O_MODEL)
+    return ConversationService(
+        redis_url=REDIS_URL,
+        initial_questions_handler=InitialQuestionsHandler(model=model),
+        kyma_graph=KymaGraph(
+            model=model,
+            memory=RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL)),
+        ),
+    )
 
 
 router = APIRouter(
