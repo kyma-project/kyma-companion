@@ -21,6 +21,7 @@ logger = get_logger(__name__)
 
 TOKEN_LIMIT = 14_000
 
+
 class IService(Protocol):
     """Service interface"""
 
