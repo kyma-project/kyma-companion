@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, Literal, Protocol  # noqa UP
 
+from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -78,6 +79,7 @@ class SupervisorAgent:
                 return {
                     "next": route_result.next,
                     "subtasks": state.subtasks,
+                    "messages": [AIMessage(content=result.content, name=self.name)],
                 }
             except Exception as e:
                 logger.exception("Error occurred in Supervisor agent.")
