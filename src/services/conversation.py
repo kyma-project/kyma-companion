@@ -1,4 +1,3 @@
-import os
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
@@ -15,11 +14,10 @@ from initial_questions.inital_questions import (
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import LLM, IModel, ModelFactory
+from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
-
-REDIS_URL = f"{os.getenv('REDIS_URL')}/0"
 
 
 class IService(Protocol):
@@ -102,4 +100,4 @@ class ConversationService(metaclass=SingletonMeta):
 
         async for chunk in self._kyma_graph.astream(conversation_id, message):
             logger.debug(f"Sending chunk: {chunk}")
-            yield f"{chunk}".encode()
+            yield chunk.encode()

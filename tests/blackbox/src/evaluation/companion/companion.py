@@ -87,41 +87,30 @@ class CompanionClient:
         return answer
 
     def __extract_final_response(self, response) -> str:
-        """read the stream response and extract the final response from it. Timeout is in seconds."""
+        """Read the stream response and extract the final response from it."""
         start_time = time.time()
-        # extract the final response from the response.
         for chunk in response.iter_lines():
-            # check for timeout.
+            # Check for timeout
             if time.time() - start_time > self.config.streaming_response_timeout:
-                raise Exception("timeout while waiting for the final response")
+                raise Exception("Timeout while waiting for the final response")
 
             # sometimes it can return multiple chunks in the response.
             # so we need to extract the last chunk.
             lines = chunk.splitlines()
-            obj = json.loads(lines[-1])
+            try:
+                obj = json.loads(lines[-1])
+            except json.JSONDecodeError as e:
+                raise Exception(f"returned chunk is not valid json: {chunk}") from e
 
-            # if the status is not OK, raise an exception.
-            if "status" not in obj:
-                raise Exception(f"status key not found in the response: {obj}")
-            if obj["status"] != HTTPStatus.OK:
-                raise Exception(f"companion response status: {obj}")
+            if "event" not in obj:
+                raise Exception(f"'event' key not found in the response: {obj}")
 
-            # if the data key is not found, continue.
-            if "data" not in obj:
-                continue
+            if obj["event"] == "unknown":
+                raise Exception(f"Unknown event in the chunk response: {obj}")
 
-            # if the data is a string, convert it to a json object.
-            data = obj["data"]
-            if isinstance(obj["data"], str):
-                data = json.loads(obj["data"])
+            if obj["event"] == "final_response":
+                if "error" in obj["data"] and obj["data"]["error"]:
+                    raise Exception(f"Error in final response: {obj['data']['error']}")
+                return obj["data"]["answer"]["content"]
 
-            # if the finalizer key is found, return the final answer.
-            if "Finalizer" in data:
-                messages = data["Finalizer"]["messages"]
-                if len(messages) == 0:
-                    raise Exception("no final answer found by the companion")
-                return messages[-1]["content"]
-
-            # if the Exit key is found, raise an exception.
-            if "Exit" in obj["data"]:
-                raise Exception("kyma companion went into error node")
+        raise Exception("No final response found in the stream")
