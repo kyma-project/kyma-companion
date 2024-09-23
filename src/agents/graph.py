@@ -133,7 +133,8 @@ class KymaGraph:
                     )
             except OutputParserException as ope:
                 logger.debug(f"Problem in parsing the planner response: {ope}")
-                # sometimes the plan_response is without 'response' attribute
+                # If 'response' field of the content of plan_response is missing due to LLM inconsistency,
+                # the response is read from the plan_response content.
                 return create_node_output(
                     message=AIMessage(content=plan_response.content, name=PLANNER),
                     final_response=plan_response.content,
