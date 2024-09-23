@@ -13,6 +13,7 @@ class LLM(str, Enum):
     """Enum for LLM model names."""
 
     GPT4O_MODEL = "gpt-4o"
+    GPT4O_MINI_MODEL = "gpt-4o-mini"
     GPT35_MODEL = "gpt-3.5"
     GEMINI_10_PRO = "gemini-1.0-pro"
 
