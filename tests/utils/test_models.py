@@ -10,8 +10,8 @@ from utils.models import LLM, GeminiModel, ModelFactory, OpenAIModel, get_model_
 def mock_config():
     return Config(
         models=[
-            ModelConfig(name=LLM.GPT4O_MODEL, deployment_id="dep1", temperature=0),
-            ModelConfig(name=LLM.GPT35_MODEL, deployment_id="dep2", temperature=0),
+            ModelConfig(name=LLM.GPT4O, deployment_id="dep1", temperature=0),
+            ModelConfig(name=LLM.GPT35, deployment_id="dep2", temperature=0),
             ModelConfig(name=LLM.GEMINI_10_PRO, deployment_id="dep3", temperature=0),
         ]
     )
@@ -34,8 +34,8 @@ def mock_get_config(mock_config):
 @pytest.mark.parametrize(
     "model_name, expected_deployment_id",
     [
-        (LLM.GPT4O_MODEL, "dep1"),
-        (LLM.GPT35_MODEL, "dep2"),
+        (LLM.GPT4O, "dep1"),
+        (LLM.GPT35, "dep2"),
         (LLM.GEMINI_10_PRO, "dep3"),
         ("non_existent_model", None),
     ],
@@ -73,7 +73,6 @@ class TestGeminiModel:
 
 
 class TestModelFactory:
-
     @pytest.fixture
     def mock_generative_model(self):
         with patch("utils.models.GenerativeModel") as mock_generative_model:
@@ -86,8 +85,8 @@ class TestModelFactory:
     @pytest.mark.parametrize(
         "model_name, expected_result",
         [
-            (LLM.GPT4O_MODEL, OpenAIModel),
-            (LLM.GPT35_MODEL, OpenAIModel),
+            (LLM.GPT4O, OpenAIModel),
+            (LLM.GPT35, OpenAIModel),
             (LLM.GEMINI_10_PRO, GeminiModel),
             ("non_existent_model", ValueError),
         ],
@@ -114,7 +113,7 @@ class TestModelFactory:
     @pytest.mark.parametrize(
         "model_name, expected_model",
         [
-            (LLM.GPT4O_MODEL, OpenAIModel),
+            (LLM.GPT4O, OpenAIModel),
             (LLM.GEMINI_10_PRO, GeminiModel),
             ("non_existent_model", type(None)),
         ],

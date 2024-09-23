@@ -52,7 +52,7 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
     ) -> None:
         # Set up the Model, which contains the llm.
-        self._model = model or ModelFactory().create_model(LLM.GPT4O_MODEL)
+        self._model = model or ModelFactory().create_model(LLM.GPT4O_MINI)
 
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (

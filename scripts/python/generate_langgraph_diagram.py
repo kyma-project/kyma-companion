@@ -36,7 +36,7 @@ if not os.getenv("MODELS_CONFIG_FILE_PATH"):
 supervisor_agent: SupervisorAgent
 model_factory = ModelFactory()
 
-model = model_factory.create_model(LLM.GPT4O_MODEL)
+model = model_factory.create_model(LLM.GPT4O)
 memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
 graph = KymaGraph(model, memory)
 
