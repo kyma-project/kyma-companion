@@ -1,0 +1,8 @@
+{
+    "name": "Python: Tests",
+    "type": "python",
+    "request": "test",
+    "purpose": ["debug-test"],
+    "justMyCode": false
+  }
+  

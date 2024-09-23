@@ -38,6 +38,7 @@ langchain-redis = "^0.0.4"
 langchain-aws = "^0.1.17"
 langchain-google-vertexai = "^1.0.10"
 tiktoken = "^0.7.0"
+python-decouple = "^3.8"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"

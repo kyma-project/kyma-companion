@@ -2,7 +2,7 @@ SUPERVISOR_ROLE_PROMPT = """
 You are a supervisor managing a conversation between the agents: {members}.
 Your task is to oversee the conversation to achieve the goal, checking subtasks 
 and their statuses to decide the next action or finalization.
-You must follow the output format: 
+Exclude your thinking from the output and you must strictly follow the following output format: 
 {output_format}
 """
 

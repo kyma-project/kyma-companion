@@ -1,4 +1,3 @@
-import os
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
@@ -15,6 +14,7 @@ from initial_questions.inital_questions import (
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import LLM, IModel, ModelFactory
+from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -56,7 +56,7 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
     ) -> None:
         # Set up the Model, which contains the llm.
-        self._model = model or ModelFactory().create_model(LLM.GPT4O_MODEL)
+        self._model = model or ModelFactory().create_model(LLM.GPT4O_MINI)
 
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
@@ -109,4 +109,4 @@ class ConversationService(metaclass=SingletonMeta):
 
         async for chunk in self._kyma_graph.astream(conversation_id, message):
             logger.debug(f"Sending chunk: {chunk}")
-            yield f"{chunk}".encode()
+            yield chunk.encode()
