@@ -35,15 +35,15 @@ class IInitialQuestionsHandler(Protocol):
         ...
 
 
-class ITokenizer(Protocol):
-    """Encodes and decodes strings"""
+class IEncoding(Protocol):
+    """Encodes strings to tokens and decodes tokens to strings"""
 
     def encode(self, text: str) -> list[int]:
-        """Encodes a string into tokens."""
+        """Encodes strings to tokens;"""
         ...
 
-    def decode(self, tokens: list[int], errors: str = "replace") -> str:
-        """Decodes a list of tokens into a string."""
+    def decode(self, tokens: list[int]) -> str:
+        """Decodes tokens to strings."""
         ...
 
 
@@ -53,13 +53,13 @@ class InitialQuestionsHandler:
     _chain: typing.Any
     _model: IModel
     _template: str
-    _tokenizer = ITokenizer
+    _tokenizer: IEncoding
 
     def __init__(
         self,
         model: IModel,
         template: str | None = None,
-        tokenizer: ITokenizer | None = None,
+        tokenizer: IEncoding | None = None,
     ) -> None:
         self._model = model
         self._template = template or INITIAL_QUESTIONS_PROMPT
