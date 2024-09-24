@@ -2,9 +2,11 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import (
+from typing import (  # noqa UP035
     Any,
     Protocol,
+    Sequence,
+    Tuple,
 )
 
 import redis
@@ -200,7 +202,7 @@ class RedisSaver(BaseCheckpointSaver):
     async def aput_writes(
         self,
         config: RunnableConfig,
-        writes: list[tuple[str, Any]],
+        writes: Sequence[Tuple[str, Any]],  # noqa UP006
         task_id: str,
     ) -> None:
         """Put writes asynchronously."""

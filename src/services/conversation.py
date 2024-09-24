@@ -45,22 +45,23 @@ class ConversationService(metaclass=SingletonMeta):
     """
 
     _model: IModel
+    _model_mini: IModel
     _init_questions_handler: IInitialQuestionsHandler
     _kyma_graph: IGraph
 
     def __init__(
         self,
-        model: IModel | None = None,
         initial_questions_handler: IInitialQuestionsHandler | None = None,
     ) -> None:
         # Set up the Model, which contains the llm.
-        self._model = model or ModelFactory().create_model(LLM.GPT4O_MINI)
+        self._model_mini = ModelFactory().create_model(LLM.GPT4O_MINI)
 
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
-            initial_questions_handler or InitialQuestionsHandler(model=self._model)
+            initial_questions_handler or InitialQuestionsHandler(model=self._model_mini)
         )
 
+        self._model = ModelFactory().create_model(LLM.GPT4O)
         # Set up the Kyma Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         self._kyma_graph = KymaGraph(model=self._model, memory=redis_saver)

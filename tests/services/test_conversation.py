@@ -90,7 +90,7 @@ class TestConversation:
         mock_handler.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
         conversation_service = ConversationService(
-            model=Mock(), initial_questions_handler=mock_handler
+            initial_questions_handler=mock_handler
         )
 
         mock_k8s_client = Mock()
