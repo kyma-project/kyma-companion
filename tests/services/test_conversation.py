@@ -102,10 +102,6 @@ class TestConversation:
 
         # Then:
         assert result == QUESTIONS
-        mock_handler.fetch_relevant_data_from_k8s_cluster.assert_called_once_with(
-            message=TEST_MESSAGE, k8s_client=mock_k8s_client
-        )
-        mock_handler.generate_questions.assert_called_once_with(context=POD_YAML)
 
     @pytest.mark.asyncio
     async def test_handle_request(

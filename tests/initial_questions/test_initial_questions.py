@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+import tiktoken
 
 from agents.common.data import Message
 from initial_questions.inital_questions import InitialQuestionsHandler
@@ -14,6 +15,34 @@ LIST_K8S_EVENTS_FOR_RESOURCE = "list_k8s_events_for_resource"
 GET_RESOURCE = "get_resource"
 DESCRIBE_RESOURCE = "describe_resource"
 MOCK_DICT: dict = {KEY: "value"}
+
+
+def test_apply_token_limit():
+    # Given:
+    given_model_name = "gpt-4o-mini"
+
+    tokenizer = tiktoken.encoding_for_model(given_model_name)
+
+    given_template = "Test Template."
+    given_template_token_count = len(tokenizer.encode(given_template))
+    given_limit = 90
+    wanted_token_count = given_limit - given_template_token_count
+
+    given_context = "Test. " * 15_000
+
+    mock_model = Mock()
+    mock_model.name.return_value = given_model_name
+    given_handler = InitialQuestionsHandler(
+        model=mock_model, template=given_template, tokenizer=tokenizer
+    )
+
+    # When:
+    result = given_handler.apply_token_limit(
+        text=given_context, token_limit=given_limit
+    )
+
+    # Then:
+    assert len(tokenizer.encode(result)) == wanted_token_count
 
 
 @patch(
@@ -37,8 +66,7 @@ def test_generate_questions(mock_init):
     given_handler = InitialQuestionsHandler(model=Mock())
 
     # Mock the invoke method.
-    given_handler.chain = MockChain()
-
+    given_handler._chain = MockChain()
     # When:
     result = given_handler.generate_questions(given_context)
 

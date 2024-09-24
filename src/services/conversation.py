@@ -19,6 +19,8 @@ from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
 
+TOKEN_LIMIT = 16_000
+
 
 class IService(Protocol):
     """Service interface"""
@@ -76,6 +78,11 @@ class ConversationService(metaclass=SingletonMeta):
         # Fetch the context for our questions from the Kubernetes cluster.
         k8s_context = self._init_questions_handler.fetch_relevant_data_from_k8s_cluster(
             message=message, k8s_client=k8s_client
+        )
+
+        # Reduce the amount of tokens according to the limits.
+        k8s_context = self._init_questions_handler.apply_token_limit(
+            k8s_context, TOKEN_LIMIT
         )
 
         # Pass the context to the initial question handler to generate the questions.
