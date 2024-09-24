@@ -21,11 +21,10 @@ def test_apply_token_limit():
     # Given:
     given_model_name = "gpt-4o-mini"
 
-    def get_tokens_count(text: str) -> int:
-        return len(tiktoken.encoding_for_model(given_model_name).encode(text))
+    tokenizer = tiktoken.encoding_for_model(given_model_name)
 
     given_template = "Test Template."
-    given_template_token_count = get_tokens_count(given_template)
+    given_template_token_count = len(tokenizer.encode(given_template))
     given_limit = 90
     wanted_token_count = given_limit - given_template_token_count
 
@@ -33,7 +32,9 @@ def test_apply_token_limit():
 
     mock_model = Mock()
     mock_model.name.return_value = given_model_name
-    given_handler = InitialQuestionsHandler(model=mock_model, template=given_template)
+    given_handler = InitialQuestionsHandler(
+        model=mock_model, template=given_template, tokenizer=tokenizer
+    )
 
     # When:
     result = given_handler.apply_token_limit(
@@ -41,7 +42,7 @@ def test_apply_token_limit():
     )
 
     # Then:
-    assert get_tokens_count(result) == wanted_token_count
+    assert len(tokenizer.encode(result)) == wanted_token_count
 
 
 @patch(
@@ -65,7 +66,7 @@ def test_generate_questions(mock_init):
     given_handler = InitialQuestionsHandler(model=Mock())
 
     # Mock the invoke method.
-    given_handler.chain = MockChain()
+    given_handler._chain = MockChain()
     # When:
     result = given_handler.generate_questions(given_context)
 

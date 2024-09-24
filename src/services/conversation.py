@@ -19,7 +19,7 @@ from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
 
-TOKEN_LIMIT = 14_000
+TOKEN_LIMIT = 16_000
 
 
 class IService(Protocol):

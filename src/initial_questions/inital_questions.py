@@ -35,42 +35,64 @@ class IInitialQuestionsHandler(Protocol):
         ...
 
 
+class ITokenizer(Protocol):
+    """Encodes and decodes strings"""
+
+    def encode(self, text: str) -> list[int]:
+        """Encodes a string into tokens."""
+        ...
+
+    def decode(self, tokens: list[int], errors: str = "replace") -> str:
+        """Decodes a list of tokens into a string."""
+        ...
+
+
 class InitialQuestionsHandler:
     """Handler that generates initial questions."""
 
-    chain: typing.Any
+    _chain: typing.Any
     _model: IModel
     _template: str
+    _tokenizer = ITokenizer
 
-    def __init__(self, model: IModel, template: str | None = None) -> None:
+    def __init__(
+        self,
+        model: IModel,
+        template: str | None = None,
+        tokenizer: ITokenizer | None = None,
+    ) -> None:
         self._model = model
         self._template = template or INITIAL_QUESTIONS_PROMPT
-
         prompt = PromptTemplate(
             template=self._template,
             input_variables=["context"],
         )
         output_parser = QuestionOutputParser()
-        self.chain = prompt | model.llm | output_parser
+        self._chain = prompt | model.llm | output_parser
+        self._tokenizer = tokenizer or tiktoken.encoding_for_model(self._model.name)
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
         """Reduces the amount of tokens of a string by truncating exeeding tokens.
         Takes the template into account."""
-        tokenizer = tiktoken.encoding_for_model(self._model.name)
 
-        tokens_template = tokenizer.encode(self._template)
-        tokens_text = tokenizer.encode(text)
-        token_limit -= len(tokens_template)
+        tokens_template = self._tokenizer.encode(text=self._template)
+        template_token_count = len(tokens_template)
+        tokens_text = self._tokenizer.encode(text=text)
+        text_token_count = len(tokens_text)
 
-        if len(tokens_text) > token_limit:
+        if template_token_count > token_limit:
+            raise ValueError("Token limit is smaller than template token count")
+        token_limit -= template_token_count
+
+        if text_token_count > token_limit:
             tokens_text = tokens_text[:token_limit]
 
-        return tokenizer.decode(tokens_text)
+        return self._tokenizer.decode(tokens=tokens_text)
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
         # Format prompt and send to llm.
-        return self.chain.invoke({"context": context})  # type: ignore
+        return self._chain.invoke({"context": context})  # type: ignore
 
     def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
