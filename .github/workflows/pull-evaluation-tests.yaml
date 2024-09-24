@@ -9,14 +9,11 @@ run-name: "Evaluation tests"
 # - GARDENER_TEST_CLUSTER_CA_DATA
 
 on:
-  pull_request_target:
-    branches:
-      - main
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - CODEOWNERS
-      - LICENSE
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        description: Branch name to trigger the workflow
 
 # global env variables.
 env:
