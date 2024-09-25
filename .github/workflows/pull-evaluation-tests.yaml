@@ -9,7 +9,7 @@ run-name: "Evaluation tests"
 # - GARDENER_TEST_CLUSTER_CA_DATA
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths-ignore:
