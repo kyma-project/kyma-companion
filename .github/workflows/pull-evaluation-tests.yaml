@@ -17,6 +17,7 @@ on:
       - "**.md"
       - CODEOWNERS
       - LICENSE
+    types: [labeled]
 
 # global env variables.
 env:
@@ -30,6 +31,7 @@ jobs:
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
