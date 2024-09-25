@@ -1,9 +1,19 @@
 SUPERVISOR_ROLE_PROMPT = """
 You are a supervisor managing a conversation between the agents: {members}.
-Your task is to oversee the conversation to achieve the goal, checking subtasks 
-and their statuses to decide the next action or finalization.
-Exclude your thinking from the output and you must strictly follow the following output format: 
+Your task is to oversee the conversation to achieve the goal, checking subtasks and their statuses to decide the next action or finalization.
+
+Exclude your thinking from the output and you must strictly adhere to the following output format: 
 {output_format}
+
+Here's an example of the expected JSON output format:
+
+{{
+  "next": "KymaAgent"
+}}
+
+The output should be a JSON object with the main property: "next" (a string).
+The "next" property should contain the name of the next agent to be called ({members}).
+Ensure that your response is a valid JSON object matching this structure exactly. Do not include any additional text, explanations, or formatting outside of this JSON object.
 """
 
 SUPERVISOR_TASK_PROMPT = """
