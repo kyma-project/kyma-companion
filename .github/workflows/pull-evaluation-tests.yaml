@@ -111,9 +111,9 @@ jobs:
       - name: Redis Setup - Deploy Redis using Helm
         run: |
           kubectl create namespace redis
-          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
           echo "Installing Redis using Helm..."
-          helm install --wait redis bitnami/redis --set auth.enabled=false -n redis
+          helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
       - name: Companion Deploy - Create namespace
         run: |
