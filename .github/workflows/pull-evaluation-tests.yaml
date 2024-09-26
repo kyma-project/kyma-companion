@@ -37,7 +37,7 @@ jobs:
         run: |
           curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           -H "Content-Type: application/json" \
-          -d '{"body":"The evaluation test will be skipped for this PR.\nTo run it add the label \"evaluation requested\".}' \
+          -d '{"body":"The evaluation test will be skipped for this PR.\nYou can trigger it manually by adding the label \"evaluation requested\".}' \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
     
   wait-for-build:
