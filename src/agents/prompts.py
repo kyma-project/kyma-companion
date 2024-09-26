@@ -1,3 +1,5 @@
+"my comment"
+
 PLANNER_PROMPT = """
 You are a specialized planner for Kyma and Kubernetes queries, including general questions. Your primary task is to create a concise plan that directly reflects the original query without adding extra steps.
 
