@@ -15,6 +15,9 @@ class InitConversationBody(BaseModel):
     namespace: str = ""
 
 
+"comment"
+
+
 class InitialQuestionsResponse(BaseModel):
     """Response body for initializing a conversation endpoint"""
 
