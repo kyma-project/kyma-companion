@@ -28,6 +28,18 @@ env:
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
 
 jobs:
+  comment:
+    name: comment on pull request
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'evaluation requested')"
+    steps:
+      - name: Post comment
+        run: |
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"body":"The evaluation test will be skipped for this PR.\nTo run it add the label \"evaluation requested\" and re-run the evalution test workflow.}' \
+          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
+    
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
