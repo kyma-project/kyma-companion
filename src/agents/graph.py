@@ -41,6 +41,8 @@ from utils.models import IModel
 
 logger = get_logger(__name__)
 
+"hello"
+
 
 class CustomJSONEncoder(json.JSONEncoder):
     """
@@ -80,9 +82,7 @@ class KymaGraph:
 
         self.kyma_agent = KymaAgent(model)
         self.k8s_agent = KubernetesAgent(model)
-        self.supervisor_agent = SupervisorAgent(
-            model, members=[KYMA_AGENT, K8S_AGENT, COMMON]
-        )
+        self.supervisor_agent = SupervisorAgent(model, members=[KYMA_AGENT, K8S_AGENT, COMMON])
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self.graph = self._build_graph()
@@ -142,9 +142,7 @@ class KymaGraph:
                 )
 
             if not plan.subtasks:
-                raise Exception(
-                    f"No subtasks are created for the given query: {state.messages[-1].content}"
-                )
+                raise Exception(f"No subtasks are created for the given query: {state.messages[-1].content}")
 
             return create_node_output(
                 message=AIMessage(
@@ -271,9 +269,7 @@ class KymaGraph:
             workflow.add_edge(member, SUPERVISOR)
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
-        conditional_map: dict[Hashable, str] = {
-            k: k for k in self.members + [FINALIZER, EXIT]
-        }
+        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [FINALIZER, EXIT]}
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
         # Add end node
         workflow.add_edge(FINALIZER, EXIT)
@@ -283,9 +279,7 @@ class KymaGraph:
         graph = workflow.compile(checkpointer=self.memory)
         return graph
 
-    async def astream(
-        self, conversation_id: str, message: Message
-    ) -> AsyncIterator[str]:
+    async def astream(self, conversation_id: str, message: Message) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         async for chunk in self.graph.astream(
             input={
