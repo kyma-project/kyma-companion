@@ -6,6 +6,7 @@ from typing import Annotated
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 
+from services.k8s import IK8sClient
 
 class SubTaskStatus(str, Enum):
     """Status of the sub-task."""
@@ -38,6 +39,19 @@ class UserInput(BaseModel):
     resource_name: str | None
     namespace: str | None
 
+    def get_resource_information(self) -> dict[str, str]:
+        """Get resource information."""
+        result = {}
+        if self.resource_kind is not None and self.resource_name != "":
+            result["resource_kind"] = self.resource_kind
+        if self.resource_api_version is not None and self.resource_api_version != "":
+            result["resource_api_version"] = self.resource_api_version
+        if self.resource_name is not None and self.resource_name != "":
+            result["resource_name"] = self.resource_name
+        if self.namespace is not None and self.namespace != "":
+            result["resource_namespace"] = self.namespace
+        return result
+
 
 class AgentState(BaseModel):
     """Agent state.
@@ -49,6 +63,7 @@ class AgentState(BaseModel):
         subtasks: list[SubTask]: different steps/subtasks to follow
         final_response: str: final response to the user
         error: str: error message if error occurred
+        k8s_client: IK8sClient: Kubernetes client for fetching data from the cluster
 
     """
 
@@ -61,10 +76,17 @@ class AgentState(BaseModel):
     subtasks: list[SubTask] | None = []
     final_response: str | None = ""
     error: str | None
+    # IK8sClient interface implements the method "model_dump" which returns None, so that no confidential
+    # information is stored in the checkpoint.
+    k8s_client: IK8sClient | None = None
 
     def all_tasks_completed(self) -> bool:
         """Check if all the sub-tasks are completed."""
         return all(task.status == SubTaskStatus.COMPLETED for task in self.subtasks)
+
+    class Config:
+        arbitrary_types_allowed = True
+        fields = {'k8s_client': {'exclude': True}}
 
 
 class Plan(BaseModel):

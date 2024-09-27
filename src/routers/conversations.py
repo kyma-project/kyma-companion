@@ -93,14 +93,30 @@ async def messages(
         str, Path(title="The ID of the conversation to continue")
     ],
     message: Annotated[Message, Body(title="The message to send")],
+    x_cluster_url: Annotated[str, Header()],
+    x_k8s_authorization: Annotated[str, Header()],
+    x_cluster_certificate_authority_data: Annotated[str, Header()],
     service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
+    # Initialize k8s client for the request.
+    try:
+        k8s_client: IK8sClient = K8sClient(
+            api_server=x_cluster_url,
+            user_token=x_k8s_authorization,
+            certificate_authority_data=x_cluster_certificate_authority_data,
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
+        ) from e
+
     return StreamingResponse(
         (
             prepare_chunk_response(chunk) + b"\n"
-            async for chunk in service.handle_request(conversation_id, message)
+            async for chunk in service.handle_request(conversation_id, message, k8s_client)
         ),
         media_type="text/event-stream",
     )

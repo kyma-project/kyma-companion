@@ -3,7 +3,7 @@ from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
@@ -35,6 +35,7 @@ from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
+from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models import IModel
@@ -57,7 +58,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 class IGraph(Protocol):
     """Graph interface."""
 
-    def astream(self, conversation_id: str, message: Message) -> AsyncIterator[str]:
+    def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         ...
 
@@ -284,13 +285,20 @@ class KymaGraph:
         return graph
 
     async def astream(
-        self, conversation_id: str, message: Message
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
+        user_input = UserInput(**message.dict())
+        messages = [
+            SystemMessage(content=f"The user query is related to: {user_input.get_resource_information()}"),
+            HumanMessage(content=message.query)
+        ]
+
         async for chunk in self.graph.astream(
             input={
-                "messages": [HumanMessage(content=message.query)],
-                "input": UserInput(**message.dict()),
+                "messages": messages,
+                "input": user_input,
+                "k8s_client": k8s_client,
             },
             config={
                 "configurable": {

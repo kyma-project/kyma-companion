@@ -32,7 +32,7 @@ class IService(Protocol):
         ...
 
     def handle_request(
-        self, conversation_id: str, message: Message
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request for a conversation"""
         ...
@@ -100,12 +100,12 @@ class ConversationService(metaclass=SingletonMeta):
         return questions
 
     async def handle_request(
-        self, conversation_id: str, message: Message
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
 
         logger.info("Processing request...")
 
-        async for chunk in self._kyma_graph.astream(conversation_id, message):
+        async for chunk in self._kyma_graph.astream(conversation_id, message, k8s_client):
             logger.debug(f"Sending chunk: {chunk}")
             yield chunk.encode()

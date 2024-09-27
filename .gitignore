@@ -228,12 +228,16 @@ __pycache__
 .secrets
 scripts/k8s/aicore-secret.yaml
 scripts/k8s/companion-configmap.yaml
+scripts/python/query_companion.py
 
 commands.md
 .env.dev
+.env.fzn.dev
 tests/blackbox/.env.evaluation
 
 # Ignore all files starting with _, but not __init__.py
 _*
 !__init__.py
 config/config.yml
+graph.png
+k8s_agent.ipynb

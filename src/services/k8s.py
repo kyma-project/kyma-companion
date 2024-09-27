@@ -2,14 +2,18 @@ import base64
 import copy
 import os
 import tempfile
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
 
-
+@runtime_checkable
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
+
+    def model_dump(self) -> None:
+        """Dump the model without any confidential data."""
+        ...
 
     def execute_get_api_request(self, uri: str) -> dict:
         """Execute a GET request to the Kubernetes API."""
@@ -98,6 +102,11 @@ class K8sClient:
                 os.remove(self.ca_temp_filename)
             except FileNotFoundError:
                 return
+
+    def model_dump(self) -> None:
+        """Dump the model. It should not return any critical information because it is called by checkpointer
+        to store the object in database."""
+        return None
 
     def _get_decoded_ca_data(self) -> bytes:
         """Decode the certificate authority data."""
