@@ -55,7 +55,9 @@ def main() -> None:
     if scenario_list.is_test_failed():
         print_header("Tests FAILED.")
         failed_scenarios = scenario_list.get_failed_scenarios()
-        logger.error(f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}")
+        logger.error(
+            f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}"
+        )
         raise Exception("Tests failed.")
 
 
