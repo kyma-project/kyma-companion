@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_test_results, print_header
+from common.output import print_header, print_test_results
 from evaluation.process_scenario import process_scenario
 from evaluation.scenario.scenario import ScenarioList
 from evaluation.validator.utils import create_validator
