@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_test_results
+from common.output import print_test_results, print_header
 from evaluation.process_scenario import process_scenario
 from evaluation.scenario.scenario import ScenarioList
 from evaluation.validator.utils import create_validator
@@ -51,6 +51,12 @@ def main() -> None:
     # is_passed, reason = scenario_list.is_test_passed()
     # if not is_passed:
     #     raise Exception(f"Tests failed: {reason}")
+
+    if scenario_list.is_test_failed():
+        print_header("Tests FAILED.")
+        failed_scenarios = scenario_list.get_failed_scenarios()
+        logger.error(f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}")
+        raise Exception("Tests failed.")
 
 
 if __name__ == "__main__":

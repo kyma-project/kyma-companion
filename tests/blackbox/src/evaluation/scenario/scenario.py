@@ -169,6 +169,14 @@ class ScenarioList(BaseModel):
             return 0.0
         return round(float((success_count / count) * 100), 2)
 
+    def get_failed_scenarios(self) -> list[Scenario]:
+        """Get the list of failed scenarios."""
+        failed_scenarios: list[Scenario] = []
+        for item in self.items:
+            if item.evaluation.status == TestStatus.FAILED:
+                failed_scenarios.append(item)
+        return failed_scenarios
+
     def load_all_namespace_scope_scenarios(self, path: str, logger: Logger) -> None:
         """Load all the scenarios from the namespace scoped test data path."""
         logger.info(f"Reading NamespaceScoped scenarios from: {path}")
@@ -210,3 +218,8 @@ class ScenarioList(BaseModel):
             return False, "The overall success rate is 0.0"
 
         return True, "All tests passed successfully"
+
+    def is_test_failed(self) -> bool:
+        """Check if any of the scenarios failed."""
+        failed_scenarios = self.get_failed_scenarios()
+        return len(failed_scenarios) > 0
