@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
@@ -81,7 +81,12 @@ def filter_messages(
 
     Returns: list of last messages
     """
-    return messages[-recent_message_limit:]
+    filtered = messages[-recent_message_limit:]
+    # remove the first message if it is a tool message,
+    # because a tool message must be preceded by a system message.
+    if len(filtered) > 0 and isinstance(filtered[0], ToolMessage):
+        return filtered[1:]
+    return filtered
 
 
 def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore

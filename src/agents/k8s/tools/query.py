@@ -21,25 +21,21 @@ class K8sQueryToolArgs(BaseModel):
 def k8s_query_tool(
     uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 ) -> dict | list[dict]:
-    """Fetch resource data from kubernetes cluster."""
-    ## TODO: Add a better description for this tool.
+    """Query the state of objects in Kubernetes using the provided URI.
+    The URI must follow the format of Kubernetes API.
+    It only supports GET requests."""
     try:
-        result = k8s_client.execute_get_api_request(uri)
+        response = k8s_client.execute_get_api_request(uri)
+        result = response.json()
         if not isinstance(result, list) and not isinstance(result, dict):
-            err_message = (
+            raise Exception(
                 f"failed executing k8s_query_tool with URI:\n\n{uri}\n\n"
                 f"The result is not a list or dict, but a {type(result)}"
             )
-            return {
-                "error": err_message,
-            }
 
         return DataSanitizer.sanitize(result)
     except Exception as e:
-        err_message = (
+        raise Exception(
             f"failed executing k8s_query_tool with URI:\n\n{uri}\n\n"
             f"raised the following error:\n\n{type(e)}: {e}"
-        )
-        return {
-            "error": err_message,
-        }
+        ) from e

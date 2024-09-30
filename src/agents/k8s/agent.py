@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Annotated, Any, Literal
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.pydantic_v1 import BaseModel
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
@@ -21,6 +22,7 @@ from agents.k8s.constants import (
     MY_TASK,
 )
 from agents.k8s.prompts import K8S_AGENT_PROMPT
+from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from services.k8s import IK8sClient
 from utils.logging import get_logger
@@ -52,9 +54,9 @@ class KubernetesAgent:
     _name: str = K8S_AGENT
 
     def __init__(self, model: IModel):
-        self.tools = [k8s_query_tool]
+        self.tools = [k8s_query_tool, fetch_pod_logs_tool]
         self.model = model.llm.bind_tools(self.tools)
-        self.system_prompt = SystemMessage(K8S_AGENT_PROMPT)
+        self.chain = self._create_chain()
         self.graph = self._build_graph()
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
 
@@ -66,6 +68,17 @@ class KubernetesAgent:
     def agent_node(self) -> CompiledGraph:
         """Get Kubernetes agent node function."""
         return self.graph
+
+    def _create_chain(self) -> Any:
+        agent_prompt = ChatPromptTemplate.from_messages(
+            [
+                SystemMessage(K8S_AGENT_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                HumanMessage(content="query: {query}"),
+            ]
+        )
+
+        return agent_prompt | self.model
 
     def _subtask_selector_node(self, state: KubernetesAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
@@ -95,14 +108,23 @@ class KubernetesAgent:
     def _model_node(
         self, state: KubernetesAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
-        messages = (
-            [self.system_prompt]
-            + filter_messages(state.messages)
-            + [HumanMessage(content=state.my_task.description)]
-        )
+        inputs = {
+            MESSAGES: filter_messages(state.messages),
+            "query": state.my_task.description,
+        }
 
         # invoke model.
-        response = self.model.invoke(messages, config)
+        try:
+            response = self.chain.invoke(inputs, config)
+        except Exception as e:
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}"
+                    )
+                ]
+            }
+
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.
         if (
@@ -111,13 +133,14 @@ class KubernetesAgent:
             and response.tool_calls
         ):
             return {
-                "messages": [
+                MESSAGES: [
                     AIMessage(
                         id=response.id,
                         content="Sorry, the kubernetes agent needs more steps to process the request.",
                     )
                 ]
             }
+        # return the response.
         return {MESSAGES: [response]}
 
     def _build_graph(self) -> CompiledGraph:
@@ -147,7 +170,7 @@ class KubernetesAgent:
             """Function that determines whether to continue or not."""
             # If there is no function call, then we finish
             last_message = state.messages[-1]
-            if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
+            if isinstance(last_message, AIMessage) and not last_message.tool_calls:
                 return "__end__"
             return "tools"
 
