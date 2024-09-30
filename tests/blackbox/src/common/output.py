@@ -8,7 +8,7 @@ from common.metrics import Metrics
 
 def print_header(name: str) -> None:
     print("\n************************************************************************")
-    print(f"*** {name}")
+    print(f"**** {name}")
     print("************************************************************************\n")
 
 
