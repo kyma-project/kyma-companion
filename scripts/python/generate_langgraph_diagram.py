@@ -41,7 +41,7 @@ memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
 graph = KymaGraph(model, memory)
 
 try:
-    png_bytes = Image(graph.graph.get_graph().draw_mermaid_png())
+    png_bytes = Image(graph.graph.get_graph(xray=1).draw_mermaid_png())
     # store the image in a file
     with open("graph.png", "wb") as f:
         f.write(png_bytes.data)

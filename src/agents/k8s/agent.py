@@ -1,20 +1,21 @@
-from typing import TypedDict, Any
+from typing import Literal
 import operator
 
-from decorator import append
-from langgraph.graph import add_messages
+from langgraph.graph import StateGraph
+from langgraph.graph.graph import CompiledGraph
 from typing_extensions import Annotated
 from langgraph.managed import IsLastStep
 from collections.abc import Sequence
-from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent, ToolNode
+from langgraph.prebuilt import ToolNode
+from langchain_core.pydantic_v1 import BaseModel
 
-from agents.common.state import AgentState, SubTaskStatus
+from agents.common.state import AgentState, SubTaskStatus, SubTask
 from agents.common.constants import MESSAGES
 from agents.common.utils import filter_messages
+from agents.k8s.constants import K8S_AGENT, GRAPH_STEP_TIMEOUT_SECONDS, IS_LAST_STEP, K8S_CLIENT, MY_TASK
 from agents.k8s.prompts import K8S_AGENT_PROMPT
 from langchain_core.runnables.config import RunnableConfig
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import SystemMessage, AIMessage, BaseMessage, HumanMessage
 from utils.logging import get_logger
 from utils.models import IModel
 from services.k8s import IK8sClient
@@ -22,14 +23,21 @@ from agents.k8s.tools.query import k8s_query_tool
 
 logger = get_logger(__name__)
 
-K8S_AGENT = "KubernetesAgent"
-
-class KubernetesAgentState(TypedDict):
+class KubernetesAgentState(BaseModel):
     """The state of the Kubernetes agent."""
 
+    # Fields shared with the parent graph (Kyma graph).
     messages: Annotated[Sequence[BaseMessage], operator.add]
+    subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
+
+    # Subgraph private fields
+    my_task: SubTask | None = None
     is_last_step: IsLastStep
+
+    class Config:
+        arbitrary_types_allowed = True
+        fields = {K8S_CLIENT: {'exclude': True}}
 
 class KubernetesAgent:
     """Kubernetes agent class."""
@@ -37,14 +45,11 @@ class KubernetesAgent:
     _name: str = K8S_AGENT
 
     def __init__(self, model: IModel):
-        self.model = model
-        k8s_tool_node = ToolNode([k8s_query_tool])
-        self.graph = create_react_agent(
-            model.llm,
-            tools=k8s_tool_node,
-            state_schema=KubernetesAgentState,
-            state_modifier=K8S_AGENT_PROMPT,
-        )
+        self.tools = [k8s_query_tool]
+        self.model = model.llm.bind_tools(self.tools)
+        self.system_prompt = SystemMessage(K8S_AGENT_PROMPT)
+        self.graph = self._build_graph()
+        self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
 
     @property
     def name(self) -> str:
@@ -53,53 +58,87 @@ class KubernetesAgent:
 
     def agent_node(self):  # noqa ANN
         """Get Kubernetes agent node function."""
-        return self.agent_callback
+        return self.graph
 
-    def agent_callback(self, state: AgentState, config: RunnableConfig) -> dict[str, Any]:
+    def _subtask_selector_node(self, state: KubernetesAgentState):
         if state.k8s_client is None:
             raise ValueError("Kubernetes client is not initialized.")
 
         # find subtasks assigned to this agent and not completed.
-        subtasks = [subtask for subtask in state.subtasks if subtask.assigned_to == self.name and subtask.status != SubTaskStatus.COMPLETED]
-        if len(subtasks) == 0:
+        for subtask in state.subtasks:
+            if subtask.assigned_to == self.name and subtask.status != SubTaskStatus.COMPLETED:
+                return {
+                    MY_TASK: subtask,
+                }
+
+        # if no subtask is found, return is_last_step as True.
+        return {
+            IS_LAST_STEP: True,
+            MESSAGES: [
+                AIMessage(
+                    content="All my subtasks are already completed.",
+                    name=self.name,
+                )
+            ]
+        }
+
+    def _model_node(self, state: KubernetesAgentState, config: RunnableConfig):  # noqa ANN
+        messages = ([self.system_prompt] +
+                    filter_messages(state.messages) +
+                    [HumanMessage(content=state.my_task.description)])
+        # invoke model.
+        response = self.model.invoke(messages, config)
+        # if the recursive limit is reached and the response is a tool call, return a message.
+        # 'is_last_step' is a boolean that is True if the recursive limit is reached.
+        if (
+                state.is_last_step
+                and isinstance(response, AIMessage)
+                and response.tool_calls
+        ):
             return {
-                MESSAGES: [
+                "messages": [
                     AIMessage(
-                        content="All my subtasks are already completed.",
-                        name=self.name,
+                        id=response.id,
+                        content="Sorry, the kubernetes agent needs more steps to process the request.",
                     )
                 ]
             }
+        return {MESSAGES: [response]}
 
-        # for now, we will only process one subtask and return to supervisor.
-        subtask = subtasks[0]
+    def _build_graph(self) -> CompiledGraph:
+        # Define a new graph
+        workflow = StateGraph(KubernetesAgentState)
 
-        # invoke the graph.
-        try:
-            result = self.graph.invoke(
-                input={
-                    "messages": add_messages(filter_messages(state.messages), HumanMessage(content=subtask.description)),
-                    "k8s_client": state.k8s_client
-                },
-                config={
-                    "configurable": {
-                        "thread_id": config["metadata"]["thread_id"],
-                    },
-                },
-                debug=False,
-            )
-            # mark the subtask as completed.
-            subtasks[0].complete()
+        # Define the nodes we will cycle between
+        workflow.add_node("subtask_selector", self._subtask_selector_node)
+        workflow.add_node("agent", self._model_node)
+        workflow.add_node("tools", ToolNode(self.tools))
 
-            # set name to the final message.
-            final_message = result["messages"][-1]
-            final_message.name = self.name
-            return {
-                MESSAGES: [final_message],
-            }
-        except Exception as e:
-            logger.error(f"Error in agent {self.name}: {e}")
-            return {
-                "error": str(e),
-                "next": "Exit",
-            }
+        # Set the entrypoint: ENTRY --> subtask_selector
+        workflow.set_entry_point("subtask_selector")
+
+        #
+        # Define the edge: subtask_selector --> agent
+        def is_any_subtask(state: KubernetesAgentState) -> Literal["agent", "__end__"]:
+            if state.is_last_step and state.my_task is None:
+                return "__end__"
+            return "agent"
+
+        # Add the conditional edge.
+        workflow.add_conditional_edges("subtask_selector", is_any_subtask)
+
+        # Define the edge: agent --> tool | end
+        def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
+            """Function that determines whether to continue or not."""
+            # If there is no function call, then we finish
+            last_message = state.messages[-1]
+            if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
+                return "__end__"
+            return "tools"
+        # Add the conditional edge.
+        workflow.add_conditional_edges("agent", should_continue)
+
+        # Define the edge: tool --> agent
+        workflow.add_edge("tools", "agent")
+
+        return workflow.compile()

@@ -3,7 +3,7 @@ from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import ToolMessage, AIMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
@@ -50,8 +50,10 @@ class CustomJSONEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):  # noqa D102
-        if isinstance(obj, AIMessage | HumanMessage | SubTask):
+        if isinstance(obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask):
             return obj.__dict__
+        elif isinstance(obj, IK8sClient):
+            return obj.model_dump()
         return super().default(obj)
 
 

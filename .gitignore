@@ -240,4 +240,5 @@ _*
 !__init__.py
 config/config.yml
 graph.png
+k8s_agent_graph.png
 k8s_agent.ipynb
