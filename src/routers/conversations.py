@@ -116,7 +116,9 @@ async def messages(
     return StreamingResponse(
         (
             prepare_chunk_response(chunk) + b"\n"
-            async for chunk in service.handle_request(conversation_id, message, k8s_client)
+            async for chunk in service.handle_request(
+                conversation_id, message, k8s_client
+            )
         ),
         media_type="text/event-stream",
     )

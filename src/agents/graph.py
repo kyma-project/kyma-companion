@@ -3,7 +3,7 @@ from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
-from langchain_core.messages import ToolMessage, AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
@@ -50,7 +50,9 @@ class CustomJSONEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):  # noqa D102
-        if isinstance(obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask):
+        if isinstance(
+            obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask
+        ):
             return obj.__dict__
         elif isinstance(obj, IK8sClient):
             return obj.model_dump()
@@ -60,7 +62,9 @@ class CustomJSONEncoder(json.JSONEncoder):
 class IGraph(Protocol):
     """Graph interface."""
 
-    def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
+    def astream(
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+    ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         ...
 
@@ -292,8 +296,10 @@ class KymaGraph:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.dict())
         messages = [
-            SystemMessage(content=f"The user query is related to: {user_input.get_resource_information()}"),
-            HumanMessage(content=message.query)
+            SystemMessage(
+                content=f"The user query is related to: {user_input.get_resource_information()}"
+            ),
+            HumanMessage(content=message.query),
         ]
 
         async for chunk in self.graph.astream(

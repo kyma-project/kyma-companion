@@ -1,4 +1,3 @@
-
 K8S_AGENT = "KubernetesAgent"
 GRAPH_STEP_TIMEOUT_SECONDS = 30
 

@@ -8,6 +8,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 
 from services.k8s import IK8sClient
 
+
 class SubTaskStatus(str, Enum):
     """Status of the sub-task."""
 
@@ -86,7 +87,7 @@ class AgentState(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        fields = {'k8s_client': {'exclude': True}}
+        fields = {"k8s_client": {"exclude": True}}
 
 
 class Plan(BaseModel):

@@ -7,6 +7,7 @@ from typing import Protocol, runtime_checkable
 import requests
 from kubernetes import client, dynamic
 
+
 @runtime_checkable
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""

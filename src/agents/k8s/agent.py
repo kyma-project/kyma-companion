@@ -1,27 +1,33 @@
-from typing import Literal
 import operator
+from collections.abc import Sequence
+from typing import Annotated, Any, Literal
 
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing_extensions import Annotated
 from langgraph.managed import IsLastStep
-from collections.abc import Sequence
 from langgraph.prebuilt import ToolNode
-from langchain_core.pydantic_v1 import BaseModel
 
-from agents.common.state import AgentState, SubTaskStatus, SubTask
 from agents.common.constants import MESSAGES
+from agents.common.state import AgentState, SubTask, SubTaskStatus
 from agents.common.utils import filter_messages
-from agents.k8s.constants import K8S_AGENT, GRAPH_STEP_TIMEOUT_SECONDS, IS_LAST_STEP, K8S_CLIENT, MY_TASK
+from agents.k8s.constants import (
+    GRAPH_STEP_TIMEOUT_SECONDS,
+    IS_LAST_STEP,
+    K8S_AGENT,
+    K8S_CLIENT,
+    MY_TASK,
+)
 from agents.k8s.prompts import K8S_AGENT_PROMPT
-from langchain_core.runnables.config import RunnableConfig
-from langchain_core.messages import SystemMessage, AIMessage, BaseMessage, HumanMessage
+from agents.k8s.tools.query import k8s_query_tool
+from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import IModel
-from services.k8s import IK8sClient
-from agents.k8s.tools.query import k8s_query_tool
 
 logger = get_logger(__name__)
+
 
 class KubernetesAgentState(BaseModel):
     """The state of the Kubernetes agent."""
@@ -37,7 +43,8 @@ class KubernetesAgentState(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        fields = {K8S_CLIENT: {'exclude': True}}
+        fields = {K8S_CLIENT: {"exclude": True}}
+
 
 class KubernetesAgent:
     """Kubernetes agent class."""
@@ -56,17 +63,20 @@ class KubernetesAgent:
         """Agent name."""
         return self._name
 
-    def agent_node(self):  # noqa ANN
+    def agent_node(self) -> CompiledGraph:
         """Get Kubernetes agent node function."""
         return self.graph
 
-    def _subtask_selector_node(self, state: KubernetesAgentState):
+    def _subtask_selector_node(self, state: KubernetesAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
             raise ValueError("Kubernetes client is not initialized.")
 
         # find subtasks assigned to this agent and not completed.
         for subtask in state.subtasks:
-            if subtask.assigned_to == self.name and subtask.status != SubTaskStatus.COMPLETED:
+            if (
+                subtask.assigned_to == self.name
+                and subtask.status != SubTaskStatus.COMPLETED
+            ):
                 return {
                     MY_TASK: subtask,
                 }
@@ -79,21 +89,26 @@ class KubernetesAgent:
                     content="All my subtasks are already completed.",
                     name=self.name,
                 )
-            ]
+            ],
         }
 
-    def _model_node(self, state: KubernetesAgentState, config: RunnableConfig):  # noqa ANN
-        messages = ([self.system_prompt] +
-                    filter_messages(state.messages) +
-                    [HumanMessage(content=state.my_task.description)])
+    def _model_node(
+        self, state: KubernetesAgentState, config: RunnableConfig
+    ) -> dict[str, Any]:
+        messages = (
+            [self.system_prompt]
+            + filter_messages(state.messages)
+            + [HumanMessage(content=state.my_task.description)]
+        )
+
         # invoke model.
         response = self.model.invoke(messages, config)
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.
         if (
-                state.is_last_step
-                and isinstance(response, AIMessage)
-                and response.tool_calls
+            state.is_last_step
+            and isinstance(response, AIMessage)
+            and response.tool_calls
         ):
             return {
                 "messages": [
@@ -135,6 +150,7 @@ class KubernetesAgent:
             if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
                 return "__end__"
             return "tools"
+
         # Add the conditional edge.
         workflow.add_conditional_edges("agent", should_continue)
 
