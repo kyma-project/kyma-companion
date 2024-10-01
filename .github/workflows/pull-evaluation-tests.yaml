@@ -17,6 +17,7 @@ on:
       - "**.md"
       - CODEOWNERS
       - LICENSE
+    types: [labeled]
 
 # global env variables.
 env:
@@ -27,9 +28,22 @@ env:
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
 
 jobs:
+  comment:
+    name: comment on pull request
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'evaluation requested')"
+    steps:
+      - name: Post comment
+        run: |
+          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "{\"body\":\"The evaluation test will be skipped for this PR. You can trigger it manually by adding the label evaluation requested.\"}" \
+          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
+    
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,9 +123,9 @@ jobs:
       - name: Redis Setup - Deploy Redis using Helm
         run: |
           kubectl create namespace redis
-          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
           echo "Installing Redis using Helm..."
-          helm install --wait redis bitnami/redis --set auth.enabled=false -n redis
+          helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
       - name: Companion Deploy - Create namespace
         run: |

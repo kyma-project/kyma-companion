@@ -70,8 +70,10 @@ spec:
             secretKeyRef:
               name: ai-core
               key: resource_group
-        - name: REDIS_URL
-          value: "redis://redis-master.redis.svc.cluster.local:6379"
+        - name: REDIS_HOST
+          value: "redis-stack.redis.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
         - name: MODELS_CONFIG_FILE_PATH
           value: "/mnt/config/models-config.yml"
         envFrom:
