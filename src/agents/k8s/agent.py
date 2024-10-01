@@ -1,6 +1,6 @@
 import operator
 from collections.abc import Sequence
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -12,7 +12,7 @@ from langgraph.managed import IsLastStep
 from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import MESSAGES
-from agents.common.state import AgentState, SubTask, SubTaskStatus
+from agents.common.state import SubTask, SubTaskStatus
 from agents.common.utils import filter_messages
 from agents.k8s.constants import (
     GRAPH_STEP_TIMEOUT_SECONDS,
@@ -20,10 +20,12 @@ from agents.k8s.constants import (
     K8S_AGENT,
     K8S_CLIENT,
     MY_TASK,
+    QUERY,
 )
 from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
+from agents.k8s.utils import agent_edge, subtask_selector_edge
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import IModel
@@ -110,7 +112,7 @@ class KubernetesAgent:
     ) -> dict[str, Any]:
         inputs = {
             MESSAGES: filter_messages(state.messages),
-            "query": state.my_task.description,
+            QUERY: state.my_task.description,
         }
 
         # invoke model.
@@ -147,7 +149,7 @@ class KubernetesAgent:
         # Define a new graph
         workflow = StateGraph(KubernetesAgentState)
 
-        # Define the nodes we will cycle between
+        # Define the nodes of the graph.
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
         workflow.add_node("tools", ToolNode(self.tools))
@@ -155,27 +157,11 @@ class KubernetesAgent:
         # Set the entrypoint: ENTRY --> subtask_selector
         workflow.set_entry_point("subtask_selector")
 
-        #
-        # Define the edge: subtask_selector --> agent
-        def is_any_subtask(state: KubernetesAgentState) -> Literal["agent", "__end__"]:
-            if state.is_last_step and state.my_task is None:
-                return "__end__"
-            return "agent"
+        # Define the edge: subtask_selector --> (agent | end)
+        workflow.add_conditional_edges("subtask_selector", subtask_selector_edge)
 
-        # Add the conditional edge.
-        workflow.add_conditional_edges("subtask_selector", is_any_subtask)
-
-        # Define the edge: agent --> tool | end
-        def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
-            """Function that determines whether to continue or not."""
-            # If there is no function call, then we finish
-            last_message = state.messages[-1]
-            if isinstance(last_message, AIMessage) and not last_message.tool_calls:
-                return "__end__"
-            return "tools"
-
-        # Add the conditional edge.
-        workflow.add_conditional_edges("agent", should_continue)
+        # Define the edge: agent --> (tool | end)
+        workflow.add_conditional_edges("agent", agent_edge)
 
         # Define the edge: tool --> agent
         workflow.add_edge("tools", "agent")

@@ -23,7 +23,8 @@ def k8s_query_tool(
 ) -> dict | list[dict]:
     """Query the state of objects in Kubernetes using the provided URI.
     The URI must follow the format of Kubernetes API.
-    It only supports GET requests."""
+    The returned data is sanitized to remove any sensitive information.
+    For example, it will always remove the `data` field of a `Secret` object."""
     try:
         response = k8s_client.execute_get_api_request(uri)
         result = response.json()
