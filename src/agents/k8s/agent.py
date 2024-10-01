@@ -32,10 +32,12 @@ class KubernetesAgent:
     """Kubernetes agent class."""
 
     _name: str = K8S_AGENT
+    model: IModel
+    graph: CompiledGraph
 
     def __init__(self, model: IModel):
         self.tools = [k8s_query_tool, fetch_pod_logs_tool]
-        self.model = model.llm.bind_tools(self.tools)
+        self.model = model
         self.chain = self._create_chain()
         self.graph = self._build_graph()
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
@@ -58,7 +60,7 @@ class KubernetesAgent:
             ]
         )
 
-        return agent_prompt | self.model
+        return agent_prompt | self.model.llm.bind_tools(self.tools)
 
     def _subtask_selector_node(self, state: KubernetesAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
@@ -115,7 +117,6 @@ class KubernetesAgent:
             return {
                 MESSAGES: [
                     AIMessage(
-                        id=response.id,
                         content="Sorry, the kubernetes agent needs more steps to process the request.",
                     )
                 ]
