@@ -4,6 +4,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableLambda
+from langgraph.graph.graph import CompiledGraph
 
 from agents.common.constants import FINALIZER, MESSAGES
 from agents.common.state import SubTask, SubTaskStatus
@@ -43,6 +44,17 @@ class TestKubernetesAgent:
         assert agent.model == mock_model
         assert agent.graph is not None
         assert agent.chain is not None
+
+    def test_agent_node(self, mock_model):
+        # Given
+        agent = KubernetesAgent(mock_model)
+
+        # When
+        result = agent.agent_node()
+
+        # Then
+        assert result is not None
+        assert isinstance(result, CompiledGraph)
 
     def test_create_chain(self, mock_model):
         # Given

@@ -73,6 +73,11 @@ class TestK8sClient:
         assert isinstance(decoded_ca_data, bytes)
         assert decoded_ca_data == expected_result
 
+    @patch("services.k8s.K8sClient.__init__", return_value=None)
+    def test_model_dump(self, mock_init):
+        k8s_client = K8sClient()
+        assert k8s_client.model_dump() is None
+
     @pytest.mark.parametrize(
         "test_description, given_user_token, expected_result",
         [
