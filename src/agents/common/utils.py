@@ -82,10 +82,11 @@ def filter_messages(
     Returns: list of last messages
     """
     filtered = messages[-recent_message_limit:]
-    # remove the first message if it is a tool message,
+    # remove the tool messages from head of the list,
     # because a tool message must be preceded by a system message.
-    if len(filtered) > 0 and isinstance(filtered[0], ToolMessage):
-        return filtered[1:]
+    for i, message in enumerate(filtered):
+        if not isinstance(message, ToolMessage):
+            return filtered[i:]
     return filtered
 
 
