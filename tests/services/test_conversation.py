@@ -107,6 +107,9 @@ class TestConversation:
     async def test_handle_request(
         self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
     ):
+        # Given:
+        mock_k8s_client = Mock()
+
         # When:
         messaging_service = ConversationService()
 
@@ -114,7 +117,7 @@ class TestConversation:
         result = [
             chunk
             async for chunk in messaging_service.handle_request(
-                CONVERSATION_ID, TEST_MESSAGE
+                CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client
             )
         ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]

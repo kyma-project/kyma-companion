@@ -1,53 +1,31 @@
-import operator
-from collections.abc import Sequence
-from typing import Annotated, Any
+from typing import Any
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.pydantic_v1 import BaseModel
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
-from langgraph.managed import IsLastStep
 from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import MESSAGES
-from agents.common.state import SubTask, SubTaskStatus
+from agents.common.state import SubTaskStatus
 from agents.common.utils import filter_messages
 from agents.k8s.constants import (
     GRAPH_STEP_TIMEOUT_SECONDS,
     IS_LAST_STEP,
     K8S_AGENT,
-    K8S_CLIENT,
     MY_TASK,
     QUERY,
 )
 from agents.k8s.prompts import K8S_AGENT_PROMPT
+from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from agents.k8s.utils import agent_edge, subtask_selector_edge
-from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models import IModel
 
 logger = get_logger(__name__)
-
-
-class KubernetesAgentState(BaseModel):
-    """The state of the Kubernetes agent."""
-
-    # Fields shared with the parent graph (Kyma graph).
-    messages: Annotated[Sequence[BaseMessage], operator.add]
-    subtasks: list[SubTask] | None = []
-    k8s_client: IK8sClient
-
-    # Subgraph private fields
-    my_task: SubTask | None = None
-    is_last_step: IsLastStep
-
-    class Config:
-        arbitrary_types_allowed = True
-        fields = {K8S_CLIENT: {"exclude": True}}
 
 
 class KubernetesAgent:

@@ -2,7 +2,7 @@ from typing import Literal
 
 from langchain_core.messages import AIMessage
 
-from agents.k8s.agent import KubernetesAgentState
+from agents.k8s.state import KubernetesAgentState
 
 
 def subtask_selector_edge(state: KubernetesAgentState) -> Literal["agent", "__end__"]:
