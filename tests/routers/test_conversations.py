@@ -26,7 +26,7 @@ class MockService(IService):
         return ["Test question 1", "Test question 2", "Test question 3"]
 
     async def handle_request(
-        self, conversation_id: str, message: Message
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
@@ -68,10 +68,16 @@ def client_factory():
     app.dependency_overrides.clear()
 
 
+@patch("services.k8s.K8sClient.__init__", return_value=None)
 @pytest.mark.parametrize(
-    "conversation_id, input_message, expected_output",
+    "request_headers, conversation_id, input_message, expected_output",
     [
         (
+            {
+                "x-k8s-authorization": "non-empty-auth",
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
             1,
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
@@ -83,6 +89,11 @@ def client_factory():
             {"status_code": 200, "content-type": "text/event-stream; charset=utf-8"},
         ),
         (
+            {
+                "x-k8s-authorization": "non-empty-auth",
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
             2,
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
@@ -93,20 +104,43 @@ def client_factory():
             },
             {"status_code": 200, "content-type": "text/event-stream; charset=utf-8"},
         ),
+        (
+            {},
+            3,
+            {
+                "query": "should return error when k8s headers are missing",
+                "resource_kind": "Pod",
+                "resource_api_version": "v1",
+                "resource_name": "my-pod",
+                "namespace": "default",
+            },
+            {"status_code": 422, "content-type": "application/json"},
+        ),
     ],
 )
 def test_messages_endpoint(
-    client_factory, conversation_id, input_message, expected_output
+    mock_init,
+    client_factory,
+    request_headers,
+    conversation_id,
+    input_message,
+    expected_output,
 ):
     # Create a new client with the expected error
     test_client = client_factory()
 
     response = test_client.post(
-        f"/api/conversations/{conversation_id}/messages", json=input_message
+        f"/api/conversations/{conversation_id}/messages",
+        json=input_message,
+        headers=request_headers,
     )
 
     assert response.status_code == expected_output["status_code"]
     assert response.headers["content-type"] == expected_output["content-type"]
+
+    if expected_output["status_code"] == HTTPStatus.UNPROCESSABLE_ENTITY:
+        # return if test case is to check for missing headers.
+        return
 
     content = response.content
 

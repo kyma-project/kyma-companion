@@ -543,6 +543,9 @@ class TestKymaGraph:
         expected_output,
         expected_error,
     ):
+        # Given:
+        mock_k8s_client = Mock()
+
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):
             if isinstance(mock_chunks, Exception):
@@ -555,12 +558,16 @@ class TestKymaGraph:
 
         if expected_error:
             with pytest.raises(Exception) as exc_info:
-                async for _ in kyma_graph.astream(conversation_id, message):
+                async for _ in kyma_graph.astream(
+                    conversation_id, message, mock_k8s_client
+                ):
                     pass
             assert str(exc_info.value) == expected_error
         else:
             result = []
-            async for chunk in kyma_graph.astream(conversation_id, message):
+            async for chunk in kyma_graph.astream(
+                conversation_id, message, mock_k8s_client
+            ):
                 result.append(chunk)
 
             def compare_json(json_str1, json_str2):

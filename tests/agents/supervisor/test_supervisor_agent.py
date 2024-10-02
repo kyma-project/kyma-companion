@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from agents.common.constants import COMMON, EXIT
 from agents.common.state import AgentState, SubTask
 from agents.common.utils import filter_messages
-from agents.k8s.agent import K8S_AGENT
+from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, SupervisorAgent
 

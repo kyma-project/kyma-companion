@@ -2,16 +2,23 @@ import base64
 import copy
 import os
 import tempfile
-from typing import Protocol
+from http import HTTPStatus
+from typing import Protocol, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
+from requests import Response
 
 
+@runtime_checkable
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
 
-    def execute_get_api_request(self, uri: str) -> dict:
+    def model_dump(self) -> None:
+        """Dump the model without any confidential data."""
+        ...
+
+    def execute_get_api_request(self, uri: str) -> Response:
         """Execute a GET request to the Kubernetes API."""
         ...
 
@@ -65,6 +72,17 @@ class IK8sClient(Protocol):
         """List all Kubernetes events for a specific resource."""
         ...
 
+    def fetch_pod_logs(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch logs of Kubernetes Pod."""
+        ...
+
 
 class K8sClient:
     """Client to interact with the Kubernetes API."""
@@ -99,6 +117,11 @@ class K8sClient:
             except FileNotFoundError:
                 return
 
+    def model_dump(self) -> None:
+        """Dump the model. It should not return any critical information because it is called by checkpointer
+        to store the object in database."""
+        return None
+
     def _get_decoded_ca_data(self) -> bytes:
         """Decode the certificate authority data."""
         return base64.b64decode(self.certificate_authority_data)
@@ -123,7 +146,7 @@ class K8sClient:
             "Content-Type": "application/json",
         }
 
-    def execute_get_api_request(self, uri: str) -> dict:
+    def execute_get_api_request(self, uri: str) -> Response:
         """Execute a GET request to the Kubernetes API."""
         response = requests.get(
             url=f"{self.api_server}/{uri.lstrip('/')}",
@@ -131,7 +154,7 @@ class K8sClient:
             verify=self.ca_temp_filename,
         )
 
-        return response.json()  # type: ignore
+        return response
 
     def list_resources(
         self, api_version: str, kind: str, namespace: str, sanitize: bool = True
@@ -208,7 +231,9 @@ class K8sClient:
 
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
-        result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
+        result = self.execute_get_api_request(
+            "apis/metrics.k8s.io/v1beta1/nodes"
+        ).json()
         return list(result["items"])
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
@@ -243,6 +268,36 @@ class K8sClient:
                 result.append(event)
 
         return result
+
+    def fetch_pod_logs(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
+        uri = (
+            f"api/v1/namespaces/{namespace}/pods/{name}/log"
+            f"?container={container_name}"
+            f"&tailLines={tail_limit}"
+        )
+
+        if is_terminated:
+            uri += "&previous=true"
+
+        response = self.execute_get_api_request(uri)
+        if response.status_code != HTTPStatus.OK:
+            raise ValueError(
+                f"Failed to fetch logs for pod {name} in namespace {namespace} "
+                f"with container {container_name}. Error: {response.text}"
+            )
+
+        logs = []
+        for line in response.iter_lines():
+            logs.append(line)
+        return logs
 
 
 class DataSanitizer:

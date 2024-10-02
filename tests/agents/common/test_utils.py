@@ -2,7 +2,13 @@ from collections.abc import Sequence
 from unittest.mock import Mock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.prompts import MessagesPlaceholder
 
 from agents.common.state import AgentState, SubTask, SubTaskStatus
@@ -302,6 +308,23 @@ def test_agent_node(
             ],
             1,
             [HumanMessage(content="Third")],
+        ),
+        # Test case 7: Tool messages on head of result list.
+        (
+            [
+                AIMessage(content="Second"),
+                ToolMessage(content="Tool message 1", tool_call_id="call_MEOW"),
+                ToolMessage("Tool message 2", tool_call_id="call_WOF"),
+                HumanMessage(content="First"),
+                AIMessage(content="Second"),
+                HumanMessage(content="Third"),
+            ],
+            5,
+            [
+                HumanMessage(content="First"),
+                AIMessage(content="Second"),
+                HumanMessage(content="Third"),
+            ],
         ),
     ],
 )

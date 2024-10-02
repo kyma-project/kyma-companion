@@ -6,6 +6,7 @@ Guidelines:
    - Create a plan that directly mirrors the original query points.
    - Do not add extra steps or elaborate beyond the original questions.
    - Maintain the original wording and order of the questions.
+   - Mention the resource information like namespace, resource kind, api version and name if provided.
 
 2. For unrelated queries:
    - Provide a direct response without a plan/subtasks.
@@ -31,11 +32,11 @@ Examples:
 Query: "What is Kyma serverless? Why my k8s deployment is failing?"
 Plan/Subtasks must contain the following subtasks:
 - What is Kyma serverless?
-- Why my k8s deployment is failing?
+- Why my k8s deployment is failing in namespace kyma-system?
 
 Query: "Why my k8s deployment is failing?"
 Plan/Subtasks must contain the following subtasks:
-- Why my k8s deployment is failing?
+- Why my k8s deployment is failing in namespace kyma-system?
 
 Query: "Explain the benefits of using Kyma with Kubernetes."
 Plan/Subtasks must contain the following subtasks:

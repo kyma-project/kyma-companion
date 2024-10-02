@@ -1,6 +1,6 @@
 import pytest
 
-from agents.common.state import AgentState, SubTask, SubTaskStatus
+from agents.common.state import AgentState, SubTask, SubTaskStatus, UserInput
 
 
 class TestSubTask:
@@ -82,3 +82,55 @@ class TestAgentState:
             final_response=final_response,
         )
         assert state.all_tasks_completed() == expected
+
+
+class TestUserInput:
+    @pytest.mark.parametrize(
+        "user_input, expected",
+        [
+            (
+                UserInput(query="non-empty"),
+                {},
+            ),
+            (
+                UserInput(
+                    query="non-empty",
+                    resource_kind="Pod",
+                    resource_api_version="v1",
+                    resource_name="pod-1",
+                    namespace="default",
+                ),
+                {
+                    "resource_api_version": "v1",
+                    "resource_kind": "Pod",
+                    "resource_name": "pod-1",
+                    "resource_namespace": "default",
+                },
+            ),
+            (
+                UserInput(
+                    query="non-empty",
+                    resource_kind="Pod",
+                    resource_api_version="v1",
+                    resource_name="pod-1",
+                    namespace="",
+                ),
+                {
+                    "resource_api_version": "v1",
+                    "resource_kind": "Pod",
+                    "resource_name": "pod-1",
+                },
+            ),
+            (
+                UserInput(
+                    query="non-empty",
+                    resource_kind="Pod",
+                ),
+                {
+                    "resource_kind": "Pod",
+                },
+            ),
+        ],
+    )
+    def test_get_resource_information(self, user_input, expected):
+        assert user_input.get_resource_information() == expected
