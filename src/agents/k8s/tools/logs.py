@@ -38,6 +38,6 @@ def fetch_pod_logs_tool(
         )
     except Exception as e:
         raise Exception(
-            f"failed executing fetch_pod_logs for pod {name} in namespace {namespace} "
-            f"with container {container_name}\n\n raised the following error:\n\n{type(e)}: {e}"
+            f"failed executing fetch_pod_logs for pod: {name} in namespace: {namespace} with "
+            f"container: {container_name}, raised the following error: {e}"
         ) from e

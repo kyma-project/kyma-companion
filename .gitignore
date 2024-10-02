@@ -228,7 +228,6 @@ __pycache__
 .secrets
 scripts/k8s/aicore-secret.yaml
 scripts/k8s/companion-configmap.yaml
-scripts/python/query_companion.py
 
 commands.md
 .env.dev
@@ -240,5 +239,4 @@ _*
 !__init__.py
 config/config.yml
 graph.png
-k8s_agent_graph.png
-k8s_agent.ipynb
+jupyter-notebooks/
