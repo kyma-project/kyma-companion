@@ -45,4 +45,4 @@ class Config:
         self.model_temperature = 0
         self.iterations = 3
         self.streaming_response_timeout = 10 * 60  # seconds
-        self.max_workers = 3
+        self.max_workers = 1
