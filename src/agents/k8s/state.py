@@ -4,6 +4,7 @@ from typing import Annotated
 
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel
+from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 
 from agents.common.state import SubTask
@@ -15,7 +16,7 @@ class KubernetesAgentState(BaseModel):
     """The state of the Kubernetes agent."""
 
     # Fields shared with the parent graph (Kyma graph).
-    messages: Annotated[Sequence[BaseMessage], operator.add]
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
 

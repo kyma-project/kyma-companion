@@ -1,10 +1,10 @@
-import operator
 from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated
 
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
+from langgraph.graph import add_messages
 
 from services.k8s import IK8sClient
 
@@ -53,6 +53,17 @@ class UserInput(BaseModel):
             result["resource_namespace"] = self.namespace
         return result
 
+    def is_same_resource(self, target: 'UserInput') -> bool:
+        if self.resource_kind != target.resource_kind:
+            return False
+        if self.resource_api_version != target.resource_api_version:
+            return False
+        if self.resource_name != target.resource_name:
+            return False
+        if self.namespace != target.namespace:
+            return False
+        return True
+
 
 class AgentState(BaseModel):
     """Agent state.
@@ -72,7 +83,8 @@ class AgentState(BaseModel):
         description="user input with user query and resource(s) contextual information"
     )
 
-    messages: Annotated[Sequence[BaseMessage], operator.add]
+    # add_messages is better than operator.add, because it sets the id of messages if missing.
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     next: str | None
     subtasks: list[SubTask] | None = []
     final_response: str | None = ""
