@@ -1,12 +1,14 @@
-import logging
 from typing import Protocol
 
+from common.logger import get_logger
 from langchain.prompts import PromptTemplate
 from termcolor import colored
 
-from validation.scenario_mock_responses import ScenarioMockResponses
+from validation.scenario_mock_responses import ScenarioScore, ValidationScenario
 from validation.utils.models import Model
 from validation.utils.utils import string_to_bool
+
+logger = get_logger(__name__)
 
 TEMPLATE = PromptTemplate(
     template="""Please only answer with one word, true or false:
@@ -37,85 +39,107 @@ class Validator(Protocol):
 
 class ModelValidator:
     _model: Model
-    data: list[ScenarioMockResponses]
-    _score: float = 0
-    _short_report: str = ""
-    _report: str = ""
+    scenarios: list[ValidationScenario]
+    _validation_scores: list[ScenarioScore] = []
 
-    def __init__(self, model: Model, data: list[ScenarioMockResponses]):
+    def __init__(self, model: Model, scenarios: list[ValidationScenario]):
         self._model = model
-        self.data = data
+        self.scenarios = scenarios
 
     @property
-    def score(self) -> float:
-        return self._score
+    def score(self) -> int:
+        score = 0
+        for validation_score in self._validation_scores:
+            score += validation_score.score
+        return score
 
     @property
     def report(self) -> str:
-        return self._short_report
+        report = f"For model {self.model.name} scored {self.score} points.\n"
+        for validation_score in self._validation_scores:
+            report += f"\tFor scenario {validation_score.scenario_id} scored {validation_score.score} points."
+        return report
 
     @property
     def full_report(self) -> str:
-        return self._report
+        report = ""
+        for validation_score in self._validation_scores:
+            report += validation_score.report
+        return report
 
     @property
     def model(self) -> Model:
         return self._model
 
     async def run(self):
-        logging.info("Validating model: ", self.model.name)
+        logger.info(f"Starting validation with model: {self.model.name}")
 
-        total_score = 0
-        success_count = 0
-        total_count = 0
-        for scenario_mock_response in self.data:
-            scenario_success_count = 0
-            total_count += len(scenario_mock_response.expected_evaluations)
-            scenario_report = ""
-            for mock_response in scenario_mock_response.expected_evaluations:
-                expectation = next(
-                    (
-                        item
-                        for item in scenario_mock_response.scenario.expectations
-                        if item.name == mock_response.scenario_expectation_name
-                    ),
-                    None,
-                )
-                # actual evaluation response
-                model_validation_response = self.model.invoke(
-                    TEMPLATE.format(
-                        statement=expectation.statement,
-                        response=scenario_mock_response.mock_response_content,
+        for scenario in self.scenarios:
+            logger.info(f"Validating scenario: {scenario.evaluation_scenario.id}")
+            score = ScenarioScore(
+                scenario_id=scenario.evaluation_scenario.id,
+                mock_response_count=len(scenario.mock_responses),
+                max_score=0,
+                score=0,
+                max_success=0,
+                success=0,
+                report=f"Scenario: {scenario.evaluation_scenario.id}",
+            )
+            for mock_response in scenario.mock_responses:
+                logger.info(f"Validating mock response: {mock_response.description}")
+                mock_response_score = 0
+                mock_response_max_score = 0
+                score.report += f"\tMock response: {mock_response.mock_response_content}"
+
+                for expectatet_evaluation in mock_response.expected_evaluations:
+                    logger.info(f"Validating expectation: {expectatet_evaluation.scenario_expectation_name}")
+                    # First we need the actual expectation from the evaluation scenario.
+                    # We can fetch it via its name, which we also store in the expectat evaluation.
+                    # TODO: have this function in the utils, so it can be reused for tests.
+                    expectation = next(
+                        (
+                            expectation
+                            for expectation in scenario.evaluation_scenario.expectations
+                            if expectation.name == expectatet_evaluation.scenario_expectation_name
+                        ),
+                        None,
                     )
-                )
-                actual_evaluation = string_to_bool(model_validation_response)
-                expected_result = mock_response.expected_evaluation
+                    if expectation is None:
+                        raise ValueError(f"Expectation not found: {expectatet_evaluation.scenario_expectation_name}")
 
-                if actual_evaluation != expected_result:
-                    total_score += expectation.complexity * 0
-                else:
-                    total_score += expectation.complexity * 1
-                    success_count += 1
-                    scenario_success_count += 1
-                scenario_report += f"""
-                    expectation: {colored(expectation.statement, 'yellow')}
-                    actual result: {colored(model_validation_response, 'yellow')}
-                    expected result: {colored(expected_result, 'yellow')}"""
+                    # We let the model decide if the mock response matches the expectations.
+                    model_validation_response = self.model.invoke(
+                        TEMPLATE.format(
+                            statement=expectation.statement,
+                            response=mock_response.mock_response_content,
+                        )
+                    )
+                    actual_result = string_to_bool(model_validation_response)
+                    expected_result = expectatet_evaluation.expected_evaluation
 
-            success_rate = round(
-                scenario_success_count
-                / len(scenario_mock_response.expected_evaluations)
-                * 100,
+                    # Gathering scores.
+                    score.max_success += 1
+                    score.max_score += expectation.complexity
+                    mock_response_max_score += expectation.complexity
+                    if actual_result == expected_result:
+                        score.success += 1
+                        score.score += expectation.complexity
+                        mock_response_score += expectation.complexity
+
+                    # Report per expectation.
+                    score.report += f"""
+\t\texpectation: {colored(expectation.statement, 'yellow')}
+\t\tactual result: {colored(model_validation_response, 'yellow')}
+\t\texpected result: {colored(expected_result, 'yellow')}\n"""
+
+                # Report per mock response.
+                score_percent = round(mock_response_score / mock_response_max_score * 100, 2)
+                score.report += f"\tScored {mock_response_score} of {mock_response_max_score} points ({score_percent}%) for mock response: {mock_response}"
+
+            # Report per scenario.
+            score_percent = round(
+                score.score / score.max_score * 100,
                 2,
             )
-            self._short_report += (
-                f"scenario: {colored(scenario_mock_response.scenario_id, 'yellow')}\n"
-                f"success rate: {colored(success_rate, 'yellow')}\n"
-            )
-
-            self._report += (
-                f"{self._short_report}\n"
-                f"expectation report: {colored(scenario_report, 'yellow')}\n"
-            )
-
-        self._score = total_score
+            score.report += f"Scored {score.score} of {score.max_score} point ({score_percent}%) for scenario {scenario.evaluation_scenario.id}"
+            self._validation_scores.append(score)

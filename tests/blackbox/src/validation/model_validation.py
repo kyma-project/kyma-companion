@@ -3,7 +3,7 @@ from typing import Protocol
 
 from prettytable import PrettyTable
 
-from validation.scenario_mock_responses import ScenarioMockResponses
+from validation.scenario_mock_responses import MockResponse, ValidationScenario
 from validation.utils.models import Model
 from validation.validator import ModelValidator, Validator
 
@@ -25,8 +25,8 @@ class ModelValidation:
     validators: list[Validator]
     _model_scores: dict[str, float] = {}
 
-    def __init__(self, models: list[Model], data: list[ScenarioMockResponses]):
-        self.validators = [ModelValidator(model, data) for model in models]
+    def __init__(self, models: list[Model], vaidation_scenarios: list[ValidationScenario]):
+        self.validators = [ModelValidator(model, vaidation_scenarios) for model in models]
 
     async def validate(self):
         tasks = [validator.run() for validator in self.validators]
@@ -53,13 +53,9 @@ class ModelValidation:
         table = PrettyTable()
         table.field_names = ["Model", "Score", "Full Report"]
         for validator in self.validators:
-            table.add_row(
-                [validator.model.name, validator.score, validator.full_report]
-            )
+            table.add_row([validator.model.name, validator.score, validator.full_report])
         print(table)
 
 
-def create_validation(
-    models: list[Model], data: list[ScenarioMockResponses]
-) -> Validation:
-    return ModelValidation(models, data)
+def create_validation(models: list[Model], validation_scenarios: list[ValidationScenario]) -> Validation:
+    return ModelValidation(models, validation_scenarios)

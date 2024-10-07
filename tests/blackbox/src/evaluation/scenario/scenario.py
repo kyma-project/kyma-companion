@@ -187,7 +187,7 @@ class ScenarioList(BaseModel):
 
         # loop over all the directory names
         for dir_name in directories:
-            scenario_file = path + "/" + dir_name + "/scenario.yml"
+            scenario_file = path + "/" + dir_name + "/evaluation.yml"
             logger.debug(f"Loading scenario file: {scenario_file}")
 
             try:

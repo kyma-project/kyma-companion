@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "evaluation"
+name = "Kyma Companion Blackbox Tests"
 version = "0.1.0"
-description = "Evaluation Framework"
+description = "Evaluation and Validation Framework for Kyma Companion"
 authors = []
 package-mode = false
 

@@ -77,13 +77,16 @@ def get_models() -> list:
             models_config = [ModelConfig(**model) for model in yaml_data]
             llms: list[Model] = []
             for config in models_config:
+                logger.info(f"Initializing model: {config.name}")
                 if config.name.startswith("gpt"):
                     llms.append(OpenAIModel(config))
                 elif config.name.startswith("gemini"):
                     llms.append(GeminiModel(config))
                 else:
                     raise ValueError(f"Model {config.name} not supported.")
+            logger.info(f"Loaded {len(llms)} models")
             return llms
+
     except Exception:
         logger.exception(
             f"Failed to load/initialize models specified in the config file: {models_config}"
