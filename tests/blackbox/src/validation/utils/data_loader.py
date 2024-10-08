@@ -2,7 +2,7 @@ import os
 
 import yaml
 from common.logger import get_logger
-from evaluation.scenario.scenario import Scenario
+from evaluation.scenario.scenario import Scenario as EvaluationScenario
 
 from validation.scenario_mock_responses import MockResponse, ValidationScenario
 
@@ -25,11 +25,11 @@ def load_data(data_dir: str) -> list[ValidationScenario]:
 
                 # Load the Scenario from the evaluation file.
                 logger.info(f"Loading evaluation data from {evaluation_file_path}")
-                scenario: Scenario
+                scenario: EvaluationScenario
                 if os.path.exists(evaluation_file_path):
                     with open(evaluation_file_path) as eval_file:
                         eval_data = yaml.safe_load(eval_file)
-                        scenario = Scenario(**eval_data)
+                        scenario = EvaluationScenario(**eval_data)
                 else:
                     logger.error(f"Evaluation data not found at {evaluation_file_path}")
                     raise FileNotFoundError(f"Evaluation data not found for the scenario: {subdir}")
@@ -46,10 +46,10 @@ def load_data(data_dir: str) -> list[ValidationScenario]:
                     raise FileNotFoundError(f"Validation data not found for the scenario: {subdir}")
 
                 # Build the validation scenario from the scenario and the corresponding mock responses.
-                validation_scenario = ValidationScenario(evaluation_scenario=scenario, mock_responses=mock_responses)
+                validation_scenario = ValidationScenario(eval_scenario=scenario, mock_responses=mock_responses)
                 results.append(validation_scenario)
                 logger.info(
-                    f"Loaded data for scenario '{validation_scenario.evaluation_scenario.id}' "
+                    f"Loaded data for scenario '{validation_scenario.eval_scenario.id}' "
                     f"with {len(validation_scenario.mock_responses)} mock responses"
                 )
     except Exception:

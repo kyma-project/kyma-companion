@@ -1,3 +1,7 @@
+from evaluation.scenario.scenario import Expectation, Scenario as EvaluationScenario
+from validation.scenario_mock_responses import ExpectedEvaluation
+
+
 def string_to_bool(value: str) -> bool:
     """Convert a string to a boolean value."""
     if value.lower() in ["true", "1", "t", "y", "yes"]:
@@ -10,3 +14,14 @@ def string_to_bool(value: str) -> bool:
 def print_seperator_line() -> None:
     """Print a line."""
     print("#########################################")
+
+
+def get_expectation(eval_scenario: EvaluationScenario, expected_evaluation: ExpectedEvaluation) -> Expectation | None:
+    return next(
+        (
+            expectation
+            for expectation in eval_scenario.expectations
+            if expectation.name == expected_evaluation.scenario_expectation_name
+        ),
+        None,
+    )

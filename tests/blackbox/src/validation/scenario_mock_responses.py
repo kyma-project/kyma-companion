@@ -1,7 +1,5 @@
 from common.logger import get_logger
-
-# TODO: Import as Evaluation
-from evaluation.scenario.scenario import Scenario
+from evaluation.scenario.scenario import Scenario as EvaluationScenario
 from pydantic import BaseModel
 
 logger = get_logger(__name__)
@@ -14,14 +12,14 @@ class ExpectedEvaluation(BaseModel):
 
 class MockResponse(BaseModel):
     description: str
+    # TODO: do we need this?
     scenario_id: str
     mock_response_content: str
     expected_evaluations: list[ExpectedEvaluation]
 
 
 class ValidationScenario(BaseModel):
-    # TODO: rename to simply evaluation
-    evaluation_scenario: Scenario
+    eval_scenario: EvaluationScenario
     mock_responses: list[MockResponse]
 
 

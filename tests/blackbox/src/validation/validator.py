@@ -25,7 +25,10 @@ class Validator(Protocol):
     async def run(self): ...
 
     @property
-    def score(self) -> float: ...
+    def score(self) -> int: ...
+
+    @property
+    def max_score(self) -> int: ...
 
     @property
     def report(self) -> str: ...
@@ -52,6 +55,13 @@ class ModelValidator:
         for validation_score in self._validation_scores:
             score += validation_score.score
         return score
+
+    @property
+    def max_score(self) -> int:
+        max_score = 0
+        for validation_score in self._validation_scores:
+            max_score += validation_score.max_score
+        return max_score
 
     @property
     def report(self) -> str:

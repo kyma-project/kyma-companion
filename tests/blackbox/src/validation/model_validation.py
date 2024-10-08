@@ -42,11 +42,14 @@ class ModelValidation:
     def get_best_rated_model(self) -> str:
         return max(self.model_scores, key=self.model_scores.get)
 
+    # TODO: rename to print results.
     def print_report(self):
         table = PrettyTable()
-        table.field_names = ["Model", "Score", "Short Report"]
+        table.field_names = ["Model", "Score", "Relative"]
         for validator in self.validators:
-            table.add_row([validator.model.name, validator.score, validator.report])
+            score_field = f"{validator.score}/{validator.max_score}"
+            relative_field = f"{validator.score / validator.max_score * 100:.2f}%"
+            table.add_row([validator.model.name, score_field, relative_field])
         print(table)
 
     def print_full_report(self):
