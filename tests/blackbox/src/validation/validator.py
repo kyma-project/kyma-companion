@@ -7,6 +7,8 @@ from termcolor import colored
 from validation.scenario_mock_responses import ScenarioScore, ValidationScenario
 from validation.utils.models import Model
 from validation.utils.utils import get_expectation, string_to_bool
+import time
+import openai
 
 logger = get_logger(__name__)
 
@@ -118,12 +120,24 @@ class ModelValidator:
                         )
 
                     # We let the model decide if the mock response matches the expectations.
-                    model_validation_response = self.model.invoke(
-                        TEMPLATE.format(
-                            statement=expectation.statement,
-                            response=mock_response.mock_response_content,
-                        )
-                    )
+                    retry_delay = 120  # Start with 2 minutes
+                    max_delay = 600  # Maximum delay of 10 minutes
+                    while True:
+                        try:
+                            model_validation_response = self.model.invoke(
+                                TEMPLATE.format(
+                                    statement=expectation.statement,
+                                    response=mock_response.mock_response_content,
+                                )
+                            )
+                            break  # Exit the loop if the request is successful
+                        except openai.RateLimitError as e:
+                            logger.warning(f"Rate limit error: {e}. Retrying in {retry_delay // 60} minutes...")
+                            time.sleep(retry_delay)
+                            if retry_delay < max_delay:
+                                retry_delay += 120  # Increase delay by 2 minutes
+                            else:
+                                raise RuntimeError("Maximum retry delay reached. Failing the request.")
                     actual_result = string_to_bool(model_validation_response)
                     expected_result = expectatet_evaluation.expected_evaluation
 
