@@ -99,15 +99,23 @@ class ModelValidator:
                 logger.info(f"Validating mock response: {mock_response.description}")
                 mock_response_score = 0
                 mock_response_max_score = 0
-                score.report += f"\tMock response: {mock_response.mock_response_content}"
+                score.report += (
+                    f"\tMock response: {mock_response.mock_response_content}"
+                )
 
                 for expectatet_evaluation in mock_response.expected_evaluations:
-                    logger.info(f"Validating expectation: {expectatet_evaluation.scenario_expectation_name}")
+                    logger.info(
+                        f"Validating expectation: {expectatet_evaluation.scenario_expectation_name}"
+                    )
                     # First we need the actual expectation from the evaluation scenario.
                     # We can fetch it via its name, which we also store in the expectat evaluation.
-                    expectation = get_expectation(scenario.eval_scenario, expectatet_evaluation)
+                    expectation = get_expectation(
+                        scenario.eval_scenario, expectatet_evaluation
+                    )
                     if expectation is None:
-                        raise ValueError(f"Expectation not found: {expectatet_evaluation.scenario_expectation_name}")
+                        raise ValueError(
+                            f"Expectation not found: {expectatet_evaluation.scenario_expectation_name}"
+                        )
 
                     # We let the model decide if the mock response matches the expectations.
                     model_validation_response = self.model.invoke(
@@ -135,7 +143,9 @@ class ModelValidator:
 \t\texpected result: {colored(expected_result, 'yellow')}\n"""
 
                 # Report per mock response.
-                score_percent = round(mock_response_score / mock_response_max_score * 100, 2)
+                score_percent = round(
+                    mock_response_score / mock_response_max_score * 100, 2
+                )
                 score.report += (
                     f"\tScored {mock_response_score} of {mock_response_max_score} points "
                     f"({score_percent}%) for mock response: {mock_response}"

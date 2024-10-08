@@ -23,8 +23,12 @@ class ModelValidation:
     validators: list[Validator]
     _model_scores: dict[str, float] = {}
 
-    def __init__(self, models: list[Model], vaidation_scenarios: list[ValidationScenario]):
-        self.validators = [ModelValidator(model, vaidation_scenarios) for model in models]
+    def __init__(
+        self, models: list[Model], vaidation_scenarios: list[ValidationScenario]
+    ):
+        self.validators = [
+            ModelValidator(model, vaidation_scenarios) for model in models
+        ]
 
     async def validate(self):
         tasks = [validator.run() for validator in self.validators]
@@ -52,5 +56,7 @@ class ModelValidation:
         self.print_results()
 
 
-def create_validation(models: list[Model], validation_scenarios: list[ValidationScenario]) -> Validation:
+def create_validation(
+    models: list[Model], validation_scenarios: list[ValidationScenario]
+) -> Validation:
     return ModelValidation(models, validation_scenarios)

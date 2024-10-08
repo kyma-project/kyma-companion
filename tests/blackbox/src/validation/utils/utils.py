@@ -18,7 +18,9 @@ def print_seperator_line() -> None:
     print("#########################################")
 
 
-def get_expectation(eval_scenario: EvaluationScenario, expected_evaluation: ExpectedEvaluation) -> Expectation | None:
+def get_expectation(
+    eval_scenario: EvaluationScenario, expected_evaluation: ExpectedEvaluation
+) -> Expectation | None:
     return next(
         (
             expectation

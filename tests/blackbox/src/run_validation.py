@@ -25,6 +25,8 @@ async def main(full_report: bool = False) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--full_report", action="store_true", help="Flag to print the full report")
+    parser.add_argument(
+        "--full_report", action="store_true", help="Flag to print the full report"
+    )
     args = parser.parse_args()
     asyncio.run(main(args.full_report))

@@ -31,7 +31,9 @@ class OpenAIModel(Model):
 
     def __init__(self, config: ModelConfig):
         self._name = config.name
-        self.model = ChatOpenAI(deployment_id=config.deployment_id, proxy_client=proxy_client, temperature=0)
+        self.model = ChatOpenAI(
+            deployment_id=config.deployment_id, proxy_client=proxy_client, temperature=0
+        )
 
     def invoke(self, content: str) -> str:
         response = self.model.invoke(content)
@@ -65,7 +67,9 @@ class GeminiModel(Model):
 
 
 def get_models() -> list:
-    models_config_path = os.getenv("MODEL_CONFIG_PATH", "./config/validation/models.yml")
+    models_config_path = os.getenv(
+        "MODEL_CONFIG_PATH", "./config/validation/models.yml"
+    )
     logger.info(f"Loading models from the config file: {models_config_path}")
     try:
         with open(models_config_path) as file:
@@ -84,5 +88,7 @@ def get_models() -> list:
             return llms
 
     except Exception:
-        logger.exception(f"Failed to load/initialize models specified in the config file: {models_config}")
+        logger.exception(
+            f"Failed to load/initialize models specified in the config file: {models_config}"
+        )
         raise
