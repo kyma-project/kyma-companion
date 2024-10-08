@@ -1,4 +1,6 @@
-from evaluation.scenario.scenario import Expectation, Scenario as EvaluationScenario
+from evaluation.scenario.scenario import Expectation
+from evaluation.scenario.scenario import Scenario as EvaluationScenario
+
 from validation.scenario_mock_responses import ExpectedEvaluation
 
 
