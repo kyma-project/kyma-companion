@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 def load_data(data_dir: str) -> list[ValidationScenario]:
     # Load the validation data from the given directory. The directory should contain subdirectories with the given
     # scenarios. Each scenario should have a validation.yml file containing the mock responses for the scenario and
-    # an evaluation.yml file containing the scenario details.
+    # an scenario.yml file containing the scenario details.
     logger.info(f"Loading validation data from the directory: {data_dir}")
 
     results: list[ValidationScenario] = []
@@ -21,7 +21,7 @@ def load_data(data_dir: str) -> list[ValidationScenario]:
             subdir_path = os.path.join(data_dir, subdir)
             if os.path.isdir(subdir_path):
                 validation_file_path = os.path.join(subdir_path, "validation.yml")
-                evaluation_file_path = os.path.join(subdir_path, "evaluation.yml")
+                evaluation_file_path = os.path.join(subdir_path, "scenario.yml")
 
                 # Load the Scenario from the evaluation file.
                 logger.info(f"Loading evaluation data from {evaluation_file_path}")
@@ -32,9 +32,7 @@ def load_data(data_dir: str) -> list[ValidationScenario]:
                         scenario = EvaluationScenario(**eval_data)
                 else:
                     logger.error(f"Evaluation data not found at {evaluation_file_path}")
-                    raise FileNotFoundError(
-                        f"Evaluation data not found for the scenario: {subdir}"
-                    )
+                    raise FileNotFoundError(f"Evaluation data not found for the scenario: {subdir}")
 
                 # Load the mock responses for the given scenario from the validation file.
                 logger.info(f"Loading validation data from {validation_file_path}")
@@ -45,23 +43,17 @@ def load_data(data_dir: str) -> list[ValidationScenario]:
                         mock_responses = [MockResponse(**data) for data in val_data]
                 else:
                     logger.error(f"Validation data not found at {validation_file_path}")
-                    raise FileNotFoundError(
-                        f"Validation data not found for the scenario: {subdir}"
-                    )
+                    raise FileNotFoundError(f"Validation data not found for the scenario: {subdir}")
 
                 # Build the validation scenario from the scenario and the corresponding mock responses.
-                validation_scenario = ValidationScenario(
-                    eval_scenario=scenario, mock_responses=mock_responses
-                )
+                validation_scenario = ValidationScenario(eval_scenario=scenario, mock_responses=mock_responses)
                 results.append(validation_scenario)
                 logger.info(
                     f"Loaded data for scenario '{validation_scenario.eval_scenario.id}' "
                     f"with {len(validation_scenario.mock_responses)} mock responses"
                 )
     except Exception:
-        logger.exception(
-            f"Failed to load validation data from the directory: {data_dir}"
-        )
+        logger.exception(f"Failed to load validation data from the directory: {data_dir}")
         raise
 
     logger.info(f"loaded data from {len(results)} scenarios")

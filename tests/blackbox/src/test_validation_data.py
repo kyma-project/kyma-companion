@@ -7,10 +7,16 @@ DEFAULT_DATA_DIR: str = "tests/blackbox/data/namespace-scoped"
 
 
 def test_data_integrity():
+    # This test checks if all validation can be loaded and ensures that the
+    # mock responses can be assigned to the corresponding expectations.
+
+    # This function call already checks that the mock responses are assigned to the correct
+    # evaluation scenarios, which hold the expectations.
     validation_scenarios: list[ValidationScenario] = load_data(DEFAULT_DATA_DIR)
     for scenario in validation_scenarios:
         for mock_response in scenario.mock_responses:
             for expected_evaluation in mock_response.expected_evaluations:
+                # This checks if right expectation can be found for the mock response.
                 expectation = get_expectation(
                     scenario.eval_scenario, expected_evaluation
                 )
