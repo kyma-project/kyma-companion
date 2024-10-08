@@ -1,6 +1,6 @@
 import json
 from collections.abc import Hashable
-from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
+from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -81,6 +81,8 @@ class KymaGraph:
 
     plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
+    planner_prompt: ChatPromptTemplate
+
     def __init__(self, model: IModel, memory: BaseCheckpointSaver):
         self.model = model
         self.memory = memory
@@ -95,7 +97,7 @@ class KymaGraph:
         self.graph = self._build_graph()
 
     def _create_planner_chain(self) -> RunnableSequence:
-        planner_prompt = ChatPromptTemplate.from_messages(
+        self.planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
@@ -104,7 +106,16 @@ class KymaGraph:
             members=", ".join(self.members),
             output_format=self.plan_parser.get_format_instructions(),
         )
-        return planner_prompt | self.model.llm  # type: ignore
+        return self.planner_prompt | self.model.llm  # type: ignore
+
+    def _invoke_planner(self, state: AgentState) -> dict[str, Any]:
+        """Invoke the planner."""
+        planner_chain = self._create_planner_chain()
+        return planner_chain.invoke(
+            input={
+                "messages": filter_messages(state.messages),
+            },
+        )
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """
@@ -122,12 +133,9 @@ class KymaGraph:
         # to prevent stored errors from previous runs
         state.error = None
 
-        planner_chain = self._create_planner_chain()
         try:
-            plan_response = planner_chain.invoke(
-                input={
-                    "messages": filter_messages(state.messages),
-                },  # last message is the user query
+            plan_response = self._invoke_planner(
+                state,  # last message is the user query
             )
 
             try:
@@ -155,8 +163,7 @@ class KymaGraph:
 
             return create_node_output(
                 message=AIMessage(
-                    content=f"Task decomposed into subtasks and assigned to agents: "
-                    f"{json.dumps(plan.subtasks, cls=CustomJSONEncoder)}",
+                    content=plan_response.content,
                     name=PLANNER,
                 ),
                 next=CONTINUE,
@@ -178,6 +185,16 @@ class KymaGraph:
         )
         return prompt | self.model.llm  # type: ignore
 
+    def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
+        """Invoke the common node."""
+        common_node_chain = self._common_node_chain()
+        return common_node_chain.invoke(
+            {
+                "messages": filter_messages(state.messages),
+                "query": subtask,
+            },
+        ).content
+
     def common_node(self, state: AgentState) -> dict[str, Any]:
         """Common node to handle general queries."""
 
@@ -186,12 +203,7 @@ class KymaGraph:
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
                 try:
-                    response = chain.invoke(
-                        {
-                            "messages": filter_messages(state.messages),
-                            "query": subtask.description,
-                        },
-                    ).content
+                    response = self._invoke_common_node(state, subtask.description)
                     subtask.complete()
                     return {
                         MESSAGES: [

@@ -26,7 +26,7 @@ langchain-community = "^0.2.6"
 langchain-google-genai = "^1.0.7"
 langchain-openai = "^0.1.14"
 ai-core-sdk = "^2.3.11"
-generative-ai-hub-sdk = "^3.1.0"
+generative-ai-hub-sdk = "^3.2.6"
 langfuse = "^2.39.1"
 langgraph = "^0.2.5"
 redis = "^5.0.8"
@@ -36,7 +36,7 @@ langchain-experimental = "^0.0.64"
 black = "^24.8.0"
 langchain-redis = "^0.0.4"
 langchain-aws = "^0.1.17"
-langchain-google-vertexai = "^1.0.10"
+langchain-google-vertexai = "^1.0.8"
 tiktoken = "^0.7.0"
 python-decouple = "^3.8"
 
@@ -49,6 +49,8 @@ pyyaml = "^6.0.1"
 types-pyyaml = "^6.0.12.20240311"
 prettytable = "^3.10.2"
 termcolor = "^2.4.0"
+pytest-dotenv = "^0.5.2"
+deepeval = "^1.3.4"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "v0.4.10"
@@ -69,6 +71,9 @@ pythonpath = [
 ]
 testpaths = [
     "tests",
+]
+env_files = [
+    ".test.env"
 ]
 
 [tool.poe.tasks]
