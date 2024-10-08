@@ -35,7 +35,7 @@ class OpenAIModel(Model):
 
     def invoke(self, content: str) -> str:
         response = self.model.invoke(content)
-        return response.content.__str__()
+        return response.content
 
     @property
     def name(self) -> str:

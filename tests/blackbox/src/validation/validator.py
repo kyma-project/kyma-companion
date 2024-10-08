@@ -136,12 +136,18 @@ class ModelValidator:
 
                 # Report per mock response.
                 score_percent = round(mock_response_score / mock_response_max_score * 100, 2)
-                score.report += f"\tScored {mock_response_score} of {mock_response_max_score} points ({score_percent}%) for mock response: {mock_response}"
+                score.report += (
+                    f"\tScored {mock_response_score} of {mock_response_max_score} points "
+                    f"({score_percent}%) for mock response: {mock_response}"
+                )
 
             # Report per scenario.
             score_percent = round(
                 score.score / score.max_score * 100,
                 2,
             )
-            score.report += f"Scored {score.score} of {score.max_score} point ({score_percent}%) for scenario {scenario.eval_scenario.id}"
+            score.report += (
+                f"Scored {score.score} of {score.max_score} point ({score_percent}%) for "
+                f"scenario {scenario.eval_scenario.id}"
+            )
             self._validation_scores.append(score)
