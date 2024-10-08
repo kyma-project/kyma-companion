@@ -149,7 +149,9 @@ class ScenarioList(BaseModel):
             if total_count[category] == 0:
                 success_rate[category] = 0.0
             else:
-                success_rate[category] = round(float((success_count[category] / total_count[category]) * 100), 2)
+                success_rate[category] = round(
+                    float((success_count[category] / total_count[category]) * 100), 2
+                )
 
         return success_rate
 
@@ -192,7 +194,9 @@ class ScenarioList(BaseModel):
                 with open(scenario_file) as file:
                     scenario_yaml = yaml.load(file, Loader=yaml.FullLoader)
             except Exception as exception:
-                raise Exception(f"Error reading scenario file: {scenario_file}") from exception
+                raise Exception(
+                    f"Error reading scenario file: {scenario_file}"
+                ) from exception
 
             try:
                 json_str = json.dumps(scenario_yaml)
@@ -201,7 +205,9 @@ class ScenarioList(BaseModel):
                 # add the scenario to the list.
                 self.add(scenario)
             except Exception as exception:
-                raise Exception(f"Error parsing scenario file: {scenario_file}") from exception
+                raise Exception(
+                    f"Error parsing scenario file: {scenario_file}"
+                ) from exception
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
 
