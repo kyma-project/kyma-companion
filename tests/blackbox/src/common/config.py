@@ -13,9 +13,7 @@ class Config:
     test_data_path: str  # Path to the test data directory e.g. "~kyma-companion/tests/blackbox/data"
     namespace_scoped_test_data_path: str
     companion_api_url: str
-    companion_token: (
-        str  # Authentication token when the companion is deployed in MPS cluster.
-    )
+    companion_token: str  # Authentication token when the companion is deployed in MPS cluster.
     test_cluster_url: str  # Gardener test cluster API server URL.
     test_cluster_ca_data: str  # Gardener test cluster CA data.
     test_cluster_auth_token: str  # Gardener test cluster authentication token.
@@ -30,9 +28,7 @@ class Config:
 
     def __init__(self) -> None:
         self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
-        self.namespace_scoped_test_data_path = (
-            f"{self.test_data_path}/evaluation/namespace-scoped"
-        )
+        self.namespace_scoped_test_data_path = f"{self.test_data_path}/namespace-scoped"
 
         self.companion_api_url = get_env("COMPANION_API_URL")
         self.companion_token = get_env("COMPANION_TOKEN", False, "not-needed")
