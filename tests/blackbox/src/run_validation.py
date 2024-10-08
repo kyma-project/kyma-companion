@@ -18,7 +18,7 @@ async def main(full_report: bool = False) -> None:
     models = get_models()
     validation = create_validation(models, data)
     await validation.validate()
-    validation.print_reults()
+    validation.print_results()
     if full_report:
         validation.print_full_report()
 
