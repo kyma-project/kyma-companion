@@ -3,7 +3,7 @@ from typing import Protocol
 
 from prettytable import PrettyTable
 
-from validation.scenario_mock_responses import MockResponse, ValidationScenario
+from validation.scenario_mock_responses import ValidationScenario
 from validation.utils.models import Model
 from validation.validator import ModelValidator, Validator
 
@@ -14,9 +14,7 @@ class Validation(Protocol):
     @property
     def model_scores(self) -> dict[str, float]: ...
 
-    def get_best_rated_model(self) -> str: ...
-
-    def print_report(self) -> None: ...
+    def print_results(self) -> None: ...
 
     def print_full_report(self) -> None: ...
 
@@ -39,11 +37,7 @@ class ModelValidation:
             self._model_scores[validator.model.name] = validator.score
         return self._model_scores
 
-    def get_best_rated_model(self) -> str:
-        return max(self.model_scores, key=self.model_scores.get)
-
-    # TODO: rename to print results.
-    def print_report(self):
+    def print_results(self):
         table = PrettyTable()
         table.field_names = ["Model", "Score", "Relative"]
         for validator in self.validators:
@@ -53,11 +47,9 @@ class ModelValidation:
         print(table)
 
     def print_full_report(self):
-        table = PrettyTable()
-        table.field_names = ["Model", "Score", "Full Report"]
         for validator in self.validators:
-            table.add_row([validator.model.name, validator.score, validator.full_report])
-        print(table)
+            print(validator.full_report)
+        self.print_results()
 
 
 def create_validation(models: list[Model], validation_scenarios: list[ValidationScenario]) -> Validation:

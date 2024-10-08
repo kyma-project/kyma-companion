@@ -6,7 +6,7 @@ from termcolor import colored
 
 from validation.scenario_mock_responses import ScenarioScore, ValidationScenario
 from validation.utils.models import Model
-from validation.utils.utils import string_to_bool
+from validation.utils.utils import get_expectation, string_to_bool
 
 logger = get_logger(__name__)
 
@@ -85,15 +85,15 @@ class ModelValidator:
         logger.info(f"Starting validation with model: {self.model.name}")
 
         for scenario in self.scenarios:
-            logger.info(f"Validating scenario: {scenario.evaluation_scenario.id}")
+            logger.info(f"Validating scenario: {scenario.eval_scenario.id}")
             score = ScenarioScore(
-                scenario_id=scenario.evaluation_scenario.id,
+                scenario_id=scenario.eval_scenario.id,
                 mock_response_count=len(scenario.mock_responses),
                 max_score=0,
                 score=0,
                 max_success=0,
                 success=0,
-                report=f"Scenario: {scenario.evaluation_scenario.id}",
+                report=f"Scenario: {scenario.eval_scenario.id}",
             )
             for mock_response in scenario.mock_responses:
                 logger.info(f"Validating mock response: {mock_response.description}")
@@ -105,15 +105,7 @@ class ModelValidator:
                     logger.info(f"Validating expectation: {expectatet_evaluation.scenario_expectation_name}")
                     # First we need the actual expectation from the evaluation scenario.
                     # We can fetch it via its name, which we also store in the expectat evaluation.
-                    # TODO: have this function in the utils, so it can be reused for tests.
-                    expectation = next(
-                        (
-                            expectation
-                            for expectation in scenario.evaluation_scenario.expectations
-                            if expectation.name == expectatet_evaluation.scenario_expectation_name
-                        ),
-                        None,
-                    )
+                    expectation = get_expectation(scenario.eval_scenario, expectatet_evaluation)
                     if expectation is None:
                         raise ValueError(f"Expectation not found: {expectatet_evaluation.scenario_expectation_name}")
 
@@ -151,5 +143,5 @@ class ModelValidator:
                 score.score / score.max_score * 100,
                 2,
             )
-            score.report += f"Scored {score.score} of {score.max_score} point ({score_percent}%) for scenario {scenario.evaluation_scenario.id}"
+            score.report += f"Scored {score.score} of {score.max_score} point ({score_percent}%) for scenario {scenario.eval_scenario.id}"
             self._validation_scores.append(score)
