@@ -2,7 +2,8 @@ from validation.scenario_mock_responses import ValidationScenario
 from validation.utils.data_loader import load_data
 from validation.utils.utils import get_expectation
 
-DEFAULT_DATA_DIR: str = "./data/namespace-scoped"
+# Unit tests run from the rootdir of the repository.
+DEFAULT_DATA_DIR: str = "tests/blackbox/data/namespace-scoped"
 
 
 def test_data_integrity():
