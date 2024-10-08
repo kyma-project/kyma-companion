@@ -12,8 +12,6 @@ class ExpectedEvaluation(BaseModel):
 
 class MockResponse(BaseModel):
     description: str
-    # TODO: do we need this?
-    scenario_id: str
     mock_response_content: str
     expected_evaluations: list[ExpectedEvaluation]
 
