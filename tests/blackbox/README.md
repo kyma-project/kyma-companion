@@ -2,6 +2,14 @@
 
 The black box testing framework provides evaluation tests for Kyma Companion and validation of large language models (LLMs) as assessments for tests. The evaluation tests measure the improvement of Kyma Companion, while validation finds the best model to verify the test scenarios.
 
+## Testing Data
+
+The data we use for both `Validation` and `Evaluation` is stored in `kyma-companion/tests/blackbox/data/namespace-scoped`. Located in that directery are a number of subdirectories named after the testing scenario they represent. In each of these you will find:
+- `deploy.sh`, a shell script that would help to deploy the scenario on a Kubernetes cluster.
+- `deployment.yml`, a Kubernetes manifest, that is utilised by the aforementioned `deploy.sh`.
+- `scenario.yml`, a file that contains all data for running the `Evaluation` test against the scenario.
+- `validation.yml`, a file that contains all data for running the `Validation` test against the scenario.
+
 ## Evaluation
 
 To measure any improvement of Kyma Companion, we need a black box test. This test is referred to as an evaluation test.
