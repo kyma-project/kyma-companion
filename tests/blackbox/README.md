@@ -12,7 +12,7 @@ The data we use for both `Validation` and `Evaluation` is stored in `kyma-compan
 
 ## Evaluation
 
-To measure any improvement of Kyma Companion, we need a black box test. This test is referred to as an evaluation test.
+To measure any improvement of the Kyma Companion, we need a black box test. This test is referred to as an evaluation test.
 
 For the evaluation, we need to define a set of scenarios, with each scenario further divided into expectations. Kyma
 Companion is prompted through its endpoints to evaluate the given scenario. In the evaluation, the response is compared
