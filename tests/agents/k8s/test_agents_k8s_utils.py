@@ -54,7 +54,7 @@ def test_subtask_selector_edge(
         ),
         (
             AIMessage(content="test"),
-            "__end__",
+            "finalizer",
         ),
     ],
 )

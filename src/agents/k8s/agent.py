@@ -1,6 +1,13 @@
 from typing import Any
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    RemoveMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
@@ -15,6 +22,7 @@ from agents.k8s.constants import (
     IS_LAST_STEP,
     K8S_AGENT,
     MY_TASK,
+    OWNER,
     QUERY,
 )
 from agents.k8s.prompts import K8S_AGENT_PROMPT
@@ -55,12 +63,30 @@ class KubernetesAgent:
         agent_prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(K8S_AGENT_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
+                MessagesPlaceholder(variable_name=MESSAGES),
                 HumanMessage(content="query: {query}"),
             ]
         )
 
         return agent_prompt | self.model.llm.bind_tools(self.tools)
+
+    def is_internal_message(self, message: BaseMessage) -> bool:
+        """Check if the message is an internal message."""
+        # if the message is a tool call and the owner is the agent, return True.
+        if (
+            message.additional_kwargs is not None
+            and OWNER in message.additional_kwargs
+            and message.additional_kwargs[OWNER] == self.name
+            and message.tool_calls  # type: ignore
+        ):
+            return True
+
+        # if the message is a tool message and the tool is in the agent's tools, return True.
+        tool_names = [tool.name for tool in self.tools]
+        if isinstance(message, ToolMessage) and message.name in tool_names:
+            return True
+        # otherwise, return False.
+        return False
 
     def _subtask_selector_node(self, state: KubernetesAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
@@ -122,7 +148,26 @@ class KubernetesAgent:
                 ]
             }
         # return the response.
+        response.additional_kwargs[OWNER] = self.name
         return {MESSAGES: [response]}
+
+    def _finalizer_node(
+        self, state: KubernetesAgentState, config: RunnableConfig
+    ) -> dict[str, Any]:
+        """Finalizer node will mark the task as completed and also clean-up any extra messages."""
+
+        # mark the task as completed.
+        state.my_task.complete()
+
+        # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
+        return {
+            MESSAGES: [
+                RemoveMessage(id=m.id)  # type: ignore
+                for m in state.messages
+                if self.is_internal_message(m)
+            ],
+            MY_TASK: None,
+        }
 
     def _build_graph(self) -> CompiledGraph:
         # Define a new graph
@@ -132,6 +177,7 @@ class KubernetesAgent:
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
         workflow.add_node("tools", ToolNode(self.tools))
+        workflow.add_node("finalizer", self._finalizer_node)
 
         # Set the entrypoint: ENTRY --> subtask_selector
         workflow.set_entry_point("subtask_selector")
@@ -139,10 +185,13 @@ class KubernetesAgent:
         # Define the edge: subtask_selector --> (agent | end)
         workflow.add_conditional_edges("subtask_selector", subtask_selector_edge)
 
-        # Define the edge: agent --> (tool | end)
+        # Define the edge: agent --> (tool | finalizer)
         workflow.add_conditional_edges("agent", agent_edge)
 
         # Define the edge: tool --> agent
         workflow.add_edge("tools", "agent")
+
+        # Define the edge: finalizer --> END
+        workflow.add_edge("finalizer", "__end__")
 
         return workflow.compile()
