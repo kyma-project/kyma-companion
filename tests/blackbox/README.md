@@ -4,7 +4,7 @@ The black box testing framework provides evaluation tests for Kyma Companion and
 
 ## Testing Data
 
-The data we use for both `Validation` and `Evaluation` is stored in `kyma-companion/tests/blackbox/data/namespace-scoped`. Located in that directery are a number of subdirectories named after the testing scenario they represent. In each of these you will find:
+The data we use for both `Validation` and `Evaluation` is stored in `kyma-companion/tests/blackbox/data/namespace-scoped`. Located in that directory are several subdirectories named after the testing scenario they represent. In each of these you will find:
 - `deploy.sh`, a shell script that would help to deploy the scenario on a Kubernetes cluster.
 - `deployment.yml`, a Kubernetes manifest, that is utilised by the aforementioned `deploy.sh`.
 - `scenario.yml`, a file that contains all data for running the `Evaluation` test against the scenario.
