@@ -17,6 +17,8 @@ on:
       - "**.md"
       - CODEOWNERS
       - LICENSE
+    paths: 
+      - "src/**"
     types: [labeled]
 
 # global env variables.
