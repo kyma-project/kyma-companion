@@ -13,10 +13,13 @@ on:
     branches:
       - main
     paths-ignore:
+      - ".github/**"
       - "docs/**"
-      - "**.md"
+      - "**/*.md"
       - CODEOWNERS
       - LICENSE
+      - "LICENSES/**"
+      - "tests/**"
     types: [labeled]
 
 # global env variables.
