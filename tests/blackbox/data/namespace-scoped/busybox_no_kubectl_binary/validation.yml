@@ -36,7 +36,7 @@
     - scenario_expectation_name: deployable_yaml
       expected_evaluation: false
 - description: This mock response points out that the Pod is in an error state due to the kubectl binary missing in the image and provides a deployable Pod manifest.
-  scenario_id: bitnami-wrong-rbac-permissions
+  scenario_id: busybox-no-kubectl-binary 
   mock_response_content: |-
     "The Pod is in error state because the image does not contain kubectl. The correct image is `bitnami/kubectl:latest`.
     Here is a corrected version of the Pod:

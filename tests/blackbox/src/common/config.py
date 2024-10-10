@@ -30,9 +30,7 @@ class Config:
 
     def __init__(self) -> None:
         self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
-        self.namespace_scoped_test_data_path = (
-            f"{self.test_data_path}/evaluation/namespace-scoped"
-        )
+        self.namespace_scoped_test_data_path = f"{self.test_data_path}/namespace-scoped"
 
         self.companion_api_url = get_env("COMPANION_API_URL")
         self.companion_token = get_env("COMPANION_TOKEN", False, "not-needed")

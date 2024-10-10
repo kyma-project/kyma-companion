@@ -1,38 +1,31 @@
-import os
-
-import yaml
 from common.logger import get_logger
-from evaluation.scenario.scenario import Scenario
+from evaluation.scenario.scenario import Scenario as EvaluationScenario
 from pydantic import BaseModel
 
 logger = get_logger(__name__)
 
 
-class MockResponse(BaseModel):
+class ExpectedEvaluation(BaseModel):
     scenario_expectation_name: str
     expected_evaluation: bool
 
 
-class ScenarioMockResponses(BaseModel):
+class MockResponse(BaseModel):
     description: str
-    scenario_id: str
     mock_response_content: str
-    expected_evaluations: list[MockResponse]
+    expected_evaluations: list[ExpectedEvaluation]
 
-    _scenario: Scenario
 
-    @property
-    def scenario(self):
-        evaluation_data_dir = os.getenv("EVALUATION_DATA_PATH", "./data/evaluation")
-        try:
-            with open(
-                f"{evaluation_data_dir}/namespace-scoped/{self.scenario_id}/scenario.yml"
-            ) as file:
-                scenario_yaml = yaml.safe_load(file)
-        except FileNotFoundError:
-            logger.error(
-                f"Scenario file not found for scenario_id: {self.scenario_id}. "
-                f"Please check if this scenario file really exists."
-            )
-            raise
-        return Scenario(**scenario_yaml)
+class ValidationScenario(BaseModel):
+    eval_scenario: EvaluationScenario
+    mock_responses: list[MockResponse]
+
+
+class ScenarioScore(BaseModel):
+    scenario_id: str
+    max_score: int
+    score: int
+    max_success: int
+    success: int
+    mock_response_count: int
+    report: str

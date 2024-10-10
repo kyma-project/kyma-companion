@@ -9,15 +9,16 @@ load_dotenv()
 from validation.utils.data_loader import load_data  # noqa
 from validation.model_validation import create_validation  # noqa
 from validation.utils.models import get_models  # noqa
-from validation.validator import ModelValidator  # noqa
+
+DEFAULT_DATA_DIR: str = "./data/namespace-scoped"
 
 
 async def main(full_report: bool = False) -> None:
+    data = load_data(os.getenv("VALIDATION_DATA_PATH", DEFAULT_DATA_DIR))
     models = get_models()
-    data = load_data(os.getenv("VALIDATION_DATA_PATH", "./data/validation"))
     validation = create_validation(models, data)
     await validation.validate()
-    validation.print_report()
+    validation.print_results()
     if full_report:
         validation.print_full_report()
 

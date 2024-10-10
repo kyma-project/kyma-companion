@@ -12,7 +12,7 @@ set -E          # needs to be set if we want the ERR trap
 set -o pipefail # prevents errors in a pipeline from being masked
 
 # Define base directory
-base_dir="tests/blackbox/data/evaluation/namespace-scoped"
+base_dir="tests/blackbox/data/namespace-scoped"
 
 # Arrays to track missing and failed scripts
 missing_deploy_scripts=()
@@ -94,3 +94,4 @@ deploy_test_cases
 
 # Final report
 final_report
+

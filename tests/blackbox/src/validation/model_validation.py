@@ -3,7 +3,7 @@ from typing import Protocol
 
 from prettytable import PrettyTable
 
-from validation.scenario_mock_responses import ScenarioMockResponses
+from validation.scenario_mock_responses import ValidationScenario
 from validation.utils.models import Model
 from validation.validator import ModelValidator, Validator
 
@@ -14,9 +14,7 @@ class Validation(Protocol):
     @property
     def model_scores(self) -> dict[str, float]: ...
 
-    def get_best_rated_model(self) -> str: ...
-
-    def print_report(self) -> None: ...
+    def print_results(self) -> None: ...
 
     def print_full_report(self) -> None: ...
 
@@ -25,8 +23,12 @@ class ModelValidation:
     validators: list[Validator]
     _model_scores: dict[str, float] = {}
 
-    def __init__(self, models: list[Model], data: list[ScenarioMockResponses]):
-        self.validators = [ModelValidator(model, data) for model in models]
+    def __init__(
+        self, models: list[Model], vaidation_scenarios: list[ValidationScenario]
+    ):
+        self.validators = [
+            ModelValidator(model, vaidation_scenarios) for model in models
+        ]
 
     async def validate(self):
         tasks = [validator.run() for validator in self.validators]
@@ -39,27 +41,22 @@ class ModelValidation:
             self._model_scores[validator.model.name] = validator.score
         return self._model_scores
 
-    def get_best_rated_model(self) -> str:
-        return max(self.model_scores, key=self.model_scores.get)
-
-    def print_report(self):
+    def print_results(self):
         table = PrettyTable()
-        table.field_names = ["Model", "Score", "Short Report"]
+        table.field_names = ["Model", "Score", "Relative"]
         for validator in self.validators:
-            table.add_row([validator.model.name, validator.score, validator.report])
+            score_field = f"{validator.score}/{validator.max_score}"
+            relative_field = f"{validator.score / validator.max_score * 100:.2f}%"
+            table.add_row([validator.model.name, score_field, relative_field])
         print(table)
 
     def print_full_report(self):
-        table = PrettyTable()
-        table.field_names = ["Model", "Score", "Full Report"]
         for validator in self.validators:
-            table.add_row(
-                [validator.model.name, validator.score, validator.full_report]
-            )
-        print(table)
+            print(validator.full_report)
+        self.print_results()
 
 
 def create_validation(
-    models: list[Model], data: list[ScenarioMockResponses]
+    models: list[Model], validation_scenarios: list[ValidationScenario]
 ) -> Validation:
-    return ModelValidation(models, data)
+    return ModelValidation(models, validation_scenarios)

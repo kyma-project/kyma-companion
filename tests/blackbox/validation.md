@@ -30,9 +30,8 @@ To run the validation, follow these steps:
    AICORE_CLIENT_SECRET=                # AI-Core Client Secret.
    AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
    
-   VALIDATION_DATA_PATH=                # Path to the validation data folder, default is ./data/validation
-   EVALUATION_DATA_PATH=                # Path to the evaluation data folder, default is ./data/evaluation
-   MODEL_CONFIG_PATH=                   # Path to the model config file, default is ./config/validation/models.yml
+   VALIDATION_DATA_PATH=                # Optional: Path to the validation data folder, default is ./data
+   MODEL_CONFIG_PATH=                   # Optional: Path to the model config file, default is ./config/validation/models.yml
     ```
 
 3. Run the following command to set up the environment variables in your system:
