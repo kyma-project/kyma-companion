@@ -62,7 +62,7 @@ async def init_conversation(
 
     try:
         # Create initial questions.
-        questions = service.new_conversation(
+        questions = await service.new_conversation(
             session_id=session_id,
             k8s_client=k8s_client,
             message=Message(

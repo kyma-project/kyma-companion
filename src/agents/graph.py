@@ -2,6 +2,7 @@ import json
 from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
 
+from langchain_core.messages import RemoveMessage, BaseMessage
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser
@@ -66,6 +67,14 @@ class IGraph(Protocol):
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
+        ...
+
+    def aadd_messages(self, conversation_id: str, messages: list[BaseMessage]) -> None:
+        """Add messages to the graph state."""
+        ...
+
+    def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
         ...
 
 
@@ -294,6 +303,7 @@ class KymaGraph:
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
+
         user_input = UserInput(**message.dict())
         messages = [
             SystemMessage(
@@ -301,6 +311,28 @@ class KymaGraph:
             ),
             HumanMessage(content=message.query),
         ]
+
+        # check if the request is related to the same Kubernetes resource.
+        thread_id = {
+            "configurable": {
+                "thread_id": conversation_id,
+            },
+        }
+
+        latest_state = await self.graph.aget_state(thread_id)
+        if (latest_state.values
+                and 'input' in latest_state.values
+                and not user_input.is_same_resource(latest_state.values['input'])):
+            # option 1: remove all messages. Pre-requisite is that all
+            # the messages stored in the checkpoint should have valid ids i.e. message.id.
+            # Tip: Use `add_messages` in graph state, because it sets the id of messages if missing.
+            # e.g. messages: Annotated[Sequence[BaseMessage], add_messages]
+            await self.graph.aupdate_state(thread_id, {
+                "messages": [RemoveMessage(id=m.id) for m in latest_state.values['messages']],
+            })
+
+            # option 2: remove all previous checkpoints for the same thread_id.
+            # self.memory.clear_checkpoint(thread_id)
 
         async for chunk in self.graph.astream(
             input={
@@ -318,3 +350,24 @@ class KymaGraph:
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
                 yield chunk_json
+
+    async def aadd_messages(self, conversation_id: str, messages: list[BaseMessage]) -> None:
+        """Add messages to the graph state."""
+        await self.graph.aupdate_state({
+            "configurable": {
+                "thread_id": conversation_id,
+            },
+        }, {
+            "messages": messages,
+        })
+
+    async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
+        latest_state = await self.graph.aget_state({
+            "configurable": {
+                "thread_id": conversation_id,
+            },
+        })
+        if latest_state.values and 'messages' in latest_state.values:
+            return latest_state.values['messages']
+        return []

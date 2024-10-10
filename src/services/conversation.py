@@ -1,8 +1,7 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
-from langchain_core.messages import HumanMessage
-from langchain_redis import RedisChatMessageHistory
+from langchain_core.messages import SystemMessage
 
 from agents.common.data import Message
 from agents.graph import IGraph, KymaGraph
@@ -66,7 +65,7 @@ class ConversationService(metaclass=SingletonMeta):
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         self._kyma_graph = KymaGraph(model=self._model, memory=redis_saver)
 
-    def new_conversation(
+    async def new_conversation(
         self, session_id: str, k8s_client: IK8sClient, message: Message
     ) -> list[str]:
         """Initialize a new conversation."""
@@ -90,12 +89,9 @@ class ConversationService(metaclass=SingletonMeta):
         questions = self._init_questions_handler.generate_questions(context=k8s_context)
 
         # Store the Kubernetes context in the Redis chat history.
-        history = RedisChatMessageHistory(session_id=session_id, redis_url=REDIS_URL)
-        history.add_message(
-            message=HumanMessage(
-                content=f"These are the information I got from my Kubernetes cluster:\n{k8s_context}"
-            )
-        )
+        await self._kyma_graph.aadd_messages(session_id, [SystemMessage(
+                content=f"These are the information I got from Kubernetes cluster:\n{k8s_context}"
+            )])
 
         return questions
 
