@@ -91,13 +91,20 @@ class TestKubernetesAgent:
 
         # Then
         # check nodes.
-        assert len(graph.nodes) == 4  # noqa
-        assert graph.nodes.keys() == {"__start__", "subtask_selector", "agent", "tools"}
+        assert len(graph.nodes) == 5  # noqa
+        assert graph.nodes.keys() == {
+            "__start__",
+            "subtask_selector",
+            "agent",
+            "tools",
+            "finalizer",
+        }
         # check edges.
-        assert len(graph.builder.edges) == 2  # noqa
+        assert len(graph.builder.edges) == 3  # noqa
         assert graph.builder.edges == {
             ("tools", "agent"),
             ("__start__", "subtask_selector"),
+            ("finalizer", "__end__"),
         }
         # check conditional edges.
         assert len(graph.builder.branches) == 2  # noqa
@@ -198,6 +205,7 @@ class TestKubernetesAgent:
                     MESSAGES: [
                         AIMessage(
                             content="This is a dummy response from model.",
+                            additional_kwargs={"owner": "KubernetesAgent"},
                         )
                     ]
                 },

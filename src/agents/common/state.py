@@ -1,10 +1,10 @@
-import operator
 from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated
 
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
+from langgraph.graph import add_messages
 
 from services.k8s import IK8sClient
 
@@ -72,7 +72,7 @@ class AgentState(BaseModel):
         description="user input with user query and resource(s) contextual information"
     )
 
-    messages: Annotated[Sequence[BaseMessage], operator.add]
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     next: str | None
     subtasks: list[SubTask] | None = []
     final_response: str | None = ""
