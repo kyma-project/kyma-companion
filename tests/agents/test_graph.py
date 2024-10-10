@@ -14,7 +14,7 @@ from agents.common.constants import (
 )
 from agents.common.data import Message
 from agents.common.state import AgentState, SubTask, UserInput
-from agents.graph import KymaGraph
+from agents.graph import CompanionGraph
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from utils.models import IModel
@@ -37,8 +37,8 @@ def mock_graph():
 
 @pytest.fixture
 def kyma_graph(mock_model, mock_memory, mock_graph):
-    with patch.object(KymaGraph, "_build_graph", return_value=mock_graph):
-        return KymaGraph(mock_model, mock_memory)
+    with patch.object(CompanionGraph, "_build_graph", return_value=mock_graph):
+        return CompanionGraph(mock_model, mock_memory)
 
 
 def create_messages_json(content, role, node) -> str:
@@ -192,7 +192,7 @@ class TestKymaGraph:
         with patch.object(
             kyma_graph, "_create_planner_chain", return_value=mock_planner_chain
         ):
-            result = kyma_graph._plan(state)
+            result = kyma_graph._planner_node(state)
 
         assert result == expected_output
 

@@ -69,8 +69,8 @@ class IGraph(Protocol):
         ...
 
 
-class KymaGraph:
-    """Kyma graph class. Represents all the workflow of the application."""
+class CompanionGraph:
+    """Companion graph class. Represents all the workflow of the application."""
 
     model: IModel
     memory: BaseCheckpointSaver
@@ -106,7 +106,7 @@ class KymaGraph:
         )
         return planner_prompt | self.model.llm  # type: ignore
 
-    def _plan(self, state: AgentState) -> dict[str, Any]:
+    def _planner_node(self, state: AgentState) -> dict[str, Any]:
         """
         Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
         If the query is general, it returns the response directly.
@@ -253,7 +253,7 @@ class KymaGraph:
             }
 
     def _build_graph(self) -> CompiledGraph:
-        """Create a supervisor agent."""
+        """Create the companion graph."""
 
         workflow = StateGraph(AgentState)
         workflow.add_node(FINALIZER, self.generate_final_response)
@@ -262,7 +262,7 @@ class KymaGraph:
         workflow.add_node(COMMON, self.common_node)
 
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
-        workflow.add_node(PLANNER, self._plan)
+        workflow.add_node(PLANNER, self._planner_node)
         workflow.add_node(EXIT, exit_node)
 
         # routing to the exit node in case of an error

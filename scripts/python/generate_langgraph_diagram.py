@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../src"))
 
 from IPython.display import Image  # noqa: E402
 
-from agents.graph import KymaGraph
+from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import (  # noqa: E402
     RedisSaver,
     initialize_async_pool,
@@ -38,7 +38,7 @@ model_factory = ModelFactory()
 
 model = model_factory.create_model(LLM.GPT4O)
 memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-graph = KymaGraph(model, memory)
+graph = CompanionGraph(model, memory)
 
 try:
     png_bytes = Image(graph.graph.get_graph(xray=1).draw_mermaid_png())
