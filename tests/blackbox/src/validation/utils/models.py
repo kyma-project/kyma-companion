@@ -5,7 +5,7 @@ import yaml
 from common.logger import get_logger
 from gen_ai_hub.proxy import get_proxy_client
 from gen_ai_hub.proxy.langchain import ChatOpenAI
-from gen_ai_hub.proxy.native.google.clients import GenerativeModel
+from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
 from pydantic import BaseModel
 
 logger = get_logger(__name__)
