@@ -1,6 +1,0 @@
-- name: "gpt-3.5"
-  deployment_id: "123c02e45ca77234"
-- name: "gpt-4o"
-  deployment_id: "123c02e45ca77234"
-- name: "gemini-1.0-pro"
-  deployment_id: "123d43fd9b87e89b"
