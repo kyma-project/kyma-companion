@@ -1,7 +1,14 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    RemoveMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
@@ -91,13 +98,20 @@ class TestKubernetesAgent:
 
         # Then
         # check nodes.
-        assert len(graph.nodes) == 4  # noqa
-        assert graph.nodes.keys() == {"__start__", "subtask_selector", "agent", "tools"}
+        assert len(graph.nodes) == 5  # noqa
+        assert graph.nodes.keys() == {
+            "__start__",
+            "subtask_selector",
+            "agent",
+            "tools",
+            "finalizer",
+        }
         # check edges.
-        assert len(graph.builder.edges) == 2  # noqa
+        assert len(graph.builder.edges) == 3  # noqa
         assert graph.builder.edges == {
             ("tools", "agent"),
             ("__start__", "subtask_selector"),
+            ("finalizer", "__end__"),
         }
         # check conditional edges.
         assert len(graph.builder.branches) == 2  # noqa
@@ -198,6 +212,7 @@ class TestKubernetesAgent:
                     MESSAGES: [
                         AIMessage(
                             content="This is a dummy response from model.",
+                            additional_kwargs={"owner": "KubernetesAgent"},
                         )
                     ]
                 },
@@ -289,3 +304,155 @@ class TestKubernetesAgent:
             agent.chain.invoke.assert_called_once_with(
                 expected_invoke_inputs, mock_config
             )
+
+    @pytest.mark.parametrize(
+        "given_message, expected_output",
+        [
+            # Test case when the AIMessage have None additional_kwargs.
+            (
+                AIMessage(content="dummy"),
+                False,
+            ),
+            # Test case when the AIMessage have no owner key in additional_kwargs.
+            (
+                AIMessage(content="dummy", additional_kwargs={"key": "value"}),
+                False,
+            ),
+            # Test case when the AIMessage have different owner in additional_kwargs.
+            (
+                AIMessage(
+                    content="dummy",
+                    additional_kwargs={"owner": "value"},
+                    tool_calls=[
+                        {
+                            "args": {
+                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
+                            },
+                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
+                            "name": "k8s_query_tool",
+                            "type": "tool_call",
+                        }
+                    ],
+                ),
+                False,
+            ),
+            # Test case when the AIMessage have KubernetesAgent owner in additional_kwargs.
+            (
+                AIMessage(
+                    content="dummy",
+                    additional_kwargs={"owner": K8S_AGENT},
+                    tool_calls=[
+                        {
+                            "args": {
+                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
+                            },
+                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
+                            "name": "k8s_query_tool",
+                            "type": "tool_call",
+                        }
+                    ],
+                ),
+                True,
+            ),
+            # Test case when the ToolMessage have non-relevant tool name.
+            (
+                ToolMessage(
+                    content="dummy",
+                    name="google_query_tool",
+                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
+                ),
+                False,
+            ),
+            # Test case when the ToolMessage have relevant tool name.
+            (
+                ToolMessage(
+                    content="dummy",
+                    name="k8s_query_tool",
+                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
+                ),
+                True,
+            ),
+            # Test case when the ToolMessage have relevant tool name.
+            (
+                ToolMessage(
+                    content="dummy",
+                    name="fetch_pod_logs_tool",
+                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
+                ),
+                True,
+            ),
+        ],
+    )
+    def test_is_internal_message(
+        self,
+        mock_model,
+        given_message: BaseMessage,
+        expected_output: bool,
+    ):
+        # Given
+        agent = KubernetesAgent(mock_model)
+
+        # When
+        assert agent.is_internal_message(given_message) == expected_output
+
+    @pytest.mark.parametrize(
+        "given_state, expected_output",
+        [
+            # Test case when the subtask is not completed and tool call messages exists.
+            (
+                KubernetesAgentState(
+                    my_task=SubTask(
+                        description="test task 1",
+                        assigned_to=K8S_AGENT,
+                        status=SubTaskStatus.PENDING,
+                    ),
+                    is_last_step=False,
+                    messages=[
+                        AIMessage(
+                            id="1",
+                            content="dummy",
+                            additional_kwargs={"owner": K8S_AGENT},
+                            tool_calls=[
+                                {
+                                    "args": {
+                                        "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
+                                    },
+                                    "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
+                                    "name": "k8s_query_tool",
+                                    "type": "tool_call",
+                                }
+                            ],
+                        ),
+                        ToolMessage(
+                            id="2",
+                            content="dummy",
+                            name="k8s_query_tool",
+                            tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
+                        ),
+                        AIMessage(id="3", content="final answer"),
+                    ],
+                    k8s_client=Mock(spec_set=IK8sClient),
+                ),
+                {
+                    "messages": [
+                        RemoveMessage(content="", id="1"),
+                        RemoveMessage(content="", id="2"),
+                    ],
+                    "my_task": None,
+                },
+            ),
+        ],
+    )
+    def test_finalizer_node(
+        self,
+        mock_model,
+        given_state: KubernetesAgentState,
+        expected_output: dict,
+    ):
+        # Given
+        agent = KubernetesAgent(mock_model)
+        agent.chain = MagicMock()
+
+        # When
+        assert agent._finalizer_node(given_state, mock_config) == expected_output
+        assert given_state.my_task.status == SubTaskStatus.COMPLETED
