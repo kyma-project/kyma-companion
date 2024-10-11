@@ -308,7 +308,7 @@ class TestKymaGraph:
             mock_chain.invoke.return_value.content = chain_response
 
         with patch.object(kyma_graph, "_common_node_chain", return_value=mock_chain):
-            result = kyma_graph.common_node(state)
+            result = kyma_graph._common_node(state)
 
         assert result == expected_output
         if chain_response:
@@ -419,7 +419,7 @@ class TestKymaGraph:
         with patch.object(
             kyma_graph, "_final_response_chain", return_value=mock_final_response_chain
         ):
-            result = kyma_graph.generate_final_response(state)
+            result = kyma_graph._generate_final_response(state)
 
         assert result == expected_output
         mock_final_response_chain.invoke.assert_called_once_with(

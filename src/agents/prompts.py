@@ -27,20 +27,80 @@ Key Principles:
 - Keep the plan concise, avoiding any additional or explanatory steps.
 - Focus solely on the key points raised in the query.
 
-Examples:
+Sample Queries and Responses:
+- General queries that are irrelevant to Kyma or Kubernetes:
+  Query: "What is the capital of France?"
+  Output:
+  ```
+  {{
+    "response": "Paris"
+  }}
+  ```
 
-Query: "What is Kyma serverless? Why my k8s deployment is failing?"
-Plan/Subtasks must contain the following subtasks:
-- What is Kyma serverless?
-- Why my k8s deployment is failing in namespace kyma-system?
+- Kyma or Kubernetes related queries:
+  Query: "What is Kyma function?"
+  Output:
+  ```
+  {{
+      "subtasks": [
+          {{
+              "description": "What is Kyma function?",
+              "assigned_to": "KymaAgent"
+          }}
+      ]
+  }}
+  ```
 
-Query: "Why my k8s deployment is failing?"
-Plan/Subtasks must contain the following subtasks:
-- Why my k8s deployment is failing in namespace kyma-system?
+  Query: "What is Kyma serverless? Why my k8s deployment is failing?"
+  Output:
+  ```
+  {{
+      "subtasks": [
+          {{
+              "description": "What is Kyma serverless?",
+              "assigned_to": "KymaAgent"
+          }},
+          {{
+              "description": "Why my k8s deployment is failing?",
+              "assigned_to": "KubernetesAgent"
+          }}
+      ]
+  }}
+  ```
 
-Query: "Explain the benefits of using Kyma with Kubernetes."
-Plan/Subtasks must contain the following subtasks:
-- Explain the benefits of using Kyma with Kubernetes.
+  Query: "Why my k8s deployment is failing?"
+  Output: 
+  ```
+  {{
+    "subtasks": [
+        {{
+            "description": "Why my k8s deployment is failing?",
+            "assigned_to": "KubernetesAgent"
+        }}
+    ]
+  }}
+  ```
+
+  Query: "How to create a Python app that performs Discounted Cash Flow (DCF) calculations? How to create a Kyma function? How to create a k8s service for this function?"
+  Output: 
+  ```
+  {{
+    "subtasks": [
+        {{
+            "description": "How to create a Python app that performs Discounted Cash Flow (DCF) calculations?",
+            "assigned_to": "Common"
+        }},
+        {{
+            "description": "How to create a Kyma function?",
+            "assigned_to": "KymaAgent"
+        }},
+        {{
+            "description": "How to create a k8s service for this function?",
+            "assigned_to": "KubernetesAgent"
+        }}
+    ]
+  }}
+  ```
 
 Kyma terminologies: Kyma, Kubernetes, Serverless, Service Mesh, API Gateway, API Rule, Istio, Service Catalog, Application Connector, Eventing, Telemetry, Tracing, Logging, Kyma Runtime, module, Service Management.
 

@@ -38,7 +38,7 @@ from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import IModel
+from utils.models import IModel, LLM
 
 logger = get_logger(__name__)
 
@@ -72,7 +72,7 @@ class IGraph(Protocol):
 class KymaGraph:
     """Kyma graph class. Represents all the workflow of the application."""
 
-    model: IModel
+    models: dict[str, IModel]
     memory: BaseCheckpointSaver
     supervisor_agent: IAgent
     kyma_agent: IAgent
@@ -83,20 +83,22 @@ class KymaGraph:
 
     planner_prompt: ChatPromptTemplate
 
-    def __init__(self, model: IModel, memory: BaseCheckpointSaver):
-        self.model = model
+    def __init__(self, models: dict[str, IModel], memory: BaseCheckpointSaver):
+        self.models = models
         self.memory = memory
 
-        self.kyma_agent = KymaAgent(model)
-        self.k8s_agent = KubernetesAgent(model)
+        self.kyma_agent = KymaAgent(models.get(LLM.GPT4O_MINI))
+        self.k8s_agent = KubernetesAgent(models.get(LLM.GPT4O))
         self.supervisor_agent = SupervisorAgent(
-            model, members=[KYMA_AGENT, K8S_AGENT, COMMON]
+            models.get(LLM.GPT4O), members=[KYMA_AGENT, K8S_AGENT, COMMON]
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
+        self._planner_chain = self._planner_chain(models.get(LLM.GPT4O_MINI))
+        self._common_node_chain = self._common_node_chain(models.get(LLM.GPT4O_MINI))
         self.graph = self._build_graph()
 
-    def _create_planner_chain(self) -> RunnableSequence:
+    def _planner_chain(self, model: IModel) -> RunnableSequence:
         self.planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", PLANNER_PROMPT),
@@ -106,12 +108,11 @@ class KymaGraph:
             members=", ".join(self.members),
             output_format=self.plan_parser.get_format_instructions(),
         )
-        return self.planner_prompt | self.model.llm  # type: ignore
+        return self.planner_prompt | model.llm  # type: ignore
 
     def _invoke_planner(self, state: AgentState) -> dict[str, Any]:
         """Invoke the planner."""
-        planner_chain = self._create_planner_chain()
-        return planner_chain.invoke(
+        return self._planner_chain.invoke(
             input={
                 "messages": filter_messages(state.messages),
             },
@@ -173,7 +174,8 @@ class KymaGraph:
             logger.error(f"Error in planning: {e}")
             return create_node_output(next=EXIT, error=str(e))
 
-    def _common_node_chain(self) -> RunnableSequence:
+    @staticmethod
+    def _common_node_chain(model: IModel) -> RunnableSequence:
         """Common node chain to handle general queries."""
 
         prompt = ChatPromptTemplate.from_messages(
@@ -183,22 +185,19 @@ class KymaGraph:
                 ("human", "query: {query}"),
             ]
         )
-        return prompt | self.model.llm  # type: ignore
+        return prompt | model.llm  # type: ignore
 
     def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
         """Invoke the common node."""
-        common_node_chain = self._common_node_chain()
-        return common_node_chain.invoke(
+        return self._common_node_chain.invoke(
             {
                 "messages": filter_messages(state.messages),
                 "query": subtask,
             },
         ).content
 
-    def common_node(self, state: AgentState) -> dict[str, Any]:
+    def _common_node(self, state: AgentState) -> dict[str, Any]:
         """Common node to handle general queries."""
-
-        chain = self._common_node_chain()
 
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
@@ -237,7 +236,7 @@ class KymaGraph:
         ).partial(members=", ".join(self.members), query=state.input.query)
         return prompt | self.model.llm  # type: ignore
 
-    def generate_final_response(self, state: AgentState) -> dict[str, Any]:
+    def _generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
@@ -268,10 +267,10 @@ class KymaGraph:
         """Create a supervisor agent."""
 
         workflow = StateGraph(AgentState)
-        workflow.add_node(FINALIZER, self.generate_final_response)
+        workflow.add_node(FINALIZER, self._generate_final_response)
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
-        workflow.add_node(COMMON, self.common_node)
+        workflow.add_node(COMMON, self._common_node)
 
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(PLANNER, self._plan)
