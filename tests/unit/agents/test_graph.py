@@ -545,7 +545,7 @@ class TestKymaGraph:
             ),
         ],
     )
-    async def test_astream_second(
+    async def test_astream(
         self,
         kyma_graph,
         description,

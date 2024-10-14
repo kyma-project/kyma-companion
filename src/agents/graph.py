@@ -305,7 +305,7 @@ class KymaGraph:
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
-        user_input = UserInput(**message.dict())
+        user_input = UserInput(**message.__dict__)
         messages = [
             SystemMessage(
                 content=f"The user query is related to: {user_input.get_resource_information()}"
