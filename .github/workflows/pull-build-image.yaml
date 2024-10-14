@@ -3,14 +3,20 @@ name: Pull Build Image
 on:
   pull_request_target:
     types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches:
+      - main
     paths-ignore:
       - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
       - "docs/**"
+      - "scripts/**"
+      - "tests/**"
       - "**/*.md"
       - CODEOWNERS
       - LICENSE
-      - "LICENSES/**"
-      - "tests/**"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
