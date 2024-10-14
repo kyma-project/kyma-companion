@@ -38,7 +38,7 @@ from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import IModel, LLM
+from utils.models import LLM, IModel
 
 logger = get_logger(__name__)
 

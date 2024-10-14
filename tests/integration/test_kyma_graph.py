@@ -60,7 +60,8 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
@@ -70,7 +71,8 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="Write snake game in javascript"),
             ],
@@ -80,7 +82,8 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma?"),
             ],
@@ -90,7 +93,8 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma API Rule?"),
             ],
@@ -100,10 +104,14 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 AIMessage(
-                    content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a `CrashLoopBackOff` state. The last termination reason was `StartError` with the message indicating a failure to create the containerd task due to a context cancellation."
+                    content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
+                    "`CrashLoopBackOff` state. The last termination reason was `StartError`"
+                    " with the message indicating a failure to create the containerd task "
+                    "due to a context cancellation."
                 ),
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="why the pod is failing?"),
             ],
@@ -113,7 +121,8 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
@@ -123,35 +132,41 @@ def create_state(messages: Sequence[BaseMessage]) -> AgentState:
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kubernetes? Explain Kyma function"),
             ],
-            '{"subtasks": [{"description": "What is Kubernetes?", "assigned_to": "KubernetesAgent"},{"description": "Explain Kyma function", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{"description": "What is Kubernetes?", "assigned_to": "KubernetesAgent"},'
+            '{"description": "Explain Kyma function", "assigned_to": "KymaAgent"}]}',
             False,
         ),
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
                     content="Create a hello world app and deploy it with Kyma?"
                 ),
             ],
-            '{"subtasks": [{"description": "Create a hello world app", "assigned_to": "Common"},{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{"description": "Create a hello world app", "assigned_to": "Common"},'
+            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
             False,
         ),
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
                     content="Create a hello world app with python and deploy it with Kyma?"
                 ),
             ],
-            '{"subtasks": [{"description": "Create a hello world app with python", "assigned_to": "Common"},{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{"description": "Create a hello world app with python", "assigned_to": "Common"},'
+            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
             False,
         ),
     ],
@@ -179,11 +194,7 @@ def test_planner(
         print(f"Score: {planner_correctness_metric.score}")
         print(f"Reason: {planner_correctness_metric.reason}")
 
-        # TODO: validate the result.content to follow Plan schema
-        plan = kyma_graph.plan_parser.parse(result.content)
-        # assert (
-        #     planner_correctness_metric.score >= planner_correctness_metric.threshold
-        # ), planner_correctness_metric.reason
+        kyma_graph.plan_parser.parse(result.content)
 
         assert_test(test_case, [planner_correctness_metric])
     else:
@@ -196,7 +207,8 @@ def test_planner(
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
@@ -205,7 +217,8 @@ def test_planner(
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
@@ -214,7 +227,6 @@ def test_planner(
     ],
 )
 def test_common_node(messages, expected_answer, kyma_graph, answer_relevancy_metric):
-    # Generate actual output using LangChain
     state = create_state(messages)
 
     result = kyma_graph._invoke_common_node(state, messages[-1].content)

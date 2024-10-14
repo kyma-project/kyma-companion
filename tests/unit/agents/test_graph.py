@@ -17,16 +17,29 @@ from agents.common.state import AgentState, SubTask, UserInput
 from agents.graph import KymaGraph
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from utils.models import IModel
+from utils.models import LLM, IModel
 
 
 @pytest.fixture
-def mock_model():
-    return Mock(spec=IModel)
+def mock_models():
+    return {
+        LLM.GPT4O_MINI: MagicMock(spec=IModel),
+        LLM.GPT4O: MagicMock(spec=IModel),
+    }
 
 
 @pytest.fixture
 def mock_memory():
+    return Mock()
+
+
+@pytest.fixture
+def mock_planner_chain():
+    return Mock()
+
+
+@pytest.fixture
+def mock_common_node_chain():
     return Mock()
 
 
@@ -36,9 +49,17 @@ def mock_graph():
 
 
 @pytest.fixture
-def kyma_graph(mock_model, mock_memory, mock_graph):
-    with patch.object(KymaGraph, "_build_graph", return_value=mock_graph):
-        return KymaGraph(mock_model, mock_memory)
+def kyma_graph(
+    mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_node_chain
+):
+    with (
+        patch.object(KymaGraph, "_planner_chain", return_value=mock_planner_chain),
+        patch.object(
+            KymaGraph, "_common_node_chain", return_value=mock_common_node_chain
+        ),
+        patch.object(KymaGraph, "_build_graph", return_value=mock_graph),
+    ):
+        return KymaGraph(mock_models, mock_memory)
 
 
 def create_messages_json(content, role, node) -> str:
@@ -69,10 +90,9 @@ class TestKymaGraph:
                     ],
                     "messages": [
                         AIMessage(
-                            content="Task decomposed into subtasks and assigned to agents: "
-                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent", '
-                            '"status": "pending", "result": null}, {"description": "Explain K8s deployment", '
-                            '"assigned_to": "KubernetesAgent", "status": "pending", "result": null}]',
+                            content='{"subtasks": '
+                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
+                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
                             name=PLANNER,
                         )
                     ],
@@ -95,9 +115,9 @@ class TestKymaGraph:
                     ],
                     "messages": [
                         AIMessage(
-                            content="Task decomposed into subtasks and assigned to agents: "
-                            '[{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent", '
-                            '"status": "pending", "result": null}]',
+                            content='{"subtasks": '
+                            '[{"description": "Explain Kubernetes pod concept", '
+                            '"assigned_to": "KubernetesAgent"}]}',
                             name=PLANNER,
                         )
                     ],
@@ -179,20 +199,15 @@ class TestKymaGraph:
         plan_content,
         expected_output,
         expected_error,
+        mock_planner_chain,
     ):
         state = AgentState(messages=[HumanMessage(content=input_query)])
-
-        mock_planner_chain = Mock()
 
         if expected_error:
             mock_planner_chain.invoke.side_effect = Exception(expected_error)
         else:
             mock_planner_chain.invoke.return_value.content = plan_content
-
-        with patch.object(
-            kyma_graph, "_create_planner_chain", return_value=mock_planner_chain
-        ):
-            result = kyma_graph._plan(state)
+        result = kyma_graph._plan(state)
 
         assert result == expected_output
 
@@ -297,22 +312,19 @@ class TestKymaGraph:
         chain_response,
         expected_output,
         expected_error,
+        mock_common_node_chain,
     ):
         state = AgentState(subtasks=subtasks, messages=messages)
 
-        mock_chain = Mock()
-
         if expected_error:
-            mock_chain.invoke.side_effect = Exception(expected_error)
+            mock_common_node_chain.invoke.side_effect = Exception(expected_error)
         else:
-            mock_chain.invoke.return_value.content = chain_response
+            mock_common_node_chain.invoke.return_value.content = chain_response
 
-        with patch.object(kyma_graph, "_common_node_chain", return_value=mock_chain):
-            result = kyma_graph._common_node(state)
-
+        result = kyma_graph._common_node(state)
         assert result == expected_output
         if chain_response:
-            mock_chain.invoke.assert_called_once()
+            mock_common_node_chain.invoke.assert_called_once()
             assert (
                 subtasks[0].assigned_to == COMMON and subtasks[0].status == "completed"
             )
@@ -470,18 +482,18 @@ class TestKymaGraph:
                 ],
                 [
                     f'{{"Planner": {create_messages_json("Query is decomposed into subtasks",
-                                                         "ai", "Planner")}}}',
+                                                             "ai", "Planner")}}}',
                     f'{{"Supervisor": {create_messages_json("next is KymaAgent",
-                                                            "ai", "Supervisor")}}}',
+                                                                "ai", "Supervisor")}}}',
                     f'{{"KymaAgent": {create_messages_json(
-                        "You can deploy a Kyma function by following these steps",
-                                                           "ai", "KymaAgent")}}}',
+                            "You can deploy a Kyma function by following these steps",
+                            "ai", "KymaAgent")}}}',
                     f'{{"Supervisor": {create_messages_json("next is KubernetesAgent",
-                                                            "ai", "Supervisor")}}}',
+                                                                "ai", "Supervisor")}}}',
                     f'{{"KubernetesAgent": {create_messages_json("You can deploy a k8s app by following these steps",
-                                                                 "ai", "Supervisor")}}}',
+                                                                     "ai", "Supervisor")}}}',
                     f'{{"Exit": {create_messages_json("final response",
-                                                      "ai", "Exit")}}}',
+                                                          "ai", "Exit")}}}',
                 ],
                 None,
             ),

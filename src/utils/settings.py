@@ -1,13 +1,17 @@
 # Load all variables from .env into the environment
 # necessary to implicitly import AI Core Env Vars
+import logging
 import os
 import sys
 
-from decouple import Config, RepositoryEnv
-from dotenv import load_dotenv, find_dotenv
+from decouple import Config, RepositoryEnv, config
+from dotenv import find_dotenv, load_dotenv
 
 
-def is_running_pytest():
+def is_running_pytest() -> bool:
+    """Check if the code is running with pytest.
+    This is needed to identify if tests are running.
+    """
     return "pytest" in sys.modules
 
 
@@ -16,15 +20,11 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 if is_running_pytest():
     # Use .test.env for tests
     env_path = find_dotenv(".test.env")
-    config = Config(RepositoryEnv(env_path))
-    load_dotenv(".test.env")
-else:
-    # Use .env for normal execution
-    env_path = find_dotenv(".env")
-    config = Config(RepositoryEnv(env_path))
-    load_dotenv()
-
-# Define your settings using the config object
+    if env_path and os.path.exists(env_path):
+        config = Config(RepositoryEnv(env_path))
+        load_dotenv(".test.env")
+    else:
+        logging.warning("No .test.env file found. Using .env file.")
 
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis
