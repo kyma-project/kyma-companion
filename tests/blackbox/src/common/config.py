@@ -13,9 +13,7 @@ class Config:
     test_data_path: str  # Path to the test data directory e.g. "~kyma-companion/tests/blackbox/data"
     namespace_scoped_test_data_path: str
     companion_api_url: str
-    companion_token: (
-        str  # Authentication token when the companion is deployed in MPS cluster.
-    )
+    companion_token: str  # Authentication token when the companion is deployed in MPS cluster.
     test_cluster_url: str  # Gardener test cluster API server URL.
     test_cluster_ca_data: str  # Gardener test cluster CA data.
     test_cluster_auth_token: str  # Gardener test cluster authentication token.
@@ -39,7 +37,7 @@ class Config:
         self.test_cluster_auth_token = get_env("TEST_CLUSTER_AUTH_TOKEN")
         self.aicore_deployment_id_gpt4 = get_env("AICORE_DEPLOYMENT_ID_GPT4")
         self.aicore_configuration_id_gpt4 = get_env("AICORE_CONFIGURATION_ID_GPT4")
-        self.model_name = get_env("MODEL_NAME", False, "gpt4.o")
+        self.model_name = get_env("MODEL_NAME", False, "gpt4.o-mini")
         self.model_temperature = 0
         self.iterations = 3
         self.streaming_response_timeout = 10 * 60  # seconds
