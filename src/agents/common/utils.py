@@ -1,9 +1,10 @@
+import json
 from collections.abc import Sequence
 from typing import Any, Literal
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage, HumanMessage
 from langchain_core.prompts import MessagesPlaceholder
 from langgraph.constants import END
 
@@ -19,9 +20,26 @@ from agents.common.constants import (
     SUBTASKS,
 )
 from agents.common.state import AgentState, SubTask, SubTaskStatus
+from services.k8s import IK8sClient
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder for AIMessage, HumanMessage, and SubTask.
+    Default JSON cannot serialize these objects.
+    """
+
+    def default(self, obj):  # noqa D102
+        if isinstance(
+            obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask
+        ):
+            return obj.__dict__
+        elif isinstance(obj, IK8sClient):
+            return obj.model_dump()
+        return super().default(obj)
 
 
 def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str) -> AgentExecutor:

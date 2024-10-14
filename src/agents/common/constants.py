@@ -3,6 +3,7 @@ COMMON = "Common"
 FINALIZER = "Finalizer"
 EXIT = "Exit"
 CONTINUE = "Continue"
+SUPERVISOR = "Supervisor"
 
 RECENT_MESSAGES_LIMIT = 10
 

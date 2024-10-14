@@ -126,7 +126,7 @@ class TestSupervisorAgent:
         state = AgentState(messages=messages, subtasks=subtasks)
 
         # Execute
-        supervisor_node = supervisor_agent.agent_node()
+        supervisor_node = supervisor_agent._supervisor_node()
         result = supervisor_node(state)
 
         # Assert
