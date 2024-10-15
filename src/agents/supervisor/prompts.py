@@ -20,7 +20,7 @@ SUPERVISOR_TASK_PROMPT = """
 1. Review and summarize the LATEST status of all subtasks.
 2. Check if the latest subtasks have the status 'completed'.
 3. Decide on the next action:
-    a) If the latest subtasks are 'completed', you MUST set {finalizer}.
+    a) If the latest subtasks are 'completed', you MUST set {end}.
     b) Otherwise, select the next agent to act from: {options}.
 Provide your decision and a brief explanation.
 """
