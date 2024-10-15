@@ -10,14 +10,21 @@ run-name: "Evaluation tests"
 
 on:
   pull_request_target:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
     branches:
       - main
     paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
       - "docs/**"
-      - "**.md"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
       - CODEOWNERS
       - LICENSE
-    types: [labeled]
 
 # global env variables.
 env:
@@ -39,7 +46,7 @@ jobs:
           -H "Content-Type: application/json" \
           -d "{\"body\":\"The evaluation test will be skipped for this PR. You can trigger it manually by adding the label evaluation requested.\"}" \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-    
+
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
