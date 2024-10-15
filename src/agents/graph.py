@@ -274,7 +274,7 @@ class KymaGraph:
         workflow.add_edge(EXIT, END)
 
         for member in self.members:
-            # We want our workers to ALWAYS "report back" to the supervisor when done.
+            # We want our workers to ALWAYS "report back" to the supervisor when done
             workflow.add_edge(member, SUPERVISOR)
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
