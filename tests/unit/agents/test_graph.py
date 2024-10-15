@@ -39,7 +39,7 @@ def mock_planner_chain():
 
 
 @pytest.fixture
-def mock_common_node_chain():
+def mock_common_chain():
     return Mock()
 
 
@@ -50,13 +50,13 @@ def mock_graph():
 
 @pytest.fixture
 def kyma_graph(
-    mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_node_chain
+    mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
 ):
     with (
-        patch.object(KymaGraph, "_planner_chain", return_value=mock_planner_chain),
         patch.object(
-            KymaGraph, "_common_node_chain", return_value=mock_common_node_chain
+            KymaGraph, "_create_planner_chain", return_value=mock_planner_chain
         ),
+        patch.object(KymaGraph, "_create_common_chain", return_value=mock_common_chain),
         patch.object(KymaGraph, "_build_graph", return_value=mock_graph),
     ):
         return KymaGraph(mock_models, mock_memory)
@@ -312,19 +312,19 @@ class TestKymaGraph:
         chain_response,
         expected_output,
         expected_error,
-        mock_common_node_chain,
+        mock_common_chain,
     ):
         state = AgentState(subtasks=subtasks, messages=messages)
 
         if expected_error:
-            mock_common_node_chain.invoke.side_effect = Exception(expected_error)
+            mock_common_chain.invoke.side_effect = Exception(expected_error)
         else:
-            mock_common_node_chain.invoke.return_value.content = chain_response
+            mock_common_chain.invoke.return_value.content = chain_response
 
         result = kyma_graph._common_node(state)
         assert result == expected_output
         if chain_response:
-            mock_common_node_chain.invoke.assert_called_once()
+            mock_common_chain.invoke.assert_called_once()
             assert (
                 subtasks[0].assigned_to == COMMON and subtasks[0].status == "completed"
             )

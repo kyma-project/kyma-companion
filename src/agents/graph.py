@@ -87,18 +87,23 @@ class KymaGraph:
         self.models = models
         self.memory = memory
 
-        self.kyma_agent = KymaAgent(models.get(LLM.GPT4O_MINI))
-        self.k8s_agent = KubernetesAgent(models.get(LLM.GPT4O))
+        gpt_4o_mini = models[LLM.GPT4O_MINI]
+        gpt_4o = models[LLM.GPT4O]
+
+        # TODO: switch to gpt_4o when necessary
+        self.kyma_agent = KymaAgent(gpt_4o_mini)
+
+        self.k8s_agent = KubernetesAgent(gpt_4o)
         self.supervisor_agent = SupervisorAgent(
-            models.get(LLM.GPT4O), members=[KYMA_AGENT, K8S_AGENT, COMMON]
+            gpt_4o, members=[KYMA_AGENT, K8S_AGENT, COMMON]
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._planner_chain = self._planner_chain(models.get(LLM.GPT4O_MINI))
-        self._common_node_chain = self._common_node_chain(models.get(LLM.GPT4O_MINI))
+        self._planner_chain = self._create_planner_chain(gpt_4o_mini)
+        self._common_chain = self._create_common_chain(gpt_4o_mini)
         self.graph = self._build_graph()
 
-    def _planner_chain(self, model: IModel) -> RunnableSequence:
+    def _create_planner_chain(self, model: IModel) -> RunnableSequence:
         self.planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", PLANNER_PROMPT),
@@ -110,13 +115,14 @@ class KymaGraph:
         )
         return self.planner_prompt | model.llm  # type: ignore
 
-    def _invoke_planner(self, state: AgentState) -> dict[str, Any]:
+    def _invoke_planner(self, state: AgentState) -> AIMessage:
         """Invoke the planner."""
-        return self._planner_chain.invoke(
+        response: AIMessage = self._planner_chain.invoke(
             input={
                 "messages": filter_messages(state.messages),
             },
         )
+        return response
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """
@@ -138,9 +144,10 @@ class KymaGraph:
             plan_response = self._invoke_planner(
                 state,  # last message is the user query
             )
+            response_content: str = plan_response.content  # type: ignore
 
             try:
-                plan = self.plan_parser.parse(plan_response.content)
+                plan = self.plan_parser.parse(response_content)
                 if plan.response:
                     return create_node_output(
                         message=AIMessage(content=plan.response, name=PLANNER),
@@ -152,8 +159,8 @@ class KymaGraph:
                 # If 'response' field of the content of plan_response is missing due to LLM inconsistency,
                 # the response is read from the plan_response content.
                 return create_node_output(
-                    message=AIMessage(content=plan_response.content, name=PLANNER),
-                    final_response=plan_response.content,
+                    message=AIMessage(content=response_content, name=PLANNER),
+                    final_response=response_content,
                     next=EXIT,
                 )
 
@@ -164,7 +171,7 @@ class KymaGraph:
 
             return create_node_output(
                 message=AIMessage(
-                    content=plan_response.content,
+                    content=response_content,
                     name=PLANNER,
                 ),
                 next=CONTINUE,
@@ -175,7 +182,7 @@ class KymaGraph:
             return create_node_output(next=EXIT, error=str(e))
 
     @staticmethod
-    def _common_node_chain(model: IModel) -> RunnableSequence:
+    def _create_common_chain(model: IModel) -> RunnableSequence:
         """Common node chain to handle general queries."""
 
         prompt = ChatPromptTemplate.from_messages(
@@ -189,7 +196,7 @@ class KymaGraph:
 
     def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
         """Invoke the common node."""
-        return self._common_node_chain.invoke(
+        return self._common_chain.invoke(  # type: ignore
             {
                 "messages": filter_messages(state.messages),
                 "query": subtask,

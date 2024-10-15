@@ -25,6 +25,9 @@ if is_running_pytest():
         load_dotenv(".test.env")
     else:
         logging.warning("No .test.env file found. Using .env file.")
+        load_dotenv()
+else:
+    load_dotenv()
 
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis

@@ -20,7 +20,7 @@ on:
 ## in the create-release.yml workflow as well.
 
 jobs:
-  integration-test:
+  int-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -60,7 +60,7 @@ jobs:
       - name: Run Integration Tests
         run: |
           echo "${{ secrets.MODELS }}" > config/config.yml
-          poetry poe test-int
+          poetry run poe test-int
         env:
           LOG_LEVEL: "DEBUG"
           # AI Core configurations.
