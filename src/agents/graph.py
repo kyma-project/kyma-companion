@@ -2,34 +2,29 @@ import json
 from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
 
-from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.constants import END, START
+from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
-    ERROR,
-    EXIT,
     MESSAGES,
-    NEXT,
 )
 from agents.common.data import Message
 from agents.common.state import AgentState, Plan, SubTask, UserInput
 from agents.common.utils import (
-    exit_node,
     filter_messages,
 )
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
-from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
+from agents.prompts import COMMON_QUESTION_PROMPT
+from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
@@ -138,8 +133,12 @@ class KymaGraph:
                 except Exception as e:
                     logger.error(f"Error in common node: {e}")
                     return {
-                        ERROR: str(e),
-                        NEXT: EXIT,
+                        MESSAGES: [
+                            AIMessage(
+                                content="Sorry, the kubernetes agent needs more steps to process the request.",
+                                name=COMMON,
+                            )
+                        ]
                     }
         return {
             MESSAGES: [
@@ -158,10 +157,8 @@ class KymaGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
-        workflow.add_node(EXIT, exit_node)
 
-        # Define the edge: exit --> end
-        workflow.add_edge(EXIT, END)
+        # start with the supervisor
         workflow.set_entry_point(SUPERVISOR)
 
         # Agents should ALWAYS "report back" to the supervisor when done
@@ -171,8 +168,8 @@ class KymaGraph:
 
         # The supervisor populates the "next" field in the graph state
         # which routes to a node or finishes
-        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [EXIT]}
-        # Define the dynamic conditional edges: Supervisor --> (KymaAgent | KubernetesAgent | Common | Exit)
+        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
+        # Define the dynamic conditional edges: Supervisor --> (KymaAgent | KubernetesAgent | Common | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
 
         graph = workflow.compile(checkpointer=self.memory)

@@ -66,7 +66,6 @@ class AgentState(BaseModel):
         messages: list[BaseMessage]: messages exchanged between agents and user
         next: str: next LangGraph node to be called. It can be KymaAgent, KubernetesAgent, or Finalizer.
         subtasks: list[SubTask]: different steps/subtasks to follow
-        final_response: str: final response to the user
         error: str: error message if error occurred
         k8s_client: IK8sClient: Kubernetes client for fetching data from the cluster
 
@@ -79,7 +78,6 @@ class AgentState(BaseModel):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     next: str | None
     subtasks: list[SubTask] | None = []
-    final_response: str | None = ""
     error: str | None
     # IK8sClient interface implements the method "model_dump" which returns None, so that no confidential
     # information is stored in the checkpoint.

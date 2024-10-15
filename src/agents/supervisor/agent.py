@@ -12,9 +12,6 @@ from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.constants import (
-    ERROR,
-    EXIT,
-    FINAL_RESPONSE,
     FINALIZER,
     MESSAGES,
     NEXT,
@@ -35,28 +32,18 @@ ROUTER = "Router"
 logger = get_logger(__name__)
 
 
-def next_step(state: SupervisorState) -> Literal[EXIT, FINALIZER, ROUTER]:  # type: ignore
+def next_step(state: SupervisorState) -> Literal[END, FINALIZER, ROUTER]:  # type: ignore
     """Return EXIT if next is EXIT or there is an error, FINALIZER if the next node is FINALIZER, else ROUTER."""
-    if state.next == EXIT:
+    if state.next == END:
         logger.debug("Ending the workflow.")
-        return EXIT
-    # if all subtasks of state is completed, then return FINALIZER
-    if all(subtask.completed() for subtask in state.subtasks):
-        logger.debug("All subtasks are completed.")
-        return FINALIZER
+        return END
+    # if there is a recoverable error
     if state.error:
         logger.error(f"Exiting the workflow due to the error: {state.error}")
-        return EXIT
-    return FINALIZER if state.next == FINALIZER else ROUTER
-
-
-def exit_node(state: SupervisorState) -> dict[str, Any]:
-    """Used to end the workflow."""
-    return {
-        NEXT: END,
-        ERROR: state.error,
-        FINAL_RESPONSE: state.final_response,
-    }
+        return END
+    if state.next == FINALIZER:
+        return FINALIZER
+    return ROUTER
 
 
 class SupervisorAgent:
@@ -74,6 +61,7 @@ class SupervisorAgent:
         self.parser = self._route_create_parser()
         self.supervisor_chain = self._create_supervisor_chain(model)
         self._planner_chain = self._create_planner_chain(model)
+        self._graph = self._build_graph()
 
     def _route_create_parser(self) -> PydanticOutputParser:
         class RouteResponse(BaseModel):
@@ -94,7 +82,7 @@ class SupervisorAgent:
         ).partial(
             options=str(self.options),
             members=", ".join(self.options),
-            finalizer=FINALIZER,
+            end=str(END),
             output_format=self.parser.get_format_instructions(),
         )
 
@@ -105,9 +93,9 @@ class SupervisorAgent:
         """Agent name."""
         return self._name
 
-    def agent_node(self):  # noqa ANN
+    def agent_node(self) -> CompiledGraph:
         """Get Supervisor agent node function."""
-        return self._build_graph()
+        return self._graph
 
     def _route(self, state: AgentState) -> dict[str, Any]:
         """Supervisor node."""
@@ -129,8 +117,12 @@ class SupervisorAgent:
         except Exception as e:
             logger.exception("Error occurred in Supervisor agent.")
             return {
-                "error": str(e),
-                "next": EXIT,
+                MESSAGES: [
+                    AIMessage(
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        name=ROUTER,
+                    )
+                ]
             }
 
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:
@@ -186,8 +178,7 @@ class SupervisorAgent:
                 if plan.response:
                     return create_node_output(
                         message=AIMessage(content=plan.response, name=PLANNER),
-                        final_response=plan.response,
-                        next=EXIT,
+                        next=END,
                     )
             except OutputParserException as ope:
                 logger.debug(f"Problem in parsing the planner response: {ope}")
@@ -195,8 +186,7 @@ class SupervisorAgent:
                 # the response is read from the plan_response content.
                 return create_node_output(
                     message=AIMessage(content=response_content, name=PLANNER),
-                    final_response=response_content,
-                    next=EXIT,
+                    next=END,
                 )
 
             if not plan.subtasks:
@@ -214,11 +204,18 @@ class SupervisorAgent:
             )
         except Exception as e:
             logger.error(f"Error in planning: {e}")
-            return create_node_output(next=EXIT, error=str(e))
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        name=PLANNER,
+                    )
+                ]
+            }
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
 
-        # get last human message from  state.messages
+        # last human message must be the query
         last_human_message = next(
             (msg for msg in reversed(state.messages) if isinstance(msg, HumanMessage)),
         )
@@ -244,18 +241,21 @@ class SupervisorAgent:
             return {
                 MESSAGES: [
                     AIMessage(
-                        content=final_response if final_response else "",
+                        content=final_response,
                         name=FINALIZER,
                     )
                 ],
-                NEXT: EXIT,
-                FINAL_RESPONSE: final_response,
+                NEXT: END,
             }
         except Exception as e:
             logger.error(f"Error in generating final response: {e}")
             return {
-                ERROR: str(e),
-                NEXT: EXIT,
+                MESSAGES: [
+                    AIMessage(
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        name=FINALIZER,
+                    )
+                ]
             }
 
     def _build_graph(self) -> CompiledGraph:
@@ -266,20 +266,17 @@ class SupervisorAgent:
         workflow.add_node(PLANNER, self._plan)
         workflow.add_node(ROUTER, self._route)
         workflow.add_node(FINALIZER, self._generate_final_response)
-        workflow.add_node(EXIT, exit_node)
 
         # Set the entrypoint: ENTRY --> planner
         workflow.set_entry_point(PLANNER)
 
-        # Define the edge: planner --> (router | finalizer | exit)
+        # Define the edge: planner --> (router | finalizer | end)
         workflow.add_conditional_edges(
             PLANNER,
             next_step,
-            {ROUTER: ROUTER, FINALIZER: FINALIZER, EXIT: EXIT},
+            {ROUTER: ROUTER, FINALIZER: FINALIZER, END: END},
         )
-        # Define the edge: finalizer --> exit
-        workflow.add_edge(FINALIZER, EXIT)
-        # Define the edge: exit --> end
-        workflow.add_edge(EXIT, END)
+        # Define the edge: finalizer --> end
+        workflow.add_edge(FINALIZER, END)
 
         return workflow.compile()
