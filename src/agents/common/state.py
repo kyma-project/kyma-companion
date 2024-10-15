@@ -28,6 +28,10 @@ class SubTask(BaseModel):
         """Update the result of the task."""
         self.status = SubTaskStatus.COMPLETED
 
+    def completed(self) -> bool:
+        """Check if the task is completed."""
+        return self.status == SubTaskStatus.COMPLETED
+
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
 # Currently, we are using pydantic v1.

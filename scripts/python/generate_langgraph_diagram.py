@@ -36,9 +36,12 @@ if not os.getenv("CONFIG_PATH"):
 supervisor_agent: SupervisorAgent
 model_factory = ModelFactory()
 
-model = model_factory.create_model(LLM.GPT4O)
+models = {
+    LLM.GPT4O: model_factory.create_model(LLM.GPT4O),
+    LLM.GPT4O_MINI: model_factory.create_model(LLM.GPT4O_MINI),
+}
 memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-graph = KymaGraph(model, memory)
+graph = KymaGraph(models, memory)
 
 try:
     png_bytes = Image(graph.graph.get_graph(xray=1).draw_mermaid_png())
