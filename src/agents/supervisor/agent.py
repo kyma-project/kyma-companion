@@ -7,7 +7,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnableSequence
-from langgraph.constants import END
+from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
@@ -16,10 +16,9 @@ from agents.common.constants import (
     MESSAGES,
     NEXT,
     PLANNER,
-    SUBTASKS,
 )
 from agents.common.state import AgentState, Plan
-from agents.common.utils import create_node_output, filter_messages, next_step
+from agents.common.utils import create_node_output, filter_messages
 from agents.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
 from agents.supervisor.state import SupervisorState
@@ -32,8 +31,8 @@ ROUTER = "Router"
 logger = get_logger(__name__)
 
 
-def next_step(state: SupervisorState) -> Literal[END, FINALIZER, ROUTER]:  # type: ignore
-    """Return EXIT if next is EXIT or there is an error, FINALIZER if the next node is FINALIZER, else ROUTER."""
+def decide_to_route(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ignore
+    """Return the next node whether to route or ed with direct response."""
     if state.next == END:
         logger.debug("Ending the workflow.")
         return END
@@ -41,9 +40,22 @@ def next_step(state: SupervisorState) -> Literal[END, FINALIZER, ROUTER]:  # typ
     if state.error:
         logger.error(f"Exiting the workflow due to the error: {state.error}")
         return END
-    if state.next == FINALIZER:
-        return FINALIZER
+
     return ROUTER
+
+
+def decide_to_plan(state: SupervisorState) -> Literal[PLANNER, ROUTER, ROUTER]:  # type: ignore
+    """Decide the next node whether to plan, route, or finalize."""
+    if state.subtasks and all(subtask.completed() for subtask in state.subtasks):
+        logger.debug("Finalizing as all subtasks are completed.")
+        return FINALIZER
+
+    if state.subtasks:  # subtasks exist but not all are completed
+        logger.debug("No need to plan as subtasks are already created.")
+        return ROUTER
+
+    logger.debug("Breaking down the query into subtasks.")
+    return PLANNER
 
 
 class SupervisorAgent:
@@ -153,20 +165,6 @@ class SupervisorAgent:
         """
         state.error = None
 
-        if state.subtasks and all(subtask.completed() for subtask in state.subtasks):
-            logger.debug("Finalizing as all subtasks are completed.")
-            return {
-                MESSAGES: state.messages,
-                NEXT: FINALIZER,
-            }
-        elif state.subtasks:  # subtasks exist but not all are completed
-            logger.debug("No need to plan as subtasks are already created.")
-            return {
-                MESSAGES: state.messages,
-                NEXT: ROUTER,
-                SUBTASKS: state.subtasks,
-            }
-
         try:
             plan_response = self._invoke_planner(
                 state,  # last message is the user query
@@ -268,13 +266,21 @@ class SupervisorAgent:
         workflow.add_node(FINALIZER, self._generate_final_response)
 
         # Set the entrypoint: ENTRY --> planner
-        workflow.set_entry_point(PLANNER)
+        workflow.add_conditional_edges(
+            START,
+            decide_to_plan,
+            {
+                PLANNER: PLANNER,
+                ROUTER: ROUTER,
+                FINALIZER: FINALIZER,
+            },
+        )
 
-        # Define the edge: planner --> (router | finalizer | end)
+        # Define the edge: planner --> (router | end)
         workflow.add_conditional_edges(
             PLANNER,
-            next_step,
-            {ROUTER: ROUTER, FINALIZER: FINALIZER, END: END},
+            decide_to_route,
+            {ROUTER: ROUTER, END: END},
         )
         # Define the edge: finalizer --> end
         workflow.add_edge(FINALIZER, END)
