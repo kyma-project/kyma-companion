@@ -2,6 +2,7 @@ name: Integration Test
 
 on:
   pull_request:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
       - "release-**"
@@ -16,12 +17,12 @@ on:
       - "data/**"
       - "scripts/**"
 
-## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for integration-tests
+## **IMPORTANT**: If any changes are made to how to run the integration tests, make sure to update the steps for integration-tests
 ## in the create-release.yml workflow as well.
 
 jobs:
-  int-test:
-    if: contains(github.event.pull_request.labels.*.name, 'run-int-tests')
+  integration-test:
+    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -61,7 +62,7 @@ jobs:
       - name: Run Integration Tests
         run: |
           echo "${{ secrets.MODELS }}" > config/config.yml
-          poetry run poe test-int
+          poetry run poe test-integration
         env:
           LOG_LEVEL: "DEBUG"
           # AI Core configurations.

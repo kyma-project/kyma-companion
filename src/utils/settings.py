@@ -19,10 +19,10 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 
 if is_running_pytest():
     # Use .test.env for tests
-    env_path = find_dotenv(".test.env")
+    env_path = find_dotenv(".env.test")
     if env_path and os.path.exists(env_path):
         config = Config(RepositoryEnv(env_path))
-        load_dotenv(".test.env")
+        load_dotenv(".env.test")
     else:
         logging.warning("No .test.env file found. Using .env file.")
         load_dotenv()

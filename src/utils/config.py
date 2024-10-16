@@ -55,9 +55,9 @@ def get_config() -> Config:
     """
     # Get the absolute path of the current file
     current_file_path = Path(__file__).resolve()
-    # Find the config file by searching upwards
 
     target_config_file = os.environ.get("CONFIG_PATH", "config/config.yml")
+    # Find the config file by searching upwards
     config_file = find_config_file(current_file_path.parent, target_config_file)
 
     logger.info(f"Loading models config from: {config_file}")
