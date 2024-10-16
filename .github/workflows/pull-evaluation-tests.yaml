@@ -202,8 +202,6 @@ jobs:
           echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_CONFIGURATION_ID_GPT4_MINI=$(yq eval '.stringData.configuration_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_DEPLOYMENT_ID_GPT4_MINI=$(yq eval '.stringData.deployment_id_gpt_mini4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_CONFIGURATION_ID_GPT4=$(yq eval '.stringData.configuration_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_DEPLOYMENT_ID_GPT4=$(yq eval '.stringData.deployment_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           # cleanup
           rm -f aicore-secret.yaml
 
@@ -223,10 +221,8 @@ jobs:
           AICORE_AUTH_URL: ${{ steps.eval-tests-configs.outputs.AICORE_AUTH_URL }}
           AICORE_BASE_URL: ${{ steps.eval-tests-configs.outputs.AICORE_BASE_URL }}
           AICORE_RESOURCE_GROUP: ${{ steps.eval-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
-          AICORE_CONFIGURATION_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4_MINI }}
-          AICORE_DEPLOYMENT_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4_MINI }}
-          AICORE_CONFIGURATION_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4 }}
-          AICORE_DEPLOYMENT_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4 }}
+          AICORE_CONFIGURATION_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4_MINI }}
+          AICORE_DEPLOYMENT_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4_MINI }}
         run: |
           poetry run python src/run_evaluation.py
 
