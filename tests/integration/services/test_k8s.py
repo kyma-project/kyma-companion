@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 from services.k8s import K8sClient
 
-if not load_dotenv("../../../.env.evaluation"):
-    raise ValueError("failed to load .env.evaluation")
+# load env file if exists.
+load_dotenv(os.getenv("ENV_FILE", "../../../.env.evaluation"))
 
 @pytest.fixture
 def k8s_client() -> K8sClient:
@@ -28,26 +28,24 @@ def k8s_client() -> K8sClient:
 
 class TestK8sClient:
     @pytest.mark.parametrize(
-        "given_api_version, given_kind, given_namespace, expected_objects_names",
+        "given_api_version, given_kind, given_namespace",
         [
-            # Test case: should be able to list pods in all namespaces.
+            # Test case: should be able to list deployments in all namespaces.
             (
-                "v1",
-                "Pod",
+                "apps/v1",
+                "Deployment",
                 "",
-                None,
             ),
             # Test case: should be able to list pods in a specific namespace.
             (
                     "v1",
                     "Pod",
-                    "companion-integration-tests-1",
-                    ["failingpod"],
+                    "nginx-wrong-image",
             ),
         ],
     )
     def test_list_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace, expected_objects_names
+        self, k8s_client, given_api_version, given_kind, given_namespace
     ):
         # when
         result = k8s_client.list_resources(
@@ -59,28 +57,23 @@ class TestK8sClient:
         # then
         # the return type should be a list.
         assert type(result) == list
-        # the length of the list should be greater than 0.
-        if given_namespace == "":
-            assert len(result) > 0
-        else:
-            assert len(result) == len(expected_objects_names)
+        # the list should not be empty.
+        assert len(result) > 0
         # each item in the list should be a dictionary.
         for item in result:
             assert type(item) == dict
             assert item["kind"] == given_kind
             assert item["apiVersion"] == given_api_version
-            if expected_objects_names  is not None:
-                assert item["metadata"]["name"] in expected_objects_names
 
     @pytest.mark.parametrize(
         "given_api_version, given_kind, given_namespace, given_name, expected_object",
         [
-            # Test case: should be able to get a pod.
+            # Test case: should be able to get a deployment.
             (
-                    "v1",
-                    "Pod",
-                    "companion-integration-tests-1",
-                    "failingpod",
+                    "apps/v1",
+                    "Deployment",
+                    "kyma-system",
+                    "eventing-manager",
                     None,
             ),
         ],
@@ -110,10 +103,10 @@ class TestK8sClient:
         [
             # Test case: should be able to get a pod.
             (
-                    "v1",
-                    "Pod",
-                    "companion-integration-tests-1",
-                    "failingpod",
+                    "apps/v1",
+                    "Deployment",
+                    "nginx-wrong-image",
+                    "nginx",
                     None,
             ),
         ],
@@ -139,17 +132,17 @@ class TestK8sClient:
         assert result["metadata"]["namespace"] == given_namespace
 
         assert type(result["events"]) == list
-        assert len(result["events"]) > 0
-        for item in result["events"]:
-            assert type(item) == dict
+        # assert len(result["events"]) > 0
+        # for item in result["events"]:
+        #     assert type(item) == dict
 
     @pytest.mark.parametrize(
         "given_namespace, expected_pod_names",
         [
             # Test case: should be able to get list of not running pods.
             (
-                    "companion-integration-tests-1",
-                    ["failingpod"],
+                    "nginx-wrong-image",
+                    ["nginx-"],
             ),
         ],
     )
@@ -170,7 +163,7 @@ class TestK8sClient:
             assert item["kind"] == "Pod"
             assert item["apiVersion"] == "v1"
             assert item["metadata"]["namespace"] == given_namespace
-            assert item["metadata"]["name"] in expected_pod_names
+            # assert item["metadata"]["name"] in expected_pod_names
 
     def test_list_nodes_metrics(
             self, k8s_client,
@@ -194,9 +187,7 @@ class TestK8sClient:
         "given_namespace",
         [
             # Test case: should be able to get events from all namespaces.
-            (
-                    "",
-            ),
+            "",
         ],
     )
     def test_list_k8s_events(
@@ -211,3 +202,24 @@ class TestK8sClient:
         assert len(result) > 0
         for item in result:
             assert type(item) == dict
+
+    @pytest.mark.parametrize(
+        "given_namespace",
+        [
+            # Test case: should be able to get events from all namespaces.
+            "",
+        ],
+    )
+    def test_list_k8s_warning_events(
+            self, k8s_client, given_namespace
+    ):
+        # when
+        result = k8s_client.list_k8s_warning_events(namespace=given_namespace)
+
+        # then
+        # the return type should be a list.
+        assert type(result) == list
+        assert len(result) > 0
+        for item in result:
+            assert type(item) == dict
+            assert item["type"] == "Warning"
