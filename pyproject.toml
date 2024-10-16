@@ -80,6 +80,7 @@ format-fix = "black ."
 lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]
 test = "pytest tests/unit"
+test-integration = "pytest tests/integration"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
 pre-commit-check = ["code-fix", "codecheck", "test"]

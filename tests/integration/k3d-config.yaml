@@ -1,0 +1,10 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: companion-integration-tests # name (will still be prefixed with `k3d-`)
+servers: 1
+agents: 1
+options:
+  k3d:
+    wait: true # wait for cluster to be usable.
+    timeout: "120s" # wait timeout before aborting.

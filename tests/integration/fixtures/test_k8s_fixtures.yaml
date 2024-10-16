@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: companion-integration-tests-1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: failingpod
+  name: failingpod
+  namespace: companion-integration-tests-1
+spec:
+  containers:
+  - image: nginx123
+    imagePullPolicy: IfNotPresent
+    name: failingpod
+    ports:
+    - containerPort: 15090
+      name: http
+      protocol: TCP
+  restartPolicy: Always
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "my-secret"
+  namespace: companion-integration-tests-1
+stringData:
+  "config": "this is a test config"
+---
