@@ -9,3 +9,4 @@ class AIModel(StrEnum):
     AZURE_GPT4 = "llm_azure_gpt4"
     AZURE_GPT4_32K = "llm_azure_gpt4-32k"
     CHATGPT_4_O = "gpt4.o"
+    CHATGPT_4_O_MINI = "gpt4.o-mini"
