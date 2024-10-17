@@ -39,8 +39,8 @@ To run the Evaluation tests, follow these steps:
    AICORE_CLIENT_ID=                    # AI-Core Client ID.
    AICORE_CLIENT_SECRET=                # AI-Core Client Secret.
    AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
-   AICORE_CONFIGURATION_ID_GPT4_MINI=   # AI-Core Configuration ID for GPT-4.
-   AICORE_DEPLOYMENT_ID_GPT4_MINI=      # AI-Core Deployment ID for GPT-4.
+   AICORE_CONFIGURATION_ID_GPT4_MINI=   # AI-Core Configuration ID for GPT-4 mini.
+   AICORE_DEPLOYMENT_ID_GPT4_MINI=      # AI-Core Deployment ID for GPT-4 mini.
     ```
 
 3. Run the following command to set up the environment variables in your system:
