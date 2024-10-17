@@ -59,8 +59,8 @@ class IGraph(Protocol):
         ...
 
 
-class KymaGraph:
-    """Kyma graph class. Represents all the workflow of the application."""
+class CompanionGraph:
+    """Companion graph class. Represents all the workflow of the application."""
 
     models: dict[str, IModel]
     memory: BaseCheckpointSaver
@@ -150,29 +150,33 @@ class KymaGraph:
         }
 
     def _build_graph(self) -> CompiledGraph:
-        """Create a supervisor agent."""
+        """Create the companion parent graph."""
 
+        # Define a new graph.
         workflow = StateGraph(AgentState)
+
+        # Define the nodes of the graph.
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
 
-        # start with the supervisor
+        # Set the entrypoint: ENTRY --> supervisor
         workflow.set_entry_point(SUPERVISOR)
 
-        # Agents should ALWAYS "report back" to the supervisor when done
-        # define the edges: (KymaAgent | KubernetesAgent | Common) --> Supervisor
+        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
+        # The agents ALWAYS "report back" to the supervisor.
         for member in self.members:
             workflow.add_edge(member, SUPERVISOR)
 
-        # The supervisor populates the "next" field in the graph state
-        # which routes to a node or finishes
+        # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
-        # Define the dynamic conditional edges: Supervisor --> (KymaAgent | KubernetesAgent | Common | END)
+        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
 
+        # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)
+
         return graph
 
     async def astream(

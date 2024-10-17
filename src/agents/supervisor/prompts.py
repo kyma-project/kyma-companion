@@ -1,4 +1,4 @@
-SUPERVISOR_ROLE_PROMPT = """
+ROUTER_ROLE_PROMPT = """
 You are a router managing a conversation between the agents: {members}.
 Your task is to oversee the conversation to achieve the goal, checking subtasks and their statuses to decide the next action or finalization.
 
@@ -16,7 +16,7 @@ The "next" property should contain the name of the next agent to be called ({mem
 Ensure that your response is a valid JSON object matching this structure exactly. Do not include any additional text, explanations, or formatting outside of this JSON object.
 """
 
-SUPERVISOR_TASK_PROMPT = """
+ROUTER_TASK_PROMPT = """
 1. Review and summarize the LATEST status of all subtasks.
 2. Check if the latest subtasks have the status 'completed'.
 3. Decide on the next action:

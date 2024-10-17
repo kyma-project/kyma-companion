@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 from langchain_redis import RedisChatMessageHistory
 
 from agents.common.data import Message
-from agents.graph import IGraph, KymaGraph
+from agents.graph import IGraph, CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from initial_questions.inital_questions import (
     IInitialQuestionsHandler,
@@ -64,7 +64,7 @@ class ConversationService(metaclass=SingletonMeta):
         self._model = ModelFactory().create_model(LLM.GPT4O)
         # Set up the Kyma Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-        self._kyma_graph = KymaGraph(
+        self._kyma_graph = CompanionGraph(
             models={LLM.GPT4O: self._model, LLM.GPT4O_MINI: self._model_mini},
             memory=redis_saver,
         )

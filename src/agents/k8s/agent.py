@@ -170,7 +170,7 @@ class KubernetesAgent:
         }
 
     def _build_graph(self) -> CompiledGraph:
-        # Define a new graph
+        # Define a new graph.
         workflow = StateGraph(KubernetesAgentState)
 
         # Define the nodes of the graph.
