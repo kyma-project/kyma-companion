@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -49,6 +50,6 @@ from utils.config import Config, ModelConfig, get_config
     ],
 )
 def test_get_config(yaml_content, expected_config):
-    with patch("builtins.open", mock_open(read_data=yaml_content)):
+    with patch.object(Path, "open", mock_open(read_data=yaml_content)):
         result = get_config()
         assert result == expected_config

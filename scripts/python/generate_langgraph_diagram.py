@@ -8,7 +8,7 @@ Usage:
     python scripts/python/generate_langgraph_diagram.py
 
 Environment Variables:
-    MODELS_CONFIG_FILE_PATH: Path to the models configuration file (default: "config/config.yml")
+    CONFIG_PATH: Path to the models configuration file (default: "config/config.yml")
 
 Output:
     - graph.png: The generated LangGraph diagram saved as a PNG file.
@@ -30,8 +30,8 @@ from agents.supervisor.agent import SupervisorAgent  # noqa: E402
 from utils.models import LLM, ModelFactory  # noqa: E402
 from utils.settings import REDIS_URL
 
-if not os.getenv("MODELS_CONFIG_FILE_PATH"):
-    os.environ["MODELS_CONFIG_FILE_PATH"] = "config/config.yml"
+if not os.getenv("CONFIG_PATH"):
+    os.environ["CONFIG_PATH"] = "config/config.yml"
 
 supervisor_agent: SupervisorAgent
 model_factory = ModelFactory()

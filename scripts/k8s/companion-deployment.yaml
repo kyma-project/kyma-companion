@@ -74,7 +74,7 @@ spec:
           value: "redis-stack.redis.svc.cluster.local"
         - name: REDIS_PORT
           value: "6379"
-        - name: MODELS_CONFIG_FILE_PATH
+        - name: CONFIG_PATH
           value: "/mnt/config/models-config.yml"
         envFrom:
           - configMapRef:
