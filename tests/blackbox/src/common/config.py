@@ -37,8 +37,10 @@ class Config:
         self.test_cluster_url = get_env("TEST_CLUSTER_URL")
         self.test_cluster_ca_data = get_env("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = get_env("TEST_CLUSTER_AUTH_TOKEN")
-        self.aicore_deployment_id_gpt4_mini = get_env("AICORE_DEPLOYMENT_ID_GPT4")
-        self.aicore_configuration_id_gpt4_mini = get_env("AICORE_CONFIGURATION_ID_GPT4")
+        self.aicore_deployment_id_gpt4_mini = get_env("AICORE_DEPLOYMENT_ID_GPT4_MINI")
+        self.aicore_configuration_id_gpt4_mini = get_env(
+            "AICORE_CONFIGURATION_ID_GPT4_MINI"
+        )
         self.model_name = get_env("MODEL_NAME", False, "gpt4.o-mini")
         self.model_temperature = 0
         self.iterations = 3
