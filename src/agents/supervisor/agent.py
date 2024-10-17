@@ -20,7 +20,7 @@ from agents.common.constants import (
 from agents.common.state import AgentState, Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
-from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
+from agents.supervisor.prompts import ROUTER_ROLE_PROMPT, ROUTER_TASK_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
 from utils.models import IModel
@@ -31,8 +31,8 @@ ROUTER = "Router"
 logger = get_logger(__name__)
 
 
-def decide_to_route(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ignore
-    """Return the next node whether to route or ed with direct response."""
+def decide_route_or_exit(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ignore
+    """Return the next node whether to route or exit with a direct response."""
     if state.next == END:
         logger.debug("Ending the workflow.")
         return END
@@ -44,16 +44,20 @@ def decide_to_route(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ig
     return ROUTER
 
 
-def decide_to_plan(state: SupervisorState) -> Literal[PLANNER, ROUTER, ROUTER]:  # type: ignore
-    """Decide the next node whether to plan, route, or finalize."""
+def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINALIZER]:  # type: ignore
+    """When entering the supervisor subgraph, decide the entry point: plan, route, or finalize."""
+
+    # if all subtasks are completed, finalize the response
     if state.subtasks and all(subtask.completed() for subtask in state.subtasks):
         logger.debug("Finalizing as all subtasks are completed.")
         return FINALIZER
 
-    if state.subtasks:  # subtasks exist but not all are completed
+    # if subtasks exists but not all are completed, router delegates to the next agent
+    if state.subtasks:
         logger.debug("No need to plan as subtasks are already created.")
         return ROUTER
 
+    # if there are no subtasks, come up with a plan
     logger.debug("Breaking down the query into subtasks.")
     return PLANNER
 
@@ -86,10 +90,10 @@ class SupervisorAgent:
     def _create_supervisor_chain(self, model: IModel) -> RunnableSequence:
         supervisor_system_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", SUPERVISOR_ROLE_PROMPT),
+                ("system", ROUTER_ROLE_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
                 ("assistant", "Subtasks: {subtasks}"),
-                ("system", SUPERVISOR_TASK_PROMPT),
+                ("system", ROUTER_TASK_PROMPT),
             ]
         ).partial(
             options=str(self.options),
@@ -265,10 +269,10 @@ class SupervisorAgent:
         workflow.add_node(ROUTER, self._route)
         workflow.add_node(FINALIZER, self._generate_final_response)
 
-        # Set the entrypoint: ENTRY --> planner
+        # Set the entrypoint: ENTRY --> (planner | router | finalizer)
         workflow.add_conditional_edges(
             START,
-            decide_to_plan,
+            decide_entry_point,
             {
                 PLANNER: PLANNER,
                 ROUTER: ROUTER,
@@ -276,13 +280,14 @@ class SupervisorAgent:
             },
         )
 
-        # Define the edge: planner --> (router | end)
+        # Define the edge: planner --> (router | END)
         workflow.add_conditional_edges(
             PLANNER,
-            decide_to_route,
+            decide_route_or_exit,
             {ROUTER: ROUTER, END: END},
         )
-        # Define the edge: finalizer --> end
+
+        # Define the edge: finalizer --> END
         workflow.add_edge(FINALIZER, END)
 
         return workflow.compile()

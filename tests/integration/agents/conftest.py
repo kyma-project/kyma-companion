@@ -4,7 +4,7 @@ import pytest
 from deepeval.models.base_model import DeepEvalBaseLLM
 from fakeredis import TcpFakeServer
 
-from agents.graph import KymaGraph
+from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from utils.models import LLM, ModelFactory  # noqa: E402
 from utils.settings import REDIS_HOST, REDIS_PORT, REDIS_URL
@@ -70,5 +70,5 @@ def start_fake_redis():
 @pytest.fixture(scope="session")
 def kyma_graph(app_models, start_fake_redis):
     memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-    graph = KymaGraph(app_models, memory)
+    graph = CompanionGraph(app_models, memory)
     return graph

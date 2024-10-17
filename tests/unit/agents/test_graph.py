@@ -14,7 +14,7 @@ from agents.common.constants import (
 )
 from agents.common.data import Message
 from agents.common.state import AgentState, SubTask, UserInput
-from agents.graph import KymaGraph
+from agents.graph import CompanionGraph
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from utils.models import LLM, IModel
@@ -49,17 +49,17 @@ def mock_graph():
 
 
 @pytest.fixture
-def kyma_graph(
+def companion_graph(
     mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
 ):
     with (
         patch.object(
-            KymaGraph, "_create_planner_chain", return_value=mock_planner_chain
+            CompanionGraph, "_create_planner_chain", return_value=mock_planner_chain
         ),
-        patch.object(KymaGraph, "_create_common_chain", return_value=mock_common_chain),
-        patch.object(KymaGraph, "_build_graph", return_value=mock_graph),
+        patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
+        patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
     ):
-        return KymaGraph(mock_models, mock_memory)
+        return CompanionGraph(mock_models, mock_memory)
 
 
 def create_messages_json(content, role, node) -> str:
@@ -67,7 +67,7 @@ def create_messages_json(content, role, node) -> str:
     return json_str
 
 
-class TestKymaGraph:
+class TestCompanionGraph:
 
     @pytest.mark.parametrize(
         "description, input_query, plan_content, expected_output, expected_error",
@@ -193,7 +193,7 @@ class TestKymaGraph:
     )
     def test_plan(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         input_query,
         plan_content,
@@ -207,7 +207,7 @@ class TestKymaGraph:
             mock_planner_chain.invoke.side_effect = Exception(expected_error)
         else:
             mock_planner_chain.invoke.return_value.content = plan_content
-        result = kyma_graph._plan(state)
+        result = companion_graph._plan(state)
 
         assert result == expected_output
 
@@ -305,7 +305,7 @@ class TestKymaGraph:
     )
     def test_common_node(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         subtasks,
         messages,
@@ -321,7 +321,7 @@ class TestKymaGraph:
         else:
             mock_common_chain.invoke.return_value.content = chain_response
 
-        result = kyma_graph._common_node(state)
+        result = companion_graph._common_node(state)
         assert result == expected_output
         if chain_response:
             mock_common_chain.invoke.assert_called_once()
@@ -408,7 +408,7 @@ class TestKymaGraph:
     )
     def test_generate_final_response(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         input_query,
         conversation_messages,
@@ -429,9 +429,9 @@ class TestKymaGraph:
             )
 
         with patch.object(
-            kyma_graph, "_final_response_chain", return_value=mock_final_response_chain
+            companion_graph, "_final_response_chain", return_value=mock_final_response_chain
         ):
-            result = kyma_graph._generate_final_response(state)
+            result = companion_graph._generate_final_response(state)
 
         assert result == expected_output
         mock_final_response_chain.invoke.assert_called_once_with(
@@ -447,7 +447,7 @@ class TestKymaGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.KymaGraph", return_value=kyma_graph) as mock:
+        with patch("services.conversation.KymaGraph", return_value=companion_graph) as mock:
             yield mock
 
     @pytest.mark.asyncio
@@ -547,7 +547,7 @@ class TestKymaGraph:
     )
     async def test_astream(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         conversation_id,
         message,
@@ -566,18 +566,18 @@ class TestKymaGraph:
                 yield chunk
 
         # Mock the graph's astream method with our async generator function
-        kyma_graph.graph.astream = mock_astream
+        companion_graph.graph.astream = mock_astream
 
         if expected_error:
             with pytest.raises(Exception) as exc_info:
-                async for _ in kyma_graph.astream(
+                async for _ in companion_graph.astream(
                     conversation_id, message, mock_k8s_client
                 ):
                     pass
             assert str(exc_info.value) == expected_error
         else:
             result = []
-            async for chunk in kyma_graph.astream(
+            async for chunk in companion_graph.astream(
                 conversation_id, message, mock_k8s_client
             ):
                 result.append(chunk)
