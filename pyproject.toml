@@ -21,7 +21,6 @@ package-mode = false
 python = "~3.12"
 ai-core-sdk = "^2.3.11"
 black = "^24.8.0"
-# Add your production dependencies here
 fastapi = "^0.111.0"
 generative-ai-hub-sdk = "^3.2.6"
 kubernetes = "^30.1.0"
