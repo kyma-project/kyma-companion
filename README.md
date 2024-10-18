@@ -194,7 +194,7 @@ Mypy does not support fixing issues automatically.
 
 ## Tests
 
-First, .test.env file should be configured with the proper environment variables. 
+First, the `.test.env` file should be configured with the proper environment variables. 
 
 The tests written in the [pytest framework](https://docs.pytest.org/en/stable/) can be executed with the following command:
 

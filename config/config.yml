@@ -1,10 +1,7 @@
 models:
   - name: gpt-4o
-    deployment_id: d4bf8b0e56fcf372
+    deployment_id: d92ed4e1d4bafffc
     temperature: 0
   - name: gpt-4o-mini
-    deployment_id: d4bf8b0e56fcf372
-    temperature: 0
-  - name: gemini-1.0-pro
-    deployment_id: d4bf8b0e56fcf372
+    deployment_id: d3da334def2bb9c8
     temperature: 0

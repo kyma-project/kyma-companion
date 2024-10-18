@@ -10,14 +10,21 @@ run-name: "Evaluation tests"
 
 on:
   pull_request_target:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
     branches:
       - main
     paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
       - "docs/**"
-      - "**.md"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
       - CODEOWNERS
       - LICENSE
-    types: [labeled]
 
 # global env variables.
 env:
@@ -39,7 +46,7 @@ jobs:
           -H "Content-Type: application/json" \
           -d "{\"body\":\"The evaluation test will be skipped for this PR. You can trigger it manually by adding the label evaluation requested.\"}" \
           "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-    
+
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
@@ -200,8 +207,8 @@ jobs:
           echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_CONFIGURATION_ID_GPT4=$(yq eval '.stringData.configuration_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_DEPLOYMENT_ID_GPT4=$(yq eval '.stringData.deployment_id_gpt4' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_CONFIGURATION_ID_GPT4_MINI=$(yq eval '.stringData.configuration_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_DEPLOYMENT_ID_GPT4_MINI=$(yq eval '.stringData.deployment_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           # cleanup
           rm -f aicore-secret.yaml
 
@@ -221,8 +228,8 @@ jobs:
           AICORE_AUTH_URL: ${{ steps.eval-tests-configs.outputs.AICORE_AUTH_URL }}
           AICORE_BASE_URL: ${{ steps.eval-tests-configs.outputs.AICORE_BASE_URL }}
           AICORE_RESOURCE_GROUP: ${{ steps.eval-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
-          AICORE_CONFIGURATION_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4 }}
-          AICORE_DEPLOYMENT_ID_GPT4: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4 }}
+          AICORE_CONFIGURATION_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4_MINI }}
+          AICORE_DEPLOYMENT_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4_MINI }}
         run: |
           poetry run python src/run_evaluation.py
 

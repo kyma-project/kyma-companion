@@ -26,8 +26,8 @@ class ChatOpenAIValidator(ValidatorInterface):
         self.model = ChatOpenAI(
             model_name=config.model_name,
             temperature=config.model_temperature,
-            deployment_id=config.aicore_deployment_id_gpt4,
-            config_id=config.aicore_configuration_id_gpt4,
+            deployment_id=config.aicore_deployment_id_gpt4_mini,
+            config_id=config.aicore_configuration_id_gpt4_mini,
         )
         self.output_parser = BooleanOutputParser()
 

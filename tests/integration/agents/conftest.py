@@ -6,7 +6,7 @@ from fakeredis import TcpFakeServer
 
 from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
-from utils.models import LLM, ModelFactory  # noqa: E402
+from utils.models import LLM, ModelFactory
 from utils.settings import REDIS_HOST, REDIS_PORT, REDIS_URL
 
 
@@ -17,17 +17,13 @@ class LangChainOpenAI(DeepEvalBaseLLM):
     def load_model(self):
         return self.model
 
-    # @observe()
     def generate(self, prompt: str) -> str:
         chat_model = self.load_model()
-        # print("prompt: " + prompt)
         res = chat_model.invoke(prompt).content
         return res
 
-    # @observe()
     async def a_generate(self, prompt: str) -> str:
         chat_model = self.load_model()
-        # print("prompt: " + prompt)
         res = await chat_model.ainvoke(prompt)
         return res.content
 
