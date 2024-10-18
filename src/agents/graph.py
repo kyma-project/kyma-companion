@@ -241,7 +241,7 @@ class KymaGraph:
                 ("system", FINALIZER_PROMPT),
             ]
         ).partial(members=", ".join(self.members), query=state.input.query)
-        return prompt | self.model.llm  # type: ignore
+        return prompt | self.models[LLM.GPT4O_MINI].llm  # type: ignore
 
     def _generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""
