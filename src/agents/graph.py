@@ -135,7 +135,7 @@ class CompanionGraph:
                     return {
                         MESSAGES: [
                             AIMessage(
-                                content="Sorry, the kubernetes agent needs more steps to process the request.",
+                                content="Sorry, the common agent is unable to process the request.",
                                 name=COMMON,
                             )
                         ]
