@@ -48,7 +48,7 @@ class TestConversation:
             "chunk3",
         ]
         with patch(
-            "services.conversation.KymaGraph", return_value=mock_kyma_graph
+            "services.conversation.CompanionGraph", return_value=mock_kyma_graph
         ) as mock:
             yield mock
 
