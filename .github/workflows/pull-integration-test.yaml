@@ -18,18 +18,6 @@ on:
       - "scripts/**"
 
 jobs:
-  comment:
-    name: comment on pull request
-    runs-on: ubuntu-latest
-    if: "!contains(github.event.pull_request.labels.*.name, 'run-integration-test')"
-    steps:
-      - name: Post comment
-        run: |
-          curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{\"body\":\"The integration test will be skipped for this PR. You can trigger it manually by adding the label: run-integration-test.\"}" \
-          "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-
   integration-test:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
