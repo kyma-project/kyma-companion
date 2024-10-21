@@ -1,0 +1,30 @@
+name: "PR Comment"
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    branches:
+      - "main"
+      - "release-**"
+
+jobs:
+  comment:
+    name: Notes for PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install comment cli
+        uses: shmokmt/actions-setup-github-comment@93d9e7c3ea11e473e3061a8dbed8231faea13dea
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Post comment
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GH_COMMENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          github-comment post \
+            --template-key pr-notes \
+            --config .github/github-comment.yaml
+
+
