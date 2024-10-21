@@ -194,7 +194,7 @@ Mypy does not support fixing issues automatically.
 
 ## Tests
 
-First, the `.test.env` file should be configured with the proper environment variables. 
+### Unit Tests
 
 The tests written in the [pytest framework](https://docs.pytest.org/en/stable/) can be executed with the following command:
 
@@ -207,6 +207,14 @@ Or, with the following command:
 ```bash
 poetry run pytest tests
 ```
+
+### Integration Tests
+
+For details about Integration Tests, read the [Integration Tests README](./tests/integration/README.md) file.
+
+### Blackbox Tests
+
+For details about Blackbox Tests, read the [Blackbox Tests README](./tests/blackbox/README.md) file.
 
 ## Release Process
 
