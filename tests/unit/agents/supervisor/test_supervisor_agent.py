@@ -16,7 +16,7 @@ class TestSupervisorAgent:
 
     @pytest.fixture
     def supervisor_agent(self):
-        agent = SupervisorAgent(Mock(), [K8S_AGENT, KYMA_AGENT, COMMON])  # noqa
+        agent = SupervisorAgent(Mock(), [K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])  # noqa
         agent.supervisor_chain = Mock()
         return agent  # noqa
 
@@ -92,13 +92,13 @@ class TestSupervisorAgent:
                     )
                 ],
                 [HumanMessage(content="Error test")],
-                EXIT,
+                None,
                 [
                     SubTask(
                         description="Task 4", assigned_to=KYMA_AGENT, status="pending"
                     )
                 ],
-                "Test error",
+                "Sorry, I encountered an error while processing the request. Error: Test error",
             ),
         ],
     )
@@ -126,8 +126,8 @@ class TestSupervisorAgent:
         state = AgentState(messages=messages, subtasks=subtasks)
 
         # Execute
-        supervisor_node = supervisor_agent.agent_node()
-        result = supervisor_node(state)
+        route_node = supervisor_agent._route
+        result = route_node(state)
 
         # Assert
         supervisor_agent.supervisor_chain.invoke.assert_called_once_with(
@@ -137,8 +137,8 @@ class TestSupervisorAgent:
             }
         )
 
-        assert result["next"] == expected_next
         if expected_error:
-            assert result["error"] == expected_error
+            assert result["messages"][0].content == expected_error
         else:
+            assert result["next"] == expected_next
             assert "error" not in result
