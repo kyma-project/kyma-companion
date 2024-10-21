@@ -133,7 +133,7 @@ class TestSupervisorAgent:
         supervisor_agent.supervisor_chain.invoke.assert_called_once_with(
             input={
                 "messages": filter_messages(messages),
-                "subtasks": json.dumps([subtask.dict() for subtask in subtasks]),
+                "subtasks": json.dumps([subtask.__dict__ for subtask in subtasks]),
             }
         )
 

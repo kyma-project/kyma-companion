@@ -1,6 +1,6 @@
 import json
 from collections.abc import Hashable
-from typing import Any, AsyncIterator, Dict, Literal, Protocol  # noqa UP
+from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -38,7 +38,7 @@ from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import IModel
+from utils.models import LLM, IModel
 
 logger = get_logger(__name__)
 
@@ -72,7 +72,7 @@ class IGraph(Protocol):
 class KymaGraph:
     """Kyma graph class. Represents all the workflow of the application."""
 
-    model: IModel
+    models: dict[str, IModel]
     memory: BaseCheckpointSaver
     supervisor_agent: IAgent
     kyma_agent: IAgent
@@ -81,21 +81,30 @@ class KymaGraph:
 
     plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, model: IModel, memory: BaseCheckpointSaver):
-        self.model = model
+    planner_prompt: ChatPromptTemplate
+
+    def __init__(self, models: dict[str, IModel], memory: BaseCheckpointSaver):
+        self.models = models
         self.memory = memory
 
-        self.kyma_agent = KymaAgent(model)
-        self.k8s_agent = KubernetesAgent(model)
+        gpt_4o_mini = models[LLM.GPT4O_MINI]
+        gpt_4o = models[LLM.GPT4O]
+
+        # TODO: switch to gpt_4o when necessary
+        self.kyma_agent = KymaAgent(gpt_4o_mini)
+
+        self.k8s_agent = KubernetesAgent(gpt_4o)
         self.supervisor_agent = SupervisorAgent(
-            model, members=[KYMA_AGENT, K8S_AGENT, COMMON]
+            gpt_4o, members=[KYMA_AGENT, K8S_AGENT, COMMON]
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
+        self._planner_chain = self._create_planner_chain(gpt_4o_mini)
+        self._common_chain = self._create_common_chain(gpt_4o_mini)
         self.graph = self._build_graph()
 
-    def _create_planner_chain(self) -> RunnableSequence:
-        planner_prompt = ChatPromptTemplate.from_messages(
+    def _create_planner_chain(self, model: IModel) -> RunnableSequence:
+        self.planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
@@ -104,7 +113,16 @@ class KymaGraph:
             members=", ".join(self.members),
             output_format=self.plan_parser.get_format_instructions(),
         )
-        return planner_prompt | self.model.llm  # type: ignore
+        return self.planner_prompt | model.llm  # type: ignore
+
+    def _invoke_planner(self, state: AgentState) -> AIMessage:
+        """Invoke the planner."""
+        response: AIMessage = self._planner_chain.invoke(
+            input={
+                "messages": filter_messages(state.messages),
+            },
+        )
+        return response
 
     def _plan(self, state: AgentState) -> dict[str, Any]:
         """
@@ -122,16 +140,14 @@ class KymaGraph:
         # to prevent stored errors from previous runs
         state.error = None
 
-        planner_chain = self._create_planner_chain()
         try:
-            plan_response = planner_chain.invoke(
-                input={
-                    "messages": filter_messages(state.messages),
-                },  # last message is the user query
+            plan_response = self._invoke_planner(
+                state,  # last message is the user query
             )
+            response_content: str = plan_response.content  # type: ignore
 
             try:
-                plan = self.plan_parser.parse(plan_response.content)
+                plan = self.plan_parser.parse(response_content)
                 if plan.response:
                     return create_node_output(
                         message=AIMessage(content=plan.response, name=PLANNER),
@@ -143,8 +159,8 @@ class KymaGraph:
                 # If 'response' field of the content of plan_response is missing due to LLM inconsistency,
                 # the response is read from the plan_response content.
                 return create_node_output(
-                    message=AIMessage(content=plan_response.content, name=PLANNER),
-                    final_response=plan_response.content,
+                    message=AIMessage(content=response_content, name=PLANNER),
+                    final_response=response_content,
                     next=EXIT,
                 )
 
@@ -155,8 +171,7 @@ class KymaGraph:
 
             return create_node_output(
                 message=AIMessage(
-                    content=f"Task decomposed into subtasks and assigned to agents: "
-                    f"{json.dumps(plan.subtasks, cls=CustomJSONEncoder)}",
+                    content=response_content,
                     name=PLANNER,
                 ),
                 next=CONTINUE,
@@ -166,7 +181,8 @@ class KymaGraph:
             logger.error(f"Error in planning: {e}")
             return create_node_output(next=EXIT, error=str(e))
 
-    def _common_node_chain(self) -> RunnableSequence:
+    @staticmethod
+    def _create_common_chain(model: IModel) -> RunnableSequence:
         """Common node chain to handle general queries."""
 
         prompt = ChatPromptTemplate.from_messages(
@@ -176,22 +192,24 @@ class KymaGraph:
                 ("human", "query: {query}"),
             ]
         )
-        return prompt | self.model.llm  # type: ignore
+        return prompt | model.llm  # type: ignore
 
-    def common_node(self, state: AgentState) -> dict[str, Any]:
+    def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
+        """Invoke the common node."""
+        return self._common_chain.invoke(  # type: ignore
+            {
+                "messages": filter_messages(state.messages),
+                "query": subtask,
+            },
+        ).content
+
+    def _common_node(self, state: AgentState) -> dict[str, Any]:
         """Common node to handle general queries."""
-
-        chain = self._common_node_chain()
 
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
                 try:
-                    response = chain.invoke(
-                        {
-                            "messages": filter_messages(state.messages),
-                            "query": subtask.description,
-                        },
-                    ).content
+                    response = self._invoke_common_node(state, subtask.description)
                     subtask.complete()
                     return {
                         MESSAGES: [
@@ -225,7 +243,7 @@ class KymaGraph:
         ).partial(members=", ".join(self.members), query=state.input.query)
         return prompt | self.model.llm  # type: ignore
 
-    def generate_final_response(self, state: AgentState) -> dict[str, Any]:
+    def _generate_final_response(self, state: AgentState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
@@ -256,10 +274,10 @@ class KymaGraph:
         """Create a supervisor agent."""
 
         workflow = StateGraph(AgentState)
-        workflow.add_node(FINALIZER, self.generate_final_response)
+        workflow.add_node(FINALIZER, self._generate_final_response)
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
-        workflow.add_node(COMMON, self.common_node)
+        workflow.add_node(COMMON, self._common_node)
 
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(PLANNER, self._plan)
@@ -294,7 +312,7 @@ class KymaGraph:
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
-        user_input = UserInput(**message.dict())
+        user_input = UserInput(**message.__dict__)
         messages = [
             SystemMessage(
                 content=f"The user query is related to: {user_input.get_resource_information()}"

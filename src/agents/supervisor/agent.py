@@ -71,7 +71,7 @@ class SupervisorAgent:
                     input={
                         "messages": filter_messages(state.messages),
                         "subtasks": json.dumps(
-                            [subtask.dict() for subtask in state.subtasks]
+                            [subtask.__dict__ for subtask in state.subtasks]
                         ),
                     },
                 )
