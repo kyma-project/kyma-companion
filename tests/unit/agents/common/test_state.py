@@ -25,7 +25,7 @@ class TestSubTask:
             status=status,
             result=result,
         )
-        subtask.completed()
+        subtask.complete()
         assert subtask.status == expected_status
 
 
