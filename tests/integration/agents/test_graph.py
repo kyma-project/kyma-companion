@@ -75,6 +75,17 @@ def create_mock_state(messages: Sequence[BaseMessage]) -> AgentState:
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
+                HumanMessage(content="How many continents exist in the planet?"),
+            ],
+            '{"response": "seven"}',
+            True,
+        ),
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
                 HumanMessage(content="What is Kyma?"),
             ],
             '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent"}]}',
