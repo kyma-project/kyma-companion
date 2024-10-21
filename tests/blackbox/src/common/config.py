@@ -4,6 +4,9 @@ from common.utils import get_env
 
 load_dotenv()
 
+DEFAULT_RETRY_WAIT_TIME = 60
+DEFAULT_RETRY_MAX_WAIT_TIME = 600
+
 
 class Config:
     """
@@ -27,6 +30,8 @@ class Config:
     iterations: int
     streaming_response_timeout: int
     max_workers: int
+    retry_wait_time: int
+    retry_max_wait_time: int
 
     def __init__(self) -> None:
         self.test_data_path = get_env("TEST_DATA_PATH", False, "./data")
@@ -46,3 +51,9 @@ class Config:
         self.iterations = 3
         self.streaming_response_timeout = 10 * 60  # seconds
         self.max_workers = 1
+        self.retry_wait_time = int(
+            get_env("RETRY_WAIT_TIME", False, DEFAULT_RETRY_WAIT_TIME)
+        )  # seconds
+        self.retry_max_wait_time = int(
+            get_env("RETRY_MAX_WAIT_TIME", False, DEFAULT_RETRY_MAX_WAIT_TIME)
+        )  # seconds
