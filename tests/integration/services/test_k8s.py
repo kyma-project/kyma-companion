@@ -2,13 +2,9 @@ import os
 from http import HTTPStatus
 
 import pytest
-from dotenv import load_dotenv
 from requests import Response
 
 from services.k8s import K8sClient
-
-# load env file if exists.
-load_dotenv(os.getenv("ENV_FILE", "../../../.env.evaluation"))
 
 
 @pytest.fixture
