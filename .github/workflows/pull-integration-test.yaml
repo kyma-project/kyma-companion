@@ -1,0 +1,47 @@
+name: Integration Test
+
+on:
+  pull_request_target:
+    branches:
+      - "main"
+      - "release-**"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - CODEOWNERS
+      - LICENSE
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run integration tests
+        env:
+          # Gardener test cluster configurations.
+          TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
+          TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
+          TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
+        run: poetry run poe test-integration
