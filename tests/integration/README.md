@@ -4,7 +4,7 @@ Integration tests ensure that various modules of Kyma Companion work seamlessly 
 
 ## Setup
 
-The Integration tests uses the same data as the blackbox tests. The data is stored in the [tests/blackbox/data/evaluation](../../tests/blackbox/data/evaluation) directory.
+The Integration tests uses the same data as the blackbox tests. The data is stored in the [tests/blackbox/data](../../tests/blackbox/data) directory.
 
 ## Usage
 
