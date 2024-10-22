@@ -10,6 +10,7 @@ from agents.common.utils import filter_messages
 from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, SupervisorAgent
+from agents.supervisor.state import SupervisorState
 
 
 class TestSupervisorAgent:
@@ -142,3 +143,112 @@ class TestSupervisorAgent:
         else:
             assert result["next"] == expected_next
             assert "error" not in result
+
+    @pytest.mark.parametrize(
+        "description, input_query, conversation_messages, final_response_content, expected_output, expected_error",
+        [
+            (
+                "Generates final response successfully",
+                "How do I deploy a Kyma function?",
+                [
+                    HumanMessage(content="How do I deploy a Kyma function?"),
+                    AIMessage(
+                        content="To deploy a Kyma function, you need to...",
+                        name="KymaAgent",
+                    ),
+                    AIMessage(
+                        content="In Kubernetes, deployment involves...",
+                        name="KubernetesAgent",
+                    ),
+                ],
+                "To deploy a Kyma function, follow these steps: 1. Create a function file. "
+                "2. Use the Kyma CLI to deploy. 3. Verify the deployment in the Kyma dashboard.",
+                {
+                    'messages': [
+                        AIMessage(
+                            content='To deploy a Kyma function, follow these steps: '
+                                    '1. Create a function file. '
+                                    '2. Use the Kyma CLI to deploy. '
+                                    '3. Verify the deployment in the Kyma dashboard.',
+                            name='Finalizer'
+                        )
+                    ],
+                    'next': '__end__'
+                },
+                None,
+            ),
+            (
+                "Generates empty final response",
+                "What is Kubernetes?",
+                [
+                    HumanMessage(content="What is Kubernetes?"),
+                    AIMessage(
+                        content="Kubernetes is a container orchestration platform.",
+                        name="KubernetesAgent",
+                    ),
+                ],
+                "",
+                {
+                    'messages': [
+                        AIMessage(
+                            content='',
+                            name='Finalizer'
+                        )
+                    ],
+                    'next': '__end__'
+                },
+                None,
+            ),
+            (
+                "Handles exception during final response generation",
+                "What is Kubernetes?",
+                [
+                    HumanMessage(content="What is Kubernetes?"),
+                    AIMessage(
+                        content="Kubernetes is a container orchestration platform.",
+                        name="KubernetesAgent",
+                    ),
+                ],
+                None,
+                {
+                    'messages': [
+                        AIMessage(
+                            content='Sorry, I encountered an error while processing the request. '
+                                    'Error: Error in finalizer node: Test error',
+                            name='Finalizer')
+                    ]
+                },
+                "Error in finalizer node: Test error",
+            ),
+        ],
+    )
+    @patch("agents.k8s.agent.get_logger", Mock())
+    def test_agent_generate_final_response(
+        self,
+        supervisor_agent,
+        description,
+        input_query,
+        conversation_messages,
+        final_response_content,
+        expected_output,
+        expected_error,
+    ):
+        state = SupervisorState(messages=conversation_messages)
+
+        mock_final_response_chain = Mock()
+        if expected_error:
+            mock_final_response_chain.invoke.side_effect = Exception(expected_error)
+        else:
+            mock_final_response_chain.invoke.return_value.content = (
+                final_response_content
+            )
+
+        with patch.object(
+            supervisor_agent, "_final_response_chain", return_value=mock_final_response_chain
+        ):
+            result = supervisor_agent._generate_final_response(state)
+
+        assert result == expected_output
+        mock_final_response_chain.invoke.assert_called_once_with(
+            {"messages": conversation_messages}
+        )
