@@ -64,7 +64,7 @@ def start_fake_redis():
 
 
 @pytest.fixture(scope="session")
-def kyma_graph(app_models, start_fake_redis):
+def companion_graph(app_models, start_fake_redis):
     memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
     graph = CompanionGraph(app_models, memory)
     return graph

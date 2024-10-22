@@ -14,7 +14,7 @@ from services.k8s import IK8sClient
 class KubernetesAgentState(BaseModel):
     """The state of the Kubernetes agent."""
 
-    # Fields shared with the parent graph (Kyma graph).
+    # Fields shared with the parent graph (Companion graph).
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
