@@ -104,7 +104,7 @@ class TestSupervisorAgent:
         ],
     )
     @patch("agents.k8s.agent.get_logger", Mock())
-    def test_agent_node(
+    def test_agent_route(
         self,
         supervisor_agent,
         mock_supervisor_chain_invoke_return,
