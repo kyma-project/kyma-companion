@@ -161,8 +161,10 @@ class TestSupervisorAgent:
                         name="KubernetesAgent",
                     ),
                 ],
-                "To deploy a Kyma function, follow these steps: 1. Create a function file. "
-                "2. Use the Kyma CLI to deploy. 3. Verify the deployment in the Kyma dashboard.",
+                "To deploy a Kyma function, follow these steps: "
+                "1. Create a function file. "
+                "2. Use the Kyma CLI to deploy. "
+                "3. Verify the deployment in the Kyma dashboard.",
                 {
                     'messages': [
                         AIMessage(
