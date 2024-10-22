@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "indexing"
+version = "0.1.0"
+description = "Indexes Kyma documents for RAG"
+authors = []
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "~3.12"
+hdbcli = "^2.22.29"
+python-decouple = "^3.8"
+generative-ai-hub-sdk = {extras = ["all"], version = "^3.2.6"}
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+
