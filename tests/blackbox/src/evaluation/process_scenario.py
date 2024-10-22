@@ -35,25 +35,33 @@ def process_scenario(
         companion_client, payload, config, logger, scenario
     )
     if not conversation_id:
+        # If we fail to initialize the conversation,
+        # the scenario is marked as failed and we can return.
         return
 
     # Get Companion responses for the user query of the scenario.
     if not get_companion_responses(
         companion_client, payload, config, logger, scenario, conversation_id
     ):
+        # If we fail to get the response,
+        # the scenario is marked as failed and we can return.
         return
 
     # Evaluate the scenario by the response from the Companion API against the expectations.
     if not evaluate_scenario(validator, config, logger, scenario):
+        # If we fail to validate the scenario,
+        # the scenario is marked as failed and we can return.
         return
 
     # Set the status to complete, if we made it through the whole test without issues.
     scenario.complete()
 
 
-def initialize_conversation(companion_client, payload, config, logger, scenario):
+def initialize_conversation(companion_client, payload, config, logger, scenario) -> str:
     # Before we can have further interactions with the Companion,
     # we need to initialize the conversation with the Companion API.
+    # If this is successful we will return the received conversation_id which we can use
+    # for further interactions.
 
     # We retry the initialization multiple times to handle transient errors.
     retry_wait_time = config.retry_wait_time
@@ -67,7 +75,7 @@ def initialize_conversation(companion_client, payload, config, logger, scenario)
             conversation_id = json.loads(init_questions_response.content)[
                 "conversation_id"
             ]
-            return conversation_id
+            return str(conversation_id)
 
         # If we get an exception, we log the error and retry after an increasing time
         # until we reach the maximum retry time.
@@ -91,13 +99,16 @@ def initialize_conversation(companion_client, payload, config, logger, scenario)
             f"skipping scenario because failed to call initialize conversation endpoint "
             f"after multiple retries. Error: {companion_error}"
         )
+        # We return None to indicate that the initialization failed.
         return None
 
 
 def get_companion_responses(
     companion_client, payload, config, logger, scenario, conversation_id
-):
+) -> bool:
     # After initializing the conversation, we get the responses from the Companion API for the user query.
+    # If this is successful we will return True, otherwise False.
+
     payload.query = scenario.user_query
     # We get the response multiple times to check if the response is consistent.
     # This is the so called idempotency check.
@@ -138,12 +149,16 @@ def get_companion_responses(
                 f"skipping scenario {scenario.id} because failed to get response from the "
                 f"companion API for scenario: {scenario.id}. Error: {companion_error}"
             )
+            # We return False to indicate that the scenario failed.
             return False
+    # We return True to indicate that the scenario passed.
     return True
 
 
-def evaluate_scenario(validator, config, logger, scenario):
+def evaluate_scenario(validator, config, logger, scenario) -> bool:
     # We evaluate the scenario by validating the expectations.
+    # If this is successful we will return True, otherwise False.
+
     for expectation in scenario.expectations:
 
         # We retry the validation multiple times to handle transient errors.
@@ -182,5 +197,7 @@ def evaluate_scenario(validator, config, logger, scenario):
                 f"failed to validate expectation {expectation.name} after multiple retries, "
                 f"{validation_error}."
             )
+            # We return False to indicate that the scenario failed.
             return False
+    # We return True to indicate that the scenario passed.
     return True
