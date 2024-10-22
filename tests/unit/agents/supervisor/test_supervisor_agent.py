@@ -4,12 +4,13 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from agents.common.constants import COMMON, EXIT
+from langgraph.constants import END
+from agents.common.constants import COMMON, PLANNER
 from agents.common.state import AgentState, SubTask
 from agents.common.utils import filter_messages
 from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from agents.supervisor.agent import FINALIZER, SupervisorAgent
+from agents.supervisor.agent import FINALIZER, SupervisorAgent, ROUTER
 from agents.supervisor.state import SupervisorState
 
 
@@ -19,6 +20,7 @@ class TestSupervisorAgent:
     def supervisor_agent(self):
         agent = SupervisorAgent(Mock(), [K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])  # noqa
         agent.supervisor_chain = Mock()
+        agent._planner_chain = Mock()
         return agent  # noqa
 
     @pytest.mark.parametrize(
@@ -254,3 +256,143 @@ class TestSupervisorAgent:
         mock_final_response_chain.invoke.assert_called_once_with(
             {"messages": conversation_messages}
         )
+
+    @pytest.mark.parametrize(
+        "description, input_query, plan_content, expected_output, expected_error",
+        [
+            (
+                    "Plans multiple subtasks successfully",
+                    "How do I deploy a Kyma function?",
+                    '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                    {
+                        "subtasks": [
+                            SubTask(
+                                description="Explain Kyma function deployment",
+                                assigned_to=KYMA_AGENT
+                            ),
+                            SubTask(
+                                description="Explain K8s deployment",
+                                assigned_to=K8S_AGENT
+                            ),
+                        ],
+                        "messages": [
+                            AIMessage(
+                                content='{"subtasks": '
+                                        '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
+                                        '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                                name=PLANNER,
+                            )
+                        ],
+                        "error": None,
+                        "next": ROUTER,
+                    },
+                    None,
+            ),
+            (
+                "Plans a single subtask successfully",
+                "What is a Kubernetes pod?",
+                '{"subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent"}]}',
+                {
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Kubernetes pod concept",
+                            assigned_to="KubernetesAgent",
+                        )
+                    ],
+                    "messages": [
+                        AIMessage(
+                            content='{"subtasks": '
+                            '[{"description": "Explain Kubernetes pod concept", '
+                            '"assigned_to": "KubernetesAgent"}]}',
+                            name=PLANNER,
+                        )
+                    ],
+                    "error": None,
+                    "next": ROUTER,
+                },
+                None,
+            ),
+            (
+                "Exits with error if no subtasks are returned",
+                "What is a Kubernetes pod?",
+                '{"subtasks": []}',
+                {
+                    "messages": [
+                        AIMessage(
+                            content="Sorry, I encountered an error while processing the request. "
+                                    "Error: No subtasks are created for the given query: What is a Kubernetes pod?",
+                            name=PLANNER
+                        )
+                    ]
+                },
+                None,
+            ),
+            (
+                "Exits immediately by answering for the general query",
+                "Write a hello world python code?",
+                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')"}',
+                {
+                    "error": None,
+                    "messages": [
+                        AIMessage(
+                            content="Here is the hellow world python code: print('Hello, World!')",
+                            name=PLANNER
+                        )
+                    ],
+                 "next": END,
+                 "subtasks": None
+                },
+                None,
+            ),
+            (
+                "Exits immediately for the general query even if llm doesn't return response attribute",
+                "Write a hello world python code?",
+                "Here is the hellow world python code: print('Hello, World!')",
+                {
+                    "error": None,
+                    "messages": [
+                        AIMessage(
+                            content="Here is the hellow world python code: print('Hello, World!')",
+                            name=PLANNER
+                        )
+                    ],
+                    "next": END,
+                    "subtasks": None
+                },
+                None,
+            ),
+            (
+                "Exits of error occurs in planning",
+                "What is a Kubernetes service?",
+                '{"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent"}]}',
+                {
+                    "messages": [
+                        AIMessage(
+                            content="Sorry, I encountered an error while processing the request. "
+                                    "Error: fake error",
+                            name=PLANNER
+                        )
+                    ]
+                },
+                "fake error",
+            ),
+        ],
+    )
+    def test_agent_plan(
+            self,
+            supervisor_agent,
+            description,
+            input_query,
+            plan_content,
+            expected_output,
+            expected_error,
+    ):
+        if expected_error:
+            supervisor_agent._planner_chain.invoke.side_effect = Exception(expected_error)
+        else:
+            supervisor_agent._planner_chain.invoke.return_value.content = plan_content
+
+        state = SupervisorState(messages=[HumanMessage(content=input_query)])
+        result = supervisor_agent._plan(state)
+
+        assert result == expected_output
