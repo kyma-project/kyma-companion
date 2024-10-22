@@ -41,7 +41,7 @@ To run the Evaluation tests, follow these steps:
    AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
    AICORE_CONFIGURATION_ID_GPT4_MINI=   # AI-Core Configuration ID for GPT-4 mini.
    AICORE_DEPLOYMENT_ID_GPT4_MINI=      # AI-Core Deployment ID for GPT-4 mini.
-   DEFAULT_RETRY_WAIT_TIME=             # [Optional] The amount of seconds we increase the retry wait time by when querying the Companion API. Default is 60.
+   DEFAULT_RETRY_WAIT_TIME=             # [Optional] The number of seconds we increase the retry wait time by when querying the Companion API. Default is 60.
    DEFAULT_RETRY_MAX_WAIT_TIME=         # [Optional] The maximum retry wait time in seconds when querying the Companion API. Default is 600.
 
     ```
