@@ -8,8 +8,6 @@ app = FastAPI(
 app.include_router(conversations.router)
 
 
-# TODO: This comment is only here to trigger the build job, so the eval test can run.
-# Before merging this PR remove this comment.
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
