@@ -1,5 +1,5 @@
 """
-This script generates a LangGraph diagram using the KymaGraph class and saves it as a PNG file.
+This script generates a LangGraph diagram using the CompanionGraph class and saves it as a PNG file.
 It initializes the necessary components, including the model and memory, and then creates the graph.
 
 Usage:

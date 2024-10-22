@@ -179,13 +179,13 @@ def test_invoke_planner(
     messages,
     expected_answer,
     general_query,
-    kyma_graph,
+    companion_graph,
     planner_correctness_metric,
     answer_relevancy_metric,
 ):
-    """Tests the invoke_planner method of KymaGraph."""
+    """Tests the invoke_planner method of CompanionGraph."""
     state = create_mock_state(messages)
-    result = kyma_graph._invoke_planner(state)
+    result = companion_graph._invoke_planner(state)
 
     test_case = LLMTestCase(
         input=messages[-1].content,
@@ -200,7 +200,7 @@ def test_invoke_planner(
         print(f"Reason: {planner_correctness_metric.reason}")
 
         # Parse the output to check if it is in valid JSON format
-        kyma_graph.plan_parser.parse(result.content)
+        companion_graph.plan_parser.parse(result.content)
 
         assert_test(test_case, [planner_correctness_metric])
     else:
@@ -233,11 +233,11 @@ def test_invoke_planner(
     ],
 )
 def test_invoke_common_node(
-    messages, expected_answer, kyma_graph, answer_relevancy_metric
+    messages, expected_answer, companion_graph, answer_relevancy_metric
 ):
-    """Tests the invoke_common_node method of KymaGraph."""
+    """Tests the invoke_common_node method of CompanionGraph."""
     state = create_mock_state(messages)
 
-    result = kyma_graph._invoke_common_node(state, messages[-1].content)
+    result = companion_graph._invoke_common_node(state, messages[-1].content)
     test_case = LLMTestCase(input=messages[-1].content, actual_output=result)
     assert_test(test_case, [answer_relevancy_metric])

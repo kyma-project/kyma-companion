@@ -47,7 +47,7 @@ class ConversationService(metaclass=SingletonMeta):
     _model: IModel
     _model_mini: IModel
     _init_questions_handler: IInitialQuestionsHandler
-    _kyma_graph: IGraph
+    _companion_graph: IGraph
 
     def __init__(
         self,
@@ -62,9 +62,9 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         self._model = ModelFactory().create_model(LLM.GPT4O)
-        # Set up the Kyma Graph which allows access to stored conversation histories.
+        # Set up the Companion Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-        self._kyma_graph = CompanionGraph(
+        self._companion_graph = CompanionGraph(
             models={LLM.GPT4O: self._model, LLM.GPT4O_MINI: self._model_mini},
             memory=redis_saver,
         )
@@ -109,7 +109,7 @@ class ConversationService(metaclass=SingletonMeta):
 
         logger.info("Processing request...")
 
-        async for chunk in self._kyma_graph.astream(
+        async for chunk in self._companion_graph.astream(
             conversation_id, message, k8s_client
         ):
             logger.debug(f"Sending chunk: {chunk}")

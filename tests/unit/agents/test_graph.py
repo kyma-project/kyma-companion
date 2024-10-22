@@ -439,7 +439,7 @@ class TestCompanionGraph:
         )
 
     @pytest.fixture
-    def mock_kyma_graph(self):
+    def mock_companion_graph(self):
         mock_graph = MagicMock()
         mock_graph.astream.return_value = AsyncMock()
         mock_graph.astream.return_value.__aiter__.return_value = [
@@ -447,7 +447,7 @@ class TestCompanionGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.KymaGraph", return_value=companion_graph) as mock:
+        with patch("services.conversation.CompanionGraph", return_value=companion_graph) as mock:
             yield mock
 
     @pytest.mark.asyncio
