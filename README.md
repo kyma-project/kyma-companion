@@ -210,11 +210,11 @@ poetry run pytest tests
 
 ### Integration Tests
 
-For details about Integration Tests, read the [Integration Tests README](./tests/integration/README.md) file.
+For details about integration tests, read the [Integration Tests README file](./tests/integration/README.md).
 
 ### Blackbox Tests
 
-For details about Blackbox Tests, read the [Blackbox Tests README](./tests/blackbox/README.md) file.
+For details about blackbox tests, read the [Blackbox Tests README file](./tests/blackbox/README.md).
 
 ## Release Process
 

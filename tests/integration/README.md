@@ -4,7 +4,7 @@ Integration tests ensure that various modules of Kyma Companion work seamlessly 
 
 ## Setup
 
-The Integration tests uses the same data as the blackbox tests. The data is stored in the [tests/blackbox/data](../../tests/blackbox/data) directory.
+The integration tests use the same data as the blackbox tests. The data is stored in the [`tests/blackbox/data`](../../tests/blackbox/data) directory.
 
 ## Usage
 
@@ -36,7 +36,7 @@ To run the Integration tests, follow these steps:
     export $(xargs < .env.test)
     ```
 
-4. Run the Integration tests:
+4. Run the integration tests:
 
     ```bash
    poetry run poe test-integration
