@@ -1,5 +1,5 @@
 import json
-from typing import Any, Literal
+from typing import Any, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import PydanticOutputParser
