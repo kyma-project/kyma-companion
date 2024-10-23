@@ -3,7 +3,7 @@ from validation.utils.data_loader import load_data
 from validation.utils.utils import get_expectation
 
 # Unit tests run from the rootdir of the repository.
-DEFAULT_DATA_DIR: str = "tests/blackbo/data/namespace-scoped"
+DEFAULT_DATA_DIR: str = "tests/blackbox/data/namespace-scoped"
 
 
 def test_data_integrity():
