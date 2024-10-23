@@ -13,7 +13,8 @@ with open(config_path) as f:
     logging.config.dictConfig(config)
 
 
-def get_logger(name: str) -> Logger:  # noqa: D103
+def get_logger(name: str) -> Logger:
+    """Returns a preconfigured logger instance."""
     logger = logging.getLogger(name)
     logger.setLevel(LOG_LEVEL)
     return logger

@@ -3,7 +3,7 @@ from validation.utils.data_loader import load_data
 from validation.utils.utils import get_expectation
 
 # Unit tests run from the rootdir of the repository.
-DEFAULT_DATA_DIR: str = "tests/blackbox/data/namespace-scoped"
+DEFAULT_DATA_DIR: str = "tests/blackbo/data/namespace-scoped"
 
 
 def test_data_integrity():
@@ -16,7 +16,7 @@ def test_data_integrity():
     for scenario in validation_scenarios:
         for mock_response in scenario.mock_responses:
             for expected_evaluation in mock_response.expected_evaluations:
-                # This checks if right expectation can be found for the mock response.
+                # This checks if the right expectation can be found for a given mock response.
                 expectation = get_expectation(
                     scenario.eval_scenario, expected_evaluation
                 )
