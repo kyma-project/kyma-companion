@@ -29,7 +29,6 @@ TEST_MESSAGE = Message(
 )
 
 
-@pytest.mark.asyncio(scope="class")
 class TestConversation:
     @pytest.fixture
     def mock_model_factory(self):

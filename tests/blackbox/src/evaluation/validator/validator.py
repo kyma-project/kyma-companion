@@ -1,3 +1,5 @@
+from typing import Protocol
+
 from common.config import Config
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from langchain.output_parsers.boolean import BooleanOutputParser
@@ -12,13 +14,11 @@ TEMPLATE = PromptTemplate(
 )
 
 
-class ValidatorInterface:
-    def is_response_as_expected(self, expectation: str, response: str) -> bool:
-        # This method should be implemented by the concrete class.
-        raise NotImplementedError
+class IValidator(Protocol):
+    def is_response_as_expected(self, expectation: str, response: str) -> bool: ...
 
 
-class ChatOpenAIValidator(ValidatorInterface):
+class ChatOpenAIValidator:
     model: ChatOpenAI
     output_parser: BooleanOutputParser
 
