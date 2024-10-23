@@ -185,7 +185,7 @@ def test_invoke_planner(
 ):
     """Tests the invoke_planner method of CompanionGraph."""
     state = create_mock_state(messages)
-    result = companion_graph._invoke_planner(state)
+    result = companion_graph.supervisor_agent._invoke_planner(state)
 
     test_case = LLMTestCase(
         input=messages[-1].content,
