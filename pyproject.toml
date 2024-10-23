@@ -88,7 +88,8 @@ test = "pytest tests/unit"
 test-integration = "pytest tests/integration"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
-pre-commit-check = ["code-fix", "codecheck", "test"]
+sort = "poetry sort"
+pre-commit-check = ["sort", "code-fix", "codecheck", "test"]
 
 [tool.mypy]
 check_untyped_defs = true
