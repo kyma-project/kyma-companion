@@ -7,7 +7,7 @@ from common.output import print_header, print_test_results
 from evaluation.process_scenario import process_scenario
 from evaluation.scenario.scenario import ScenarioList
 from evaluation.validator.utils import create_validator
-from evaluation.validator.validator import ValidatorInterface
+from evaluation.validator.validator import IValidator
 
 
 def main() -> None:
@@ -25,7 +25,7 @@ def main() -> None:
     )
 
     # initialize the response validator.
-    validator: ValidatorInterface = create_validator(config)
+    validator: IValidator = create_validator(config)
 
     # add each scenario to the executor.
     with ThreadPoolExecutor(max_workers=config.max_workers) as executor:

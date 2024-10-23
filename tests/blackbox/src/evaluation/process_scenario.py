@@ -10,12 +10,10 @@ from evaluation.companion.companion import (
 )
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario
-from evaluation.validator.validator import ValidatorInterface
+from evaluation.validator.validator import IValidator
 
 
-def process_scenario(
-    scenario: Scenario, config: Config, validator: ValidatorInterface
-) -> None:
+def process_scenario(scenario: Scenario, config: Config, validator: IValidator) -> None:
     logger = get_logger(scenario.id)
     logger.info("started processing of scenario.")
 
@@ -57,7 +55,9 @@ def process_scenario(
     scenario.complete()
 
 
-def initialize_conversation(companion_client, payload, config, logger, scenario) -> str:
+def initialize_conversation(
+    companion_client, payload, config, logger, scenario
+) -> str | None:
     # Before we can have further interactions with the Companion,
     # we need to initialize the conversation with the Companion API.
     # If this is successful we will return the received conversation_id which we can use
@@ -65,8 +65,8 @@ def initialize_conversation(companion_client, payload, config, logger, scenario)
 
     # We retry the initialization multiple times to handle transient errors.
     retry_wait_time = config.retry_wait_time
+    companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
-        companion_error = None
         try:
             logger.debug("getting response from the initial conversations endpoint.")
             init_questions_response = companion_client.fetch_initial_questions(
@@ -160,7 +160,6 @@ def evaluate_scenario(validator, config, logger, scenario) -> bool:
     # If this is successful we will return True, otherwise False.
 
     for expectation in scenario.expectations:
-
         # We retry the validation multiple times to handle transient errors.
         retry_wait_time = config.retry_wait_time
         validation_error = None
