@@ -1,8 +1,8 @@
 name: Integration Test
 
 on:
-  pull_request:
-    types: [labeled, opened, synchronize, reopened, ready_for_review]
+  pull_request_target:
+    types: [ labeled, opened, synchronize, reopened, ready_for_review ]
     branches:
       - "main"
       - "release-**"
@@ -17,9 +17,6 @@ on:
       - "data/**"
       - "scripts/**"
 
-## **IMPORTANT**: If any changes are made to how to run the integration tests, make sure to update the steps for integration-tests
-## in the create-release.yml workflow as well.
-
 jobs:
   integration-test:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
@@ -27,6 +24,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Extract Python version
         id: python-version
@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Integration Tests Setup - Prepare test configurations
+      - name: Prepare test configurations
         id: int-tests-configs
         env:
           AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
@@ -59,10 +59,7 @@ jobs:
           # cleanup
           rm -f aicore-secret.yaml
 
-      - name: Run Integration Tests
-        run: |
-          echo "${{ secrets.MODELS }}" > config/config.yml
-          poetry run poe test-integration
+      - name: Run integration tests
         env:
           LOG_LEVEL: "DEBUG"
           # AI Core configurations.
@@ -71,3 +68,10 @@ jobs:
           AICORE_AUTH_URL: ${{ steps.int-tests-configs.outputs.AICORE_AUTH_URL }}
           AICORE_BASE_URL: ${{ steps.int-tests-configs.outputs.AICORE_BASE_URL }}
           AICORE_RESOURCE_GROUP: ${{ steps.int-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
+          # Gardener test cluster configurations.
+          TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
+          TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
+          TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
+        run: |
+          echo "${{ secrets.MODELS }}" > config/config.yml
+          poetry run poe test-integration

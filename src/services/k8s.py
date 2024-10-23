@@ -296,7 +296,7 @@ class K8sClient:
 
         logs = []
         for line in response.iter_lines():
-            logs.append(line)
+            logs.append(str(line))
         return logs
 
 

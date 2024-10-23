@@ -1,0 +1,10 @@
+post:
+  pr-notes:
+    template: |
+      ## Note(s) for PR Auther:
+      - The integration test will be skipped for the PR. You can trigger it manually after adding the label: `run-integration-test`.
+      - The evaluation test will be skipped for the PR. You can trigger it manually after adding the label: `evaluation requested`.
+      - If any changes are made to the evaluation tests data, make sure that the integration tests are working as expected.
+      - If any changes are made to how to run the unit tests, make sure to update the steps for unit-tests in the create-release.yml workflow as well.
+      ## Note(s) for PR Reviewer(s):
+      - Make sure that the integration and evaluation tests are working as expected.

@@ -3,20 +3,11 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.constants import END
 
-from agents.common.constants import (
-    COMMON,
-    CONTINUE,
-    EXIT,
-    FINALIZER,
-    PLANNER,
-)
+from agents.common.constants import COMMON
 from agents.common.data import Message
-from agents.common.state import AgentState, SubTask, UserInput
+from agents.common.state import AgentState, SubTask
 from agents.graph import CompanionGraph
-from agents.k8s.agent import K8S_AGENT
-from agents.kyma.agent import KYMA_AGENT
 from utils.models import LLM, IModel
 
 
@@ -53,9 +44,6 @@ def companion_graph(
     mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
 ):
     with (
-        patch.object(
-            CompanionGraph, "_create_planner_chain", return_value=mock_planner_chain
-        ),
         patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
     ):
@@ -68,148 +56,6 @@ def create_messages_json(content, role, node) -> str:
 
 
 class TestCompanionGraph:
-
-    @pytest.mark.parametrize(
-        "description, input_query, plan_content, expected_output, expected_error",
-        [
-            (
-                "Plans multiple subtasks successfully",
-                "How do I deploy a Kyma function?",
-                '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Kyma function deployment",
-                            assigned_to=KYMA_AGENT,
-                        ),
-                        SubTask(
-                            description="Explain K8s deployment",
-                            assigned_to=K8S_AGENT,
-                        ),
-                    ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": None,
-                    "next": CONTINUE,
-                },
-                None,
-            ),
-            (
-                "Plans a single subtask successfully",
-                "What is a Kubernetes pod?",
-                '{"subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Kubernetes pod concept",
-                            assigned_to="KubernetesAgent",
-                        )
-                    ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kubernetes pod concept", '
-                            '"assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": None,
-                    "next": CONTINUE,
-                },
-                None,
-            ),
-            (
-                "Exits with error if no subtasks are returned",
-                "What is a Kubernetes pod?",
-                '{"subtasks": []}',
-                {
-                    "subtasks": None,
-                    "messages": [],
-                    "final_response": None,
-                    "next": EXIT,
-                    "error": "No subtasks are created for the given query: What is a Kubernetes pod?",
-                },
-                None,
-            ),
-            (
-                "Exits immediately by answering for the general query",
-                "Write a hello world python code?",
-                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')"}',
-                {
-                    "subtasks": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": "Here is the hellow world python code: print('Hello, World!')",
-                    "next": EXIT,
-                },
-                None,
-            ),
-            (
-                "Exits immediately for the general query even if llm doesn't return response attribute",
-                "Write a hello world python code?",
-                "Here is the hellow world python code: print('Hello, World!')",
-                {
-                    "subtasks": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": "Here is the hellow world python code: print('Hello, World!')",
-                    "next": EXIT,
-                },
-                None,
-            ),
-            (
-                "Exits of error occurs in planning",
-                "What is a Kubernetes service?",
-                '{"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": None,
-                    "messages": [],
-                    "error": "fake error",
-                    "final_response": None,
-                    "next": EXIT,
-                },
-                "fake error",
-            ),
-        ],
-    )
-    def test_plan(
-        self,
-        companion_graph,
-        description,
-        input_query,
-        plan_content,
-        expected_output,
-        expected_error,
-        mock_planner_chain,
-    ):
-        state = AgentState(messages=[HumanMessage(content=input_query)])
-
-        if expected_error:
-            mock_planner_chain.invoke.side_effect = Exception(expected_error)
-        else:
-            mock_planner_chain.invoke.return_value.content = plan_content
-        result = companion_graph._plan(state)
-
-        assert result == expected_output
 
     @pytest.mark.parametrize(
         "description, subtasks, messages, chain_response, expected_output, expected_error",
@@ -296,8 +142,12 @@ class TestCompanionGraph:
                 [HumanMessage(content="What is Java?")],
                 None,
                 {
-                    "error": "Error in common node: Test error",
-                    "next": EXIT,
+                    'messages': [
+                        AIMessage(
+                            content='Sorry, the common agent is unable to process the request.',
+                            name='Common'
+                        )
+                    ]
                 },
                 "Error in common node: Test error",
             ),
@@ -328,115 +178,6 @@ class TestCompanionGraph:
             assert (
                 subtasks[0].assigned_to == COMMON and subtasks[0].status == "completed"
             )
-
-    @pytest.mark.parametrize(
-        "description, input_query, conversation_messages, final_response_content, expected_output, expected_error",
-        [
-            (
-                "Generates final response successfully",
-                "How do I deploy a Kyma function?",
-                [
-                    HumanMessage(content="How do I deploy a Kyma function?"),
-                    AIMessage(
-                        content="To deploy a Kyma function, you need to...",
-                        name="KymaAgent",
-                    ),
-                    AIMessage(
-                        content="In Kubernetes, deployment involves...",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                "To deploy a Kyma function, follow these steps: 1. Create a function file. "
-                "2. Use the Kyma CLI to deploy. 3. Verify the deployment in the Kyma dashboard.",
-                {
-                    "final_response": "To deploy a Kyma function, follow these steps: "
-                    "1. Create a function file. 2. Use the Kyma CLI to deploy. "
-                    "3. Verify the deployment in the Kyma dashboard.",
-                    "messages": [
-                        AIMessage(
-                            content="To deploy a Kyma function, follow these steps: "
-                            "1. Create a function file. 2. Use the Kyma CLI to deploy. "
-                            "3. Verify the deployment in the Kyma dashboard.",
-                            name=FINALIZER,
-                        )
-                    ],
-                    "next": END,
-                },
-                None,
-            ),
-            (
-                "Generates empty final response",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                "",
-                {
-                    "final_response": "",
-                    "messages": [
-                        AIMessage(
-                            content="",
-                            name=FINALIZER,
-                        )
-                    ],
-                    "next": END,
-                },
-                None,
-            ),
-            (
-                "Handles exception during final response generation",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                None,
-                {
-                    "error": "Error in finalizer node: Test error",
-                    "next": EXIT,
-                },
-                "Error in finalizer node: Test error",
-            ),
-        ],
-    )
-    def test_generate_final_response(
-        self,
-        companion_graph,
-        description,
-        input_query,
-        conversation_messages,
-        final_response_content,
-        expected_output,
-        expected_error,
-    ):
-        state = AgentState(
-            messages=conversation_messages, input=UserInput(query=input_query)
-        )
-
-        mock_final_response_chain = Mock()
-        if expected_error:
-            mock_final_response_chain.invoke.side_effect = Exception(expected_error)
-        else:
-            mock_final_response_chain.invoke.return_value.content = (
-                final_response_content
-            )
-
-        with patch.object(
-            companion_graph, "_final_response_chain", return_value=mock_final_response_chain
-        ):
-            result = companion_graph._generate_final_response(state)
-
-        assert result == expected_output
-        mock_final_response_chain.invoke.assert_called_once_with(
-            {"messages": conversation_messages}
-        )
 
     @pytest.fixture
     def mock_companion_graph(self):

@@ -233,7 +233,7 @@ scripts/k8s/companion-configmap.yaml
 commands.md
 .env.dev
 .env.fzn.dev
-tests/blackbox/.env.evaluation
+**/.env.evaluation
 
 # Ignore all files starting with _, but not __init__.py
 _*
