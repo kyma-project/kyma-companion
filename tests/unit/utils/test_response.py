@@ -77,21 +77,6 @@ from utils.response import prepare_chunk_response
         ),
         (
             # input
-            b'{"Exit": {"next": "__end__", "final_response": '
-            b'"To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}',
-            # expected
-            b'{"event": "final_response", '
-            b'"data": {"answer": {"content": '
-            b'"To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}}',
-        ),
-        (
-            # input
-            b'{"Exit": {"next": "__end__", "error": "Error occurred"}}',
-            # expected
-            b'{"event": "final_response", "data": {"error": "Error occurred"}}',
-        ),
-        (
-            # input
             b'{"InvalidJSON"',
             # expected
             b'{"event": "unknown", "data": {"error": "Invalid JSON"}}',

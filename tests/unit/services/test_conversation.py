@@ -38,16 +38,16 @@ class TestConversation:
             yield mock
 
     @pytest.fixture
-    def mock_kyma_graph(self):
-        mock_kyma_graph = MagicMock()
-        mock_kyma_graph.astream.return_value = AsyncMock()
-        mock_kyma_graph.astream.return_value.__aiter__.return_value = [
+    def mock_companion_graph(self):
+        mock_companion_graph = MagicMock()
+        mock_companion_graph.astream.return_value = AsyncMock()
+        mock_companion_graph.astream.return_value.__aiter__.return_value = [
             "chunk1",
             "chunk2",
             "chunk3",
         ]
         with patch(
-            "services.conversation.KymaGraph", return_value=mock_kyma_graph
+            "services.conversation.CompanionGraph", return_value=mock_companion_graph
         ) as mock:
             yield mock
 
@@ -79,7 +79,7 @@ class TestConversation:
     def test_new_conversation(
         self,
         mock_model_factory,
-        mock_kyma_graph,
+        mock_companion_graph,
         mock_redis_saver,
         mock_init_pool,
         mock_redis_history,
@@ -104,7 +104,7 @@ class TestConversation:
 
     @pytest.mark.asyncio
     async def test_handle_request(
-        self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_kyma_graph
+        self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_companion_graph
     ):
         # Given:
         mock_k8s_client = Mock()
