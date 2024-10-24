@@ -38,3 +38,4 @@ REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
+LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="True")
