@@ -1,7 +1,12 @@
 from langfuse.callback import CallbackHandler
 
+from utils.settings import (
+    LANGFUSE_ENABLED,
+    LANGFUSE_HOST,
+    LANGFUSE_PUBLIC_KEY,
+    LANGFUSE_SECRET_KEY,
+)
 from utils.utils import string_to_bool
-from utils.settings import LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_ENABLED
 
 handler = CallbackHandler(
     secret_key=LANGFUSE_SECRET_KEY,
