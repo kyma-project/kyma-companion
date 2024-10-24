@@ -1,12 +1,12 @@
 import logging
 from typing import List, Protocol
 
-from gen_ai_hub.proxy.langchain import OpenAIEmbeddings
 from hdbcli import dbapi
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from indexing.contants import HEADER1
@@ -42,7 +42,7 @@ class MarkdownIndexer:
     def __init__(
         self,
         docs_path: str,
-        embedding: OpenAIEmbeddings,
+        embedding: Embeddings,
         connection: dbapi.Connection,
         table_name=None,
     ):
@@ -59,6 +59,18 @@ class MarkdownIndexer:
             table_name=table_name,
         )
 
+    def _load_documents(self) -> List[Document]:
+        # Load all documents from the given directory
+        try:
+            loader = DirectoryLoader(
+                self.docs_path, loader_cls=TextLoader, recursive=True
+            )
+            docs = loader.load()
+            return docs
+        except Exception:
+            logging.exception(f"Error while loading documents")
+            raise
+
     def index(self, headers_to_split_on=None):
         """
         Indexes the markdown files in the given directory.
@@ -68,12 +80,10 @@ class MarkdownIndexer:
         if not headers_to_split_on:
             headers_to_split_on = [HEADER1]
 
-        # Load all documents from the directory
-        loader = DirectoryLoader(self.docs_path, loader_cls=TextLoader, recursive=True)
-        documents = loader.load()
+        docs = self._load_documents()
 
         # chunk the documents by the headers
-        all_chunks = create_chunks(documents, headers_to_split_on)
+        all_chunks = create_chunks(docs, headers_to_split_on)
 
         logging.info(
             f"Indexing {len(all_chunks)} markdown files chunks for {self.table_name}..."
@@ -81,5 +91,14 @@ class MarkdownIndexer:
 
         # TODO: check if overwrite works without deleting the data
         # overwrite the existing data
-        self.db.delete(filter={})
-        self.db.add_documents(all_chunks)
+        try:
+            self.db.delete(filter={})
+        except Exception:
+            logging.error(f"Error while deleting existing documents in HanaDB.")
+            raise
+
+        try:
+            self.db.add_documents(all_chunks)
+        except Exception:
+            logging.error(f"Error while storing documents chunks in HanaDB.")
+            raise

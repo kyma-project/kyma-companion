@@ -22,7 +22,7 @@ if is_running_pytest():
     env_path = find_dotenv(".env.test")
     if env_path and os.path.exists(env_path):
         config = Config(RepositoryEnv(env_path))
-        load_dotenv(".env.test")
+        load_dotenv(env_path)
     else:
         logging.warning("No .test.env file found. Using .env file.")
         load_dotenv()

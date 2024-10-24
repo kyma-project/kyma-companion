@@ -1,7 +1,8 @@
 from indexing.indexer import MarkdownIndexer
 from utils.hana import create_hana_connection
 from utils.models import (
-    create_openai_embedding,
+    create_embedding_factory,
+    openai_embedding_creator,
 )
 from utils.settings import (
     DATABASE_URL,
@@ -15,7 +16,8 @@ from utils.settings import (
 def main():
     docs_path = "../data/kyma_os_docs"
     # init embedding model
-    embeddings_model = create_openai_embedding(EMBEDDING_MODEL_DEPLOYMENT_ID)
+    create_embedding = create_embedding_factory(openai_embedding_creator)
+    embeddings_model = create_embedding(EMBEDDING_MODEL_DEPLOYMENT_ID)
     # setup connection to Hana Cloud DB
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD

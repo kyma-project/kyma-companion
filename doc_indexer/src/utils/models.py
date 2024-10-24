@@ -18,7 +18,7 @@ def create_embedding_factory(
 
 
 # OpenAI Embeddings
-def create_openai_embeddings(
+def openai_embedding_creator(
     deployment_id: str, proxy_client: BaseProxyClient
 ) -> Embeddings:
     llm = OpenAIEmbeddings(
@@ -26,6 +26,3 @@ def create_openai_embeddings(
         proxy_client=proxy_client,
     )
     return llm
-
-
-create_openai_embedding = create_embedding_factory(create_openai_embeddings)
