@@ -72,12 +72,15 @@ class SupervisorAgent:
 
     def __init__(self, model: IModel, members: list[str]):
         self.model = model
-        self.members = []
+        self.members = members
         self.options = members
         self.parser = self._route_create_parser()
         self.supervisor_chain = self._create_supervisor_chain(model)
         self._planner_chain = self._create_planner_chain(model)
         self._graph = self._build_graph()
+
+    def get_members_str(self) -> str:
+        return ", ".join(self.members)
 
     def _route_create_parser(self) -> PydanticOutputParser:
         class RouteResponse(BaseModel):
@@ -97,7 +100,7 @@ class SupervisorAgent:
             ]
         ).partial(
             options=str(self.options),
-            members=", ".join(self.options),
+            members=self.get_members_str(),
             end=str(END),
             output_format=self.parser.get_format_instructions(),
         )
@@ -148,7 +151,7 @@ class SupervisorAgent:
                 MessagesPlaceholder(variable_name="messages"),
             ]
         ).partial(
-            members=", ".join(self.members),
+            members=self.get_members_str(),
             output_format=self.plan_parser.get_format_instructions(),
         )
         return self.planner_prompt | model.llm  # type: ignore
@@ -227,7 +230,7 @@ class SupervisorAgent:
                 MessagesPlaceholder(variable_name="messages"),
                 ("system", FINALIZER_PROMPT),
             ]
-        ).partial(members=", ".join(self.members), query=last_human_message)
+        ).partial(members=self.get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
 
     def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
