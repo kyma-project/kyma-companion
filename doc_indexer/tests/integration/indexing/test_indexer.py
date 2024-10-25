@@ -16,8 +16,6 @@ from src.utils.settings import (
     DATABASE_PASSWORD,
 )
 
-docs_path = "./integration/fixtures/test_docs"
-
 
 @pytest.fixture(scope="session")
 def embedding_model():
@@ -43,9 +41,7 @@ def table_name():
 
 @pytest.fixture(scope="session")
 def indexer(embedding_model, hana_conn, table_name):
-    indexer = MarkdownIndexer(
-        docs_path, embedding_model, hana_conn, table_name=table_name
-    )
+    indexer = MarkdownIndexer("", embedding_model, hana_conn, table_name=table_name)
     yield indexer
     try:
         indexer.db.drop_table()

@@ -89,8 +89,7 @@ class MarkdownIndexer:
             f"Indexing {len(all_chunks)} markdown files chunks for {self.table_name}..."
         )
 
-        # TODO: check if overwrite works without deleting the data
-        # overwrite the existing data
+        # deletion is necessary to avoid duplicates
         try:
             self.db.delete(filter={})
         except Exception:
