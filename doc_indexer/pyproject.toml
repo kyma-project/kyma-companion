@@ -14,13 +14,11 @@ python-dotenv = "^1.0.1"
 unstructured = "^0.16.0"
 markdown = "^3.7"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.test.dependencies]
+poethepoet = "^0.29.0"
 black = "^24.10.0"
 ruff = "^0.7.1"
 mypy = "^1.13.0"
-
-
-[tool.poetry.group.test.dependencies]
 pytest = "^8.3.3"
 
 [tool.pytest.ini_options]
