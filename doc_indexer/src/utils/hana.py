@@ -3,7 +3,10 @@ import logging
 from hdbcli import dbapi
 
 
-def create_hana_connection(url, port, user, password) -> dbapi.Connection | None:
+def create_hana_connection(
+    url: str, port: int, user: str, password: str
+) -> dbapi.Connection | None:
+    """Create a connection to the Hana Cloud DB."""
     try:
         connection = dbapi.connect(
             address=url,

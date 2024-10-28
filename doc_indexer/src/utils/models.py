@@ -1,4 +1,5 @@
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any, cast
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
@@ -9,6 +10,7 @@ from langchain_core.embeddings import Embeddings
 def create_embedding_factory(
     embedding_creator: Callable[[str, Any], Embeddings]
 ) -> Callable[[str], Embeddings]:
+    """Create a factory function for embedding models."""
 
     def factory(deployment_id: str) -> Embeddings:
         proxy_client = get_proxy_client("gen-ai-hub")
@@ -21,8 +23,12 @@ def create_embedding_factory(
 def openai_embedding_creator(
     deployment_id: str, proxy_client: BaseProxyClient
 ) -> Embeddings:
-    llm = OpenAIEmbeddings(
-        deployment_id=deployment_id,
-        proxy_client=proxy_client,
+    """Create an OpenAI embedding model."""
+    llm = cast(
+        Embeddings,
+        OpenAIEmbeddings(
+            deployment_id=deployment_id,
+            proxy_client=proxy_client,
+        ),
     )
     return llm

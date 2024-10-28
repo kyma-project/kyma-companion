@@ -1,20 +1,22 @@
 from indexing.indexer import MarkdownIndexer
+
 from utils.hana import create_hana_connection
 from utils.models import (
     create_embedding_factory,
     openai_embedding_creator,
 )
 from utils.settings import (
+    DATABASE_PASSWORD,
+    DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
-    DATABASE_PASSWORD,
+    DOCS_PATH,
     EMBEDDING_MODEL_DEPLOYMENT_ID,
-    DATABASE_PORT,
 )
 
 
-def main():
-    docs_path = "../data/kyma_os_docs"
+def main() -> None:
+    """Entry function to run the indexer."""
     # init embedding model
     create_embedding = create_embedding_factory(openai_embedding_creator)
     embeddings_model = create_embedding(EMBEDDING_MODEL_DEPLOYMENT_ID)
@@ -23,7 +25,7 @@ def main():
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
 
-    indexer = MarkdownIndexer(docs_path, embeddings_model, hana_conn)
+    indexer = MarkdownIndexer(DOCS_PATH, embeddings_model, hana_conn)
     indexer.index()
 
 

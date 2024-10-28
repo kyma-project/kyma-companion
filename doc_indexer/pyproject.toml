@@ -16,6 +16,8 @@ markdown = "^3.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
+ruff = "^0.7.1"
+mypy = "^1.13.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -33,11 +35,14 @@ testpaths = [
 
 [tool.poe.tasks]
 format = "black . --check"
+lint = "ruff check ."
+lint-fix = "ruff check . --fix"
 format-fix = "black ."
+typecheck = "mypy . --pretty --config-file ../mypy.ini"
+codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit"
 test-integration = "pytest tests/integration"
 test = [
     "test-unit",
     "test-integration"
 ]
-

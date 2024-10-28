@@ -1,19 +1,17 @@
 import uuid
-from typing import List
 from unittest.mock import patch
 
 import pytest
-from langchain_core.documents import Document
-
 from indexing.indexer import MarkdownIndexer
+from langchain_core.documents import Document
 from src.utils.hana import create_hana_connection
 from src.utils.models import create_embedding_factory, openai_embedding_creator
 from src.utils.settings import (
-    EMBEDDING_MODEL_DEPLOYMENT_ID,
-    DATABASE_URL,
-    DATABASE_PORT,
-    DATABASE_USER,
     DATABASE_PASSWORD,
+    DATABASE_PORT,
+    DATABASE_URL,
+    DATABASE_USER,
+    EMBEDDING_MODEL_DEPLOYMENT_ID,
 )
 
 
@@ -35,7 +33,7 @@ def hana_conn():
 
 
 @pytest.fixture(scope="session")
-def table_name():
+def table_name() -> str:
     return f"test_table_{uuid.uuid4().hex}"
 
 
@@ -50,7 +48,7 @@ def indexer(embedding_model, hana_conn, table_name):
 
 
 @pytest.fixture
-def loaded_documents() -> List[Document]:
+def loaded_documents() -> list[Document]:
     return [
         Document(
             page_content="""
@@ -124,9 +122,10 @@ def test_index(
     table_name,
     loaded_documents,
     indexer,
-):
+) -> None:
     with patch.object(indexer, "_load_documents", return_value=loaded_documents):
-        indexer.index(headers_to_split_on)
+        indexer.headers_to_split_on = headers_to_split_on
+        indexer.index()
         cursor = hana_conn.cursor()
         cursor.execute(f'SELECT VEC_TEXT, VEC_META FROM "{table_name}"')
         stored_chunks = [row[0] for row in cursor.fetchall()]

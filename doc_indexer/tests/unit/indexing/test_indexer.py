@@ -1,15 +1,13 @@
-from typing import List, Any
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
+from indexing.indexer import MarkdownIndexer, create_chunks
 from langchain_core.documents import Document
-
-from indexing.contants import HEADER1
-from indexing.indexer import create_chunks, MarkdownIndexer
 
 
 @pytest.fixture(scope="session")
-def fixtures_path(root_tests_path):
+def fixtures_path(root_tests_path) -> str:
     return f"{root_tests_path}/unit/fixtures"
 
 
@@ -40,7 +38,7 @@ def indexer(mock_embedding, mock_connection, mock_hana_db):
 
 
 @pytest.fixture
-def sample_documents() -> List[Document]:
+def sample_documents() -> list[Document]:
     return [
         Document(
             page_content="""
@@ -112,12 +110,12 @@ def sample_documents() -> List[Document]:
     ],
 )
 def test_create_chunks(
-    sample_documents: List[Document],
+    sample_documents: list[Document],
     input_docs: Any,
-    headers_to_split_on: List[tuple],
-    expected_chunks: List[str],
+    headers_to_split_on: list[tuple],
+    expected_chunks: list[str],
     expected_exception: type,
-):
+) -> None:
     if input_docs == "sample_documents":
         input_docs = sample_documents
 
@@ -127,7 +125,7 @@ def test_create_chunks(
     else:
         result = create_chunks(input_docs, headers_to_split_on)
         assert len(result) == len(expected_chunks)
-        for res, exp in zip(result, expected_chunks):
+        for res, exp in zip(result, expected_chunks, strict=False):
             assert res.page_content.strip() == exp.strip()
 
 
@@ -173,7 +171,7 @@ def test_load_documents(
     docs_path,
     expected_docs_number,
     expected_exception,
-):
+) -> None:
     indexer.docs_path = fixtures_path + "/" + docs_path
     if expected_exception:
         with pytest.raises(expected_exception):
@@ -253,25 +251,23 @@ def test_index(
     delete_error,
     add_error,
     expected_exception,
-):
+) -> None:
     indexer.db.delete.side_effect = delete_error
     indexer.db.add_documents.side_effect = add_error
 
-    with patch.object(indexer, "_load_documents", return_value=loaded_docs):
-        with patch(
-            "indexing.indexer.create_chunks", return_value=expected_chunks
-        ) as mock_create_chunks:
-            if expected_exception:
-                with pytest.raises(expected_exception):
-                    indexer.index(headers_to_split_on)
-            else:
-                indexer.index(headers_to_split_on)
+    with patch.object(indexer, "_load_documents", return_value=loaded_docs), patch(
+        "indexing.indexer.create_chunks", return_value=expected_chunks
+    ) as mock_create_chunks:
+        indexer.headers_to_split_on = headers_to_split_on
+        if expected_exception:
+            with pytest.raises(expected_exception):
+                indexer.index()
+        else:
+            indexer.index()
 
-                mock_create_chunks.assert_called_once_with(
-                    loaded_docs, headers_to_split_on or [HEADER1]
-                )
-                indexer.db.delete.assert_called_once_with(filter={})
-                indexer.db.add_documents.assert_called_once_with(expected_chunks)
+            mock_create_chunks.assert_called_once_with(loaded_docs, headers_to_split_on)
+            indexer.db.delete.assert_called_once_with(filter={})
+            indexer.db.add_documents.assert_called_once_with(expected_chunks)
 
     if delete_error:
         assert str(delete_error) in str(indexer.db.delete.side_effect)
