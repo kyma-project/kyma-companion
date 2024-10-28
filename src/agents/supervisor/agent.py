@@ -23,7 +23,7 @@ from agents.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.prompts import ROUTER_ROLE_PROMPT, ROUTER_TASK_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
-from utils.models import IModel
+from utils.models import LLM, IModel
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
@@ -70,13 +70,16 @@ class SupervisorAgent:
     members: list[str] = []
     plan_parser = PydanticOutputParser(pydantic_object=Plan)
 
-    def __init__(self, model: IModel, members: list[str]):
-        self.model = model
+    def __init__(self, models: dict[str, IModel], members: list[str]):
+        gpt_4o = models[LLM.GPT4O]
+        gpt_4o_mini = models[LLM.GPT4O_MINI]
+
+        self.model = gpt_4o
         self.members = members
         self.options = members
         self.parser = self._route_create_parser()
-        self.supervisor_chain = self._create_supervisor_chain(model)
-        self._planner_chain = self._create_planner_chain(model)
+        self.supervisor_chain = self._create_supervisor_chain(gpt_4o)
+        self._planner_chain = self._create_planner_chain(gpt_4o_mini)
         self._graph = self._build_graph()
 
     def get_members_str(self) -> str:

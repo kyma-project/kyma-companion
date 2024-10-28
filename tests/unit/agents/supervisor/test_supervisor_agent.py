@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
@@ -12,13 +12,20 @@ from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, SupervisorAgent, ROUTER
 from agents.supervisor.state import SupervisorState
+from utils.models import LLM, IModel
 
+@pytest.fixture
+def mock_models():
+    return {
+        LLM.GPT4O_MINI: MagicMock(spec=IModel),
+        LLM.GPT4O: MagicMock(spec=IModel),
+    }
 
 class TestSupervisorAgent:
 
     @pytest.fixture
-    def supervisor_agent(self):
-        agent = SupervisorAgent(Mock(), [K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])  # noqa
+    def supervisor_agent(self, mock_models):
+        agent = SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])  # noqa
         agent.supervisor_chain = Mock()
         agent._planner_chain = Mock()
         return agent  # noqa

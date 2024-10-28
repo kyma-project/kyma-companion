@@ -85,7 +85,7 @@ class CompanionGraph:
 
         self.k8s_agent = KubernetesAgent(gpt_4o)
         self.supervisor_agent = SupervisorAgent(
-            gpt_4o, members=[KYMA_AGENT, K8S_AGENT, COMMON]
+            models, members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
