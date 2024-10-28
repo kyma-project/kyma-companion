@@ -5,8 +5,11 @@ from deepeval import assert_test
 from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from agents.k8s.constants import K8S_AGENT
+from agents.kyma.agent import KYMA_AGENT
+from agents.common.constants import COMMON
 
-from agents.common.state import AgentState, UserInput
+from agents.common.state import AgentState, UserInput, SubTask
 
 
 @pytest.fixture
@@ -50,7 +53,7 @@ def planner_correctness_metric(evaluator_model):
     )
 
 
-def create_mock_state(messages: Sequence[BaseMessage]) -> AgentState:
+def create_mock_state(messages: Sequence[BaseMessage], subtasks: list[SubTask] | None = []) -> AgentState:
     """Create a mock langgraph state for tests."""
     user_input = UserInput(
         query=messages[-1].content,
@@ -64,7 +67,7 @@ def create_mock_state(messages: Sequence[BaseMessage]) -> AgentState:
         input=user_input,
         messages=messages,
         next="",
-        subtasks=[],
+        subtasks=subtasks,
         final_response="",
         error=None,
     )
@@ -443,6 +446,175 @@ def test_invoke_finalizer(
 
     assert_test(test_case, [semantic_similarity_metric])
     # TODO(marcobebway) add a syntax scoring to give a bad score for agent names and response headers
+
+
+@pytest.mark.parametrize(
+    "messages, subtasks, expected_answer",
+    [
+        # Single task:
+        # - Assigned K8sAgent is 'Next' agent
+        # - Assigned KymaAgent is 'Next' agent
+        # - Assigned Common is 'Next' agent
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=K8S_AGENT, status="pending"
+                ),
+            ],
+            K8S_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=KYMA_AGENT, status="pending"
+                ),
+            ],
+            KYMA_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=COMMON, status="pending"
+                ),
+            ],
+            COMMON
+        ),
+        # Multiple tasks, all still pending:
+        # - First assigned K8sAgent is 'Next' agent
+        # - First assigned KymaAgent is 'Next' agent
+        # - First assigned Common is 'Next' agent
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=K8S_AGENT, status="pending"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
+                ),
+            ],
+            K8S_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=KYMA_AGENT, status="pending"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=K8S_AGENT, status="pending"
+                ),
+            ],
+            KYMA_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=COMMON, status="pending"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
+                ),
+            ],
+            COMMON
+        ),
+        # Multiple tasks, the first one is completed:
+        # - Second pending K8sAgent is 'Next' agent
+        # - Second pending KymaAgent is 'Next' agent
+        # - Second pending Common is 'Next' agent
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=KYMA_AGENT, status="completed"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=K8S_AGENT, status="pending"
+                ),
+            ],
+            K8S_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=K8S_AGENT, status="completed"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
+                ),
+            ],
+            KYMA_AGENT
+        ),
+        (
+            [
+                SystemMessage(content="""
+                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """)
+            ],
+            [
+                SubTask(
+                    description="Task 1", assigned_to=KYMA_AGENT, status="completed"
+                ),
+                SubTask(
+                    description="Task 2", assigned_to=COMMON, status="pending"
+                ),
+            ],
+            COMMON
+        ),
+    ],
+)
+def test_invoke_router(
+        messages, subtasks, expected_answer, companion_graph, semantic_similarity_metric
+):
+    """Tests the router method of CompanionGraph."""
+    state = create_mock_state(messages, subtasks)
+
+    result = companion_graph.supervisor_agent._route(state)
+
+    test_case = LLMTestCase(
+        input=messages[-1].content,
+        actual_output=result['next'],
+        expected_output=expected_answer,
+    )
+
+    assert_test(test_case, [semantic_similarity_metric])
 
 
 @pytest.mark.parametrize(

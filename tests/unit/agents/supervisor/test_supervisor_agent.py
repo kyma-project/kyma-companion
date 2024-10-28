@@ -14,12 +14,14 @@ from agents.supervisor.agent import FINALIZER, SupervisorAgent, ROUTER
 from agents.supervisor.state import SupervisorState
 from utils.models import LLM, IModel
 
+
 @pytest.fixture
 def mock_models():
     return {
         LLM.GPT4O_MINI: MagicMock(spec=IModel),
         LLM.GPT4O: MagicMock(spec=IModel),
     }
+
 
 class TestSupervisorAgent:
 
