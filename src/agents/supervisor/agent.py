@@ -79,7 +79,7 @@ class SupervisorAgent:
         self.options = members
         self.parser = self._route_create_parser()
         self.supervisor_chain = self._create_supervisor_chain(gpt_4o)
-        self._planner_chain = self._create_planner_chain(gpt_4o_mini)
+        self._planner_chain = self._create_planner_chain(gpt_4o)
         self._graph = self._build_graph()
 
     def get_members_str(self) -> str:
