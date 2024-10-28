@@ -601,20 +601,17 @@ def test_invoke_finalizer(
     ],
 )
 def test_invoke_router(
-        messages, subtasks, expected_answer, companion_graph, semantic_similarity_metric
+        messages, subtasks, expected_answer, companion_graph
 ):
     """Tests the router method of CompanionGraph."""
     state = create_mock_state(messages, subtasks)
 
     result = companion_graph.supervisor_agent._route(state)
 
-    test_case = LLMTestCase(
-        input=messages[-1].content,
-        actual_output=result['next'],
-        expected_output=expected_answer,
-    )
+    actual_output = result['next']
+    expected_output = expected_answer
 
-    assert_test(test_case, [semantic_similarity_metric])
+    assert actual_output == expected_output
 
 
 @pytest.mark.parametrize(
