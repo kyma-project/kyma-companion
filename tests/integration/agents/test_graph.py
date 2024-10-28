@@ -243,8 +243,7 @@ def test_invoke_planner(
                     The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                     """),
                     HumanMessage(content="What is Kyma?"),
-                    AIMessage(
-                        content="""
+                    AIMessage(name="KymaAgent", content="""
                         Kyma is an open-source platform designed to extend applications with microservices and serverless functions. It provides a set of tools and components that enable developers to build, deploy, and manage cloud-native applications. Key features of Kyma include:
                         1. **Kubernetes-based**: Kyma runs on Kubernetes, leveraging its orchestration capabilities for managing containerized applications.
                         2. **Microservices Architecture**: It supports the development of microservices, allowing for modular application design and easier scaling.
@@ -272,7 +271,7 @@ def test_invoke_planner(
                     The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                     """),
                     HumanMessage(content="What is Kyma?"),
-                    AIMessage(content="It is a color of fish.")
+                    AIMessage(name="KymaAgent", content="It is a color of fish.")
                 ],
                 "I apologize, but I am unable to provide an answer to your query at the moment."
         ),
@@ -286,7 +285,7 @@ def test_invoke_planner(
                     The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                     """),
                     HumanMessage(content="What is k8s?"),
-                    AIMessage(content="""
+                    AIMessage(name="KubernetesAgent", content="""
                     Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate deploying, scaling, and operating application containers. Originally developed by Google, it is now maintained by the Cloud Native Computing Foundation (CNCF). Kubernetes provides a framework to run distributed systems resiliently, taking care of scaling and failover for your application, providing deployment patterns, and more.
                     Key features of Kubernetes include:
                     1. **Automated Rollouts and Rollbacks**: Kubernetes can manage the deployment of changes to your application or its configuration, ensuring that not all instances are updated simultaneously, and can roll back changes if something goes wrong.
@@ -314,7 +313,7 @@ def test_invoke_planner(
                     The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                     """),
                     HumanMessage(content="What is k8s?"),
-                    AIMessage(content="The sky is blue.")
+                    AIMessage(name="KubernetesAgent", content="The sky is blue.")
                 ],
                 "I apologize, but I am unable to provide an answer to your query at the moment."
         ),
