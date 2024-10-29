@@ -68,7 +68,7 @@ class SupervisorAgent:
     model: IModel
     _name: str = SUPERVISOR
     members: list[str] = []
-    plan_parser = PydanticOutputParser(pydantic_object=Plan)
+    plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
     def __init__(self, models: dict[str, IModel], members: list[str]):
         gpt_4o = models[LLM.GPT4O]
