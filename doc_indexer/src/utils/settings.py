@@ -27,10 +27,17 @@ if is_running_pytest():
 else:
     load_dotenv()
 
+
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 EMBEDDING_MODEL_DEPLOYMENT_ID = config("EMBEDDING_MODEL_DEPLOYMENT_ID")
 EMBEDDING_MODEL_NAME = config("EMBEDDING_MODEL_NAME")
 
+TMP_DIR = config("TMP_DIR", default=os.path.join(project_root, "tmp"))
+DOCS_SOURCES_FILE_PATH = config(
+    "DOCS_SOURCES_FILE_PATH", default=os.path.join(project_root, "docs_sources.json")
+)
 DOCS_PATH = config("DOCS_PATH", default=None)
+
 DATABASE_URL = config("DATABASE_URL")
 DATABASE_PORT = config("DATABASE_PORT", cast=int)
 DATABASE_USER = config("DATABASE_USER")
