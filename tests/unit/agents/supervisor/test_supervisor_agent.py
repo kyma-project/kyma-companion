@@ -270,32 +270,33 @@ class TestSupervisorAgent:
         "description, input_query, plan_content, expected_output, expected_error",
         [
             (
-                    "Plans multiple subtasks successfully",
-                    "How do I deploy a Kyma function?",
-                    '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                    {
-                        "subtasks": [
-                            SubTask(
-                                description="Explain Kyma function deployment",
-                                assigned_to=KYMA_AGENT
-                            ),
-                            SubTask(
-                                description="Explain K8s deployment",
-                                assigned_to=K8S_AGENT
-                            ),
-                        ],
-                        "messages": [
-                            AIMessage(
-                                content='{"subtasks": '
-                                        '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                                        '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                                name=PLANNER,
-                            )
-                        ],
-                        "error": None,
-                        "next": ROUTER,
-                    },
-                    None,
+                "Plans multiple subtasks successfully",
+                "How do I deploy a Kyma function?",
+                '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
+                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                {
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Kyma function deployment",
+                            assigned_to=KYMA_AGENT
+                        ),
+                        SubTask(
+                            description="Explain K8s deployment",
+                            assigned_to=K8S_AGENT
+                        ),
+                    ],
+                    "messages": [
+                        AIMessage(
+                            content='{"subtasks": '
+                                    '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
+                                    '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                            name=PLANNER,
+                        )
+                    ],
+                    "error": None,
+                    "next": ROUTER,
+                },
+                None,
             ),
             (
                 "Plans a single subtask successfully",
@@ -348,8 +349,8 @@ class TestSupervisorAgent:
                             name=PLANNER
                         )
                     ],
-                 "next": END,
-                 "subtasks": None
+                    "next": END,
+                    "subtasks": None
                 },
                 None,
             ),
