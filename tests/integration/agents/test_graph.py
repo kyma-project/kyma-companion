@@ -6,7 +6,7 @@ from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from agents.common.state import AgentState, UserInput
+from agents.common.state import CompanionState, UserInput
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def planner_correctness_metric(evaluator_model):
     )
 
 
-def create_mock_state(messages: Sequence[BaseMessage]) -> AgentState:
+def create_mock_state(messages: Sequence[BaseMessage]) -> CompanionState:
     """Create a mock langgraph state for tests."""
     user_input = UserInput(
         query=messages[-1].content,
@@ -45,7 +45,7 @@ def create_mock_state(messages: Sequence[BaseMessage]) -> AgentState:
         namespace=None,
     )
 
-    return AgentState(
+    return CompanionState(
         input=user_input,
         messages=messages,
         next="",

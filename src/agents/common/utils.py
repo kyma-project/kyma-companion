@@ -18,7 +18,7 @@ from agents.common.constants import (
     RECENT_MESSAGES_LIMIT,
     SUBTASKS,
 )
-from agents.common.state import AgentState, SubTask, SubTaskStatus
+from agents.common.state import BaseAgentState, CompanionState, SubTask, SubTaskStatus
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -39,7 +39,9 @@ def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str) -> AgentExecu
     return executor
 
 
-def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, Any]:
+def agent_node(
+    state: CompanionState, agent: AgentExecutor, name: str
+) -> dict[str, Any]:
     """Agent node."""
     for subtask in state.subtasks:
         if subtask.assigned_to == name and subtask.status != SubTaskStatus.COMPLETED:
@@ -90,7 +92,7 @@ def filter_messages(
     return filtered
 
 
-def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
+def next_step(state: CompanionState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
     """Return EXIT if next is EXIT or there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
     if state.next == EXIT:
         logger.debug("Ending the workflow.")
@@ -101,7 +103,7 @@ def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type:
     return FINALIZER if state.next == FINALIZER else CONTINUE
 
 
-def exit_node(state: AgentState) -> dict[str, Any]:
+def exit_node(state: CompanionState) -> dict[str, Any]:
     """Used to end the workflow."""
     return {
         NEXT: END,
@@ -134,3 +136,18 @@ def create_node_output(
         FINAL_RESPONSE: final_response,
         ERROR: error,
     }
+
+
+def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "__end__"]:
+    """Function that determines whether to end or call agent."""
+    if state.is_last_step and state.my_task is None:
+        return "__end__"
+    return "agent"
+
+
+def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
+    """Function that determines whether to call tools or finalizer."""
+    last_message = state.messages[-1]
+    if isinstance(last_message, AIMessage) and not last_message.tool_calls:
+        return "finalizer"
+    return "tools"

@@ -13,7 +13,7 @@ from agents.common.constants import (
     PLANNER,
 )
 from agents.common.data import Message
-from agents.common.state import AgentState, SubTask, UserInput
+from agents.common.state import CompanionState, SubTask, UserInput
 from agents.graph import KymaGraph
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
@@ -201,7 +201,7 @@ class TestKymaGraph:
         expected_error,
         mock_planner_chain,
     ):
-        state = AgentState(messages=[HumanMessage(content=input_query)])
+        state = CompanionState(messages=[HumanMessage(content=input_query)])
 
         if expected_error:
             mock_planner_chain.invoke.side_effect = Exception(expected_error)
@@ -314,7 +314,7 @@ class TestKymaGraph:
         expected_error,
         mock_common_chain,
     ):
-        state = AgentState(subtasks=subtasks, messages=messages)
+        state = CompanionState(subtasks=subtasks, messages=messages)
 
         if expected_error:
             mock_common_chain.invoke.side_effect = Exception(expected_error)
@@ -416,7 +416,7 @@ class TestKymaGraph:
         expected_output,
         expected_error,
     ):
-        state = AgentState(
+        state = CompanionState(
             messages=conversation_messages, input=UserInput(query=input_query)
         )
 

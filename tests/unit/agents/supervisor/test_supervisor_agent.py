@@ -5,7 +5,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.common.constants import COMMON, EXIT
-from agents.common.state import AgentState, SubTask
+from agents.common.state import CompanionState, SubTask
 from agents.common.utils import filter_messages
 from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
@@ -123,7 +123,7 @@ class TestSupervisorAgent:
                 return_value=mock_supervisor_chain_invoke_return
             )
 
-        state = AgentState(messages=messages, subtasks=subtasks)
+        state = CompanionState(messages=messages, subtasks=subtasks)
 
         # Execute
         supervisor_node = supervisor_agent.agent_node()

@@ -24,7 +24,7 @@ from agents.common.constants import (
     PLANNER,
 )
 from agents.common.data import Message
-from agents.common.state import AgentState, Plan, SubTask, UserInput
+from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
     create_node_output,
     exit_node,
@@ -115,7 +115,7 @@ class KymaGraph:
         )
         return self.planner_prompt | model.llm  # type: ignore
 
-    def _invoke_planner(self, state: AgentState) -> AIMessage:
+    def _invoke_planner(self, state: CompanionState) -> AIMessage:
         """Invoke the planner."""
         response: AIMessage = self._planner_chain.invoke(
             input={
@@ -124,7 +124,7 @@ class KymaGraph:
         )
         return response
 
-    def _plan(self, state: AgentState) -> dict[str, Any]:
+    def _plan(self, state: CompanionState) -> dict[str, Any]:
         """
         Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
         If the query is general, it returns the response directly.
@@ -194,7 +194,7 @@ class KymaGraph:
         )
         return prompt | model.llm  # type: ignore
 
-    def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
+    def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
         """Invoke the common node."""
         return self._common_chain.invoke(  # type: ignore
             {
@@ -203,7 +203,7 @@ class KymaGraph:
             },
         ).content
 
-    def _common_node(self, state: AgentState) -> dict[str, Any]:
+    def _common_node(self, state: CompanionState) -> dict[str, Any]:
         """Common node to handle general queries."""
 
         for subtask in state.subtasks:
@@ -234,7 +234,7 @@ class KymaGraph:
             ]
         }
 
-    def _final_response_chain(self, state: AgentState) -> RunnableSequence:
+    def _final_response_chain(self, state: CompanionState) -> RunnableSequence:
         prompt = ChatPromptTemplate.from_messages(
             [
                 MessagesPlaceholder(variable_name="messages"),
@@ -243,7 +243,7 @@ class KymaGraph:
         ).partial(members=", ".join(self.members), query=state.input.query)
         return prompt | self.models[LLM.GPT4O_MINI].llm  # type: ignore
 
-    def _generate_final_response(self, state: AgentState) -> dict[str, Any]:
+    def _generate_final_response(self, state: CompanionState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
@@ -273,7 +273,7 @@ class KymaGraph:
     def _build_graph(self) -> CompiledGraph:
         """Create a supervisor agent."""
 
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(CompanionState)
         workflow.add_node(FINALIZER, self._generate_final_response)
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())

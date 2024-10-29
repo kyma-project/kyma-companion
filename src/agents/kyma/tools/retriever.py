@@ -1,6 +1,6 @@
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import Any, cast
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
@@ -10,6 +10,7 @@ from hdbcli import dbapi
 from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+
 
 def create_hana_connection(
     url: str, port: int, user: str, password: str

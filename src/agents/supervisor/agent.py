@@ -8,7 +8,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnableSequence
 
 from agents.common.constants import EXIT, FINALIZER
-from agents.common.state import AgentState
+from agents.common.state import CompanionState
 from agents.common.utils import filter_messages
 from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
 from utils.logging import get_logger
@@ -64,7 +64,7 @@ class SupervisorAgent:
     def agent_node(self):  # noqa ANN
         """Get Supervisor agent node function."""
 
-        def supervisor_node(state: AgentState) -> dict[str, Any]:
+        def supervisor_node(state: CompanionState) -> dict[str, Any]:
             """Supervisor node."""
             try:
                 result = self.supervisor_chain.invoke(

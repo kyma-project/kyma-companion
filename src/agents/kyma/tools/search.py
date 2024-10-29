@@ -2,7 +2,12 @@
 from langchain_core.pydantic_v1 import BaseModel
 from langchain_core.tools import tool
 
-from agents.kyma.tools.retriever import Retriever, create_embedding_factory, create_hana_connection, openai_embedding_creator
+from agents.kyma.tools.retriever import (
+    Retriever,
+    create_embedding_factory,
+    create_hana_connection,
+    openai_embedding_creator,
+)
 from utils.settings import DATABASE_PASSWORD, DATABASE_PORT, DATABASE_URL, DATABASE_USER, EMBEDDING_MODEL_DEPLOYMENT_ID
 
 create_embedding = create_embedding_factory(openai_embedding_creator)

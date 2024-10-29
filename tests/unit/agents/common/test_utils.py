@@ -11,7 +11,7 @@ from langchain_core.messages import (
 )
 from langchain_core.prompts import MessagesPlaceholder
 
-from agents.common.state import AgentState, SubTask, SubTaskStatus
+from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
     agent_node,
@@ -74,7 +74,7 @@ def mock_agent_executor():
 
 @pytest.fixture
 def mock_state():
-    return Mock(spec=AgentState, messages=[HumanMessage(content="Hello Test")])
+    return Mock(spec=CompanionState, messages=[HumanMessage(content="Hello Test")])
 
 
 @pytest.mark.parametrize(

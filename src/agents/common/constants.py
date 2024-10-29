@@ -15,3 +15,15 @@ NEXT = "next"
 SUBTASKS = "subtasks"
 
 FINAL_RESPONSE = "final_response"
+
+GRAPH_STEP_TIMEOUT_SECONDS = 30
+
+IS_LAST_STEP = "is_last_step"
+
+K8S_CLIENT = "k8s_client"
+
+MY_TASK = "my_task"
+
+QUERY = "query"
+
+OWNER = "owner"
