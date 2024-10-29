@@ -27,7 +27,9 @@ class TestSupervisorAgent:
 
     @pytest.fixture
     def supervisor_agent(self, mock_models):
-        agent = SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])  # noqa
+        agent = SupervisorAgent(
+            models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER]
+        )  # noqa
         agent.supervisor_chain = Mock()
         agent._planner_chain = Mock()
         return agent  # noqa
@@ -177,16 +179,16 @@ class TestSupervisorAgent:
                 "2. Use the Kyma CLI to deploy. "
                 "3. Verify the deployment in the Kyma dashboard.",
                 {
-                    'messages': [
+                    "messages": [
                         AIMessage(
-                            content='To deploy a Kyma function, follow these steps: '
-                                    '1. Create a function file. '
-                                    '2. Use the Kyma CLI to deploy. '
-                                    '3. Verify the deployment in the Kyma dashboard.',
-                            name='Finalizer'
+                            content="To deploy a Kyma function, follow these steps: "
+                            "1. Create a function file. "
+                            "2. Use the Kyma CLI to deploy. "
+                            "3. Verify the deployment in the Kyma dashboard.",
+                            name="Finalizer",
                         )
                     ],
-                    'next': '__end__'
+                    "next": "__end__",
                 },
                 None,
             ),
@@ -202,13 +204,8 @@ class TestSupervisorAgent:
                 ],
                 "",
                 {
-                    'messages': [
-                        AIMessage(
-                            content='',
-                            name='Finalizer'
-                        )
-                    ],
-                    'next': '__end__'
+                    "messages": [AIMessage(content="", name="Finalizer")],
+                    "next": "__end__",
                 },
                 None,
             ),
@@ -224,11 +221,12 @@ class TestSupervisorAgent:
                 ],
                 None,
                 {
-                    'messages': [
+                    "messages": [
                         AIMessage(
-                            content='Sorry, I encountered an error while processing the request. '
-                                    'Error: Error in finalizer node: Test error',
-                            name='Finalizer')
+                            content="Sorry, I encountered an error while processing the request. "
+                            "Error: Error in finalizer node: Test error",
+                            name="Finalizer",
+                        )
                     ]
                 },
                 "Error in finalizer node: Test error",
@@ -257,7 +255,9 @@ class TestSupervisorAgent:
             )
 
         with patch.object(
-            supervisor_agent, "_final_response_chain", return_value=mock_final_response_chain
+            supervisor_agent,
+            "_final_response_chain",
+            return_value=mock_final_response_chain,
         ):
             result = supervisor_agent._generate_final_response(state)
 
@@ -278,18 +278,17 @@ class TestSupervisorAgent:
                     "subtasks": [
                         SubTask(
                             description="Explain Kyma function deployment",
-                            assigned_to=KYMA_AGENT
+                            assigned_to=KYMA_AGENT,
                         ),
                         SubTask(
-                            description="Explain K8s deployment",
-                            assigned_to=K8S_AGENT
+                            description="Explain K8s deployment", assigned_to=K8S_AGENT
                         ),
                     ],
                     "messages": [
                         AIMessage(
                             content='{"subtasks": '
-                                    '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                                    '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
+                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
                             name=PLANNER,
                         )
                     ],
@@ -330,8 +329,8 @@ class TestSupervisorAgent:
                     "messages": [
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
-                                    "Error: No subtasks are created for the given query: What is a Kubernetes pod?",
-                            name=PLANNER
+                            "Error: No subtasks are created for the given query: What is a Kubernetes pod?",
+                            name=PLANNER,
                         )
                     ]
                 },
@@ -346,11 +345,11 @@ class TestSupervisorAgent:
                     "messages": [
                         AIMessage(
                             content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER
+                            name=PLANNER,
                         )
                     ],
                     "next": END,
-                    "subtasks": None
+                    "subtasks": None,
                 },
                 None,
             ),
@@ -363,11 +362,11 @@ class TestSupervisorAgent:
                     "messages": [
                         AIMessage(
                             content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER
+                            name=PLANNER,
                         )
                     ],
                     "next": END,
-                    "subtasks": None
+                    "subtasks": None,
                 },
                 None,
             ),
@@ -379,8 +378,8 @@ class TestSupervisorAgent:
                     "messages": [
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
-                                    "Error: fake error",
-                            name=PLANNER
+                            "Error: fake error",
+                            name=PLANNER,
                         )
                     ]
                 },
@@ -389,16 +388,18 @@ class TestSupervisorAgent:
         ],
     )
     def test_agent_plan(
-            self,
-            supervisor_agent,
-            description,
-            input_query,
-            plan_content,
-            expected_output,
-            expected_error,
+        self,
+        supervisor_agent,
+        description,
+        input_query,
+        plan_content,
+        expected_output,
+        expected_error,
     ):
         if expected_error:
-            supervisor_agent._planner_chain.invoke.side_effect = Exception(expected_error)
+            supervisor_agent._planner_chain.invoke.side_effect = Exception(
+                expected_error
+            )
         else:
             supervisor_agent._planner_chain.invoke.return_value.content = plan_content
 

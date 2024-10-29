@@ -44,7 +44,9 @@ def companion_graph(
     mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
 ):
     with (
-        patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
+        patch.object(
+            CompanionGraph, "_create_common_chain", return_value=mock_common_chain
+        ),
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
     ):
         return CompanionGraph(mock_models, mock_memory)
@@ -142,10 +144,10 @@ class TestCompanionGraph:
                 [HumanMessage(content="What is Java?")],
                 None,
                 {
-                    'messages': [
+                    "messages": [
                         AIMessage(
-                            content='Sorry, the common agent is unable to process the request.',
-                            name='Common'
+                            content="Sorry, the common agent is unable to process the request.",
+                            name="Common",
                         )
                     ]
                 },
@@ -188,7 +190,9 @@ class TestCompanionGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.CompanionGraph", return_value=companion_graph) as mock:
+        with patch(
+            "services.conversation.CompanionGraph", return_value=companion_graph
+        ) as mock:
             yield mock
 
     @pytest.mark.asyncio

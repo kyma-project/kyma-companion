@@ -153,8 +153,7 @@ def test_messages_endpoint(
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content'
         b'": "To create an API Rule in Kyma to expose a service externally"}}}\n'
         b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"content": '
-        b'"To create a kubernetes deployment"}}}\n'
-        in content
+        b'"To create a kubernetes deployment"}}}\n' in content
     )
 
 

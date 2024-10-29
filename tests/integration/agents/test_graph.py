@@ -24,7 +24,7 @@ def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
         criteria=""
-                 "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        "Evaluate whether two answers are semantically similar or convey the same meaning.",
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
@@ -40,10 +40,10 @@ def planner_correctness_metric(evaluator_model):
     return GEval(
         name="Correctness",
         criteria=""
-                 "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). "
-                 "It is okay if the output contains one subtask."
-                 "Check if the output is in valid JSON format"
-                 "Verify that the JSON contains required keys: 'subtasks'",
+        "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). "
+        "It is okay if the output contains one subtask."
+        "Check if the output is in valid JSON format"
+        "Verify that the JSON contains required keys: 'subtasks'",
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
@@ -83,7 +83,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
                 # tests if a general query is immediately answered by the planner
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
@@ -95,7 +95,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma?"),
             ],
@@ -107,7 +107,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma API Rule?"),
             ],
@@ -119,13 +119,13 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 AIMessage(
                     content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
-                            "`CrashLoopBackOff` state. The last termination reason was `StartError`"
-                            " with the message indicating a failure to create the containerd task "
-                            "due to a context cancellation."
+                    "`CrashLoopBackOff` state. The last termination reason was `StartError`"
+                    " with the message indicating a failure to create the containerd task "
+                    "due to a context cancellation."
                 ),
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="why the pod is failing?"),
             ],
@@ -137,7 +137,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
@@ -149,7 +149,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kubernetes? Explain Kyma function"),
             ],
@@ -162,7 +162,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
                     content="Create a hello world app and deploy it with Kyma?"
@@ -177,10 +177,10 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
-                        content="Create a hello world app with python and deploy it with Kyma?"
+                    content="Create a hello world app with python and deploy it with Kyma?"
                 ),
             ],
             '{"subtasks": [{"description": "Create a hello world app with python", "assigned_to": "Common"},'
@@ -192,7 +192,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
             [
                 SystemMessage(
                     content="The user query is related to: "
-                            "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
                     content="how to enable eventing module and create a subscription for my app?"
@@ -205,12 +205,12 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
     ],
 )
 def test_invoke_planner(
-        messages,
-        expected_answer,
-        general_query,
-        companion_graph,
-        planner_correctness_metric,
-        answer_relevancy_metric,
+    messages,
+    expected_answer,
+    general_query,
+    companion_graph,
+    planner_correctness_metric,
+    answer_relevancy_metric,
 ):
     """Tests the invoke_planner method of SupervisorAgent."""
     state = create_mock_state(messages)
@@ -244,11 +244,15 @@ def test_invoke_planner(
         # - Simulate invalid answers
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
+                """
+                ),
                 HumanMessage(content="What is Kyma?"),
-                AIMessage(name="KymaAgent", content="""
+                AIMessage(
+                    name="KymaAgent",
+                    content="""
                 Kyma is an open-source platform designed to extend 
                 applications with microservices and serverless functions. It provides a set of tools and 
                 components that enable developers to build, deploy, and manage cloud-native applications. Key 
@@ -264,7 +268,8 @@ def test_invoke_planner(
                 including service discovery, monitoring, and logging. Overall, Kyma is aimed at simplifying the 
                 development and management of cloud-native applications, making it easier for organizations to 
                 innovate and respond to changing business needs.
-                """)
+                """,
+                ),
             ],
             """
             Kyma is an open-source platform designed to extend applications with microservices and serverless functions.
@@ -284,29 +289,34 @@ def test_invoke_planner(
             monitoring, and logging.
             Overall, Kyma is aimed at simplifying the development and management of cloud-native applications, making it
             easier for organizations to innovate and respond to changing business needs.
-            """
+            """,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
+                """
+                ),
                 HumanMessage(content="What is Kyma?"),
-                AIMessage(name="KymaAgent", content="It is a color of fish.")
+                AIMessage(name="KymaAgent", content="It is a color of fish."),
             ],
-            "I apologize, but I am unable to provide an answer to your query at the moment."
+            "I apologize, but I am unable to provide an answer to your query at the moment.",
         ),
-
         # Invoke K8S agent:
         # - Simulate valid answers
         # - Simulate invalid answers
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
+                """
+                ),
                 HumanMessage(content="What is k8s?"),
-                AIMessage(name="KubernetesAgent", content="""
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="""
                 Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate deploying,
                 scaling, and operating application containers. Originally developed by Google, it is now maintained by
                 the Cloud Native Computing Foundation (CNCF). Kubernetes provides a framework to run distributed systems
@@ -329,7 +339,8 @@ def test_invoke_planner(
                 configuration without rebuilding your image and without exposing secrets in your stack configuration.
                 Kubernetes is highly extensible and can be used to manage containerized applications across various
                 environments, from on-premises data centers to public clouds.
-                """)
+                """,
+                ),
             ],
             """
             Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate deploying, scaling,
@@ -353,30 +364,37 @@ def test_invoke_planner(
             without rebuilding your image and without exposing secrets in your stack configuration.
             Kubernetes is highly extensible and can be used to manage containerized applications across various
             environments, from on-premises data centers to public clouds.
-            """
+            """,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
+                """
+                ),
                 HumanMessage(content="What is k8s?"),
-                AIMessage(name="KubernetesAgent", content="The sky is blue.")
+                AIMessage(name="KubernetesAgent", content="The sky is blue."),
             ],
-            "I apologize, but I am unable to provide an answer to your query at the moment."
+            "I apologize, but I am unable to provide an answer to your query at the moment.",
         ),
-
         # Invoke K8S and Kyma agents:
         # - Simulate two valid answers
         # - Simulate two invalid answers
         # - Simulate one valid and one invalid answer
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
-                HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
-                AIMessage(name="KubernetesAgent", content="""
+                """
+                ),
+                HumanMessage(
+                    content="what are the types of a k8s service? what is a kyma function?"
+                ),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="""
                 Kubernetes services can be of several types, each serving a different purpose. The main types of
                 Kubernetes services are:
                 1. **ClusterIP**: Exposes the service on a cluster-internal IP. This type makes the service only
@@ -390,8 +408,11 @@ def test_invoke_planner(
                 `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
                 These types allow Kubernetes to offer different ways to expose applications depending on the use case
                 and the environment in which the cluster is running.
-                """),
-                AIMessage(name="KymaAgent", content="""
+                """,
+                ),
+                AIMessage(
+                    name="KymaAgent",
+                    content="""
                 A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you
                 to execute custom business logic in response to events or HTTP requests. Functions are typically written
                 in JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
@@ -408,7 +429,8 @@ def test_invoke_planner(
                 cloud-native environment.
                 5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines,
                 making it straightforward to manage and update them.
-                """)
+                """,
+                ),
             ],
             """
             Kubernetes services can be of several types, each serving a different purpose. The main types of Kubernetes
@@ -441,35 +463,54 @@ def test_invoke_planner(
             straightforward to manage and update them.
             Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native
             environment.
-            """
+            """,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
-                HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
-                AIMessage(name="KubernetesAgent", content="""
+                """
+                ),
+                HumanMessage(
+                    content="what are the types of a k8s service? what is a kyma function?"
+                ),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="""
                 The sun emits light.
-                """),
-                AIMessage(name="KymaAgent", content="""
+                """,
+                ),
+                AIMessage(
+                    name="KymaAgent",
+                    content="""
                 The moon reflects the sun's light.
-                """)
-                ],
+                """,
+                ),
+            ],
             """
             I apologize, but I am unable to provide an answer to your query at the moment.
-            """
+            """,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """),
-                HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
-                AIMessage(name="KubernetesAgent", content="""
+                """
+                ),
+                HumanMessage(
+                    content="what are the types of a k8s service? what is a kyma function?"
+                ),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="""
                 The sun emits light.
-                """),
-                AIMessage(name="KymaAgent", content="""
+                """,
+                ),
+                AIMessage(
+                    name="KymaAgent",
+                    content="""
                 A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you
                 to execute custom business logic in response to events or HTTP requests. Functions are typically written
                 in JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
@@ -486,7 +527,8 @@ def test_invoke_planner(
                 cloud-native environment.
                 5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines,
                 making it straightforward to manage and update them.
-                """)
+                """,
+                ),
             ],
             """
             A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you to
@@ -507,15 +549,12 @@ def test_invoke_planner(
             environment.
 
             I apologize, but I am unable to provide an answer to your Kubernetes question at the moment.
-            """
+            """,
         ),
     ],
 )
 def test_invoke_finalizer(
-        messages,
-        expected_answer,
-        companion_graph,
-        semantic_similarity_metric
+    messages, expected_answer, companion_graph, semantic_similarity_metric
 ):
     """Tests the _generate_final_response method of SupervisorAgent"""
     state = create_mock_state(messages)
@@ -524,7 +563,7 @@ def test_invoke_finalizer(
 
     test_case = LLMTestCase(
         input=messages[-1].content,
-        actual_output=result['messages'][0].content,
+        actual_output=result["messages"][0].content,
         expected_output=expected_answer,
     )
 
@@ -540,42 +579,42 @@ def test_invoke_finalizer(
         # - Assigned Common is 'Next' agent
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=K8S_AGENT, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=K8S_AGENT, status="pending"),
             ],
-            K8S_AGENT
+            K8S_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=KYMA_AGENT, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=KYMA_AGENT, status="pending"),
             ],
-            KYMA_AGENT
+            KYMA_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=COMMON, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=COMMON, status="pending"),
             ],
-            COMMON
+            COMMON,
         ),
         # Multiple tasks, all still pending:
         # - First assigned K8sAgent is 'Next' agent
@@ -583,51 +622,45 @@ def test_invoke_finalizer(
         # - First assigned Common is 'Next' agent
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=K8S_AGENT, status="pending"
-                ),
-                SubTask(
-                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=K8S_AGENT, status="pending"),
+                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
             ],
-            K8S_AGENT
+            K8S_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=KYMA_AGENT, status="pending"
-                ),
-                SubTask(
-                    description="Task 2", assigned_to=K8S_AGENT, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=KYMA_AGENT, status="pending"),
+                SubTask(description="Task 2", assigned_to=K8S_AGENT, status="pending"),
             ],
-            KYMA_AGENT
+            KYMA_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
-                SubTask(
-                    description="Task 1", assigned_to=COMMON, status="pending"
-                ),
-                SubTask(
-                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
-                ),
+                SubTask(description="Task 1", assigned_to=COMMON, status="pending"),
+                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
             ],
-            COMMON
+            COMMON,
         ),
         # Multiple tasks, the first one is completed:
         # - Second pending K8sAgent is 'Next' agent
@@ -635,63 +668,61 @@ def test_invoke_finalizer(
         # - Second pending Common is 'Next' agent
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
                 SubTask(
                     description="Task 1", assigned_to=KYMA_AGENT, status="completed"
                 ),
-                SubTask(
-                    description="Task 2", assigned_to=K8S_AGENT, status="pending"
-                ),
+                SubTask(description="Task 2", assigned_to=K8S_AGENT, status="pending"),
             ],
-            K8S_AGENT
+            K8S_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
                 SubTask(
                     description="Task 1", assigned_to=K8S_AGENT, status="completed"
                 ),
-                SubTask(
-                    description="Task 2", assigned_to=KYMA_AGENT, status="pending"
-                ),
+                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
             ],
-            KYMA_AGENT
+            KYMA_AGENT,
         ),
         (
             [
-                SystemMessage(content="""
+                SystemMessage(
+                    content="""
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """)
+                """
+                )
             ],
             [
                 SubTask(
                     description="Task 1", assigned_to=KYMA_AGENT, status="completed"
                 ),
-                SubTask(
-                    description="Task 2", assigned_to=COMMON, status="pending"
-                ),
+                SubTask(description="Task 2", assigned_to=COMMON, status="pending"),
             ],
-            COMMON
+            COMMON,
         ),
     ],
 )
-def test_invoke_router(
-        messages, subtasks, expected_answer, companion_graph
-):
+def test_invoke_router(messages, subtasks, expected_answer, companion_graph):
     """Tests the router method of CompanionGraph."""
     state = create_mock_state(messages, subtasks)
 
     result = companion_graph.supervisor_agent._route(state)
 
-    actual_output = result['next']
+    actual_output = result["next"]
     expected_output = expected_answer
 
     assert actual_output == expected_output
@@ -701,31 +732,31 @@ def test_invoke_router(
     "messages, expected_answer",
     [
         (
-                # tests that the Common node corretly answers a general non-technical query
-                [
-                    SystemMessage(
-                        content="The user query is related to: "
-                                "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                    ),
-                    HumanMessage(content="What is the capital of Germany?"),
-                ],
-                "Berlin",
+            # tests that the Common node corretly answers a general non-technical query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="What is the capital of Germany?"),
+            ],
+            "Berlin",
         ),
         (
-                # tests that the Common node correctly answers a general programming related query
-                [
-                    SystemMessage(
-                        content="The user query is related to: "
-                                "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                    ),
-                    HumanMessage(content='Write "Hello, World!" code in Python'),
-                ],
-                'Here is a simple "Hello, World!" program in Python: `print("Hello, World!")`',
+            # tests that the Common node correctly answers a general programming related query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content='Write "Hello, World!" code in Python'),
+            ],
+            'Here is a simple "Hello, World!" program in Python: `print("Hello, World!")`',
         ),
     ],
 )
 def test_invoke_common_node(
-        messages, expected_answer, companion_graph, answer_relevancy_metric
+    messages, expected_answer, companion_graph, answer_relevancy_metric
 ):
     """Tests the invoke_common_node method of CompanionGraph."""
     state = create_mock_state(messages)
