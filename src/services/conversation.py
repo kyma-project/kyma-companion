@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 from langchain_redis import RedisChatMessageHistory
 
 from agents.common.data import Message
-from agents.graph import IGraph, CompanionGraph
+from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from initial_questions.inital_questions import (
     IInitialQuestionsHandler,

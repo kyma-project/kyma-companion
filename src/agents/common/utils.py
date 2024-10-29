@@ -5,7 +5,6 @@ from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
-from langgraph.constants import END
 
 from agents.common.constants import (
     CONTINUE,

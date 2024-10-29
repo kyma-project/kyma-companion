@@ -5,11 +5,11 @@ from deepeval import assert_test
 from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+
+from agents.common.constants import COMMON
+from agents.common.state import AgentState, SubTask, UserInput
 from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from agents.common.constants import COMMON
-
-from agents.common.state import AgentState, UserInput, SubTask
 
 
 @pytest.fixture
