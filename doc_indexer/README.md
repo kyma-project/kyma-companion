@@ -19,9 +19,7 @@ To run the project locally, follow these steps:
 poetry install
 ```
 
-2. Run the project:
-
-Create .env file in the root of the project and add the following variables:
+2. Create .env file in the root of the project and add the following variables:
 ```yaml
 # AI Core credentials
 AICORE_AUTH_URL=
@@ -46,14 +44,14 @@ DATABASE_PASSWORD=
 
 It is important to pay attention that `DOCS_PATH` is the path to the Kyma documentation markdown files.
 
+3. Run the project:
 ```bash
 poetry run python src/main.py
 ```
 
 ## Testing
 
-The .env can be used for testing as well. You can also create a separate .env.test with similar content to .env.
-
+The `.env` file can also be used for testing. You can create a separate `.env.test` file with similar content to `.env`.
 To run the unit and integration tests, use the following command:
 
 ```bash
@@ -72,8 +70,7 @@ To run the integration tests, use the following command:
 poetry run poe test-integration
 ```
 
-## Static code analysis
-Run the linting, type checking and formatting:
+## Static Code Analysis
 ```bash
 poetry run poe codecheck
 ```
