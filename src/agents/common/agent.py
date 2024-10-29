@@ -15,7 +15,7 @@ from langgraph.prebuilt import ToolNode
 from agents.common.constants import MESSAGES
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import agent_edge, filter_messages, subtask_selector_edge
-from utils.models import IModel
+from utils.models.factory import IModel
 
 
 class IAgent(Protocol):

@@ -12,7 +12,7 @@ from agents.common.state import CompanionState
 from agents.common.utils import filter_messages
 from agents.supervisor.prompts import SUPERVISOR_ROLE_PROMPT, SUPERVISOR_TASK_PROMPT
 from utils.logging import get_logger
-from utils.models import IModel
+from utils.models.factory import IModel
 
 SUPERVISOR = "Supervisor"
 

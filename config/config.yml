@@ -5,3 +5,5 @@ models:
   - name: gpt-4o-mini
     deployment_id: d3da334def2bb9c8
     temperature: 0
+  - name: text-embedding-3-large
+    deployment_id: d6a35fa3fd8ca8b2

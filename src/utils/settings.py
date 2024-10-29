@@ -1,5 +1,3 @@
-# Load all variables from .env into the environment
-# necessary to implicitly import AI Core Env Vars
 import logging
 import os
 import sys
@@ -40,11 +38,8 @@ LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="True")
 
-EMBEDDING_MODEL_DEPLOYMENT_ID = config("EMBEDDING_MODEL_DEPLOYMENT_ID")
-EMBEDDING_MODEL_NAME = config("EMBEDDING_MODEL_NAME")
-
-DOCS_PATH = config("DOCS_PATH", default=None)
 DATABASE_URL = config("DATABASE_URL")
 DATABASE_PORT = config("DATABASE_PORT", cast=int)
 DATABASE_USER = config("DATABASE_USER")
 DATABASE_PASSWORD = config("DATABASE_PASSWORD")
+DOC_TABLE_NAME = config("DOC_TABLE_NAME", default="kyma_docs")

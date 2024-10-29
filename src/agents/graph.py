@@ -38,7 +38,8 @@ from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import LLM, IModel
+from utils.models.factory import ModelType, IModel
+from langchain_core.embeddings import Embeddings
 
 logger = get_logger(__name__)
 
@@ -83,15 +84,14 @@ class KymaGraph:
 
     planner_prompt: ChatPromptTemplate
 
-    def __init__(self, models: dict[str, IModel], memory: BaseCheckpointSaver):
+    def __init__(self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver):
         self.models = models
         self.memory = memory
 
-        gpt_4o_mini = models[LLM.GPT4O_MINI]
-        gpt_4o = models[LLM.GPT4O]
+        gpt_4o_mini = models[ModelType.GPT4O_MINI]
+        gpt_4o = models[ModelType.GPT4O]
 
-        # TODO: switch to gpt_4o when necessary
-        self.kyma_agent = KymaAgent(gpt_4o_mini)
+        self.kyma_agent = KymaAgent(models)
 
         self.k8s_agent = KubernetesAgent(gpt_4o)
         self.supervisor_agent = SupervisorAgent(
@@ -156,7 +156,7 @@ class KymaGraph:
                     )
             except OutputParserException as ope:
                 logger.debug(f"Problem in parsing the planner response: {ope}")
-                # If 'response' field of the content of plan_response is missing due to LLM inconsistency,
+                # If 'response' field of the content of plan_response is missing due to ModelType inconsistency,
                 # the response is read from the plan_response content.
                 return create_node_output(
                     message=AIMessage(content=response_content, name=PLANNER),
@@ -241,7 +241,7 @@ class KymaGraph:
                 ("system", FINALIZER_PROMPT),
             ]
         ).partial(members=", ".join(self.members), query=state.input.query)
-        return prompt | self.models[LLM.GPT4O_MINI].llm  # type: ignore
+        return prompt | self.models[ModelType.GPT4O_MINI].llm  # type: ignore
 
     def _generate_final_response(self, state: CompanionState) -> dict[str, Any]:
         """Generate the final response."""

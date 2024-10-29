@@ -7,7 +7,7 @@ from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
-from utils.models import IModel
+from utils.models.factory import IModel
 
 
 class KubernetesAgent(BaseAgent):

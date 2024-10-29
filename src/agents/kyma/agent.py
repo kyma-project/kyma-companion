@@ -4,14 +4,25 @@ from agents.kyma.constants import KYMA_AGENT
 from agents.kyma.prompts import KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import kyma_query_tool
-from agents.kyma.tools.search import search_kyma_doc_tool
-from utils.models import IModel
+from agents.kyma.tools.search import create_search_kyma_doc_tool
+from utils.models.factory import IModel
+from langchain_core.embeddings import Embeddings
+from utils.models.factory import ModelType
 
 
 class KymaAgent(BaseAgent):
     """Kyma agent class."""
 
-    def __init__(self, model: IModel):
-        tools = [search_kyma_doc_tool, kyma_query_tool]
-        super().__init__(KYMA_AGENT, model, tools, KYMA_AGENT_PROMPT, KymaAgentState)
+    def __init__(self, models: dict[str, IModel | Embeddings]):
+        tools = [
+            create_search_kyma_doc_tool(models[ModelType.TEXT_EMBEDDING_3_LARGE]),
+            kyma_query_tool,
+        ]
+        super().__init__(
+            KYMA_AGENT,
+            models[ModelType.GPT4O],
+            tools,
+            KYMA_AGENT_PROMPT,
+            KymaAgentState,
+        )
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS

@@ -13,9 +13,10 @@ from initial_questions.inital_questions import (
 )
 from services.k8s import IK8sClient
 from utils.logging import get_logger
-from utils.models import LLM, IModel, ModelFactory
+from utils.models.factory import IModelFactory, ModelType, IModel, ModelFactory
 from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
+from langchain_core.embeddings import Embeddings
 
 logger = get_logger(__name__)
 
@@ -44,28 +45,31 @@ class ConversationService(metaclass=SingletonMeta):
     This class is a singleton and should be used to handle the conversation.
     """
 
-    _model: IModel
-    _model_mini: IModel
     _init_questions_handler: IInitialQuestionsHandler
     _kyma_graph: IGraph
+    _model_factory: ModelFactory
 
     def __init__(
         self,
         initial_questions_handler: IInitialQuestionsHandler | None = None,
+        model_factory: IModelFactory | None = None
     ) -> None:
-        # Set up the Model, which contains the llm.
-        self._model_mini = ModelFactory().create_model(LLM.GPT4O_MINI)
-
+        try:
+            self._model_factory = model_factory or ModelFactory()
+            models = self._model_factory.create_models()
+        except Exception as e:
+            logger.error(f"Failed to initialize models: {e}")
+            raise
+        
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
-            initial_questions_handler or InitialQuestionsHandler(model=self._model_mini)
+            initial_questions_handler or InitialQuestionsHandler(model=models[ModelType.GPT4O_MINI])
         )
 
-        self._model = ModelFactory().create_model(LLM.GPT4O)
         # Set up the Kyma Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         self._kyma_graph = KymaGraph(
-            models={LLM.GPT4O: self._model, LLM.GPT4O_MINI: self._model_mini},
+            models,
             memory=redis_saver,
         )
 
