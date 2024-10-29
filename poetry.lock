@@ -1878,6 +1878,29 @@ files = [
 ]
 
 [[package]]
+name = "hdbcli"
+version = "2.22.32"
+description = "SAP HANA Python Client"
+optional = false
+python-versions = "*"
+files = [
+    {file = "hdbcli-2.22.32-cp27-cp27m-macosx_10_7_x86_64.whl", hash = "sha256:1ada555cabe820a8f25ab11404529c7577ff720d713186b944e0134fea2ddc57"},
+    {file = "hdbcli-2.22.32-cp27-cp27m-manylinux1_x86_64.whl", hash = "sha256:bc65dc303dfadc2029e474891def08f46a7f846e6b20efe76d665e5849bf35a5"},
+    {file = "hdbcli-2.22.32-cp27-cp27m-manylinux2014_ppc64le.whl", hash = "sha256:6cdad89ae1540cb3ddf5e08f4174cef3213de7a5b0ef4d4fd5d48e43fbac9232"},
+    {file = "hdbcli-2.22.32-cp27-cp27m-win_amd64.whl", hash = "sha256:f088d71218429ed03c3b3b8b02b4cfd6b181bbdb814816081f0fca61034b5791"},
+    {file = "hdbcli-2.22.32-cp27-cp27mu-macosx_10_7_x86_64.whl", hash = "sha256:683209604beb5d184cc6ead75d6fd4fdb3a8650a48cd4f3032fcee5a849a5767"},
+    {file = "hdbcli-2.22.32-cp27-cp27mu-manylinux1_x86_64.whl", hash = "sha256:eec899375a338bb98db3c84190858126688ad690a65ad4de8434d0388163ab89"},
+    {file = "hdbcli-2.22.32-cp27-cp27mu-manylinux2014_ppc64le.whl", hash = "sha256:b771631cefa973c9a942507ec1ca35036566c152e2df530e37aaece1dfc9cc41"},
+    {file = "hdbcli-2.22.32-cp34-abi3-macosx_10_11_x86_64.whl", hash = "sha256:5dd02ab6aebfcb87b1bb526528afa54377685bb2e525eb82639858151edc7fe4"},
+    {file = "hdbcli-2.22.32-cp34-abi3-manylinux1_x86_64.whl", hash = "sha256:e36dac44bd847c284efb42c6bffbe0fd565d218731b0045b4980b5de3238485b"},
+    {file = "hdbcli-2.22.32-cp34-abi3-manylinux2014_ppc64le.whl", hash = "sha256:387b42834293f72d55bc104b1e43fd7a89e11be0fab02ad748f5132a561e03f6"},
+    {file = "hdbcli-2.22.32-cp36-abi3-manylinux2014_aarch64.whl", hash = "sha256:c585a605c38b924be7245e723415febde70b3d0fd61a80ec7a907d23926e7844"},
+    {file = "hdbcli-2.22.32-cp36-abi3-win32.whl", hash = "sha256:5340c085ee4c4299b50eab7a150e1c6eeefc0afd2bdc77b2fe08b2518f784461"},
+    {file = "hdbcli-2.22.32-cp36-abi3-win_amd64.whl", hash = "sha256:486375fac0c83302256408ecc1aaaababf123e5a1092f4835909e156d264c6b5"},
+    {file = "hdbcli-2.22.32-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:261ab5ce149f496a93a8127183f00d9baea70f4b28f06f15599f0e95dcf1a0e4"},
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.6"
 description = "A minimal low-level HTTP client."
@@ -6155,4 +6178,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "046635605790ca0bf6783461a7da41697de553619a643ba395da49230fde525f"
+content-hash = "9f7d5200103cfcd040f4c25b3226a142b0302a8ded2b4a116041f5c7386a1e00"

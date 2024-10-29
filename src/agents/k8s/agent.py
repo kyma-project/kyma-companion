@@ -128,7 +128,8 @@ class KubernetesAgent:
             return {
                 MESSAGES: [
                     AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}"
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        name=self.name,
                     )
                 ]
             }
@@ -144,6 +145,7 @@ class KubernetesAgent:
                 MESSAGES: [
                     AIMessage(
                         content="Sorry, the kubernetes agent needs more steps to process the request.",
+                        name=self.name,
                     )
                 ]
             }
