@@ -418,9 +418,6 @@ def test_invoke_planner(
                 I apologize, but I am unable to provide an answer to your Kubernetes question at the moment.
                 """
         ),
-
-        # Invoke common agent
-        # TODO(marcobebway) write test-cases for the common agent
     ],
 )
 def test_invoke_finalizer(
@@ -430,10 +427,6 @@ def test_invoke_finalizer(
         semantic_similarity_metric
 ):
     """Tests the _generate_final_response method of SupervisorAgent"""
-
-    from langchain.globals import set_debug
-    set_debug(True)
-
     state = create_mock_state(messages)
 
     result = companion_graph.supervisor_agent._generate_final_response(state)
@@ -445,7 +438,6 @@ def test_invoke_finalizer(
     )
 
     assert_test(test_case, [semantic_similarity_metric])
-    # TODO(marcobebway) add a syntax scoring to give a bad score for agent names and response headers
 
 
 @pytest.mark.parametrize(
