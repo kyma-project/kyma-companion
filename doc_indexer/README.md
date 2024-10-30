@@ -21,6 +21,8 @@ poetry install
 
 2. Create .env file in the root of the project and add the following variables:
 ```yaml
+LOG_LEVEL=INFO # Set the log level to INFO, DEBUG, WARNING, or ERROR
+
 # AI Core credentials
 AICORE_AUTH_URL=
 AICORE_CLIENT_ID=
@@ -33,6 +35,7 @@ EMBEDDING_MODEL_DEPLOYMENT_ID=
 EMBEDDING_MODEL_NAME=
 
 # Kyma docs path
+DOCS_SOURCES_FILE_PATH=  # Path to the file with the list of documentation sources. Default: "docs_sources.json"
 DOCS_PATH=...
 
 # HANA Cloud DB
@@ -44,9 +47,14 @@ DATABASE_PASSWORD=
 
 It is important to pay attention that `DOCS_PATH` is the path to the Kyma documentation markdown files.
 
-3. Run the project:
+3. Run the fetcher to pull documents from the specified sources in `DOCS_SOURCES_FILE_PATH` file:
 ```bash
-poetry run python src/main.py
+poetry run python src/main.py fetch
+```
+
+4. Run the indexer to create embeddings for the fetched documents:
+```bash
+poetry run python src/main.py index
 ```
 
 ## Testing
