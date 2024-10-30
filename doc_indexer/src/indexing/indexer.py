@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Protocol
 
 from hdbcli import dbapi
@@ -9,6 +10,8 @@ from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
+
+from utils.settings import CHUNKS_BATCH_SIZE
 
 
 def create_chunks(
@@ -56,9 +59,6 @@ class MarkdownIndexer:
         if not table_name:
             table_name = docs_path.split("/")[-1]
 
-        # if not headers_to_split_on:
-        #     headers_to_split_on = [HEADER1]
-
         self.docs_path = docs_path
         self.table_name = table_name
         self.embedding = embedding
@@ -96,15 +96,32 @@ class MarkdownIndexer:
             f"Indexing {len(all_chunks)} markdown files chunks for {self.table_name}..."
         )
 
-        # deletion is necessary to avoid duplicates
+        logging.info("Deleting existing documents in HanaDB...")
         try:
             self.db.delete(filter={})
         except Exception:
-            logging.error("Error while deleting existing documents in HanaDB.")
+            logging.exception("Error while deleting existing documents in HanaDB.")
             raise
+        logging.info("Successfully deleted existing documents in HanaDB.")
 
-        try:
-            self.db.add_documents(all_chunks)
-        except Exception:
-            logging.error("Error while storing documents chunks in HanaDB.")
-            raise
+        logging.info("Adding documents to HanaDB...")
+        for i in range(0, len(all_chunks), CHUNKS_BATCH_SIZE):
+            batch = all_chunks[i : i + CHUNKS_BATCH_SIZE]
+            try:
+                # Add current batch of documents
+                self.db.add_documents(batch)
+                logging.info(
+                    f"Indexed batch {i//CHUNKS_BATCH_SIZE + 1} of {len(all_chunks)//CHUNKS_BATCH_SIZE + 1}"
+                )
+
+                # Wait 3 seconds before processing next batch
+                if i + CHUNKS_BATCH_SIZE < len(all_chunks):
+                    time.sleep(3)
+
+            except Exception as e:
+                logging.error(
+                    f"Error while storing documents batch {i//CHUNKS_BATCH_SIZE + 1} in HanaDB: {str(e)}"
+                )
+                raise
+
+        logging.info(f"Successfully indexed {len(all_chunks)} markdown files chunks.")

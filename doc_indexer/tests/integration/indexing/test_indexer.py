@@ -1,3 +1,4 @@
+import logging
 import uuid
 from unittest.mock import patch
 
@@ -42,9 +43,13 @@ def indexer(embedding_model, hana_conn, table_name):
     indexer = MarkdownIndexer("", embedding_model, hana_conn, table_name=table_name)
     yield indexer
     try:
-        indexer.db.drop_table()
+        logging.info(f"Dropping table {table_name}")
+        cursor = hana_conn.cursor()
+        # Add double quotes around both schema and table names
+        cursor.execute(f'DROP TABLE "{DATABASE_USER}"."{table_name}"')
+        cursor.close()
     except Exception as e:
-        print(f"Error while dropping table: {e}")
+        logging.error(f"Error while dropping table: {e}")
 
 
 @pytest.fixture

@@ -6,6 +6,8 @@ from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
 
+# TODO: re-use the model factory parent project
+
 
 def create_embedding_factory(
     embedding_creator: Callable[[str, Any], Embeddings]

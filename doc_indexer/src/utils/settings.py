@@ -5,6 +5,8 @@ import sys
 from decouple import Config, RepositoryEnv, config
 from dotenv import find_dotenv, load_dotenv
 
+# TODO: re-use the settings parent project
+
 
 def is_running_pytest() -> bool:
     """Check if the code is running with pytest.
@@ -30,7 +32,9 @@ else:
 EMBEDDING_MODEL_DEPLOYMENT_ID = config("EMBEDDING_MODEL_DEPLOYMENT_ID")
 EMBEDDING_MODEL_NAME = config("EMBEDDING_MODEL_NAME")
 
-DOCS_PATH = config("DOCS_PATH", default=None)
+DOCS_PATH = config("DOCS_PATH", default="data/output")
+DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
+CHUNKS_BATCH_SIZE = config("CHUNKS_BATCH_SIZE", cast=int, default=100)
 DATABASE_URL = config("DATABASE_URL")
 DATABASE_PORT = config("DATABASE_PORT", cast=int)
 DATABASE_USER = config("DATABASE_USER")
