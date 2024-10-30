@@ -47,7 +47,7 @@ DATABASE_PASSWORD=
 
 It is important to pay attention that `DOCS_PATH` is the path to the Kyma documentation markdown files.
 
-3. Run the fetcher to pull documents from the specified sources in `DOCS_SOURCES_FILE_PATH` file:
+3. Run the fetcher to pull documents from the specified sources in the `DOCS_SOURCES_FILE_PATH` file:
 ```bash
 poetry run python src/main.py fetch
 ```
