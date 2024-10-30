@@ -19,8 +19,7 @@ from agents.common.constants import (
 )
 from agents.common.state import AgentState, Plan
 from agents.common.utils import create_node_output, filter_messages
-from agents.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
-from agents.supervisor.prompts import ROUTER_ROLE_PROMPT, ROUTER_TASK_PROMPT
+from agents.supervisor.prompts import ROUTER_ROLE_PROMPT, ROUTER_TASK_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
 from utils.models import LLM, IModel
@@ -75,7 +74,6 @@ class SupervisorAgent:
 
         self.model = gpt_4o
         self.members = members
-        self.options = members
         self.parser = self._route_create_parser()
         self.supervisor_chain = self._create_supervisor_chain(gpt_4o)
         self._planner_chain = self._create_planner_chain(gpt_4o)
@@ -86,7 +84,7 @@ class SupervisorAgent:
 
     def _route_create_parser(self) -> PydanticOutputParser:
         class RouteResponse(BaseModel):
-            next: Literal[*self.options] | None = Field(  # type: ignore
+            next: Literal[*self.members] | None = Field(  # type: ignore
                 description="next agent to be called"
             )
 
@@ -101,7 +99,6 @@ class SupervisorAgent:
                 ("system", ROUTER_TASK_PROMPT),
             ]
         ).partial(
-            options=str(self.options),
             members=self._get_members_str(),
             end=str(END),
             output_format=self.parser.get_format_instructions(),
@@ -119,7 +116,7 @@ class SupervisorAgent:
         return self._graph
 
     def _route(self, state: AgentState) -> dict[str, Any]:
-        """Supervisor node."""
+        """Router node. Routes the conversation to the next agent."""
         try:
             result = self.supervisor_chain.invoke(
                 input={
@@ -178,10 +175,13 @@ class SupervisorAgent:
             plan_response = self._invoke_planner(
                 state,  # last message is the user query
             )
+            # get the content of the AIMessage
             response_content: str = plan_response.content  # type: ignore
 
             try:
+                # try to parse the JSON formatted Planner response into a Plan object
                 plan = self.plan_parser.parse(response_content)
+                # if the Planner responds directly, return the response and exit the graph
                 if plan.response:
                     return create_node_output(
                         message=AIMessage(content=plan.response, name=PLANNER),
@@ -195,12 +195,12 @@ class SupervisorAgent:
                     message=AIMessage(content=response_content, name=PLANNER),
                     next=END,
                 )
-
+            # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
             if not plan.subtasks:
                 raise Exception(
                     f"No subtasks are created for the given query: {state.messages[-1].content}"
                 )
-
+            # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
                 message=AIMessage(
                     content=response_content,
