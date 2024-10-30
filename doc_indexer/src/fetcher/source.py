@@ -9,8 +9,8 @@ class DocumentsSource(BaseModel):
     name: str
     source_type: str
     url: str
-    include_files: list[str] | None
-    exclude_files: list[str] | None
+    include_files: list[str] | None = None
+    exclude_files: list[str] | None = None
     filter_file_types: list[str] = ["md"]
 
 
