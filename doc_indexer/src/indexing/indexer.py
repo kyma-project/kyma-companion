@@ -1,4 +1,3 @@
-import logging
 import time
 from typing import Protocol
 
@@ -11,7 +10,10 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
+from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE
+
+logger = get_logger(__name__)
 
 
 def create_chunks(
@@ -27,9 +29,9 @@ def create_chunks(
         for doc in documents:
             chunks = text_splitter.split_text(doc.page_content)
             all_chunks.extend([chunk for chunk in chunks if chunk.page_content.strip()])
-        logging.info(f"Successfully created {len(all_chunks)} document chunks.")
+        logger.info(f"Successfully created {len(all_chunks)} document chunks.")
     except Exception as e:
-        logging.error(f"Error while creating document chunks: {e}")
+        logger.error(f"Error while creating document chunks: {e}")
         raise
 
     return all_chunks
@@ -78,7 +80,7 @@ class MarkdownIndexer:
             docs = loader.load()
             return docs
         except Exception:
-            logging.exception("Error while loading documents")
+            logger.exception("Error while loading documents")
             raise
 
     def index(self) -> None:
@@ -92,25 +94,25 @@ class MarkdownIndexer:
         # chunk the documents by the headers
         all_chunks = create_chunks(docs, self.headers_to_split_on)
 
-        logging.info(
+        logger.info(
             f"Indexing {len(all_chunks)} markdown files chunks for {self.table_name}..."
         )
 
-        logging.info("Deleting existing documents in HanaDB...")
+        logger.info("Deleting existing index in HanaDB...")
         try:
             self.db.delete(filter={})
         except Exception:
-            logging.exception("Error while deleting existing documents in HanaDB.")
+            logger.exception("Error while deleting existing documents in HanaDB.")
             raise
-        logging.info("Successfully deleted existing documents in HanaDB.")
+        logger.info("Successfully deleted existing documents in HanaDB.")
 
-        logging.info("Adding documents to HanaDB...")
+        logger.info("Indexing and storing indexes to HanaDB...")
         for i in range(0, len(all_chunks), CHUNKS_BATCH_SIZE):
             batch = all_chunks[i : i + CHUNKS_BATCH_SIZE]
             try:
                 # Add current batch of documents
                 self.db.add_documents(batch)
-                logging.info(
+                logger.info(
                     f"Indexed batch {i//CHUNKS_BATCH_SIZE + 1} of {len(all_chunks)//CHUNKS_BATCH_SIZE + 1}"
                 )
 
@@ -119,9 +121,9 @@ class MarkdownIndexer:
                     time.sleep(3)
 
             except Exception as e:
-                logging.error(
+                logger.error(
                     f"Error while storing documents batch {i//CHUNKS_BATCH_SIZE + 1} in HanaDB: {str(e)}"
                 )
                 raise
 
-        logging.info(f"Successfully indexed {len(all_chunks)} markdown files chunks.")
+        logger.info(f"Successfully indexed {len(all_chunks)} markdown files chunks.")
