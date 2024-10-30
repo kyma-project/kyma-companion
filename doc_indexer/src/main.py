@@ -11,6 +11,7 @@ from utils.settings import (
     DATABASE_URL,
     DATABASE_USER,
     DOCS_PATH,
+    DOCS_TABLE_NAME,
     EMBEDDING_MODEL_DEPLOYMENT_ID,
 )
 
@@ -25,7 +26,7 @@ def main() -> None:
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
 
-    indexer = MarkdownIndexer(DOCS_PATH, embeddings_model, hana_conn)
+    indexer = MarkdownIndexer(DOCS_PATH, embeddings_model, hana_conn, DOCS_TABLE_NAME)
     indexer.index()
 
 
