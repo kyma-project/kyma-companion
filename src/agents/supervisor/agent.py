@@ -19,7 +19,7 @@ from agents.common.constants import (
 )
 from agents.common.state import AgentState, Plan
 from agents.common.utils import create_node_output, filter_messages
-from agents.supervisor.prompts import ROUTER_ROLE_PROMPT, ROUTER_TASK_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
+from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
 from utils.models import LLM, IModel
@@ -75,7 +75,6 @@ class SupervisorAgent:
         self.model = gpt_4o
         self.members = members
         self.parser = self._route_create_parser()
-        self.supervisor_chain = self._create_supervisor_chain(gpt_4o)
         self._planner_chain = self._create_planner_chain(gpt_4o)
         self._graph = self._build_graph()
 
@@ -90,22 +89,6 @@ class SupervisorAgent:
 
         return PydanticOutputParser(pydantic_object=RouteResponse)
 
-    def _create_supervisor_chain(self, model: IModel) -> RunnableSequence:
-        supervisor_system_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", ROUTER_ROLE_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-                ("assistant", "Subtasks: {subtasks}"),
-                ("system", ROUTER_TASK_PROMPT),
-            ]
-        ).partial(
-            members=self._get_members_str(),
-            end=str(END),
-            output_format=self.parser.get_format_instructions(),
-        )
-
-        return supervisor_system_prompt | model.llm  # type: ignore
-
     @property
     def name(self) -> str:
         """Agent name."""
@@ -117,31 +100,19 @@ class SupervisorAgent:
 
     def _route(self, state: AgentState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
-        try:
-            result = self.supervisor_chain.invoke(
-                input={
-                    "messages": filter_messages(state.messages),
-                    "subtasks": json.dumps(
-                        [subtask.__dict__ for subtask in state.subtasks]
-                    ),
-                },
-            )
-            route_result = self.parser.parse(result.content)
-            return {
-                "next": route_result.next,
-                "subtasks": state.subtasks,
-                "messages": [AIMessage(content=result.content, name=self.name)],
+        for subtask in state.subtasks:
+            if not subtask.completed():
+                next_agent = subtask.assigned_to
+                return {
+                    "next": next_agent,
+                    "subtasks": state.subtasks,
+                    "messages": [AIMessage(content=f'{{"next": {next_agent}}}', name=self.name)],
             }
-        except Exception as e:
-            logger.exception("Error occurred in Supervisor agent.")
-            return {
-                MESSAGES: [
-                    AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
-                        name=ROUTER,
-                    )
-                ]
-            }
+        return {
+            "next": FINALIZER,
+            "subtasks": state.subtasks,
+            "messages": [AIMessage(content=f'{{"next": {FINALIZER}}}', name=self.name)],
+        }
 
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:
         self.planner_prompt = ChatPromptTemplate.from_messages(

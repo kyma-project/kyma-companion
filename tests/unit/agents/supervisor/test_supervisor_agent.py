@@ -35,10 +35,9 @@ class TestSupervisorAgent:
         return agent  # noqa
 
     @pytest.mark.parametrize(
-        "mock_supervisor_chain_invoke_return, subtasks, messages, expected_next, expected_subtasks, expected_error",
+        "subtasks, messages, expected_next, expected_subtasks, expected_error",
         [
             (
-                AIMessage(content=f"""{{"next": "{K8S_AGENT}"}}"""),
                 [
                     SubTask(
                         description="Task 1", assigned_to=K8S_AGENT, status="pending"
@@ -63,7 +62,6 @@ class TestSupervisorAgent:
                 None,
             ),
             (
-                AIMessage(content=f"""{{"next": "{KYMA_AGENT}"}}"""),
                 [
                     SubTask(
                         description="Task 2",
@@ -83,7 +81,6 @@ class TestSupervisorAgent:
                 None,
             ),
             (
-                AIMessage(content=f"""{{"next": "{FINALIZER}"}}"""),
                 [
                     SubTask(
                         description="Task 3", assigned_to=K8S_AGENT, status="completed"
@@ -98,29 +95,12 @@ class TestSupervisorAgent:
                 ],
                 None,
             ),
-            (
-                Exception("Test error"),
-                [
-                    SubTask(
-                        description="Task 4", assigned_to=KYMA_AGENT, status="pending"
-                    )
-                ],
-                [HumanMessage(content="Error test")],
-                None,
-                [
-                    SubTask(
-                        description="Task 4", assigned_to=KYMA_AGENT, status="pending"
-                    )
-                ],
-                "Sorry, I encountered an error while processing the request. Error: Test error",
-            ),
         ],
     )
     @patch("agents.k8s.agent.get_logger", Mock())
     def test_agent_route(
         self,
         supervisor_agent,
-        mock_supervisor_chain_invoke_return,
         subtasks,
         messages,
         expected_next,
@@ -128,28 +108,11 @@ class TestSupervisorAgent:
         expected_error,
     ):
         # Setup
-        if isinstance(mock_supervisor_chain_invoke_return, Exception):
-            supervisor_agent.supervisor_chain.invoke = Mock(
-                side_effect=mock_supervisor_chain_invoke_return
-            )
-        else:
-            supervisor_agent.supervisor_chain.invoke = Mock(
-                return_value=mock_supervisor_chain_invoke_return
-            )
-
         state = AgentState(messages=messages, subtasks=subtasks)
 
         # Execute
         route_node = supervisor_agent._route
         result = route_node(state)
-
-        # Assert
-        supervisor_agent.supervisor_chain.invoke.assert_called_once_with(
-            input={
-                "messages": filter_messages(messages),
-                "subtasks": json.dumps([subtask.__dict__ for subtask in subtasks]),
-            }
-        )
 
         if expected_error:
             assert result["messages"][0].content == expected_error
