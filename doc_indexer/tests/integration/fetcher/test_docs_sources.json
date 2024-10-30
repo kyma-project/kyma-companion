@@ -1,0 +1,26 @@
+[
+  {
+    "name": "eventing-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/eventing-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "nats-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/nats-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  }
+]
