@@ -129,4 +129,3 @@ Avoid giving any impression regarding the correctness or incorrectness of the re
 Remove any information regarding the agents and your decision-making process from your final response.
 Do not add any more headers or sub-headers to the final response.
 """
-

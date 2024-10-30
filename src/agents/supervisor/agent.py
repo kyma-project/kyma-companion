@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, Literal, Protocol  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
@@ -106,8 +105,10 @@ class SupervisorAgent:
                 return {
                     "next": next_agent,
                     "subtasks": state.subtasks,
-                    "messages": [AIMessage(content=f'{{"next": {next_agent}}}', name=self.name)],
-            }
+                    "messages": [
+                        AIMessage(content=f'{{"next": {next_agent}}}', name=self.name)
+                    ],
+                }
         return {
             "next": FINALIZER,
             "subtasks": state.subtasks,
