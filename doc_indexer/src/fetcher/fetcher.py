@@ -4,10 +4,10 @@ import shutil
 from fetcher.scroller import Scroller
 from fetcher.source import DocumentsSource, get_documents_sources
 
-from utils.settings import LOG_LEVEL
-from utils.utils import clone_repo, get_logger
+from utils.logging import get_logger
+from utils.utils import clone_repo
 
-logger = get_logger(__name__, LOG_LEVEL)
+logger = get_logger(__name__)
 
 
 class DocumentsFetcher:

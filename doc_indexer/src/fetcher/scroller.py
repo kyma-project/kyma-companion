@@ -4,10 +4,9 @@ import shutil
 
 from fetcher.source import DocumentsSource
 
-from utils.settings import LOG_LEVEL
-from utils.utils import get_logger
+from utils.logging import get_logger
 
-logger = get_logger(__name__, LOG_LEVEL)
+logger = get_logger(__name__)
 
 
 class Scroller:

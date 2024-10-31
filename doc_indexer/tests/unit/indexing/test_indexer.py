@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from indexing.indexer import MarkdownIndexer, create_chunks
@@ -185,38 +185,21 @@ def test_load_documents(
     "test_case,headers_to_split_on,loaded_docs,expected_chunks,delete_error,add_error,expected_exception",
     [
         (
-            "Default header",
+            "Single batch",
             None,
-            [
-                Document(
-                    page_content="# My Header 1\nContent",
-                )
-            ],
-            [
-                Document(
-                    page_content="# My second Header 1 \nContent",
-                )
-            ],
+            [Document(page_content="# My Header 1\nContent")],
+            [Document(page_content="# My Header 1\nContent")],
             None,
             None,
             None,
         ),
         (
-            "Custom headers",
-            [("##", "Header2")],
+            "Multiple batches",
+            None,
             [
-                Document(
-                    page_content="# H1\n## H2\nContent",
-                )
-            ],
-            [
-                Document(
-                    page_content="# H1\n", metadata={"source": "/test/docs/file1.md"}
-                ),
-                Document(
-                    page_content="## H2\nContent",
-                ),
-            ],
+                Document(page_content=f"# Header {i}\nContent") for i in range(6)
+            ],  # Assuming CHUNKS_BATCH_SIZE is 5
+            [Document(page_content=f"# Header {i}\nContent") for i in range(6)],
             None,
             None,
             None,
@@ -224,8 +207,8 @@ def test_load_documents(
         (
             "Delete error",
             None,
-            [],
-            [],
+            [Document(page_content="# My Header 1\nContent")],
+            [Document(page_content="# My Header 1\nContent")],
             Exception("Delete error"),
             None,
             Exception,
@@ -233,8 +216,8 @@ def test_load_documents(
         (
             "Add documents error",
             None,
-            [],
-            [],
+            [Document(page_content="# My Header 1\nContent")],
+            [Document(page_content="# My Header 1\nContent")],
             None,
             Exception("Add documents error"),
             Exception,
@@ -257,17 +240,41 @@ def test_index(
 
     with patch.object(indexer, "_load_documents", return_value=loaded_docs), patch(
         "indexing.indexer.create_chunks", return_value=expected_chunks
-    ) as mock_create_chunks:
+    ) as mock_create_chunks, patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5), patch(
+        "time.sleep"
+    ) as mock_sleep:  # Add mock for sleep
+
         indexer.headers_to_split_on = headers_to_split_on
+
         if expected_exception:
             with pytest.raises(expected_exception):
                 indexer.index()
         else:
             indexer.index()
 
+            # Verify create_chunks was called
             mock_create_chunks.assert_called_once_with(loaded_docs, headers_to_split_on)
+
+            # Verify delete was called
             indexer.db.delete.assert_called_once_with(filter={})
-            indexer.db.add_documents.assert_called_once_with(expected_chunks)
+
+            # Calculate expected number of batches
+            num_chunks = len(expected_chunks)
+            batch_size = 5  # From the mocked CHUNKS_BATCH_SIZE
+            expected_batches = [
+                expected_chunks[i : i + batch_size]
+                for i in range(0, num_chunks, batch_size)
+            ]
+
+            # Verify add_documents was called for each batch
+            assert indexer.db.add_documents.call_count == len(expected_batches)
+            for i, batch in enumerate(expected_batches):
+                assert indexer.db.add_documents.call_args_list[i] == call(batch)
+
+            # Verify sleep was called between batches
+            if len(expected_batches) > 1:
+                assert mock_sleep.call_count == len(expected_batches) - 1
+                mock_sleep.assert_has_calls([call(3)] * (len(expected_batches) - 1))
 
     if delete_error:
         assert str(delete_error) in str(indexer.db.delete.side_effect)
