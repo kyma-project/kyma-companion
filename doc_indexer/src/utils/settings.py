@@ -27,14 +27,20 @@ if is_running_pytest():
 else:
     load_dotenv()
 
+
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 EMBEDDING_MODEL_DEPLOYMENT_ID = config("EMBEDDING_MODEL_DEPLOYMENT_ID")
 EMBEDDING_MODEL_NAME = config("EMBEDDING_MODEL_NAME")
 
+TMP_DIR = config("TMP_DIR", default=os.path.join(project_root, "tmp"))
+DOCS_SOURCES_FILE_PATH = config(
+    "DOCS_SOURCES_FILE_PATH", default=os.path.join(project_root, "docs_sources.json")
+)
 DOCS_PATH = config("DOCS_PATH", default="data/output")
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
 CHUNKS_BATCH_SIZE = config("CHUNKS_BATCH_SIZE", cast=int, default=200)
+
 DATABASE_URL = config("DATABASE_URL")
 DATABASE_PORT = config("DATABASE_PORT", cast=int)
 DATABASE_USER = config("DATABASE_USER")
 DATABASE_PASSWORD = config("DATABASE_PASSWORD")
-LOG_LEVEL = config("LOG_LEVEL", default="INFO")

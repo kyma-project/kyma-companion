@@ -1,0 +1,84 @@
+[
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs",
+      [
+         "double_nested_dirs",
+         "single_doc",
+         "test_docs"
+      ],
+      [
+
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/double_nested_dirs",
+      [
+         "test-folder-1"
+      ],
+      [
+         "test-file-1.py",
+         "_sidebar.md"
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/double_nested_dirs/test-folder-1",
+      [
+         "test-folder-2"
+      ],
+      [
+         "sample-1.md",
+         "text-file-1.txt"
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/double_nested_dirs/test-folder-1/test-folder-2",
+      [
+
+      ],
+      [
+         "sample-1.md",
+         "main.go"
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/single_doc",
+      [
+
+      ],
+      [
+         "sample-1.md",
+         ".env",
+         "config.yaml"
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/test_docs",
+      [
+         "test-folder-2",
+         "test-folder-1"
+      ],
+      [
+
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/test_docs/test-folder-2",
+      [
+
+      ],
+      [
+         "sample-1.md",
+         "sample-2.md",
+         "sample-3.md"
+      ]
+   ],
+   [
+      "/kyma-project/kyma-companion/doc_indexer/docs/test_docs/test-folder-1",
+      [
+
+      ],
+      [
+         "sample-1.md"
+      ]
+   ]
+]

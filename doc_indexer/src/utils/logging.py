@@ -1,21 +1,24 @@
-import logging
+from logging import Formatter, Logger, StreamHandler, getLogger
 
 from utils.settings import LOG_LEVEL
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str) -> Logger:
     """
     Get a configured logger instance.
-
     Args:
         name: The name of the logger, typically __name__ from the calling module
-
     Returns:
         A configured logger instance
     """
-    logging.basicConfig(
-        level=LOG_LEVEL.upper(),
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    logger = getLogger(name)
+    formatter = Formatter(
+        fmt="{asctime} - {levelname} - {name} : {message}",
+        style="{",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-
-    return logging.getLogger(name)
+    console_handler = StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.setLevel(LOG_LEVEL)
+    return logger
