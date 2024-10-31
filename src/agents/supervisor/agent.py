@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 class SupervisorAgent:
-    """Supervisor agent class."""
+    """Supervisor agent class. REMOVE"""
 
     model: IModel
     _name: str = SUPERVISOR
