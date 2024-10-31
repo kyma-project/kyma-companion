@@ -33,8 +33,10 @@ def fixtures_path(root_tests_path) -> str:
 
 
 @pytest.fixture()
-def mock_os_walk():
-    with open("./sample_os_walk_output.json") as file:
+def mock_os_walk(root_tests_path):
+    with open(
+        os.path.join(root_tests_path, "unit/fetcher", "sample_os_walk_output.json")
+    ) as file:
         data = json.load(file)
     with patch("os.walk") as mock:
         mock.return_value = data
