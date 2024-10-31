@@ -2,7 +2,7 @@ import os
 import shutil
 
 from fetcher.scroller import Scroller
-from fetcher.source import DocumentsSource, get_documents_sources
+from fetcher.source import DocumentsSource, SourceType, get_documents_sources
 
 from utils.logging import get_logger
 from utils.utils import clone_repo
@@ -37,24 +37,30 @@ class DocumentsFetcher:
         """Fetch the documents from the source."""
         logger.info(f"******* Fetching documents for: {source.name}")
 
-        if source.source_type == "Github":
+        if source.source_type == SourceType.GITHUB:
             logger.debug(f"Cloning repository: {source.url}")
             # clone the git repository.
             repo_dir = clone_repo(source.url, self.tmp_dir)
         else:
             raise ValueError(f"unsupported source_type: {source.source_type}")
 
-        module_dir = os.path.join(self.output_dir, source.name)
-        logger.debug(f"Creating a temporary directory: {module_dir}")
-        os.makedirs(module_dir, exist_ok=True)
+        module_output_dir = os.path.join(self.output_dir, source.name)
+        logger.debug(f"Creating a temporary directory: {module_output_dir}")
+        os.makedirs(module_output_dir, exist_ok=True)
 
         # extract markdown files
-        scroller = Scroller(repo_dir, module_dir, source)
-        scroller.scroll()
-
-        # delete the directories if they exist
-        logger.debug(f"Deleting the temporary directory: {repo_dir}")
-        shutil.rmtree(repo_dir, ignore_errors=False)
+        try:
+            scroller = Scroller(repo_dir, module_output_dir, source)
+            scroller.scroll()
+        except Exception as e:
+            logger.error(
+                f"Error while scrolling documents for: {source.name}: {str(e)}"
+            )
+            raise e
+        finally:
+            # delete the directories if they exist
+            logger.debug(f"Deleting the temporary directory: {repo_dir}")
+            shutil.rmtree(repo_dir, ignore_errors=False)
 
     def run(self) -> None:
         """Fetch the documents from all the sources."""

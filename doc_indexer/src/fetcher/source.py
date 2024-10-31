@@ -1,13 +1,20 @@
 import json
+from enum import StrEnum
 
 from pydantic import BaseModel
+
+
+class SourceType(StrEnum):
+    """Enum for the documents source type."""
+
+    GITHUB = "Github"
 
 
 class DocumentsSource(BaseModel):
     """Model for the documents source."""
 
     name: str
-    source_type: str
+    source_type: SourceType
     url: str
     include_files: list[str] | None = None
     exclude_files: list[str] | None = None
