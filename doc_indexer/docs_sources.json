@@ -69,7 +69,6 @@
     ],
     "exclude_files": [
       "*/_sidebar.md",
-      "docs/contributor/adr/adr-template.md_garbage/docsadr-template.md",
       "docs/contributor/adr/adr-template.md"
     ]
   },
@@ -119,7 +118,7 @@
     ],
     "exclude_files": [
       "*/_sidebar.md",
-      "docs/user/resources/README.md_garbage"
+      "docs/user/resources/README.md"
     ]
   },
   {
