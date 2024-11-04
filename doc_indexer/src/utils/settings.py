@@ -12,6 +12,7 @@ def is_running_pytest() -> bool:
     """
     return "pytest" in sys.modules
 
+
 project_root = os.path.dirname(os.path.abspath(__file__))
 
 if is_running_pytest():
@@ -21,7 +22,7 @@ if is_running_pytest():
         config = Config(RepositoryEnv(env_path))
         load_dotenv(env_path)
     else:
-        logging.warning("No .test.env file found. Using .env test file.")
+        logging.warning("No .test.env file found. Using .env file.")
         load_dotenv()
 else:
     load_dotenv()
