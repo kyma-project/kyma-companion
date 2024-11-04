@@ -23,6 +23,7 @@ on:
       - "scripts/**"
       - "tests/**"
       - "**/*.md"
+      - "doc_indexer/**"
       - CODEOWNERS
       - LICENSE
 

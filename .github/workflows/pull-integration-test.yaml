@@ -15,6 +15,7 @@ on:
       - ".reuse/**"
       - "config/**"
       - "data/**"
+      - "doc_indexer/**"
       - "scripts/**"
 
 jobs:
