@@ -80,7 +80,7 @@ jobs:
           DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
           # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
-          DOCS_PATH: : "/test-data"
+          DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
         run: |
           ls
