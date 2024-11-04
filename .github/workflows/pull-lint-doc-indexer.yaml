@@ -10,7 +10,7 @@ on:
       - "doc_indexer/**"
 
 jobs:
-  tests:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
