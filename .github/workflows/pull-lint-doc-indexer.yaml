@@ -1,22 +1,18 @@
-name: Unit Test
+name: pull-lint-doc-indexer
 
 on:
   pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
     branches:
       - "main"
       - "release-**"
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
+    paths:
       - "doc_indexer/**"
-      - CODEOWNERS
-      - LICENSE
-
-## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
-## in the create-release.yml workflow as well.
+    paths-ignore:
+      - "doc_indexer/**.md"
 
 jobs:
-  unit-test:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,7 +20,10 @@ jobs:
 
       - name: Extract Python version
         id: python-version
-        run: ./scripts/shell/extract-python-version.sh
+        working-directory: ./doc_indexer
+        run: |
+          ../scripts/shell/extract-python-version.sh
+          echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -37,7 +36,11 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: poetry install --with dev
+        working-directory: ./doc_indexer
+        run: poetry install --with test
 
-      - name: Run tests
-        run: poetry run poe test
+      - name: Run lint
+        working-directory: ./doc_indexer
+        run: |
+          ls
+          poetry run poe codecheck
