@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from agents.common.constants import EXIT, PLANNER
+from agents.common.constants import PLANNER
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
 
@@ -44,21 +44,6 @@ def prepare_chunk_response(chunk: bytes) -> bytes:
         return json.dumps(
             {"event": "unknown", "data": {"error": "No agent found"}}
         ).encode()
-
-    if agent == EXIT:
-        response = {
-            "event": "final_response",
-            "data": (
-                {"error": data[EXIT].get("error")}
-                if data[EXIT].get("error")
-                else {
-                    "answer": {
-                        "content": data[EXIT].get("final_response"),
-                    }
-                }
-            ),
-        }
-        return json.dumps(response).encode()
 
     new_data = process_response(data, agent)
 

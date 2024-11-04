@@ -5,13 +5,11 @@ from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
-from langgraph.constants import END
 
 from agents.common.constants import (
     CONTINUE,
     ERROR,
     EXIT,
-    FINAL_RESPONSE,
     FINALIZER,
     MESSAGES,
     NEXT,
@@ -101,20 +99,10 @@ def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type:
     return FINALIZER if state.next == FINALIZER else CONTINUE
 
 
-def exit_node(state: AgentState) -> dict[str, Any]:
-    """Used to end the workflow."""
-    return {
-        NEXT: END,
-        ERROR: state.error,
-        FINAL_RESPONSE: state.final_response,
-    }
-
-
 def create_node_output(
     message: BaseMessage | None = None,
     next: str | None = None,
     subtasks: list[SubTask] | None = None,
-    final_response: str | None = None,
     error: str | None = None,
 ) -> dict[str, Any]:
     """
@@ -131,6 +119,5 @@ def create_node_output(
         MESSAGES: [message] if message else [],
         NEXT: next,
         SUBTASKS: subtasks,
-        FINAL_RESPONSE: final_response,
         ERROR: error,
     }

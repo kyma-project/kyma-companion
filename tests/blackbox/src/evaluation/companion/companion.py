@@ -88,6 +88,7 @@ class CompanionClient:
 
     def __extract_final_response(self, response) -> str:
         """Read the stream response and extract the final response from it."""
+        obj = None
         start_time = time.time()
         for chunk in response.iter_lines():
             # Check for timeout
@@ -108,9 +109,13 @@ class CompanionClient:
             if obj["event"] == "unknown":
                 raise Exception(f"Unknown event in the chunk response: {obj}")
 
-            if obj["event"] == "final_response":
-                if "error" in obj["data"] and obj["data"]["error"]:
-                    raise Exception(f"Error in final response: {obj['data']['error']}")
-                return obj["data"]["answer"]["content"]
+        if obj is None or not obj["data"]:
+            raise Exception("No response found in the stream")
 
-        raise Exception("No final response found in the stream")
+        if "error" in obj["data"] and obj["data"]["error"]:
+            raise Exception(f"Error in response: {obj["data"]["error"]}")
+
+        if not obj["data"]["answer"] or not obj["data"]["answer"]["content"]:
+            raise Exception("No response found in the stream")
+
+        return obj["data"]["answer"]["content"]
