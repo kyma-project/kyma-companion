@@ -8,8 +8,6 @@ on:
       - "release-**"
     paths:
       - "doc_indexer/**"
-    paths-ignore:
-      - "doc_indexer/**.md"
 
 jobs:
   tests:
