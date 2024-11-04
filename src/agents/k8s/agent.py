@@ -15,5 +15,7 @@ class KubernetesAgent(BaseAgent):
 
     def __init__(self, model: IModel):
         tools = [k8s_query_tool, fetch_pod_logs_tool]
-        super().__init__(K8S_AGENT, model, tools, K8S_AGENT_PROMPT, KubernetesAgentState)
+        super().__init__(
+            K8S_AGENT, model, tools, K8S_AGENT_PROMPT, KubernetesAgentState
+        )
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS

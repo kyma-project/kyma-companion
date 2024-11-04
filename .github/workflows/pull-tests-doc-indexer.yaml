@@ -1,0 +1,113 @@
+name: pull-tests-doc-indexer
+
+on:
+  pull_request_target:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches:
+      - "main"
+      - "release-**"
+    paths:
+      - "doc_indexer/**"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Extract Python version
+        id: python-version
+        working-directory: ./doc_indexer
+        run: |
+          ../scripts/shell/extract-python-version.sh
+          echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: ./doc_indexer
+        run: poetry install --with test
+
+      - name: Prepare test configurations
+        id: int-tests-configs
+        env:
+          AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
+        run: |
+          echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
+          echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_CLIENT_SECRET=$(yq eval '.stringData.clientsecret' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "EMBEDDING_MODEL_DEPLOYMENT_ID=$(yq eval '.stringData.embedding_model_deployment_id' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "EMBEDDING_MODEL_NAME=$(yq eval '.stringData.embedding_model_name' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_URL=$(yq eval '.stringData.hana_db_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PORT=$(yq eval '.stringData.hana_db_port' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_USER=$(yq eval '.stringData.hana_db_user' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PASSWORD=$(yq eval '.stringData.hana_db_password' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          # cleanup
+          rm -f aicore-secret.yaml
+
+      - name: Run unit tests
+        working-directory: ./doc_indexer
+        env:
+          LOG_LEVEL: "DEBUG"
+          # AI Core configurations.
+          AICORE_CLIENT_ID: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ steps.int-tests-configs.outputs.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ steps.int-tests-configs.outputs.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ steps.int-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
+          # EMBEDDING_MODEL.
+          EMBEDDING_MODEL_DEPLOYMENT_ID: ${{ steps.int-tests-configs.outputs.EMBEDDING_MODEL_DEPLOYMENT_ID }}
+          EMBEDDING_MODEL_NAME: ${{ steps.int-tests-configs.outputs.EMBEDDING_MODEL_NAME }}
+          # Database configurations.
+          DATABASE_URL: ${{ steps.int-tests-configs.outputs.DATABASE_URL }}
+          DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
+          DATABASE_USER: ${{ steps.int-tests-configs.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
+          # Kyma docs path.
+          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
+          DOCS_PATH: "/test-data"
+          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+        run: |
+          ls
+          poetry run poe test-unit
+
+      - name: Run integration tests
+        working-directory: ./doc_indexer
+        env:
+          LOG_LEVEL: "DEBUG"
+          # AI Core configurations.
+          AICORE_CLIENT_ID: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ steps.int-tests-configs.outputs.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ steps.int-tests-configs.outputs.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ steps.int-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
+          # EMBEDDING_MODEL.
+          EMBEDDING_MODEL_DEPLOYMENT_ID: ${{ steps.int-tests-configs.outputs.EMBEDDING_MODEL_DEPLOYMENT_ID }}
+          EMBEDDING_MODEL_NAME: ${{ steps.int-tests-configs.outputs.EMBEDDING_MODEL_NAME }}
+          # Database configurations.
+          DATABASE_URL: ${{ steps.int-tests-configs.outputs.DATABASE_URL }}
+          DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
+          DATABASE_USER: ${{ steps.int-tests-configs.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
+          # Kyma docs path.
+          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
+          DOCS_PATH: "/test-data"
+          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+        run: |
+          ls
+          poetry run poe test-integration

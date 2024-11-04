@@ -42,10 +42,6 @@ class MockService(IService):
             b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], '
             b'"usage_metadata": null}]}}'
         )
-        yield (
-            b'{"Exit": {"next": "__end__", "final_response": "To create a Kubernetes application '
-            b'and expose it when deployed in the Kyma runtime"}}'
-        )
 
 
 @pytest.fixture(scope="function")
@@ -154,9 +150,10 @@ def test_messages_endpoint(
         b'"To create a kubernetes deployment"}}}\n' in content
     )
     assert (
-        b'{"event": "final_response", "data": {"answer": {"content": '
-        b'"To create a Kubernetes application and expose it when deployed in the Kyma runtime"}}}\n'
-        in content
+        b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content'
+        b'": "To create an API Rule in Kyma to expose a service externally"}}}\n'
+        b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"content": '
+        b'"To create a kubernetes deployment"}}}\n' in content
     )
 
 

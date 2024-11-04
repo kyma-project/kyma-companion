@@ -3,20 +3,11 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.constants import END
 
-from agents.common.constants import (
-    COMMON,
-    CONTINUE,
-    EXIT,
-    FINALIZER,
-    PLANNER,
-)
+from agents.common.constants import COMMON
 from agents.common.data import Message
-from agents.common.state import CompanionState, SubTask, UserInput
-from agents.graph import KymaGraph
-from agents.k8s.agent import K8S_AGENT
-from agents.kyma.agent import KYMA_AGENT
+from agents.graph import CompanionGraph
+from agents.common.state import CompanionState, SubTask
 from utils.models import LLM, IModel
 
 
@@ -49,17 +40,16 @@ def mock_graph():
 
 
 @pytest.fixture
-def kyma_graph(
+def companion_graph(
     mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
 ):
     with (
         patch.object(
-            KymaGraph, "_create_planner_chain", return_value=mock_planner_chain
+            CompanionGraph, "_create_common_chain", return_value=mock_common_chain
         ),
-        patch.object(KymaGraph, "_create_common_chain", return_value=mock_common_chain),
-        patch.object(KymaGraph, "_build_graph", return_value=mock_graph),
+        patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
     ):
-        return KymaGraph(mock_models, mock_memory)
+        return CompanionGraph(mock_models, mock_memory)
 
 
 def create_messages_json(content, role, node) -> str:
@@ -67,149 +57,7 @@ def create_messages_json(content, role, node) -> str:
     return json_str
 
 
-class TestKymaGraph:
-
-    @pytest.mark.parametrize(
-        "description, input_query, plan_content, expected_output, expected_error",
-        [
-            (
-                "Plans multiple subtasks successfully",
-                "How do I deploy a Kyma function?",
-                '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Kyma function deployment",
-                            assigned_to=KYMA_AGENT,
-                        ),
-                        SubTask(
-                            description="Explain K8s deployment",
-                            assigned_to=K8S_AGENT,
-                        ),
-                    ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": None,
-                    "next": CONTINUE,
-                },
-                None,
-            ),
-            (
-                "Plans a single subtask successfully",
-                "What is a Kubernetes pod?",
-                '{"subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Kubernetes pod concept",
-                            assigned_to="KubernetesAgent",
-                        )
-                    ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kubernetes pod concept", '
-                            '"assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": None,
-                    "next": CONTINUE,
-                },
-                None,
-            ),
-            (
-                "Exits with error if no subtasks are returned",
-                "What is a Kubernetes pod?",
-                '{"subtasks": []}',
-                {
-                    "subtasks": None,
-                    "messages": [],
-                    "final_response": None,
-                    "next": EXIT,
-                    "error": "No subtasks are created for the given query: What is a Kubernetes pod?",
-                },
-                None,
-            ),
-            (
-                "Exits immediately by answering for the general query",
-                "Write a hello world python code?",
-                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')"}',
-                {
-                    "subtasks": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": "Here is the hellow world python code: print('Hello, World!')",
-                    "next": EXIT,
-                },
-                None,
-            ),
-            (
-                "Exits immediately for the general query even if llm doesn't return response attribute",
-                "Write a hello world python code?",
-                "Here is the hellow world python code: print('Hello, World!')",
-                {
-                    "subtasks": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "error": None,
-                    "final_response": "Here is the hellow world python code: print('Hello, World!')",
-                    "next": EXIT,
-                },
-                None,
-            ),
-            (
-                "Exits of error occurs in planning",
-                "What is a Kubernetes service?",
-                '{"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent"}]}',
-                {
-                    "subtasks": None,
-                    "messages": [],
-                    "error": "fake error",
-                    "final_response": None,
-                    "next": EXIT,
-                },
-                "fake error",
-            ),
-        ],
-    )
-    def test_plan(
-        self,
-        kyma_graph,
-        description,
-        input_query,
-        plan_content,
-        expected_output,
-        expected_error,
-        mock_planner_chain,
-    ):
-        state = CompanionState(messages=[HumanMessage(content=input_query)])
-
-        if expected_error:
-            mock_planner_chain.invoke.side_effect = Exception(expected_error)
-        else:
-            mock_planner_chain.invoke.return_value.content = plan_content
-        result = kyma_graph._plan(state)
-
-        assert result == expected_output
+class TestCompanionGraph:
 
     @pytest.mark.parametrize(
         "description, subtasks, messages, chain_response, expected_output, expected_error",
@@ -296,8 +144,12 @@ class TestKymaGraph:
                 [HumanMessage(content="What is Java?")],
                 None,
                 {
-                    "error": "Error in common node: Test error",
-                    "next": EXIT,
+                    "messages": [
+                        AIMessage(
+                            content="Sorry, the common agent is unable to process the request.",
+                            name="Common",
+                        )
+                    ]
                 },
                 "Error in common node: Test error",
             ),
@@ -305,7 +157,7 @@ class TestKymaGraph:
     )
     def test_common_node(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         subtasks,
         messages,
@@ -321,7 +173,7 @@ class TestKymaGraph:
         else:
             mock_common_chain.invoke.return_value.content = chain_response
 
-        result = kyma_graph._common_node(state)
+        result = companion_graph._common_node(state)
         assert result == expected_output
         if chain_response:
             mock_common_chain.invoke.assert_called_once()
@@ -329,117 +181,8 @@ class TestKymaGraph:
                 subtasks[0].assigned_to == COMMON and subtasks[0].status == "completed"
             )
 
-    @pytest.mark.parametrize(
-        "description, input_query, conversation_messages, final_response_content, expected_output, expected_error",
-        [
-            (
-                "Generates final response successfully",
-                "How do I deploy a Kyma function?",
-                [
-                    HumanMessage(content="How do I deploy a Kyma function?"),
-                    AIMessage(
-                        content="To deploy a Kyma function, you need to...",
-                        name="KymaAgent",
-                    ),
-                    AIMessage(
-                        content="In Kubernetes, deployment involves...",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                "To deploy a Kyma function, follow these steps: 1. Create a function file. "
-                "2. Use the Kyma CLI to deploy. 3. Verify the deployment in the Kyma dashboard.",
-                {
-                    "final_response": "To deploy a Kyma function, follow these steps: "
-                    "1. Create a function file. 2. Use the Kyma CLI to deploy. "
-                    "3. Verify the deployment in the Kyma dashboard.",
-                    "messages": [
-                        AIMessage(
-                            content="To deploy a Kyma function, follow these steps: "
-                            "1. Create a function file. 2. Use the Kyma CLI to deploy. "
-                            "3. Verify the deployment in the Kyma dashboard.",
-                            name=FINALIZER,
-                        )
-                    ],
-                    "next": END,
-                },
-                None,
-            ),
-            (
-                "Generates empty final response",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                "",
-                {
-                    "final_response": "",
-                    "messages": [
-                        AIMessage(
-                            content="",
-                            name=FINALIZER,
-                        )
-                    ],
-                    "next": END,
-                },
-                None,
-            ),
-            (
-                "Handles exception during final response generation",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                None,
-                {
-                    "error": "Error in finalizer node: Test error",
-                    "next": EXIT,
-                },
-                "Error in finalizer node: Test error",
-            ),
-        ],
-    )
-    def test_generate_final_response(
-        self,
-        kyma_graph,
-        description,
-        input_query,
-        conversation_messages,
-        final_response_content,
-        expected_output,
-        expected_error,
-    ):
-        state = CompanionState(
-            messages=conversation_messages, input=UserInput(query=input_query)
-        )
-
-        mock_final_response_chain = Mock()
-        if expected_error:
-            mock_final_response_chain.invoke.side_effect = Exception(expected_error)
-        else:
-            mock_final_response_chain.invoke.return_value.content = (
-                final_response_content
-            )
-
-        with patch.object(
-            kyma_graph, "_final_response_chain", return_value=mock_final_response_chain
-        ):
-            result = kyma_graph._generate_final_response(state)
-
-        assert result == expected_output
-        mock_final_response_chain.invoke.assert_called_once_with(
-            {"messages": conversation_messages}
-        )
-
     @pytest.fixture
-    def mock_kyma_graph(self):
+    def mock_companion_graph(self):
         mock_graph = MagicMock()
         mock_graph.astream.return_value = AsyncMock()
         mock_graph.astream.return_value.__aiter__.return_value = [
@@ -447,7 +190,9 @@ class TestKymaGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.KymaGraph", return_value=kyma_graph) as mock:
+        with patch(
+            "services.conversation.CompanionGraph", return_value=companion_graph
+        ) as mock:
             yield mock
 
     @pytest.mark.asyncio
@@ -547,7 +292,7 @@ class TestKymaGraph:
     )
     async def test_astream(
         self,
-        kyma_graph,
+        companion_graph,
         description,
         conversation_id,
         message,
@@ -566,18 +311,18 @@ class TestKymaGraph:
                 yield chunk
 
         # Mock the graph's astream method with our async generator function
-        kyma_graph.graph.astream = mock_astream
+        companion_graph.graph.astream = mock_astream
 
         if expected_error:
             with pytest.raises(Exception) as exc_info:
-                async for _ in kyma_graph.astream(
+                async for _ in companion_graph.astream(
                     conversation_id, message, mock_k8s_client
                 ):
                     pass
             assert str(exc_info.value) == expected_error
         else:
             result = []
-            async for chunk in kyma_graph.astream(
+            async for chunk in companion_graph.astream(
                 conversation_id, message, mock_k8s_client
             ):
                 result.append(chunk)

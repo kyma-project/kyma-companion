@@ -1,5 +1,5 @@
 """
-This script generates a LangGraph diagram using the KymaGraph class and saves it as a PNG file.
+This script generates a LangGraph diagram using the CompanionGraph class and saves it as a PNG file.
 It initializes the necessary components, including the model and memory, and then creates the graph.
 
 Usage:
@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../src"))
 
 from IPython.display import Image  # noqa: E402
 
-from agents.graph import KymaGraph
+from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import (  # noqa: E402
     RedisSaver,
     initialize_async_pool,
@@ -36,9 +36,12 @@ if not os.getenv("CONFIG_PATH"):
 supervisor_agent: SupervisorAgent
 model_factory = ModelFactory()
 
-model = model_factory.create_model(LLM.GPT4O)
+models = {
+    LLM.GPT4O: model_factory.create_model(LLM.GPT4O),
+    LLM.GPT4O_MINI: model_factory.create_model(LLM.GPT4O_MINI),
+}
 memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-graph = KymaGraph(model, memory)
+graph = CompanionGraph(models, memory)
 
 try:
     png_bytes = Image(graph.graph.get_graph(xray=1).draw_mermaid_png())

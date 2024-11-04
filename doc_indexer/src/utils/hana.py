@@ -1,6 +1,8 @@
-import logging
-
 from hdbcli import dbapi
+
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def create_hana_connection(
@@ -16,7 +18,7 @@ def create_hana_connection(
         )
         return connection
     except dbapi.Error:
-        logging.exception("Connection to Hana Cloud failed.")
+        logger.exception("Connection to Hana Cloud failed.")
     except Exception:
-        logging.exception("Unknown error occurred.")
+        logger.exception("Unknown error occurred.")
     return None

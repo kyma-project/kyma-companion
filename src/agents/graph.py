@@ -2,39 +2,29 @@ import json
 from collections.abc import Hashable
 from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
 
-from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.constants import END, START
+from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
-    CONTINUE,
-    ERROR,
-    EXIT,
-    FINAL_RESPONSE,
     MESSAGES,
-    NEXT,
-    PLANNER,
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
-    create_node_output,
-    exit_node,
     filter_messages,
-    next_step,
 )
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.prompts import COMMON_QUESTION_PROMPT, FINALIZER_PROMPT, PLANNER_PROMPT
-from agents.supervisor.agent import FINALIZER, SUPERVISOR, SupervisorAgent
+from agents.prompts import COMMON_QUESTION_PROMPT
+from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
@@ -70,8 +60,8 @@ class IGraph(Protocol):
         ...
 
 
-class KymaGraph:
-    """Kyma graph class. Represents all the workflow of the application."""
+class CompanionGraph:
+    """Companion graph class. Represents all the workflow of the application."""
 
     models: dict[str, IModel]
     memory: BaseCheckpointSaver
@@ -84,7 +74,9 @@ class KymaGraph:
 
     planner_prompt: ChatPromptTemplate
 
-    def __init__(self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver):
+    def __init__(
+        self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver
+    ):
         self.models = models
         self.memory = memory
 
@@ -95,91 +87,13 @@ class KymaGraph:
 
         self.k8s_agent = KubernetesAgent(gpt_4o)
         self.supervisor_agent = SupervisorAgent(
-            gpt_4o, members=[KYMA_AGENT, K8S_AGENT, COMMON]
+            models,
+            members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._planner_chain = self._create_planner_chain(gpt_4o_mini)
         self._common_chain = self._create_common_chain(gpt_4o_mini)
         self.graph = self._build_graph()
-
-    def _create_planner_chain(self, model: IModel) -> RunnableSequence:
-        self.planner_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", PLANNER_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        ).partial(
-            members=", ".join(self.members),
-            output_format=self.plan_parser.get_format_instructions(),
-        )
-        return self.planner_prompt | model.llm  # type: ignore
-
-    def _invoke_planner(self, state: CompanionState) -> AIMessage:
-        """Invoke the planner."""
-        response: AIMessage = self._planner_chain.invoke(
-            input={
-                "messages": filter_messages(state.messages),
-            },
-        )
-        return response
-
-    def _plan(self, state: CompanionState) -> dict[str, Any]:
-        """
-        Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
-        If the query is general, it returns the response directly.
-
-        Args:
-            state: AgentState: agent state of the Supervisor graph
-
-        Returns:
-            dict[str, Any]: output of the node with subtask if query is related to Kyma and K8s.
-            Returns response directly if query is general.
-        """
-
-        # to prevent stored errors from previous runs
-        state.error = None
-
-        try:
-            plan_response = self._invoke_planner(
-                state,  # last message is the user query
-            )
-            response_content: str = plan_response.content  # type: ignore
-
-            try:
-                plan = self.plan_parser.parse(response_content)
-                if plan.response:
-                    return create_node_output(
-                        message=AIMessage(content=plan.response, name=PLANNER),
-                        final_response=plan.response,
-                        next=EXIT,
-                    )
-            except OutputParserException as ope:
-                logger.debug(f"Problem in parsing the planner response: {ope}")
-                # If 'response' field of the content of plan_response is missing due to ModelType inconsistency,
-                # the response is read from the plan_response content.
-                return create_node_output(
-                    message=AIMessage(content=response_content, name=PLANNER),
-                    final_response=response_content,
-                    next=EXIT,
-                )
-
-            if not plan.subtasks:
-                raise Exception(
-                    f"No subtasks are created for the given query: {state.messages[-1].content}"
-                )
-
-            return create_node_output(
-                message=AIMessage(
-                    content=response_content,
-                    name=PLANNER,
-                ),
-                next=CONTINUE,
-                subtasks=plan.subtasks,
-            )
-        except Exception as e:
-            logger.error(f"Error in planning: {e}")
-            return create_node_output(next=EXIT, error=str(e))
 
     @staticmethod
     def _create_common_chain(model: IModel) -> RunnableSequence:
@@ -222,8 +136,12 @@ class KymaGraph:
                 except Exception as e:
                     logger.error(f"Error in common node: {e}")
                     return {
-                        ERROR: str(e),
-                        NEXT: EXIT,
+                        MESSAGES: [
+                            AIMessage(
+                                content="Sorry, the common agent is unable to process the request.",
+                                name=COMMON,
+                            )
+                        ]
                     }
         return {
             MESSAGES: [
@@ -234,78 +152,34 @@ class KymaGraph:
             ]
         }
 
-    def _final_response_chain(self, state: CompanionState) -> RunnableSequence:
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                MessagesPlaceholder(variable_name="messages"),
-                ("system", FINALIZER_PROMPT),
-            ]
-        ).partial(members=", ".join(self.members), query=state.input.query)
-        return prompt | self.models[ModelType.GPT4O_MINI].llm  # type: ignore
-
-    def _generate_final_response(self, state: CompanionState) -> dict[str, Any]:
-        """Generate the final response."""
-
-        final_response_chain = self._final_response_chain(state)
-
-        try:
-            final_response = final_response_chain.invoke(
-                {"messages": filter_messages(state.messages)},
-            ).content
-
-            return {
-                MESSAGES: [
-                    AIMessage(
-                        content=final_response if final_response else "",
-                        name=FINALIZER,
-                    )
-                ],
-                NEXT: END,
-                FINAL_RESPONSE: final_response,
-            }
-        except Exception as e:
-            logger.error(f"Error in generating final response: {e}")
-            return {
-                ERROR: str(e),
-                NEXT: EXIT,
-            }
-
     def _build_graph(self) -> CompiledGraph:
-        """Create a supervisor agent."""
+        """Create the companion parent graph."""
 
+        # Define a new graph.
         workflow = StateGraph(CompanionState)
-        workflow.add_node(FINALIZER, self._generate_final_response)
+
+        # Define the nodes of the graph.
+        workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
 
-        workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
-        workflow.add_node(PLANNER, self._plan)
-        workflow.add_node(EXIT, exit_node)
+        # Set the entrypoint: ENTRY --> supervisor
+        workflow.set_entry_point(SUPERVISOR)
 
-        # routing to the exit node in case of an error
-        workflow.add_conditional_edges(
-            PLANNER,
-            next_step,
-            {EXIT: EXIT, CONTINUE: SUPERVISOR},
-        )
-        workflow.add_edge(EXIT, END)
-
+        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
+        # The agents ALWAYS "report back" to the supervisor.
         for member in self.members:
-            # We want our workers to ALWAYS "report back" to the supervisor when done
             workflow.add_edge(member, SUPERVISOR)
-        # The supervisor populates the "next" field in the graph state
-        # which routes to a node or finishes
-        conditional_map: dict[Hashable, str] = {
-            k: k for k in self.members + [FINALIZER, EXIT]
-        }
-        workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
-        # Add end node
-        workflow.add_edge(FINALIZER, EXIT)
-        # Add entrypoint
-        workflow.add_edge(START, PLANNER)
 
+        # The supervisor dynamically populates the "next" field in the graph.
+        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
+        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
+        workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
+
+        # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)
+
         return graph
 
     async def astream(
@@ -325,6 +199,7 @@ class KymaGraph:
                 "messages": messages,
                 "input": user_input,
                 "k8s_client": k8s_client,
+                "subtasks": [],
             },
             config={
                 "configurable": {

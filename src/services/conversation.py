@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 from langchain_redis import RedisChatMessageHistory
 
 from agents.common.data import Message
-from agents.graph import IGraph, KymaGraph
+from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from initial_questions.inital_questions import (
     IInitialQuestionsHandler,
@@ -13,10 +13,9 @@ from initial_questions.inital_questions import (
 )
 from services.k8s import IK8sClient
 from utils.logging import get_logger
-from utils.models.factory import IModelFactory, ModelType, IModel, ModelFactory
+from utils.models.factory import IModelFactory, ModelType, ModelFactory
 from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
-from langchain_core.embeddings import Embeddings
 
 logger = get_logger(__name__)
 
@@ -52,7 +51,7 @@ class ConversationService(metaclass=SingletonMeta):
     def __init__(
         self,
         initial_questions_handler: IInitialQuestionsHandler | None = None,
-        model_factory: IModelFactory | None = None
+        model_factory: IModelFactory | None = None,
     ) -> None:
         try:
             self._model_factory = model_factory or ModelFactory()
@@ -60,15 +59,16 @@ class ConversationService(metaclass=SingletonMeta):
         except Exception as e:
             logger.error(f"Failed to initialize models: {e}")
             raise
-        
+
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
-            initial_questions_handler or InitialQuestionsHandler(model=models[ModelType.GPT4O_MINI])
+            initial_questions_handler
+            or InitialQuestionsHandler(model=models[ModelType.GPT4O_MINI])
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
-        self._kyma_graph = KymaGraph(
+        self._companion_graph = CompanionGraph(
             models,
             memory=redis_saver,
         )
@@ -113,7 +113,7 @@ class ConversationService(metaclass=SingletonMeta):
 
         logger.info("Processing request...")
 
-        async for chunk in self._kyma_graph.astream(
+        async for chunk in self._companion_graph.astream(
             conversation_id, message, k8s_client
         ):
             logger.debug(f"Sending chunk: {chunk}")

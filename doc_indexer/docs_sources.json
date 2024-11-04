@@ -1,0 +1,161 @@
+[
+  {
+    "name": "eventing-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/eventing-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "nats-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/nats-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "istio",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/istio.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "warden",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/warden.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "cloud-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/cloud-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "api-gateway",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/api-gateway.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md",
+      "docs/contributor/adr/adr-template.md"
+    ]
+  },
+  {
+    "name": "telemetry-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/telemetry-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "btp-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/btp-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "application-connector-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/application-connector-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "docker-registry",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/docker-registry.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md",
+      "docs/user/resources/README.md"
+    ]
+  },
+  {
+    "name": "keda-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/keda-manager.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "serverless",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/serverless.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "kyma",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/kyma.git",
+    "include_files": [
+      "README.md",
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md",
+      "*/_*.md"
+    ]
+  }
+]
