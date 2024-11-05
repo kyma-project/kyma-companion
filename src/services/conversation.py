@@ -1,6 +1,9 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
+from langchain_core.messages import HumanMessage
+from langchain_redis import RedisChatMessageHistory
+
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
@@ -103,6 +106,14 @@ class ConversationService(metaclass=SingletonMeta):
 
         # Pass the context to the initial question handler to generate the questions.
         questions = self._init_questions_handler.generate_questions(context=k8s_context)
+
+        # Store the Kubernetes context in the Redis chat history.
+        history = RedisChatMessageHistory(session_id=session_id, redis_url=REDIS_URL)
+        history.add_message(
+            message=HumanMessage(
+                content=f"These are the information I got from my Kubernetes cluster:\n{k8s_context}"
+            )
+        )
 
         return questions
 
