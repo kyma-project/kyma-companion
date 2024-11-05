@@ -15,7 +15,7 @@ from agents.common.state import CompanionState, SubTask, UserInput
 @pytest.fixture
 def answer_relevancy_metric(evaluator_model):
     return AnswerRelevancyMetric(
-        threshold=0.6, model=evaluator_model, include_reason=True
+        threshold=0.8, model=evaluator_model, include_reason=True
     )
 
 

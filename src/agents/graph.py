@@ -63,7 +63,7 @@ class IGraph(Protocol):
 class CompanionGraph:
     """Companion graph class. Represents all the workflow of the application."""
 
-    models: dict[str, IModel]
+    models: dict[str, IModel | Embeddings]
     memory: BaseCheckpointSaver
     supervisor_agent: IAgent
     kyma_agent: IAgent

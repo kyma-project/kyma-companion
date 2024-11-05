@@ -1,3 +1,5 @@
+from typing import cast
+
 from agents.common.agent import BaseAgent
 from agents.k8s.constants import GRAPH_STEP_TIMEOUT_SECONDS
 from agents.kyma.constants import KYMA_AGENT
@@ -15,7 +17,9 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         tools = [
-            create_search_kyma_doc_tool(models[ModelType.TEXT_EMBEDDING_3_LARGE]),
+            create_search_kyma_doc_tool(
+                cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE])
+            ),
             kyma_query_tool,
         ]
         super().__init__(

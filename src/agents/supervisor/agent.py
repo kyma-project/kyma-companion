@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnableSequence
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
+from langchain_core.embeddings import Embeddings
 
 from agents.common.constants import (
     FINALIZER,
@@ -68,7 +69,7 @@ class SupervisorAgent:
     members: list[str] = []
     plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, models: dict[str, IModel], members: list[str]):
+    def __init__(self, models: dict[str, IModel | Embeddings], members: list[str]):
         gpt_4o = models[ModelType.GPT4O]
 
         self.model = gpt_4o

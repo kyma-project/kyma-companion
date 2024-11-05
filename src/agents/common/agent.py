@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Any, Protocol
 
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
@@ -34,7 +35,14 @@ class IAgent(Protocol):
 class BaseAgent(ABC):
     """Abstract base agent class."""
 
-    def __init__(self, name: str, model: IModel, tools: list, system_prompt: str, state_class: type):
+    def __init__(
+        self,
+        name: str,
+        model: IModel | Embeddings,
+        tools: list,
+        system_prompt: str,
+        state_class: type,
+    ):
         self._name = name
         self.model = model
         self.tools = tools
@@ -67,11 +75,13 @@ class BaseAgent(ABC):
         return False
 
     def _create_chain(self, system_prompt: str) -> Any:
-        agent_prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name=MESSAGES),
-            ("human", "query: {query}"),
-        ])
+        agent_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                MessagesPlaceholder(variable_name=MESSAGES),
+                ("human", "query: {query}"),
+            ]
+        )
         return agent_prompt | self.model.llm.bind_tools(self.tools)
 
     def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
