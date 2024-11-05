@@ -1,12 +1,13 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol
 
-from langchain_core.messages import HumanMessage
-from langchain_redis import RedisChatMessageHistory
-
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
+from followup_questions.followup_questions import (
+    FollowUpQuestionsHandler,
+    IFollowUpQuestionsHandler,
+)
 from initial_questions.inital_questions import (
     IInitialQuestionsHandler,
     InitialQuestionsHandler,
@@ -31,6 +32,10 @@ class IService(Protocol):
         """Initialize a new conversation."""
         ...
 
+    async def handle_followup_questions(self, conversation_id: str) -> list[str]:
+        """Generate follow-up questions for a conversation."""
+        ...
+
     def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
@@ -52,6 +57,7 @@ class ConversationService(metaclass=SingletonMeta):
     def __init__(
         self,
         initial_questions_handler: IInitialQuestionsHandler | None = None,
+        followup_questions_handler: IFollowUpQuestionsHandler | None = None,
     ) -> None:
         # Set up the Model, which contains the llm.
         self._model_mini = ModelFactory().create_model(LLM.GPT4O_MINI)
@@ -59,6 +65,12 @@ class ConversationService(metaclass=SingletonMeta):
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
             initial_questions_handler or InitialQuestionsHandler(model=self._model_mini)
+        )
+
+        # Set up the followup question handler.
+        self._followup_questions_handler = (
+            followup_questions_handler
+            or FollowUpQuestionsHandler(model=self._model_mini)
         )
 
         self._model = ModelFactory().create_model(LLM.GPT4O)
@@ -92,15 +104,19 @@ class ConversationService(metaclass=SingletonMeta):
         # Pass the context to the initial question handler to generate the questions.
         questions = self._init_questions_handler.generate_questions(context=k8s_context)
 
-        # Store the Kubernetes context in the Redis chat history.
-        history = RedisChatMessageHistory(session_id=session_id, redis_url=REDIS_URL)
-        history.add_message(
-            message=HumanMessage(
-                content=f"These are the information I got from my Kubernetes cluster:\n{k8s_context}"
-            )
+        return questions
+
+    async def handle_followup_questions(self, conversation_id: str) -> list[str]:
+        """Generate follow-up questions for a conversation."""
+
+        logger.info(
+            f"Generating follow-up questions for conversation: ({conversation_id})"
         )
 
-        return questions
+        # Fetch the conversation history from the LangGraph.
+        messages = await self._companion_graph.aget_messages(conversation_id)
+        # Generate follow-up questions based on the conversation history.
+        return self._followup_questions_handler.generate_questions(messages=messages)
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient

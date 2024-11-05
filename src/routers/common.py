@@ -20,3 +20,9 @@ class InitialQuestionsResponse(BaseModel):
 
     initial_questions: list[str] = []
     conversation_id: str
+
+
+class FollowUpQuestionsResponse(BaseModel):
+    """Response body for follow-up questions endpoint"""
+
+    questions: list[str] = []
