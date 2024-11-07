@@ -79,7 +79,7 @@ class BaseAgent(ABC):
             [
                 ("system", system_prompt),
                 MessagesPlaceholder(variable_name=MESSAGES),
-                ("human", "query: {query}"),
+                ("human", "{query}"),
             ]
         )
         return agent_prompt | self.model.llm.bind_tools(self.tools)
@@ -107,17 +107,20 @@ class BaseAgent(ABC):
                 )
             ],
         }
-
-    def _model_node(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> dict[str, Any]:
+        
+    def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> dict[str, Any]:
         inputs = {
             MESSAGES: filter_messages(state.messages),
             "query": state.my_task.description,
         }
+        response = self.chain.invoke(inputs, config)
+        return response
 
+    def _model_node(
+        self, state: BaseAgentState, config: RunnableConfig
+    ) -> dict[str, Any]:
         try:
-            response = self.chain.invoke(inputs, config)
+            response = self._invoke_chain(state, config)
         except Exception as e:
             return {
                 MESSAGES: [
