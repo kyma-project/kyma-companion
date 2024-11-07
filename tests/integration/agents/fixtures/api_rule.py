@@ -1,3 +1,6 @@
+from textwrap import dedent
+
+
 API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
 "apiVersion": "gateway.kyma-project.io/v1beta1",
 "items": [
@@ -21,10 +24,10 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                             {
                                 "accessStrategies": [
                                     {
-                                        "handler": "no_auth"
+                                        "handler": "allow"
                                     },
                                     {
-                                        "handler": "allow"
+                                        "handler": "jwt"
                                     }
                                 ],
                                 "methods": [
@@ -131,10 +134,10 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                 {
                     "accessStrategies": [
                         {
-                            "handler": "no_auth"
+                            "handler": "allow"
                         },
                         {
-                            "handler": "allow"
+                            "handler": "jwt"
                         }
                     ],
                     "methods": [
@@ -153,7 +156,7 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
         "status": {
             "APIRuleStatus": {
                 "code": "ERROR",
-                "desc": "Multiple validation errors: \nAttribute \".spec.rules[0].accessStrategies.accessStrategies[1].handler\": allow access strategy is not allowed in combination with other access strategies\nAttribute \".spec.rules[0].accessStrategies.accessStrategies[0].handler\": no_auth access strategy is not allowed in combination with other access strategies"
+                "desc": "Multiple validation errors: \nAttribute \".spec.rules[0].accessStrategies.accessStrategies[1].handler\": allow access strategy is not allowed in combination with other access strategies\nAttribute \".spec.rules[0].accessStrategies.accessStrategies[0].handler\": allow access strategy is not allowed in combination with other access strategies"
             },
             "accessRuleStatus": {
                 "code": "SKIPPED"
@@ -196,3 +199,71 @@ The handlers' combination in the above example is not supported. If an APIRule h
 ### Remedy  
 Decide on one configuration you want to use. You can either `allow` access to the specific path or restrict it using the JWT security token. Defining both configuration methods on the same path is not allowed.
 """
+
+EXPECTED_API_RULE_RESPONSE = """
+Looking at the APIRule configuration and the error message, there is a specific issue with the access strategies configuration. The error occurs because you're trying to use multiple access strategies (`allow` and `jwt`) together, which is not allowed.
+
+The error message clearly states two validation errors:
+1. `allow` access strategy cannot be combined with other access strategies
+2. `jwt` access strategy cannot be combined with other access strategies
+
+Here's what's wrong in the current configuration:
+```yaml
+accessStrategies:
+- handler: jwt
+- handler: allow
+```
+
+To fix this, you should choose only one access strategy.
+
+```yaml
+accessStrategies:
+- handler: jwt
+```
+
+OR
+
+```yaml
+accessStrategies:
+- handler: allow
+```
+"""
+
+EXPECTED_API_RULE_TOOL_CALL_RESPONSE = """
+{
+    "role": "assistant",
+    "content": "",
+    "additional_kwargs": {
+        "refusal": null,
+        "tool_calls": [
+            {
+                "id": "call_tbAMSFELnLfbU3VPvBT64Ona",
+                "type": "function",
+                "function": {
+                    "name": "kyma_query_tool",
+                    "arguments": {
+                        "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
+                    }
+                }
+            }
+        ]
+    }
+}
+"""
+
+EXPECTED_API_RULE_DOC_SEARCH_TOOL_CALL_RESPONSE = """
+{
+    "refusal": null,
+    "tool_calls": [
+        {
+            "id": "call_rlyq2ogbxzI8HaArhHYubnY2",
+            "type": "function",
+            "function": {
+                "name": "search_kyma_doc_tool",
+                "arguments": {
+                    "query": "Diagnose API Rule issues"
+                }
+            }
+        }
+    ]
+}"""

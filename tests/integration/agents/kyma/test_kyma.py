@@ -12,9 +12,12 @@ from agents.kyma.agent import KymaAgent
 from agents.kyma.state import KymaAgentState
 from integration.agents.fixtures.api_rule import (
     API_RULE_WITH_WRONG_ACCESS_STRATEGY,
+    EXPECTED_API_RULE_RESPONSE,
+    EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
     KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
 )
 from integration.agents.fixtures.serverless_function import (
+    EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
     SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
 from services.k8s import IK8sClient
@@ -43,7 +46,7 @@ def kyma_agent(app_models):
 
 
 @pytest.mark.parametrize(
-    "state,retrieval_context,expected_result,should_raise",
+    "state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
         # API Rule Issues
         (
@@ -51,6 +54,13 @@ def kyma_agent(app_models):
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                    ),
+                    HumanMessage(content="What is wrong with api rule?"),
+                    AIMessage(
+                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -87,7 +97,7 @@ def kyma_agent(app_models):
                         name="search_kyma_doc_tool",
                         tool_call_id="tool_call_id_2",
                     ),
-                    HumanMessage(content="What is wrong with ApiRule?"),
+                    HumanMessage(content="What is wrong with API rule?"),
                 ],
                 subtasks=[],
                 my_task=SubTask(
@@ -97,35 +107,82 @@ def kyma_agent(app_models):
                 is_last_step=False,
             ),
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
-            dedent(
-                """
-            Looking at the APIRule configuration and the error message, there is a specific issue with the access strategies configuration. The error occurs because you're trying to use multiple access strategies (`no_auth` and `allow`) together, which is not allowed.
-        
-            The error message clearly states two validation errors:
-            1. `allow` access strategy cannot be combined with other access strategies
-            2. `no_auth` access strategy cannot be combined with other access strategies
-            
-            Here's what's wrong in the current configuration:
-            ```yaml
-            accessStrategies:
-            - handler: no_auth
-            - handler: allow
-            ```
-            
-            To fix this, you should choose only one access strategy.
-            
-            ```yaml
-            accessStrategies:
-            - handler: no_auth
-            ```
-            
-            OR
-            
-            ```yaml
-            accessStrategies:
-            - handler: allow
-            ```"""
+            EXPECTED_API_RULE_RESPONSE,
+            None,
+            False,
+        ),
+        # API Rule Kyma Query Tool Call
+        (
+            KymaAgentState(
+                messages=[
+                    AIMessage(
+                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                    ),
+                    HumanMessage(content="What is wrong with api rule?"),
+                    AIMessage(
+                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
+                    ),
+                    HumanMessage(content="What is wrong with api rule?"),
+                ],
+                subtasks=[],
+                my_task=SubTask(
+                    description="Diagnose API Rule issues", assigned_to="KymaAgent"
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
             ),
+            None,
+            EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
+            "kyma_query_tool",
+            False,
+        ),
+        # API Rule with Kyma Doc Search Tool Call - Agent must still query doc search tool
+        (
+            KymaAgentState(
+                messages=[
+                    AIMessage(
+                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                    ),
+                    HumanMessage(content="What is wrong with api rule?"),
+                    AIMessage(
+                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
+                    ),
+                    HumanMessage(content="What is wrong with api rule?"),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content=API_RULE_WITH_WRONG_ACCESS_STRATEGY,
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[],
+                my_task=SubTask(
+                    description="Diagnose API Rule issues", assigned_to="KymaAgent"
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+            ),
+            None,
+            EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
+            "search_kyma_doc_tool",
             False,
         ),
         # Serverless Function with syntax error
@@ -183,23 +240,8 @@ def kyma_agent(app_models):
                 is_last_step=False,
             ),
             None,
-            dedent(
-                """
-            The function fails because of an incorrect Date object constructor:
-
-            ```javascript
-            const now = new Dates(); // Wrong
-            ```
-
-            Should be:
-
-            ```javascript
-            const now = new Date(); // Correct
-            ```
-
-            Simply fix the constructor name from `Dates` to `Date` and the function will work properly.
-            """
-            ),
+            EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
+            None,
             False,
         ),
     ],
@@ -211,6 +253,7 @@ def test_invoke_chain(
     state,
     retrieval_context,
     expected_result,
+    expected_tool_call,
     should_raise,
 ):
     """Test the _invoke_chain method with success, context, and error scenarios."""
@@ -221,21 +264,29 @@ def test_invoke_chain(
         response = kyma_agent._invoke_chain(state, {})
         assert isinstance(response, AIMessage)
 
-        # Test the response content
-        test_case = LLMTestCase(
-            input=state.messages[-1].content,
-            actual_output=response.content,
-            expected_output=expected_result,
-            retrieval_context=([retrieval_context] if retrieval_context else []),
-        )
+        if expected_tool_call:
+            # if tool calls are expected, assert the tool call content matches expected_tool_call
+            assert response.tool_calls is not None, "Expected tool calls but found none"
+            assert len(response.tool_calls) > 0, "Expected at least one tool call"
+            tool_call = response.tool_calls[0]
+            assert tool_call.get("type") == "tool_call"
+            assert tool_call.get("name") == expected_tool_call
+        else:
+            # If tool calls are not expected, content should match expected_result
+            test_case = LLMTestCase(
+                input=state.messages[-1].content,
+                actual_output=response.content,
+                expected_output=expected_result,
+                retrieval_context=([retrieval_context] if retrieval_context else []),
+            )
 
-        # Run deepeval metrics
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[answer_relevancy_metric, faithfulness_metric],
-        )
+            # Run deepeval metrics
+            results = evaluate(
+                test_cases=[test_case],
+                metrics=[answer_relevancy_metric, faithfulness_metric],
+            )
 
-        # Assert all metrics pass
-        assert all(
-            result.success for result in results.test_results
-        ), "Not all metrics passed"
+            # Assert all metrics pass
+            assert all(
+                result.success for result in results.test_results
+            ), "Not all metrics passed"

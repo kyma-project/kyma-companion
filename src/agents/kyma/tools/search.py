@@ -23,8 +23,9 @@ def create_search_kyma_doc_tool(embedding_model: Embeddings):
   
   @tool(infer_schema=False, args_schema=SearchKymaDocArgs)
   def search_kyma_doc_tool(query: str) -> str:
-      """Search through Kyma documentation for relevant information.
-      Provide a search query to find information about Kyma concepts, features, or components."""
+      """Used to search through Kyma documentation for relevant information about Kyma concepts, features, components, 
+      resources, or troubleshooting. A query is required to search the documentation.
+      """
       
       docs = retriever.retrieve(query)
       

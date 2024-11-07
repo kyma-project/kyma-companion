@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from decouple import Config, RepositoryEnv
+from decouple import config, Config, RepositoryEnv
 from dotenv import find_dotenv, load_dotenv
 
 
@@ -25,9 +25,10 @@ if is_running_pytest():
         config = Config(repository)
     else:
         logging.warning("No .test.env file found. Using .env file.")
-        config = Config(RepositoryEnv(find_dotenv()))
+        load_dotenv()
 else:
-    config = Config(RepositoryEnv(find_dotenv()))
+    load_dotenv()
+
 
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis

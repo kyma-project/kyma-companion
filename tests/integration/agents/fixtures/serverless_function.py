@@ -141,3 +141,19 @@ SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR = """
     }
 }
 """
+
+EXPECTED_SERVERLESS_FUNCTION_RESPONSE = """
+The function fails because of an incorrect Date object constructor:
+
+```javascript
+const now = new Dates(); // Wrong
+```
+
+Should be:
+
+```javascript
+const now = new Date(); // Correct
+```
+
+Simply fix the constructor name from `Dates` to `Date` and the function will work properly.
+"""
