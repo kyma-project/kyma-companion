@@ -26,6 +26,8 @@ if is_running_pytest():
     else:
         logging.warning("No .test.env file found. Using .env file.")
         load_dotenv()
+    # deepeval specific environment variables
+    DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 else:
     load_dotenv()
 

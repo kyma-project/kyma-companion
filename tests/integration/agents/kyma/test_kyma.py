@@ -3,13 +3,20 @@ from unittest.mock import Mock
 
 import pytest
 from deepeval import evaluate
-from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
-from deepeval.test_case import LLMTestCase
+from deepeval.metrics import (
+    AnswerRelevancyMetric,
+    FaithfulnessMetric,
+    GEval,
+    HallucinationMetric,
+)
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from agents.common.constants import PLANNER
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
 from agents.kyma.state import KymaAgentState
+from agents.supervisor.agent import SUPERVISOR
 from integration.agents.fixtures.api_rule import (
     API_RULE_WITH_WRONG_ACCESS_STRATEGY,
     EXPECTED_API_RULE_RESPONSE,
@@ -18,21 +25,48 @@ from integration.agents.fixtures.api_rule import (
 )
 from integration.agents.fixtures.serverless_function import (
     EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
+    EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
+    FUNCTION_NO_REPLICAS,
+    KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY,
     SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
 from services.k8s import IK8sClient
+from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 
 
 @pytest.fixture
-def answer_relevancy_metric(evaluator_model):
-    return AnswerRelevancyMetric(
-        threshold=0.7, model=evaluator_model, include_reason=True
+def semantic_similarity_metric(evaluator_model):
+    return GEval(
+        name="Semantic Similarity",
+        criteria=""
+        "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        evaluation_params=[
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+        ],
+        model=evaluator_model,
+        threshold=0.8,
     )
 
 
 @pytest.fixture
 def faithfulness_metric(evaluator_model):
-    return FaithfulnessMetric(threshold=0.7, model=evaluator_model, include_reason=True)
+    return FaithfulnessMetric(
+        threshold=0.7,
+        model=evaluator_model,
+        include_reason=True,
+        verbose_mode=DEEPEVAL_TESTCASE_VERBOSE,
+    )
+
+
+@pytest.fixture
+def hallucination_metric(evaluator_model):
+    return HallucinationMetric(
+        threshold=0.7,
+        model=evaluator_model,
+        include_reason=True,
+        verbose_mode=DEEPEVAL_TESTCASE_VERBOSE,
+    )
 
 
 @pytest.fixture
@@ -46,10 +80,10 @@ def kyma_agent(app_models):
 
 
 @pytest.mark.parametrize(
-    "state,retrieval_context,expected_result,expected_tool_call,should_raise",
+    "test_case,state,context,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
-        # API Rule Issues
         (
+            "API Rule with wrong access strategy",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -58,9 +92,11 @@ def kyma_agent(app_models):
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
+                        name=PLANNER,
                     ),
                     AIMessage(
                         content='{"next": "KymaAgent"}',
+                        name=SUPERVISOR,
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -97,22 +133,22 @@ def kyma_agent(app_models):
                         name="search_kyma_doc_tool",
                         tool_call_id="tool_call_id_2",
                     ),
-                    HumanMessage(content="What is wrong with API rule?"),
                 ],
                 subtasks=[],
                 my_task=SubTask(
-                    description="Diagnose API Rule issues", assigned_to="KymaAgent"
+                    description="What is wrong with API rule?", assigned_to="KymaAgent"
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
+            ["Multiple access strategies are not allowed to be used together"],
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
             EXPECTED_API_RULE_RESPONSE,
             None,
             False,
         ),
-        # API Rule Kyma Query Tool Call
         (
+            "API Rule Kyma Resource Query Tool Call",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -129,18 +165,19 @@ def kyma_agent(app_models):
                 ],
                 subtasks=[],
                 my_task=SubTask(
-                    description="Diagnose API Rule issues", assigned_to="KymaAgent"
+                    description="What is wrong with api rule?", assigned_to="KymaAgent"
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
             None,
+            None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
             "kyma_query_tool",
             False,
         ),
-        # API Rule with Kyma Doc Search Tool Call - Agent must still query doc search tool
         (
+            "API Rule Kyma Doc Search Tool Call",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -175,18 +212,19 @@ def kyma_agent(app_models):
                 ],
                 subtasks=[],
                 my_task=SubTask(
-                    description="Diagnose API Rule issues", assigned_to="KymaAgent"
+                    description="What is wrong with ApiRule?", assigned_to="KymaAgent"
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
             None,
+            None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
             "search_kyma_doc_tool",
             False,
         ),
-        # Serverless Function with syntax error
         (
+            "Serverless Function with syntax error",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -239,8 +277,86 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
+            [
+                "There is no Dates object in JavaScript, but Date object. It can be initialized with `new Date()`."
+            ],
             None,
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
+            None,
+            False,
+        ),
+        (
+            "Serverless Function with no replicas",
+            KymaAgentState(
+                messages=[
+                    AIMessage(
+                        content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
+                    ),
+                    HumanMessage(
+                        content="Why the pod of the serverless Function is not ready?"
+                    ),
+                    AIMessage(
+                        content=dedent(
+                            """```json
+                            {
+                                "subtasks": [
+                                    {
+                                        "description": "Why the pod of the serverless Function is not ready?",
+                                        "assigned_to": "KymaAgent"
+                                    }
+                                ]
+                            }
+                            ```"""
+                        ),
+                        name=PLANNER,
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
+                        name=SUPERVISOR,
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+                                },
+                            },
+                            {
+                                "id": "tool_call_id_2",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc_tool",
+                                "args": {"query": "serverless Function pod not ready"},
+                            },
+                        ],
+                    ),
+                    ToolMessage(
+                        content=FUNCTION_NO_REPLICAS,
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                    ToolMessage(
+                        content=KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY,
+                        name="search_kyma_doc_tool",
+                        tool_call_id="tool_call_id_2",
+                    ),
+                ],
+                subtasks=[],
+                my_task=SubTask(
+                    description="Why the pod of the serverless Function is not ready?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+            ),
+            [
+                "The Serverless Function replicas must be greater than 0 to respond to requests"
+            ],
+            None,
+            EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
             None,
             False,
         ),
@@ -248,9 +364,12 @@ def kyma_agent(app_models):
 )
 def test_invoke_chain(
     kyma_agent,
-    answer_relevancy_metric,
+    semantic_similarity_metric,
     faithfulness_metric,
+    hallucination_metric,
+    test_case,
     state,
+    context,
     retrieval_context,
     expected_result,
     expected_tool_call,
@@ -274,16 +393,21 @@ def test_invoke_chain(
         else:
             # If tool calls are not expected, content should match expected_result
             test_case = LLMTestCase(
-                input=state.messages[-1].content,
+                input=state.my_task.description,
                 actual_output=response.content,
-                expected_output=expected_result,
+                expected_output=expected_result if expected_result else None,
+                context=context if context else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
 
             # Run deepeval metrics
             results = evaluate(
                 test_cases=[test_case],
-                metrics=[answer_relevancy_metric, faithfulness_metric],
+                metrics=[
+                    semantic_similarity_metric,
+                    faithfulness_metric,
+                    hallucination_metric,
+                ],
             )
 
             # Assert all metrics pass
