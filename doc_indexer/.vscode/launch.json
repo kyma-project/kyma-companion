@@ -5,11 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: main.py",
+      "name": "Indexer: main.py",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/main.py",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "args": ["index"]
     }
   ]
 }

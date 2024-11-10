@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 from deepeval import evaluate
 from deepeval.metrics import (
-    AnswerRelevancyMetric,
     FaithfulnessMetric,
     GEval,
     HallucinationMetric,
@@ -28,24 +27,33 @@ from integration.agents.fixtures.serverless_function import (
     EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
     FUNCTION_NO_REPLICAS,
     KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY,
+    KYMADOC_FUNCTION_TROUBLESHOOTING,
     SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
 from services.k8s import IK8sClient
+from integration.agents.fixtures.btp_manager import (
+    EXPECTED_BTP_MANAGER_RESPONSE,
+    RETRIEVAL_CONTEXT,
+)
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 
 
 @pytest.fixture
-def semantic_similarity_metric(evaluator_model):
+def correctness_metric(evaluator_model):
     return GEval(
-        name="Semantic Similarity",
-        criteria=""
-        "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        name="Correctness",
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning."
+            "Check whether the facts in 'actual output' contradict any facts in 'expected output'",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language are permissible",
+        ],
         model=evaluator_model,
-        threshold=0.8,
+        threshold=0.7,
     )
 
 
@@ -98,7 +106,6 @@ def kyma_agent(app_models):
                         content='{"next": "KymaAgent"}',
                         name=SUPERVISOR,
                     ),
-                    HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -265,8 +272,21 @@ def kyma_agent(app_models):
                         name="kyma_query_tool",
                         tool_call_id="tool_call_id_1",
                     ),
-                    HumanMessage(
-                        content="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?"
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_2",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc_tool",
+                                "args": {"query": "Kyma Function troubleshooting"},
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content=KYMADOC_FUNCTION_TROUBLESHOOTING,
+                        name="search_kyma_doc_tool",
+                        tool_call_id="tool_call_id_2",
                     ),
                 ],
                 subtasks=[],
@@ -278,12 +298,12 @@ def kyma_agent(app_models):
                 is_last_step=False,
             ),
             [
-                "There is no Dates object in JavaScript, but Date object. It can be initialized with `new Date()`."
-            ],
-            None,
-            EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
-            None,
-            False,
+                "Th Dates object does not exist in JavaScript. The correct object is Date, which can be initialized with `new Date()`."
+            ],  # context
+            None,  # retrieval_context
+            EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
+            None,  # expected_tool_call
+            False,  # should_raise
         ),
         (
             "Serverless Function with no replicas",
@@ -360,11 +380,56 @@ def kyma_agent(app_models):
             None,
             False,
         ),
+        (
+            "General Kyma question - only need Kyma Doc Search",
+            KymaAgentState(
+                messages=[
+                    AIMessage(content="The user query is related to: {}"),
+                    HumanMessage(content="what are the BTP Operator features?"),
+                    AIMessage(
+                        content='```json\n{ "subtasks": [ { "description": "what are the BTP Operator features?", "assigned_to": "KymaAgent" } ] }\n```',
+                        name=PLANNER,
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
+                        name=SUPERVISOR,
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc_tool",
+                                "args": {"query": "BTP Operator features"},
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content=RETRIEVAL_CONTEXT,
+                        name="search_kyma_doc_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[],
+                my_task=SubTask(
+                    description="What are the BTP Operator features?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+            ),
+            [EXPECTED_BTP_MANAGER_RESPONSE],
+            "",
+            EXPECTED_BTP_MANAGER_RESPONSE,
+            None,
+            False,
+        ),
     ],
 )
 def test_invoke_chain(
     kyma_agent,
-    semantic_similarity_metric,
+    correctness_metric,
     faithfulness_metric,
     hallucination_metric,
     test_case,
@@ -404,7 +469,7 @@ def test_invoke_chain(
             results = evaluate(
                 test_cases=[test_case],
                 metrics=[
-                    semantic_similarity_metric,
+                    correctness_metric,
                     faithfulness_metric,
                     hallucination_metric,
                 ],
