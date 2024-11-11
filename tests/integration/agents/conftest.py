@@ -1,4 +1,5 @@
 from threading import Thread
+from unittest.mock import Mock, patch
 
 import pytest
 from deepeval.models.base_model import DeepEvalBaseLLM
@@ -64,8 +65,17 @@ def start_fake_redis():
     t.join(timeout=5)
 
 
+# mock Hana DB calls
 @pytest.fixture(scope="session")
-def companion_graph(app_models, start_fake_redis):
+def mock_hana_db_connection_setup():
+    with patch("agents.kyma.tools.search.create_hana_connection") as mock_conn, patch(
+        "agents.kyma.tools.search.HanaDBRetriever", return_value=Mock()
+    ) as mock_retriever:
+        yield {"connection": mock_conn, "retriever": mock_retriever}
+
+
+@pytest.fixture(scope="session")
+def companion_graph(app_models, start_fake_redis, mock_hana_db_connection_setup):
     memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
     graph = CompanionGraph(app_models, memory)
     return graph

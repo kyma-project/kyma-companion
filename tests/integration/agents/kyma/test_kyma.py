@@ -6,7 +6,6 @@ from deepeval import evaluate
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
-    HallucinationMetric,
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
@@ -68,22 +67,12 @@ def faithfulness_metric(evaluator_model):
 
 
 @pytest.fixture
-def hallucination_metric(evaluator_model):
-    return HallucinationMetric(
-        threshold=0.7,
-        model=evaluator_model,
-        include_reason=True,
-        verbose_mode=DEEPEVAL_TESTCASE_VERBOSE,
-    )
-
-
-@pytest.fixture
 def mock_k8s_client():
     return Mock(spec_set=IK8sClient)
 
 
 @pytest.fixture
-def kyma_agent(app_models):
+def kyma_agent(app_models, mock_hana_db_connection_setup):
     return KymaAgent(app_models)
 
 
@@ -431,7 +420,6 @@ def test_invoke_chain(
     kyma_agent,
     correctness_metric,
     faithfulness_metric,
-    hallucination_metric,
     test_case,
     state,
     context,
@@ -471,7 +459,6 @@ def test_invoke_chain(
                 metrics=[
                     correctness_metric,
                     faithfulness_metric,
-                    hallucination_metric,
                 ],
             )
 

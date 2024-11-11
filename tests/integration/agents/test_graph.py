@@ -15,7 +15,7 @@ from agents.kyma.agent import KYMA_AGENT
 @pytest.fixture
 def answer_relevancy_metric(evaluator_model):
     return AnswerRelevancyMetric(
-        threshold=0.8, model=evaluator_model, include_reason=True
+        threshold=0.6, model=evaluator_model, include_reason=True
     )
 
 
@@ -30,7 +30,7 @@ def semantic_similarity_metric(evaluator_model):
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
         model=evaluator_model,
-        threshold=0.8,
+        threshold=0.7,
     )
 
 

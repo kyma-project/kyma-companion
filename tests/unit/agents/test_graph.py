@@ -50,6 +50,7 @@ def companion_graph(
             CompanionGraph, "_create_common_chain", return_value=mock_common_chain
         ),
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
+        patch("agents.graph.KymaAgent", return_value=Mock()),
     ):
         return CompanionGraph(mock_models, mock_memory)
 
@@ -335,3 +336,25 @@ class TestCompanionGraph:
                 return obj1 == obj2
 
             assert result == expected_output
+
+    def test_agent_initialization(self, companion_graph, mock_models, mock_memory):
+        with (
+            patch("agents.graph.KymaAgent") as mock_kyma_cls,
+            patch("agents.graph.KubernetesAgent") as mock_k8s_cls,
+            patch("agents.graph.SupervisorAgent") as mock_supervisor_cls,
+            patch.object(CompanionGraph, "_build_graph") as mock_build_graph,
+        ):
+            CompanionGraph(mock_models, mock_memory)
+
+            # Verify KymaAgent was constructed with models
+            mock_kyma_cls.assert_called_once_with(mock_models)
+
+            # Verify KubernetesAgent was constructed with GPT4O model
+            mock_k8s_cls.assert_called_once_with(mock_models[ModelType.GPT4O])
+
+            # Verify SupervisorAgent was constructed with correct arguments
+            mock_supervisor_cls.assert_called_once_with(
+                mock_models, members=["KymaAgent", "KubernetesAgent", "Common"]
+            )
+
+            mock_build_graph.assert_called_once()

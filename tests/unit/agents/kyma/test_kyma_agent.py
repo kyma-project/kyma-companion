@@ -24,7 +24,11 @@ def mock_models():
 @pytest.fixture
 def doc_search_tool(mock_models):
     """Create a mock search tool."""
-    return create_search_kyma_doc_tool(mock_models[ModelType.TEXT_EMBEDDING_3_LARGE])
+    # mock create_hana_connection and HanaDBRetriever
+    with patch("agents.kyma.tools.search.create_hana_connection"), patch(
+        "agents.kyma.tools.search.HanaDBRetriever"
+    ):
+        yield create_search_kyma_doc_tool(mock_models[ModelType.TEXT_EMBEDDING_3_LARGE])
 
 
 def test_kyma_agent_init(mock_models, doc_search_tool):
