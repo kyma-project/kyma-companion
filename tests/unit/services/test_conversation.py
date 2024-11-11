@@ -123,6 +123,7 @@ class TestConversation:
         conversation_service = ConversationService(
             followup_questions_handler=mock_handler
         )
+        conversation_service._followup_questions_handler = mock_handler
         # define mock for CompanionGraph.
         conversation_service._companion_graph.aget_messages = AsyncMock(
             return_value=dummy_conversation_history
