@@ -1,16 +1,12 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from utils.config import Config, ModelConfig
+from utils.config import ModelConfig
 from utils.models.factory import (
-    ModelType,
     GeminiModel,
-    ModelFactory,
-    OpenAIModel,
-    get_model_config,
 )
-from utils.models.exceptions import ModelNotFoundError, UnsupportedModelError
+
 
 @pytest.fixture
 def gemini_model(mock_get_proxy_client):
@@ -19,6 +15,7 @@ def gemini_model(mock_get_proxy_client):
         model = GeminiModel(config, mock_get_proxy_client)
         model._model = mock_generative_model.return_value
         return model
+
 
 class TestGeminiModel:
     def test_invoke(self, gemini_model):

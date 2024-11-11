@@ -41,4 +41,4 @@ def kyma_query_tool(
         raise Exception(
             f"failed executing kyma_query_tool with URI: {uri},"
             f"raised the following error: {e}"
-        ) from e 
+        ) from e

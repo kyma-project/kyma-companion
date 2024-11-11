@@ -352,6 +352,7 @@ def test_filter_messages_default_parameter():
     assert len(result) == RECENT_MESSAGES_LIMIT
     assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]
 
+
 @pytest.mark.parametrize(
     "is_last_step, my_task, expected_output",
     [

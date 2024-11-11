@@ -33,4 +33,3 @@ class OpenAIModel:
     def llm(self) -> ChatOpenAI | GenerativeModel:
         """Returns the instance of OpenAI model."""
         return self._llm
-    

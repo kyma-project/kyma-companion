@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Protocol  # noqa UP
+from typing import Any, Dict, Literal, Protocol, cast  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
@@ -70,7 +70,7 @@ class SupervisorAgent:
     plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
     def __init__(self, models: dict[str, IModel | Embeddings], members: list[str]):
-        gpt_4o = models[ModelType.GPT4O]
+        gpt_4o = cast(IModel, models[ModelType.GPT4O])
 
         self.model = gpt_4o
         self.members = members

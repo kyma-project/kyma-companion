@@ -1,7 +1,13 @@
 import json
-from collections.abc import Hashable
-from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
+from collections.abc import AsyncIterator, Hashable
+from typing import (
+    Any,
+    Protocol,
+    cast,
+)
 
+# noqa UP
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -28,8 +34,7 @@ from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models.factory import ModelType, IModel
-from langchain_core.embeddings import Embeddings
+from utils.models.factory import IModel, ModelType
 
 logger = get_logger(__name__)
 
@@ -85,14 +90,14 @@ class CompanionGraph:
 
         self.kyma_agent = KymaAgent(models)
 
-        self.k8s_agent = KubernetesAgent(gpt_4o)
+        self.k8s_agent = KubernetesAgent(cast(IModel, gpt_4o))
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._common_chain = self._create_common_chain(gpt_4o_mini)
+        self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
         self.graph = self._build_graph()
 
     @staticmethod

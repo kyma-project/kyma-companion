@@ -22,6 +22,10 @@ from integration.agents.fixtures.api_rule import (
     EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
     KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
 )
+from integration.agents.fixtures.btp_manager import (
+    EXPECTED_BTP_MANAGER_RESPONSE,
+    RETRIEVAL_CONTEXT,
+)
 from integration.agents.fixtures.serverless_function import (
     EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
     EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
@@ -31,10 +35,6 @@ from integration.agents.fixtures.serverless_function import (
     SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
 from services.k8s import IK8sClient
-from integration.agents.fixtures.btp_manager import (
-    EXPECTED_BTP_MANAGER_RESPONSE,
-    RETRIEVAL_CONTEXT,
-)
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 
 

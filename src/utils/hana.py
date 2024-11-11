@@ -1,4 +1,3 @@
-
 import logging
 
 from hdbcli import dbapi

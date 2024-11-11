@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from decouple import config, Config, RepositoryEnv
+from decouple import Config, RepositoryEnv, config
 from dotenv import find_dotenv, load_dotenv
 
 

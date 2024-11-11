@@ -1,6 +1,3 @@
-from textwrap import dedent
-
-
 API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
 "apiVersion": "gateway.kyma-project.io/v1beta1",
 "items": [

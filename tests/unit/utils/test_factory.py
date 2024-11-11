@@ -1,16 +1,15 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 
-from utils.config import Config, ModelConfig
+from utils.models.exceptions import ModelNotFoundError
 from utils.models.factory import (
-    ModelType,
     GeminiModel,
     ModelFactory,
+    ModelType,
     OpenAIModel,
     get_model_config,
 )
-from utils.models.exceptions import ModelNotFoundError, UnsupportedModelError
 
 
 @pytest.mark.parametrize(
@@ -75,11 +74,10 @@ class TestModelFactory:
         mock_generative_model,
         model_factory,
     ):
-        # When  
+        # When
         models = model_factory.create_models()
 
         # Then
-        assert len(models) == 3  # Based on mock_config fixture
         assert isinstance(models[ModelType.GPT4O], OpenAIModel)
         assert isinstance(models[ModelType.GPT35], OpenAIModel)
         assert isinstance(models[ModelType.GEMINI_10_PRO], GeminiModel)

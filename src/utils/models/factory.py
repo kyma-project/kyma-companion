@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from enum import Enum
 from functools import lru_cache
 from typing import Protocol, cast
@@ -16,12 +15,16 @@ from utils.models.openai import OpenAIModel
 
 
 class ModelPrefix:
+    """Model Prefixes."""
+
     GPT = "gpt"
     GEMINI = "gemini"
     TEXT_EMBEDDING = "text-embedding"
 
 
 class EmbeddingModelPrefix:
+    """Embedding Model Prefixes."""
+
     OPENAI = "text-embedding"
     GECKO = "textembedding-gecko"
 
@@ -99,14 +102,14 @@ class ModelFactory:
 
     def __init__(self):
         self._proxy_client = init_proxy_client()
-        self._models: dict[str, IModel] = {}
+        self._models: dict[str, IModel | Embeddings] = {}
 
     def create_model(self, name: str) -> IModel | Embeddings:
         """
         Create a model for the given name.
         """
         # TODO: Maybe use deployment ID as a key in addition to the model name.
-        model: IModel | None = self._models.get(name)
+        model: IModel | Embeddings | None = self._models.get(name)
         if model:
             return model
 

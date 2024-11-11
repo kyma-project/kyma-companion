@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import Any, Protocol
 
 from langchain_core.embeddings import Embeddings
@@ -32,7 +31,7 @@ class IAgent(Protocol):
         ...
 
 
-class BaseAgent(ABC):
+class BaseAgent:
     """Abstract base agent class."""
 
     def __init__(
@@ -107,8 +106,8 @@ class BaseAgent(ABC):
                 )
             ],
         }
-        
-    def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> dict[str, Any]:
+
+    def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
             MESSAGES: filter_messages(state.messages),
             "query": state.my_task.description,
@@ -148,9 +147,7 @@ class BaseAgent(ABC):
         response.additional_kwargs["owner"] = self.name
         return {MESSAGES: [response]}
 
-    def _finalizer_node(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> dict[str, Any]:
+    def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed and clean-up extra messages."""
         state.my_task.complete()
 

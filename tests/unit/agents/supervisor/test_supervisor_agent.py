@@ -1,17 +1,17 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.constants import END
 
-from agents.common.state import CompanionState, SubTask
 from agents.common.constants import COMMON, PLANNER
+from agents.common.state import CompanionState, SubTask
 from agents.k8s.constants import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
-from utils.models.factory import ModelType, IModel
-from langchain_core.embeddings import Embeddings
+from utils.models.factory import IModel, ModelType
 
 
 @pytest.fixture

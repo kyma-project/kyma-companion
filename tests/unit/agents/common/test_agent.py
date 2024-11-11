@@ -1,44 +1,47 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     RemoveMessage,
-    SystemMessage,
     ToolMessage,
 )
 from langchain_core.prompts import (
     ChatPromptTemplate,
-    MessagesPlaceholder,
     HumanMessagePromptTemplate,
+    MessagesPlaceholder,
+    SystemMessagePromptTemplate,
 )
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import BaseAgent
 from agents.common.constants import FINALIZER, MESSAGES
-from agents.common.state import SubTask, SubTaskStatus, BaseAgentState
+from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
-from utils.models.factory import IModel, ModelType
-from langchain_core.embeddings import Embeddings
-from langchain_core.prompts import SystemMessagePromptTemplate
 from services.k8s import IK8sClient
+from utils.models.factory import IModel, ModelType
+
 
 class TestAgentState(BaseAgentState):
     """Test agent state class."""
+
     k8s_client: IK8sClient | None = None  # Make k8s_client optional with default None
+
 
 class TestAgent(BaseAgent):
     """Concrete implementation of BaseAgent for testing."""
+
     def __init__(self, model: IModel):
         super().__init__(
             name="TestAgent",
             model=model,
             tools=[k8s_query_tool, fetch_pod_logs_tool],
             system_prompt="You are a test agent",
-            state_class=TestAgentState
+            state_class=TestAgentState,
         )
 
 

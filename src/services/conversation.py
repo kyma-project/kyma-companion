@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Protocol
+from typing import Protocol, cast
 
 from langchain_core.messages import HumanMessage
 from langchain_redis import RedisChatMessageHistory
@@ -13,7 +13,7 @@ from initial_questions.inital_questions import (
 )
 from services.k8s import IK8sClient
 from utils.logging import get_logger
-from utils.models.factory import IModelFactory, ModelType, ModelFactory
+from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
 from utils.settings import REDIS_URL
 from utils.singleton_meta import SingletonMeta
 
@@ -46,7 +46,7 @@ class ConversationService(metaclass=SingletonMeta):
 
     _init_questions_handler: IInitialQuestionsHandler
     _kyma_graph: IGraph
-    _model_factory: ModelFactory
+    _model_factory: IModelFactory
 
     def __init__(
         self,
@@ -63,7 +63,7 @@ class ConversationService(metaclass=SingletonMeta):
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
             initial_questions_handler
-            or InitialQuestionsHandler(model=models[ModelType.GPT4O_MINI])
+            or InitialQuestionsHandler(model=cast(IModel, models[ModelType.GPT4O_MINI]))
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.

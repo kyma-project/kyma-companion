@@ -6,7 +6,7 @@ from fakeredis import TcpFakeServer
 
 from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
-from utils.models.factory import ModelType, ModelFactory
+from utils.models.factory import ModelFactory, ModelType
 from utils.settings import REDIS_HOST, REDIS_PORT, REDIS_URL
 
 

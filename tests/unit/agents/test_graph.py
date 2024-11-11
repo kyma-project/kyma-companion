@@ -1,16 +1,16 @@
 import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from openai import embeddings
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agents.common.constants import COMMON
 from agents.common.data import Message
-from agents.graph import CompanionGraph
 from agents.common.state import CompanionState, SubTask
-from utils.models.factory import ModelType, IModel
-from langchain_core.embeddings import Embeddings
+from agents.graph import CompanionGraph
+from utils.models.factory import IModel, ModelType
+
 
 @pytest.fixture
 def mock_models():
