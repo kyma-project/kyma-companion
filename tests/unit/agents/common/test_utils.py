@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain_core.messages import (
@@ -14,10 +14,15 @@ from langchain_core.prompts import MessagesPlaceholder
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
+    agent_edge,
     agent_node,
     create_agent,
     filter_messages,
+    subtask_selector_edge,
 )
+from agents.k8s.constants import K8S_AGENT
+from agents.k8s.state import KubernetesAgentState
+from services.k8s import IK8sClient
 
 # Mock the logging setup
 mock_logger = Mock()
@@ -346,3 +351,64 @@ def test_filter_messages_default_parameter():
     result = filter_messages(messages)  # Using default last_messages_number
     assert len(result) == RECENT_MESSAGES_LIMIT
     assert [msg.content for msg in result] == [str(i) for i in range(5, 15)]
+
+@pytest.mark.parametrize(
+    "is_last_step, my_task, expected_output",
+    [
+        (
+            False,
+            SubTask(description="test", assigned_to=K8S_AGENT),
+            "agent",
+        ),
+        (
+            True,
+            None,
+            "__end__",
+        ),
+    ],
+)
+def test_subtask_selector_edge(
+    is_last_step: bool, my_task: SubTask | None, expected_output: str
+):
+    k8s_client = MagicMock()
+    k8s_client.mock_add_spec(IK8sClient)
+
+    state = KubernetesAgentState(
+        my_task=my_task,
+        is_last_step=is_last_step,
+        messages=[],
+        subtasks=[],
+        k8s_client=k8s_client,
+    )
+    assert subtask_selector_edge(state) == expected_output
+
+
+@pytest.mark.parametrize(
+    "last_message, expected_output",
+    [
+        (
+            ToolMessage(
+                content="test",
+                tool_call_id="call_MEOW",
+                tool_calls={"call_MEOW": "test"},
+            ),
+            "tools",
+        ),
+        (
+            AIMessage(content="test"),
+            "finalizer",
+        ),
+    ],
+)
+def test_agent_edge(last_message: BaseMessage, expected_output: str):
+    k8s_client = MagicMock()
+    k8s_client.mock_add_spec(IK8sClient)
+
+    state = KubernetesAgentState(
+        my_task=None,
+        is_last_step=False,
+        messages=[last_message],
+        subtasks=[],
+        k8s_client=k8s_client,
+    )
+    assert agent_edge(state) == expected_output

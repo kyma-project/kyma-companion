@@ -9,10 +9,15 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    HumanMessagePromptTemplate,
+)
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
+from agents.common.agent import BaseAgent
 from agents.common.constants import FINALIZER, MESSAGES
 from agents.common.state import SubTask, SubTaskStatus
 from agents.k8s.agent import KubernetesAgent
@@ -21,13 +26,21 @@ from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
+from agents.kyma.agent import KymaAgent
+from agents.kyma.constants import KYMA_AGENT
+from agents.kyma.state import KymaAgentState
 from services.k8s import IK8sClient
-from utils.models import IModel
+from utils.models.factory import IModel, ModelType
+from langchain_core.embeddings import Embeddings
+from langchain_core.prompts import SystemMessagePromptTemplate
 
 
 @pytest.fixture
-def mock_model():
-    return Mock(spec=IModel)
+def mock_models():
+    return {
+        ModelType.GPT4O: Mock(spec=IModel),
+        ModelType.TEXT_EMBEDDING_3_LARGE: Mock(spec=Embeddings),
+    }
 
 
 @pytest.fixture
@@ -40,21 +53,26 @@ def mock_config():
     return Mock()
 
 
-class TestKubernetesAgent:
-    def test_name(self, mock_model):
-        agent = KubernetesAgent(mock_model)
+class TestBaseAgent:
+    """Test base agent class."""
+
+    def test_name(self, mock_models):
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
         assert agent.name == K8S_AGENT
 
-    def test_agent_init(self, mock_model, mock_graph):
-        agent = KubernetesAgent(mock_model)
+        agent = KymaAgent(mock_models)
+        assert agent.name == KYMA_AGENT
+
+    def test_agent_init(self, mock_models):
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
         assert agent.tools == [k8s_query_tool, fetch_pod_logs_tool]
-        assert agent.model == mock_model
+        assert agent.model == mock_models[ModelType.GPT4O]
         assert agent.graph is not None
         assert agent.chain is not None
 
-    def test_agent_node(self, mock_model):
+    def test_agent_node(self, mock_models):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
 
         # When
         result = agent.agent_node()
@@ -63,12 +81,12 @@ class TestKubernetesAgent:
         assert result is not None
         assert isinstance(result, CompiledGraph)
 
-    def test_create_chain(self, mock_model):
+    def test_create_chain(self, mock_models):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
 
         # When
-        chain = agent._create_chain()
+        chain = agent._create_chain(K8S_AGENT_PROMPT)
 
         # Then
         assert chain is not None
@@ -78,23 +96,22 @@ class TestKubernetesAgent:
         assert isinstance(chain.steps[0], ChatPromptTemplate) == True  # noqa
         assert len(chain.steps[0].messages) == 3  # noqa
         # check step 1 > message 1
-        assert isinstance(chain.steps[0].messages[0], SystemMessage)
-        assert chain.steps[0].messages[0].content == K8S_AGENT_PROMPT
+        assert isinstance(chain.steps[0].messages[0], SystemMessagePromptTemplate)
+        assert chain.steps[0].messages[0].prompt.template == K8S_AGENT_PROMPT
         # check step 1 > message 2
         assert isinstance(chain.steps[0].messages[1], MessagesPlaceholder)
         # check step 1 > message 3
-        assert isinstance(chain.steps[0].messages[2], HumanMessage)
-        assert chain.steps[0].messages[2].content == "query: {query}"
+        assert isinstance(chain.steps[0].messages[2], HumanMessagePromptTemplate)
 
         # check step 2: model
         assert isinstance(chain.steps[1], RunnableLambda)
 
-    def test_build_graph(self, mock_model):
+    def test_build_graph(self, mock_models):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])  # noqa
 
         # When
-        graph = agent._build_graph()
+        graph = agent._build_graph(KubernetesAgentState)
 
         # Then
         # check nodes.
@@ -189,10 +206,89 @@ class TestKubernetesAgent:
             ),
         ],
     )
-    def test_subtask_selector_node(
-        self, mock_model, given_state: KubernetesAgentState, expected_output: dict
+    def test_subtask_selector_node_k8s(
+        self, mock_models, given_state: KubernetesAgentState, expected_output: dict
     ):
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
+        assert agent._subtask_selector_node(given_state) == expected_output
+        
+    @pytest.mark.parametrize(
+        "given_state, expected_output",
+        [
+            # Test case when there is a subtask assigned to the agent.
+            (
+                KymaAgentState(
+                    my_task=None,
+                    is_last_step=False,
+                    messages=[],
+                    subtasks=[
+                        SubTask(description="test", assigned_to=FINALIZER),
+                        SubTask(description="test", assigned_to=KYMA_AGENT),
+                    ],
+                    k8s_client=Mock(spec_set=IK8sClient),
+                ),
+                {
+                    MY_TASK: SubTask(description="test", assigned_to=KYMA_AGENT),
+                },
+            ),
+            # Test case when there is no subtask assigned to the agent.
+            (
+                KymaAgentState(
+                    my_task=None,
+                    is_last_step=False,
+                    messages=[],
+                    subtasks=[
+                        SubTask(description="test", assigned_to=FINALIZER),
+                    ],
+                    k8s_client=Mock(spec_set=IK8sClient),
+                ),
+                {
+                    IS_LAST_STEP: True,
+                    MESSAGES: [
+                        AIMessage(
+                            content="All my subtasks are already completed.",
+                            name=KYMA_AGENT,
+                        )
+                    ],
+                },
+            ),
+            # Test case when there all subtasks assigned to the agent are completed.
+            (
+                KymaAgentState(
+                    my_task=None,
+                    is_last_step=False,
+                    messages=[],
+                    subtasks=[
+                        SubTask(description="test", assigned_to=FINALIZER),
+                        SubTask(
+                            description="test1",
+                            assigned_to=KYMA_AGENT,
+                            status=SubTaskStatus.COMPLETED,
+                        ),
+                        SubTask(
+                            description="test2",
+                            assigned_to=KYMA_AGENT,
+                            status=SubTaskStatus.COMPLETED,
+                        ),
+                    ],
+                    k8s_client=Mock(spec_set=IK8sClient),
+                ),
+                {
+                    IS_LAST_STEP: True,
+                    MESSAGES: [
+                        AIMessage(
+                            content="All my subtasks are already completed.",
+                            name=KYMA_AGENT,
+                        )
+                    ],
+                },
+            ),
+        ],
+    )
+    def test_subtask_selector_node_kyma(
+        self, mock_models, given_state: KymaAgentState, expected_output: dict
+    ):
+        agent = KymaAgent(mock_models)
         assert agent._subtask_selector_node(given_state) == expected_output
 
     @pytest.mark.parametrize(
@@ -236,6 +332,7 @@ class TestKubernetesAgent:
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
                             "Error: This is a dummy exception from model.",
+                            name=K8S_AGENT,
                         )
                     ]
                 },
@@ -266,7 +363,8 @@ class TestKubernetesAgent:
                 {
                     MESSAGES: [
                         AIMessage(
-                            content="Sorry, the kubernetes agent needs more steps to process the request.",
+                            content="Sorry, I need more steps to process the request.",
+                            name=K8S_AGENT,
                         )
                     ]
                 },
@@ -279,7 +377,7 @@ class TestKubernetesAgent:
     )
     def test_model_node(
         self,
-        mock_model,
+        mock_models,
         mock_config,
         given_invoke_response: BaseMessage,
         given_invoke_error: Exception,
@@ -288,7 +386,7 @@ class TestKubernetesAgent:
         expected_invoke_inputs: dict,
     ):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
         agent.chain = MagicMock()
         agent.chain.invoke = MagicMock()
         if given_invoke_response is not None:
@@ -385,12 +483,12 @@ class TestKubernetesAgent:
     )
     def test_is_internal_message(
         self,
-        mock_model,
+        mock_models,
         given_message: BaseMessage,
         expected_output: bool,
     ):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
 
         # When
         assert agent.is_internal_message(given_message) == expected_output
@@ -445,12 +543,12 @@ class TestKubernetesAgent:
     )
     def test_finalizer_node(
         self,
-        mock_model,
+        mock_models,
         given_state: KubernetesAgentState,
         expected_output: dict,
     ):
         # Given
-        agent = KubernetesAgent(mock_model)
+        agent = KubernetesAgent(mock_models[ModelType.GPT4O])
         agent.chain = MagicMock()
 
         # When

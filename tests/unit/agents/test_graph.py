@@ -1,6 +1,7 @@
 import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+from openai import embeddings
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -8,14 +9,15 @@ from agents.common.constants import COMMON
 from agents.common.data import Message
 from agents.graph import CompanionGraph
 from agents.common.state import CompanionState, SubTask
-from utils.models import LLM, IModel
-
+from utils.models.factory import ModelType, IModel
+from langchain_core.embeddings import Embeddings
 
 @pytest.fixture
 def mock_models():
     return {
-        LLM.GPT4O_MINI: MagicMock(spec=IModel),
-        LLM.GPT4O: MagicMock(spec=IModel),
+        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
+        ModelType.GPT4O: MagicMock(spec=IModel),
+        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
     }
 
 

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Protocol, cast
+from typing import Protocol, cast
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
@@ -80,6 +80,7 @@ def get_model_config(name: str) -> ModelConfig | None:
     """
     config = get_config()
     return next((model for model in config.models if model.name == name), None)
+
 
 class IModelFactory(Protocol):
     """Model Factory Interface."""
