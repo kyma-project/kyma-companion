@@ -211,6 +211,7 @@ jobs:
 
           # cleanup
           rm -f aicore-secret.yaml
+          rm -f hana-db-secret.yaml
 
       - name: Run Evaluation Tests
         working-directory: tests/blackbox
