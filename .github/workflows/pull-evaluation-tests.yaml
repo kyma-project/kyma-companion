@@ -189,7 +189,9 @@ jobs:
         id: eval-tests-configs
         env:
           AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
+          HANA_DB_SECRET: ${{ secrets.HANA_DB }}
         run: |
+          # AI Core configurations.
           echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
           echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_CLIENT_SECRET=$(yq eval '.stringData.clientsecret' aicore-secret.yaml)" >> $GITHUB_OUTPUT
@@ -198,6 +200,15 @@ jobs:
           echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_CONFIGURATION_ID_GPT4_MINI=$(yq eval '.stringData.configuration_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_DEPLOYMENT_ID_GPT4_MINI=$(yq eval '.stringData.deployment_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          
+          # Hana DB configurations.
+          echo "${HANA_DB_SECRET}" > hana-db-secret.yaml
+          echo "DATABASE_URL=$(yq eval '.DATABASE_URL' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PORT=$(yq eval '.DATABASE_PORT' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_USER=$(yq eval '.DATABASE_USER' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PASSWORD=$(yq eval '.DATABASE_PASSWORD' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DOCS_TABLE_NAME=$(yq eval '.DOCS_TABLE_NAME' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+
           # cleanup
           rm -f aicore-secret.yaml
 
@@ -219,6 +230,12 @@ jobs:
           AICORE_RESOURCE_GROUP: ${{ steps.eval-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
           AICORE_CONFIGURATION_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4_MINI }}
           AICORE_DEPLOYMENT_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4_MINI }}
+          # Hana DB configurations.
+          DATABASE_URL: ${{ steps.eval-tests-configs.outputs.DATABASE_URL }}
+          DATABASE_PORT: ${{ steps.eval-tests-configs.outputs.DATABASE_PORT }}
+          DATABASE_USER: ${{ steps.eval-tests-configs.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.eval-tests-configs.outputs.DATABASE_PASSWORD }}
+          DOCS_TABLE_NAME: ${{ steps.eval-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
           poetry run python src/run_evaluation.py
 
