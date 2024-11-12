@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from deepeval import assert_test
@@ -11,9 +11,11 @@ from langgraph.types import StateSnapshot
 
 from followup_questions.followup_questions import FollowUpQuestionsHandler
 from services.conversation import ConversationService
-from utils.models import LLM, ModelFactory
+from utils.models import LLM
 
 FOLLOW_UP_QUESTIONS_COUNT = 5
+
+shared_memory = {}
 
 
 @pytest.fixture
@@ -44,6 +46,12 @@ def conversation_service(app_models, companion_graph):
         conversation_service._followup_questions_handler = FollowUpQuestionsHandler(
             model=model_mini
         )
+
+    async def mock_aget_state(config):
+        con_id = config["configurable"]["thread_id"]
+        return shared_memory[con_id]
+
+    conversation_service._companion_graph.graph.aget_state = mock_aget_state
     return conversation_service
 
 
@@ -67,8 +75,10 @@ def conversation_service(app_models, companion_graph):
                         orchestration capabilities for managing containerized applications. 2. **Microservices
                         Architecture**: It supports the development of microservices, allowing for modular application
                         design and easier scaling. 3. **Serverless Functions**: Kyma enables the creation of serverless
-                        functions, which can be triggered by events, making it easier to build event-driven applications.
-                        4. **Integration Capabilities**: It offers various integration options with external services and
+                        functions, which can be triggered by events, making it easier to build 
+                        event-driven applications.
+                        4. **Integration Capabilities**: It offers various integration options with external services 
+                        and
                         APIs, facilitating seamless communication between different systems. 5. **Extensibility**:
                         Developers can extend existing applications with new functionalities without needing to modify
                         the core application code. 6. **Service Management**: Kyma provides tools for managing services,
@@ -81,14 +91,14 @@ def conversation_service(app_models, companion_graph):
         [
             SystemMessage(
                 content="The user query is related to: "
-                        "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
             ),
             HumanMessage(content="why the pod is failing?"),
             AIMessage(
                 content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
-                        "`CrashLoopBackOff` state. The last termination reason was `StartError`"
-                        " with the message indicating a failure to create the containerd task "
-                        "due to a context cancellation."
+                "`CrashLoopBackOff` state. The last termination reason was `StartError`"
+                " with the message indicating a failure to create the containerd task "
+                "due to a context cancellation."
             ),
         ],
     ],
@@ -110,12 +120,11 @@ async def test_followup_questions(
         parent_config=None,
     )
 
-    conversation_service._companion_graph.graph.aget_state = AsyncMock(
-        return_value=given_latest_state
-    )
+    given_conversation_id = str(uuid.uuid4())
+    shared_memory[given_conversation_id] = given_latest_state
 
     # when
-    result = await conversation_service.handle_followup_questions(str(uuid.uuid4()))
+    result = await conversation_service.handle_followup_questions(given_conversation_id)
 
     # then
     # there should be 5 follow-up questions.
@@ -126,5 +135,4 @@ async def test_followup_questions(
         input=messages[-1].content,
         actual_output=got_questions,
     )
-
-    assert_test(test_case, [followup_correctness_metric])
+    assert_test(test_case, [followup_correctness_metric], run_async=False)
