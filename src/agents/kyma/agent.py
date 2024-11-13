@@ -1,4 +1,3 @@
-
 from langchain_core.embeddings import Embeddings
 
 from agents.common.agent import BaseAgent
@@ -17,7 +16,7 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         tools = [
-            SearchKymaDocTool(models),
+            SearchKymaDocTool(models, top_k=4),
             kyma_query_tool,
         ]
         super().__init__(

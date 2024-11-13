@@ -1,7 +1,7 @@
 from typing import Any, Protocol
 
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from rag.prompts import QUERY_GENERATOR_PROMPT_TEMPLATE
@@ -42,8 +42,10 @@ class QueryGenerator:
                 ("user", "Original query: {query}"),
                 (
                     "system",
-                    "Based on the original query, generate {num_queries} alternative queries that capture different aspects and "
-                    "variations of the search intent. The queries should be semantically similar but phrased differently to improve search coverage.",
+                    "Based on the original query, generate {num_queries} alternative queries "
+                    "that capture different aspects and variations of the search intent. "
+                    "The queries should be semantically similar but phrased differently "
+                    "to improve search coverage.",
                 ),
             ]
         ).partial(

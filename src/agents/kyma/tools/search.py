@@ -32,7 +32,7 @@ class SearchKymaDocTool(BaseTool):
     args_schema: type[BaseModel] = SearchKymaDocArgs
     return_direct: bool = False  # Let the agent process the search results
 
-    # Add these fields
+    # the following fields are not part of the schema, but are used internally
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
     top_k: int | None = Field(default=5, exclude=True)
 
@@ -52,7 +52,6 @@ class SearchKymaDocTool(BaseTool):
         if len(docs) == 0:
             return "No relevant documentation found for your query."
 
-        # Format the results with source information if available
         formatted_docs = []
         for doc in docs:
             content = doc.page_content

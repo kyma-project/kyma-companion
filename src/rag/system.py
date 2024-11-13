@@ -1,7 +1,7 @@
 from typing import Protocol, cast
 
+from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from pydantic import BaseModel
 
 from rag.query_generator import QueryGenerator
 from rag.retriever import HanaDBRetriever, Query
@@ -17,12 +17,6 @@ from utils.settings import (
 )
 
 logger = get_logger(__name__)
-
-class Document(BaseModel):
-    """A RAG system document."""
-
-    id: str
-    content: str
 
 
 class IRAGSystem(Protocol):
@@ -50,9 +44,21 @@ class RAGSystem:
             connection=hana_conn,
             table_name=DOC_TABLE_NAME,
         )
-        
+
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOC_TABLE_NAME}")
+
+    def _remove_duplicates(self, documents: list[Document]) -> list[Document]:
+        """Remove duplicate documents based on content."""
+        seen_content = set()
+        unique_docs = []
+
+        for doc in documents:
+            if doc.page_content not in seen_content:
+                seen_content.add(doc.page_content)
+                unique_docs.append(doc)
+
+        return unique_docs
 
     def retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
@@ -65,15 +71,16 @@ class RAGSystem:
         # retrieve documents for each query
         all_docs = []
         for query in all_queries:
-            docs = self.retriever.retrieve(query, top_k=top_k)
-            # compare the content of the new docs with the content of the existing docs
-            # and add only the new ones
-            new_docs = [doc for doc in docs if doc.page_content not in [doc.page_content for doc in all_docs]]
-            all_docs.extend(new_docs)
+            retrieved_docs = self.retriever.retrieve(query)
+            all_docs.extend(retrieved_docs)
 
-        # TODO: re-rank the all_docs based on the original query
+        # remove duplicates from all retrieved documents
+        all_docs = self._remove_duplicates(all_docs)
 
-        all_docs = all_docs[:top_k]
+        # TODO: re-rank documents
+
+        if len(all_docs) > top_k:
+            all_docs = all_docs[:top_k]
 
         logger.info(f"Retrieved {len(all_docs)} documents.")
         return all_docs
