@@ -1,4 +1,3 @@
-from typing import cast
 
 from langchain_core.embeddings import Embeddings
 
@@ -7,7 +6,7 @@ from agents.common.constants import GRAPH_STEP_TIMEOUT_SECONDS
 from agents.kyma.prompts import KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import kyma_query_tool
-from agents.kyma.tools.search import create_search_kyma_doc_tool
+from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel, ModelType
 
 KYMA_AGENT = "KymaAgent"
@@ -18,9 +17,7 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         tools = [
-            create_search_kyma_doc_tool(
-                cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE])
-            ),
+            SearchKymaDocTool(models),
             kyma_query_tool,
         ]
         super().__init__(

@@ -11,6 +11,33 @@
       "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal",
       "args": ["index"]
+    },
+    {
+      "name": "Fetcher: main.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "args": ["fetch"]
+    },
+    {
+      "name": "Retriever: run_retrieval.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/run_retriever.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--query",
+        "${input:queryValue}"
+      ],
+    }
+  ],
+  "inputs": [
+    {
+      "id": "queryValue",
+      "type": "promptString",
+      "description": "Enter your search query",
+      "default": "Istio features"
     }
   ]
 }

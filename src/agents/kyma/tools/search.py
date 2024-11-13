@@ -1,47 +1,71 @@
-from typing import Any
-
 from langchain_core.embeddings import Embeddings
-from langchain_core.pydantic_v1 import BaseModel
-from langchain_core.tools import tool
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.tools import BaseTool
 
-from rag.retriever import HanaDBRetriever
-from utils.hana import create_hana_connection
-from utils.settings import (
-    DATABASE_PASSWORD,
-    DATABASE_PORT,
-    DATABASE_URL,
-    DATABASE_USER,
-    DOCS_TABLE_NAME,
-)
+from rag.retriever import Query
+from rag.system import RAGSystem
+from utils.models.factory import IModel
 
 
 class SearchKymaDocArgs(BaseModel):
     """Arguments for the search_kyma_doc tool."""
 
-    query: str
-
-
-def create_search_kyma_doc_tool(embedding_model: Embeddings) -> Any:
-    """Create a tool to search Kyma documentation with Embeddings model."""
-
-    # setup connection to Hana Cloud DB
-    hana_conn = create_hana_connection(
-        DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
+    query: str = Field(
+        description="The search query to find relevant Kyma documentation",
+        examples=["How to install Kyma?", "What are Kyma components?"],
     )
-    retriever = HanaDBRetriever(embedding_model, hana_conn, DOCS_TABLE_NAME)
 
-    @tool(infer_schema=False, args_schema=SearchKymaDocArgs)
-    def search_kyma_doc_tool(query: str) -> str:
-        """Used to search through Kyma documentation for relevant information about Kyma concepts, features, components,
-        resources, or troubleshooting. A query is required to search the documentation.
-        """
 
-        docs = retriever.retrieve(query)
+class SearchKymaDocTool(BaseTool):
+    """Tool to search through Kyma documentation."""
+
+    name: str = "search_kyma_doc"
+    description: str = """Used to search through Kyma documentation for relevant information about Kyma concepts, 
+    features, components, resources, or troubleshooting. A query is required to search the documentation.
+
+    Example queries:
+    - "How do I install Kyma?"
+    - "What are the main Kyma components?"
+    - "How to troubleshoot Kyma Istio module?"
+    """
+
+    args_schema: type[BaseModel] = SearchKymaDocArgs
+    return_direct: bool = False  # Let the agent process the search results
+
+    # Add these fields
+    rag_system: RAGSystem | None = Field(default=None, exclude=True)
+    top_k: int | None = Field(default=5, exclude=True)
+
+    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = 5):
+        super().__init__()
+        self.rag_system = RAGSystem(models)
+        self.top_k = top_k
+
+    def _run(
+        self,
+        query: str,
+    ) -> str:
+        """Execute the search through Kyma documentation."""
+        query_obj = Query(text=query)
+        docs = self.rag_system.retrieve(query_obj, top_k=self.top_k)
 
         if len(docs) == 0:
-            return "No relevant documentation found."
+            return "No relevant documentation found for your query."
 
-        docs_str = "\n".join([doc.page_content for doc in docs])
+        # Format the results with source information if available
+        formatted_docs = []
+        for doc in docs:
+            content = doc.page_content
+            metadata = doc.metadata or {}
+            source = metadata.get("source", "")
+            if source:
+                content = f"{content}\nSource: {source}"
+            formatted_docs.append(content)
+
+        docs_str = "\n\n---\n\n".join(formatted_docs)
         return docs_str
 
-    return search_kyma_doc_tool
+    async def _arun(self, query: str) -> str:
+        """Async implementation of the search through Kyma documentation."""
+        # For now, just call the sync version
+        return self._run(query)
