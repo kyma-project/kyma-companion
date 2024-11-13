@@ -42,7 +42,7 @@ def find_config_file(start_path: Path, target: str) -> Path:
         if potential_path.is_file():
             return potential_path
     raise FileNotFoundError(
-        f"{target} not found in any parent directories of {start_path}"
+        f"{target} not found in parent directories of {start_path}"
     )
 
 
