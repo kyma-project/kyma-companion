@@ -79,8 +79,12 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
 @pytest.mark.parametrize(
     "test_case,state,context,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
+        # Test case for API Rule with wrong access strategy
+        # - Verifies agent correctly identifies and explains API Rule validation error
+        # - Checks agent uses both kyma_query_tool and search_kyma_doc_tool
+        # - Validates response matches expected explanation about multiple access strategies
         (
-            "API Rule with wrong access strategy",
+            "Should return right solution for API Rule with wrong access strategy",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -134,7 +138,7 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 my_task=SubTask(
                     description="What is wrong with API rule?", assigned_to="KymaAgent"
                 ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                k8s_client=Mock(spec_set=IK8sClient),
                 is_last_step=False,
             ),
             ["Multiple access strategies are not allowed to be used together"],
@@ -143,8 +147,10 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             None,
             False,
         ),
+        # Test case for initial API Rule query
+        # - Verifies agent makes correct kyma_query_tool call on first interaction
         (
-            "API Rule Kyma Resource Query Tool Call",
+            "Should return Kyma resource query tool call for the first user query call",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -172,8 +178,11 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             "kyma_query_tool",
             False,
         ),
+        # Test case for API Rule documentation search
+        # - Verifies agent searches Kyma docs after getting API Rule resource
+        # - Validates proper sequence of tool calls (query then doc search)
         (
-            "API Rule Kyma Doc Search Tool Call",
+            "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -219,8 +228,11 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             "search_kyma_doc_tool",
             False,
         ),
+        # Test case for Serverless Function with syntax error
+        # - Verifies agent correctly identifies JavaScript syntax error
+        # - Validates response includes proper error explanation
         (
-            "Serverless Function with syntax error",
+            "Should return right solution for Serverless Function with syntax error",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -294,8 +306,11 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             None,  # expected_tool_call
             False,  # should_raise
         ),
+        # Test case for Serverless Function with no replicas
+        # - Verifies agent detects and explains replica configuration issue
+        # - Validates response includes proper explanation about replica requirements
         (
-            "Serverless Function with no replicas",
+            "Should return right solution for Serverless Function with no replicas",
             KymaAgentState(
                 messages=[
                     AIMessage(
@@ -369,8 +384,12 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             None,
             False,
         ),
+        # Test case for general Kyma documentation query
+        # - Verifies agent handles general documentation queries without resource lookup
+        # - Checks proper use of doc search tool for BTP Operator features
+        # - Validates response matches expected documentation content
         (
-            "General Kyma question - only need Kyma Doc Search",
+            "Should return right solution for general Kyma question - only need Kyma Doc Search",
             KymaAgentState(
                 messages=[
                     AIMessage(content="The user query is related to: {}"),
@@ -428,14 +447,16 @@ def test_invoke_chain(
     expected_tool_call,
     should_raise,
 ):
-    """Test the _invoke_chain method with success, context, and error scenarios."""
     if should_raise:
+        # When error is expected
         with pytest.raises(expected_result):
             kyma_agent._invoke_chain(state, {})
     else:
+        # When
         response = kyma_agent._invoke_chain(state, {})
         assert isinstance(response, AIMessage)
 
+        # Then
         if expected_tool_call:
             # if tool calls are expected, assert the tool call content matches expected_tool_call
             assert response.tool_calls is not None, "Expected tool calls but found none"

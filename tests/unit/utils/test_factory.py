@@ -44,25 +44,25 @@ class TestModelFactory:
         "test_case,model_name, expected_result, expected_exception",
         [
             (
-                "create gpt4o model should return OpenAIModel",
+                "should return OpenAIModel when gpt4o is requested",
                 ModelType.GPT4O,
                 OpenAIModel,
                 None,
             ),
             (
-                "create gpt35 model should return OpenAIModel",
+                "should return OpenAIModel when gpt35 is requested",
                 ModelType.GPT35,
                 OpenAIModel,
                 None,
             ),
             (
-                "create gemini_10_pro model should return GeminiModel",
+                "should return GeminiModel when gemini_10_pro is requested",
                 ModelType.GEMINI_10_PRO,
                 GeminiModel,
                 None,
             ),
             (
-                "create non_existent_model should raise error",
+                "should raise error when non_existent_model is requested",
                 "non_existent_model",
                 None,
                 ModelNotFoundError,
@@ -80,12 +80,16 @@ class TestModelFactory:
         expected_exception,
     ):
         if expected_exception:
+            # When exception is expected
             if expected_exception == ModelNotFoundError:
                 with pytest.raises(expected_exception):
                     model_factory.create_model(model_name)
 
         else:
+            # When
             model = model_factory.create_model(model_name)
+
+            # Then
             assert isinstance(model, expected_result)
             assert model.name == model_name
 
@@ -129,9 +133,13 @@ class TestModelFactory:
         expected_model,
     ):
         if expected_model != type(None):
+            # When
             model = model_factory.create_model(model_name)
+
+            # Then
             assert isinstance(model, expected_model)
             assert model.name == model_name
         else:
+            # When exception is expected
             with pytest.raises(ModelNotFoundError):
                 model_factory.create_model(model_name)
