@@ -12,7 +12,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agents.common.constants import MESSAGES
+from agents.common.constants import IS_LAST_STEP, MESSAGES, MY_TASK, OWNER
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import agent_edge, filter_messages, subtask_selector_edge
 from utils.models.factory import IModel
@@ -60,14 +60,16 @@ class BaseAgent:
 
     def is_internal_message(self, message: BaseMessage) -> bool:
         """Check if the message is an internal message."""
+        # if the message is a tool call and the owner is the agent, return True.
         if (
             message.additional_kwargs is not None
-            and "owner" in message.additional_kwargs
-            and message.additional_kwargs["owner"] == self.name
+            and OWNER in message.additional_kwargs
+            and message.additional_kwargs[OWNER] == self.name
             and message.tool_calls  # type: ignore
         ):
             return True
 
+        # if the message is a tool message and the tool is in the agent's tools, return True.
         tool_names = [tool.name for tool in self.tools]
         if isinstance(message, ToolMessage) and message.name in tool_names:
             return True
@@ -94,11 +96,11 @@ class BaseAgent:
                 and subtask.status != SubTaskStatus.COMPLETED
             ):
                 return {
-                    "my_task": subtask,
+                    MY_TASK: subtask,
                 }
 
         return {
-            "is_last_step": True,
+            IS_LAST_STEP: True,
             MESSAGES: [
                 AIMessage(
                     content="All my subtasks are already completed.",
@@ -130,6 +132,8 @@ class BaseAgent:
                 ]
             }
 
+        # if the recursive limit is reached and the response is a tool call, return a message.
+        # 'is_last_step' is a boolean that is True if the recursive limit is reached.
         if (
             state.is_last_step
             and isinstance(response, AIMessage)
@@ -150,14 +154,14 @@ class BaseAgent:
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed and clean-up extra messages."""
         state.my_task.complete()
-
+        # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
         return {
             MESSAGES: [
                 RemoveMessage(id=m.id)  # type: ignore
                 for m in state.messages
                 if self.is_internal_message(m)
             ],
-            "my_task": None,
+            MY_TASK: None,
         }
 
     def _build_graph(self, state_class: type) -> Any:

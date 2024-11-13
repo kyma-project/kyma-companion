@@ -41,12 +41,32 @@ class TestModelFactory:
         return ModelFactory()
 
     @pytest.mark.parametrize(
-        "model_name, expected_result, expected_exception",
+        "test_case,model_name, expected_result, expected_exception",
         [
-            (ModelType.GPT4O, OpenAIModel, None),
-            (ModelType.GPT35, OpenAIModel, None),
-            (ModelType.GEMINI_10_PRO, GeminiModel, None),
-            ("non_existent_model", None, ModelNotFoundError),
+            (
+                "create gpt4o model should return OpenAIModel",
+                ModelType.GPT4O,
+                OpenAIModel,
+                None,
+            ),
+            (
+                "create gpt35 model should return OpenAIModel",
+                ModelType.GPT35,
+                OpenAIModel,
+                None,
+            ),
+            (
+                "create gemini_10_pro model should return GeminiModel",
+                ModelType.GEMINI_10_PRO,
+                GeminiModel,
+                None,
+            ),
+            (
+                "create non_existent_model should raise error",
+                "non_existent_model",
+                None,
+                ModelNotFoundError,
+            ),
         ],
     )
     def test_create_model(
@@ -54,6 +74,7 @@ class TestModelFactory:
         mock_get_config,
         mock_generative_model,
         model_factory,
+        test_case,
         model_name,
         expected_result,
         expected_exception,
@@ -83,11 +104,19 @@ class TestModelFactory:
         assert isinstance(models[ModelType.GEMINI_10_PRO], GeminiModel)
 
     @pytest.mark.parametrize(
-        "model_name, expected_model",
+        "test_case, model_name, expected_model",
         [
-            (ModelType.GPT4O, OpenAIModel),
-            (ModelType.GEMINI_10_PRO, GeminiModel),
-            ("non_existent_model", type(None)),
+            ("get gpt4o model should return OpenAIModel", ModelType.GPT4O, OpenAIModel),
+            (
+                "get gemini_10_pro model should return GeminiModel",
+                ModelType.GEMINI_10_PRO,
+                GeminiModel,
+            ),
+            (
+                "get non_existent_model should raise error",
+                "non_existent_model",
+                type(None),
+            ),
         ],
     )
     def test_get_model(
@@ -95,6 +124,7 @@ class TestModelFactory:
         mock_get_config,
         mock_generative_model,
         model_factory,
+        test_case,
         model_name,
         expected_model,
     ):

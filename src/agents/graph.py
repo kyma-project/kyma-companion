@@ -6,7 +6,6 @@ from typing import (
     cast,
 )
 
-# noqa UP
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.output_parsers import PydanticOutputParser

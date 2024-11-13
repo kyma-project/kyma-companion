@@ -1,7 +1,11 @@
 PLANNER = "Planner"
+
 COMMON = "Common"
+
 FINALIZER = "Finalizer"
+
 EXIT = "Exit"
+
 CONTINUE = "Continue"
 
 RECENT_MESSAGES_LIMIT = 10

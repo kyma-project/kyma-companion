@@ -3,10 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 from langchain_core.embeddings import Embeddings
 
-from agents.kyma.agent import KymaAgent
-from agents.kyma.constants import (
-    KYMA_AGENT,
-)
+from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.kyma.tools.query import kyma_query_tool
 from agents.kyma.tools.search import create_search_kyma_doc_tool
 from utils.models.factory import IModel, ModelType

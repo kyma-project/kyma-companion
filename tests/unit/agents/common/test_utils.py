@@ -20,7 +20,7 @@ from agents.common.utils import (
     filter_messages,
     subtask_selector_edge,
 )
-from agents.k8s.constants import K8S_AGENT
+from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
 

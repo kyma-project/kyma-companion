@@ -73,7 +73,7 @@ class Plan(BaseModel):
 
 
 class CompanionState(BaseModel):
-    """Agent state.
+    """State for the main companion graph.
 
     Attributes:
         input: UserInput: user input with user query and resource(s) contextual information
@@ -107,7 +107,7 @@ class CompanionState(BaseModel):
 
 
 class BaseAgentState(BaseModel):
-    """Base state for all agents."""
+    """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []

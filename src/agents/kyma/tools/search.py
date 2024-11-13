@@ -14,8 +14,6 @@ from utils.settings import (
     DOC_TABLE_NAME,
 )
 
-# setup connection to Hana Cloud DB
-
 
 class SearchKymaDocArgs(BaseModel):
     """Arguments for the search_kyma_doc tool."""
@@ -26,6 +24,7 @@ class SearchKymaDocArgs(BaseModel):
 def create_search_kyma_doc_tool(embedding_model: Embeddings) -> Any:
     """Create a tool to search Kyma documentation with Embeddings model."""
 
+    # setup connection to Hana Cloud DB
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )

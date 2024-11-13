@@ -3,13 +3,14 @@ from typing import cast
 from langchain_core.embeddings import Embeddings
 
 from agents.common.agent import BaseAgent
-from agents.k8s.constants import GRAPH_STEP_TIMEOUT_SECONDS
-from agents.kyma.constants import KYMA_AGENT
+from agents.common.constants import GRAPH_STEP_TIMEOUT_SECONDS
 from agents.kyma.prompts import KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import kyma_query_tool
 from agents.kyma.tools.search import create_search_kyma_doc_tool
 from utils.models.factory import IModel, ModelType
+
+KYMA_AGENT = "KymaAgent"
 
 
 class KymaAgent(BaseAgent):

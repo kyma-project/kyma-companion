@@ -7,7 +7,7 @@ from langgraph.constants import END
 
 from agents.common.constants import COMMON, PLANNER
 from agents.common.state import CompanionState, SubTask
-from agents.k8s.constants import K8S_AGENT
+from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
