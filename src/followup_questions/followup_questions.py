@@ -24,7 +24,7 @@ class IFollowUpQuestionsHandler(Protocol):
     """Protocol for IFollowUpQuestionsHandler."""
 
     def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
-        """Generates initial questions given a context with cluster data."""
+        """Generates follow-up questions given the conversation history."""
         ...
 
 
