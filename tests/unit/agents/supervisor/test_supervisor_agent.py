@@ -1,23 +1,25 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.constants import END
 
 from agents.common.constants import COMMON, PLANNER
-from agents.common.state import AgentState, SubTask
-from agents.k8s.constants import K8S_AGENT
+from agents.common.state import CompanionState, SubTask
+from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
-from utils.models import LLM, IModel
+from utils.models.factory import IModel, ModelType
 
 
 @pytest.fixture
 def mock_models():
     return {
-        LLM.GPT4O_MINI: MagicMock(spec=IModel),
-        LLM.GPT4O: MagicMock(spec=IModel),
+        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
+        ModelType.GPT4O: MagicMock(spec=IModel),
+        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
     }
 
 
@@ -95,7 +97,6 @@ class TestSupervisorAgent:
             ),
         ],
     )
-    @patch("agents.k8s.agent.get_logger", Mock())
     def test_agent_route(
         self,
         supervisor_agent,
@@ -106,7 +107,7 @@ class TestSupervisorAgent:
         expected_error,
     ):
         # Setup
-        state = AgentState(messages=messages, subtasks=subtasks)
+        state = CompanionState(messages=messages, subtasks=subtasks)
 
         # Execute
         route_node = supervisor_agent._route
@@ -194,7 +195,6 @@ class TestSupervisorAgent:
             ),
         ],
     )
-    @patch("agents.k8s.agent.get_logger", Mock())
     def test_agent_generate_final_response(
         self,
         supervisor_agent,

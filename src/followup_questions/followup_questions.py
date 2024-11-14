@@ -15,7 +15,7 @@ from followup_questions.prompts import FOLLOW_UP_QUESTIONS_PROMPT
 from initial_questions.inital_questions import IEncoding
 from initial_questions.output_parser import QuestionOutputParser
 from utils.logging import get_logger
-from utils.models import IModel
+from utils.models.factory import IModel
 
 logger = get_logger(__name__)
 

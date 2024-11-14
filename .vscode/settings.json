@@ -1,0 +1,12 @@
+{
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    },
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "testing.pytestArgs": ["tests"],
+    "testing.unittestEnabled": false,
+    "testing.pytestEnabled": true
+  },
+}

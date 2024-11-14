@@ -243,3 +243,10 @@ _*
 config/config.yml
 graph.png
 jupyter-notebooks/
+*.ipynb
+data/*
+doc_indexer/data/*
+.env.*
+
+# ignore scripts in the root folder
+*.sh

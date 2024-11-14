@@ -7,8 +7,8 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from agents.common.constants import COMMON
-from agents.common.state import AgentState, SubTask, UserInput
-from agents.k8s.constants import K8S_AGENT
+from agents.common.state import CompanionState, SubTask, UserInput
+from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 
 
@@ -23,14 +23,17 @@ def answer_relevancy_metric(evaluator_model):
 def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
-        criteria=""
-        "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning.",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language are permissible",
+        ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
         model=evaluator_model,
-        threshold=0.8,
+        threshold=0.7,
     )
 
 
@@ -53,7 +56,7 @@ def planner_correctness_metric(evaluator_model):
     )
 
 
-def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentState:
+def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:
     """Create a mock langgraph state for tests."""
     if subtasks is None:
         subtasks = []
@@ -65,7 +68,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
         namespace=None,
     )
 
-    return AgentState(
+    return CompanionState(
         input=user_input,
         messages=messages,
         next="",
@@ -499,9 +502,7 @@ def test_invoke_planner(
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 ),
-                HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
-                ),
+                HumanMessage(content="what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content="""

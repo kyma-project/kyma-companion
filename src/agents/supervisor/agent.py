@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Protocol  # noqa UP
+from typing import Any, Dict, Literal, Protocol, cast  # noqa UP
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnableSequence
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
+from langchain_core.embeddings import Embeddings
 
 from agents.common.constants import (
     FINALIZER,
@@ -16,12 +17,12 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
-from agents.common.state import AgentState, Plan
+from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
-from utils.models import LLM, IModel
+from utils.models.factory import ModelType, IModel
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
@@ -68,8 +69,8 @@ class SupervisorAgent:
     members: list[str] = []
     plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
 
-    def __init__(self, models: dict[str, IModel], members: list[str]):
-        gpt_4o = models[LLM.GPT4O]
+    def __init__(self, models: dict[str, IModel | Embeddings], members: list[str]):
+        gpt_4o = cast(IModel, models[ModelType.GPT4O])
 
         self.model = gpt_4o
         self.members = members
@@ -97,7 +98,7 @@ class SupervisorAgent:
         """Get Supervisor agent node function."""
         return self._graph
 
-    def _route(self, state: AgentState) -> dict[str, Any]:
+    def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
         for subtask in state.subtasks:
             if not subtask.completed():
@@ -161,7 +162,7 @@ class SupervisorAgent:
                     )
             except OutputParserException as ope:
                 logger.debug(f"Problem in parsing the planner response: {ope}")
-                # If 'response' field of the content of plan_response is missing due to LLM inconsistency,
+                # If 'response' field of the content of plan_response is missing due to ModelType inconsistency,
                 # the response is read from the plan_response content.
                 return create_node_output(
                     message=AIMessage(content=response_content, name=PLANNER),

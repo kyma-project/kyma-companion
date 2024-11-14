@@ -36,7 +36,7 @@ TMP_DIR = config("TMP_DIR", default=os.path.join(project_root, "tmp"))
 DOCS_SOURCES_FILE_PATH = config(
     "DOCS_SOURCES_FILE_PATH", default=os.path.join(project_root, "docs_sources.json")
 )
-DOCS_PATH = config("DOCS_PATH", default="data/output")
+DOCS_PATH = config("DOCS_PATH", default="data")
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
 CHUNKS_BATCH_SIZE = config("CHUNKS_BATCH_SIZE", cast=int, default=200)
 

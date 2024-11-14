@@ -67,6 +67,7 @@ select = [
     "ANN204", # Missing return type annotation for special method
     "ANN205", # Missing return type annotation for staticmethod
     "ANN206", # Missing return type annotation for classmethod
+    "E501", # Ignore line too long errors
 ]
 # ignore line too long for prompts.py files
 "prompts.py" = ["E501"]
