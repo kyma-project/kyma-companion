@@ -25,6 +25,15 @@ class MockService(IService):
             raise self.expected_error
         return ["Test question 1", "Test question 2", "Test question 3"]
 
+    async def handle_followup_questions(self, conversation_id: str) -> list[str]:
+        if self.expected_error:
+            raise self.expected_error
+        return [
+            "Test follow-up question 1",
+            "Test follow-up question 2",
+            "Test follow-up question 3",
+        ]
+
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
@@ -276,5 +285,62 @@ def test_init_conversation(
         )
         assert response_body["conversation_id"] != ""
         assert response.headers["session-id"] != ""
+    else:
+        assert response_body == expected_output["body"]
+
+
+@pytest.mark.parametrize(
+    "conversation_id, given_error, expected_output",
+    [
+        (
+            # should successfully return follow-up questions.
+            "a8172829-7f6c-4c76-aa16-e91edc7a14c9",
+            None,
+            {
+                "status_code": 200,
+                "content-type": "application/json",
+                "body": {
+                    "questions": [
+                        "Test follow-up question 1",
+                        "Test follow-up question 2",
+                        "Test follow-up question 3",
+                    ],
+                },
+            },
+        ),
+        (
+            # should return error when conversation service fails.
+            "d8725492-deb2-4d81-8ee1-ac74d61e84c5",
+            ValueError("service failed"),
+            {
+                "status_code": 500,
+                "content-type": "application/json",
+                "body": {"detail": "service failed"},
+            },
+        ),
+    ],
+)
+def test_followup_questions(
+    client_factory,
+    conversation_id,
+    given_error,
+    expected_output,
+):
+    # given
+    # Create a new client with the expected error
+    test_client = client_factory(given_error)
+
+    # when
+    response = test_client.get(
+        f"/api/conversations/{conversation_id}/questions",
+    )
+
+    # then
+    assert response.status_code == expected_output["status_code"]
+    assert response.headers["content-type"] == expected_output["content-type"]
+
+    response_body = json.loads(response.content)
+    if expected_output["status_code"] == HTTPStatus.OK:
+        assert response_body["questions"] == expected_output["body"]["questions"]
     else:
         assert response_body == expected_output["body"]

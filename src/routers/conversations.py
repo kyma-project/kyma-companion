@@ -8,6 +8,7 @@ from agents.common.data import Message
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
+    FollowUpQuestionsResponse,
     InitConversationBody,
     InitialQuestionsResponse,
 )
@@ -81,6 +82,31 @@ async def init_conversation(
         return JSONResponse(
             content=jsonable_encoder(response),
             headers={SESSION_ID_HEADER: session_id},
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
+async def followup_questions(
+    conversation_id: Annotated[str, Path(title="The ID of the conversation")],
+    service: IService = Depends(get_conversation_service),  # noqa B008
+) -> JSONResponse:
+    """Endpoint to generate follow-up questions for a conversation."""
+
+    try:
+        # Create follow-up questions.
+        questions = await service.handle_followup_questions(
+            conversation_id=conversation_id
+        )
+
+        # Return response.
+        response = FollowUpQuestionsResponse(
+            questions=questions,
+        )
+        return JSONResponse(
+            content=jsonable_encoder(response),
         )
     except Exception as e:
         logger.error(e)
