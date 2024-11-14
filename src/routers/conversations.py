@@ -46,7 +46,7 @@ async def init_conversation(
     logger.info("Initializing new conversation.")
 
     # Initialize with the session_id. Create a new session_id if not provided.
-    session_id = session_id if session_id != "" else create_session_id()
+    session_id = session_id if session_id else create_session_id()
 
     # Initialize k8s client for the request.
     try:
@@ -64,7 +64,6 @@ async def init_conversation(
     try:
         # Create initial questions.
         questions = service.new_conversation(
-            session_id=session_id,
             k8s_client=k8s_client,
             message=Message(
                 query="",
