@@ -7,7 +7,13 @@ from typing import (
 )
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
@@ -61,6 +67,10 @@ class IGraph(Protocol):
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
+        ...
+
+    async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
         ...
 
 
@@ -215,3 +225,16 @@ class CompanionGraph:
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
                 yield chunk_json
+
+    async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
+        latest_state = await self.graph.aget_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
+        if latest_state.values and "messages" in latest_state.values:
+            return latest_state.values["messages"]  # type: ignore
+        return []

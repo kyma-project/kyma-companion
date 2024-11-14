@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from langchain_core.messages import AIMessage
 
 from agents.common.data import Message
 from services.conversation import ConversationService
@@ -101,6 +102,44 @@ class TestConversation:
 
         # Then:
         assert result == QUESTIONS
+
+    @pytest.mark.asyncio
+    async def test_handle_followup_questions(
+        self,
+        mock_model_factory,
+        mock_companion_graph,
+        mock_init_pool,
+    ) -> None:
+        # Given:
+        dummy_conversation_history = [
+            AIMessage(content="Message 1"),
+            AIMessage(content="Message 2"),
+            AIMessage(content="Message 3"),
+        ]
+        # define mock for FollowUpQuestionsHandler.
+        mock_handler = Mock()
+        mock_handler.generate_questions = Mock(return_value=QUESTIONS)
+        # initialize ConversationService instance.
+        conversation_service = ConversationService(
+            followup_questions_handler=mock_handler
+        )
+        conversation_service._followup_questions_handler = mock_handler
+        # define mock for CompanionGraph.
+        conversation_service._companion_graph.aget_messages = AsyncMock(
+            return_value=dummy_conversation_history
+        )
+
+        # When:
+        result = await conversation_service.handle_followup_questions(CONVERSATION_ID)
+
+        # Then:
+        assert result == QUESTIONS
+        mock_handler.generate_questions.assert_called_once_with(
+            messages=dummy_conversation_history
+        )
+        conversation_service._companion_graph.aget_messages.assert_called_once_with(
+            CONVERSATION_ID
+        )
 
     @pytest.mark.asyncio
     async def test_handle_request(

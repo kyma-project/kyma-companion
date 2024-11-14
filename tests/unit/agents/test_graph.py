@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
+from langgraph.types import StateSnapshot
 
 from agents.common.constants import COMMON
 from agents.common.data import Message
@@ -358,3 +360,69 @@ class TestCompanionGraph:
             )
 
             mock_build_graph.assert_called_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "conversation_id, given_latest_state_values, expected_output",
+        [
+            # test case when the latest state values is empty.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {},
+                [],
+            ),
+            # test case when the latest state values do not have messages key.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {
+                    "dummy_key": "dummy_value",
+                },
+                [],
+            ),
+            # test case when the latest state values have messages.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {
+                    "messages": [
+                        AIMessage(content="Message 1"),
+                        AIMessage(content="Message 2"),
+                    ],
+                },
+                [
+                    AIMessage(content="Message 1"),
+                    AIMessage(content="Message 2"),
+                ],
+            ),
+        ],
+    )
+    async def test_aget_messages(
+        self,
+        companion_graph,
+        conversation_id,
+        given_latest_state_values,
+        expected_output,
+    ):
+        # given
+        given_latest_state = StateSnapshot(
+            values=given_latest_state_values,
+            next=(),
+            config=RunnableConfig(),
+            tasks=(),
+            metadata=None,
+            created_at=None,
+            parent_config=None,
+        )
+        companion_graph.graph.aget_state = AsyncMock(return_value=given_latest_state)
+
+        # when
+        result = await companion_graph.aget_messages(conversation_id)
+
+        # then
+        assert result == expected_output
+        companion_graph.graph.aget_state.assert_called_once_with(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
