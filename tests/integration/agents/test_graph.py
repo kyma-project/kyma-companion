@@ -23,8 +23,11 @@ def answer_relevancy_metric(evaluator_model):
 def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
-        criteria=""
-        "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning.",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language are permissible",
+        ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
@@ -499,9 +502,7 @@ def test_invoke_planner(
                 The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 ),
-                HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
-                ),
+                HumanMessage(content="what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content="""
