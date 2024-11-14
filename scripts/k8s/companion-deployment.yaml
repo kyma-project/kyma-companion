@@ -70,6 +70,28 @@ spec:
             secretKeyRef:
               name: ai-core
               key: resource_group
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: hana_db_url
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: hana_db_user
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: hana_db_password
+        - name: DATABASE_PORT
+          valueFrom:
+            secretKeyRef:
+              name: ai-core
+              key: hana_db_port
+        - name: DOCS_TABLE_NAME
+          value: "kyma_docs"
         - name: REDIS_HOST
           value: "redis-stack.redis.svc.cluster.local"
         - name: REDIS_PORT

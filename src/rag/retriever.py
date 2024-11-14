@@ -15,7 +15,7 @@ class IRetriever(Protocol):
 
 
 class HanaDBRetriever:
-    """Retriever for HanaDB."""
+    """HANA DB Retriever."""
 
     def __init__(
         self, embedding: Embeddings, connection: dbapi.Connection, table_name: str
