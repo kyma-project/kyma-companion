@@ -16,7 +16,10 @@ from utils.settings import (
 
 
 class SearchKymaDocArgs(BaseModel):
-    """Arguments for the search_kyma_doc tool."""
+    """Arguments for the search_kyma_doc tool.
+    Args:
+        query (str): The query to search the Kyma documentation
+    """
 
     query: str
 
