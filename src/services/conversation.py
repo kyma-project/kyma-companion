@@ -63,8 +63,7 @@ class ConversationService(metaclass=SingletonMeta):
 
         # Set up the followup question handler.
         self._followup_questions_handler = (
-            followup_questions_handler
-            or FollowUpQuestionsHandler(model=self._model_mini)
+            followup_questions_handler or FollowUpQuestionsHandler(model=model_mini)
         )
 
         self._model = ModelFactory().create_model(LLM.GPT4O)
