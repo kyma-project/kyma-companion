@@ -11,7 +11,7 @@ from utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
-    DOC_TABLE_NAME,
+    DOCS_TABLE_NAME,
 )
 
 
@@ -28,7 +28,7 @@ def create_search_kyma_doc_tool(embedding_model: Embeddings) -> Any:
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
-    retriever = HanaDBRetriever(embedding_model, hana_conn, DOC_TABLE_NAME)
+    retriever = HanaDBRetriever(embedding_model, hana_conn, DOCS_TABLE_NAME)
 
     @tool(infer_schema=False, args_schema=SearchKymaDocArgs)
     def search_kyma_doc_tool(query: str) -> str:

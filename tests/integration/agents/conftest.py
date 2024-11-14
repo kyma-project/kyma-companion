@@ -59,7 +59,7 @@ def start_fake_redis():
     # Yield control back to the tests
     yield server
 
-    # Teardown: Stop the server after all tests are finished
+    # Teardown: Stop the server after all tests are finished:
     server.shutdown()
     server.server_close()
     t.join(timeout=5)

@@ -433,6 +433,53 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
             None,
             False,
         ),
+        # Test case for Kyma doc search when no relevant documentation is found
+        # - it still responds with the existing knowledge as BTP Operator features are known to LLM
+        (
+            "Should make kyma doc tool search once when no relevant documentation is found",
+            KymaAgentState(
+                messages=[
+                    AIMessage(content="The user query is related to: {}"),
+                    HumanMessage(content="what are the BTP Operator features?"),
+                    AIMessage(
+                        content='```json\n{ "subtasks": [ { "description": "what are the BTP Operator features?", "assigned_to": "KymaAgent" } ] }\n```',
+                        name=PLANNER,
+                    ),
+                    AIMessage(
+                        content='{"next": "KymaAgent"}',
+                        name=SUPERVISOR,
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc_tool",
+                                "args": {"query": "BTP Operator features"},
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="No relevant documentation found.",
+                        name="search_kyma_doc_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[],
+                my_task=SubTask(
+                    description="What are the BTP Operator features?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+            ),
+            [EXPECTED_BTP_MANAGER_RESPONSE],
+            "",
+            EXPECTED_BTP_MANAGER_RESPONSE,
+            None,
+            False,
+        ),
     ],
 )
 def test_invoke_chain(
