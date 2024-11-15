@@ -1,9 +1,6 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol, cast
 
-from langchain_core.messages import HumanMessage
-from langchain_redis import RedisChatMessageHistory
-
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
@@ -29,9 +26,7 @@ TOKEN_LIMIT = 16_000
 class IService(Protocol):
     """Service interface"""
 
-    def new_conversation(
-        self, session_id: str, k8s_client: IK8sClient, message: Message
-    ) -> list[str]:
+    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         """Initialize a new conversation."""
         ...
 
@@ -87,13 +82,11 @@ class ConversationService(metaclass=SingletonMeta):
             memory=redis_saver,
         )
 
-    def new_conversation(
-        self, session_id: str, k8s_client: IK8sClient, message: Message
-    ) -> list[str]:
+    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         """Initialize a new conversation."""
 
         logger.info(
-            f"Initializing conversation ({session_id}) with namespace '{message.namespace}', "
+            f"Initializing conversation in namespace '{message.namespace}', "
             f"resource_type '{message.resource_kind}' and resource name {message.resource_name}"
         )
 
@@ -109,14 +102,6 @@ class ConversationService(metaclass=SingletonMeta):
 
         # Pass the context to the initial question handler to generate the questions.
         questions = self._init_questions_handler.generate_questions(context=k8s_context)
-
-        # Store the Kubernetes context in the Redis chat history.
-        history = RedisChatMessageHistory(session_id=session_id, redis_url=REDIS_URL)
-        history.add_message(
-            message=HumanMessage(
-                content=f"These are the information I got from my Kubernetes cluster:\n{k8s_context}"
-            )
-        )
 
         return questions
 
