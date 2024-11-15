@@ -1,5 +1,6 @@
-from typing import Any, Dict, Literal, Protocol, cast  # noqa UP
+from typing import Any, Literal, cast
 
+from langchain_core.embeddings import Embeddings
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
@@ -9,7 +10,6 @@ from langchain_core.runnables import RunnableSequence
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
-from langchain_core.embeddings import Embeddings
 
 from agents.common.constants import (
     FINALIZER,
@@ -22,7 +22,7 @@ from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger
-from utils.models.factory import ModelType, IModel
+from utils.models.factory import IModel, ModelType
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
@@ -194,7 +194,6 @@ class SupervisorAgent:
             }
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
-
         # last human message must be the query
         last_human_message = next(
             (msg for msg in reversed(state.messages) if isinstance(msg, HumanMessage)),
