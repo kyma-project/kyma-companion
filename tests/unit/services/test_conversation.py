@@ -68,22 +68,12 @@ class TestConversation:
         with patch("services.conversation.initialize_async_pool") as mock:
             yield mock
 
-    @pytest.fixture
-    def mock_redis_history(self):
-        mock_history = Mock()
-        mock_history.add_message = Mock(return_value=None)
-        with patch(
-            "services.conversation.RedisChatMessageHistory", return_value=mock_history
-        ):
-            yield mock_history
-
     def test_new_conversation(
         self,
         mock_model_factory,
         mock_companion_graph,
         mock_redis_saver,
         mock_init_pool,
-        mock_redis_history,
     ) -> None:
         # Given:
         mock_handler = Mock()
@@ -97,7 +87,7 @@ class TestConversation:
 
         # When:
         result = conversation_service.new_conversation(
-            session_id=CONVERSATION_ID, k8s_client=mock_k8s_client, message=TEST_MESSAGE
+            k8s_client=mock_k8s_client, message=TEST_MESSAGE
         )
 
         # Then:

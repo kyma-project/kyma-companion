@@ -21,6 +21,7 @@ package-mode = false
 python = "~3.12"
 ai-core-sdk = "^2.3.11"
 black = "^24.8.0"
+deepeval = "^1.5.0"
 fastapi = "^0.111.0"
 generative-ai-hub-sdk = "^3.2.6"
 hdbcli = "^2.22.32"
@@ -40,7 +41,6 @@ python-decouple = "^3.8"
 redis = "^5.0.8"
 requests = "^2.32.3"
 tiktoken = "^0.7.0"
-deepeval = "^1.5.0"
 
 [tool.poetry.group.test.dependencies]
 deepeval = "^1.5.0"

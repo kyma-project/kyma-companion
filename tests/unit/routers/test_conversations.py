@@ -18,9 +18,7 @@ class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
 
-    def new_conversation(
-        self, session_id: str, k8s_client: IK8sClient, message: Message
-    ) -> list[str]:
+    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         if self.expected_error:
             raise self.expected_error
         return ["Test question 1", "Test question 2", "Test question 3"]
