@@ -2,8 +2,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import BaseTool
 
-from rag.retriever import Query
-from rag.system import RAGSystem
+from rag.system import RAGSystem, Query
 from utils.models.factory import IModel
 
 

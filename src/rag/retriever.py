@@ -4,23 +4,16 @@ from hdbcli import dbapi
 from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from pydantic import BaseModel
 
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class Query(BaseModel):
-    """A RAG system query."""
-
-    text: str
-
-
 class IRetriever(Protocol):
     """Retriever interface."""
 
-    def retrieve(self, query: Query, top_k: int = 3) -> list[Document]:
+    def retrieve(self, query: str, top_k: int = 3) -> list[Document]:
         """Retrieve relevant documents based on the query."""
         ...
 

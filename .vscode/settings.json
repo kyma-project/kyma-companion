@@ -9,4 +9,8 @@
     "testing.unittestEnabled": false,
     "testing.pytestEnabled": true
   },
+  "mypy": {
+    "dmypyExecutable": "dmypy",
+    "configFile": "mypy.ini"
+  }
 }

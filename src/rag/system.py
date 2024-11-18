@@ -2,9 +2,10 @@ from typing import Protocol, cast
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from pydantic import BaseModel
 
 from rag.query_generator import QueryGenerator
-from rag.retriever import HanaDBRetriever, Query
+from rag.retriever import HanaDBRetriever
 from utils.hana import create_hana_connection
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
@@ -13,10 +14,16 @@ from utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
-    DOC_TABLE_NAME,
+    DOCS_TABLE_NAME,
 )
 
 logger = get_logger(__name__)
+
+
+class Query(BaseModel):
+    """A RAG system query."""
+
+    text: str
 
 
 class IRAGSystem(Protocol):
@@ -42,11 +49,11 @@ class RAGSystem:
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE]),
             connection=hana_conn,
-            table_name=DOC_TABLE_NAME,
+            table_name=DOCS_TABLE_NAME,
         )
 
         logger.info("RAG system initialized.")
-        logger.debug(f"Hana DB table name: {DOC_TABLE_NAME}")
+        logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
 
     def _remove_duplicates(self, documents: list[Document]) -> list[Document]:
         """Remove duplicate documents based on content."""
