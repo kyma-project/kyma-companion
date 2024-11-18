@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel
 
+from rag.generator import Generator
 from rag.query_generator import QueryGenerator
 from rag.retriever import HanaDBRetriever
 from utils.hana import create_hana_connection
@@ -29,7 +30,7 @@ class Query(BaseModel):
 class IRAGSystem(Protocol):
     """A protocol for a RAG system."""
 
-    def query(self, query: Query) -> list[Document]:
+    def search(self, query: Query) -> str:
         """Query the system with a given query."""
         ...
 
@@ -51,11 +52,14 @@ class RAGSystem:
             connection=hana_conn,
             table_name=DOCS_TABLE_NAME,
         )
+        # setup generator
+        self.generator = Generator(cast(IModel, models[ModelType.GPT4O_MINI]))
 
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
 
-    def _remove_duplicates(self, documents: list[Document]) -> list[Document]:
+    @staticmethod
+    def _remove_duplicates(documents: list[Document]) -> list[Document]:
         """Remove duplicate documents based on content."""
         seen_content = set()
         unique_docs = []
@@ -67,7 +71,7 @@ class RAGSystem:
 
         return unique_docs
 
-    def retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+    def _retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
         logger.info(f"Retrieving documents for query: {query.text}")
 
@@ -91,3 +95,10 @@ class RAGSystem:
 
         logger.info(f"Retrieved {len(all_docs)} documents.")
         return all_docs
+
+    def search(self, query: Query) -> str:
+        """Query the system with a given query."""
+
+        retrieved_docs = self._retrieve(query)
+        response = self.generator.generate(retrieved_docs, query.text)
+        return response

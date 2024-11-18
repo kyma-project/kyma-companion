@@ -10,7 +10,7 @@
     "testing.pytestEnabled": true
   },
   "mypy": {
-    "dmypyExecutable": "dmypy",
+    "dmypyExecutable": "/Users/I504380/.pyenv/versions/3.12.4/bin/dmypy", // add dmypy to PATH
     "configFile": "mypy.ini"
   }
 }

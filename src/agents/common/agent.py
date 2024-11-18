@@ -1,4 +1,4 @@
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
@@ -14,8 +14,23 @@ from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import IS_LAST_STEP, MESSAGES, MY_TASK, OWNER
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import agent_edge, filter_messages, subtask_selector_edge
+from agents.common.utils import filter_messages
 from utils.models.factory import IModel
+
+
+def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "__end__"]:
+    """Function that determines whether to end or call agent."""
+    if state.is_last_step and state.my_task is None:
+        return "__end__"
+    return "agent"
+
+
+def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
+    """Function that determines whether to call tools or finalizer."""
+    last_message = state.messages[-1]
+    if isinstance(last_message, AIMessage) and not last_message.tool_calls:
+        return "finalizer"
+    return "tools"
 
 
 class IAgent(Protocol):

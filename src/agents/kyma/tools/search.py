@@ -2,7 +2,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import BaseTool
 
-from rag.system import RAGSystem, Query
+from rag.system import Query, RAGSystem
 from utils.models.factory import IModel
 
 
@@ -46,22 +46,8 @@ class SearchKymaDocTool(BaseTool):
     ) -> str:
         """Execute the search through Kyma documentation."""
         query_obj = Query(text=query)
-        docs = self.rag_system.retrieve(query_obj, top_k=self.top_k)
-
-        if len(docs) == 0:
-            return "No relevant documentation found for your query."
-
-        formatted_docs = []
-        for doc in docs:
-            content = doc.page_content
-            metadata = doc.metadata or {}
-            source = metadata.get("source", "")
-            if source:
-                content = f"{content}\nSource: {source}"
-            formatted_docs.append(content)
-
-        docs_str = "\n\n---\n\n".join(formatted_docs)
-        return docs_str
+        rag_response = self.rag_system.search(query_obj)
+        return rag_response
 
     async def _arun(self, query: str) -> str:
         """Async implementation of the search through Kyma documentation."""
