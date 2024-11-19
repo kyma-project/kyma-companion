@@ -34,6 +34,18 @@ class IRAGSystem(Protocol):
         """Query the system with a given query."""
         ...
 
+    def retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+        """Retrieve documents for a given query."""
+        ...
+
+    def generate(
+        self,
+        query: Query,
+        relevant_docs: list[Document],
+    ) -> str:
+        """Generate a response to a given query."""
+        ...
+
 
 class RAGSystem:
     """A system that can be used to generate queries and retrieve documents."""
@@ -41,7 +53,7 @@ class RAGSystem:
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
         self.query_generator = QueryGenerator(
-            cast(IModel, models[ModelType.GPT4O_MINI])
+            cast(IModel, cast(IModel, models[ModelType.GPT4O_MINI]))
         )
         # setup retriever
         hana_conn = create_hana_connection(
@@ -71,7 +83,7 @@ class RAGSystem:
 
         return unique_docs
 
-    def _retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+    def retrieve(self, query: Query, top_k: int = 3) -> list[Document]:
         """Retrieve documents for a given query."""
         logger.info(f"Retrieving documents for query: {query.text}")
 
@@ -96,9 +108,12 @@ class RAGSystem:
         logger.info(f"Retrieved {len(all_docs)} documents.")
         return all_docs
 
-    def search(self, query: Query) -> str:
-        """Query the system with a given query."""
+    def generate(
+        self,
+        query: Query,
+        relevant_docs: list[Document],
+    ) -> str:
+        """Generate a response to a given query."""
 
-        retrieved_docs = self._retrieve(query)
-        response = self.generator.generate(retrieved_docs, query.text)
+        response = self.generator.generate(relevant_docs, query.text)
         return response

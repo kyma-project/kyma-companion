@@ -19,8 +19,6 @@ Guidelines for query generation:
 - Keep queries concise and specific
 - Use Kyma's technical terminology accurately
 - Include relevant component names (e.g., Istio, NATS, Eventing, Service Mesh)
-- Consider both developer and operator perspectives
-- Include queries about prerequisites, dependencies, or SAP ecosystem integration when relevant
 
 Format your response as a JSON list of queries.
 {format_instructions}
@@ -30,7 +28,6 @@ Examples:
 User Query: "How to set up Kyma for my project?"
 Generated Queries: [
     "Kyma installation options: open-source vs SAP BTP Kyma runtime",
-    "Prerequisites for Kyma installation on Kubernetes",
     "Step-by-step guide to install open-source Kyma",
     "Configuring Kyma modules post-installation",
     "Integrating Kyma with existing SAP systems",
@@ -44,6 +41,5 @@ Generated Queries: [
     "Kyma's integration with Istio and Service Mesh",
     "Role of NATS and Cloud Events in Kyma architecture",
     "Kyma's approach to extending Kubernetes functionality",
-    "Differences in architecture: open-source Kyma vs SAP BTP Kyma runtime"
 ]
 """

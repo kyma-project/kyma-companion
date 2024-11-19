@@ -32,7 +32,7 @@ class QueryGenerator:
         self,
         model: IModel,
         prompt: ChatPromptTemplate | None = None,
-        num_queries: int = 5,
+        num_queries: int = 4,
     ):
         self.model = model
         self.queries_parser = PydanticOutputParser(pydantic_object=Queries)

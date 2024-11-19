@@ -46,7 +46,8 @@ class SearchKymaDocTool(BaseTool):
     ) -> str:
         """Execute the search through Kyma documentation."""
         query_obj = Query(text=query)
-        rag_response = self.rag_system.search(query_obj)
+        relevant_docs = self.rag_system.retrieve(query_obj)
+        rag_response = self.rag_system.generate(query_obj, relevant_docs)
         return rag_response
 
     async def _arun(self, query: str) -> str:

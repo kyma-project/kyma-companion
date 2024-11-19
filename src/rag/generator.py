@@ -25,23 +25,25 @@ class Generator:
             dedent(
                 """
                 You are Kyma documentation assistant who helps to retrieve the information from Kyma documentation. 
-                Use the following pieces of retrieved context to answer the query. 
+                Use the following pieces of retrieved context to answer the query.
+                Answer the specific question directly.
+                Include only information from the provided context.
                 If you don't know the answer, just say that you don't know.
                 
                 Query: {query} 
 
-            Context: {context} 
+                Context: {context} 
 
-            Answer:
-            """
+                Answer:
+                """
             )
         )
         self.rag_chain = prompt | self.model.llm | StrOutputParser()
 
-    def generate(self, docs: list[Document], query: str) -> str:
+    def generate(self, relevant_docs: list[Document], query: str) -> str:
         """Generate a response based on the RAG chain."""
         # Convert Document objects to a list of their page_content
-        docs_content = [doc.page_content for doc in docs]
+        docs_content = [doc.page_content for doc in relevant_docs]
 
         response = str(self.rag_chain.invoke({"context": docs_content, "query": query}))
         return response
