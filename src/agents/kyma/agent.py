@@ -16,7 +16,7 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         tools = [
-            SearchKymaDocTool(models, top_k=4),
+            SearchKymaDocTool(models),
             kyma_query_tool,
         ]
         super().__init__(

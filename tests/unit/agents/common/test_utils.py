@@ -11,14 +11,13 @@ from langchain_core.messages import (
 )
 from langchain_core.prompts import MessagesPlaceholder
 
+from agents.common.agent import subtask_selector_edge, agent_edge
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
-    agent_edge,
     agent_node,
     create_agent,
     filter_messages,
-    subtask_selector_edge,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState

@@ -43,7 +43,7 @@ requests = "^2.32.3"
 tiktoken = "^0.7.0"
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^1.5.6"
+deepeval = "^1.5.8"
 fakeredis = "^2.23.3"
 prettytable = "^3.10.2"
 pytest = "^8.2.2"

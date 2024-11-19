@@ -35,7 +35,7 @@ class SearchKymaDocTool(BaseTool):
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
     top_k: int | None = Field(default=5, exclude=True)
 
-    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = 5):
+    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = 4):
         super().__init__()
         self.rag_system = RAGSystem(models)
         self.top_k = top_k
