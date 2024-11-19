@@ -5,13 +5,16 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
+from utils.logging import get_logger
 from utils.models.factory import IModel
+
+logger = get_logger(__name__)
 
 
 class IGenerator(Protocol):
     """A protocol for a RAG generator."""
 
-    def generate(self, docs: list[str], query: str) -> str:
+    def generate(self, relevant_docs: list[Document], query: str) -> str:
         """Generate a response based on the RAG chain."""
         ...
 
@@ -44,6 +47,11 @@ class Generator:
         """Generate a response based on the RAG chain."""
         # Convert Document objects to a list of their page_content
         docs_content = [doc.page_content for doc in relevant_docs]
-
-        response = str(self.rag_chain.invoke({"context": docs_content, "query": query}))
+        try:
+            response = str(
+                self.rag_chain.invoke({"context": docs_content, "query": query})
+            )
+        except Exception as e:
+            logger.exception(f"Error generating response for query: {query}")
+            raise e
         return response

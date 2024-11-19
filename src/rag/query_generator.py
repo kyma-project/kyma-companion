@@ -20,7 +20,7 @@ class Queries(BaseModel):
 class IQueryGenerator(Protocol):
     """Given a single query, generates multiple alternative queries."""
 
-    def generate_queries(self, query: str) -> list[str]:
+    def generate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
         ...
 
