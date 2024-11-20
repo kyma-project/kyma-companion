@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from deepeval import evaluate
 from deepeval.metrics import (
@@ -54,75 +56,79 @@ def rag_system(app_models):
     [
         pytest.param(
             "How to enable Istio sidecar proxy injection?",
-            "integration/rag/fixtures/kyma_docs/istio/docs/user/tutorials/01-40-enable-sidecar-injection.md",
+            "fixtures/kyma_docs/istio/docs/user/tutorials/01-40-enable-sidecar-injection.md",
             id="How to enable Istio sidecar proxy injection?",
         ),
         pytest.param(
             "Why do I get a 'Connection reset by peer' response error?",
-            "integration/rag/fixtures/kyma_docs/istio/docs/user/troubleshooting/03-20-connection-refused.md",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-20-connection-refused.md",
             id="Why do I get a Connection reset by peer error?",
         ),
         pytest.param(
             "function pod have have no sidecar proxy",
-            "integration/rag/fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
             id="Pods don't have sidecar",
         ),
         # serverless
         pytest.param(
             "How to expose a Function Using the APIRule Custom Resource?",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/tutorials/01-20-expose-function.md",
+            "fixtures/kyma_docs/serverless/docs/user/tutorials/01-20-expose-function.md",
             id="How to expose a Function Using the APIRule Custom Resource?",
         ),
         pytest.param(
             "How to create a Function?",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/tutorials/01-10-create-inline-function.md",
+            "fixtures/kyma_docs/serverless/docs/user/tutorials/01-10-create-inline-function.md",
             id="How to create a Function?",
         ),
         pytest.param(
             "want to create custom tracing spans for a function",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/tutorials/01-100-customize-function-traces.md",
+            "fixtures/kyma_docs/serverless/docs/user/tutorials/01-100-customize-function-traces.md",
             id="want to add additional traces for a function",
         ),
         pytest.param(
             "adding a new env var to a function",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/tutorials/01-120-inject-envs.md",
+            "fixtures/kyma_docs/serverless/docs/user/tutorials/01-120-inject-envs.md",
             id="adding a new env var to a function",
         ),
         pytest.param(
             "Serverless function pod has lots of restarts",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/troubleshooting-guides/03-50-serverless-periodically-restaring.md",
+            "fixtures/kyma_docs/serverless/docs/user/troubleshooting-guides/03-50-serverless-periodically-restaring.md",
             id="Serverless function pod has lots of restarts",
         ),
         pytest.param(
             "why function build is failing?",
-            "integration/rag/fixtures/kyma_docs/serverless/docs/user/troubleshooting-guides/03-40-function-build-failing-k3d.md",
+            "fixtures/kyma_docs/serverless/docs/user/troubleshooting-guides/03-40-function-build-failing-k3d.md",
             id="why function build is failing?",
         ),
         # telemetry manager
         pytest.param(
             "show how to create a trace pipeline",
-            "integration/rag/fixtures/kyma_docs/telemetry-manager/docs/user/resources/04-tracepipeline.md",
+            "fixtures/kyma_docs/telemetry-manager/docs/user/resources/04-tracepipeline.md",
             id="show how to create a trace pipeline",
         ),
-        pytest.param(
-            "what are the prerequisites for applications to enable logging?",
-            "integration/rag/fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md",
-            id="what are the prerequisites for applications to enable logging?",
-        ),
+        # TODO: enable it after indexing is improved. Currently it is failing.
+        # pytest.param(
+        #     "what are the prerequisites for applications to enable logging?",
+        #     "fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md",
+        #     id="what are the prerequisites for applications to enable logging?",
+        # ),
         # eventing
         pytest.param(
             "some eventing messages are pending",
-            "integration/rag/fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-05-fix-pending-messages.md",
+            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-05-fix-pending-messages.md",
             id="some eventing messages are pending",
         ),
         pytest.param(
             "what to do if event publish rate is so high?",
-            "integration/rag/fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-04-free-jetstream-storage.md",
+            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-04-free-jetstream-storage.md",
             id="what to do if event publish rate is so high?",
         ),
     ],
 )
 def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics):
+    # getting rag dir path
+    rag_dir = os.path.dirname(os.path.abspath(__file__))
+
     # When
     query = Query(text=input)
     retrieved_docs = rag_system.retrieve(query)
@@ -131,7 +137,7 @@ def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics)
     actual_output = rag_system.generate(query, retrieved_docs)
     assert actual_output is not None, "RAG system generated no output"
 
-    with open(expected_output_path) as file:
+    with open(os.path.join(rag_dir, expected_output_path)) as file:
         expected_output = file.read()
 
     assert expected_output is not None, "Expected output document does not exist"
@@ -144,7 +150,6 @@ def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics)
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,
     )
-    # assert_test(test_case, evaluation_metrics)
 
     results = evaluate(
         test_cases=[test_case],

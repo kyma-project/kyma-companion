@@ -77,7 +77,7 @@ def kyma_agent(app_models):
 
 
 @pytest.mark.parametrize(
-    "test_case,state,context,retrieval_context,expected_result,expected_tool_call,should_raise",
+    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
         # Test case for API Rule with wrong access strategy
         # - Verifies agent correctly identifies and explains API Rule validation error
@@ -141,7 +141,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),
                 is_last_step=False,
             ),
-            ["Multiple access strategies are not allowed to be used together"],
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
             EXPECTED_API_RULE_RESPONSE,
             None,
@@ -172,7 +171,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            None,
             None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
             "kyma_query_tool",
@@ -222,7 +220,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            None,
             None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
             "search_kyma_doc",
@@ -297,10 +294,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
-            ),
-            [
-                "Th Dates object does not exist in JavaScript. The correct object is Date, which can be initialized with `new Date()`."
-            ],  # context
+            ),  # context
             None,  # retrieval_context
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
             None,  # expected_tool_call
@@ -376,9 +370,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [
-                "The Serverless Function replicas must be greater than 0 to respond to requests"
-            ],
             None,
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
             None,
@@ -427,7 +418,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [EXPECTED_BTP_MANAGER_RESPONSE],
             "",
             EXPECTED_BTP_MANAGER_RESPONSE,
             None,
@@ -474,7 +464,6 @@ def kyma_agent(app_models):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [EXPECTED_BTP_MANAGER_RESPONSE],
             "",
             EXPECTED_BTP_MANAGER_RESPONSE,
             None,
@@ -488,7 +477,6 @@ def test_invoke_chain(
     faithfulness_metric,
     test_case,
     state,
-    context,
     retrieval_context,
     expected_result,
     expected_tool_call,
@@ -517,7 +505,6 @@ def test_invoke_chain(
                 input=state.my_task.description,
                 actual_output=response.content,
                 expected_output=expected_result if expected_result else None,
-                context=context if context else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
 

@@ -116,7 +116,9 @@ Your task is to review responses from other agents: "{members}" to a specific us
 Do not answer the user query yourself.
 
 First, decide whether to accept or reject the response.
-Accept the response if it answers the user query correctly and remove the agent names and your decision from your response.
+Accept the response:
+ - if it answers the user query correctly and remove the agent names and your decision from your response.
+ - if an agent cannot answer, mention it in the response.
 Reject the response if it is does not answer the user query correctly and remove the agent names and your decision from your response.
 
 Do not rely strictly on exact wording, but focus on the underlying meaning and intent. The answer should be approved 
