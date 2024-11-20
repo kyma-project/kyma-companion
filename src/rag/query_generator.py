@@ -1,4 +1,4 @@
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -61,7 +61,7 @@ class QueryGenerator:
     def _invoke_chain(self, query: str) -> Queries:
         """Invokes the chat model with created chain."""
         try:
-            return self._chain.invoke({"query": query})
+            return cast(Queries, self._chain.invoke({"query": query}))
         except Exception:
             logger.exception("Error invoking chain")
             raise

@@ -46,7 +46,8 @@ class TestQueryGenerator:
         generator = QueryGenerator(mock_model)
 
         # Then
-        assert len(generator.prompt.messages) == 3
+        chain_steps_number = 3  # PromptTemplate | Model | OutputParser
+        assert len(generator.prompt.messages) == chain_steps_number
         assert (
             generator.prompt.messages[0].prompt.template
             == QUERY_GENERATOR_PROMPT_TEMPLATE
@@ -65,7 +66,8 @@ class TestQueryGenerator:
         # Then
         assert chain is not None
         # Verify chain composition
-        assert len(chain.steps) == 3  # PromptTemplate | Model | OutputParser
+        chain_steps_number = 3  # PromptTemplate | Model | OutputParser
+        assert len(chain.steps) == chain_steps_number
         assert isinstance(chain.steps[0], ChatPromptTemplate)
         assert chain.steps[1] == mock_llm
         assert isinstance(chain.steps[2], PydanticOutputParser)

@@ -11,7 +11,7 @@ from langchain_core.messages import (
 )
 from langchain_core.prompts import MessagesPlaceholder
 
-from agents.common.agent import subtask_selector_edge, agent_edge
+from agents.common.agent import agent_edge, subtask_selector_edge
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,

@@ -16,7 +16,7 @@ from agents.common.constants import (
     RECENT_MESSAGES_LIMIT,
     SUBTASKS,
 )
-from agents.common.state import BaseAgentState, CompanionState, SubTask, SubTaskStatus
+from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
