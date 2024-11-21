@@ -132,7 +132,7 @@ class SupervisorAgent:
         """Invoke the planner."""
         response: AIMessage = self._planner_chain.invoke(
             input={
-                "messages": filter_messages(state.messages),
+                "messages": state.messages,
             },
         )
         return response
@@ -214,7 +214,7 @@ class SupervisorAgent:
 
         try:
             final_response = final_response_chain.invoke(
-                {"messages": filter_messages(state.messages)},
+                {"messages": state.messages},
             ).content
 
             return {

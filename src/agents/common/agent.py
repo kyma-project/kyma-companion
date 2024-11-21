@@ -111,7 +111,7 @@ class BaseAgent:
 
     def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
-            MESSAGES: filter_messages(state.messages),
+            MESSAGES: state.messages,
             "query": state.my_task.description,
         }
         response = self.chain.invoke(inputs, config)

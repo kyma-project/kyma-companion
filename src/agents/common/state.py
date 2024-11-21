@@ -8,6 +8,7 @@ from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 
 from agents.common.constants import K8S_CLIENT
+from agents.memory.summarization import summarize_and_add_messages
 from services.k8s import IK8sClient
 
 
@@ -89,7 +90,7 @@ class CompanionState(BaseModel):
         description="user input with user query and resource(s) contextual information"
     )
 
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages: Annotated[Sequence[BaseMessage], summarize_and_add_messages(10, 15)]
     next: str | None
     subtasks: list[SubTask] | None = []
     error: str | None
@@ -109,7 +110,7 @@ class CompanionState(BaseModel):
 class BaseAgentState(BaseModel):
     """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages: Annotated[Sequence[BaseMessage], summarize_and_add_messages(10, 15)]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
 
