@@ -9,7 +9,12 @@ from agents.common.constants import COMMON, PLANNER
 from agents.common.state import CompanionState, SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
+from agents.supervisor.agent import (
+    FINALIZER,
+    ROUTER,
+    SupervisorAgent,
+    filter_messages_for_planner,
+)
 from agents.supervisor.state import SupervisorState
 from utils.models.factory import IModel, ModelType
 
@@ -24,7 +29,6 @@ def mock_models():
 
 
 class TestSupervisorAgent:
-
     @pytest.fixture
     def supervisor_agent(self, mock_models):
         agent = SupervisorAgent(
@@ -368,3 +372,80 @@ class TestSupervisorAgent:
         result = supervisor_agent._plan(state)
 
         assert result == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_messages, expected_output, number_recent_messages",
+    [
+        # Test case 1: Don't remove HumanMessages.
+        (
+            [
+                HumanMessage(content="What is Kubernetes?"),
+            ],
+            [
+                HumanMessage(content="What is Kubernetes?"),
+            ],
+            None,
+        ),
+        # Test case 2: Don't remove AIMessages that are from the finalizer.
+        (
+            [
+                AIMessage(
+                    content="Kubernetes is a container orchestration platform.",
+                    name=FINALIZER,
+                ),
+            ],
+            [
+                AIMessage(
+                    content="Kubernetes is a container orchestration platform.",
+                    name=FINALIZER,
+                ),
+            ],
+            None,
+        ),
+        # Test case 3: Remove AIMessages that are not from the finalizer,
+        # and keep AIMessages that are from the finalizer and HumanMessages.
+        (
+            [
+                HumanMessage(content="What is Kubernetes?"),
+                AIMessage(
+                    content="Kubernetes is a container orchestration platform.",
+                    name=K8S_AGENT,
+                ),
+                HumanMessage(content="What is Kubernetes?"),
+                AIMessage(
+                    content="Kubernetes is a container orchestration platform.",
+                    name=FINALIZER,
+                ),
+            ],
+            [
+                HumanMessage(content="What is Kubernetes?"),
+                HumanMessage(content="What is Kubernetes?"),
+                AIMessage(
+                    content="Kubernetes is a container orchestration platform.",
+                    name=FINALIZER,
+                ),
+            ],
+            None,
+        ),
+        # Test case 4: Remove old messages via the number_recent_messages parameter.
+        (
+            [
+                HumanMessage(content="Message 1"),
+                HumanMessage(content="Message 2"),
+                HumanMessage(content="Message 3"),
+                HumanMessage(content="Message 4"),
+            ],
+            [
+                HumanMessage(content="Message 3"),
+                HumanMessage(content="Message 4"),
+            ],
+            2,
+        ),
+    ],
+)
+def test_filter_messages(input_messages, expected_output, number_recent_messages):
+    filtered_messages = filter_messages_for_planner(
+        input_messages, number_recent_messages
+    )
+    assert filtered_messages == expected_output

@@ -1,8 +1,9 @@
+from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.exceptions import OutputParserException
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.pydantic_v1 import BaseModel, Field
@@ -30,11 +31,38 @@ ROUTER = "Router"
 logger = get_logger(__name__)
 
 
+def filter_messages_for_planner(
+    messages: Sequence[BaseMessage], number_recent_messages: int | None = 10
+) -> Sequence[BaseMessage]:
+    """Filter messages to return a desired number of messages that are either
+    AIMessages with name 'Finalizer' or HumanMessages.
+
+    Args:
+        messages: Sequence of messages
+        number_recent_messages: int | None: number of last messages to return, default is 10.
+            If None, return all messages.
+    """
+
+    # Remove all undesired messages from the list.
+    filtered = [
+        cast(BaseMessage, message)
+        for message in messages
+        if isinstance(message, HumanMessage)
+        or (isinstance(message, AIMessage) and message.name == FINALIZER)
+    ]
+
+    # Reduce the number of messages, if requested, to the number of recent messages.
+    if number_recent_messages:
+        filtered = filtered[-number_recent_messages:]
+    return filtered
+
+
 def decide_route_or_exit(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ignore
     """Return the next node whether to route or exit with a direct response."""
     if state.next == END:
         logger.debug("Ending the workflow.")
         return END
+
     # if there is a recoverable error
     if state.error:
         logger.error(f"Exiting the workflow due to the error: {state.error}")
@@ -132,7 +160,7 @@ class SupervisorAgent:
         """Invoke the planner."""
         response: AIMessage = self._planner_chain.invoke(
             input={
-                "messages": filter_messages(state.messages),
+                "messages": filter_messages_for_planner(state.messages),
             },
         )
         return response
@@ -149,7 +177,7 @@ class SupervisorAgent:
                 state,  # last message is the user query
             )
             # get the content of the AIMessage
-            response_content: str = plan_response.content  # type: ignore
+            response_content = str(plan_response.content)
 
             try:
                 # try to parse the JSON formatted Planner response into a Plan object
