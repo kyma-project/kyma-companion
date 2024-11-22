@@ -18,7 +18,7 @@ from agents.common.constants import (
     PLANNER,
 )
 from agents.common.state import Plan
-from agents.common.utils import create_node_output, filter_messages
+from agents.common.utils import create_node_output
 from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
 from utils.logging import get_logger

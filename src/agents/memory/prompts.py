@@ -1,11 +1,15 @@
 MESSAGES_SUMMARY_PROMPT = """
-Your task is to summarize the given conversation. 
+Your task is to summarize the main points discussed in the given conversation. 
 Your output will be used as context for other LLM agents to respond to user queries. 
-Therefore, summarize in such a way the is most useful for other agents to understand the conversation.
+Therefore, summarize in such a way that is most useful for other agents to understand the conversation.
+
+Your tasks are as follows:
+Step 1: Analyze provided conversation history and identify different topics, problems, proposed solutions or questions discussed.
+Step 2: Generate a summary for each identified topic, problem, proposed solutions or questions as a separate paragraph.
+Step 3: If the first message is a summary of older messages, then incorporate it in the most relevant summary.
+Step 3: Append the summaries to final output.
 
 Instructions:
-- Give more priority to the latest messages in the conversation.
-- Focus on the technical issues discussed and the solutions proposed.
-- If multiple topics are discussed, summarize each topic separately.
-- Keep the summary clear and concise.
+- Do not exclude any important information.
+- You can use bullet points to list different points discussed.
 """

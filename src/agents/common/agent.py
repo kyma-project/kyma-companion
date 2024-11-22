@@ -14,7 +14,7 @@ from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import IS_LAST_STEP, MESSAGES, MY_TASK, OWNER
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import agent_edge, filter_messages, subtask_selector_edge
+from agents.common.utils import agent_edge, subtask_selector_edge
 from utils.models.factory import IModel
 
 
