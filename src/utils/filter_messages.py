@@ -40,15 +40,18 @@ def filter_most_recent_messages(
 
 
 def is_human_message(message: BaseMessage) -> bool:
-    """Check if a message is a human message. Can be used as a check in the 'filter_messages' function."""
+    """Check if a message is a human message. Can be used as a check in the 'filter_messages_via_checks' function."""
     return isinstance(message, HumanMessage)
 
 
 def is_finalizer_message(message: BaseMessage) -> bool:
-    """Check if a message is a finalizer message. Can be used as a check in the 'filter_messages' function."""
+    """
+    Check if a message is a finalizer message. Can be used as a check in the
+    'filter_messages_via_checks' function.
+    """
     return isinstance(message, AIMessage) and message.name == FINALIZER
 
 
 def is_system_message(message: BaseMessage) -> bool:
-    """Check if a message is a system message. Can be used as a check in the 'filter_messages' function."""
+    """Check if a message is a system message. Can be used as a check in the 'filter_messages_via_checks' function."""
     return isinstance(message, SystemMessage)

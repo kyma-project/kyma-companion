@@ -21,6 +21,13 @@ from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
+from utils.filter_messages import (
+    filter_messages_via_checks,
+    filter_most_recent_messages,
+    is_finalizer_message,
+    is_human_message,
+    is_system_message,
+)
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 
@@ -126,9 +133,15 @@ class SupervisorAgent:
 
     def _invoke_planner(self, state: SupervisorState) -> AIMessage:
         """Invoke the planner."""
+
+        messages = filter_messages_via_checks(
+            state.messages, [is_human_message, is_system_message, is_finalizer_message]
+        )
+        messages = filter_most_recent_messages(messages, 10)
+
         response: AIMessage = self._planner_chain.invoke(
             input={
-                "messages": filter_messages(state.messages),
+                "messages": messages,
             },
         )
         return response
