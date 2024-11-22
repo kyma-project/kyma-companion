@@ -158,7 +158,7 @@ class SupervisorAgent:
                 state,  # last message is the user query
             )
             # get the content of the AIMessage
-            response_content: str = plan_response.content  # type: ignore
+            response_content = str(plan_response.content)
 
             try:
                 # try to parse the JSON formatted Planner response into a Plan object
