@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Protocol
 
 from langchain_core.documents import Document
@@ -14,7 +15,7 @@ logger = get_logger(__name__)
 class IGenerator(Protocol):
     """A protocol for a RAG generator."""
 
-    def generate(self, relevant_docs: list[Document], query: str) -> str:
+    async def generate(self, relevant_docs: list[Document], query: str) -> str:
         """Generate a response based on the RAG chain."""
         ...
 
@@ -27,15 +28,16 @@ class Generator:
         prompt = PromptTemplate.from_template(GENERATOR_PROMPT)
         self.rag_chain = prompt | self.model.llm | StrOutputParser()
 
-    def generate(self, relevant_docs: list[Document], query: str) -> str:
+    async def agenerate(self, relevant_docs: list[Document], query: str) -> str:
         """Generate a response based on the given query and relevant documents."""
+        """Generate a response based on the RAG chain."""
         # Convert Document objects to a list of their page_content
         docs_content = [doc.page_content for doc in relevant_docs]
         try:
-            response = str(
-                self.rag_chain.invoke({"context": docs_content, "query": query})
+            response = await self.rag_chain.ainvoke(
+                {"context": docs_content, "query": query}
             )
         except Exception as e:
             logger.exception(f"Error generating response for query: {query}")
             raise e
-        return response
+        return str(response)

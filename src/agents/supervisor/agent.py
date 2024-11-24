@@ -105,7 +105,7 @@ class SupervisorAgent:
         """Get Supervisor agent node function."""
         return self._graph
 
-    def _route(self, state: SupervisorState) -> dict[str, Any]:
+    async def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
         for subtask in state.subtasks:
             if not subtask.completed():
@@ -131,7 +131,7 @@ class SupervisorAgent:
         )
         return self.planner_prompt | model.llm  # type: ignore
 
-    def _invoke_planner(self, state: SupervisorState) -> AIMessage:
+    async def _invoke_planner(self, state: SupervisorState) -> AIMessage:
         """Invoke the planner."""
 
         filtered_messages = filter_messages_via_checks(
@@ -139,14 +139,14 @@ class SupervisorAgent:
         )
         reduces_messages = filter_most_recent_messages(filtered_messages, 10)
 
-        response: AIMessage = self._planner_chain.invoke(
+        response: AIMessage = await self._planner_chain.ainvoke(
             input={
                 "messages": reduces_messages,
             },
         )
         return response
 
-    def _plan(self, state: SupervisorState) -> dict[str, Any]:
+    async def _plan(self, state: SupervisorState) -> dict[str, Any]:
         """
         Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
         If the query is general, it returns the response directly.
@@ -154,7 +154,7 @@ class SupervisorAgent:
         state.error = None
 
         try:
-            plan_response = self._invoke_planner(
+            plan_response = await self._invoke_planner(
                 state,  # last message is the user query
             )
             # get the content of the AIMessage
@@ -212,20 +212,20 @@ class SupervisorAgent:
         ).partial(members=self._get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
 
-    def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
+    async def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
 
         try:
-            final_response = final_response_chain.invoke(
+            final_response = await final_response_chain.ainvoke(
                 {"messages": filter_messages(state.messages)},
-            ).content
+            )
 
             return {
                 MESSAGES: [
                     AIMessage(
-                        content=final_response,
+                        content=final_response.content,
                         name=FINALIZER,
                     )
                 ],
