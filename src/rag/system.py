@@ -1,3 +1,4 @@
+import asyncio
 from typing import Protocol, cast
 
 from langchain_core.documents import Document
@@ -30,15 +31,11 @@ class Query(BaseModel):
 class IRAGSystem(Protocol):
     """A protocol for a RAG system."""
 
-    def search(self, query: Query) -> str:
-        """Query the system with a given query."""
-        ...
-
-    def retrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+    async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
         ...
 
-    def generate(
+    async def agenerate(
         self,
         query: Query,
         relevant_docs: list[Document],
@@ -83,22 +80,20 @@ class RAGSystem:
 
         return unique_docs
 
-    def retrieve(self, query: Query, top_k: int = 3) -> list[Document]:
+    async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
         logger.info(f"Retrieving documents for query: {query.text}")
 
-        alternative_queries = self.query_generator.generate_queries(query.text)
+        alternative_queries = await self.query_generator.agenerate_queries(query.text)
         # add original query to the list
         all_queries = [query.text] + alternative_queries.queries
 
-        # retrieve documents for each query
-        all_docs = []
-        for query in all_queries:
-            retrieved_docs = self.retriever.retrieve(query)
-            all_docs.extend(retrieved_docs)
-
+        # retrieve documents for all queries concurrently
+        docs_lists = await asyncio.gather(
+            *(self.retriever.aretrieve(q) for q in all_queries)
+        )
         # remove duplicates from all retrieved documents
-        all_docs = self._remove_duplicates(all_docs)
+        all_docs = self._remove_duplicates([doc for docs in docs_lists for doc in docs])
 
         # TODO: re-rank documents
 
@@ -108,12 +103,10 @@ class RAGSystem:
         logger.info(f"Retrieved {len(all_docs)} documents.")
         return all_docs
 
-    def generate(
+    async def agenerate(
         self,
         query: Query,
         relevant_docs: list[Document],
     ) -> str:
         """Generate a response to a given query."""
-
-        response = self.generator.generate(relevant_docs, query.text)
-        return response
+        return await self.generator.agenerate(relevant_docs, query.text)

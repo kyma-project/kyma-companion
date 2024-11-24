@@ -100,7 +100,7 @@ class BaseAgent:
         )
         return agent_prompt | self.model.llm.bind_tools(self.tools)
 
-    def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
+    async def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
             raise ValueError("Kubernetes client is not initialized.")
 
@@ -124,19 +124,19 @@ class BaseAgent:
             ],
         }
 
-    def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
+    async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
             MESSAGES: filter_messages(state.messages),
             "query": state.my_task.description,
         }
-        response = self.chain.invoke(inputs, config)
+        response = await self.chain.ainvoke(inputs, config)
         return response
 
-    def _model_node(
+    async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
-            response = self._invoke_chain(state, config)
+            response = await self._invoke_chain(state, config)
         except Exception as e:
             return {
                 MESSAGES: [
@@ -166,7 +166,9 @@ class BaseAgent:
         response.additional_kwargs["owner"] = self.name
         return {MESSAGES: [response]}
 
-    def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
+    async def _finalizer_node(
+        self, state: BaseAgentState, config: RunnableConfig
+    ) -> Any:
         """Finalizer node will mark the task as completed and clean-up extra messages."""
         state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
@@ -183,7 +185,7 @@ class BaseAgent:
         # Define a new graph
         workflow = StateGraph(state_class)
 
-        # Define the nodes of the graph.
+        # Define nodes with async awareness
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
         workflow.add_node("tools", ToolNode(self.tools))

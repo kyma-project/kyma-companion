@@ -45,12 +45,12 @@ class SearchKymaDocTool(BaseTool):
         query: str,
     ) -> str:
         """Execute the search through Kyma documentation."""
-        query_obj = Query(text=query)
-        relevant_docs = self.rag_system.retrieve(query_obj)
-        rag_response = self.rag_system.generate(query_obj, relevant_docs)
-        return rag_response
+        return ""
 
     async def _arun(self, query: str) -> str:
         """Async implementation of the search through Kyma documentation."""
         # For now, just call the sync version
-        return self._run(query)
+        query_obj = Query(text=query)
+        relevant_docs = await self.rag_system.aretrieve(query_obj)
+        rag_response = await self.rag_system.agenerate(query_obj, relevant_docs)
+        return rag_response

@@ -122,22 +122,25 @@ class CompanionGraph:
         )
         return prompt | model.llm  # type: ignore
 
-    def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
+    async def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
         """Invoke the common node."""
-        return self._common_chain.invoke(  # type: ignore
+        response = await self._common_chain.ainvoke(  # type: ignore
             {
                 "messages": filter_messages(state.messages),
                 "query": subtask,
             },
-        ).content
+        )
+        return response.content
 
-    def _common_node(self, state: CompanionState) -> dict[str, Any]:
+    async def _common_node(self, state: CompanionState) -> dict[str, Any]:
         """Common node to handle general queries."""
 
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
                 try:
-                    response = self._invoke_common_node(state, subtask.description)
+                    response = await self._invoke_common_node(
+                        state, subtask.description
+                    )
                     subtask.complete()
                     return {
                         MESSAGES: [
@@ -152,7 +155,7 @@ class CompanionGraph:
                     return {
                         MESSAGES: [
                             AIMessage(
-                                content="Sorry, the common agent is unable to process the request.",
+                                content="Sorry, I am unable to process the request.",
                                 name=COMMON,
                             )
                         ]
