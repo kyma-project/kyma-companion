@@ -169,7 +169,7 @@ class CompanionGraph:
     def _build_graph(self) -> CompiledGraph:
         """Create the companion parent graph."""
 
-        # Define a new graph.
+        # Define a new lang graph.
         workflow = StateGraph(CompanionState)
 
         # Define the nodes of the graph.
