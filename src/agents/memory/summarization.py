@@ -1,5 +1,5 @@
 import tiktoken
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.graph.message import Messages, add_messages
 
@@ -56,13 +56,21 @@ def compute_messages_token_count(msgs: Messages) -> int:
     return token_count
 
 def filter_messages_by_token_limit(messages: Messages, token_limit: int) -> Messages:
-    filtered_messages = []
+    # calculate how many latest messages can be kept within the token limit.
     token_count = 0
-    for msg in messages:
+    msg_count = 0
+    for msg in reversed(messages):
         token_count += compute_string_token_count(msg.content)
         if token_count > token_limit:
             break
-        filtered_messages.append(msg)
+        msg_count += 1
+    # separate out the messages which needs to be kept in chat history.
+    filtered_messages = messages[msg_count:].copy()
+    # remove the tool messages from head of the list,
+    # because a tool message must be preceded by a system message.
+    for i, message in enumerate(filtered_messages):
+        if not isinstance(message, ToolMessage):
+            return filtered_messages[i:]
     return filtered_messages
 
 def summarize_and_add_messages_token(token_lower_limit, token_upper_limit):
@@ -71,10 +79,13 @@ def summarize_and_add_messages_token(token_lower_limit, token_upper_limit):
 
         token_count = compute_messages_token_count(combined_messages)
         if token_count > token_upper_limit:
-            latest = filter_messages_by_token_limit(combined_messages, token_lower_limit)
-            llc = len(latest)
-            summary = get_summary(combined_messages[:-llc])
-            return add_messages(summary, latest)
+            latest_messages = filter_messages_by_token_limit(combined_messages, token_lower_limit)
+            if len(latest_messages) == len(combined_messages):
+                return combined_messages
+            # separate out messages which needs to be summarized.
+            msgs_for_summary = combined_messages[:-len(latest_messages)]
+            summary = get_summary(msgs_for_summary)
+            return add_messages(summary, latest_messages)
         return combined_messages
     return callback
 

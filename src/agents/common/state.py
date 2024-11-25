@@ -59,6 +59,17 @@ class UserInput(BaseModel):
             result["resource_namespace"] = self.namespace
         return result
 
+    def is_same_resource(self, target: 'UserInput') -> bool:
+        if self.resource_kind != target.resource_kind:
+            return False
+        if self.resource_api_version != target.resource_api_version:
+            return False
+        if self.resource_name != target.resource_name:
+            return False
+        if self.namespace != target.namespace:
+            return False
+        return True
+
 
 class Plan(BaseModel):
     """Plan to follow in future"""
