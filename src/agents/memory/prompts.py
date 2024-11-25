@@ -13,4 +13,5 @@ Instructions:
 - Do not exclude any important information.
 - You can use bullet points to list different points discussed.
 - Do not hallucinate or add any information that is not present in the chat history.
+- Prioritize the latest messages.
 """

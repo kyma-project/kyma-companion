@@ -194,33 +194,11 @@ class CompanionGraph:
         return graph
 
 
-    async def reset_messages_if_tab_switch(
-            self, conversation_id: str, user_input: UserInput
-    ) -> None:
-        state_config = {
-                "configurable": {
-                    "thread_id": conversation_id,
-                },
-            }
-        latest_state = await self.graph.aget_state(state_config)
-        # check if the request is related to the same Kubernetes resource.
-        if (latest_state.values
-                and 'input' in latest_state.values
-                and not user_input.is_same_resource(latest_state.values['input'])):
-            # remove all messages if tab is switched.
-            await self.graph.aupdate_state(state_config, {
-                "messages": [RemoveMessage(id=m.id) for m in latest_state.values['messages']],
-            })
-
-
     async def astream(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
-
-        # remove all messages if tab is switched.
-        await self.reset_messages_if_tab_switch(conversation_id, user_input)
 
         messages = [
             SystemMessage(

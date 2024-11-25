@@ -15,7 +15,7 @@ TOKEN_UPPER_LIMIT = 2000
 
 model_factory = ModelFactory()
 models = model_factory.create_models()
-model_4o = cast(IModel, models[ModelType.GPT4O])
+summarization_model = cast(IModel, models[ModelType.GPT4O_MINI])
 
 def get_summary(messages: Messages) -> Messages:
     llm_prompt = ChatPromptTemplate.from_messages(
@@ -25,28 +25,29 @@ def get_summary(messages: Messages) -> Messages:
         ]
     )
 
-    chain = llm_prompt | model_4o.llm
+    chain = llm_prompt | summarization_model.llm
     res = chain.invoke({"messages": messages})
     print("***********SUMMARY************")
     print(res.content)
     return SystemMessage(content=f"Summary of previous messages: {res.content}")
 
-# def summarize_and_add_messages(messages_lower_limit, messages_upper_limit):
-#     def callback(left: Messages, right: Messages) -> Messages:
-#         combined_messages = add_messages(left, right)
-#
-#         if len(combined_messages) > messages_upper_limit:
-#             latest = combined_messages[-messages_lower_limit:]
-#             summary = get_summary(combined_messages[:-messages_lower_limit])
-#             return add_messages(summary, latest)
-#
-#         return combined_messages
-#
-#     return callback
+def summarize_and_add_messages(messages_lower_limit, messages_upper_limit):
+    """Based on the number of messages, summarize the old messages and add them to the chat history."""
+    def callback(left: Messages, right: Messages) -> Messages:
+        combined_messages = add_messages(left, right)
+
+        if len(combined_messages) > messages_upper_limit:
+            latest = combined_messages[-messages_lower_limit:]
+            summary = get_summary(combined_messages[:-messages_lower_limit])
+            return add_messages(summary, latest)
+
+        return combined_messages
+
+    return callback
 
 
 def compute_string_token_count(text: str) -> int:
-    tokenizer = tiktoken.encoding_for_model(model_4o.name)
+    tokenizer = tiktoken.encoding_for_model(summarization_model.name)
     return len(tokenizer.encode(text=text))
 
 def compute_messages_token_count(msgs: Messages) -> int:
