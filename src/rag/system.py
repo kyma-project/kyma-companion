@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from rag.generator import Generator
 from rag.query_generator import QueryGenerator
+from rag.reranker.reranker import LLMReranker
 from rag.retriever import HanaDBRetriever
 from utils.hana import create_hana_connection
 from utils.logging import get_logger
@@ -64,21 +65,11 @@ class RAGSystem:
         # setup generator
         self.generator = Generator(cast(IModel, models[ModelType.GPT4O_MINI]))
 
+        # setup reranker
+        self.reranker = LLMReranker(cast(IModel, models[ModelType.GPT4O_MINI]))
+
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
-
-    @staticmethod
-    def _remove_duplicates(documents: list[Document]) -> list[Document]:
-        """Remove duplicate documents based on content."""
-        seen_content = set()
-        unique_docs = []
-
-        for doc in documents:
-            if doc.page_content not in seen_content:
-                seen_content.add(doc.page_content)
-                unique_docs.append(doc)
-
-        return unique_docs
 
     async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
@@ -89,19 +80,17 @@ class RAGSystem:
         all_queries = [query.text] + alternative_queries.queries
 
         # retrieve documents for all queries concurrently
-        docs_lists = await asyncio.gather(
+        all_docs = await asyncio.gather(
             *(self.retriever.aretrieve(q) for q in all_queries)
         )
-        # remove duplicates from all retrieved documents
-        all_docs = self._remove_duplicates([doc for docs in docs_lists for doc in docs])
 
-        # TODO: re-rank documents
+        # rerank documents
+        reranked_docs = self.reranker.rerank(
+            all_docs, all_queries, input_limit=10, output_limit=top_k
+        )
 
-        if len(all_docs) > top_k:
-            all_docs = all_docs[:top_k]
-
-        logger.info(f"Retrieved {len(all_docs)} documents.")
-        return all_docs
+        logger.info(f"Retrieved {len(reranked_docs)} documents.")
+        return reranked_docs
 
     async def agenerate(
         self,
