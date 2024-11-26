@@ -1,0 +1,24 @@
+# This secret contains all the secrets that are required to start an instance of LangFuse
+# and to connect kyma-companion with it LangFuse.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: langfuse-secrets
+type: Opaque
+stringData:
+  # LangFuse env vars.
+  # Env vars for headless initialization.
+  LANGFUSE_INIT_ORG_ID: "kyma"
+  LANGFUSE_INIT_PROJECT_ID: "kyma-companion"
+  LANGFUSE_INIT_PROJECT_PUBLIC_KEY: "lf_pk_$(openssl rand -hex 20)"
+  LANGFUSE_INIT_PROJECT_SECRET_KEY: "lf_sk_$(openssl rand -hex 20)"
+  LANGFUSE_INIT_USER_EMAIL: "ID+USERNAME@users.noreply.github.com"
+  LANGFUSE_INIT_USER_PASSWORD: "$(openssl rand -hex 20)"
+
+  # General env vars.
+  DATABASE_URL: <add url>
+  NEXTAUTH_URL:
+  NEXTAUTH_SECRET: "$(openssl rand -base64 32)"
+  SALT: "$(openssl rand -base64 32)"
+  ENCRYPTION_KEY: "$(openssl rand -base64 32)"
+
