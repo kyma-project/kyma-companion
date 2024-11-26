@@ -35,8 +35,9 @@ open http://localhost:3000/auth/sign-up
 ```
 Hit the `+ New project` button, give your project a name, and hit `Create`. On the next page you will find the values for `LANGFUSE_SECRET_KEY` and `LANGFUSE_PUBLIC_KEY`; copy them into your `.env` file.
 
-If you already have a local copy of the LangFuse repository, don't forget to `fetch` and `pull` the latest changes, since it gets frequently updated. Then just run:
+If you already have a local copy of the LangFuse repository, don't forget to `pull` the latest changes, since it gets frequently updated. Then just run:
 ```bash
+git pull
 docker compose up --wait
 open http://localhost:3000/auth/sign-up
 ```
