@@ -63,7 +63,7 @@ from utils.filter_messages import (
             ],
         ),
         (
-            "should handle multiple checks",
+            "should handle two checks",
             [
                 HumanMessage(content="Human Message"),
                 AIMessage(content="AI Message"),
@@ -74,6 +74,21 @@ from utils.filter_messages import (
             [
                 HumanMessage(content="Human Message"),
                 AIMessage(content="Finalizer Message", name=FINALIZER),
+            ],
+        ),
+        (
+            "should handle three checks",
+            [
+                HumanMessage(content="Human Message"),
+                AIMessage(content="AI Message"),
+                AIMessage(content="Finalizer Message", name=FINALIZER),
+                SystemMessage(content="Sysytem Message"),
+            ],
+            [is_human_message, is_finalizer_message, is_system_message],
+            [
+                HumanMessage(content="Human Message"),
+                AIMessage(content="Finalizer Message", name=FINALIZER),
+                SystemMessage(content="Sysytem Message"),
             ],
         ),
         (

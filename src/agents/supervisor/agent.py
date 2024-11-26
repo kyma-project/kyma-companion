@@ -134,14 +134,14 @@ class SupervisorAgent:
     def _invoke_planner(self, state: SupervisorState) -> AIMessage:
         """Invoke the planner."""
 
-        messages = filter_messages_via_checks(
+        filtered_messages = filter_messages_via_checks(
             state.messages, [is_human_message, is_system_message, is_finalizer_message]
         )
-        messages = filter_most_recent_messages(messages, 10)
+        reduces_messages = filter_most_recent_messages(filtered_messages, 10)
 
         response: AIMessage = self._planner_chain.invoke(
             input={
-                "messages": messages,
+                "messages": reduces_messages,
             },
         )
         return response
