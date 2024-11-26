@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from rag.generator import Generator
 from rag.query_generator import QueryGenerator
+from rag.reranker.reranker import LLMReranker
 from rag.retriever import HanaDBRetriever
 from utils.hana import create_hana_connection
 from utils.logging import get_logger
@@ -67,6 +68,9 @@ class RAGSystem:
         # setup generator
         self.generator = Generator(cast(IModel, models[ModelType.GPT4O_MINI]))
 
+        # setup reranker
+        self.reranker = LLMReranker(cast(IModel, models[ModelType.GPT4O_MINI]))
+
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
 
@@ -93,20 +97,21 @@ class RAGSystem:
 
         # retrieve documents for each query
         all_docs = []
-        for query in all_queries:
-            retrieved_docs = self.retriever.retrieve(query)
+        for q in all_queries:
+            retrieved_docs = self.retriever.retrieve(q)
             all_docs.extend(retrieved_docs)
 
         # remove duplicates from all retrieved documents
         all_docs = self._remove_duplicates(all_docs)
 
-        # TODO: re-rank documents
+        # rerank documents
+        ranked_documents = self.reranker.rerank(all_docs, all_queries, input_limit=10, output_limit=top_k)
 
-        if len(all_docs) > top_k:
-            all_docs = all_docs[:top_k]
+        if len(ranked_documents) > top_k:
+            ranked_documents = ranked_documents[:top_k]
 
-        logger.info(f"Retrieved {len(all_docs)} documents.")
-        return all_docs
+        logger.info(f"Retrieved {len(ranked_documents)} documents.")
+        return ranked_documents
 
     def generate(
         self,
