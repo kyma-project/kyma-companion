@@ -4,7 +4,10 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
-from rag.prompts import QUERY_GENERATOR_PROMPT_TEMPLATE
+from rag.prompts import (
+    QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE,
+    QUERY_GENERATOR_PROMPT_TEMPLATE,
+)
 from utils import logging
 from utils.models.factory import IModel
 
@@ -39,14 +42,9 @@ class QueryGenerator:
         self.prompt = prompt or ChatPromptTemplate.from_messages(
             [
                 ("system", QUERY_GENERATOR_PROMPT_TEMPLATE),
+                # TODO: messages (conversation history) will be added later here
                 ("user", "Original query: {query}"),
-                (
-                    "system",
-                    "Based on the original query, generate {num_queries} alternative queries "
-                    "that capture different aspects and variations of the search intent. "
-                    "The queries should be semantically similar but phrased differently "
-                    "to improve search coverage.",
-                ),
+                ("system", QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE),
             ]
         ).partial(
             num_queries=num_queries,

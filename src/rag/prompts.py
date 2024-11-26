@@ -43,3 +43,25 @@ Generated Queries: [
     "Kyma's approach to extending Kubernetes functionality",
 ]
 """
+
+QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE = """
+Based on the original query, generate {num_queries} alternative queries
+that capture different aspects and variations of the search intent.
+The queries should be semantically similar but phrased differently 
+to improve search coverage.,
+"""
+
+
+GENERATOR_PROMPT = """
+You are Kyma documentation assistant who helps to retrieve the information from Kyma documentation. 
+Use the following pieces of retrieved context to answer the query.
+Answer the specific question directly.
+Include only information from the provided context.
+If you don't know the answer, just say that you don't know.
+
+Query: {query} 
+
+Context: {context} 
+
+Answer:
+"""

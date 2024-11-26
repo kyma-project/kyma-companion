@@ -106,7 +106,6 @@ class SupervisorAgent:
                 return {
                     "next": next_agent,
                     "subtasks": state.subtasks,
-                    
                 }
         return {
             "next": FINALIZER,

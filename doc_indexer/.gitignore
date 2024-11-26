@@ -1,6 +1,2 @@
 data
 tmp
-
-
-# ignore retriever files
-*retriever*.py

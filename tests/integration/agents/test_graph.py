@@ -507,7 +507,7 @@ def test_invoke_planner(
                 ),
                 AIMessage(
                     name="KubernetesAgent",
-                    content="sorry, I am unable to answer your k8s question at the moment.",
+                    content="The sun emits light.",
                 ),
                 AIMessage(
                     name="KymaAgent",
