@@ -1,7 +1,0 @@
-models:
-  - name: gpt-4o
-    deployment_id: d92ed4e1d4bafffc
-    temperature: 0
-  - name: gpt-4o-mini
-    deployment_id: d3da334def2bb9c8
-    temperature: 0

@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -56,12 +57,18 @@ def get_config() -> Config:
     # Get the absolute path of the current file
     current_file_path = Path(__file__).resolve()
 
-    target_config_file = os.environ.get("CONFIG_PATH", "config/config.yml")
+    target_config_file = os.environ.get("CONFIG_PATH", "config/config.json")
     # Find the config file by searching upwards
     config_file = find_config_file(current_file_path.parent, target_config_file)
 
     logger.info(f"Loading models config from: {config_file}")
-    with config_file.open() as f:
-        data = yaml.safe_load(f)
-    config = Config(**data)
-    return config
+    try:
+        with config_file.open() as file:
+            data = json.load(file)
+        # Extract only the "models" part of the configuration
+        models_data = data.get("models", [])
+        config = Config(models=models_data)
+        return config
+    except Exception as e:
+        logger.error(f"Error loading config from {config_file}: {e}")
+        raise
