@@ -37,7 +37,7 @@ class IAgent(Protocol):
     """Agent interface."""
 
     def agent_node(self):  # noqa ANN
-        """Agent node."""
+        """Main agent function."""
         ...
 
     @property
