@@ -106,14 +106,10 @@ class SupervisorAgent:
                 return {
                     "next": next_agent,
                     "subtasks": state.subtasks,
-                    "messages": [
-                        AIMessage(content=f'{{"next": {next_agent}}}', name=self.name)
-                    ],
                 }
         return {
             "next": FINALIZER,
             "subtasks": state.subtasks,
-            "messages": [AIMessage(content=f'{{"next": {FINALIZER}}}', name=self.name)],
         }
 
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:

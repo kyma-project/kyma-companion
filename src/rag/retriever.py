@@ -5,11 +5,15 @@ from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class IRetriever(Protocol):
     """Retriever interface."""
 
-    def retrieve(self, query: str) -> list[Document]:
+    def retrieve(self, query: str, top_k: int = 3) -> list[Document]:
         """Retrieve relevant documents based on the query."""
         ...
 
@@ -26,7 +30,11 @@ class HanaDBRetriever:
             table_name=table_name,
         )
 
-    def retrieve(self, query: str) -> list[Document]:
+    def retrieve(self, query: str, top_k: int = 5) -> list[Document]:
         """Retrieve relevant documents based on the query."""
-        docs = self.db.similarity_search(query, k=3)
+        try:
+            docs = self.db.similarity_search(query, k=top_k)
+        except Exception as e:
+            logger.exception(f"Error retrieving documents for query: {query}")
+            raise e
         return docs
