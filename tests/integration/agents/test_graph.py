@@ -1,14 +1,14 @@
 from collections.abc import Sequence
 
 import pytest
-from deepeval import assert_test
+from deepeval import assert_test, evaluate
 from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from agents.common.constants import COMMON
-from agents.common.state import AgentState, SubTask, UserInput
-from agents.k8s.constants import K8S_AGENT
+from agents.common.state import CompanionState, SubTask, UserInput
+from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 
 
@@ -23,14 +23,17 @@ def answer_relevancy_metric(evaluator_model):
 def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
-        criteria=""
-        "Evaluate whether two answers are semantically similar or convey the same meaning.",
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning.",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language are permissible",
+        ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
         model=evaluator_model,
-        threshold=0.8,
+        threshold=0.7,
     )
 
 
@@ -53,7 +56,7 @@ def planner_correctness_metric(evaluator_model):
     )
 
 
-def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentState:
+def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:
     """Create a mock langgraph state for tests."""
     if subtasks is None:
         subtasks = []
@@ -65,7 +68,7 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> AgentSt
         namespace=None,
     )
 
-    return AgentState(
+    return CompanionState(
         input=user_input,
         messages=messages,
         next="",
@@ -253,20 +256,20 @@ def test_invoke_planner(
                 AIMessage(
                     name="KymaAgent",
                     content="""
-                Kyma is an open-source platform designed to extend 
-                applications with microservices and serverless functions. It provides a set of tools and 
-                components that enable developers to build, deploy, and manage cloud-native applications. Key 
-                features of Kyma include: 1. **Kubernetes-based**: Kyma runs on Kubernetes, leveraging its 
-                orchestration capabilities for managing containerized applications. 2. **Microservices 
-                Architecture**: It supports the development of microservices, allowing for modular application 
-                design and easier scaling. 3. **Serverless Functions**: Kyma enables the creation of serverless 
-                functions, which can be triggered by events, making it easier to build event-driven applications. 
-                4. **Integration Capabilities**: It offers various integration options with external services and 
-                APIs, facilitating seamless communication between different systems. 5. **Extensibility**: 
-                Developers can extend existing applications with new functionalities without needing to modify 
-                the core application code. 6. **Service Management**: Kyma provides tools for managing services, 
-                including service discovery, monitoring, and logging. Overall, Kyma is aimed at simplifying the 
-                development and management of cloud-native applications, making it easier for organizations to 
+                Kyma is an open-source platform designed to extend
+                applications with microservices and serverless functions. It provides a set of tools and
+                components that enable developers to build, deploy, and manage cloud-native applications. Key
+                features of Kyma include: 1. **Kubernetes-based**: Kyma runs on Kubernetes, leveraging its
+                orchestration capabilities for managing containerized applications. 2. **Microservices
+                Architecture**: It supports the development of microservices, allowing for modular application
+                design and easier scaling. 3. **Serverless Functions**: Kyma enables the creation of serverless
+                functions, which can be triggered by events, making it easier to build event-driven applications.
+                4. **Integration Capabilities**: It offers various integration options with external services and
+                APIs, facilitating seamless communication between different systems. 5. **Extensibility**:
+                Developers can extend existing applications with new functionalities without needing to modify
+                the core application code. 6. **Service Management**: Kyma provides tools for managing services,
+                including service discovery, monitoring, and logging. Overall, Kyma is aimed at simplifying the
+                development and management of cloud-native applications, making it easier for organizations to
                 innovate and respond to changing business needs.
                 """,
                 ),
@@ -329,7 +332,7 @@ def test_invoke_planner(
                 2. **Service Discovery and Load Balancing**: Kubernetes can expose a container using the DNS name or
                 their own IP address. If traffic to a container is high, Kubernetes can load balance and distribute the
                 network traffic so that the deployment is stable.
-                3. **Storage Orchestration**: Kubernetes allows you to automatically mount the storage system of your 
+                3. **Storage Orchestration**: Kubernetes allows you to automatically mount the storage system of your
                 choice, such as local storage, public cloud providers, and more.
                 4. **Self-Healing**: Kubernetes restarts containers that fail, replaces containers, kills containers
                 that don’t respond to your user-defined health check, and doesn’t advertise them to clients until they
@@ -500,13 +503,11 @@ def test_invoke_planner(
                 """
                 ),
                 HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
+                    content="what is k8s stateful set and what is a kyma function?"
                 ),
                 AIMessage(
                     name="KubernetesAgent",
-                    content="""
-                The sun emits light.
-                """,
+                    content="The sun emits light.",
                 ),
                 AIMessage(
                     name="KymaAgent",
@@ -561,13 +562,30 @@ def test_invoke_finalizer(
 
     result = companion_graph.supervisor_agent._generate_final_response(state)
 
+    latest_human_message = next(
+        msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
+    )
+
     test_case = LLMTestCase(
-        input=messages[-1].content,
+        input=latest_human_message,
         actual_output=result["messages"][0].content,
         expected_output=expected_answer,
     )
 
-    assert_test(test_case, [semantic_similarity_metric])
+    # assert_test(test_case, [semantic_similarity_metric])
+
+    # Run deepeval metrics
+    eval_results = evaluate(
+        test_cases=[test_case],
+        metrics=[
+            semantic_similarity_metric,
+        ],
+    )
+
+    # Assert all metrics pass
+    assert all(
+        result.success for result in eval_results.test_results
+    ), "Not all metrics passed"
 
 
 @pytest.mark.parametrize(

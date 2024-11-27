@@ -1,6 +1,6 @@
 import pytest
 
-from agents.common.state import AgentState, SubTask, SubTaskStatus, UserInput
+from agents.common.state import CompanionState, SubTask, SubTaskStatus, UserInput
 
 
 class TestSubTask:
@@ -75,7 +75,7 @@ class TestAgentState:
     def test_all_tasks_completed(
         self, messages, next, subtasks, final_response, expected
     ):
-        state = AgentState(
+        state = CompanionState(
             messages=messages,
             next=next,
             subtasks=subtasks,

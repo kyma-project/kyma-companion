@@ -16,7 +16,7 @@ from agents.common.constants import (
     RECENT_MESSAGES_LIMIT,
     SUBTASKS,
 )
-from agents.common.state import AgentState, SubTask, SubTaskStatus
+from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +37,9 @@ def create_agent(llm: ChatOpenAI, tools: list, system_prompt: str) -> AgentExecu
     return executor
 
 
-def agent_node(state: AgentState, agent: AgentExecutor, name: str) -> dict[str, Any]:
+def agent_node(
+    state: CompanionState, agent: AgentExecutor, name: str
+) -> dict[str, Any]:
     """Agent node."""
     for subtask in state.subtasks:
         if subtask.assigned_to == name and subtask.status != SubTaskStatus.COMPLETED:
@@ -88,7 +90,7 @@ def filter_messages(
     return filtered
 
 
-def next_step(state: AgentState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
+def next_step(state: CompanionState) -> Literal[EXIT, FINALIZER, CONTINUE]:  # type: ignore
     """Return EXIT if next is EXIT or there is an error, FINALIZER if the next node is FINALIZER, else CONTINUE."""
     if state.next == EXIT:
         logger.debug("Ending the workflow.")

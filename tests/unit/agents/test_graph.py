@@ -2,20 +2,24 @@ import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
+from langgraph.types import StateSnapshot
 
 from agents.common.constants import COMMON
 from agents.common.data import Message
-from agents.common.state import AgentState, SubTask
+from agents.common.state import CompanionState, SubTask
 from agents.graph import CompanionGraph
-from utils.models import LLM, IModel
+from utils.models.factory import IModel, ModelType
 
 
 @pytest.fixture
 def mock_models():
     return {
-        LLM.GPT4O_MINI: MagicMock(spec=IModel),
-        LLM.GPT4O: MagicMock(spec=IModel),
+        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
+        ModelType.GPT4O: MagicMock(spec=IModel),
+        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
     }
 
 
@@ -48,6 +52,7 @@ def companion_graph(
             CompanionGraph, "_create_common_chain", return_value=mock_common_chain
         ),
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
+        patch("agents.graph.KymaAgent", return_value=Mock()),
     ):
         return CompanionGraph(mock_models, mock_memory)
 
@@ -166,7 +171,7 @@ class TestCompanionGraph:
         expected_error,
         mock_common_chain,
     ):
-        state = AgentState(subtasks=subtasks, messages=messages)
+        state = CompanionState(subtasks=subtasks, messages=messages)
 
         if expected_error:
             mock_common_chain.invoke.side_effect = Exception(expected_error)
@@ -333,3 +338,91 @@ class TestCompanionGraph:
                 return obj1 == obj2
 
             assert result == expected_output
+
+    def test_agent_initialization(self, companion_graph, mock_models, mock_memory):
+        with (
+            patch("agents.graph.KymaAgent") as mock_kyma_cls,
+            patch("agents.graph.KubernetesAgent") as mock_k8s_cls,
+            patch("agents.graph.SupervisorAgent") as mock_supervisor_cls,
+            patch.object(CompanionGraph, "_build_graph") as mock_build_graph,
+        ):
+            CompanionGraph(mock_models, mock_memory)
+
+            # Verify KymaAgent was constructed with models
+            mock_kyma_cls.assert_called_once_with(mock_models)
+
+            # Verify KubernetesAgent was constructed with GPT4O model
+            mock_k8s_cls.assert_called_once_with(mock_models[ModelType.GPT4O])
+
+            # Verify SupervisorAgent was constructed with correct arguments
+            mock_supervisor_cls.assert_called_once_with(
+                mock_models, members=["KymaAgent", "KubernetesAgent", "Common"]
+            )
+
+            mock_build_graph.assert_called_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "conversation_id, given_latest_state_values, expected_output",
+        [
+            # test case when the latest state values is empty.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {},
+                [],
+            ),
+            # test case when the latest state values do not have messages key.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {
+                    "dummy_key": "dummy_value",
+                },
+                [],
+            ),
+            # test case when the latest state values have messages.
+            (
+                "e9974a27-048e-4e65-b4ed-a02d201465a6",
+                {
+                    "messages": [
+                        AIMessage(content="Message 1"),
+                        AIMessage(content="Message 2"),
+                    ],
+                },
+                [
+                    AIMessage(content="Message 1"),
+                    AIMessage(content="Message 2"),
+                ],
+            ),
+        ],
+    )
+    async def test_aget_messages(
+        self,
+        companion_graph,
+        conversation_id,
+        given_latest_state_values,
+        expected_output,
+    ):
+        # given
+        given_latest_state = StateSnapshot(
+            values=given_latest_state_values,
+            next=(),
+            config=RunnableConfig(),
+            tasks=(),
+            metadata=None,
+            created_at=None,
+            parent_config=None,
+        )
+        companion_graph.graph.aget_state = AsyncMock(return_value=given_latest_state)
+
+        # when
+        result = await companion_graph.aget_messages(conversation_id)
+
+        # then
+        assert result == expected_output
+        companion_graph.graph.aget_state.assert_called_once_with(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )

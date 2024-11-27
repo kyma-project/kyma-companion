@@ -238,6 +238,7 @@ commands.md
 .env.dev
 .env.fzn.dev
 **/.env.evaluation
+**/.deepeval_telemtry.txt
 
 # Ignore all files starting with _, but not __init__.py
 _*
@@ -245,3 +246,10 @@ _*
 config/config.yml
 graph.png
 jupyter-notebooks/
+*.ipynb
+data/*
+doc_indexer/data/*
+.env.*
+
+# ignore scripts in the root folder
+*.sh

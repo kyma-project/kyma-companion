@@ -8,6 +8,7 @@ from agents.common.data import Message
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
+    FollowUpQuestionsResponse,
     InitConversationBody,
     InitialQuestionsResponse,
 )
@@ -45,7 +46,7 @@ async def init_conversation(
     logger.info("Initializing new conversation.")
 
     # Initialize with the session_id. Create a new session_id if not provided.
-    session_id = session_id if session_id != "" else create_session_id()
+    session_id = session_id if session_id else create_session_id()
 
     # Initialize k8s client for the request.
     try:
@@ -63,7 +64,6 @@ async def init_conversation(
     try:
         # Create initial questions.
         questions = service.new_conversation(
-            session_id=session_id,
             k8s_client=k8s_client,
             message=Message(
                 query="",
@@ -81,6 +81,31 @@ async def init_conversation(
         return JSONResponse(
             content=jsonable_encoder(response),
             headers={SESSION_ID_HEADER: session_id},
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
+async def followup_questions(
+    conversation_id: Annotated[str, Path(title="The ID of the conversation")],
+    service: IService = Depends(get_conversation_service),  # noqa B008
+) -> JSONResponse:
+    """Endpoint to generate follow-up questions for a conversation."""
+
+    try:
+        # Create follow-up questions.
+        questions = await service.handle_followup_questions(
+            conversation_id=conversation_id
+        )
+
+        # Return response.
+        response = FollowUpQuestionsResponse(
+            questions=questions,
+        )
+        return JSONResponse(
+            content=jsonable_encoder(response),
         )
     except Exception as e:
         logger.error(e)

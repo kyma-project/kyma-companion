@@ -1,5 +1,3 @@
-# Load all variables from .env into the environment
-# necessary to implicitly import AI Core Env Vars
 import json
 import logging
 import os
@@ -43,16 +41,21 @@ if is_running_pytest():
     # For tests use .env.test if available
     env_path = find_dotenv(".env.test")
     if env_path and os.path.exists(env_path):
-        config = Config(RepositoryEnv(env_path))
-        load_dotenv(env_path)
+        repository = RepositoryEnv(env_path)
+        for key, value in repository.data.items():
+            os.environ[key] = str(value)
+        config = Config(repository)
     else:
         # Load the config.json if no .env.test file is found
         logging.warning("No .test.env file found. Using config.json.")
         load_env_from_json()
 
+    # deepeval specific environment variables
+    DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 else:
     # For production load the env variables needed dynamically from the config.json.
     load_env_from_json()
+
 
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis
@@ -64,3 +67,9 @@ LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="True")
+
+DATABASE_URL = config("DATABASE_URL", None)
+DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
+DATABASE_USER = config("DATABASE_USER", None)
+DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
+DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")

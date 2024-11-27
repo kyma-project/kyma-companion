@@ -5,7 +5,9 @@ from typing import Annotated
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langgraph.graph import add_messages
+from langgraph.managed import IsLastStep
 
+from agents.common.constants import K8S_CLIENT
 from services.k8s import IK8sClient
 
 
@@ -58,8 +60,20 @@ class UserInput(BaseModel):
         return result
 
 
-class AgentState(BaseModel):
-    """Agent state.
+class Plan(BaseModel):
+    """Plan to follow in future"""
+
+    subtasks: list[SubTask] | None = Field(
+        description="different steps/subtasks to follow, should be in sorted order"
+    )
+
+    response: str | None = Field(
+        description="direct response of planner if plan is unnecessary"
+    )
+
+
+class CompanionState(BaseModel):
+    """State for the main companion graph.
 
     Attributes:
         input: UserInput: user input with user query and resource(s) contextual information
@@ -92,13 +106,17 @@ class AgentState(BaseModel):
         fields = {"k8s_client": {"exclude": True}}
 
 
-class Plan(BaseModel):
-    """Plan to follow in future"""
+class BaseAgentState(BaseModel):
+    """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
-    subtasks: list[SubTask] | None = Field(
-        description="different steps/subtasks to follow, should be in sorted order"
-    )
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    subtasks: list[SubTask] | None = []
+    k8s_client: IK8sClient
 
-    response: str | None = Field(
-        description="direct response of planner if plan is unnecessary"
-    )
+    # Subgraph private fields
+    my_task: SubTask | None = None
+    is_last_step: IsLastStep
+
+    class Config:
+        arbitrary_types_allowed = True
+        fields = {K8S_CLIENT: {"exclude": True}}

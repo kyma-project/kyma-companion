@@ -1,49 +1,29 @@
-import functools
+from langchain_core.embeddings import Embeddings
 
-from langchain_core.tools import tool
-
-from agents.common.utils import agent_node, create_agent
+from agents.common.agent import BaseAgent
+from agents.common.constants import GRAPH_STEP_TIMEOUT_SECONDS
 from agents.kyma.prompts import KYMA_AGENT_PROMPT
-from utils.logging import get_logger
-from utils.models import IModel
+from agents.kyma.state import KymaAgentState
+from agents.kyma.tools.query import kyma_query_tool
+from agents.kyma.tools.search import SearchKymaDocTool
+from utils.models.factory import IModel, ModelType
 
-logger = get_logger(__name__)
 KYMA_AGENT = "KymaAgent"
 
 
-class KymaAgent:
-    """Supervisor agent class."""
+class KymaAgent(BaseAgent):
+    """Kyma agent class."""
 
-    _name: str = KYMA_AGENT
-
-    def __init__(self, model: IModel):
-        self.model = model
-
-    @staticmethod
-    @tool
-    def search_kyma_doc(query: str) -> str:
-        """Search Kyma documentation."""
-        logger.info(f"Searching Kyma documentation for query: {query}")
-        # TODO: Implement the actual search logic with RAG.
-        return (
-            "Kyma is an opinionated set of Kubernetes-based modular building blocks, including all necessary "
-            "capabilities to develop and run enterprise-grade cloud-native applications."
-        )
-
-    @property
-    def name(self) -> str:
-        """Agent name."""
-        return self._name
-
-    def agent_node(self):  # noqa ANN
-        """Get Kyma agent node function."""
-        kyma_agent_node = create_agent(
-            self.model.llm,
-            [self.search_kyma_doc],
+    def __init__(self, models: dict[str, IModel | Embeddings]):
+        tools = [
+            SearchKymaDocTool(models),
+            kyma_query_tool,
+        ]
+        super().__init__(
+            KYMA_AGENT,
+            models[ModelType.GPT4O],
+            tools,
             KYMA_AGENT_PROMPT,
+            KymaAgentState,
         )
-        return functools.partial(
-            agent_node,
-            agent=kyma_agent_node,
-            name=KYMA_AGENT,
-        )
+        self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS

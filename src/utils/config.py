@@ -15,7 +15,7 @@ class ModelConfig(BaseModel):
 
     name: str
     deployment_id: str
-    temperature: float
+    temperature: float = 0.0
 
 
 class Config(BaseModel):

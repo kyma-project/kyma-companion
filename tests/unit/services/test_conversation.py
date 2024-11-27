@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from langchain_core.messages import AIMessage
 
 from agents.common.data import Message
 from services.conversation import ConversationService
@@ -67,22 +68,12 @@ class TestConversation:
         with patch("services.conversation.initialize_async_pool") as mock:
             yield mock
 
-    @pytest.fixture
-    def mock_redis_history(self):
-        mock_history = Mock()
-        mock_history.add_message = Mock(return_value=None)
-        with patch(
-            "services.conversation.RedisChatMessageHistory", return_value=mock_history
-        ):
-            yield mock_history
-
     def test_new_conversation(
         self,
         mock_model_factory,
         mock_companion_graph,
         mock_redis_saver,
         mock_init_pool,
-        mock_redis_history,
     ) -> None:
         # Given:
         mock_handler = Mock()
@@ -96,11 +87,49 @@ class TestConversation:
 
         # When:
         result = conversation_service.new_conversation(
-            session_id=CONVERSATION_ID, k8s_client=mock_k8s_client, message=TEST_MESSAGE
+            k8s_client=mock_k8s_client, message=TEST_MESSAGE
         )
 
         # Then:
         assert result == QUESTIONS
+
+    @pytest.mark.asyncio
+    async def test_handle_followup_questions(
+        self,
+        mock_model_factory,
+        mock_companion_graph,
+        mock_init_pool,
+    ) -> None:
+        # Given:
+        dummy_conversation_history = [
+            AIMessage(content="Message 1"),
+            AIMessage(content="Message 2"),
+            AIMessage(content="Message 3"),
+        ]
+        # define mock for FollowUpQuestionsHandler.
+        mock_handler = Mock()
+        mock_handler.generate_questions = Mock(return_value=QUESTIONS)
+        # initialize ConversationService instance.
+        conversation_service = ConversationService(
+            followup_questions_handler=mock_handler
+        )
+        conversation_service._followup_questions_handler = mock_handler
+        # define mock for CompanionGraph.
+        conversation_service._companion_graph.aget_messages = AsyncMock(
+            return_value=dummy_conversation_history
+        )
+
+        # When:
+        result = await conversation_service.handle_followup_questions(CONVERSATION_ID)
+
+        # Then:
+        assert result == QUESTIONS
+        mock_handler.generate_questions.assert_called_once_with(
+            messages=dummy_conversation_history
+        )
+        conversation_service._companion_graph.aget_messages.assert_called_once_with(
+            CONVERSATION_ID
+        )
 
     @pytest.mark.asyncio
     async def test_handle_request(

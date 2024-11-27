@@ -1,78 +1,44 @@
-import functools
 from unittest.mock import Mock, patch
 
 import pytest
-from langchain.agents import AgentExecutor
+from langchain_core.embeddings import Embeddings
 
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.kyma.prompts import KYMA_AGENT_PROMPT
+from agents.kyma.tools.query import kyma_query_tool
+from agents.kyma.tools.search import SearchKymaDocTool
+from rag.system import RAGSystem
+from utils.models.factory import IModel, ModelType
 
 
-class TestKymaAgent:
+@pytest.fixture
+def mock_models():
+    """Create mock models dictionary with required model types."""
+    return {
+        ModelType.GPT4O: Mock(spec=IModel),
+        ModelType.TEXT_EMBEDDING_3_LARGE: Mock(spec=Embeddings),
+    }
 
-    @pytest.fixture
-    def kyma_agent(self):
-        return KymaAgent(Mock())  # noqa
 
-    @pytest.mark.parametrize(
-        "create_agent_return, agent_node_return, expected_type, expected_name",
-        [
-            (
-                Mock(spec=AgentExecutor),
-                {"messages": [{"content": "kyma info", "type": "ai"}]},
-                functools.partial,
-                KYMA_AGENT,
-            ),
-            (
-                Mock(spec=AgentExecutor),
-                {"messages": []},
-                functools.partial,
-                KYMA_AGENT,
-            ),
-            (
-                Mock(spec=AgentExecutor),
-                {"messages": [{"content": "Error occurred", "type": "system"}]},
-                functools.partial,
-                KYMA_AGENT,
-            ),
-        ],
-    )
-    @patch("agents.kyma.agent.get_logger", Mock())
-    @patch("agents.kyma.agent.create_agent")
-    @patch("agents.kyma.agent.agent_node")
-    def test_agent_node(
-        self,
-        mock_agent_node,
-        mock_create_agent,
-        kyma_agent,
-        create_agent_return,
-        agent_node_return,
-        expected_type,
-        expected_name,
-    ):
-        # Setup
-        mock_create_agent.return_value = create_agent_return
-        mock_agent_node.return_value = agent_node_return
+@pytest.fixture
+def doc_search_tool(mock_models):
+    """Create a mock search tool."""
+    # mock RAGSystem
+    mock_rag_system = Mock(spec=RAGSystem)
+    with patch("agents.kyma.tools.search.RAGSystem", return_value=mock_rag_system):
+        tool = SearchKymaDocTool(mock_models)
+        yield tool
 
-        # Execute
-        result = kyma_agent.agent_node()
 
-        # Assert
-        mock_create_agent.assert_called_once_with(
-            kyma_agent.model.llm,
-            [KymaAgent.search_kyma_doc],
-            KYMA_AGENT_PROMPT,
-        )
+def test_kyma_agent_init(mock_models, doc_search_tool):
+    """Test that KymaAgent initializes correctly with all expected attributes."""
+    agent = KymaAgent(mock_models)
 
-        assert isinstance(result, expected_type)
-        assert result.func == mock_agent_node
-        assert result.keywords["agent"] == create_agent_return
-        assert result.keywords["name"] == expected_name
+    # Verify the agent name
+    assert agent.name == KYMA_AGENT
 
-        # Verify that the returned partial function works as expected
-        partial_result = result()
-        assert partial_result == agent_node_return
-        mock_agent_node.assert_called_once_with(
-            agent=create_agent_return,
-            name=KYMA_AGENT,
-        )
+    # Verify the model is set correctly
+    assert agent.model == mock_models[ModelType.GPT4O]
+
+    # Verify the tools are set correctly
+    expected_tools = [doc_search_tool, kyma_query_tool]
+    assert agent.tools == expected_tools

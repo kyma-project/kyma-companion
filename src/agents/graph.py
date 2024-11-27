@@ -1,8 +1,19 @@
 import json
-from collections.abc import Hashable
-from typing import Any, AsyncIterator, Dict, Literal, Protocol, Sequence  # noqa UP
+from collections.abc import AsyncIterator, Hashable
+from typing import (
+    Any,
+    Protocol,
+    cast,
+)
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.embeddings import Embeddings
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
@@ -17,7 +28,7 @@ from agents.common.constants import (
     MESSAGES,
 )
 from agents.common.data import Message
-from agents.common.state import AgentState, Plan, SubTask, UserInput
+from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
     filter_messages,
 )
@@ -28,7 +39,7 @@ from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
-from utils.models import LLM, IModel
+from utils.models.factory import IModel, ModelType
 
 logger = get_logger(__name__)
 
@@ -58,11 +69,15 @@ class IGraph(Protocol):
         """Stream the output to the caller asynchronously."""
         ...
 
+    async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
+        ...
+
 
 class CompanionGraph:
     """Companion graph class. Represents all the workflow of the application."""
 
-    models: dict[str, IModel]
+    models: dict[str, IModel | Embeddings]
     memory: BaseCheckpointSaver
     supervisor_agent: IAgent
     kyma_agent: IAgent
@@ -73,24 +88,25 @@ class CompanionGraph:
 
     planner_prompt: ChatPromptTemplate
 
-    def __init__(self, models: dict[str, IModel], memory: BaseCheckpointSaver):
+    def __init__(
+        self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver
+    ):
         self.models = models
         self.memory = memory
 
-        gpt_4o_mini = models[LLM.GPT4O_MINI]
-        gpt_4o = models[LLM.GPT4O]
+        gpt_4o_mini = models[ModelType.GPT4O_MINI]
+        gpt_4o = models[ModelType.GPT4O]
 
-        # TODO: switch to gpt_4o when necessary
-        self.kyma_agent = KymaAgent(gpt_4o_mini)
+        self.kyma_agent = KymaAgent(models)
 
-        self.k8s_agent = KubernetesAgent(gpt_4o)
+        self.k8s_agent = KubernetesAgent(cast(IModel, gpt_4o))
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._common_chain = self._create_common_chain(gpt_4o_mini)
+        self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
         self.graph = self._build_graph()
 
     @staticmethod
@@ -106,7 +122,7 @@ class CompanionGraph:
         )
         return prompt | model.llm  # type: ignore
 
-    def _invoke_common_node(self, state: AgentState, subtask: str) -> str:
+    def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
         """Invoke the common node."""
         return self._common_chain.invoke(  # type: ignore
             {
@@ -115,7 +131,7 @@ class CompanionGraph:
             },
         ).content
 
-    def _common_node(self, state: AgentState) -> dict[str, Any]:
+    def _common_node(self, state: CompanionState) -> dict[str, Any]:
         """Common node to handle general queries."""
 
         for subtask in state.subtasks:
@@ -154,7 +170,7 @@ class CompanionGraph:
         """Create the companion parent graph."""
 
         # Define a new graph.
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(CompanionState)
 
         # Define the nodes of the graph.
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
@@ -209,3 +225,16 @@ class CompanionGraph:
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
                 yield chunk_json
+
+    async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
+        """Get messages from the graph state."""
+        latest_state = await self.graph.aget_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
+        if latest_state.values and "messages" in latest_state.values:
+            return latest_state.values["messages"]  # type: ignore
+        return []

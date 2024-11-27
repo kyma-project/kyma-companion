@@ -1,12 +1,10 @@
 """Implementation of a langgraph checkpoint saver using Redis."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
-from typing import (  # noqa UP035
+from typing import (
     Any,
     Protocol,
-    Sequence,
-    Tuple,
 )
 
 import redis
@@ -202,7 +200,7 @@ class RedisSaver(BaseCheckpointSaver):
     async def aput_writes(
         self,
         config: RunnableConfig,
-        writes: Sequence[Tuple[str, Any]],  # noqa UP006
+        writes: Sequence[tuple[str, Any]],
         task_id: str,
     ) -> None:
         """Put writes asynchronously."""

@@ -6,7 +6,7 @@ from fakeredis import TcpFakeServer
 
 from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
-from utils.models import LLM, ModelFactory
+from utils.models.factory import ModelFactory, ModelType
 from utils.settings import REDIS_HOST, REDIS_PORT, REDIS_URL
 
 
@@ -34,17 +34,18 @@ class LangChainOpenAI(DeepEvalBaseLLM):
 @pytest.fixture(scope="session")
 def app_models():
     model_factory = ModelFactory()
-    model = model_factory.create_model(LLM.GPT4O)
-    model_mini = model_factory.create_model(LLM.GPT4O_MINI)
     return {
-        LLM.GPT4O_MINI: model_mini,
-        LLM.GPT4O: model,
+        ModelType.GPT4O_MINI: model_factory.create_model(ModelType.GPT4O_MINI),
+        ModelType.GPT4O: model_factory.create_model(ModelType.GPT4O),
+        ModelType.TEXT_EMBEDDING_3_LARGE: model_factory.create_model(
+            ModelType.TEXT_EMBEDDING_3_LARGE
+        ),
     }
 
 
 @pytest.fixture(scope="session")
 def evaluator_model(app_models):
-    return LangChainOpenAI(app_models[LLM.GPT4O].llm)
+    return LangChainOpenAI(app_models[ModelType.GPT4O].llm)
 
 
 @pytest.fixture(scope="session")
