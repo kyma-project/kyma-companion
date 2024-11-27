@@ -1,2 +1,3 @@
-Prerequisite to enable logging for a Kyma application, it must log to `stdout` or `stderr`, which ensures that the logs can be processed by Kubernetes primitives like `kubectl logs`. 
-For details, see [Kubernetes: Logging Architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/).
+One of the **rerequisites** for an application to be able to log is:
+
+* **Log to `stdout` or `stderr`:** Your application must write its log messages to the standard output (`stdout`) or standard error (`stderr`) streams. This is essential because Kubernetes uses these streams to collect and manage container logs.

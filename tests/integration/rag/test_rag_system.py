@@ -58,19 +58,24 @@ def rag_system(app_models):
     [
         pytest.param(
             "How to enable Istio sidecar proxy injection?",
-            "fixtures/kyma_docs/istio/docs/user/tutorials/01-40-enable-sidecar-injection.md",
+            "fixtures/kyma_docs/istio/docs/user/tutorials/istio-injection.md",
             id="How to enable Istio sidecar proxy injection?",
+        ),
+        pytest.param(
+            "why an Istio sidecar is not injected to a pod?",
+            "fixtures/kyma_docs/istio/docs/user/tutorials/why-no-sidecar.md",
+            id="why an Istio sidecar is not injected to a pod?",
         ),
         pytest.param(
             "Why do I get a 'Connection reset by peer' error?",
             # "Why do I get a connection refuses error?",
-            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-20-connection-refused.md",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/connection-reset-error.md",
             id="Why do I get a 'Connection reset by peer' error?",
         ),
         pytest.param(
             "how to resolve 'Connection reset by peer' error?",
             # "Why do I get a connection refuses error?",
-            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-20-connection-refused.md",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/connection-reset-error.md",
             id="how to resolve 'Connection reset by peer' error?",
         ),
         pytest.param(
