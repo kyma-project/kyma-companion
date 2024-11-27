@@ -11,13 +11,20 @@ from utils.config import Config, ModelConfig, get_config
     [
         (
             """
-            models:
-              - name: model1
-                deployment_id: dep1
-                temperature: 0.0
-              - name: model2
-                deployment_id: dep2
-                temperature: 0.5
+            {
+                "models": [
+                    {
+                        "name": "model1",
+                        "deployment_id": "dep1",
+                        "temperature": 0.0
+                    },
+                    {
+                        "name": "model2",
+                        "deployment_id": "dep2",
+                        "temperature": 0.5
+                    }
+                ]
+            }
             """,
             Config(
                 models=[
@@ -28,10 +35,15 @@ from utils.config import Config, ModelConfig, get_config
         ),
         (
             """
-            models:
-              - name: single_model
-                deployment_id: single_dep
-                temperature: 1
+            {
+                "models": [
+                    {
+                        "name": "single_model",
+                        "deployment_id": "single_dep",
+                        "temperature": 1
+                    }
+                ]
+            }
             """,
             Config(
                 models=[
@@ -43,7 +55,9 @@ from utils.config import Config, ModelConfig, get_config
         ),
         (
             """
-            models: []
+            {
+                "models": []
+            }
             """,
             Config(models=[]),
         ),
