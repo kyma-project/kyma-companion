@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
@@ -7,7 +8,7 @@ from utils.config import Config, ModelConfig, get_config
 
 
 @pytest.mark.parametrize(
-    "yaml_content, expected_config",
+    "json_content, expected_config",
     [
         (
             """
@@ -63,7 +64,9 @@ from utils.config import Config, ModelConfig, get_config
         ),
     ],
 )
-def test_get_config(yaml_content, expected_config):
-    with patch.object(Path, "open", mock_open(read_data=yaml_content)):
-        result = get_config()
-        assert result == expected_config
+def test_get_config(json_content, expected_config):
+    with patch.object(Path, "open", mock_open(read_data=json_content)):
+        # Mock `Path.is_file` to always return True for the config file
+        with patch.object(Path, "is_file", return_value=True):
+            result = get_config()
+            assert result == expected_config
