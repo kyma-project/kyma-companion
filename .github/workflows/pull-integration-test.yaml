@@ -61,7 +61,7 @@ jobs:
 
           # Extract HANA DB credentials - updated key names
           echo "${HANA_DB_SECRET}" > hana-db-secret.yaml
-          echo "DATABASE_URL=$(yq eval '.DABASE_URL' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_URL=$(yq eval '.DATABASE_URL' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
           echo "DATABASE_USER=$(yq eval '.DATABASE_USER' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
           echo "DATABASE_PASSWORD=$(yq eval '.DATABASE_PASSWORD' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
           echo "DATABASE_PORT=$(yq eval '.DATABASE_PORT' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
