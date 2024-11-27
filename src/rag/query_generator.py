@@ -35,7 +35,7 @@ class QueryGenerator:
         self,
         model: IModel,
         prompt: ChatPromptTemplate | None = None,
-        num_queries: int = 4,
+        num_queries: int = 6,
     ):
         self.model = model
         self.queries_parser = PydanticOutputParser(pydantic_object=Queries)
@@ -60,6 +60,7 @@ class QueryGenerator:
         """Generate multiple queries based on the input query."""
         try:
             queries = await self._chain.ainvoke({"query": query})
+            logger.debug("Generated queries: %s", queries)
             return cast(Queries, queries)
         except Exception:
             logger.exception("Error generating queries")

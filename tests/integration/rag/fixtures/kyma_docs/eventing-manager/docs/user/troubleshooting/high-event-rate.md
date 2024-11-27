@@ -1,0 +1,1 @@
+If the events' publish rate is very high (more than 1.5k events per second), speed up the event dispatching by increasing the `maxInFlightMessages` configuration of the Subscription (default is set to 10) accordingly. Due to low `maxInFlightMessages`, the dispatcher will not be able to keep up with the publisher, and as a result, the stream size will keep growing.  

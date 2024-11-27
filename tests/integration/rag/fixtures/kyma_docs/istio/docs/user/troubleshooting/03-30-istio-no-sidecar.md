@@ -18,7 +18,7 @@ A Pod is not injected with an Istio sidecar proxy if:
 Find out which Pods do not have Istio sidecar proxy injection enabled and why. You can either inspect Pods across all namespaces, focus on a specific namespace, or verify why a selective Pod is not injected.
 
 ### Check Pods in All Namespaces
-
+### Check Pods in All Namespaces
 1. Download the [script](../../assets/sidecar-analysis.sh).
 2. Run the script.
 
@@ -98,5 +98,3 @@ Find out which Pods do not have Istio sidecar proxy injection enabled and why. Y
     kubectl get pod {POD} -n default -o=jsonpath='{.metadata.labels.sidecar\.istio\.io/inject}
     ```
 4. To learn how to include a Pod into the Istio service mesh, see [Enabling Istio Sidecar Proxy Injection](https://help.sap.com/docs/btp/sap-business-technology-platform-internal/enabling-istio-sidecar-proxy?locale=en-US&state=DRAFT&version=Internal).
-
-<!-- tabs:end -->

@@ -8,12 +8,14 @@ Key points about Kyma to consider:
 4. There's a distinction between the open-source Kyma project and SAP BTP, Kyma runtime (managed service).
 
 For the given user query, generate different search queries that:
-1. Break down complex questions into simpler, focused queries
-2. Cover various aspects: installation, configuration, integration, troubleshooting
+1. Rephrase the original query using different wording while preserving the core intent
+2. Break down complex queries into simpler, focused sub-queries
 3. Include Kyma-specific terminology, components, and related technologies
-4. Address both high-level concepts and specific implementation details
-5. Consider potential issues or common pitfalls
-6. Explore differences between open-source Kyma and SAP BTP, Kyma runtime where relevant
+4. Include Kyma-specific terminology and components (e.g., runtime, eventing, serverless, service mesh)
+5. For problem-related queries:
+   - Include terms related to potential error messages or symptoms
+   - Add terms related to causes
+   - Include keywords related to solutions
 
 Guidelines for query generation:
 - Keep queries concise and specific
@@ -27,20 +29,10 @@ Examples:
 
 User Query: "How to set up Kyma for my project?"
 Generated Queries: [
-    "Kyma installation options: open-source vs SAP BTP Kyma runtime",
+    "How to install Kyma?",
     "Step-by-step guide to install open-source Kyma",
-    "Configuring Kyma modules post-installation",
-    "Integrating Kyma with existing SAP systems",
-    "Kyma setup troubleshooting common issues"
-]
-
-User Query: "Explain Kyma's architecture"
-Generated Queries: [
-    "Overview of Kyma's modular architecture",
-    "Key components in Kyma's Kubernetes-based runtime",
-    "Kyma's integration with Istio and Service Mesh",
-    "Role of NATS and Cloud Events in Kyma architecture",
-    "Kyma's approach to extending Kubernetes functionality",
+    "Setting up Kyma runtime",
+    "Kyma installation prerequisites and steps"
 ]
 """
 
