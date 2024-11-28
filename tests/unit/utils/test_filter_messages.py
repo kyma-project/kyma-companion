@@ -105,7 +105,7 @@ from utils.filter_messages import (
 )
 def test_filter_messages_via_checks(test_case, messages, checks, expected_result):
     """
-    The purpose of this test is to test the filter_messages function
+    The purpose of this test is to test the filter_messages_via_checks function
     by passing in a sequence of messages and a list of checks and checking
     if the function returns the expected, filtered sequence of messages.
     """
