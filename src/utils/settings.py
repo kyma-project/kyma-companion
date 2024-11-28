@@ -4,7 +4,7 @@ import os
 import sys
 
 from decouple import Config, RepositoryEnv, config
-from dotenv import find_dotenv, load_dotenv
+from dotenv import find_dotenv
 
 
 def is_running_pytest() -> bool:
@@ -14,17 +14,19 @@ def is_running_pytest() -> bool:
     return "pytest" in sys.modules
 
 
-def load_env_from_json():
+def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     config_path = os.getenv(
         "AICORE_HOME",
-        os.path.abspath("../../go/src/github.com/kyma-project/kyma-companion/config/config.json")
+        os.path.abspath(
+            "../../go/src/github.com/kyma-project/kyma-companion/config/config.json"
+        ),
     )  # Default to root config.json.
 
     if os.path.exists(config_path):
         try:
             # Load the configuration from the given path and set the environment variables.
-            with open(config_path, "r") as file:
+            with open(config_path) as file:
                 config_file = json.load(file)
 
                 # Set environment variables for all keys except "models"

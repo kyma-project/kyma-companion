@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 
-import yaml
 from pydantic import BaseModel
 
 from utils.logging import get_logger
