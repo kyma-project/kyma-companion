@@ -246,12 +246,6 @@ class TestSupervisorAgent:
                         ),
                     ],
                     "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
                     ],
                     "error": None,
                     "next": ROUTER,
@@ -270,12 +264,6 @@ class TestSupervisorAgent:
                         )
                     ],
                     "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kubernetes pod concept", '
-                            '"assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
                     ],
                     "error": None,
                     "next": ROUTER,
