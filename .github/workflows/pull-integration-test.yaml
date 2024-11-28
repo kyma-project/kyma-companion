@@ -50,6 +50,7 @@ jobs:
         id: int-tests-configs
         env:
           AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
+          HANA_DB_SECRET: ${{ secrets.HANA_DB }}
         run: |
           echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
           echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
@@ -57,8 +58,17 @@ jobs:
           echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
           echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+
+          # Extract HANA DB credentials - updated key names
+          echo "${HANA_DB_SECRET}" > hana-db-secret.yaml
+          echo "DATABASE_URL=$(yq eval '.DATABASE_URL' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_USER=$(yq eval '.DATABASE_USER' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PASSWORD=$(yq eval '.DATABASE_PASSWORD' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PORT=$(yq eval '.DATABASE_PORT' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DOCS_TABLE_NAME=$(yq eval '.DOCS_TABLE_NAME' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          
           # cleanup
-          rm -f aicore-secret.yaml
+          rm -f aicore-secret.yaml hana-db-secret.yaml
 
       - name: Run integration tests
         env:
@@ -73,6 +83,12 @@ jobs:
           TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
           TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
           TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
+          # HANA DB configurations
+          DATABASE_URL: ${{ steps.int-tests-configs.outputs.DATABASE_URL }}
+          DATABASE_USER: ${{ steps.int-tests-configs.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
+          DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
+          DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
           echo "${{ secrets.MODELS }}" > config/config.yml
           poetry run poe test-integration

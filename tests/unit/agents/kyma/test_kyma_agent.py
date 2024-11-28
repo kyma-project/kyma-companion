@@ -5,7 +5,8 @@ from langchain_core.embeddings import Embeddings
 
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.kyma.tools.query import kyma_query_tool
-from agents.kyma.tools.search import create_search_kyma_doc_tool
+from agents.kyma.tools.search import SearchKymaDocTool
+from rag.system import RAGSystem
 from utils.models.factory import IModel, ModelType
 
 
@@ -21,26 +22,23 @@ def mock_models():
 @pytest.fixture
 def doc_search_tool(mock_models):
     """Create a mock search tool."""
-    # mock create_hana_connection and HanaDBRetriever
-    with patch("agents.kyma.tools.search.create_hana_connection"), patch(
-        "agents.kyma.tools.search.HanaDBRetriever"
-    ):
-        yield create_search_kyma_doc_tool(mock_models[ModelType.TEXT_EMBEDDING_3_LARGE])
+    # mock RAGSystem
+    mock_rag_system = Mock(spec=RAGSystem)
+    with patch("agents.kyma.tools.search.RAGSystem", return_value=mock_rag_system):
+        tool = SearchKymaDocTool(mock_models)
+        yield tool
 
 
 def test_kyma_agent_init(mock_models, doc_search_tool):
     """Test that KymaAgent initializes correctly with all expected attributes."""
-    with patch(
-        "agents.kyma.agent.create_search_kyma_doc_tool", return_value=doc_search_tool
-    ):
-        agent = KymaAgent(mock_models)
+    agent = KymaAgent(mock_models)
 
-        # Verify the agent name
-        assert agent.name == KYMA_AGENT
+    # Verify the agent name
+    assert agent.name == KYMA_AGENT
 
-        # Verify the model is set correctly
-        assert agent.model == mock_models[ModelType.GPT4O]
+    # Verify the model is set correctly
+    assert agent.model == mock_models[ModelType.GPT4O]
 
-        # Verify the tools are set correctly
-        expected_tools = [doc_search_tool, kyma_query_tool]
-        assert agent.tools == expected_tools
+    # Verify the tools are set correctly
+    expected_tools = [doc_search_tool, kyma_query_tool]
+    assert agent.tools == expected_tools

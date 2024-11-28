@@ -21,6 +21,13 @@ from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
 from agents.supervisor.state import SupervisorState
+from utils.filter_messages import (
+    filter_messages_via_checks,
+    filter_most_recent_messages,
+    is_finalizer_message,
+    is_human_message,
+    is_system_message,
+)
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 
@@ -106,14 +113,10 @@ class SupervisorAgent:
                 return {
                     "next": next_agent,
                     "subtasks": state.subtasks,
-                    "messages": [
-                        AIMessage(content=f'{{"next": {next_agent}}}', name=self.name)
-                    ],
                 }
         return {
             "next": FINALIZER,
             "subtasks": state.subtasks,
-            "messages": [AIMessage(content=f'{{"next": {FINALIZER}}}', name=self.name)],
         }
 
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:
@@ -130,9 +133,15 @@ class SupervisorAgent:
 
     def _invoke_planner(self, state: SupervisorState) -> AIMessage:
         """Invoke the planner."""
+
+        filtered_messages = filter_messages_via_checks(
+            state.messages, [is_human_message, is_system_message, is_finalizer_message]
+        )
+        reduces_messages = filter_most_recent_messages(filtered_messages, 10)
+
         response: AIMessage = self._planner_chain.invoke(
             input={
-                "messages": filter_messages(state.messages),
+                "messages": reduces_messages,
             },
         )
         return response
@@ -149,7 +158,7 @@ class SupervisorAgent:
                 state,  # last message is the user query
             )
             # get the content of the AIMessage
-            response_content: str = plan_response.content  # type: ignore
+            response_content = str(plan_response.content)
 
             try:
                 # try to parse the JSON formatted Planner response into a Plan object

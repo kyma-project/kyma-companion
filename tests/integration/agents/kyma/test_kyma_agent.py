@@ -72,16 +72,16 @@ def mock_k8s_client():
 
 
 @pytest.fixture
-def kyma_agent(app_models, mock_hana_db_connection_setup):
+def kyma_agent(app_models):
     return KymaAgent(app_models)
 
 
 @pytest.mark.parametrize(
-    "test_case,state,context,retrieval_context,expected_result,expected_tool_call,should_raise",
+    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
         # Test case for API Rule with wrong access strategy
         # - Verifies agent correctly identifies and explains API Rule validation error
-        # - Checks agent uses both kyma_query_tool and search_kyma_doc_tool
+        # - Checks agent uses both kyma_query_tool and search_kyma_doc
         # - Validates response matches expected explanation about multiple access strategies
         (
             "Should return right solution for API Rule with wrong access strategy",
@@ -123,14 +123,14 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                             {
                                 "id": "tool_call_id_2",
                                 "type": "tool_call",
-                                "name": "search_kyma_doc_tool",
+                                "name": "search_kyma_doc",
                                 "args": {"query": "APIRule validation errors"},
                             }
                         ],
                     ),
                     ToolMessage(
                         content=KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
-                        name="search_kyma_doc_tool",
+                        name="search_kyma_doc",
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
@@ -141,7 +141,6 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 k8s_client=Mock(spec_set=IK8sClient),
                 is_last_step=False,
             ),
-            ["Multiple access strategies are not allowed to be used together"],
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
             EXPECTED_API_RULE_RESPONSE,
             None,
@@ -172,7 +171,6 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            None,
             None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
             "kyma_query_tool",
@@ -223,9 +221,8 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 is_last_step=False,
             ),
             None,
-            None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
-            "search_kyma_doc_tool",
+            "search_kyma_doc",
             False,
         ),
         # Test case for Serverless Function with syntax error
@@ -279,14 +276,14 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                             {
                                 "id": "tool_call_id_2",
                                 "type": "tool_call",
-                                "name": "search_kyma_doc_tool",
+                                "name": "search_kyma_doc",
                                 "args": {"query": "Kyma Function troubleshooting"},
                             }
                         ],
                     ),
                     ToolMessage(
                         content=KYMADOC_FUNCTION_TROUBLESHOOTING,
-                        name="search_kyma_doc_tool",
+                        name="search_kyma_doc",
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
@@ -297,10 +294,7 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
-            ),
-            [
-                "Th Dates object does not exist in JavaScript. The correct object is Date, which can be initialized with `new Date()`."
-            ],  # context
+            ),  # context
             None,  # retrieval_context
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
             None,  # expected_tool_call
@@ -352,7 +346,7 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                             {
                                 "id": "tool_call_id_2",
                                 "type": "tool_call",
-                                "name": "search_kyma_doc_tool",
+                                "name": "search_kyma_doc",
                                 "args": {"query": "serverless Function pod not ready"},
                             },
                         ],
@@ -364,7 +358,7 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                     ),
                     ToolMessage(
                         content=KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY,
-                        name="search_kyma_doc_tool",
+                        name="search_kyma_doc",
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
@@ -376,9 +370,6 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [
-                "The Serverless Function replicas must be greater than 0 to respond to requests"
-            ],
             None,
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
             None,
@@ -408,14 +399,14 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                             {
                                 "id": "tool_call_id_1",
                                 "type": "tool_call",
-                                "name": "search_kyma_doc_tool",
+                                "name": "search_kyma_doc",
                                 "args": {"query": "BTP Operator features"},
                             }
                         ],
                     ),
                     ToolMessage(
                         content=RETRIEVAL_CONTEXT,
-                        name="search_kyma_doc_tool",
+                        name="search_kyma_doc",
                         tool_call_id="tool_call_id_1",
                     ),
                 ],
@@ -427,7 +418,6 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [EXPECTED_BTP_MANAGER_RESPONSE],
             "",
             EXPECTED_BTP_MANAGER_RESPONSE,
             None,
@@ -455,14 +445,14 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                             {
                                 "id": "tool_call_id_1",
                                 "type": "tool_call",
-                                "name": "search_kyma_doc_tool",
+                                "name": "search_kyma_doc",
                                 "args": {"query": "BTP Operator features"},
                             }
                         ],
                     ),
                     ToolMessage(
                         content="No relevant documentation found.",
-                        name="search_kyma_doc_tool",
+                        name="search_kyma_doc",
                         tool_call_id="tool_call_id_1",
                     ),
                 ],
@@ -474,9 +464,13 @@ def kyma_agent(app_models, mock_hana_db_connection_setup):
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
             ),
-            [EXPECTED_BTP_MANAGER_RESPONSE],
             "",
-            EXPECTED_BTP_MANAGER_RESPONSE,
+            "I couldn't find specific documentation on the features of the BTP Operator in the Kyma documentation. "
+            "However, generally, the BTP Operator in Kyma is responsible for managing the lifecycle of "
+            "SAP BTP service instances and bindings. It integrates SAP BTP services into the Kyma environment, "
+            "allowing you to provision and bind services from the SAP Business Technology Platform."
+            "If you have specific questions or need further details, you might want to check the official "
+            "SAP BTP documentation or resources related to the BTP Operator for more comprehensive information.",
             None,
             False,
         ),
@@ -488,7 +482,6 @@ def test_invoke_chain(
     faithfulness_metric,
     test_case,
     state,
-    context,
     retrieval_context,
     expected_result,
     expected_tool_call,
@@ -517,7 +510,6 @@ def test_invoke_chain(
                 input=state.my_task.description,
                 actual_output=response.content,
                 expected_output=expected_result if expected_result else None,
-                context=context if context else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
 

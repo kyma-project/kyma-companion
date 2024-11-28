@@ -13,5 +13,5 @@ class SupervisorState(BaseModel):
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
-    next: str | None
-    error: str | None
+    next: str | None = None
+    error: str | None = None

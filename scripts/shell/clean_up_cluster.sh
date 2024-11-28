@@ -11,6 +11,36 @@ set -o errexit  # exit immediately when a command fails.
 set -E          # needs to be set if we want the ERR trap
 set -o pipefail # prevents errors in a pipeline from being masked
 
+
+delete_kyma_modules_crs() {
+    echo "## Delete all Subscription CRs ##"
+    kubectl delete --timeout=120s --wait=false -A subscriptions.eventing.kyma-project.io --all || true
+
+    echo "## Delete API Rule CRs ##"
+    kubectl delete --timeout=120s --wait=false -A apirules.gateway.kyma-project.io --all || true
+
+    echo "## Delete Function CRs ##"
+    kubectl delete --timeout=120s --wait=false -A functions.serverless.kyma-project.io --all || true
+
+    echo "## Delete NATS CR ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/nats-manager/releases/latest/download/nats-default-cr.yaml || true
+
+    echo "## Delete Eventing CR ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/eventing-manager/releases/latest/download/eventing-default-cr.yaml || true
+
+    echo "## Delete Serverless CR ##"
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/serverless-manager/releases/latest/download/default-serverless-cr.yaml -n kyma-system || true
+
+    echo "## Delete API Gateway CR ##"
+    kubectl patch apigateways.operator.kyma-project.io default -p '{"metadata":{"finalizers":null}}' --type=merge || true
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/api-gateway/releases/latest/download/apigateway-default-cr.yaml || true
+
+    echo "## Delete Istio CR ##"
+    kubectl patch istios.operator.kyma-project.io -n kyma-system default -p '{"metadata":{"finalizers":null}}' --type=merge || true
+    kubectl delete --timeout=120s --wait=false --ignore-not-found peerauthentications.security.istio.io --all -A || true
+    kubectl delete --timeout=120s --ignore-not-found -f https://github.com/kyma-project/istio/releases/latest/download/istio-default-cr.yaml || true
+}
+
 delete_kyma_modules() {
     echo "## Delete Subscriptions ##"
     kubectl delete --timeout=120s --wait=false -A subscriptions.eventing.kyma-project.io --all || true
@@ -93,6 +123,9 @@ delete_custom_resource_definitions() {
 }
 
 ## Main script starts here ##
+echo "### Deleting Kyma module CRs. ###"
+delete_kyma_modules_crs
+sleep 30
 
 echo "### Deleting Kyma modules. ###"
 delete_kyma_modules

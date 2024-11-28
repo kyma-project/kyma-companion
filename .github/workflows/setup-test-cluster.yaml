@@ -62,6 +62,13 @@ jobs:
           kubectl get nodes
           kubectl get ns
 
+      - name: Undeploy all existing test-cases
+        continue-on-error: true
+        run: |
+          chmod +x ./scripts/shell/undeploy_test_scenarios.sh
+          ./scripts/shell/undeploy_test_scenarios.sh || true
+          sleep 30
+
       - name: Cleanup existing resources
         run: |
           ./scripts/shell/clean_up_cluster.sh
