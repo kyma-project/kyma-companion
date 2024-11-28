@@ -487,7 +487,10 @@ def test_invoke_chain(
     expected_tool_call,
     should_raise,
 ):
-    """Tests the _invoke_chain method of KymaAgent."""
+    """
+    Tests that the _invoke_chain method of the KymaAgent returns the expected response
+    for the given user query, subtask and tool calls.
+    """
     # Given: A KymaAgent instance and test parameters
 
     if should_raise:
@@ -516,7 +519,7 @@ def test_invoke_chain(
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
-            # evaluate the test case using deepeval metrics
+            # evaluate if the gotten response is semantically similar and faithful to the expected response
             results = evaluate(
                 test_cases=[test_case],
                 metrics=[

@@ -11,8 +11,7 @@ from integration.agents.test_common_node import create_mock_state
 @pytest.mark.parametrize(
     "messages, expected_answer",
     [
-        # Invoke Kyma agent:
-        # - Simulate valid answers
+        # Finalizer answers based on Kyma agent's response
         (
             [
                 SystemMessage(
@@ -491,11 +490,14 @@ from integration.agents.test_common_node import create_mock_state
 def test_generate_final_response(
     messages, expected_answer, companion_graph, semantic_similarity_metric
 ):
-    """Tests the _generate_final_response method of SupervisorAgent"""
+    """
+    Tests that the _generate_final_response method of the Finalizer correctly synthesizes
+    the received agent responses or rejects irrelevant responses.
+    """
     # Given: A conversation state with messages and an expected answer
     state = create_mock_state(messages)
 
-    # When: The supervisor agent generates a final response
+    # When: The Finalizer generates a final response
     result = companion_graph.supervisor_agent._generate_final_response(state)
     latest_human_message = next(
         msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)

@@ -36,7 +36,9 @@ from integration.conftest import create_mock_state
 def test_invoke_common_node(
     messages, expected_answer, companion_graph, answer_relevancy_metric
 ):
-    """Tests the invoke_common_node method of CompanionGraph."""
+    """
+    Tests that the invoke_common_node method of CompanionGraph answers general queries as expected.
+    """
     # Given: a conversation state with messages
     state = create_mock_state(messages)
 

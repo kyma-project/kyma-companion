@@ -135,7 +135,6 @@ def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics)
     assert len(retrieved_docs) > 0, "No documents retrieved"
     actual_output = rag_system.generate(query, retrieved_docs)
     assert actual_output is not None, "RAG system generated no output"
-
     # Then
     # the expected output document exists
     with open(os.path.join(rag_dir, expected_output_path)) as file:
