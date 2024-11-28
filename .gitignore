@@ -250,3 +250,4 @@ doc_indexer/data/*
 
 # ignore scripts in the root folder
 *.sh
+.deepeval-cache.json
