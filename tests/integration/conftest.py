@@ -1,8 +1,8 @@
+from collections.abc import Sequence
 from threading import Thread
-from typing import Sequence
 
 import pytest
-from deepeval.metrics import GEval, AnswerRelevancyMetric
+from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCaseParams
 from fakeredis import TcpFakeServer
