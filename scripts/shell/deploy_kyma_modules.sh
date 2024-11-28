@@ -30,4 +30,4 @@ kubectl apply -f https://github.com/kyma-project/nats-manager/releases/latest/do
 
 echo "### Deploy Eventing ###"
 kubectl apply -f https://github.com/kyma-project/eventing-manager/releases/latest/download/eventing-manager.yaml
-kubectl apply -f https://github.com/kyma-project/eventing-manager/releases/latest/download/eventing-default-cr.yaml
+kubectl apply -f https://raw.githubusercontent.com/kyma-project/eventing-manager/refs/heads/main/config/samples/default_nats.yaml
