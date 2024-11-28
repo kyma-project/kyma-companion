@@ -103,7 +103,7 @@ from utils.filter_messages import (
         ),
     ],
 )
-def test_filter_messages(test_case, messages, checks, expected_result):
+def test_filter_messages_via_checks(test_case, messages, checks, expected_result):
     """
     The purpose of this test is to test the filter_messages function
     by passing in a sequence of messages and a list of checks and checking
@@ -166,7 +166,7 @@ def test_filter_messages(test_case, messages, checks, expected_result):
         ),
     ],
 )
-def test_filter_most_recent_message(
+def test_filter_most_recent_messages(
     test_case, messages, number_of_messages, expected_result
 ):
     """
