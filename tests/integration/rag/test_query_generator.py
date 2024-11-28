@@ -76,32 +76,33 @@ def query_generator(app_models):
 def test_generate_queries(
     input_query, expected_queries, query_generator, correctness_metric
 ):
-    # When
+    # When: the query generator's generate_queries method is invoked
     result = query_generator.generate_queries(input_query)
 
-    # Then
+    # Then: we evaluate the test case using deepeval metrics
     test_case = LLMTestCase(
         input=input_query,
         actual_output=str(result.queries),
         expected_output=str(expected_queries["queries"]),
     )
-
-    # Assert using DeepEval
     eval_results = evaluate(
         test_cases=[test_case],
         metrics=[correctness_metric],
     )
 
-    # Assert all metrics pass
+    # assert that all metrics passed
     assert all(
         result.success for result in eval_results.test_results
     ), "Not all metrics passed"
 
-    # Additional assertions
+    # assert that the number of queries is correct
     default_num_queries = 4
     assert len(result.queries) == default_num_queries
+    # assert that all queries are strings
     assert all(isinstance(q, str) for q in result.queries)
+    # assert that all queries are not empty
     assert all(len(q.strip()) > 0 for q in result.queries)
+    # assert that all queries are unique
     assert len(set(result.queries)) == len(
         result.queries
     )  # All queries should be unique

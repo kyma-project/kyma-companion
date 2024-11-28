@@ -126,22 +126,21 @@ def rag_system(app_models):
     ],
 )
 def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics):
-    # getting rag dir path
+    # Given: the path to the RAG directory
     rag_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # When
     query = Query(text=input)
+
+    # When: the documents are retrieved and the output is generated
     retrieved_docs = rag_system.retrieve(query)
     assert len(retrieved_docs) > 0, "No documents retrieved"
-
     actual_output = rag_system.generate(query, retrieved_docs)
     assert actual_output is not None, "RAG system generated no output"
-
+    # Then
+    # the expected output document exists
     with open(os.path.join(rag_dir, expected_output_path)) as file:
         expected_output = file.read()
-
     assert expected_output is not None, "Expected output document does not exist"
-
+    # convert the retrieved documents to array of strings
     retrieved_docs_content = [doc.page_content for doc in retrieved_docs]
 
     test_case = LLMTestCase(
@@ -150,7 +149,7 @@ def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics)
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,
     )
-
+    # evaluate the test case using deepeval metrics
     results = evaluate(
         test_cases=[test_case],
         metrics=evaluation_metrics,

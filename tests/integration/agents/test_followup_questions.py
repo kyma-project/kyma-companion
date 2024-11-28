@@ -107,7 +107,7 @@ def conversation_service(app_models, companion_graph):
 async def test_followup_questions(
     messages, conversation_service, followup_correctness_metric
 ):
-    # given
+    # Given: a conversation state with messages
     given_latest_state = StateSnapshot(
         values={
             "messages": messages,
@@ -123,11 +123,10 @@ async def test_followup_questions(
     given_conversation_id = str(uuid.uuid4())
     shared_memory[given_conversation_id] = given_latest_state
 
-    # when
+    # When: the followup questions handler is invoked
     result = await conversation_service.handle_followup_questions(given_conversation_id)
 
-    # then
-    # there should be 5 follow-up questions.
+    # Then: there should be 5 follow-up questions.
     assert len(result) == FOLLOW_UP_QUESTIONS_COUNT
 
     got_questions = "\n".join(result)
