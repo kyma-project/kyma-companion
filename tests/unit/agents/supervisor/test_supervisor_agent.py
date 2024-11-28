@@ -245,8 +245,7 @@ class TestSupervisorAgent:
                             description="Explain K8s deployment", assigned_to=K8S_AGENT
                         ),
                     ],
-                    "messages": [
-                    ],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -263,8 +262,7 @@ class TestSupervisorAgent:
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [
-                    ],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
