@@ -488,35 +488,31 @@ from integration.agents.test_common_node import create_mock_state
         ),
     ],
 )
-def test_invoke_finalizer(
+def test_generate_final_response(
     messages, expected_answer, companion_graph, semantic_similarity_metric
 ):
     """Tests the _generate_final_response method of SupervisorAgent"""
+    # Given: A conversation state with messages and an expected answer
     state = create_mock_state(messages)
 
+    # When: The supervisor agent generates a final response
     result = companion_graph.supervisor_agent._generate_final_response(state)
-
     latest_human_message = next(
         msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
     )
-
     test_case = LLMTestCase(
         input=latest_human_message,
         actual_output=result["messages"][0].content,
         expected_output=expected_answer,
     )
 
-    # assert_test(test_case, [semantic_similarity_metric])
-
-    # Run deepeval metrics
+    # Then: We evaluate the response using deepeval metrics
     eval_results = evaluate(
         test_cases=[test_case],
         metrics=[
             semantic_similarity_metric,
         ],
     )
-
-    # Assert all metrics pass
     assert all(
         result.success for result in eval_results.test_results
     ), "Not all metrics passed"

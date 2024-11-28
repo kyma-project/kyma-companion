@@ -164,24 +164,28 @@ def test_invoke_planner(
     answer_relevancy_metric,
 ):
     """Tests the invoke_planner method of SupervisorAgent."""
+    # Given: A conversation state with messages
     state = create_mock_state(messages)
-    result = companion_graph.supervisor_agent._invoke_planner(state)
 
+    # When: The supervisor agent's planner is invoked
+    result = companion_graph.supervisor_agent._invoke_planner(state)
     test_case = LLMTestCase(
         input=messages[-1].content,
         actual_output=result.content,
         expected_output=expected_answer,
     )
 
+    # Then: We evaluate based on query type
     if not general_query:
+        # For specific queries, check planner correctness
         planner_correctness_metric.measure(test_case)
 
         print(f"Score: {planner_correctness_metric.score}")
         print(f"Reason: {planner_correctness_metric.reason}")
 
-        # Parse the output to check if it is in valid JSON format
         companion_graph.plan_parser.parse(result.content)
 
         assert_test(test_case, [planner_correctness_metric])
     else:
+        # For general queries, check answer relevancy
         assert_test(test_case, [answer_relevancy_metric])

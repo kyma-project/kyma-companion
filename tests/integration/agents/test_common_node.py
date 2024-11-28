@@ -37,14 +37,16 @@ def test_invoke_common_node(
     messages, expected_answer, companion_graph, answer_relevancy_metric
 ):
     """Tests the invoke_common_node method of CompanionGraph."""
+    # Given: a conversation state with messages
     state = create_mock_state(messages)
 
+    # When: the common node's invoke_common_node method is invoked
     result = companion_graph._invoke_common_node(state, messages[-1].content)
 
+    # Then: we evaluate the response using deepeval metrics
     test_case = LLMTestCase(
         input=messages[-1].content,
         actual_output=result,
         expected_output=expected_answer,
     )
-
     assert_test(test_case, [answer_relevancy_metric])

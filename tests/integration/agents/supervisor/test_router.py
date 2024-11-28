@@ -154,13 +154,15 @@ from integration.agents.test_common_node import create_mock_state
         ),
     ],
 )
-def test_invoke_router(messages, subtasks, expected_answer, companion_graph):
+def test_route(messages, subtasks, expected_answer, companion_graph):
     """Tests the router method of CompanionGraph."""
+    # Given: A conversation state with messages and subtasks
     state = create_mock_state(messages, subtasks)
 
+    # When: The supervisor agent's route method is invoked
     result = companion_graph.supervisor_agent._route(state)
 
+    # Then: We verify the routing matches the expected output
     actual_output = result["next"]
     expected_output = expected_answer
-
-    assert actual_output == expected_output
+    assert actual_output == expected_output, "Router did not return expected next step"
