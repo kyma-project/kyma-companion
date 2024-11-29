@@ -487,33 +487,39 @@ def test_invoke_chain(
     expected_tool_call,
     should_raise,
 ):
+    """
+    Tests that the _invoke_chain method of the KymaAgent returns the expected response
+    for the given user query, subtask and tool calls.
+    """
+    # Given: A KymaAgent instance and test parameters
+
     if should_raise:
-        # When error is expected
+        # When: the chain is invoked and an error is expected
+        # Then: the expected error should be raised
         with pytest.raises(expected_result):
             kyma_agent._invoke_chain(state, {})
     else:
-        # When
+        # When: the chain is invoked normally
         response = kyma_agent._invoke_chain(state, {})
         assert isinstance(response, AIMessage)
 
-        # Then
+        # Then: Verify the response based on expected behavior
         if expected_tool_call:
-            # if tool calls are expected, assert the tool call content matches expected_tool_call
+            # for tool call cases, verify tool call properties
             assert response.tool_calls is not None, "Expected tool calls but found none"
             assert len(response.tool_calls) > 0, "Expected at least one tool call"
             tool_call = response.tool_calls[0]
             assert tool_call.get("type") == "tool_call"
             assert tool_call.get("name") == expected_tool_call
         else:
-            # If tool calls are not expected, content should match expected_result
+            # for content response cases, verify using deepeval metrics
             test_case = LLMTestCase(
                 input=state.my_task.description,
                 actual_output=response.content,
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
-
-            # Run deepeval metrics
+            # evaluate if the gotten response is semantically similar and faithful to the expected response
             results = evaluate(
                 test_cases=[test_case],
                 metrics=[
@@ -521,8 +527,7 @@ def test_invoke_chain(
                     faithfulness_metric,
                 ],
             )
-
-            # Assert all metrics pass
+            # assert that all metrics passed
             assert all(
                 result.success for result in results.test_results
             ), "Not all metrics passed"

@@ -1,9 +1,14 @@
+from collections.abc import Sequence
 from threading import Thread
 
 import pytest
+from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.models.base_model import DeepEvalBaseLLM
+from deepeval.test_case import LLMTestCaseParams
 from fakeredis import TcpFakeServer
+from langchain_core.messages import BaseMessage
 
+from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
 from utils.models.factory import ModelFactory, ModelType
@@ -69,3 +74,50 @@ def companion_graph(app_models, start_fake_redis):
     memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
     graph = CompanionGraph(app_models, memory)
     return graph
+
+
+@pytest.fixture
+def answer_relevancy_metric(evaluator_model):
+    return AnswerRelevancyMetric(
+        threshold=0.6, model=evaluator_model, include_reason=True
+    )
+
+
+@pytest.fixture
+def semantic_similarity_metric(evaluator_model):
+    return GEval(
+        name="Semantic Similarity",
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning.",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language is permissible",
+        ],
+        evaluation_params=[
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+        ],
+        model=evaluator_model,
+        threshold=0.7,
+    )
+
+
+def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:
+    """Create a mock langgraph state for tests."""
+    if subtasks is None:
+        subtasks = []
+    user_input = UserInput(
+        query=messages[-1].content,
+        resource_kind=None,
+        resource_api_version=None,
+        resource_name=None,
+        namespace=None,
+    )
+
+    return CompanionState(
+        input=user_input,
+        messages=messages,
+        next="",
+        subtasks=subtasks,
+        final_response="",
+        error=None,
+    )
