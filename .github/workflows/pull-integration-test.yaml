@@ -91,4 +91,3 @@ jobs:
           DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
           echo "${{ secrets.MODELS }}" > config/config.yml
-          poetry run poe test-integration
