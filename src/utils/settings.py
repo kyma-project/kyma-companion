@@ -47,6 +47,9 @@ def load_env_from_json() -> None:
         logging.error(f"Config file not found at {config_path}.")
 
 
+if _is_running_github_actions():
+    # For GitHub Actions use environment variables
+    load_dotenv()
 if is_running_pytest():
     # For tests use .env.test if available
     env_path = find_dotenv(".env.test")
@@ -62,9 +65,6 @@ if is_running_pytest():
 
     # deepeval specific environment variables
     DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
-elif _is_running_github_actions():
-    # For GitHub Actions use environment variables
-    load_dotenv()
 else:
     # For production load the env variables needed dynamically from the config.json.
     load_env_from_json()
