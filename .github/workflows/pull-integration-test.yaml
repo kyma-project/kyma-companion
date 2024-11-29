@@ -90,4 +90,5 @@ jobs:
           DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
           DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
-          echo "${{ secrets.MODELS }}" > config/config.yml
+          echo "${{ secrets.MODELS }}" > config/config.json
+          poetry run poe test-integration
