@@ -4,7 +4,7 @@ import os
 import sys
 
 from decouple import Config, RepositoryEnv, config
-from dotenv import find_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 
 def is_running_pytest() -> bool:
@@ -12,6 +12,11 @@ def is_running_pytest() -> bool:
     This is needed to identify if tests are running.
     """
     return "pytest" in sys.modules
+
+
+def _is_running_github_actions() -> bool:
+    """Check if the code is running with GitHub Actions."""
+    return "GITHUB_ACTIONS" in os.environ
 
 
 def load_env_from_json() -> None:
@@ -54,6 +59,9 @@ if is_running_pytest():
 
     # deepeval specific environment variables
     DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
+elif _is_running_github_actions():
+    # For GitHub Actions use environment variables
+    load_dotenv()
 else:
     # For production load the env variables needed dynamically from the config.json.
     load_env_from_json()
