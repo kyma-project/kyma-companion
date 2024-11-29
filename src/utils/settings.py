@@ -16,9 +16,6 @@ def is_running_pytest() -> bool:
 
 def _is_running_github_actions() -> bool:
     """Check if the code is running with GitHub Actions."""
-    logging.warning("Check for Github Action environment.")
-    is_gh = os.getenv("GITHUB_ACTIONS")
-    logging.warning(f"Is Github Action: {is_gh}")
     return os.getenv("GITHUB_ACTIONS") == "true"
 
 
@@ -47,6 +44,9 @@ def load_env_from_json() -> None:
         logging.error(f"Config file not found at {config_path}.")
 
 
+logging.warning("Check for Github Action environment.")
+is_gh = os.getenv("GITHUB_ACTIONS")
+logging.warning(f"Is Github Action: {is_gh}")
 if _is_running_github_actions():
     # For GitHub Actions use environment variables
     load_dotenv()
