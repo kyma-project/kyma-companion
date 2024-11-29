@@ -4,7 +4,7 @@ import os
 import sys
 
 from decouple import Config, RepositoryEnv, config
-from dotenv import find_dotenv, load_dotenv
+from dotenv import find_dotenv
 
 
 def is_running_pytest() -> bool:
