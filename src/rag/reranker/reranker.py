@@ -18,11 +18,11 @@ class IReranker(Protocol):
     """Interface for RAG rerankers."""
 
     def rerank(
-            self,
-            docs_list: list[list[Document]],
-            queries: list[str],
-            input_limit: int = 10,
-            output_limit: int = 4,
+        self,
+        docs_list: list[list[Document]],
+        queries: list[str],
+        input_limit: int = 10,
+        output_limit: int = 4,
     ) -> list[Document]:
         """Rerank the documents based on which documents are most relevant to the given queries."""
         ...
@@ -37,11 +37,11 @@ class LLMReranker(IReranker):
         self.chain = prompt | model.llm | StrOutputParser()
 
     def rerank(
-            self,
-            docs_list: list[list[Document]],
-            queries: list[str],
-            input_limit: int = 10,
-            output_limit: int = 4,
+        self,
+        docs_list: list[list[Document]],
+        queries: list[str],
+        input_limit: int = 10,
+        output_limit: int = 4,
     ) -> list[Document]:
         """
         Rerank the documents based on which documents are most relevant to the given queries.
