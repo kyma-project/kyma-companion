@@ -99,16 +99,10 @@ class RAGSystem:
         all_docs = []
         for q in all_queries:
             retrieved_docs = self.retriever.retrieve(q)
-            all_docs.extend(retrieved_docs)
-
-        # remove duplicates from all retrieved documents
-        all_docs = self._remove_duplicates(all_docs)
+            all_docs.append(retrieved_docs)
 
         # rerank documents
         ranked_documents = self.reranker.rerank(all_docs, all_queries, input_limit=10, output_limit=top_k)
-
-        if len(ranked_documents) > top_k:
-            ranked_documents = ranked_documents[:top_k]
 
         logger.info(f"Retrieved {len(ranked_documents)} documents.")
         return ranked_documents
