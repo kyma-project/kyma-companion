@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from langchain_core.documents import Document
@@ -6,9 +6,23 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
-from rag.reranker.reranker import LLMReranker, format_documents, format_queries, parse_response
+from rag.reranker.reranker import (
+    LLMReranker,
+    format_documents,
+    format_queries,
+    parse_response,
+)
 from unit.rag.reranker.fixtures import (
-    doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9, doc_to_json
+    doc1,
+    doc2,
+    doc3,
+    doc4,
+    doc5,
+    doc6,
+    doc7,
+    doc8,
+    doc9,
+    doc_to_json,
 )
 
 
@@ -28,7 +42,9 @@ class TestLLMReranker:
 
         # When
         reranker = LLMReranker(model=mock_model)
-        expected_chain = prompt(RERANKER_PROMPT_TEMPLATE) | mock_model.llm | StrOutputParser()
+        expected_chain = (
+            prompt(RERANKER_PROMPT_TEMPLATE) | mock_model.llm | StrOutputParser()
+        )
 
         # Then
         assert reranker is not None
@@ -46,7 +62,17 @@ class TestLLMReranker:
         given_input_limit = 10
         given_output_limit = 5
         expected_docs_list = [doc1, doc2, doc3, doc4, doc5]
-        relevant_docs = [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9]  # relevant documents after filtration
+        relevant_docs = [
+            doc1,
+            doc2,
+            doc3,
+            doc4,
+            doc5,
+            doc6,
+            doc7,
+            doc8,
+            doc9,
+        ]  # relevant documents after filtration
 
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
@@ -93,8 +119,10 @@ def test_format_documents():
     s = format_documents(docs)
 
     # Then
-    assert s == ('[{"kwargs": {"page_content": "this is a test content 1"}},'
-                 '{"kwargs": {"page_content": "this is a test content 2"}}]')
+    assert s == (
+        '[{"kwargs": {"page_content": "this is a test content 1"}},'
+        '{"kwargs": {"page_content": "this is a test content 2"}}]'
+    )
 
 
 def test_format_queries():
@@ -112,8 +140,8 @@ def test_format_queries():
     "name, given_response, expected_docs",
     [
         (
-                "given response is not surrounded by json code block",
-                """
+            "given response is not surrounded by json code block",
+            """
                 [
                     {
                         "kwargs": {
@@ -131,20 +159,20 @@ def test_format_queries():
                     }
                 ]
                 """,
-                [
-                    Document(
-                        type="Document",
-                        page_content="this is a test content 1",
-                    ),
-                    Document(
-                        type="Document",
-                        page_content="this is a test content 2",
-                    ),
-                ],
+            [
+                Document(
+                    type="Document",
+                    page_content="this is a test content 1",
+                ),
+                Document(
+                    type="Document",
+                    page_content="this is a test content 2",
+                ),
+            ],
         ),
         (
-                "given response is surrounded by json code block",
-                """```json
+            "given response is surrounded by json code block",
+            """```json
                 [
                     {
                         "kwargs": {
@@ -162,18 +190,18 @@ def test_format_queries():
                     }
                 ]
                 ```""",
-                [
-                    Document(
-                        type="Document",
-                        page_content="this is a test content 1",
-                    ),
-                    Document(
-                        type="Document",
-                        page_content="this is a test content 2",
-                    ),
-                ],
+            [
+                Document(
+                    type="Document",
+                    page_content="this is a test content 1",
+                ),
+                Document(
+                    type="Document",
+                    page_content="this is a test content 2",
+                ),
+            ],
         ),
-    ]
+    ],
 )
 def test_parse_response(name, given_response, expected_docs):
     # When

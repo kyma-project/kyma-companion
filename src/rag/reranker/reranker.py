@@ -7,7 +7,7 @@ from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.rrf import get_relevant_documents
-from rag.reranker.utils import document_to_str, dict_to_document
+from rag.reranker.utils import dict_to_document, document_to_str
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -18,7 +18,11 @@ class IReranker(Protocol):
     """Interface for RAG rerankers."""
 
     def rerank(
-            self, docs_list: list[list[Document]], queries: list[str], input_limit: int = 10, output_limit: int = 4
+        self,
+        docs_list: list[list[Document]],
+        queries: list[str],
+        input_limit: int = 10,
+        output_limit: int = 4,
     ) -> list[Document]:
         """Rerank the documents based on which documents are most relevant to the given queries."""
         ...
@@ -33,7 +37,11 @@ class LLMReranker(IReranker):
         self.chain = prompt | model.llm | StrOutputParser()
 
     def rerank(
-            self, docs_list: list[list[Document]], queries: list[str], input_limit: int = 10, output_limit: int = 4
+        self,
+        docs_list: list[list[Document]],
+        queries: list[str],
+        input_limit: int = 10,
+        output_limit: int = 4,
     ) -> list[Document]:
         """
         Rerank the documents based on which documents are most relevant to the given queries.
@@ -80,7 +88,7 @@ def format_queries(queries: list[str]) -> str:
     :param queries: A list of queries.
     :return: A string representation of the queries in JSON format.
     """
-    return "[{}]".format(",".join("\"{}\"".format(query) for query in queries))
+    return "[{}]".format(",".join(f'"{query}"' for query in queries))
 
 
 def parse_response(response: str) -> list[Document]:
@@ -89,5 +97,5 @@ def parse_response(response: str) -> list[Document]:
     :param response: The response from the reranker.
     :return: A list of documents.
     """
-    response = response.strip('`').lstrip('json').strip()
+    response = response.strip("`").lstrip("json").strip()
     return [dict_to_document(obj) for obj in json.loads(response)]

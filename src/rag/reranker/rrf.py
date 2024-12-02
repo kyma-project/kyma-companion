@@ -1,9 +1,11 @@
 from langchain_core.documents import Document
 
-from rag.reranker.utils import str_to_document, document_to_str
+from rag.reranker.utils import document_to_str, str_to_document
 
 
-def get_relevant_documents(docs_list: list[list[Document]], k: int = 60, limit: int = 10) -> list[Document]:
+def get_relevant_documents(
+    docs_list: list[list[Document]], k: int = 60, limit: int = 10
+) -> list[Document]:
     """
     Get the most relevant documents from a list of documents.
     Note: This functions is inspired by the Reciprocal Rank Fusion (RRF) algorithm.
@@ -20,9 +22,10 @@ def get_relevant_documents(docs_list: list[list[Document]], k: int = 60, limit: 
         for rank, doc in enumerate(docs):
             doc_str = document_to_str(doc)
             if doc_str not in scores:
-                scores[doc_str] = 0
+                scores[doc_str] = 0.0
             scores[doc_str] += 1 / (rank + k)
     relevant_docs = [
-        str_to_document(doc_str) for doc_str, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        str_to_document(doc_str)
+        for doc_str, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)
     ]
     return relevant_docs[:limit]

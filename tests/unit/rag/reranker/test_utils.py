@@ -1,5 +1,6 @@
 from langchain_core.documents import Document
-from rag.reranker.utils import document_to_str, dict_to_document, str_to_document
+
+from rag.reranker.utils import dict_to_document, document_to_str, str_to_document
 
 
 def test_document_to_str():
