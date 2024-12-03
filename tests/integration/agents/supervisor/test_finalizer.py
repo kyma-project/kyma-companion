@@ -487,7 +487,8 @@ from integration.agents.test_common_node import create_mock_state
         ),
     ],
 )
-def test_generate_final_response(
+@pytest.mark.asyncio
+async def test_generate_final_response(
     messages, expected_answer, companion_graph, semantic_similarity_metric
 ):
     """
@@ -498,7 +499,7 @@ def test_generate_final_response(
     state = create_mock_state(messages)
 
     # When: The Finalizer generates a final response
-    result = companion_graph.supervisor_agent._generate_final_response(state)
+    result = await companion_graph.supervisor_agent._generate_final_response(state)
     latest_human_message = next(
         msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
     )

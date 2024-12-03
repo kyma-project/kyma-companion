@@ -4,6 +4,7 @@ from hdbcli import dbapi
 from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_core.runnables import run_in_executor
 
 from utils.logging import get_logger
 

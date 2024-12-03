@@ -59,6 +59,7 @@ class TestHanaDBRetriever:
         )
         assert retriever.db == mock_hanavectordb.return_value
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "query, top_k, expected_docs, expected_error",
         [
@@ -89,7 +90,6 @@ class TestHanaDBRetriever:
             ),
         ],
     )
-    @pytest.mark.asyncio
     async def test_aretrieve(
         self,
         mock_embeddings,
