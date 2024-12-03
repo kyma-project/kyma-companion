@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from langchain_core.embeddings import Embeddings
@@ -224,6 +224,7 @@ class TestBaseAgent:
         agent = TestAgent(mock_models[ModelType.GPT4O])
         assert agent._subtask_selector_node(given_state) == expected_output
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "given_invoke_response, given_invoke_error, given_state, expected_output, expected_invoke_inputs",
         [
@@ -308,7 +309,7 @@ class TestBaseAgent:
             ),
         ],
     )
-    def test_model_node(
+    async def test_model_node(
         self,
         mock_models,
         mock_config,
@@ -320,21 +321,20 @@ class TestBaseAgent:
     ):
         # Given
         agent = TestAgent(mock_models[ModelType.GPT4O])
-        agent.chain = MagicMock()
-        agent.chain.invoke = MagicMock()
+        agent.chain = AsyncMock()
+        agent._invoke_chain = AsyncMock()
         if given_invoke_response is not None:
-            agent.chain.invoke.return_value = given_invoke_response
+            agent._invoke_chain.return_value = given_invoke_response
         elif given_invoke_error is not None:
-            agent.chain.invoke.side_effect = given_invoke_error
+            agent._invoke_chain.side_effect = given_invoke_error
 
         # When
-        assert agent._model_node(given_state, mock_config) == expected_output
+        result = await agent._model_node(given_state, mock_config)
+        assert result == expected_output
 
         # Then
         if expected_invoke_inputs != {}:
-            agent.chain.invoke.assert_called_once_with(
-                expected_invoke_inputs, mock_config
-            )
+            agent._invoke_chain.assert_called_once_with(given_state, mock_config)
 
     @pytest.mark.parametrize(
         "given_message, expected_output",

@@ -100,7 +100,7 @@ class BaseAgent:
         )
         return agent_prompt | self.model.llm.bind_tools(self.tools)
 
-    async def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
+    def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
         if state.k8s_client is None:
             raise ValueError("Kubernetes client is not initialized.")
 
@@ -166,9 +166,7 @@ class BaseAgent:
         response.additional_kwargs["owner"] = self.name
         return {MESSAGES: [response]}
 
-    async def _finalizer_node(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> Any:
+    def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed and clean-up extra messages."""
         state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
