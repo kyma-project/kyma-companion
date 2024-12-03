@@ -155,7 +155,8 @@ def planner_correctness_metric(evaluator_model):
         ),
     ],
 )
-def test_invoke_planner(
+@pytest.mark.asyncio
+async def test_invoke_planner(
     messages,
     expected_answer,
     general_query,
@@ -168,7 +169,7 @@ def test_invoke_planner(
     state = create_mock_state(messages)
 
     # When: The supervisor agent's planner is invoked
-    result = companion_graph.supervisor_agent._invoke_planner(state)
+    result = await companion_graph.supervisor_agent._invoke_planner(state)
     test_case = LLMTestCase(
         input=messages[-1].content,
         actual_output=result.content,

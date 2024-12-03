@@ -124,13 +124,13 @@ class CompanionGraph:
 
     async def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
         """Invoke the common node."""
-        response = await self._common_chain.ainvoke(  # type: ignore
+        response = await self._common_chain.ainvoke(
             {
                 "messages": filter_messages(state.messages),
                 "query": subtask,
             },
         )
-        return response.content
+        return str(response.content)
 
     async def _common_node(self, state: CompanionState) -> dict[str, Any]:
         """Common node to handle general queries."""

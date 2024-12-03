@@ -125,15 +125,16 @@ def rag_system(app_models):
         ),
     ],
 )
-def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics):
+@pytest.mark.asyncio
+async def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics):
     # Given: the path to the RAG directory
     rag_dir = os.path.dirname(os.path.abspath(__file__))
     query = Query(text=input)
 
     # When: the documents are retrieved and the output is generated
-    retrieved_docs = rag_system.retrieve(query)
+    retrieved_docs = await rag_system.aretrieve(query)
     assert len(retrieved_docs) > 0, "No documents retrieved"
-    actual_output = rag_system.generate(query, retrieved_docs)
+    actual_output = await rag_system.agenerate(query, retrieved_docs)
     assert actual_output is not None, "RAG system generated no output"
     # Then
     # the expected output document exists
