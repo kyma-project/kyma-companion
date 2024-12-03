@@ -1,4 +1,3 @@
-from textwrap import dedent
 from unittest.mock import Mock
 
 import pytest
@@ -10,11 +9,9 @@ from deepeval.metrics import (
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from agents.common.constants import PLANNER
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
 from agents.kyma.state import KymaAgentState
-from agents.supervisor.agent import SUPERVISOR
 from integration.agents.fixtures.api_rule import (
     API_RULE_WITH_WRONG_ACCESS_STRATEGY,
     EXPECTED_API_RULE_RESPONSE,
@@ -92,14 +89,6 @@ def kyma_agent(app_models):
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
-                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
-                        name=PLANNER,
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                        name=SUPERVISOR,
-                    ),
-                    AIMessage(
                         content="",
                         tool_calls=[
                             {
@@ -134,7 +123,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "What is wrong with ApiRule?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What is wrong with API rule?", assigned_to="KymaAgent"
                 ),
@@ -156,15 +150,14 @@ def kyma_agent(app_models):
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
-                    AIMessage(
-                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                    ),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "What is wrong with ApiRule?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What is wrong with api rule?", assigned_to="KymaAgent"
                 ),
@@ -187,12 +180,6 @@ def kyma_agent(app_models):
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
-                    AIMessage(
-                        content='```json\n{ "subtasks": [ { "description": "What is wrong with ApiRule?", "assigned_to": "KymaAgent" } ] }\n```',
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                    ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
@@ -213,7 +200,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_1",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "What is wrong with ApiRule?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What is wrong with ApiRule?", assigned_to="KymaAgent"
                 ),
@@ -236,22 +228,6 @@ def kyma_agent(app_models):
                         content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
                     HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content=dedent(
-                            """```
-                    {
-                        "subtasks": [
-                            {
-                                "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                                "assigned_to": "KymaAgent"
-                            }
-                        ]
-                    }```"""
-                        ),
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                    ),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -287,7 +263,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
                     assigned_to="KymaAgent",
@@ -312,25 +293,6 @@ def kyma_agent(app_models):
                     ),
                     HumanMessage(
                         content="Why the pod of the serverless Function is not ready?"
-                    ),
-                    AIMessage(
-                        content=dedent(
-                            """```json
-                            {
-                                "subtasks": [
-                                    {
-                                        "description": "Why the pod of the serverless Function is not ready?",
-                                        "assigned_to": "KymaAgent"
-                                    }
-                                ]
-                            }
-                            ```"""
-                        ),
-                        name=PLANNER,
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                        name=SUPERVISOR,
                     ),
                     AIMessage(
                         content="",
@@ -362,7 +324,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_2",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "Why the pod of the serverless Function is not ready?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="Why the pod of the serverless Function is not ready?",
                     assigned_to="KymaAgent",
@@ -386,14 +353,6 @@ def kyma_agent(app_models):
                     AIMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
-                        content='```json\n{ "subtasks": [ { "description": "what are the BTP Operator features?", "assigned_to": "KymaAgent" } ] }\n```',
-                        name=PLANNER,
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                        name=SUPERVISOR,
-                    ),
-                    AIMessage(
                         content="",
                         tool_calls=[
                             {
@@ -410,7 +369,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_1",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "what are the BTP Operator features?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What are the BTP Operator features?",
                     assigned_to="KymaAgent",
@@ -432,14 +396,6 @@ def kyma_agent(app_models):
                     AIMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
-                        content='```json\n{ "subtasks": [ { "description": "what are the BTP Operator features?", "assigned_to": "KymaAgent" } ] }\n```',
-                        name=PLANNER,
-                    ),
-                    AIMessage(
-                        content='{"next": "KymaAgent"}',
-                        name=SUPERVISOR,
-                    ),
-                    AIMessage(
                         content="",
                         tool_calls=[
                             {
@@ -456,7 +412,12 @@ def kyma_agent(app_models):
                         tool_call_id="tool_call_id_1",
                     ),
                 ],
-                subtasks=[],
+                subtasks=[
+                    {
+                        "description": "what are the BTP Operator features?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
                 my_task=SubTask(
                     description="What are the BTP Operator features?",
                     assigned_to="KymaAgent",

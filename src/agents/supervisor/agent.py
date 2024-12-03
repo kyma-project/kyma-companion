@@ -184,10 +184,6 @@ class SupervisorAgent:
                 )
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
-                message=AIMessage(
-                    content=response_content,
-                    name=PLANNER,
-                ),
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )
