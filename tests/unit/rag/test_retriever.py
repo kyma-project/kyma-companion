@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from hdbcli import dbapi
@@ -21,9 +21,11 @@ def mock_connection():
 
 
 @pytest.fixture
-def mock_hanadb():
-    """Create a mock HanaDB instance."""
-    with patch("rag.retriever.HanaDB") as mock:
+def mock_hanavectordb():
+    """Create a mock HanaVectorDB instance."""
+    with patch("rag.retriever.HanaVectorDB") as mock:
+        # Set up the async method
+        mock.return_value.asimilarity_search = AsyncMock()
         yield mock
 
 
@@ -37,7 +39,7 @@ def mock_logger():
 class TestHanaDBRetriever:
     """Test suite for HanaDBRetriever class."""
 
-    def test_init(self, mock_embeddings, mock_connection, mock_hanadb):
+    def test_init(self, mock_embeddings, mock_connection, mock_hanavectordb):
         """Test HanaDBRetriever initialization."""
         # Given
         table_name = "test_table"
@@ -50,12 +52,12 @@ class TestHanaDBRetriever:
         )
 
         # Then
-        mock_hanadb.assert_called_once_with(
+        mock_hanavectordb.assert_called_once_with(
             connection=mock_connection,
             embedding=mock_embeddings,
             table_name=table_name,
         )
-        assert retriever.db == mock_hanadb.return_value
+        assert retriever.db == mock_hanavectordb.return_value
 
     @pytest.mark.parametrize(
         "query, top_k, expected_docs, expected_error",
@@ -87,18 +89,19 @@ class TestHanaDBRetriever:
             ),
         ],
     )
-    def test_retrieve(
+    @pytest.mark.asyncio
+    async def test_aretrieve(
         self,
         mock_embeddings,
         mock_connection,
-        mock_hanadb,
+        mock_hanavectordb,
         mock_logger,
         query,
         top_k,
         expected_docs,
         expected_error,
     ):
-        """Test retrieve method."""
+        """Test aretrieve method."""
         # Given
         retriever = HanaDBRetriever(
             embedding=mock_embeddings,
@@ -108,21 +111,25 @@ class TestHanaDBRetriever:
 
         if expected_error:
             # Setup mock to raise exception
-            mock_hanadb.return_value.similarity_search.side_effect = expected_error
+            mock_hanavectordb.return_value.asimilarity_search.side_effect = (
+                expected_error
+            )
             # When/Then
             with pytest.raises(type(expected_error)) as exc_info:
-                retriever.retrieve(query, top_k)
+                await retriever.aretrieve(query, top_k)
             assert str(exc_info.value) == str(expected_error)
             mock_logger.exception.assert_called_once_with(
                 f"Error retrieving documents for query: {query}"
             )
         else:
             # Setup mock to return expected documents
-            mock_hanadb.return_value.similarity_search.return_value = expected_docs
+            mock_hanavectordb.return_value.asimilarity_search.return_value = (
+                expected_docs
+            )
             # When
-            result = retriever.retrieve(query, top_k)
+            result = await retriever.aretrieve(query, top_k)
             # Then
             assert result == expected_docs
-            mock_hanadb.return_value.similarity_search.assert_called_once_with(
+            mock_hanavectordb.return_value.asimilarity_search.assert_called_once_with(
                 query, k=top_k
             )

@@ -105,7 +105,7 @@ class SupervisorAgent:
         """Get Supervisor agent node function."""
         return self._graph
 
-    async def _route(self, state: SupervisorState) -> dict[str, Any]:
+    def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
         for subtask in state.subtasks:
             if not subtask.completed():

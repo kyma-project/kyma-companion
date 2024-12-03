@@ -59,7 +59,7 @@ class QueryGenerator:
     async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
         try:
-            queries = self._chain.invoke({"query": query})
+            queries = await self._chain.ainvoke({"query": query})
             return cast(Queries, queries)
         except Exception:
             logger.exception("Error generating queries")

@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
@@ -85,68 +85,28 @@ class TestQueryGenerator:
                 "How to deploy function?",
                 None,
                 None,
-                Exception("Error invoking chain"),
-            ),
-        ],
-    )
-    def test_invoke_chain(
-        self, mock_model, query, chain_output, expected_output, expected_error
-    ):
-        """Test _invoke_chain method."""
-        # Given
-        mock_chain = Mock()
-        if expected_error:
-            mock_chain.invoke = Mock(side_effect=expected_error)
-        else:
-            mock_chain.invoke = Mock(return_value=chain_output)
-
-        with patch.object(QueryGenerator, "_create_chain", return_value=mock_chain):
-            generator = QueryGenerator(mock_model)
-
-            # When/Then
-            if expected_error:
-                with pytest.raises(type(expected_error)) as exc_info:
-                    generator._invoke_chain(query)
-                assert str(exc_info.value) == str(expected_error)
-            else:
-                result = generator._invoke_chain(query)
-                assert result == expected_output
-                mock_chain.invoke.assert_called_once_with({"query": query})
-
-    @pytest.mark.parametrize(
-        "query, expected_queries, expected_error",
-        [
-            (
-                "What is Kyma?",
-                Queries(queries=["What is Kyma?", "Explain Kyma", "Define Kyma"]),
-                None,
-            ),
-            (
-                "How to deploy function?",
-                None,
                 Exception("Error generating queries"),
             ),
         ],
     )
-    def test_generate_queries(
-        self, mock_model, mock_llm, query, expected_queries, expected_error
+    @pytest.mark.asyncio
+    async def test_agenerate_queries(
+        self, mock_model, mock_llm, query, chain_output, expected_output, expected_error
     ):
-        """Test generate_queries method."""
-        # Given
-        mock_model.llm = mock_llm
-        generator = QueryGenerator(mock_model)
+        """Test agenerate_queries method."""
+        mock_chain = AsyncMock()
+        with patch.object(QueryGenerator, "_create_chain", return_value=mock_chain):
+            generator = QueryGenerator(mock_model)
+            # When/Then
+            if expected_error:
+                mock_chain.ainvoke.side_effect = expected_error
 
-        if expected_error:
-            generator._invoke_chain = Mock(side_effect=expected_error)
-        else:
-            generator._invoke_chain = Mock(return_value=expected_queries)
+                with pytest.raises(type(expected_error)) as exc_info:
+                    await generator.agenerate_queries(query)
+                assert str(exc_info.value) == str(expected_error)
+            else:
+                mock_chain.ainvoke.return_value = chain_output
 
-        # When/Then
-        if expected_error:
-            with pytest.raises(type(expected_error)) as exc_info:
-                generator.generate_queries(query)
-            assert str(exc_info.value) == str(expected_error)
-        else:
-            result = generator.generate_queries(query)
-            assert result == expected_queries
-            generator._invoke_chain.assert_called_once_with(query)
+                result = await generator.agenerate_queries(query)
+                assert result == expected_output
+                mock_chain.ainvoke.assert_called_once_with({"query": query})

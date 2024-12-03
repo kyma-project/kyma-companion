@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from langchain_core.embeddings import Embeddings
@@ -29,10 +29,8 @@ class TestSupervisorAgent:
     def supervisor_agent(self, mock_models):
         agent = SupervisorAgent(
             models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER]
-        )  # noqa
-        agent.supervisor_chain = Mock()
-        agent._planner_chain = Mock()
-        return agent  # noqa
+        )
+        return agent
 
     @pytest.mark.parametrize(
         "subtasks, messages, expected_next, expected_subtasks, expected_error",
@@ -119,6 +117,7 @@ class TestSupervisorAgent:
             assert result["next"] == expected_next
             assert "error" not in result
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, input_query, conversation_messages, final_response_content, expected_output, expected_error",
         [
@@ -195,7 +194,7 @@ class TestSupervisorAgent:
             ),
         ],
     )
-    def test_agent_generate_final_response(
+    async def test_agent_generate_final_response(
         self,
         supervisor_agent,
         description,
@@ -207,11 +206,11 @@ class TestSupervisorAgent:
     ):
         state = SupervisorState(messages=conversation_messages)
 
-        mock_final_response_chain = Mock()
+        mock_final_response_chain = AsyncMock()
         if expected_error:
-            mock_final_response_chain.invoke.side_effect = Exception(expected_error)
+            mock_final_response_chain.ainvoke.side_effect = Exception(expected_error)
         else:
-            mock_final_response_chain.invoke.return_value.content = (
+            mock_final_response_chain.ainvoke.return_value.content = (
                 final_response_content
             )
 
@@ -220,13 +219,14 @@ class TestSupervisorAgent:
             "_final_response_chain",
             return_value=mock_final_response_chain,
         ):
-            result = supervisor_agent._generate_final_response(state)
+            result = await supervisor_agent._generate_final_response(state)
 
         assert result == expected_output
-        mock_final_response_chain.invoke.assert_called_once_with(
+        mock_final_response_chain.ainvoke.assert_called_once_with(
             {"messages": conversation_messages}
         )
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, input_query, mock_plan_content, expected_output, expected_error",
         [
@@ -334,7 +334,7 @@ class TestSupervisorAgent:
             ),
         ],
     )
-    def test_agent_plan(
+    async def test_agent_plan(
         self,
         supervisor_agent,
         description,
@@ -343,16 +343,17 @@ class TestSupervisorAgent:
         expected_output,
         expected_error,
     ):
-        if expected_error:
-            supervisor_agent._planner_chain.invoke.side_effect = Exception(
-                expected_error
-            )
-        else:
-            supervisor_agent._planner_chain.invoke.return_value.content = (
-                mock_plan_content
-            )
+        # Mock _invoke_planner instead of _planner_chain
+        with patch.object(
+            supervisor_agent, "_invoke_planner", new_callable=AsyncMock
+        ) as mock_invoke_planner:
+            if expected_error:
+                mock_invoke_planner.side_effect = Exception(expected_error)
+            else:
+                mock_invoke_planner.return_value = AIMessage(content=mock_plan_content)
 
-        state = SupervisorState(messages=[HumanMessage(content=input_query)])
-        result = supervisor_agent._plan(state)
+            state = SupervisorState(messages=[HumanMessage(content=input_query)])
+            result = await supervisor_agent._plan(state)
 
-        assert result == expected_output
+            assert result == expected_output
+            mock_invoke_planner.assert_called_once_with(state)
