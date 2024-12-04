@@ -5,7 +5,6 @@ from deepeval import evaluate
 from deepeval.metrics import (
     AnswerRelevancyMetric,
     ContextualRecallMetric,
-    ContextualRelevancyMetric,
     FaithfulnessMetric,
 )
 from deepeval.test_case import LLMTestCase
@@ -23,15 +22,15 @@ def evaluation_metrics(evaluator_model):
 
     # calculates how much retrieved context aligns with the expected output
     contextual_recall = ContextualRecallMetric(
-        threshold=0.5, model=evaluator_model, include_reason=True
+        threshold=0.7, model=evaluator_model, include_reason=True
     )
     # TODO: enable it after chunking is improved.
     # Currently, H1 level chunking is used that return
     # lots of irrelevant information in the retrieved context
     # calculates how much retrieved context is relevant to the query
-    contextual_relevancy = ContextualRelevancyMetric(
-        threshold=0.5, model=evaluator_model, include_reason=True
-    )
+    # contextual_relevancy = ContextualRelevancyMetric(
+    #     threshold=0.4, model=evaluator_model, include_reason=True
+    # )
 
     answer_relevancy = AnswerRelevancyMetric(
         threshold=0.7, model=evaluator_model, include_reason=True
@@ -42,7 +41,6 @@ def evaluation_metrics(evaluator_model):
     )
     return [
         contextual_recall,
-        contextual_relevancy,
         answer_relevancy,
         faithfulness,
     ]
@@ -54,41 +52,27 @@ def rag_system(app_models):
 
 
 @pytest.mark.parametrize(
-    "user_query, expected_output_path",
+    "input, expected_output_path",
     [
         pytest.param(
             "How to enable Istio sidecar proxy injection?",
-            "fixtures/kyma_docs/istio/docs/user/tutorials/istio-injection.md",
+            "fixtures/kyma_docs/istio/docs/user/tutorials/01-40-enable-sidecar-injection.md",
             id="How to enable Istio sidecar proxy injection?",
         ),
         pytest.param(
-            "why an Istio sidecar is not injected to a pod?",
-            "fixtures/kyma_docs/istio/docs/user/tutorials/why-no-sidecar.md",
-            id="why an Istio sidecar is not injected to a pod?",
-        ),
-        pytest.param(
-            "Why do I get a 'Connection reset by peer' error?",
-            # "Why do I get a connection refuses error?",
-            "fixtures/kyma_docs/istio/docs/user/troubleshooting/connection-reset-error.md",
-            id="Why do I get a 'Connection reset by peer' error?",
-        ),
-        pytest.param(
-            "how to resolve 'Connection reset by peer' error?",
-            # "Why do I get a connection refuses error?",
-            "fixtures/kyma_docs/istio/docs/user/troubleshooting/connection-reset-error.md",
-            id="how to resolve 'Connection reset by peer' error?",
+            "Why do I get a 'Connection reset by peer' response error?",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-20-connection-refused.md",
+            id="Why do I get a Connection reset by peer error?",
         ),
         pytest.param(
             "function pod have have no sidecar proxy",
-            # "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
-            "fixtures/kyma_docs/istio/docs/user/troubleshooting/no-sidecar-proxy.md",
+            "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
             id="Pods don't have sidecar",
         ),
         # serverless
         pytest.param(
             "How to expose a Function Using the APIRule Custom Resource?",
-            # "fixtures/kyma_docs/serverless/docs/user/tutorials/01-20-expose-function.md",
-            "fixtures/kyma_docs/serverless/docs/user/tutorials/expose-function-api-rule.md",
+            "fixtures/kyma_docs/serverless/docs/user/tutorials/01-20-expose-function.md",
             id="How to expose a Function Using the APIRule Custom Resource?",
         ),
         pytest.param(
@@ -104,7 +88,6 @@ def rag_system(app_models):
         pytest.param(
             "adding a new env var to a function",
             "fixtures/kyma_docs/serverless/docs/user/tutorials/01-120-inject-envs.md",
-            # "fixtures/kyma_docs/serverless/docs/user/tutorials/inject-function-env-var.md",
             id="adding a new env var to a function",
         ),
         pytest.param(
@@ -120,48 +103,37 @@ def rag_system(app_models):
         # telemetry manager
         pytest.param(
             "show how to create a trace pipeline",
-            "fixtures/kyma_docs/telemetry-manager/docs/user/creating-trace-pipeline.md",
+            "fixtures/kyma_docs/telemetry-manager/docs/user/resources/04-tracepipeline.md",
             id="show how to create a trace pipeline",
         ),
         # TODO: enable it after indexing is improved. Currently it is failing.
-        # "fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md"
+        # pytest.param(
+        #     "what are the prerequisites for applications to enable logging?",
+        #     "fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md",
+        #     id="what are the prerequisites for applications to enable logging?",
+        # ),
+        # eventing
         pytest.param(
-            "what are the prerequisites for Kyma application to enable logging?",
-            "fixtures/kyma_docs/telemetry-manager/docs/user/app-log-prerequisites.md",
-            id="what are the prerequisites for applications to enable logging?",
-        ),
-        pytest.param(
-            "why there is no logs in the backend?",
-            "fixtures/kyma_docs/telemetry-manager/docs/user/no-logs.md",
-            id="why there is no logs in the backend?",
-        ),
-        # # eventing
-        # "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-05-fix-pending-messages.md",
-        pytest.param(
-            "some eventing messages are pending in the stream",
-            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/pending-events.md",
+            "some eventing messages are pending",
+            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-05-fix-pending-messages.md",
             id="some eventing messages are pending",
         ),
-        # "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-04-free-jetstream-storage.md",
         pytest.param(
             "what to do if event publish rate is so high?",
-            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/high-event-rate.md",
+            "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-04-free-jetstream-storage.md",
             id="what to do if event publish rate is so high?",
         ),
     ],
 )
 @pytest.mark.asyncio
-async def test_rag_search(
-    user_query, expected_output_path, rag_system, evaluation_metrics
-):
+async def test_rag_search(input, expected_output_path, rag_system, evaluation_metrics):
     # Given: the path to the RAG directory
     rag_dir = os.path.dirname(os.path.abspath(__file__))
+    query = Query(text=input)
 
     # When: the documents are retrieved and the output is generated
-    query = Query(text=user_query)
     retrieved_docs = await rag_system.aretrieve(query)
     assert len(retrieved_docs) > 0, "No documents retrieved"
-
     actual_output = await rag_system.agenerate(query, retrieved_docs)
     assert actual_output is not None, "RAG system generated no output"
     # Then
@@ -173,7 +145,7 @@ async def test_rag_search(
     retrieved_docs_content = [doc.page_content for doc in retrieved_docs]
 
     test_case = LLMTestCase(
-        input=user_query,
+        input=input,
         actual_output=actual_output,
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,

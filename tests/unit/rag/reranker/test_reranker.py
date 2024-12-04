@@ -1,16 +1,15 @@
 from unittest.mock import Mock
 
-import pytest
 from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.reranker import (
     LLMReranker,
+    RerankedDocs,
     format_documents,
     format_queries,
-    parse_response,
 )
 from unit.rag.reranker.fixtures import (
     doc1,
@@ -22,7 +21,6 @@ from unit.rag.reranker.fixtures import (
     doc7,
     doc8,
     doc9,
-    doc_to_json,
 )
 
 
@@ -42,9 +40,12 @@ class TestLLMReranker:
 
         # When
         reranker = LLMReranker(model=mock_model)
-        expected_chain = (
-            prompt(RERANKER_PROMPT_TEMPLATE) | mock_model.llm | StrOutputParser()
+
+        reranked_docs_parser = PydanticOutputParser(pydantic_object=RerankedDocs)
+        prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE).partial(
+            format_instructions=reranked_docs_parser.get_format_instructions()
         )
+        expected_chain = prompt | mock_model.llm | reranked_docs_parser
 
         # Then
         assert reranker is not None
@@ -77,7 +78,7 @@ class TestLLMReranker:
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
         reranker = LLMReranker(model=mock_model)
-        mock_response = format_json_block(*docs_to_json_str_list(expected_docs_list))
+        mock_response = docs_to_reranked_docs(expected_docs_list)
         reranker.chain = Mock()
         reranker.chain.invoke = Mock(return_value=mock_response)
 
@@ -136,106 +137,13 @@ def test_format_queries():
     assert s == '["this is a test query 1","this is a test query 2"]'
 
 
-@pytest.mark.parametrize(
-    "name, given_response, expected_docs",
-    [
-        (
-            "given response is not surrounded by json code block",
-            """
-                [
-                    {
-                        "kwargs": {
-                            "type": "Document",
-                            "page_content": "this is a test content 1",
-                            "metadata": {"type": "test 1", "metadata": "test 1"}
-                        }
-                    },
-                    {
-                        "kwargs": {
-                            "type": "Document",
-                            "page_content": "this is a test content 2",
-                            "metadata": {"type": "test 2", "metadata": "test 2"}
-                        }
-                    }
-                ]
-                """,
-            [
-                Document(
-                    type="Document",
-                    page_content="this is a test content 1",
-                ),
-                Document(
-                    type="Document",
-                    page_content="this is a test content 2",
-                ),
-            ],
-        ),
-        (
-            "given response is surrounded by json code block",
-            """```json
-                [
-                    {
-                        "kwargs": {
-                            "type": "Document",
-                            "page_content": "this is a test content 1",
-                            "metadata": {"type": "test 1", "metadata": "test 1"}
-                        }
-                    },
-                    {
-                        "kwargs": {
-                            "type": "Document",
-                            "page_content": "this is a test content 2",
-                            "metadata": {"type": "test 2", "metadata": "test 2"}
-                        }
-                    }
-                ]
-                ```""",
-            [
-                Document(
-                    type="Document",
-                    page_content="this is a test content 1",
-                ),
-                Document(
-                    type="Document",
-                    page_content="this is a test content 2",
-                ),
-            ],
-        ),
-    ],
-)
-def test_parse_response(name, given_response, expected_docs):
-    # When
-    actual_docs = parse_response(given_response)
-
-    # Then
-    assert actual_docs is not None
-    assert len(actual_docs) == len(expected_docs)
-    for i, doc in enumerate(actual_docs):
-        assert doc == expected_docs[i]
-
-
-def prompt(template: str) -> PromptTemplate:
+def docs_to_reranked_docs(docs: list[Document]) -> RerankedDocs:
     """
-    Create a PromptTemplate object from the given template.
-    :param template: A template string.
-    :return: A PromptTemplate object.
-    """
-    return PromptTemplate.from_template(template)
-
-
-def docs_to_json_str_list(docs: list[Document]) -> list[str]:
-    """
-    Convert a list of documents to a list of JSON strings.
+    Convert a list of documents to a RerankedDocs object.
     :param docs: A list of documents.
-    :return: A list of JSON strings.
+    :return: A RerankedDocs object.
     """
-    return [doc_to_json[doc.page_content] for doc in docs]
-
-
-def format_json_block(*json_str: str) -> str:
-    """
-    Format the given json strings into a single json block.
-    :param json_str: JSON strings to be formatted.
-    :return: A single json block string containing the given json strings.
-    """
-    return "```json[{}]```".format(",".join(json_str))
+    reranked_docs = RerankedDocs(documents=[])
+    for doc in docs:
+        reranked_docs.documents.append(doc)
+    return reranked_docs

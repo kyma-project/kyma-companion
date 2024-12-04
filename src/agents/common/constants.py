@@ -20,7 +20,7 @@ SUBTASKS = "subtasks"
 
 FINAL_RESPONSE = "final_response"
 
-GRAPH_STEP_TIMEOUT_SECONDS = 60
+GRAPH_STEP_TIMEOUT_SECONDS = 120
 
 IS_LAST_STEP = "is_last_step"
 

@@ -1,17 +1,29 @@
-import json
 from typing import Protocol
 
 from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.rrf import get_relevant_documents
-from rag.reranker.utils import dict_to_document, document_to_str
+from rag.reranker.utils import document_to_str
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
 logger = get_logger(__name__)
+
+
+class RerankedDoc(BaseModel):
+    """A Reranked Document with page content."""
+
+    page_content: str
+
+
+class RerankedDocs(BaseModel):
+    """A list of Reranked Documents."""
+
+    documents: list[RerankedDoc]
 
 
 class IReranker(Protocol):
@@ -33,8 +45,11 @@ class LLMReranker(IReranker):
 
     def __init__(self, model: IModel):
         """Initialize the reranker."""
-        prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        self.chain = prompt | model.llm | StrOutputParser()
+        reranked_docs_parser = PydanticOutputParser(pydantic_object=RerankedDocs)
+        prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE).partial(
+            format_instructions=reranked_docs_parser.get_format_instructions()
+        )
+        self.chain = prompt | model.llm | reranked_docs_parser
 
     def rerank(
         self,
@@ -60,7 +75,7 @@ class LLMReranker(IReranker):
         relevant_docs = get_relevant_documents(docs_list, limit=input_limit)
 
         # reranking using the LLM model
-        response = self.chain.invoke(
+        response: RerankedDocs = self.chain.invoke(
             {
                 "documents": format_documents(relevant_docs),
                 "queries": format_queries(queries),
@@ -68,9 +83,12 @@ class LLMReranker(IReranker):
             }
         )
 
-        # parsing the response from the LLM model
-        ranked_docs = parse_response(response)
-        return ranked_docs[:output_limit]
+        # return reranked documents capped at the output limit
+        reranked_docs = [
+            Document(page_content=doc.page_content)
+            for doc in response.documents[:output_limit]
+        ]
+        return reranked_docs
 
 
 def format_documents(docs: list[Document]) -> str:
@@ -89,13 +107,3 @@ def format_queries(queries: list[str]) -> str:
     :return: A string representation of the queries in JSON format.
     """
     return "[{}]".format(",".join(f'"{query}"' for query in queries))
-
-
-def parse_response(response: str) -> list[Document]:
-    """
-    Parse the response from the reranker.
-    :param response: The response from the reranker.
-    :return: A list of documents.
-    """
-    response = response.strip("`").lstrip("json").strip()
-    return [dict_to_document(obj) for obj in json.loads(response)]
