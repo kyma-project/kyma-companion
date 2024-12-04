@@ -70,6 +70,7 @@ def get_config() -> Config:
         return config
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON format in config file {config_file}: {e}")
+        raise
     except Exception as e:
         logger.error(f"Error loading config from {config_file}: {e}")
         raise
