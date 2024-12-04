@@ -91,4 +91,5 @@ jobs:
           DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
           echo "${{ secrets.MODELS }}" > config/config.yml
+          echo "${{ secrets.MODELS_JSON }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration
