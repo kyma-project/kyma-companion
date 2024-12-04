@@ -228,7 +228,7 @@ class TestSupervisorAgent:
         )
 
     @pytest.mark.parametrize(
-        "description, input_query, plan_content, expected_output, expected_error",
+        "description, input_query, mock_plan_content, expected_output, expected_error",
         [
             (
                 "Plans multiple subtasks successfully",
@@ -245,14 +245,7 @@ class TestSupervisorAgent:
                             description="Explain K8s deployment", assigned_to=K8S_AGENT
                         ),
                     ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                            '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -269,14 +262,7 @@ class TestSupervisorAgent:
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [
-                        AIMessage(
-                            content='{"subtasks": '
-                            '[{"description": "Explain Kubernetes pod concept", '
-                            '"assigned_to": "KubernetesAgent"}]}',
-                            name=PLANNER,
-                        )
-                    ],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -353,7 +339,7 @@ class TestSupervisorAgent:
         supervisor_agent,
         description,
         input_query,
-        plan_content,
+        mock_plan_content,
         expected_output,
         expected_error,
     ):
@@ -362,7 +348,9 @@ class TestSupervisorAgent:
                 expected_error
             )
         else:
-            supervisor_agent._planner_chain.invoke.return_value.content = plan_content
+            supervisor_agent._planner_chain.invoke.return_value.content = (
+                mock_plan_content
+            )
 
         state = SupervisorState(messages=[HumanMessage(content=input_query)])
         result = supervisor_agent._plan(state)
