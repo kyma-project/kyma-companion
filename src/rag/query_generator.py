@@ -23,7 +23,7 @@ class Queries(BaseModel):
 class IQueryGenerator(Protocol):
     """Given a single query, generates multiple alternative queries."""
 
-    def generate_queries(self, query: str) -> Queries:
+    async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
         ...
 
@@ -56,18 +56,11 @@ class QueryGenerator:
         """Create a chain with langchain."""
         return self.prompt | self.model.llm | self.queries_parser
 
-    def _invoke_chain(self, query: str) -> Queries:
-        """Invokes the chat model with created chain."""
-        try:
-            return cast(Queries, self._chain.invoke({"query": query}))
-        except Exception:
-            logger.exception("Error invoking chain")
-            raise
-
-    def generate_queries(self, query: str) -> Queries:
+    async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
         try:
-            return self._invoke_chain(query)
+            queries = await self._chain.ainvoke({"query": query})
+            return cast(Queries, queries)
         except Exception:
             logger.exception("Error generating queries")
             raise

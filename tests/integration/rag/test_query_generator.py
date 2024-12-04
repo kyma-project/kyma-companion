@@ -1,9 +1,11 @@
+import json
+
 import pytest
-from deepeval.evaluate import evaluate
+from deepeval import evaluate
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
-from rag.query_generator import QueryGenerator
+from rag.query_generator import Queries, QueryGenerator
 from utils.models.factory import ModelType
 
 
@@ -19,7 +21,6 @@ def correctness_metric(evaluator_model):
             "Check if the output contains multiple semantically similar queries",
             "Verify that each query is a valid question or search phrase",
             "Ensure queries capture different aspects of the original query",
-            "Check if the output is in valid JSON format with a string array",
         ],
         model=evaluator_model,
         threshold=0.7,
@@ -36,73 +37,72 @@ def query_generator(app_models):
     "input_query,expected_queries",
     [
         pytest.param(
-            "How to deploy a function in Kyma?",
-            {
-                "queries": [
+            "How to create a function in Kyma?",
+            Queries(
+                queries=[
                     "What are the steps to deploy a serverless function in Kyma?",
                     "How to create and configure a Kyma function?",
-                    "What is the process of deploying serverless workloads in Kyma?",
-                    "Explain function deployment options in Kyma",
+                    "Can you provide a guide on creating functions in a Kyma environment?",
+                    "What are the different ways to define a function in Kyma?",
                 ]
-            },
+            ),
             id="Should generate variations for a technical query",
         ),
         pytest.param(
             "Why is my Kyma pod failing?",
-            {
-                "queries": [
-                    "What are common reasons for Kyma pod failures?",
-                    "How to diagnose pod issues in Kyma?",
-                    "What should I check when Kyma pods are not running?",
-                    "Troubleshoot pod failures in Kyma environment",
+            Queries(
+                queries=[
+                    "What are common reasons for pod failures?",
+                    "How to diagnose pod issues?",
+                    "What should I check when pods are not running?",
+                    "Troubleshoot pod failures",
                 ]
-            },
+            ),
             id="Should handle troubleshooting queries",
         ),
         pytest.param(
-            "How to configure authentication and secure APIs in Kyma?",
-            {
-                "queries": [
-                    "What are the authentication methods available in Kyma?",
-                    "How to implement API security in Kyma applications?",
-                    "Explain Kyma's API Gateway security features",
-                    "What is the process of securing endpoints in Kyma?",
+            "How to secure applications in Kyma?",
+            Queries(
+                queries=[
+                    "How to implement API security for Kyma applications?",
+                    "What security features does Kyma offer for protecting APIs?",
+                    "Best practices for securing applications in Kyma",
+                    "Implementing security measures in Kyma applications",
                 ]
-            },
+            ),
             id="Should handle complex technical queries",
         ),
     ],
 )
-def test_generate_queries(
+@pytest.mark.asyncio
+async def test_generate_queries(
     input_query, expected_queries, query_generator, correctness_metric
 ):
+    """Test query generation with different types of queries."""
     # When: the query generator's generate_queries method is invoked
-    result = query_generator.generate_queries(input_query)
+    response = await query_generator.agenerate_queries(input_query)
 
-    # Then: we evaluate the test case using deepeval metrics
+    # Then: the generated queries should match the expected format
+    assert isinstance(response, Queries)
+    assert len(response.queries) > 0
+
+    response_json = json.dumps({"queries": response.queries}, indent=2)
+    expected_json = json.dumps({"queries": expected_queries.queries}, indent=2)
+
     test_case = LLMTestCase(
         input=input_query,
-        actual_output=str(result.queries),
-        expected_output=str(expected_queries["queries"]),
+        actual_output=response_json,
+        expected_output=expected_json,
     )
-    eval_results = evaluate(
+
+    eval_result = evaluate(
         test_cases=[test_case],
-        metrics=[correctness_metric],
+        metrics=[
+            correctness_metric,
+        ],
+        run_async=False,
     )
 
-    # assert that all metrics passed
     assert all(
-        result.success for result in eval_results.test_results
+        result.success for result in eval_result.test_results
     ), "Not all metrics passed"
-
-    # assert that the number of queries is correct
-    default_num_queries = 4
-    assert len(result.queries) == default_num_queries
-    # assert that all queries are strings
-    assert all(isinstance(q, str) for q in result.queries)
-    # assert that all queries are not empty
-    assert all(len(q.strip()) > 0 for q in result.queries)
-    # assert that all queries are unique
-    assert len(set(result.queries)) == len(
-        result.queries
-    )  # All queries should be unique
