@@ -33,8 +33,12 @@ def load_env_from_json() -> None:
                 for key, value in config_file.items():
                     if key != "models":  # Skip models
                         os.environ[key] = str(value)
+        except json.JSONDecodeError as e:
+            logging.error(f"Invalid JSON format in config file {config_file}: {e}")
+            raise
         except Exception as e:
             logging.error(f"Error loading config from {config_path}: {e}")
+            raise
     else:
         logging.error(f"Config file not found at {config_path}.")
 

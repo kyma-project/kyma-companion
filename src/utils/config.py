@@ -68,6 +68,8 @@ def get_config() -> Config:
         models_data = data.get("models", [])
         config = Config(models=models_data)
         return config
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in config file {config_file}: {e}")
     except Exception as e:
         logger.error(f"Error loading config from {config_file}: {e}")
         raise
