@@ -15,7 +15,7 @@ from rag.system import Query, RAGSystem
 @pytest.fixture(scope="session")
 def evaluation_metrics(evaluator_model):
     # TODO: enable it after the reranking is implemented
-    # test the reranking of the retrieved documents
+    # test the reranking of the retrieved relevant documents
     # contextual_precision = ContextualPrecisionMetric(
     #     threshold=0.7, model=evaluator_model, include_reason=True
     # )
