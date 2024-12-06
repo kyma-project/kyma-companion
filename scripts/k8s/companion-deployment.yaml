@@ -97,21 +97,21 @@ spec:
         - name: REDIS_PORT
           value: "6379"
         - name: CONFIG_PATH
-          value: "/mnt/config/config.json"
+          value: "/mnt/config/models-config.json"
         envFrom:
           - configMapRef:
               name: ai-backend-config
         volumeMounts:
           - name: models-config
-            mountPath: /mnt/config/config.json
-            subPath: config.json
+            mountPath: /mnt/config/models-config.json
+            subPath: models-config.json
       volumes:
         - name: models-config
           configMap:
             name: ai-backend-config
             items:
-              - key: config.json
-                path: config.json
+              - key: models-config.json
+                path: models-config.json
 
 ---
 apiVersion: v1
