@@ -10,8 +10,12 @@ from utils.config import Config, ModelConfig, get_config
     "json_content, expected_config",
     [
         (
+            # Given: multiple models, two variables
+            # Expected: Config object with two models, no variables
             """
             {
+                "VARIABLE_NAME": "value",
+                "VARIABLE_NAME2": "value2",
                 "models": [
                     {
                         "name": "model1",
@@ -34,8 +38,11 @@ from utils.config import Config, ModelConfig, get_config
             ),
         ),
         (
+            # Given: single model, one variable
+            # Expected: Config object with one model, no variable
             """
             {
+                "VARIABLE_NAME": "value",
                 "models": [
                     {
                         "name": "single_model",
@@ -54,8 +61,11 @@ from utils.config import Config, ModelConfig, get_config
             ),
         ),
         (
+            # Given: no models, one variable
+            # Expected: Config object with no models, no variables
             """
             {
+                "VARIABLE_NAME": "value",
                 "models": []
             }
             """,
