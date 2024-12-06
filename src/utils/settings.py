@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from pathlib import Path
 
 from decouple import Config, RepositoryEnv, config
 from dotenv import find_dotenv
@@ -16,12 +17,9 @@ def is_running_pytest() -> bool:
 
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
-    config_path = os.getenv(
-        "AICORE_HOME",
-        os.path.abspath(
-            "../../go/src/github.com/kyma-project/kyma-companion/config/config.json"
-        ),
-    )  # Default to root config.json.
+    default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
+
+    config_path = Path(os.getenv("AICORE_HOME", default_config_path))
 
     if os.path.exists(config_path):
         try:
