@@ -12,7 +12,7 @@ def is_running_pytest() -> bool:
     """
     return "pytest" in sys.modules
 
-
+# dummy change
 project_root = os.path.dirname(os.path.abspath(__file__))
 
 if is_running_pytest():
