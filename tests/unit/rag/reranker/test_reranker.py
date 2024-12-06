@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+import pytest
 from langchain_core.documents import Document
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -24,11 +25,13 @@ from unit.rag.reranker.fixtures import (
 )
 
 
+@pytest.mark.asyncio
 class TestLLMReranker:
     """
     Test class for the LLMReranker class.
     """
 
+    @pytest.mark.asyncio
     def test_init(self):
         """
         Test the initialization of the LLMReranker class.
@@ -52,7 +55,8 @@ class TestLLMReranker:
         assert reranker.chain is not None
         assert reranker.chain == expected_chain
 
-    def test_rerank(self):
+    @pytest.mark.asyncio
+    async def test_rerank(self):
         """
         Test the rerank method of the LLMReranker class.
         """
@@ -83,7 +87,7 @@ class TestLLMReranker:
         reranker.chain.invoke = Mock(return_value=mock_response)
 
         # When
-        actual_docs_list = reranker.rerank(
+        actual_docs_list = await reranker.arerank(
             docs_list=given_docs_list,
             queries=given_queries,
             input_limit=given_input_limit,
@@ -97,7 +101,8 @@ class TestLLMReranker:
                 "documents": format_documents(relevant_docs),
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
-            }
+            },
+            None,
         )
 
 
