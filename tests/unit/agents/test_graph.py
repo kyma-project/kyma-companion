@@ -35,7 +35,8 @@ def mock_planner_chain():
 
 @pytest.fixture
 def mock_common_chain():
-    return Mock()
+    mock = AsyncMock()
+    return mock
 
 
 @pytest.fixture
@@ -54,7 +55,9 @@ def companion_graph(
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
         patch("agents.graph.KymaAgent", return_value=Mock()),
     ):
-        return CompanionGraph(mock_models, mock_memory)
+        graph = CompanionGraph(mock_models, mock_memory)
+        graph._invoke_common_node = AsyncMock()
+        return graph
 
 
 def create_messages_json(content, role, node) -> str:
@@ -64,6 +67,7 @@ def create_messages_json(content, role, node) -> str:
 
 class TestCompanionGraph:
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, subtasks, messages, chain_response, expected_output, expected_error",
         [
@@ -151,8 +155,8 @@ class TestCompanionGraph:
                 {
                     "messages": [
                         AIMessage(
-                            content="Sorry, the common agent is unable to process the request.",
-                            name="Common",
+                            content="Sorry, I am unable to process the request.",
+                            name=COMMON,
                         )
                     ]
                 },
@@ -160,7 +164,7 @@ class TestCompanionGraph:
             ),
         ],
     )
-    def test_common_node(
+    async def test_common_node(
         self,
         companion_graph,
         description,
@@ -174,17 +178,29 @@ class TestCompanionGraph:
         state = CompanionState(subtasks=subtasks, messages=messages)
 
         if expected_error:
-            mock_common_chain.invoke.side_effect = Exception(expected_error)
+            companion_graph._invoke_common_node.side_effect = Exception(expected_error)
         else:
-            mock_common_chain.invoke.return_value.content = chain_response
+            companion_graph._invoke_common_node.return_value = chain_response
 
-        result = companion_graph._common_node(state)
+        result = await companion_graph._common_node(state)
         assert result == expected_output
+
         if chain_response:
-            mock_common_chain.invoke.assert_called_once()
-            assert (
-                subtasks[0].assigned_to == COMMON and subtasks[0].status == "completed"
+            companion_graph._invoke_common_node.assert_awaited_once_with(
+                state, subtasks[0].description
             )
+            assert subtasks[0].status == "completed"
+        elif expected_error:
+            # if error occurs, return message with error
+            companion_graph._invoke_common_node.assert_awaited_once_with(
+                state, subtasks[0].description
+            )
+            # Verify subtask remains pending after error
+            assert subtasks[0].status == "pending"
+            assert subtasks[0].assigned_to == COMMON
+        else:
+            # if all subtasks are completed, no need call LLM
+            assert subtasks[0].status == "completed"
 
     @pytest.fixture
     def mock_companion_graph(self):

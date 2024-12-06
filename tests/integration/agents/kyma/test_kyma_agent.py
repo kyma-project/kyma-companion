@@ -437,7 +437,8 @@ def kyma_agent(app_models):
         ),
     ],
 )
-def test_invoke_chain(
+@pytest.mark.asyncio
+async def test_invoke_chain(
     kyma_agent,
     correctness_metric,
     faithfulness_metric,
@@ -461,7 +462,7 @@ def test_invoke_chain(
             kyma_agent._invoke_chain(state, {})
     else:
         # When: the chain is invoked normally
-        response = kyma_agent._invoke_chain(state, {})
+        response = await kyma_agent._invoke_chain(state, {})
         assert isinstance(response, AIMessage)
 
         # Then: Verify the response based on expected behavior
@@ -487,6 +488,7 @@ def test_invoke_chain(
                     correctness_metric,
                     faithfulness_metric,
                 ],
+                run_async=False,
             )
             # assert that all metrics passed
             assert all(
