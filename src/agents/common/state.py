@@ -21,11 +21,11 @@ class SubTaskStatus(str, Enum):
 class SubTask(BaseModel):
     """Sub-task data model."""
 
-    description: str = Field(description="description of the task")
-    # assigned_to: str = Field(description="agent to whom the task is assigned")
-    assigned_to: Literal["KymaAgent", "KubernetesAgent"]
+    description: str = Field(
+        description="user query with original wording for the assigned agent"
+    )
+    assigned_to: Literal["KymaAgent", "KubernetesAgent", "Common"]
     status: str = Field(default=SubTaskStatus.PENDING)
-    # result: str | None
 
     def complete(self) -> None:
         """Update the result of the task."""
@@ -34,18 +34,6 @@ class SubTask(BaseModel):
     def completed(self) -> bool:
         """Check if the task is completed."""
         return self.status == SubTaskStatus.COMPLETED
-
-
-# class Subtask(BaseModel):
-#     query: str = Field(description="Query for the assigned agent")
-#     assigned_to: Literal["KymaAgent", "KubernetesAgent"]
-
-
-class PlannerOutput(BaseModel):
-    response: str = Field(
-        description="Answer only if query is not related to Kyma and Kubernetes. If query is related to kyma or kubernetes keep it blank"
-    )
-    subtasks: List[SubTask] = Field(description="Create subtask For user query")
 
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
@@ -77,11 +65,11 @@ class Plan(BaseModel):
     """Plan to follow in future"""
 
     subtasks: list[SubTask] | None = Field(
-        description="different steps/subtasks to follow, should be in sorted order"
+        description="different subtasks for user query"
     )
 
     response: str | None = Field(
-        description="direct response of planner if plan is unnecessary"
+        description="direct response only if query is not related to Kyma and Kubernetes"
     )
 
 

@@ -17,7 +17,7 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
-from agents.common.state import Plan, PlannerOutput
+from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
@@ -133,7 +133,7 @@ class SupervisorAgent:
             members=self._get_members_str(),
             output_format=self.plan_parser.get_format_instructions(),
         )
-        return self.planner_prompt | model.llm.with_structured_output(PlannerOutput)  # type: ignore
+        return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> AIMessage:
         """Invoke the planner."""
@@ -142,8 +142,6 @@ class SupervisorAgent:
             state.messages, [is_human_message, is_system_message, is_finalizer_message]
         )
         reduces_messages = filter_most_recent_messages(filtered_messages, 10)
-
-        # structured_llm = self._planner_chain.with_structured_output(PlannerOutput)
 
         response: AIMessage = await self._planner_chain.ainvoke(
             input={
@@ -164,11 +162,9 @@ class SupervisorAgent:
                 state,  # last message is the user query
             )
             # get the content of the AIMessage
-            # response_content = str(plan_response.content)
 
             try:
-                # try to parse the JSON formatted Planner response into a Plan object
-                # plan = self.plan_parser.parse(response_content)
+
                 # if the Planner responds directly, return the response and exit the graph
                 plan = plan_response
                 if plan.response:
