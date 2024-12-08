@@ -38,7 +38,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
-            '{"response": "Berlin"}',
+            '{"subtasks": null, "response": "Berlin"   }',
             True,
         ),
         (
@@ -50,7 +50,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kyma?"),
             ],
-            '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent" , "status" : "pending"}] , "response": null }',
             False,
         ),
         (
@@ -62,7 +62,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kyma API Rule?"),
             ],
-            '{"subtasks": [{"description": "What is Kyma API Rule?", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{ "description": "What is Kyma API Rule?", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -80,7 +80,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="why the pod is failing?"),
             ],
-            "{'subtasks': [{'description': 'why the pod is failing?', 'assigned_to': 'KubernetesAgent'}]}",
+            "{'subtasks': [{  'description': 'why the pod is failing?', 'assigned_to': 'KubernetesAgent' ,'status' : 'pending'}] , 'response': null}",
             False,
         ),
         (
@@ -92,7 +92,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
-            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent"}]}',
+            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -104,8 +104,8 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kubernetes? Explain Kyma function"),
             ],
-            '{"subtasks": [{"description": "What is Kubernetes?", "assigned_to": "KubernetesAgent"},'
-            '{"description": "Explain Kyma function", "assigned_to": "KymaAgent"}]}',
+            '{"subtasks": [{ "description": "What is Kubernetes?", "assigned_to": "KubernetesAgent","status" : "pending"},'
+            '{"description": "Explain Kyma function", "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -119,8 +119,8 @@ def planner_correctness_metric(evaluator_model):
                     content="Create a hello world app and deploy it with Kyma?"
                 ),
             ],
-            '{"subtasks": [{"description": "Create a hello world app", "assigned_to": "Common"},'
-            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
+            '{ "subtasks": [{"description": "Create a hello world app", "assigned_to": "Common", "status" : "pending"},'
+            '{"description": "deploy the app with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -134,8 +134,8 @@ def planner_correctness_metric(evaluator_model):
                     content="Create a hello world app with python and deploy it with Kyma?"
                 ),
             ],
-            '{"subtasks": [{"description": "Create a hello world app with python", "assigned_to": "Common"},'
-            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent"}]}',
+            '{ "subtasks": [{ "description": "Create a hello world app with python", "assigned_to": "Common", "status" : "pending"},'
+            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -149,8 +149,8 @@ def planner_correctness_metric(evaluator_model):
                     content="how to enable eventing module and create a subscription for my app?"
                 ),
             ],
-            '{"subtasks": [{"description": "How to enable eventing module?", "assigned_to": "KymaAgent"},'
-            '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent"}]}',
+            '{ "subtasks": [{"description": "How to enable eventing module?", "assigned_to": "KymaAgent", "status" : "pending"},'
+            '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent", "status" :"pending"}] , "response": null}',
             False,
         ),
     ],
@@ -172,7 +172,7 @@ async def test_invoke_planner(
     result = await companion_graph.supervisor_agent._invoke_planner(state)
     test_case = LLMTestCase(
         input=messages[-1].content,
-        actual_output=result.content,
+        actual_output=result.json(),
         expected_output=expected_answer,
     )
 
@@ -183,8 +183,6 @@ async def test_invoke_planner(
 
         print(f"Score: {planner_correctness_metric.score}")
         print(f"Reason: {planner_correctness_metric.reason}")
-
-        companion_graph.plan_parser.parse(result.content)
 
         assert_test(test_case, [planner_correctness_metric])
     else:
