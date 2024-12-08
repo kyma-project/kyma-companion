@@ -12,6 +12,7 @@ from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
 from utils.models.factory import IModel, ModelType
+from agents.common.state import Plan
 
 
 @pytest.fixture
@@ -233,8 +234,8 @@ class TestSupervisorAgent:
             (
                 "Plans multiple subtasks successfully",
                 "How do I deploy a Kyma function?",
-                '{"subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent"},'
-                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent"}]}',
+                '{"response":null, "subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent" ,"status" : "pending"},'
+                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
                         SubTask(
@@ -254,7 +255,7 @@ class TestSupervisorAgent:
             (
                 "Plans a single subtask successfully",
                 "What is a Kubernetes pod?",
-                '{"subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent"}]}',
+                '{"response":null, "subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
                         SubTask(
@@ -271,7 +272,7 @@ class TestSupervisorAgent:
             (
                 "Exits with error if no subtasks are returned",
                 "What is a Kubernetes pod?",
-                '{"subtasks": []}',
+                '{"response":null, "subtasks": null}',
                 {
                     "messages": [
                         AIMessage(
@@ -286,24 +287,7 @@ class TestSupervisorAgent:
             (
                 "Exits immediately by answering for the general query",
                 "Write a hello world python code?",
-                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')"}',
-                {
-                    "error": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "next": END,
-                    "subtasks": None,
-                },
-                None,
-            ),
-            (
-                "Exits immediately for the general query even if llm doesn't return response attribute",
-                "Write a hello world python code?",
-                "Here is the hellow world python code: print('Hello, World!')",
+                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')" ,"subtasks": null}',
                 {
                     "error": None,
                     "messages": [
@@ -320,7 +304,7 @@ class TestSupervisorAgent:
             (
                 "Exits of error occurs in planning",
                 "What is a Kubernetes service?",
-                '{"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent"}]}',
+                '{"response":null,"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "messages": [
                         AIMessage(
@@ -350,7 +334,7 @@ class TestSupervisorAgent:
             if expected_error:
                 mock_invoke_planner.side_effect = Exception(expected_error)
             else:
-                mock_invoke_planner.return_value = AIMessage(content=mock_plan_content)
+                mock_invoke_planner.return_value = Plan.parse_raw(mock_plan_content)
 
             state = SupervisorState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)

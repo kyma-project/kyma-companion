@@ -37,7 +37,7 @@ class TestAgent(BaseAgent):
 
     def __init__(self, model: IModel):
         super().__init__(
-            name="TestAgent",
+            name="KubernetesAgent",
             model=model,
             tools=[k8s_query_tool, fetch_pod_logs_tool],
             system_prompt="You are a test agent",
@@ -73,7 +73,7 @@ class TestBaseAgent:
 
     def test_name(self, mock_models):
         agent = TestAgent(mock_models[ModelType.GPT4O])
-        assert agent.name == "TestAgent"
+        assert agent.name == "KubernetesAgent"
 
     def test_agent_init(self, mock_models):
         agent = TestAgent(mock_models[ModelType.GPT4O])
@@ -155,13 +155,15 @@ class TestBaseAgent:
                     is_last_step=False,
                     messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to=FINALIZER),
-                        SubTask(description="test", assigned_to="TestAgent"),
+                        SubTask(description="test", assigned_to="KubernetesAgent"),
+                        SubTask(description="test", assigned_to="KubernetesAgent"),
                     ],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    "my_task": SubTask(description="test", assigned_to="TestAgent"),
+                    "my_task": SubTask(
+                        description="test", assigned_to="KubernetesAgent"
+                    ),
                 },
             ),
             # Test case when there is no subtask assigned to the agent.
@@ -171,7 +173,7 @@ class TestBaseAgent:
                     is_last_step=False,
                     messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to=FINALIZER),
+                        SubTask(description="test", assigned_to="KymaAgent"),
                     ],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
@@ -180,7 +182,7 @@ class TestBaseAgent:
                     MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
-                            name="TestAgent",
+                            name="KubernetesAgent",
                         )
                     ],
                 },
@@ -192,15 +194,15 @@ class TestBaseAgent:
                     is_last_step=False,
                     messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to=FINALIZER),
+                        SubTask(description="test", assigned_to="KymaAgent"),
                         SubTask(
                             description="test1",
-                            assigned_to="TestAgent",
+                            assigned_to="KubernetesAgent",
                             status=SubTaskStatus.COMPLETED,
                         ),
                         SubTask(
                             description="test2",
-                            assigned_to="TestAgent",
+                            assigned_to="KubernetesAgent",
                             status=SubTaskStatus.COMPLETED,
                         ),
                     ],
@@ -211,7 +213,7 @@ class TestBaseAgent:
                     MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
-                            name="TestAgent",
+                            name="KubernetesAgent",
                         )
                     ],
                 },
@@ -233,7 +235,9 @@ class TestBaseAgent:
                 AIMessage(content="This is a dummy response from model."),
                 None,
                 TestAgentState(
-                    my_task=SubTask(description="test task 1", assigned_to="TestAgent"),
+                    my_task=SubTask(
+                        description="test task 1", assigned_to="KubernetesAgent"
+                    ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
@@ -242,7 +246,7 @@ class TestBaseAgent:
                     MESSAGES: [
                         AIMessage(
                             content="This is a dummy response from model.",
-                            additional_kwargs={"owner": "TestAgent"},
+                            additional_kwargs={"owner": "KubernetesAgent"},
                         )
                     ]
                 },
@@ -256,7 +260,9 @@ class TestBaseAgent:
                 None,
                 ValueError("This is a dummy exception from model."),
                 TestAgentState(
-                    my_task=SubTask(description="test task 1", assigned_to="TestAgent"),
+                    my_task=SubTask(
+                        description="test task 1", assigned_to="KubernetesAgent"
+                    ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
@@ -266,7 +272,7 @@ class TestBaseAgent:
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
                             "Error: This is a dummy exception from model.",
-                            name="TestAgent",
+                            name="KubernetesAgent",
                         )
                     ]
                 },
@@ -289,7 +295,9 @@ class TestBaseAgent:
                 ),
                 None,
                 TestAgentState(
-                    my_task=SubTask(description="test task 1", assigned_to="TestAgent"),
+                    my_task=SubTask(
+                        description="test task 1", assigned_to="KubernetesAgent"
+                    ),
                     is_last_step=True,
                     messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
@@ -298,7 +306,7 @@ class TestBaseAgent:
                     MESSAGES: [
                         AIMessage(
                             content="Sorry, I need more steps to process the request.",
-                            name="TestAgent",
+                            name="KubernetesAgent",
                         )
                     ]
                 },
@@ -371,7 +379,7 @@ class TestBaseAgent:
             (
                 AIMessage(
                     content="dummy",
-                    additional_kwargs={"owner": "TestAgent"},
+                    additional_kwargs={"owner": "KubernetesAgent"},
                     tool_calls=[
                         {
                             "args": {
@@ -434,7 +442,7 @@ class TestBaseAgent:
                 TestAgentState(
                     my_task=SubTask(
                         description="test task 1",
-                        assigned_to="TestAgent",
+                        assigned_to="KubernetesAgent",
                         status=SubTaskStatus.PENDING,
                     ),
                     is_last_step=False,
@@ -442,7 +450,7 @@ class TestBaseAgent:
                         AIMessage(
                             id="1",
                             content="dummy",
-                            additional_kwargs={"owner": "TestAgent"},
+                            additional_kwargs={"owner": "KubernetesAgent"},
                             tool_calls=[
                                 {
                                     "args": {
