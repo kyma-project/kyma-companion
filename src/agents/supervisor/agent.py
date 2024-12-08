@@ -1,7 +1,6 @@
 from typing import Any, Literal, cast
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
