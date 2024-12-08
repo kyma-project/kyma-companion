@@ -69,7 +69,7 @@ class Plan(BaseModel):
     )
 
     response: str | None = Field(
-        description="direct response only if query is not related to Kyma and Kubernetes"
+        description="only if query is not related to Kyma and Kubernetes"
     )
 
 
