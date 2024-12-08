@@ -1,4 +1,4 @@
-from typing import Any, Literal, cast, List, Optional
+from typing import Any, Literal, cast
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.exceptions import OutputParserException
@@ -21,7 +21,6 @@ from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
-    PLANNER_PROMPT,
     PLANNER_PROMPT_STRUCTURED_OUTPUT,
 )
 from agents.supervisor.state import SupervisorState
@@ -135,7 +134,7 @@ class SupervisorAgent:
         )
         return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
-    async def _invoke_planner(self, state: SupervisorState) -> AIMessage:
+    async def _invoke_planner(self, state: SupervisorState) -> Plan:
         """Invoke the planner."""
 
         filtered_messages = filter_messages_via_checks(
@@ -143,12 +142,12 @@ class SupervisorAgent:
         )
         reduces_messages = filter_most_recent_messages(filtered_messages, 10)
 
-        response: AIMessage = await self._planner_chain.ainvoke(
+        plan: Plan = await self._planner_chain.ainvoke(
             input={
                 "messages": reduces_messages,
             },
         )
-        return response
+        return plan
 
     async def _plan(self, state: SupervisorState) -> dict[str, Any]:
         """
@@ -158,28 +157,17 @@ class SupervisorAgent:
         state.error = None
 
         try:
-            plan_response = await self._invoke_planner(
+            plan = await self._invoke_planner(
                 state,  # last message is the user query
             )
-            # get the content of the AIMessage
 
-            try:
-
-                # if the Planner responds directly, return the response and exit the graph
-                plan = plan_response
-                if plan.response:
-                    return create_node_output(
-                        message=AIMessage(content=plan.response, name=PLANNER),
-                        next=END,
-                    )
-            except OutputParserException as ope:
-                logger.debug(f"Problem in parsing the planner response: {ope}")
-                # If 'response' field of the content of plan_response is missing due to ModelType inconsistency,
-                # the response is read from the plan_response content.
+            # return the response if planner responded directly
+            if plan.response:
                 return create_node_output(
-                    message=AIMessage(content=plan_response.content, name=PLANNER),
+                    message=AIMessage(content=plan.response, name=PLANNER),
                     next=END,
                 )
+
             # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
             if not plan.subtasks:
                 raise Exception(

@@ -18,7 +18,7 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import BaseAgent
-from agents.common.constants import FINALIZER, MESSAGES
+from agents.common.constants import MESSAGES
 from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
