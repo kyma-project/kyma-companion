@@ -32,13 +32,14 @@ def load_env_from_json() -> None:
                     if key != "models":  # Skip models
                         os.environ[key] = str(value)
         except json.JSONDecodeError as e:
-            logging.error(f"Invalid JSON format in config file {config_file}: {e}")
+            logging.error(f"Invalid JSON format in config file {config_path}: {e}")
             raise
         except Exception as e:
             logging.error(f"Error loading config from {config_path}: {e}")
             raise
     else:
         logging.error(f"Config file not found at {config_path}.")
+        raise
 
 
 if is_running_pytest():

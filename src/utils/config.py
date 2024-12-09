@@ -48,10 +48,10 @@ def find_config_file(start_path: Path, target: str) -> Path:
 
 def get_config() -> Config:
     """
-    Get the configuration of the application by automatically locating the config file.
+    Get the model configuration of the application by automatically locating the config file.
 
     Returns:
-        Config: The configuration of the application
+        Config: The model configuration of the application
     """
     # Get the absolute path of the current file
     current_file_path = Path(__file__).resolve()
