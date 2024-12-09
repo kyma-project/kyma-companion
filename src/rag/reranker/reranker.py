@@ -3,7 +3,6 @@ from typing import Protocol
 from langchain_core.documents import Document
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import run_in_executor
 from pydantic import BaseModel
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
@@ -77,15 +76,12 @@ class LLMReranker(IReranker):
 
         try:
             # reranking using the LLM model
-            response: RerankedDocs = await run_in_executor(
-                None,
-                self.chain.invoke,
+            response: RerankedDocs = await self.chain.ainvoke(
                 {
                     "documents": format_documents(relevant_docs),
                     "queries": format_queries(queries),
                     "limit": output_limit,
-                },
-                None,
+                }
             )
 
             # return reranked documents capped at the output limit

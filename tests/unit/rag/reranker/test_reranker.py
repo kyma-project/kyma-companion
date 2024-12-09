@@ -84,7 +84,7 @@ class TestLLMReranker:
         reranker = LLMReranker(model=mock_model)
         mock_response = docs_to_reranked_docs(expected_docs_list)
         reranker.chain = Mock()
-        reranker.chain.invoke = Mock(return_value=mock_response)
+        reranker.chain.ainvoke = Mock(return_value=mock_response)
 
         # When
         actual_docs_list = await reranker.arerank(
@@ -96,13 +96,12 @@ class TestLLMReranker:
 
         # Then
         assert actual_docs_list == expected_docs_list
-        reranker.chain.invoke.assert_called_once_with(
+        reranker.chain.ainvoke.assert_called_once_with(
             {
                 "documents": format_documents(relevant_docs),
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
             },
-            None,
         )
 
 
