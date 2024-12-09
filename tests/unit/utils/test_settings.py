@@ -1,7 +1,7 @@
-from json import JSONDecodeError
 import os
-import tempfile
+from json import JSONDecodeError
 from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -15,9 +15,7 @@ from utils.settings import load_env_from_json
             # Given: Malformed Json
             # Expected: Exception
             """
-            {
-                "VARIABLE_NAME": "value",
-            }
+            { "VARIABLE_NAME": "value",
             """,
             None,
         ),
@@ -49,16 +47,15 @@ from utils.settings import load_env_from_json
             }
             """,
             {"VARIABLE_NAME": "value", "VARIABLE_NAME2": "value2"},
-        )
-    ]
+        ),
+    ],
 )
 def test_load_env_from_json(json_content, expected_env_variables):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Given: a config.json file with the given content
-        config_file = Path(temp_dir) / "config.json"
-        os.environ["AICORE_HOME"] = f"{temp_dir}/config.json"
-        with config_file.open("w") as file:
-            file.write(json_content)
+    with patch.dict(os.environ, {"AICORE_HOME": "/mocked/config.json"}), patch(
+        "os.path.exists", return_value=True
+    ), patch.object(Path, "open", mock_open(read_data=json_content)), patch.object(
+        Path, "is_file", return_value=bool(json_content)
+    ):
 
         if expected_env_variables is None:
             # Then: Expect an exception for malformed JSON
@@ -73,7 +70,5 @@ def test_load_env_from_json(json_content, expected_env_variables):
                 assert os.getenv(key) == value
 
             # Clean up the environment variables
-            for key in expected_env_variables.keys():
+            for key in expected_env_variables:
                 os.environ.pop(key)
-
-

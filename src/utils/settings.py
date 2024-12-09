@@ -24,7 +24,7 @@ def load_env_from_json() -> None:
     if os.path.exists(config_path):
         try:
             # Load the configuration from the given path and set the environment variables.
-            with open(config_path) as file:
+            with config_path.open() as file:
                 config_file = json.load(file)
 
                 # Set environment variables for all keys except "models"
