@@ -29,7 +29,7 @@ class RerankedDocs(BaseModel):
 class IReranker(Protocol):
     """Interface for RAG rerankers."""
 
-    def rerank(
+    async def arerank(
         self,
         docs_list: list[list[Document]],
         queries: list[str],
@@ -51,7 +51,7 @@ class LLMReranker(IReranker):
         )
         self.chain = prompt | model.llm | reranked_docs_parser
 
-    def rerank(
+    async def arerank(
         self,
         docs_list: list[list[Document]],
         queries: list[str],
@@ -74,21 +74,27 @@ class LLMReranker(IReranker):
         # filtration to prevent reranking irrelevant documents
         relevant_docs = get_relevant_documents(docs_list, limit=input_limit)
 
-        # reranking using the LLM model
-        response: RerankedDocs = self.chain.invoke(
-            {
-                "documents": format_documents(relevant_docs),
-                "queries": format_queries(queries),
-                "limit": output_limit,
-            }
-        )
+        try:
+            # reranking using the LLM model
+            response: RerankedDocs = await self.chain.ainvoke(
+                {
+                    "documents": format_documents(relevant_docs),
+                    "queries": format_queries(queries),
+                    "limit": output_limit,
+                }
+            )
 
-        # return reranked documents capped at the output limit
-        reranked_docs = [
-            Document(page_content=doc.page_content)
-            for doc in response.documents[:output_limit]
-        ]
-        return reranked_docs
+            # return reranked documents capped at the output limit
+            reranked_docs = [
+                Document(page_content=doc.page_content)
+                for doc in response.documents[:output_limit]
+            ]
+            return reranked_docs
+        except Exception as e:
+            logger.error(
+                f"Failed to rerank documents, return filtered documents instead: {e}"
+            )
+            return relevant_docs[:output_limit]
 
 
 def format_documents(docs: list[Document]) -> str:
