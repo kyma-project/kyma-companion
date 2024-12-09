@@ -1,12 +1,11 @@
 from typing import Any, Protocol, cast
 
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from rag.prompts import (
     QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE,
-    QUERY_GENERATOR_PROMPT_TEMPLATE,
+    QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE,
 )
 from utils import logging
 from utils.models.factory import IModel
@@ -15,7 +14,7 @@ logger = logging.get_logger(__name__)
 
 
 class Queries(BaseModel):
-    """A list of queries."""
+    """A list of generated queries."""
 
     queries: list[str]
 
@@ -38,23 +37,22 @@ class QueryGenerator:
         num_queries: int = 4,
     ):
         self.model = model
-        self.queries_parser = PydanticOutputParser(pydantic_object=Queries)
+        # self.queries_parser = PydanticOutputParser(pydantic_object=Queries)
         self.prompt = prompt or ChatPromptTemplate.from_messages(
             [
-                ("system", QUERY_GENERATOR_PROMPT_TEMPLATE),
+                ("system", QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE),
                 # TODO: messages (conversation history) will be added later here
                 ("user", "Original query: {query}"),
                 ("system", QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE),
             ]
         ).partial(
             num_queries=num_queries,
-            format_instructions=self.queries_parser.get_format_instructions(),
         )
         self._chain = self._create_chain()
 
     def _create_chain(self) -> Any:
         """Create a chain with langchain."""
-        return self.prompt | self.model.llm | self.queries_parser
+        return self.prompt | self.model.llm.with_structured_output(Queries)
 
     async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
