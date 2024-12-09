@@ -39,7 +39,6 @@ def load_env_from_json() -> None:
             raise
     else:
         logging.error(f"Config file not found at {config_path}.")
-        raise
 
 
 if is_running_pytest():
