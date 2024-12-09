@@ -1,12 +1,11 @@
 from agents.common.agent import BaseAgent
-from agents.common.constants import GRAPH_STEP_TIMEOUT_SECONDS
+
 from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from utils.models.factory import IModel
-
-K8S_AGENT = "KubernetesAgent"
+from agents.common.constants import K8S_AGENT, GRAPH_STEP_TIMEOUT_SECONDS
 
 
 class KubernetesAgent(BaseAgent):

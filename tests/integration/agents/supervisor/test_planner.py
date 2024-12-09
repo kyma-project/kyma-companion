@@ -153,6 +153,22 @@ def planner_correctness_metric(evaluator_model):
             '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent", "status" :"pending"}] , "response": null}',
             False,
         ),
+        (
+            # tests if a complex query related to Kyma , Kubernetes and some general query divided into three subtasks
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(
+                    content="How to create a Python app that performs Discounted Cash Flow (DCF) calculations? How to create a Kyma function? How to create a k8s service for this function?"
+                ),
+            ],
+            '{ "subtasks": [{"description": "How to create a Python app that performs Discounted Cash Flow (DCF) calculations?", "assigned_to": "Common", "status" : "pending"},'
+            '{"description": "How to create a Kyma function?", "assigned_to": "KymaAgent", "status" :"pending"},'
+            '{"description": "How to create a k8s service for this function?", "assigned_to": "KubernetesAgent", "status" :"pending"}] , "response": null}',
+            False,
+        ),
     ],
 )
 @pytest.mark.asyncio

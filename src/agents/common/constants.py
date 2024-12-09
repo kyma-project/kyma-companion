@@ -31,3 +31,7 @@ MY_TASK = "my_task"
 QUERY = "query"
 
 OWNER = "owner"
+
+K8S_AGENT = "KubernetesAgent"
+
+KYMA_AGENT = "KymaAgent"

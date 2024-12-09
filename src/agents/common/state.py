@@ -9,6 +9,7 @@ from langgraph.managed import IsLastStep
 
 from agents.common.constants import K8S_CLIENT
 from services.k8s import IK8sClient
+from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
 
 
 class SubTaskStatus(str, Enum):
@@ -24,7 +25,7 @@ class SubTask(BaseModel):
     description: str = Field(
         description="user query with original wording for the assigned agent"
     )
-    assigned_to: Literal["KymaAgent", "KubernetesAgent", "Common"]
+    assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]
     status: str = Field(default=SubTaskStatus.PENDING)
 
     def complete(self) -> None:
