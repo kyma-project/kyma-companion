@@ -36,6 +36,7 @@ langfuse = "^2.39.1"
 langgraph = "^0.2.5"
 poetry-plugin-sort = "^0.2.1"
 pytest = "^8.2.2"
+pytest-rerunfailures = "^15.0"
 python-decouple = "^3.8"
 redis = "^5.0.8"
 requests = "^2.32.3"
@@ -84,9 +85,8 @@ format-fix = "black ."
 lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]
 test = "pytest tests/unit"
-test-integration = "pytest tests/integration"
+test-integration = "pytest tests/integration --reruns=3 --reruns-delay=30 -r=aR"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
 sort = "poetry sort"
 pre-commit-check = ["sort", "code-fix", "codecheck", "test"]
-
