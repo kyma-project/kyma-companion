@@ -42,7 +42,7 @@ def load_env_from_json() -> None:
             f"Config file not found at {config_path}. Place the config file at the default location:"
             f"{default_config_path} or set the AICORE_HOME environment variable."
         )
-        raise FileNotFoundError
+        # raise FileNotFoundError
 
 
 if is_running_pytest():
