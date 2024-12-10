@@ -39,5 +39,10 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json      
+
       - name: Run tests
         run: poetry run poe test
