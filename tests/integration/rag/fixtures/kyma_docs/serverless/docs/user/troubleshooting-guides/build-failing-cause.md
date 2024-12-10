@@ -1,3 +1,0 @@
-This problem originates in [kaniko](https://github.com/GoogleContainerTools/kaniko) - the container image build tool used in Kyma. kaniko is designed to be run in a container and this is how it is executed in Kyma (as build jobs).
-kaniko has a detection mechanism to verify whether the build is actually executed in a container and fails in case it is not.
-This detection mechanism has issues and in some circumstances (that is, hosts with cgroups in version 2 or other, not yet clearly identified) it shows a false positive result.

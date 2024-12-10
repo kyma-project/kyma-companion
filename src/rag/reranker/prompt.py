@@ -25,8 +25,4 @@ Given the queries and documents, your task is to rank the documents based on the
 1. Do not make up or invent any new documents. Only use the documents from the provided ranking.
 2. Use the documents and your expertise to decide what to keep, how to rank, and which documents to remove.
 3. Order the documents based on their relevance score to the queries (top document is the most relevant).
-4. Return the documents in the order of relevance in the following JSON format:
-{format_instructions}
-5. Ensure that the response is a well-structured and valid JSON.
-</additional-rules>
 """

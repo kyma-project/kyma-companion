@@ -1,3 +1,0 @@
-If your serverless function pod has lots of restarts, it might be due to the Function Controller crashing and restarting. This can happen when you have many Git-sourced Functions deployed together that reference large repositories. The periodic polling for changes in these repositories can cause high demand on CPU and I/O resources, leading to the Function Controller crashing.
-
-To avoid this, try to use small, dedicated repositories for your Git Functions. This will reduce the resource usage and improve the stability of the Function Controller.

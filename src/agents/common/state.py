@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Annotated
 
 from langchain_core.messages import BaseMessage
-from pydantic import BaseModel, Field
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
+from pydantic import BaseModel, Field
 
 from agents.common.constants import K8S_CLIENT
 from services.k8s import IK8sClient
@@ -90,11 +90,9 @@ class CompanionState(BaseModel):
     )
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
-    next: str | None
+    next: str | None = None
     subtasks: list[SubTask] | None = []
-    error: str | None
-    # IK8sClient interface implements the method "model_dump" which returns None, so that no confidential
-    # information is stored in the checkpoint.
+    error: str | None = None
     k8s_client: IK8sClient | None = None
 
     def all_tasks_completed(self) -> bool:
