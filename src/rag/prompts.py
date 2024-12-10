@@ -52,7 +52,6 @@ Use the given context to answer the given query.
 1. Answer directly and specifically
 2. Use only information explicitly stated in the provided context
 3. Format code in code blocks with syntax highlighting
-4. For problems, state the problem, cause and its solution in a structured format
 4. Say "I don't know" if the context lacks relevant information
 </instructions>
 
