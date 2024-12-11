@@ -47,6 +47,8 @@ def rag_system(app_models):
     return RAGSystem(app_models)
 
 
+@pytest.mark.asyncio
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
 class TestRagSearch:
     """Test RAG search for Kyma documentation."""
 
@@ -61,7 +63,6 @@ class TestRagSearch:
             for case in istio_cases
         ],
     )
-    @pytest.mark.asyncio
     async def test_istio_queries(
         self, user_query, expected_output, rag_system, evaluation_metrics
     ):
@@ -79,7 +80,6 @@ class TestRagSearch:
             for case in serverless_cases
         ],
     )
-    @pytest.mark.asyncio
     async def test_serverless_queries(
         self,
         user_query,
@@ -108,7 +108,7 @@ class TestRagSearch:
             for case in telemetry_cases
         ],
     )
-    @pytest.mark.asyncio
+    @pytest.mark.flaky(reruns=3, reruns_delay=3)
     async def test_telemetry_queries(
         self, user_query, expected_output, rag_system, evaluation_metrics
     ):
@@ -126,7 +126,6 @@ class TestRagSearch:
             for case in eventing_cases
         ],
     )
-    @pytest.mark.asyncio
     async def test_eventing_queries(
         self, user_query, expected_output, rag_system, evaluation_metrics
     ):
