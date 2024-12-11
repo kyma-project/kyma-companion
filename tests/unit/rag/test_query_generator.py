@@ -4,7 +4,7 @@ import pytest
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from rag.prompts import QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE
+from rag.prompts import QUERY_GENERATOR_PROMPT_TEMPLATE
 from rag.query_generator import Queries, QueryGenerator
 from utils.models.factory import IModel
 
@@ -48,7 +48,7 @@ class TestQueryGenerator:
         assert len(generator.prompt.messages) == chain_steps_number
         assert (
             generator.prompt.messages[0].prompt.template
-            == QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE
+            == QUERY_GENERATOR_PROMPT_TEMPLATE
         )
         assert generator.prompt.messages[1].prompt.template == "Original query: {query}"
 
