@@ -1,13 +1,13 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 
-from agents.common.constants import K8S_CLIENT
+from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
 from services.k8s import IK8sClient
 
 
@@ -21,10 +21,11 @@ class SubTaskStatus(str, Enum):
 class SubTask(BaseModel):
     """Sub-task data model."""
 
-    description: str = Field(description="description of the task")
-    assigned_to: str = Field(description="agent to whom the task is assigned")
+    description: str = Field(
+        description="user query with original wording for the assigned agent"
+    )
+    assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]  # type: ignore
     status: str = Field(default=SubTaskStatus.PENDING)
-    result: str | None
 
     def complete(self) -> None:
         """Update the result of the task."""
@@ -64,11 +65,11 @@ class Plan(BaseModel):
     """Plan to follow in future"""
 
     subtasks: list[SubTask] | None = Field(
-        description="different steps/subtasks to follow, should be in sorted order"
+        description="different subtasks for user query"
     )
 
     response: str | None = Field(
-        description="direct response of planner if plan is unnecessary"
+        description="only if query is not related to Kyma and Kubernetes"
     )
 
 
