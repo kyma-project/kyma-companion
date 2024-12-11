@@ -130,7 +130,8 @@ Because the companion uses the FastAPI framework, read the following documentati
 
 ### Configuration
 
-For local development, LLMs can be configured inside the `config/models.yml` file.
+For local development, you can configure LLMs by modifying the `config/config.json` file.
+To use a configuration file from a different location, set the `CONFIG_PATH` environment variable to the path of your desired JSON configuration file.
 
 ## Code Checks
 
