@@ -38,9 +38,9 @@ Key Principles:
 - Focus solely on the key points raised in the query.
 
 Agent Classification:
-- "KymaAgent": Manages Kyma specific topics
-- "KubernetesAgent": Handles Kubernetes related queries
-- "Common": Covers all other general queries
+- "{kymaAgent}": Manages Kyma specific topics
+- "{kubernetesAgent}": Handles Kubernetes related queries
+- "{commonAgent}": Covers all other general queries
 
 
 Kyma terminologies: Kyma, Kubernetes, Serverless, Service Mesh, API Gateway, API Rule, Istio, Service Catalog, Application Connector, Eventing, Telemetry, Tracing, Logging, Kyma Runtime, module, Service Management.

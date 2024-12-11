@@ -11,7 +11,10 @@ from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.constants import (
+    COMMON,
     FINALIZER,
+    K8S_AGENT,
+    KYMA_AGENT,
     MESSAGES,
     NEXT,
     PLANNER,
@@ -127,10 +130,7 @@ class SupervisorAgent:
                 ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
             ]
-        ).partial(
-            members=self._get_members_str(),
-            output_format=self.plan_parser.get_format_instructions(),
-        )
+        ).partial(kymaAgent=KYMA_AGENT, kubernetesAgent=K8S_AGENT, commonAgent=COMMON)
         return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
