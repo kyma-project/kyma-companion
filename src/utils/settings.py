@@ -26,33 +26,29 @@ def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
 
-    config_path = Path(os.getenv("AICORE_HOME", default_config_path))
+    config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
-    if os.path.exists(config_path):
-        try:
-            # Load the configuration from the given path and set the environment variables.
-            with config_path.open() as file:
-                config_file = json.load(file)
+    try:
+        # Load the configuration from the given path and set the environment variables.
+        with config_path.open() as file:
+            config_file = json.load(file)
 
-                # Set environment variables for all keys except "models"
-                for key, value in config_file.items():
-                    if key != "models":  # Skip models
-                        os.environ[key] = str(value)
-        except json.JSONDecodeError as e:
-            logging.error(f"Invalid JSON format in config file {config_path}: {e}")
-            raise
-        except Exception as e:
-            logging.error(f"Error loading config from {config_path}: {e}")
-            raise
-    else:
-        if is_running_kubernetes():
-            logging.debug("Running in Kubernetes environment. Using ConfigMap.")
-        else:
-            logging.error(
-                f"Config file not found at {config_path}. Place the config file at the default location:"
-                f"{default_config_path} or set the AICORE_HOME environment variable."
-            )
-            raise FileNotFoundError
+            # Set environment variables for all keys except "models"
+            for key, value in config_file.items():
+                if key != "models":  # Skip models
+                    os.environ[key] = str(value)
+    except json.JSONDecodeError as e:
+        logging.error(f"Invalid JSON format in config file {config_path}: {e}")
+        raise
+    except FileNotFoundError:
+        logging.error(
+            f"Config file not found at {config_path}. Place the config file at the default location:"
+            f"{default_config_path} or set the CONFIG_PATH environment variable."
+        )
+        raise
+    except Exception as e:
+        logging.error(f"Error loading config from {config_path}: {e}")
+        raise
 
 
 if is_running_pytest():
