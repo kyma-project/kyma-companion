@@ -24,7 +24,7 @@ class SubTask(BaseModel):
     description: str = Field(description="description of the task")
     assigned_to: str = Field(description="agent to whom the task is assigned")
     status: str = Field(default=SubTaskStatus.PENDING)
-    result: str | None
+    result: str | None = None
 
     def complete(self) -> None:
         """Update the result of the task."""
