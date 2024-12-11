@@ -14,6 +14,7 @@ def is_running_pytest() -> bool:
     """
     return "pytest" in sys.modules
 
+
 def is_running_kubernetes() -> bool:
     """Check if the code is running in a Kubernetes environment.
     This is needed to identify if the code is running in a Kubernetes environment.
