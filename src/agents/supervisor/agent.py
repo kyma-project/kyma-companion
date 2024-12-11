@@ -130,7 +130,9 @@ class SupervisorAgent:
                 ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
             ]
-        ).partial(kymaAgent=KYMA_AGENT, kubernetesAgent=K8S_AGENT, commonAgent=COMMON)
+        ).partial(
+            kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
+        )
         return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
