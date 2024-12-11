@@ -2,7 +2,6 @@ from unittest.mock import Mock
 
 import pytest
 from langchain_core.documents import Document
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
@@ -44,11 +43,8 @@ class TestLLMReranker:
         # When
         reranker = LLMReranker(model=mock_model)
 
-        reranked_docs_parser = PydanticOutputParser(pydantic_object=RerankedDocs)
-        prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE).partial(
-            format_instructions=reranked_docs_parser.get_format_instructions()
-        )
-        expected_chain = prompt | mock_model.llm | reranked_docs_parser
+        prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
+        expected_chain = prompt | mock_model.llm.with_structured_output(RerankedDocs)
 
         # Then
         assert reranker is not None
