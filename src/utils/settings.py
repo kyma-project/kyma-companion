@@ -14,6 +14,12 @@ def is_running_pytest() -> bool:
     """
     return "pytest" in sys.modules
 
+def is_running_kubernetes() -> bool:
+    """Check if the code is running in a Kubernetes environment.
+    This is needed to identify if the code is running in a Kubernetes environment.
+    """
+    return "KUBERNETES_SERVICE_HOST" in os.environ
+
 
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
@@ -38,11 +44,14 @@ def load_env_from_json() -> None:
             logging.error(f"Error loading config from {config_path}: {e}")
             raise
     else:
-        logging.error(
-            f"Config file not found at {config_path}. Place the config file at the default location:"
-            f"{default_config_path} or set the AICORE_HOME environment variable."
-        )
-        # raise FileNotFoundError
+        if is_running_kubernetes():
+            logging.debug("Running in Kubernetes environment. Using ConfigMap.")
+        else:
+            logging.error(
+                f"Config file not found at {config_path}. Place the config file at the default location:"
+                f"{default_config_path} or set the AICORE_HOME environment variable."
+            )
+            raise FileNotFoundError
 
 
 if is_running_pytest():
