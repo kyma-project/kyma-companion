@@ -20,7 +20,7 @@ from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
-    PLANNER_PROMPT_STRUCTURED_OUTPUT,
+    PLANNER_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
@@ -124,7 +124,7 @@ class SupervisorAgent:
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:
         self.planner_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", PLANNER_PROMPT_STRUCTURED_OUTPUT),
+                ("system", PLANNER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         ).partial(

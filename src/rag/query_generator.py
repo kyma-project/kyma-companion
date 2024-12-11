@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from rag.prompts import (
     QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE,
-    QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE,
+    QUERY_GENERATOR_PROMPT_TEMPLATE,
 )
 from utils import logging
 from utils.models.factory import IModel
@@ -40,7 +40,7 @@ class QueryGenerator:
         # self.queries_parser = PydanticOutputParser(pydantic_object=Queries)
         self.prompt = prompt or ChatPromptTemplate.from_messages(
             [
-                ("system", QUERY_GENERATOR_PROMPT_STRUCTURED_OUTPUT_TEMPLATE),
+                ("system", QUERY_GENERATOR_PROMPT_TEMPLATE),
                 # TODO: messages (conversation history) will be added later here
                 ("user", "Original query: {query}"),
                 ("system", QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE),
