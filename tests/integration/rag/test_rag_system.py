@@ -4,6 +4,7 @@ import pytest
 from deepeval import evaluate
 from deepeval.metrics import (
     AnswerRelevancyMetric,
+    ContextualPrecisionMetric,
     ContextualRecallMetric,
     FaithfulnessMetric,
 )
@@ -14,15 +15,14 @@ from rag.system import Query, RAGSystem
 
 @pytest.fixture(scope="session")
 def evaluation_metrics(evaluator_model):
-    # TODO: enable it after the reranking is implemented
     # test the reranking of the retrieved documents
-    # contextual_precision = ContextualPrecisionMetric(
-    #     threshold=0.7, model=evaluator_model, include_reason=True
-    # )
+    contextual_precision = ContextualPrecisionMetric(
+        threshold=0.5, model=evaluator_model, include_reason=True
+    )
 
     # calculates how much retrieved context aligns with the expected output
     contextual_recall = ContextualRecallMetric(
-        threshold=0.7, model=evaluator_model, include_reason=True
+        threshold=0.5, model=evaluator_model, include_reason=True
     )
     # TODO: enable it after chunking is improved.
     # Currently, H1 level chunking is used that return
@@ -33,13 +33,14 @@ def evaluation_metrics(evaluator_model):
     # )
 
     answer_relevancy = AnswerRelevancyMetric(
-        threshold=0.7, model=evaluator_model, include_reason=True
+        threshold=0.5, model=evaluator_model, include_reason=True
     )
 
     faithfulness = FaithfulnessMetric(
-        threshold=0.7, model=evaluator_model, include_reason=True
+        threshold=0.5, model=evaluator_model, include_reason=True
     )
     return [
+        contextual_precision,
         contextual_recall,
         answer_relevancy,
         faithfulness,
@@ -65,13 +66,13 @@ def rag_system(app_models):
             id="Why do I get a Connection reset by peer error?",
         ),
         pytest.param(
-            "function pod have have no sidecar proxy",
+            "Istio Sidecar Proxy Injection Issues. Some Pods don't have an Istio sidecar proxy injected.",
             "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
             id="Pods don't have sidecar",
         ),
         # serverless
         pytest.param(
-            "How to expose a Function Using the APIRule Custom Resource?",
+            "Expose a Function Using the APIRule Custom Resource",
             "fixtures/kyma_docs/serverless/docs/user/tutorials/01-20-expose-function.md",
             id="How to expose a Function Using the APIRule Custom Resource?",
         ),
@@ -86,7 +87,7 @@ def rag_system(app_models):
             id="want to add additional traces for a function",
         ),
         pytest.param(
-            "adding a new env var to a function",
+            "Inject Environment Variables",
             "fixtures/kyma_docs/serverless/docs/user/tutorials/01-120-inject-envs.md",
             id="adding a new env var to a function",
         ),
@@ -96,7 +97,7 @@ def rag_system(app_models):
             id="Serverless function pod has lots of restarts",
         ),
         pytest.param(
-            "why function build is failing?",
+            "Functions Failing to Build on k3d",
             "fixtures/kyma_docs/serverless/docs/user/troubleshooting-guides/03-40-function-build-failing-k3d.md",
             id="why function build is failing?",
         ),

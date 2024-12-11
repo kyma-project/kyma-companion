@@ -135,7 +135,7 @@ jobs:
 
       - name: Companion Deploy - Create ConfigMap
         run: |
-          echo "${{ secrets.COMPANION_CONFIGMAP }}" | base64 -d > scripts/k8s/companion-configmap.yaml
+          echo "${{ secrets.COMPANION_CONFIGMAP_JSON }}" | base64 -d > scripts/k8s/companion-configmap.yaml
           kubectl apply -f scripts/k8s/companion-configmap.yaml
           rm -f scripts/k8s/companion-configmap.yaml
 
