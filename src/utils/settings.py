@@ -10,7 +10,7 @@ from dotenv import find_dotenv
 
 def is_running_pytest() -> bool:
     """Check if the code is running with pytest.
-    This is needed to identify if tests are running.
+    This is needed to identify if tests are running. :)
     """
     return "pytest" in sys.modules
 
