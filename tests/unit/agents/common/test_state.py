@@ -8,10 +8,16 @@ class TestSubTask:
     @pytest.mark.parametrize(
         "description, assigned_to, status, result, expected_status",
         [
-            ("Task 1", "Agent A", SubTaskStatus.PENDING, None, SubTaskStatus.COMPLETED),
+            (
+                "Task 1",
+                "KymaAgent",
+                SubTaskStatus.PENDING,
+                None,
+                SubTaskStatus.COMPLETED,
+            ),
             (
                 "Task 2",
-                "Agent B",
+                "KymaAgent",
                 SubTaskStatus.PENDING,
                 "Result",
                 SubTaskStatus.COMPLETED,
@@ -40,12 +46,12 @@ class TestAgentState:
                 [
                     SubTask(
                         description="Task 1",
-                        assigned_to="Agent A",
+                        assigned_to="KymaAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
                     SubTask(
                         description="Task 2",
-                        assigned_to="Agent B",
+                        assigned_to="KubernetesAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
                 ],
@@ -58,12 +64,12 @@ class TestAgentState:
                 [
                     SubTask(
                         description="Task 1",
-                        assigned_to="Agent A",
+                        assigned_to="KymaAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
                     SubTask(
                         description="Task 2",
-                        assigned_to="Agent B",
+                        assigned_to="KubernetesAgent",
                         status=SubTaskStatus.PENDING,
                     ),
                 ],

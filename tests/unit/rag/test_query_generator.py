@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from rag.prompts import QUERY_GENERATOR_PROMPT_TEMPLATE
@@ -37,7 +36,6 @@ class TestQueryGenerator:
         # Then
         assert generator.model == mock_model
         assert generator.prompt == prompt
-        assert isinstance(generator.queries_parser, PydanticOutputParser)
         assert generator._chain is not None
 
     def test_init_default_prompt(self, mock_model):
@@ -66,11 +64,9 @@ class TestQueryGenerator:
         # Then
         assert chain is not None
         # Verify chain composition
-        chain_steps_number = 3  # PromptTemplate | Model | OutputParser
+        chain_steps_number = 2  # PromptTemplate | Model.with_structured_output()
         assert len(chain.steps) == chain_steps_number
         assert isinstance(chain.steps[0], ChatPromptTemplate)
-        assert chain.steps[1] == mock_llm
-        assert isinstance(chain.steps[2], PydanticOutputParser)
 
     @pytest.mark.parametrize(
         "query, chain_output, expected_output, expected_error",
