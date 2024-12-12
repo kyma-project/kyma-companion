@@ -15,13 +15,6 @@ def is_running_pytest() -> bool:
     return "pytest" in sys.modules
 
 
-def is_running_kubernetes() -> bool:
-    """Check if the code is running in a Kubernetes environment.
-    This is needed to identify if the code is running in a Kubernetes environment.
-    """
-    return "KUBERNETES_SERVICE_HOST" in os.environ
-
-
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
