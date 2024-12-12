@@ -1,5 +1,7 @@
+import json
 import re
 import time
+import uuid
 from collections.abc import Generator
 
 import tiktoken
@@ -12,11 +14,13 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from utils.documents import load_documents
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE
+from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
 
 logger = get_logger(__name__)
+
+HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
 
 
 def remove_parentheses(text: str) -> str:
@@ -77,8 +81,8 @@ class AdaptiveSplitMarkdownIndexer:
         connection: dbapi.Connection,
         table_name: str | None = None,
         headers_to_split_on: list[tuple[str, str]] | None = None,
-        smallest_chunk_length: int = 20,
-        largest_chunk_length: int = 1000,
+        min_chunk_token_count: int = 20,
+        max_chunk_token_count: int = 1000,
     ):
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
@@ -87,8 +91,8 @@ class AdaptiveSplitMarkdownIndexer:
         self.docs_path = docs_path
         self.table_name = table_name
         self.embedding = embedding
-        self.smallest_chunk_length = smallest_chunk_length
-        self.largest_chunk_length = largest_chunk_length
+        self.min_chunk_token_count = min_chunk_token_count
+        self.max_chunk_token_count = max_chunk_token_count
         self.chunk_size = 0
 
         self.db = HanaDB(
@@ -109,74 +113,78 @@ class AdaptiveSplitMarkdownIndexer:
             headers_to_split_on=[HEADER1, HEADER2, HEADER3]
         )
 
-    def _build_title(self, s_doc: Document) -> str:
+    def _build_title(self, doc: Document) -> str:
         # the following lines build the combined title from the headers H1, H2, H3
-        header1 = remove_header_brackets(s_doc.metadata.get("Header1", "")).strip()
-        header2 = remove_header_brackets(s_doc.metadata.get("Header2", "")).strip()
-        header3 = remove_header_brackets(s_doc.metadata.get("Header3", "")).strip()
-        return (
-            (" - ".join([header1, header2, header3]))
-            .strip()
-            .strip("-")
-            .strip()
-            .strip("-")
-            .strip()
+        header1 = remove_header_brackets(doc.metadata.get("Header1", "")).strip()
+        header2 = remove_header_brackets(doc.metadata.get("Header2", "")).strip()
+        header3 = remove_header_brackets(doc.metadata.get("Header3", "")).strip()
+
+        # Join non-empty headers with " - "
+        title_parts = [part for part in [header1, header2, header3] if part]
+        title = " - ".join(title_parts)
+
+        return title
+
+    def _process_doc(
+        self,
+        doc: Document,
+        level: int = 0,
+        parent_title: str = "",
+    ) -> Generator[Document, None, None]:
+        tokens = len(encoding.encode(doc.page_content))
+
+        if tokens <= self.min_chunk_token_count:
+            return
+
+        # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
+        if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
+            yield doc
+            return
+        # Split document using current header level
+        markdown_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=HEADER_LEVELS[level], strip_headers=False
         )
+        splitted_docs = markdown_splitter.split_text(doc.page_content)
+
+        for sub_doc in splitted_docs:
+            if not sub_doc.metadata:
+                print("  skip chunk - no metadata")
+                continue
+
+            title = self._build_title(sub_doc)
+            if not title:
+                print("skip chunk - no title")
+                continue
+
+            if parent_title != title and (parent_title + " - ") not in title:
+                title = parent_title + " - " + title if parent_title else title
+
+            chunk = Document(
+                page_content=sub_doc.page_content,
+                metadata={
+                    "source": doc.metadata.get("source", ""),
+                    "title": title,
+                    "module": "Kyma Module",
+                    "version": "1.2.1",
+                },
+            )
+
+            # Recursively process this chunk with next header level
+            yield from self._process_doc(
+                chunk, level + 1, parent_title=title if level == 0 else parent_title
+            )
 
     def get_document_chunks(
         self, docs_to_chunk: list[Document]
     ) -> Generator[Document, None, None]:
-        """Recursively chunk documents based on token length and headers."""
-        header_levels = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
-
-        def process_doc(
-            doc: Document, level: int = 0, parent_title: str = ""
-        ) -> Generator[Document, None, None]:
-            tokens = len(encoding.encode(doc.page_content))
-
-            if tokens <= self.smallest_chunk_length:
-                return
-
-            # If the document is smaller than the largest chunk length or the H3 level is reached, yield the document
-            if tokens <= self.largest_chunk_length or level >= len(header_levels):
-                yield doc
-                return
-            # Split document using current header level
-            markdown_splitter = MarkdownHeaderTextSplitter(
-                headers_to_split_on=header_levels[level], strip_headers=False
-            )
-            splitted_docs = markdown_splitter.split_text(doc.page_content)
-
-            for s_doc in splitted_docs:
-                if not s_doc.metadata:
-                    print("  skip chunk - no metadata")
-                    continue
-
-                title = self._build_title(s_doc)
-                if not title:
-                    print("skip chunk - no title")
-                    continue
-
-                if parent_title != title and (parent_title + " - ") not in title:
-                    title = parent_title + " - " + title if parent_title else title
-
-                chunk = Document(
-                    page_content=s_doc.page_content,
-                    metadata={
-                        "source": doc.metadata.get("source", ""),
-                        "title": title,
-                        "module": "Kyma Module",
-                        "version": "1.2.1",
-                    },
-                )
-
-                # Recursively process this chunk with next header level
-                yield from process_doc(
-                    chunk, level + 1, parent_title=title if level == 0 else parent_title
-                )
+        """
+        Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
+        It splits the documents recursively if larger than given token number.
+        It stops if the header level H3 is reached despite the token count.
+        """
 
         for doc in docs_to_chunk:
-            yield from process_doc(doc)
+            yield from self._process_doc(doc)
 
     def process_document_titles(
         self, docs: list[Document]
@@ -192,7 +200,7 @@ class AdaptiveSplitMarkdownIndexer:
             else:
                 yield Document(
                     page_content=(
-                        f"# {chunk.metadata['title']}\n\n{chunk.page_content.split('\n', 1)[-1]}"
+                        f"# {chunk.metadata['title']}\n{chunk.page_content.split('\n', 1)[-1]}"
                         if chunk.page_content.strip().startswith(("#", "##", "###"))
                         else f"# {chunk.metadata['title']}\n\n{chunk.page_content}"
                     ),
@@ -221,33 +229,50 @@ class AdaptiveSplitMarkdownIndexer:
         batch = []
         batch_count = 0
 
-        try:
-            for chunk in all_chunks:
-                batch.append(chunk)
-                if len(batch) >= CHUNKS_BATCH_SIZE:
-                    # Process the current batch
+        if INDEX_TO_FILE:
+            # write pretty to file
+            timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+            uuid_str = str(uuid.uuid4())
+            output_file_path = f"Kyma_Documentation_chunks_{timestamp}_{uuid_str}.json"
+            with open(output_file_path, "w", encoding="utf-8") as out:
+                # Convert Documents to dictionaries
+                serializable_chunks = [
+                    {"page_content": chunk.page_content, "metadata": chunk.metadata}
+                    for chunk in all_chunks
+                ]
+                json.dump({"kyma_docs": serializable_chunks}, fp=out, indent=2)
+        else:
+            try:
+                for chunk in all_chunks:
+                    batch.append(chunk)
+                    if len(batch) >= CHUNKS_BATCH_SIZE:
+                        # Process the current batch
+                        self.db.add_documents(batch)
+                        batch_count += 1
+                        logger.info(
+                            f"Indexed batch {batch_count} with {len(batch)} chunks"
+                        )
+
+                        # Clear the batch
+                        batch = []
+
+                        # Wait before processing next batch
+                        time.sleep(3)
+
+                # Process any remaining documents in the final batch
+                if batch:
                     self.db.add_documents(batch)
                     batch_count += 1
-                    logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
+                    logger.info(
+                        f"Indexed final batch {batch_count} with {len(batch)} chunks"
+                    )
 
-                    # Clear the batch
-                    batch = []
-
-                    # Wait before processing next batch
-                    time.sleep(3)
-
-            # Process any remaining documents in the final batch
-            if batch:
-                self.db.add_documents(batch)
-                batch_count += 1
-                logger.info(
-                    f"Indexed final batch {batch_count} with {len(batch)} chunks"
+            except Exception as e:
+                logger.error(
+                    f"Error while storing documents batch {batch_count + 1} in HanaDB: {str(e)}"
                 )
+                raise
 
-        except Exception as e:
-            logger.error(
-                f"Error while storing documents batch {batch_count + 1} in HanaDB: {str(e)}"
+            logger.info(
+                f"Successfully indexed {self.chunk_size} markdown files chunks."
             )
-            raise
-
-        logger.info(f"Successfully indexed {self.chunk_size} markdown files chunks.")

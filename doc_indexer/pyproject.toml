@@ -2,7 +2,19 @@
 name = "doc_indexer"
 version = "0.1.0"
 description = "Indexes Kyma documents for RAG"
-authors = []
+authors = [
+    "Muhammad Faizan m.faizan@sap.com",
+    "Aleksei Chernyshov aleksei.chernyshov@sap.com",
+    "Carina Kothe carina.kothe@sap.com",
+    "Friedrich Wilken jens.wilken@sap.com",
+    "Tibor Kiss tibor.kiss01@sap.com",
+    "Marco Bebway marco.bebway@sap.com",
+    "Piotr Bochynski piotr.bochynski@sap.com",
+    "Mansur Uralov m.uralov@sap.com",
+]
+readme = "README.md"
+packages = [{ include = "src" }]
+license = "Apache-2.0"
 package-mode = false
 
 [tool.poetry.dependencies]
@@ -29,7 +41,7 @@ pythonpath = [
     "src"
 ]
 testpaths = [
-    "tests",
+    "tests"
 ]
 
 [tool.poe.tasks]
