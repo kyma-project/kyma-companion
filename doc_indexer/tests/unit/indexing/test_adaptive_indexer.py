@@ -2,6 +2,13 @@ from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from indexing.adaptive_indexer import (
+    AdaptiveSplitMarkdownIndexer,
+    remove_braces,
+    remove_brackets,
+    remove_header_brackets,
+    remove_parentheses,
+)
 from langchain_core.documents import Document
 
 

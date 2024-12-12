@@ -1,7 +1,6 @@
 from typing import Any, Literal, cast
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -12,14 +11,20 @@ from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.constants import (
+    COMMON,
     FINALIZER,
+    K8S_AGENT,
+    KYMA_AGENT,
     MESSAGES,
     NEXT,
     PLANNER,
 )
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
-from agents.supervisor.prompts import FINALIZER_PROMPT, PLANNER_PROMPT
+from agents.supervisor.prompts import (
+    FINALIZER_PROMPT,
+    PLANNER_PROMPT,
+)
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
     filter_messages_via_checks,
@@ -126,12 +131,11 @@ class SupervisorAgent:
                 MessagesPlaceholder(variable_name="messages"),
             ]
         ).partial(
-            members=self._get_members_str(),
-            output_format=self.plan_parser.get_format_instructions(),
+            kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
         )
-        return self.planner_prompt | model.llm  # type: ignore
+        return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
-    async def _invoke_planner(self, state: SupervisorState) -> AIMessage:
+    async def _invoke_planner(self, state: SupervisorState) -> Plan:
         """Invoke the planner."""
 
         filtered_messages = filter_messages_via_checks(
@@ -139,12 +143,12 @@ class SupervisorAgent:
         )
         reduces_messages = filter_most_recent_messages(filtered_messages, 10)
 
-        response: AIMessage = await self._planner_chain.ainvoke(
+        plan: Plan = await self._planner_chain.ainvoke(
             input={
                 "messages": reduces_messages,
             },
         )
-        return response
+        return plan
 
     async def _plan(self, state: SupervisorState) -> dict[str, Any]:
         """
@@ -154,29 +158,17 @@ class SupervisorAgent:
         state.error = None
 
         try:
-            plan_response = await self._invoke_planner(
+            plan = await self._invoke_planner(
                 state,  # last message is the user query
             )
-            # get the content of the AIMessage
-            response_content = str(plan_response.content)
 
-            try:
-                # try to parse the JSON formatted Planner response into a Plan object
-                plan = self.plan_parser.parse(response_content)
-                # if the Planner responds directly, return the response and exit the graph
-                if plan.response:
-                    return create_node_output(
-                        message=AIMessage(content=plan.response, name=PLANNER),
-                        next=END,
-                    )
-            except OutputParserException as ope:
-                logger.debug(f"Problem in parsing the planner response: {ope}")
-                # If 'response' field of the content of plan_response is missing due to ModelType inconsistency,
-                # the response is read from the plan_response content.
+            # return the response if planner responded directly
+            if plan.response:
                 return create_node_output(
-                    message=AIMessage(content=response_content, name=PLANNER),
+                    message=AIMessage(content=plan.response, name=PLANNER),
                     next=END,
                 )
+
             # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
             if not plan.subtasks:
                 raise Exception(

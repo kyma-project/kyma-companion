@@ -217,18 +217,6 @@ class AdaptiveSplitMarkdownIndexer:
         docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
-        logger.info("Deleting existing index in HanaDB...")
-        try:
-            self.db.delete(filter={})
-        except Exception:
-            logger.exception("Error while deleting existing documents in HanaDB.")
-            raise
-        logger.info("Successfully deleted existing documents in HanaDB.")
-
-        logger.info("Indexing and storing indexes to HanaDB...")
-        batch = []
-        batch_count = 0
-
         if INDEX_TO_FILE:
             # write pretty to file
             timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -241,7 +229,19 @@ class AdaptiveSplitMarkdownIndexer:
                     for chunk in all_chunks
                 ]
                 json.dump({"kyma_docs": serializable_chunks}, fp=out, indent=2)
+            logger.info(f"Chunks are stored in the file: {output_file_path}")
         else:
+            logger.info("Deleting existing index in HanaDB...")
+            try:
+                self.db.delete(filter={})
+            except Exception:
+                logger.exception("Error while deleting existing documents in HanaDB.")
+                raise
+            logger.info("Successfully deleted existing documents in HanaDB.")
+
+            logger.info("Indexing and storing indexes to HanaDB...")
+            batch = []
+            batch_count = 0
             try:
                 for chunk in all_chunks:
                     batch.append(chunk)

@@ -22,19 +22,9 @@ Guidelines for query generation:
 - Use Kyma's technical terminology accurately
 - Include relevant component names (e.g., Istio, NATS, Eventing, Service Mesh)
 
-Format your response as a JSON list of queries.
-{format_instructions}
 
-Examples:
-
-User Query: "How to set up Kyma for my project?"
-Generated Queries: [
-    "How to install Kyma?",
-    "Step-by-step guide to install open-source Kyma",
-    "Setting up Kyma runtime",
-    "Kyma installation prerequisites and steps"
-]
 """
+
 
 QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE = """
 Based on the original query, generate {num_queries} alternative queries
