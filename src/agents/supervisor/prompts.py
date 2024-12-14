@@ -62,6 +62,7 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 3. Finally, generate a final response that answers the user query based on the synthesized responses.
 
 ## Guidelines
+- Include provided YAMLS in the final response.
 - Do not rely strictly on exact wording, but focus on the underlying meaning and intent. 
 - The answer should be approved if it fully addresses the user's query, even if it uses different words or rephrases the question.
 - Avoid making up information if an agent cannot answer a specific part of the query.
