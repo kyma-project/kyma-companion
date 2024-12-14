@@ -68,6 +68,33 @@ def remove_header_brackets(input_text: str) -> str:
     return temp_text
 
 
+def extract_first_title(text: str) -> str | None:
+    """Extract the first markdown header title from the text.
+
+    Args:
+        text: The markdown text to extract the title from.
+
+    Returns:
+        The title text without the header markers (#), or None if no title is found.
+
+    Examples:
+        >>> extract_first_title("# Title 1\\nContent")
+        'Title 1'
+        >>> extract_first_title("## Subtitle\\nContent")
+        'Subtitle'
+        >>> extract_first_title("No title here")
+        None
+        >>> extract_first_title("  # Title with spaces\\nContent")
+        'Title with spaces'
+    """
+    # Match any header level (# to ######) with optional leading whitespace
+    header_pattern = re.compile(r"^\s*#{1,6}\s+(.+?)(?:\n|$)", re.MULTILINE)
+    match = header_pattern.search(text)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
 class AdaptiveSplitMarkdownIndexer:
     """
     Markdown indexer that adaptively splits documents based on token size thresholds,
@@ -138,7 +165,16 @@ class AdaptiveSplitMarkdownIndexer:
 
         # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
         if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
-            yield doc
+            yield Document(
+                page_content=doc.page_content,
+                metadata={
+                    "source": doc.metadata.get("source", ""),
+                    "title": doc.metadata.get("title")
+                    or extract_first_title(doc.page_content),
+                    "module": "Kyma Module",
+                    "version": "1.2.1",
+                },
+            )
             return
         # Split document using current header level
         markdown_splitter = MarkdownHeaderTextSplitter(

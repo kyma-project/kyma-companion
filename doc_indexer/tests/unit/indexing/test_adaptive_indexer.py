@@ -1,9 +1,9 @@
-from textwrap import dedent
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from indexing.adaptive_indexer import (
     AdaptiveSplitMarkdownIndexer,
+    extract_first_title,
     remove_braces,
     remove_brackets,
     remove_header_brackets,
@@ -43,7 +43,7 @@ def indexer(mock_embedding, mock_connection, mock_hana_db):
         connection=mock_connection,
         table_name="test_table",
         min_chunk_token_count=1,
-        max_chunk_token_count=10,
+        max_chunk_token_count=30,
     )
 
 
@@ -118,6 +118,26 @@ def test_remove_parentheses(input_text: str, expected: str):
 )
 def test_remove_header_brackets(input_text: str, expected: str):
     assert remove_header_brackets(input_text) == expected
+
+
+@pytest.mark.parametrize(
+    "given_text,wanted_title",
+    [
+        ("# Title 1\nContent 1 ## Subtitle 1\n\n Subcontent 1", "Title 1"),
+        ("## Subtitle 1\n\n Subcontent 1 ### Subsubtitle 1", "Subtitle 1"),
+        ("### Subsubtitle 1\nSubsubcontent 1", "Subsubtitle 1"),
+        ("#### Subsubsubtitle 1\nSubsubsubcontent 1", "Subsubsubtitle 1"),
+        ("No title here", None),
+        ("", None),
+        ("# Title with # in middle\nContent", "Title with # in middle"),
+        ("#Invalid title", None),  # No space after #
+        ("  # Title with leading spaces\nContent", "Title with leading spaces"),
+        ("# Title with trailing spaces  \nContent", "Title with trailing spaces"),
+        ("# Multiple\n# Headers\n", "Multiple"),  # Takes first header
+    ],
+)
+def test_extract_first_title(given_text: str, wanted_title: str | None):
+    assert extract_first_title(given_text) == wanted_title
 
 
 class TestAdaptiveSplitMarkdownIndexer:
@@ -243,106 +263,463 @@ class TestAdaptiveSplitMarkdownIndexer:
                     assert processed_docs[i].metadata[key] == value
 
     @pytest.mark.parametrize(
-        "docs",
+        "given_docs,wanted_results",
         [
             (
+                # single doc: not chunked as token count is smaller than min_chunk_token_count
                 [
                     Document(
-                        page_content=dedent(
-                            """
-                    # Title
-                    Title content
-
-                    ## Subtitle
-                    Subtitle content
-
-                    ### Subsubtitle
-                    Subsubtitle content
-
-                    #### Subsubsubtitle
-                    Subsubsubtitle content
-                    """
-                        )
+                        page_content=(
+                            "# Title\n"
+                            "Title content\n\n"
+                            "## Subtitle\n"
+                            "Subtitle content\n\n"
+                            "### Subsubtitle\n"
+                            "Subsubtitle content\n\n"
+                            "#### Subsubsubtitle\n"
+                            "Subsubsubtitle content"
+                        ),
+                        metadata={
+                            "source": "test1.md",
+                        },
+                    ),
+                ],
+                [
+                    Document(
+                        page_content=(
+                            "# Title\n"
+                            "Title content\n\n"
+                            "## Subtitle\n"
+                            "Subtitle content\n\n"
+                            "### Subsubtitle\n"
+                            "Subsubtitle content\n\n"
+                            "#### Subsubsubtitle\n"
+                            "Subsubsubtitle content"
+                        ),
+                        metadata={
+                            "source": "test1.md",
+                            "title": "Title",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                ],
+            ),
+            (
+                # single doc: chunk til H2 (##) header level
+                [
+                    Document(
+                        page_content=(
+                            "# Title 1\n"
+                            "Title content for testing ...\n\n"
+                            "## Subtitle 1\n"
+                            "Subtitle content for testing ...\n\n"
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle conten\n\n"
+                            "# Title 2\n"
+                            "Title2 content for testing ...\n\n"
+                            "## Subtitle 2\n"
+                            "Subtitle2 content for testing ...\n\n"
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ...\n\n"
+                        ),
+                        metadata={"source": "test2.md"},
+                    ),
+                ],
+                [
+                    Document(
+                        page_content="# Title 1\nTitle content for testing ...",
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
                     ),
                     Document(
-                        page_content=dedent(
-                            """
-                    # Title
-                    Title content
-
-                    ## Subtitle
-                    Subtitle content
-
-                    ### Subsubtitle
-                    Subsubtitle content
-
-                    #### Subsubsubtitle
-                    Subsubsubtitle content
-
-                    # Title2
-                    Title2 content
-
-                    ## Subtitle2
-                    Subtitle2 content
-
-                    ### Subsubtitle2
-                    Subsubtitle2 content
-
-                    #### Subsubsubtitle2
-                    Subsubsubtitle2 content
-                    """
-                        )
+                        page_content=(
+                            "## Subtitle 1\n"
+                            "Subtitle content for testing ...\n"
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle conten"
+                        ),
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 1 - Subtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
                     ),
                     Document(
-                        page_content=dedent(
-                            """
-                    # Title
-                    Title content
-                    
-                    ## Subtitle
-                    Subtitle content
-                    
-                    ### Subsubtitle
-                    Subsubtitle content
-                    
-                    #### Subsubsubtitle
-                    Subsubsubtitle content
-                    
-                    # Title2
-                    Title2 content
-                    
-                    ## Subtitle2
-                    Subtitle2 content
-                    
-                    ### Subsubtitle2
-                    Subsubtitle2 content
-                    
-                    #### Subsubsubtitle2
-                    Subsubsubtitle2 content
-                    
-                    # Title3
-                    Title3 content
-                    
-                    ## Subtitle3
-                    Subtitle3 content
-                    
-                    ### Subsubtitle3
-                    Subsubtitle3 content
-                    
-                    #### Subsubsubtitle3
-                    Subsubsubtitle3 content
-                    """
-                        )
+                        page_content="# Title 2\nTitle2 content for testing ...",
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
                     ),
-                ]
+                    Document(
+                        page_content=(
+                            "## Subtitle 2\n"
+                            "Subtitle2 content for testing ...\n"
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 2 - Subtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                ],
+            ),
+            (
+                # single doc: chunk til H3 (###) header level
+                [
+                    Document(
+                        page_content=(
+                            "# Title 1\n"
+                            "Title content for testing ...\n\n"
+                            "## Subtitle 1\n"
+                            "Subtitle content for testing ...\n\n"
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle content for testing ...\n\n"
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle content for testing ...\n\n"
+                            "# Title 2\n"
+                            "Title2 content for testing ...\n\n"
+                            "## Subtitle 2\n"
+                            "Subtitle2 content for testing ...\n\n"
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ...\n\n"
+                            "#### Subsubsubtitle 2\n"
+                            "Subsubsubtitle2 content for testing ...\n\n"
+                            "# Title 3\n"
+                            "Title3 content for testing ...\n\n"
+                            "## Subtitle 3\n"
+                            "Subtitle3 content for testing ...\n\n"
+                            "### Subsubtitle 3\n"
+                            "Subsubtitle3 content for testing ...\n\n"
+                            "#### Subsubsubtitle 3\n"
+                            "Subsubsubtitle3 content for testing ..."
+                        ),
+                        metadata={"source": "test3.md"},
+                    ),
+                ],
+                [
+                    Document(
+                        page_content="# Title 1\nTitle content for testing ...",
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "## Subtitle 1\n" "Subtitle content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 1 - Subtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle content for testing ...\n"  # why '\n\n' not kept?
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="# Title 2\nTitle2 content for testing ...",
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="## Subtitle 2\nSubtitle2 content for testing ...",
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 2 - Subtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ...\n"  # why '\n\n' not kept?
+                            "#### Subsubsubtitle 2\n"
+                            "Subsubsubtitle2 content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="# Title 3\nTitle3 content for testing ...",
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 3",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="## Subtitle 3\nSubtitle3 content for testing ...",
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 3 - Subtitle 3",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 3\n"
+                            "Subsubtitle3 content for testing ...\n"  # why '\n\n' not kept?
+                            "#### Subsubsubtitle 3\n"
+                            "Subsubsubtitle3 content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test3.md",
+                            "title": "Title 3 - Subtitle 3 - Subsubtitle 3",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                ],
+            ),
+            (
+                # multiple docs
+                [
+                    Document(
+                        page_content=(
+                            "# Title\n"
+                            "Title content\n\n"
+                            "## Subtitle\n"
+                            "Subtitle content\n\n"
+                            "### Subsubtitle\n"
+                            "Subsubtitle content\n\n"
+                            "#### Subsubsubtitle\n"
+                            "Subsubsubtitle content"
+                        ),
+                        metadata={
+                            "source": "test1.md",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "# Title 1\n"
+                            "Title content for testing ...\n\n"
+                            "## Subtitle 1\n"
+                            "Subtitle content for testing ...\n\n"
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle content for testing ...\n\n"
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle content for testing ...\n\n"
+                            "# Title 2\n"
+                            "Title2 content for testing ...\n\n"
+                            "## Subtitle 2\n"
+                            "Subtitle2 content for testing ...\n\n"
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ...\n\n"
+                            "#### Subsubsubtitle 2\n"
+                            "Subsubsubtitle2 content for testing ..."
+                        ),
+                        metadata={"source": "test2.md"},
+                    ),
+                ],
+                [
+                    Document(
+                        page_content=(
+                            "# Title\n"
+                            "Title content\n\n"
+                            "## Subtitle\n"
+                            "Subtitle content\n\n"
+                            "### Subsubtitle\n"
+                            "Subsubtitle content\n\n"
+                            "#### Subsubsubtitle\n"
+                            "Subsubsubtitle content"
+                        ),
+                        metadata={
+                            "source": "test1.md",
+                            "title": "Title",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="# Title 1\nTitle content for testing ...",
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "## Subtitle 1\n" "Subtitle content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 1 - Subtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle content for testing ...\n"  # why '\n\n' not kept?
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="# Title 2\nTitle2 content for testing ...",
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="## Subtitle 2\nSubtitle2 content for testing ...",
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 2 - Subtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 2\n"
+                            "Subsubtitle2 content for testing ...\n"  # why '\n\n' not kept?
+                            "#### Subsubsubtitle 2\n"
+                            "Subsubsubtitle2 content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test2.md",
+                            "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                ],
+            ),
+            (
+                # when conent contains #, ## or ###, the chunk is not split
+                [
+                    Document(
+                        page_content=(
+                            "# Title 1\n"
+                            "Title 1 content for testing ...\n\n"
+                            "## Subtitle 1\n"
+                            "Subtitle 1 content for testing ...\n"
+                            "Run the following command:\n"
+                            "$ kubectl get pods # this lists the pods in the cluster\n"
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle 1 content for testing:\n"
+                            "Here is the the hello world Python code:\n"
+                            "```python\n"
+                            "print('Hello, World!') # prints 'Hello, World!' to the console\n"
+                            "```\n\n"
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle 1 content for testing ...\n\n"
+                            "## Subtitle 2\n"
+                            "Subtitle 2 content for testing ..."
+                        ),
+                        metadata={"source": "test4.md"},
+                    ),
+                ],
+                [
+                    Document(
+                        page_content="# Title 1\nTitle 1 content for testing ...",
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "## Subtitle 1\n"
+                            "Subtitle 1 content for testing ...\n"
+                            "Run the following command:\n"
+                            "$ kubectl get pods # this lists the pods in the cluster"
+                        ),
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1 - Subtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content=(
+                            "### Subsubtitle 1\n"
+                            "Subsubtitle 1 content for testing:\n"
+                            "Here is the the hello world Python code:\n"
+                            "```python\n"
+                            "print('Hello, World!') # prints 'Hello, World!' to the console\n"
+                            "```\n"
+                            "#### Subsubsubtitle 1\n"
+                            "Subsubsubtitle 1 content for testing ..."
+                        ),
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                    Document(
+                        page_content="## Subtitle 2\nSubtitle 2 content for testing ...",
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1 - Subtitle 2",
+                            "module": "Kyma Module",
+                            "version": "1.2.1",
+                        },
+                    ),
+                ],
             ),
         ],
     )
-    def test_get_document_chunks(self, indexer, docs):
-        chunks = indexer.get_document_chunks(docs)
-        print("\n")
-        for chunk in chunks:
-            assert chunk is not None
-            print(f"Title: {chunk.metadata.get("title")}")
-            print(chunk.page_content)
-            print("\n-------------------\n")
+    def test_get_document_chunks(self, indexer, given_docs, wanted_results):
+        # When
+        chunks = [chunk for chunk in indexer.get_document_chunks(given_docs)]
+
+        # Then:
+        # Compare the actual chunks with expected results
+        assert chunks == wanted_results
