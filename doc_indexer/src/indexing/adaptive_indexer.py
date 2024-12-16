@@ -156,6 +156,8 @@ class AdaptiveSplitMarkdownIndexer:
         doc: Document,
         level: int = 0,
         parent_title: str = "",
+        module: str | None = "kyma",
+        module_version: str | None = "latest",
     ) -> Generator[Document, None, None]:
         tokens = len(encoding.encode(doc.page_content))
 
@@ -170,8 +172,8 @@ class AdaptiveSplitMarkdownIndexer:
                     "source": doc.metadata.get("source", ""),
                     "title": doc.metadata.get("title")
                     or extract_first_title(doc.page_content),
-                    "module": "Kyma Module",
-                    "version": "1.2.1",
+                    "module": module,
+                    "version": module_version,
                 },
             )
             return
@@ -199,8 +201,8 @@ class AdaptiveSplitMarkdownIndexer:
                 metadata={
                     "source": doc.metadata.get("source", ""),
                     "title": title,
-                    "module": "Kyma Module",
-                    "version": "1.2.1",
+                    "module": module,
+                    "version": module_version,
                 },
             )
 

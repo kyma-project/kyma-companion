@@ -296,8 +296,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test1.md",
                             "title": "Title",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                 ],
@@ -329,8 +329,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -343,8 +343,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -352,8 +352,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -366,8 +366,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                 ],
@@ -411,8 +411,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -422,8 +422,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -436,8 +436,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -445,8 +445,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -454,8 +454,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -468,8 +468,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -477,8 +477,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 3",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -486,8 +486,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 3 - Subtitle 3",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -500,8 +500,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test3.md",
                             "title": "Title 3 - Subtitle 3 - Subsubtitle 3",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                 ],
@@ -561,8 +561,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test1.md",
                             "title": "Title",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -570,8 +570,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -581,8 +581,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -595,8 +595,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -604,8 +604,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -613,8 +613,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -627,8 +627,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test2.md",
                             "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                 ],
@@ -664,8 +664,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test4.md",
                             "title": "Title 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -678,8 +678,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test4.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -696,8 +696,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                     Document(
@@ -705,8 +705,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                         metadata={
                             "source": "test4.md",
                             "title": "Title 1 - Subtitle 2",
-                            "module": "Kyma Module",
-                            "version": "1.2.1",
+                            "module": "kyma",
+                            "version": "latest",
                         },
                     ),
                 ],

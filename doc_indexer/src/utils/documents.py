@@ -10,6 +10,11 @@ def load_documents(docs_path: str) -> list[Document]:
     """
     Load documents from a given directory path.
     """
+
+    if not docs_path:
+        logger.error("Provided path is empty")
+        raise ValueError("Provided path is empty")
+
     try:
         loader = DirectoryLoader(docs_path, loader_cls=TextLoader, recursive=True)
         docs = loader.load()
