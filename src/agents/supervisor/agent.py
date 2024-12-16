@@ -16,14 +16,17 @@ from agents.common.constants import (
     K8S_AGENT,
     KYMA_AGENT,
     MESSAGES,
+    ERROR,
     NEXT,
     PLANNER,
+    RESPONSE_CONVERTER,
 )
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
     PLANNER_PROMPT,
+    RESPONSE_CONVERSION_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
@@ -38,6 +41,7 @@ from utils.models.factory import IModel, ModelType
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
+FINALIZER_ERROR = "FINALIZER ERROR"
 
 logger = get_logger(__name__)
 
@@ -226,6 +230,55 @@ class SupervisorAgent:
         except Exception as e:
             logger.error(f"Error in generating final response: {e}")
             return {
+                ERROR: FINALIZER_ERROR,
+                MESSAGES: [
+                    AIMessage(
+                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        name=FINALIZER,
+                    )
+                ],
+            }
+
+    def _response_conversion_chain(self, state: SupervisorState) -> RunnableSequence:
+        # finalizer response
+        finalizer_response = state.messages[-1]
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                MessagesPlaceholder(variable_name="messages"),
+                ("system", RESPONSE_CONVERSION_PROMPT),
+            ]
+        ).partial(finaliser_response=finalizer_response.content)
+        return prompt | self.model.llm  # type: ignore
+
+    async def _generate_converted_response(
+        self, state: SupervisorState
+    ) -> dict[str, Any]:
+        """Generate the converted response."""
+
+        if state.error == FINALIZER_ERROR:
+
+            return {NEXT: END}
+
+        response_conversion_chain = self._response_conversion_chain(state)
+
+        try:
+            converted_response = await response_conversion_chain.ainvoke(
+                {"messages": filter_messages(state.messages)},
+            )
+
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content=converted_response.content,
+                        name=RESPONSE_CONVERTER,
+                    )
+                ],
+                NEXT: END,
+            }
+        except Exception as e:
+            logger.error(f"Error in converting final response: {e}")
+            return {
                 MESSAGES: [
                     AIMessage(
                         content=f"Sorry, I encountered an error while processing the request. Error: {e}",
@@ -242,6 +295,7 @@ class SupervisorAgent:
         workflow.add_node(PLANNER, self._plan)
         workflow.add_node(ROUTER, self._route)
         workflow.add_node(FINALIZER, self._generate_final_response)
+        workflow.add_node(RESPONSE_CONVERTER, self._generate_converted_response)
 
         # Set the entrypoint: ENTRY --> (planner | router | finalizer)
         workflow.add_conditional_edges(
@@ -261,7 +315,10 @@ class SupervisorAgent:
             {ROUTER: ROUTER, END: END},
         )
 
-        # Define the edge: finalizer --> END
-        workflow.add_edge(FINALIZER, END)
+        # Define the edge: finalizer --> response coverter
+        workflow.add_edge(FINALIZER, RESPONSE_CONVERTER)
+
+        # Define the edge: response coverter --> END
+        workflow.add_edge(RESPONSE_CONVERTER, END)
 
         return workflow.compile()

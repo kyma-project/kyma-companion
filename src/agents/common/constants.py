@@ -35,3 +35,5 @@ OWNER = "owner"
 K8S_AGENT = "KubernetesAgent"
 
 KYMA_AGENT = "KymaAgent"
+
+RESPONSE_CONVERTER = "ResponseCoverter"

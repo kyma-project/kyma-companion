@@ -69,3 +69,62 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 - Avoid giving any impression regarding the correctness or incorrectness of the rejected responses.
 - Do not add any more headers or sub-headers to the final response.
 """
+
+
+RESPONSE_CONVERSION_PROMPT = """
+
+You are tasked with converting a finalizer_response containing one or more YAML configurations into a structured HTML format. 
+
+Please follow these requirements:
+
+Input Processing
+
+- Identify and separate distinct YAML configurations in the input message
+
+For each YAML block:
+
+- Validate the YAML structure
+- Identify the resource type it relates to
+- Extract key configuration elements
+
+HTML Output Requirements
+
+- Create a container div for each YAML block with:
+- A unique ID based on the resource type 
+- Clear visual separation between blocks
+
+
+For each YAML block, include:
+
+- A header showing the resource type
+- A link to the related resource documentation
+- The YAML content in a pre/code block 
+
+
+Apply these styling considerations:
+
+- Use semantic class names for styling hooks
+- Ensure proper indentation and readability
+- Include copy-to-clipboard functionality placeholder
+
+
+
+Output Format Template For each YAML block : 
+
+  <div class="yaml-block" id="resource-[type]-[index]">
+    <header class="yaml-header">
+      <h2>[Resource Type]</h2>
+      <a href="[resource-documentation-link]" class="resource-link">Documentation</a>
+    </header>
+    <div class="yaml-content">
+      <pre><code class="language-yaml">
+        [Formatted YAML Content]
+      </code></pre>
+    </div>
+    
+  </div>
+
+# finalizer_response : 
+
+{finalizer_response}
+"""
