@@ -240,9 +240,6 @@ class TestAdaptiveSplitMarkdownIndexer:
         processed_docs = list(indexer.process_document_titles(given_docs))
 
         for i, expected in enumerate(wanted_results):
-            if "expected_chunks" in expected:
-                assert indexer.chunk_size == expected["expected_chunks"]
-
             if i >= len(processed_docs):
                 continue
 
@@ -718,7 +715,7 @@ class TestAdaptiveSplitMarkdownIndexer:
     )
     def test_get_document_chunks(self, indexer, given_docs, wanted_results):
         # When
-        chunks = [chunk for chunk in indexer.get_document_chunks(given_docs)]
+        chunks = list(indexer.get_document_chunks(given_docs))
 
         # Then:
         # Compare the actual chunks with expected results

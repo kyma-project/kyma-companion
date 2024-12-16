@@ -111,6 +111,7 @@ class TestGenerator:
                 mock_logger.exception.assert_not_called()
 
             # Verify chain was called with correct arguments
+            docs_content = "\n\n".join(doc.page_content for doc in docs_content)
             mock_chain.ainvoke.assert_called_once_with(
-                {"context": [doc.page_content for doc in docs_content], "query": query}
+                {"context": docs_content, "query": query}
             )

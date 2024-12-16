@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from pydantic import BaseModel
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
+from pydantic import BaseModel
 
 from services.k8s import DataSanitizer, IK8sClient
 

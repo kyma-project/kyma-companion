@@ -43,10 +43,10 @@ class UserInput(BaseModel):
     """User input data model."""
 
     query: str
-    resource_kind: str | None
-    resource_api_version: str | None
-    resource_name: str | None
-    namespace: str | None
+    resource_kind: str | None = None
+    resource_api_version: str | None = None
+    resource_name: str | None = None
+    namespace: str | None = None
 
     def get_resource_information(self) -> dict[str, str]:
         """Get resource information."""
@@ -88,7 +88,8 @@ class CompanionState(BaseModel):
     """
 
     input: UserInput | None = Field(
-        description="user input with user query and resource(s) contextual information"
+        description="user input with user query and resource(s) contextual information",
+        default=None,
     )
 
     messages: Annotated[Sequence[BaseMessage], add_messages]

@@ -120,7 +120,6 @@ class AdaptiveSplitMarkdownIndexer:
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
-        self.chunk_size = 0
 
         self.db = HanaDB(
             connection=connection,
@@ -230,7 +229,7 @@ class AdaptiveSplitMarkdownIndexer:
         Clear the header from the document if it starts with the header.
         Yields documents one at a time instead of creating a full list.
         """
-        for counter, chunk in enumerate(self.get_document_chunks(docs)):
+        for chunk in self.get_document_chunks(docs):
             if chunk.metadata.get("title") is None:
                 yield chunk
             else:
@@ -242,10 +241,6 @@ class AdaptiveSplitMarkdownIndexer:
                     ),
                     metadata=chunk.metadata,
                 )
-        self.chunk_size = counter
-        logger.info(
-            f"Indexing {counter} markdown files chunks for {self.table_name}..."
-        )
 
     def index(self) -> None:
         """Indexes the markdown files in the given directory."""
@@ -265,6 +260,7 @@ class AdaptiveSplitMarkdownIndexer:
                     for chunk in all_chunks
                 ]
                 json.dump({"kyma_docs": serializable_chunks}, fp=out, indent=2)
+            logger.info(f"Indexed {len(serializable_chunks)} chunks.")
             logger.info(f"Chunks are stored in the file: {output_file_path}")
         else:
             logger.info("Deleting existing index in HanaDB...")
@@ -278,6 +274,7 @@ class AdaptiveSplitMarkdownIndexer:
             logger.info("Indexing and storing indexes to HanaDB...")
             batch = []
             batch_count = 0
+            total_chunk_number = 0
             try:
                 for chunk in all_chunks:
                     batch.append(chunk)
@@ -285,6 +282,7 @@ class AdaptiveSplitMarkdownIndexer:
                         # Process the current batch
                         self.db.add_documents(batch)
                         batch_count += 1
+                        total_chunk_number += len(batch)
                         logger.info(
                             f"Indexed batch {batch_count} with {len(batch)} chunks"
                         )
@@ -299,6 +297,7 @@ class AdaptiveSplitMarkdownIndexer:
                 if batch:
                     self.db.add_documents(batch)
                     batch_count += 1
+                    total_chunk_number += len(batch)
                     logger.info(
                         f"Indexed final batch {batch_count} with {len(batch)} chunks"
                     )
@@ -310,5 +309,5 @@ class AdaptiveSplitMarkdownIndexer:
                 raise
 
             logger.info(
-                f"Successfully indexed {self.chunk_size} markdown files chunks."
+                f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}."
             )

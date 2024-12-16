@@ -7,6 +7,9 @@ logger = get_logger(__name__)
 
 
 def load_documents(docs_path: str) -> list[Document]:
+    """
+    Load documents from a given directory path.
+    """
     try:
         loader = DirectoryLoader(docs_path, loader_cls=TextLoader, recursive=True)
         docs = loader.load()
