@@ -84,7 +84,7 @@ class CompanionGraph:
     k8s_agent: IAgent
     members: list[str] = []
 
-    plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
+    plan_parser = PydanticOutputParser(pydantic_object=Plan)
 
     planner_prompt: ChatPromptTemplate
 

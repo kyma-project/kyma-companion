@@ -2,8 +2,8 @@ from collections.abc import Sequence
 from typing import Annotated
 
 from langchain_core.messages import BaseMessage
-from langchain_core.pydantic_v1 import BaseModel
 from langgraph.graph import add_messages
+from pydantic import BaseModel
 
 from agents.common.state import SubTask
 

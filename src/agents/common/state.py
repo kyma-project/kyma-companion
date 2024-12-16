@@ -3,9 +3,9 @@ from enum import Enum
 from typing import Annotated, Literal
 
 from langchain_core.messages import BaseMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
+from pydantic import BaseModel, Field
 
 from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
 from services.k8s import IK8sClient
@@ -26,6 +26,7 @@ class SubTask(BaseModel):
     )
     assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]  # type: ignore
     status: str = Field(default=SubTaskStatus.PENDING)
+    result: str | None = None
 
     def complete(self) -> None:
         """Update the result of the task."""
@@ -42,10 +43,10 @@ class UserInput(BaseModel):
     """User input data model."""
 
     query: str
-    resource_kind: str | None
-    resource_api_version: str | None
-    resource_name: str | None
-    namespace: str | None
+    resource_kind: str | None = None
+    resource_api_version: str | None = None
+    resource_name: str | None = None
+    namespace: str | None = None
 
     def get_resource_information(self) -> dict[str, str]:
         """Get resource information."""
@@ -65,11 +66,11 @@ class Plan(BaseModel):
     """Plan to follow in future"""
 
     subtasks: list[SubTask] | None = Field(
-        description="different subtasks for user query"
+        description="different subtasks for user query, should be in sorted order"
     )
 
     response: str | None = Field(
-        description="only if query is not related to Kyma and Kubernetes"
+        description="only if query is irrelevant to Kyma and Kubernetes"
     )
 
 
@@ -87,15 +88,14 @@ class CompanionState(BaseModel):
     """
 
     input: UserInput | None = Field(
-        description="user input with user query and resource(s) contextual information"
+        description="user input with user query and resource(s) contextual information",
+        default=None,
     )
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
-    next: str | None
+    next: str | None = None
     subtasks: list[SubTask] | None = []
-    error: str | None
-    # IK8sClient interface implements the method "model_dump" which returns None, so that no confidential
-    # information is stored in the checkpoint.
+    error: str | None = None
     k8s_client: IK8sClient | None = None
 
     def all_tasks_completed(self) -> bool:

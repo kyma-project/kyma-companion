@@ -4,11 +4,11 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnableSequence
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
+from pydantic import BaseModel, Field
 
 from agents.common.constants import (
     COMMON,
@@ -79,7 +79,7 @@ class SupervisorAgent:
     model: IModel
     _name: str = SUPERVISOR
     members: list[str] = []
-    plan_parser = PydanticOutputParser(pydantic_object=Plan)  # type: ignore
+    plan_parser = PydanticOutputParser(pydantic_object=Plan)
 
     def __init__(self, models: dict[str, IModel | Embeddings], members: list[str]):
         gpt_4o = cast(IModel, models[ModelType.GPT4O])

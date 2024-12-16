@@ -10,7 +10,18 @@
       "request": "launch",
       "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal",
-      "args": ["index"]
+      "args": ["index"],
+    },
+    {
+      "name": "Index to file: main.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "console": "integratedTerminal",
+      "args": ["index"],
+      "env": {
+        "INDEX_TO_FILE": "true"
+      }
     },
     {
       "name": "Fetcher: main.py",
@@ -29,7 +40,7 @@
       "args": [
         "--query",
         "${input:queryValue}"
-      ],
+      ]
     }
   ],
   "inputs": [
