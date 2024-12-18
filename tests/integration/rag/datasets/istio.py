@@ -3,6 +3,7 @@ from textwrap import dedent
 cases = [
     {
         "input": "How to enable Istio sidecar proxy injection?",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
             Istio sidecar proxy injection can be enabled in two ways:
@@ -51,6 +52,7 @@ cases = [
     },
     {
         "input": "why an Istio sidecar is not injected to a pod?",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
             ### Problem
@@ -101,6 +103,7 @@ cases = [
     },
     {
         "input": "Why do I get a 'Connection reset by peer' error?",
+        "answer_relevancy_threshold": 0.7,
         # "Why do I get a connection refuses error?",
         "expected_output": dedent(
             """
@@ -123,6 +126,7 @@ cases = [
     },
     {
         "input": "function pod have have no sidecar proxy",
+        "answer_relevancy_threshold": 0.7,
         # "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
         "expected_output": dedent(
             """
