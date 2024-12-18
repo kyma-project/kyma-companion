@@ -3,7 +3,7 @@ from typing import Protocol, cast
 
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
-from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
+from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from followup_questions.followup_questions import (
     FollowUpQuestionsHandler,
     IFollowUpQuestionsHandler,
@@ -15,7 +15,7 @@ from initial_questions.inital_questions import (
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
-from utils.settings import REDIS_URL
+from utils.settings import REDIS_HOST, REDIS_PORT
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -76,10 +76,13 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
-        redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
+        # redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
+        checkpointer = AsyncRedisSaver.from_conn_info(
+            host=REDIS_HOST, port=REDIS_PORT, db=0
+        )
         self._companion_graph = CompanionGraph(
             models,
-            memory=redis_saver,
+            memory=checkpointer,
         )
 
     def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
