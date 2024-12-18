@@ -3,6 +3,7 @@ from textwrap import dedent
 cases = [
     {
         "input": "some eventing messages are pending in the stream",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
             ## Symptom
@@ -27,6 +28,7 @@ cases = [
     },
     {
         "input": "what to do if event publish rate is too high for NATS?",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
             If the events' publish rate is very high (more than 1.5k events per second), speed up the event dispatching by
