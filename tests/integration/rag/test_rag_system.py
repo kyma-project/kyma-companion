@@ -47,92 +47,32 @@ def rag_system(app_models):
     return RAGSystem(app_models)
 
 
+@pytest.mark.parametrize(
+    "user_query, expected_output, answer_relevancy_threshold",
+    [
+        pytest.param(
+            case["input"],
+            case["expected_output"],
+            case["answer_relevancy_threshold"],
+            id=case["input"],
+        )
+        for case in (istio_cases + serverless_cases + telemetry_cases + eventing_cases)
+    ],
+)
 @pytest.mark.asyncio
-@pytest.mark.flaky(reruns=3, reruns_delay=2)
-class TestRagSearch:
-    """Test RAG search for Kyma documentation."""
+async def test_rag_system(
+    user_query,
+    expected_output,
+    answer_relevancy_threshold,
+    rag_system,
+    evaluation_metrics,
+):
+    # Update the answer relevancy metric threshold
+    # we need this because the answer relevancy metric is not always above 0.7
+    for metric in evaluation_metrics:
+        if metric.__class__.__name__ == "AnswerRelevancyMetric":
+            metric.threshold = answer_relevancy_threshold
 
-    @pytest.mark.parametrize(
-        "user_query, expected_output",
-        [
-            pytest.param(
-                case["input"],
-                case["expected_output"],
-                id=case["input"],
-            )
-            for case in istio_cases
-        ],
-    )
-    async def test_istio_queries(
-        self, user_query, expected_output, rag_system, evaluation_metrics
-    ):
-        await execute_tests(user_query, expected_output, rag_system, evaluation_metrics)
-
-    @pytest.mark.parametrize(
-        "user_query, expected_output, answer_relevancy_threshold",
-        [
-            pytest.param(
-                case["input"],
-                case["expected_output"],
-                case["answer_relevancy_threshold"],
-                id=case["input"],
-            )
-            for case in serverless_cases
-        ],
-    )
-    async def test_serverless_queries(
-        self,
-        user_query,
-        expected_output,
-        answer_relevancy_threshold,
-        rag_system,
-        evaluation_metrics,
-    ):
-        # Update the answer relevancy metric threshold
-        # we need this because the answer relevancy metric is not always above 0.7
-        for metric in evaluation_metrics:
-            if metric.__class__.__name__ == "AnswerRelevancyMetric":
-                metric.threshold = answer_relevancy_threshold
-
-        await execute_tests(user_query, expected_output, rag_system, evaluation_metrics)
-
-    @pytest.mark.parametrize(
-        "user_query, expected_output",
-        [
-            # telemetry manager
-            pytest.param(
-                case["input"],
-                case["expected_output"],
-                id=case["input"],
-            )
-            for case in telemetry_cases
-        ],
-    )
-    @pytest.mark.flaky(reruns=3, reruns_delay=3)
-    async def test_telemetry_queries(
-        self, user_query, expected_output, rag_system, evaluation_metrics
-    ):
-        await execute_tests(user_query, expected_output, rag_system, evaluation_metrics)
-
-    @pytest.mark.parametrize(
-        "user_query, expected_output",
-        [
-            # "fixtures/kyma_docs/eventing-manager/docs/user/troubleshooting/evnt-05-fix-pending-messages.md",
-            pytest.param(
-                case["input"],
-                case["expected_output"],
-                id=case["input"],
-            )
-            for case in eventing_cases
-        ],
-    )
-    async def test_eventing_queries(
-        self, user_query, expected_output, rag_system, evaluation_metrics
-    ):
-        await execute_tests(user_query, expected_output, rag_system, evaluation_metrics)
-
-
-async def execute_tests(user_query, expected_output, rag_system, evaluation_metrics):
     query = Query(text=user_query)
     retrieved_docs = await rag_system.aretrieve(query, 10)
     assert len(retrieved_docs) > 0, "No documents retrieved"
