@@ -23,6 +23,7 @@ from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
+    FINALIZER_PROMPT_FOLLOW_UP,
     PLANNER_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
@@ -198,8 +199,9 @@ class SupervisorAgent:
 
         prompt = ChatPromptTemplate.from_messages(
             [
-                MessagesPlaceholder(variable_name="messages"),
                 ("system", FINALIZER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("system", FINALIZER_PROMPT_FOLLOW_UP),
             ]
         ).partial(members=self._get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
