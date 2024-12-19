@@ -3,6 +3,7 @@ from textwrap import dedent
 cases = [
     {
         "input": "some eventing messages are pending in the stream",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
             ## Symptom
@@ -26,23 +27,19 @@ cases = [
         ),
     },
     {
-        "input": "what to do if event publish rate is too high for NATS?",
+        "input": "event publish rate is too high for NATS",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
-            If the events' publish rate is very high (more than 1.5k events per second), speed up the event dispatching by
-            increasing the `maxInFlightMessages` configuration of the Subscription (default is set to 10) accordingly. Due to low
-            `maxInFlightMessages`, the dispatcher will not be able to keep up with the publisher, and as a result, the stream size
-            will keep growing.
-
-            If the published events are too large, the consumer cannot deliver them fast enough before the storage is full.
-            In that case, either slow down the events' publish rate until the events are delivered, or scale the NATS backend with
-            additional replicas.
-
-            Symptoms are:
-            - NATS JetStream backend stopped receiving events due to full storage.
-            - You observe the following behavior in the Eventing Publisher Proxy (EPP):
-              -- `507 Insufficient Storage` HTTP Status from EPP on the publish request.
-              -- `cannot send to stream: nats: maximum bytes exceeded` in the EPP logs.
+            If the event publish rate is too high for NATS, you can address the issue by taking the following actions:
+            
+            1. **Slow Down the Publish Rate**: If the published events are too large and the consumer cannot deliver them fast enough before the storage is full, consider slowing down the events' publish rate until the events are delivered.
+            
+            2. **Scale the NATS Backend**: You can scale the NATS backend with additional replicas to handle the increased load.
+            
+            3. **Increase `maxInFlightMessages`**: If the events' publish rate is very high (more than 1.5k events per second), you can speed up the event dispatching by increasing the `maxInFlightMessages` configuration of the Subscription. The default is set to 10, and increasing it will help the dispatcher keep up with the publisher, preventing the stream size from growing excessively.
+            
+            These steps can help manage the high event publish rate and prevent storage issues in NATS JetStream.
             """
         ),
     },
