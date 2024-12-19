@@ -21,16 +21,12 @@ Guidelines for query generation:
 - Keep queries concise and specific
 - Use Kyma's technical terminology accurately
 - Include relevant component names (e.g., Istio, NATS, Eventing, Service Mesh)
-
-
 """
 
 
 QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE = """
-Based on the original query, generate {num_queries} alternative queries
-that capture different aspects and variations of the search intent.
-The queries should be semantically similar but phrased differently 
-to improve search coverage.,
+Based on the original query, generate {num_queries} alternative queries that capture different aspects and variations of the search intent.
+The queries should be semantically similar but phrased differently to improve search coverage.
 """
 
 
