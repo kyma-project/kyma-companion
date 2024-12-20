@@ -3,6 +3,7 @@ from textwrap import dedent
 cases = [
     {
         "input": "show how to create a trace pipeline",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
                 To create a trace pipeline in Kyma, follow these steps:
@@ -55,6 +56,7 @@ cases = [
     # "fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md"
     {
         "input": "what are the prerequisites for Kyma application to enable logging?",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
                 One of the **rerequisites** for an application to be able to log is:
@@ -65,6 +67,7 @@ cases = [
     },
     {
         "input": "why there is no logs in the backend?",
+        "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
                 ### No Logs Arrive at the Backend
