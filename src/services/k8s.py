@@ -9,6 +9,11 @@ import requests
 from kubernetes import client, dynamic
 from requests import Response
 
+from services.data_sanitizer import DataSanitizer
+from utils import logging
+
+logger = logging.get_logger(__name__)
+
 
 @runtime_checkable
 class IK8sClient(Protocol):
@@ -18,7 +23,7 @@ class IK8sClient(Protocol):
         """Dump the model without any confidential data."""
         ...
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str, sanitize: bool = True) -> Response:
         """Execute a GET request to the Kubernetes API."""
         ...
 
@@ -146,7 +151,7 @@ class K8sClient:
             "Content-Type": "application/json",
         }
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str, sanitize: bool = True) -> Response:
         """Execute a GET request to the Kubernetes API."""
         response = requests.get(
             url=f"{self.api_server}/{uri.lstrip('/')}",
@@ -154,6 +159,13 @@ class K8sClient:
             verify=self.ca_temp_filename,
         )
 
+        if response.status_code != HTTPStatus.OK:
+            raise ValueError(
+                f"Failed to execute GET request to the Kubernetes API. Error: {response.text}"
+            )
+
+        if sanitize:
+            return DataSanitizer.sanitize(response.json())
         return response
 
     def list_resources(
@@ -232,7 +244,7 @@ class K8sClient:
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
         result = self.execute_get_api_request(
-            "apis/metrics.k8s.io/v1beta1/nodes"
+            "apis/metrics.k8s.io/v1beta1/nodes", sanitize=False
         ).json()
         return list(result["items"])
 
@@ -298,29 +310,3 @@ class K8sClient:
         for line in response.iter_lines():
             logs.append(str(line))
         return logs
-
-
-class DataSanitizer:
-    """Sanitize the data by from Kubernetes resources removing sensitive information."""
-
-    @staticmethod
-    def sanitize(data: dict | list[dict]) -> dict | list[dict]:
-        """Sanitize the data by removing sensitive information."""
-        if isinstance(data, list):
-            return [DataSanitizer._sanitize_object(obj) for obj in data]
-        elif isinstance(data, dict):
-            return DataSanitizer._sanitize_object(data)
-        raise ValueError("Data must be a list or a dictionary.")
-
-    @staticmethod
-    def _sanitize_object(obj: dict) -> dict:
-        """Sanitize a single object."""
-        if obj["kind"] == "Secret":
-            return DataSanitizer._sanitize_secret(obj)
-        return obj
-
-    @staticmethod
-    def _sanitize_secret(obj: dict) -> dict:
-        """Sanitize a secret object."""
-        obj["data"] = {}
-        return obj
