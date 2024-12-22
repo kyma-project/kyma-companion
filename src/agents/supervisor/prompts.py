@@ -68,4 +68,5 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 - Remove any information regarding the agents and your decision-making process from your final response.
 - Avoid giving any impression regarding the correctness or incorrectness of the rejected responses.
 - Do not add any more headers or sub-headers to the final response.
+- If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
 """
