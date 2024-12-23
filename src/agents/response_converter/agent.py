@@ -1,15 +1,19 @@
-from typing import Any, Literal
 import re
-from tkinter import END
+from typing import Any
+
 import yaml
-
-from agents.common.constants import FINALIZER, MESSAGES, NEXT
-from agents.supervisor.state import SupervisorState
-from utils.logging import get_logger
 from langchain_core.messages import AIMessage
+from langgraph.constants import END
 
-
-LinkType = Literal["NEW", "UPDATE"]
+from agents.common.constants import (
+    MESSAGES,
+    NEW_YAML,
+    NEXT,
+    RESPONSE_CONVERTER,
+    UPDATE_YAML,
+)
+from agents.common.state import CompanionState
+from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -39,17 +43,17 @@ class ResponseConverter:
 
         # Find all YAML blocks marked for new resources
         new_yaml_blocks = re.findall(
-            self.new_yaml_pattern, finalizer_response.content, re.DOTALL
+            self.new_yaml_pattern, finalizer_response, re.DOTALL
         )
 
         # Find all YAML blocks marked for updating existing resources
         update_yaml_blocks = re.findall(
-            self.update_yaml_pattern, finalizer_response.content, re.DOTALL
+            self.update_yaml_pattern, finalizer_response, re.DOTALL
         )
 
         return new_yaml_blocks, update_yaml_blocks
 
-    def _parse_yamls(self, yaml_config: str) -> dict[str, Any] | None:
+    def _parse_yamls(self, yaml_config: str) -> Any | None:
         """
         Parse YAML string into Python object with error handling.
         Attempts two parsing methods:
@@ -66,23 +70,25 @@ class ResponseConverter:
             # First attempt: Parse by removing yaml markers
             parsed_yaml = yaml.safe_load(yaml_config[8:-4])
 
-        except:
+        except Exception as e:
             logger.error(
-                f"Error while parsing the yaml by removing yaml markers  : {yaml_config}"
+                f"Error while parsing the yaml by removing yaml markers  : {yaml_config} , Exception : {e}"
             )
 
             try:
                 # Second attempt: Parse raw string
                 parsed_yaml = yaml.safe_load(yaml_config)
 
-            except:
-                logger.error(f"Error while parsing the raw yaml string : {yaml_config}")
+            except Exception as e:
+                logger.error(
+                    f"Error while parsing the raw yaml string : {yaml_config} , Exception : {e}"
+                )
                 return None
 
         return parsed_yaml
 
     def _generate_resource_link(
-        self, yaml_config: dict[str, Any], link_type: LinkType
+        self, yaml_config: dict[str, Any], link_type: str
     ) -> str | None:
         """
         Generate resource link based on YAML metadata and link type.
@@ -99,12 +105,14 @@ class ResponseConverter:
             namespace = yaml_config["metadata"]["namespace"]
             deployment_name = yaml_config["metadata"]["name"]
             resource_type = yaml_config["kind"]
-        except:
-            logger.error(f"Error in generating link, skipping the yaml: {yaml_config}")
+        except Exception as e:
+            logger.error(
+                f"Error in generating link, skipping the yaml: {yaml_config} , Exception : {e}"
+            )
             return None
 
         # Generate appropriate link based on type
-        if link_type == "NEW":
+        if link_type == NEW_YAML:
             # New resource link format
             return f"/namespaces/{namespace}/{resource_type}"
         else:
@@ -112,7 +120,7 @@ class ResponseConverter:
             return f"/namespaces/{namespace}/{resource_type}/{deployment_name}"
 
     def _create_html_nested_yaml(
-        self, yaml_config: str, resource_link: str, link_type: LinkType
+        self, yaml_config: str, resource_link: str, link_type: str
     ) -> str:
         """
         Create HTML structure containing YAML content and resource link.
@@ -120,26 +128,24 @@ class ResponseConverter:
         Args:
             yaml_config: YAML configuration string
             resource_link: Generated resource link
-            link_type: Type of link ('NEW' or 'UPDATE')
+            link_type: Type of link ('New' or 'Update')
 
         Returns:
             Formatted HTML string containing YAML and link
         """
-        html_content = """
+        html_content = f"""
         
         <div class="yaml-block>
             <div class="yaml">
-            {yaml_block}
+            {yaml_config}
             </div>
 
             <div class="link" link-type="{link_type}">
-                [Apply]({link})
+                [Apply]({resource_link})
             </div>
         </div>
         
-        """.format(
-            yaml_block=yaml_config, link=resource_link, link_type=link_type
-        )
+        """
 
         return html_content
 
@@ -147,7 +153,7 @@ class ResponseConverter:
         self,
         finalizer_response: str,
         replacement_html_list: list[str],
-        yaml_type: LinkType,
+        yaml_type: str,
     ) -> str:
         """
         Replace YAML blocks in the response with corresponding HTML blocks.
@@ -161,7 +167,7 @@ class ResponseConverter:
             Modified response with YAML blocks replaced by HTML
         """
 
-        def replace_func(match):
+        def replace_func(match: Any) -> Any:
             # Replace each match with the next HTML block from the list
             if replacement_html_list:
                 html_content = replacement_html_list.pop(0)
@@ -170,7 +176,7 @@ class ResponseConverter:
 
         # Select appropriate pattern based on YAML type
         yaml_pattern = (
-            self.new_yaml_pattern if yaml_type == "NEW" else self.update_yaml_pattern
+            self.new_yaml_pattern if yaml_type == NEW_YAML else self.update_yaml_pattern
         )
 
         # Perform the replacement
@@ -180,7 +186,7 @@ class ResponseConverter:
         return converted_response
 
     def _create_replacement_list(
-        self, yaml_list: list[str], yaml_type: LinkType
+        self, yaml_list: list[str], yaml_type: str
     ) -> list[str]:
         """
         Process list of YAML configs and create corresponding HTML replacements.
@@ -216,7 +222,7 @@ class ResponseConverter:
 
         return replacement_list
 
-    def convert_final_response(self, state: SupervisorState) -> dict[str, Any]:
+    def convert_final_response(self, state: CompanionState) -> dict[str, Any]:
         """
         Main conversion method that orchestrates the entire YAML to HTML conversion process.
 
@@ -226,24 +232,26 @@ class ResponseConverter:
         Returns:
             Dictionary containing converted messages and next state
         """
-        finalizer_response = state.messages[-1].content
+        finalizer_response = str(state.messages[-1].content)
         try:
             # Extract all YAML blocks
             new_yaml_list, update_yaml_list = self._extract_yaml(finalizer_response)
 
             if new_yaml_list or update_yaml_list:
                 # Process new resource YAML configs
-                replacement_list = self._create_replacement_list(new_yaml_list, "NEW")
+                replacement_list = self._create_replacement_list(
+                    new_yaml_list, NEW_YAML
+                )
                 finalizer_response = self._replace_yaml_with_html(
-                    finalizer_response, replacement_list, "NEW"
+                    finalizer_response, replacement_list, NEW_YAML
                 )
 
                 # Process update resource YAML configs
                 replacement_list = self._create_replacement_list(
-                    update_yaml_list, "UPDATE"
+                    update_yaml_list, UPDATE_YAML
                 )
                 finalizer_response = self._replace_yaml_with_html(
-                    finalizer_response, replacement_list, "UPDATE"
+                    finalizer_response, replacement_list, UPDATE_YAML
                 )
 
         except Exception as e:
@@ -253,7 +261,7 @@ class ResponseConverter:
             MESSAGES: [
                 AIMessage(
                     content=finalizer_response,
-                    name=FINALIZER,
+                    name=RESPONSE_CONVERTER,
                 )
             ],
             NEXT: END,

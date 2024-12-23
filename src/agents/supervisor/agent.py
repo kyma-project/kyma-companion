@@ -9,7 +9,6 @@ from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel, Field
-from response_converter import ResponseConverter
 
 from agents.common.constants import (
     COMMON,
@@ -19,6 +18,7 @@ from agents.common.constants import (
     MESSAGES,
     NEXT,
     PLANNER,
+    RESPONSE_CONVERTER,
 )
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
@@ -222,7 +222,7 @@ class SupervisorAgent:
                         name=FINALIZER,
                     )
                 ],
-                NEXT: END,
+                NEXT: RESPONSE_CONVERTER,
             }
         except Exception as e:
             logger.error(f"Error in generating final response: {e}")
@@ -248,11 +248,7 @@ class SupervisorAgent:
         workflow.add_conditional_edges(
             START,
             decide_entry_point,
-            {
-                PLANNER: PLANNER,
-                ROUTER: ROUTER,
-                FINALIZER: FINALIZER,
-            },
+            {PLANNER: PLANNER, ROUTER: ROUTER, FINALIZER: FINALIZER},
         )
 
         # Define the edge: planner --> (router | END)
@@ -261,8 +257,5 @@ class SupervisorAgent:
             decide_route_or_exit,
             {ROUTER: ROUTER, END: END},
         )
-
-        # Define the edge: finalizer --> END
-        workflow.add_edge(FINALIZER, END)
 
         return workflow.compile()

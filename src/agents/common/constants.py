@@ -35,3 +35,9 @@ OWNER = "owner"
 K8S_AGENT = "KubernetesAgent"
 
 KYMA_AGENT = "KymaAgent"
+
+RESPONSE_CONVERTER = "ResponseConverter"
+
+NEW_YAML = "New"
+
+UPDATE_YAML = "Update"
