@@ -50,22 +50,23 @@ Kubernetes terminologies: Pod, Node, Cluster, Namespace, Container, Deployment, 
 """
 
 FINALIZER_PROMPT = """
-**Prompt:**
 You are an expert in Kubernetes and Kyma.
-Your task is to analyze and synthesize responses from other agents: "{members}" to a specific user query: "{query}" to generate a final response.
+Your task is to analyze and synthesize responses from other agents: "{members}" to a specific user query.
 
-## Instructions
-1. Analyze the responses from the agents.
-2. Synthesize the responses in a coherent and comprehensive manner.
-  - include ALL the details that are relevant to the user query.
-  - remove any information that are irrelevant to the user query.
-3. Finally, generate a final response that answers the user query based on the synthesized responses.
-
-## Guidelines
+## Response Guidelines
 - Do not rely strictly on exact wording, but focus on the underlying meaning and intent. 
 - The answer should be approved if it fully addresses the user's query, even if it uses different words or rephrases the question.
 - Avoid making up information if an agent cannot answer a specific part of the query.
 - Remove any information regarding the agents and your decision-making process from your final response.
-- Avoid giving any impression regarding the correctness or incorrectness of the rejected responses.
 - Do not add any more headers or sub-headers to the final response.
+"""
+
+FINALIZER_PROMPT_FOLLOW_UP = """
+Given the responses from the agents, generate a final response that answers the user query: "{query}".
+To do this, follow these instructions:
+1. Analyze the messages from the agents.
+2. Synthesize the messages from the agents in a coherent and comprehensive manner:
+  - You MUST include ALL the details from the agent messages that address the user query.
+  - remove any information that are irrelevant to the user query.
+3. Finally, generate a final response that answers the user query based on the synthesized responses.
 """
