@@ -1,7 +1,6 @@
 import json
 from typing import Any
 
-from agents.common.constants import PLANNER
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
 
@@ -19,10 +18,8 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
 
-    if agent == PLANNER:
-        answer["subtasks"] = agent_data.get("subtasks")
-
     if agent == SUPERVISOR:
+        answer["subtasks"] = agent_data.get("subtasks")
         answer["next"] = agent_data.get("next")
 
     return {"agent": agent, "answer": answer}

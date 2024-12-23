@@ -1,3 +1,8 @@
+import json
+
+import scrubadub
+
+
 class DataSanitizer:
     """Implementation of the data sanitizer that processes input dictionaries."""
 
@@ -41,8 +46,10 @@ class DataSanitizer:
         if not isinstance(obj, dict):
             return obj
 
+        cleaned_obj = DataSanitizer._clean_personal_information(obj)
+
         # Create a copy to avoid modifying the original
-        obj = obj.copy()
+        obj = cleaned_obj.copy()
 
         # Handle specific Kubernetes resource types
         if "kind" in obj:
@@ -152,3 +159,12 @@ class DataSanitizer:
                 result[key] = value
 
         return result
+
+    @staticmethod
+    def _clean_personal_information(data: dict) -> dict:
+        """Cleans personal information from a string."""
+        data_str = json.dumps(data)
+
+        sanitized_data_str = scrubadub.clean(data_str)
+
+        return json.loads(sanitized_data_str)

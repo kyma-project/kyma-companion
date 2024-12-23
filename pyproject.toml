@@ -33,10 +33,11 @@ pytest-rerunfailures = "^15.0"
 python-decouple = "^3.8"
 redis = "^5.0.8"
 requests = "^2.32.3"
+scrubadub = "^2.0.1"
 tiktoken = "^0.7.0"
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.0.6"
+deepeval = "^2.0.9"
 fakeredis = "^2.23.3"
 prettytable = "^3.10.2"
 pytest = "^8.2.2"
