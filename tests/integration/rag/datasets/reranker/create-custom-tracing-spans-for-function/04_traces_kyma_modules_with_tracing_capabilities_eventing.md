@@ -1,0 +1,2 @@
+# Traces - Kyma Modules With Tracing Capabilities - Eventing
+The [Eventing](https://kyma-project.io/#/eventing-manager/user/README) module uses the [CloudEvents](https://cloudevents.io/) protocol (which natively supports the [W3C Trace Context](https://www.w3.org/TR/trace-context) propagation). Because of that, it propagates trace context properly. However, it doesn't enrich a trace with more advanced span data.

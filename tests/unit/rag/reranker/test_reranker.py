@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.documents import Document
@@ -7,7 +7,9 @@ from langchain_core.prompts import PromptTemplate
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.reranker import (
     LLMReranker,
+    RerankedDoc,
     RerankedDocs,
+    flatten_unique,
     format_documents,
     format_queries,
 )
@@ -51,36 +53,91 @@ class TestLLMReranker:
         assert reranker.chain is not None
         assert reranker.chain == expected_chain
 
+    @pytest.mark.parametrize(
+        "name,"
+        "given_docs_list,"
+        "given_queries,"
+        "given_input_limit,"
+        "given_output_limit,"
+        "given_relevant_docs,"  # documents that are used as an input to the LLM reranker.
+        "given_raise_exception,"
+        "expected_docs_list",
+        [
+            (
+                "given (duplicate documents and exception raised) "
+                "return unique relevant documents",
+                [
+                    # duplicate documents
+                    [doc1, doc4, doc7],
+                    [doc1, doc4, doc7],
+                    [doc1, doc4, doc7],
+                    # duplicate documents
+                    [doc2, doc5, doc8],
+                    [doc2, doc5, doc8],
+                    [doc2, doc5, doc8],
+                    # duplicate documents
+                    [doc3, doc6, doc9],
+                    [doc3, doc6, doc9],
+                    [doc3, doc6, doc9],
+                ],
+                ["this is a test query 1", "this is a test query 2"],
+                10,
+                5,
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                True,
+                [doc1, doc2, doc3, doc4, doc5],
+            ),
+            (
+                "given (duplicate documents and exception not raised) "
+                "return unique relevant documents",
+                [
+                    # duplicate documents
+                    [doc1, doc4, doc7],
+                    [doc1, doc4, doc7],
+                    [doc1, doc4, doc7],
+                    # duplicate documents
+                    [doc2, doc5, doc8],
+                    [doc2, doc5, doc8],
+                    [doc2, doc5, doc8],
+                    # duplicate documents
+                    [doc3, doc6, doc9],
+                    [doc3, doc6, doc9],
+                    [doc3, doc6, doc9],
+                ],
+                ["this is a test query 1", "this is a test query 2"],
+                10,
+                5,
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                False,
+                [doc1, doc2, doc3, doc4, doc5],
+            ),
+        ],
+    )
     @pytest.mark.asyncio
-    async def test_rerank(self):
+    async def test_arerank(
+        self,
+        name: str,
+        given_docs_list: list[list[Document]],
+        given_queries: list[str],
+        given_input_limit: int,
+        given_output_limit: int,
+        given_relevant_docs: list[Document],
+        given_raise_exception: bool,
+        expected_docs_list: list[Document],
+    ):
         """
-        Test the rerank method of the LLMReranker class.
+        Test the arerank method of the LLMReranker class.
         """
 
         # Given
-        given_docs_list = [[doc1, doc4, doc7], [doc2, doc5, doc8], [doc3, doc6, doc9]]
-        given_queries = ["this is a test query 1", "this is a test query 2"]
-        given_input_limit = 10
-        given_output_limit = 5
-        expected_docs_list = [doc1, doc2, doc3, doc4, doc5]
-        relevant_docs = [
-            doc1,
-            doc2,
-            doc3,
-            doc4,
-            doc5,
-            doc6,
-            doc7,
-            doc8,
-            doc9,
-        ]  # relevant documents after filtration
-
+        mock_response = docs_to_reranked_docs(expected_docs_list)
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
         reranker = LLMReranker(model=mock_model)
-        mock_response = docs_to_reranked_docs(expected_docs_list)
-        reranker.chain = Mock()
-        reranker.chain.ainvoke = Mock(return_value=mock_response)
+        reranker.chain = AsyncMock()
+        reranker.chain.ainvoke.return_value.documents = mock_response
+        if given_raise_exception:
+            reranker.chain.ainvoke.side_effect = Exception("Some error occurred.")
 
         # When
         actual_docs_list = await reranker.arerank(
@@ -94,11 +151,84 @@ class TestLLMReranker:
         assert actual_docs_list == expected_docs_list
         reranker.chain.ainvoke.assert_called_once_with(
             {
-                "documents": format_documents(relevant_docs),
+                "documents": format_documents(given_relevant_docs),
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
             },
         )
+
+
+@pytest.mark.parametrize(
+    "name, given_docs_list, given_limit, expected_docs",
+    [
+        (
+            "given (empty documents), return empty list",
+            [],
+            10,
+            [],
+        ),
+        (
+            "given (one document), return list with one document",
+            [
+                [doc1],
+            ],
+            10,
+            [doc1],
+        ),
+        (
+            "given (same order duplicate documents and zero limit), return empty documents",
+            [
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+            ],
+            0,
+            [],
+        ),
+        (
+            "given (same order duplicate documents and negative limit), return all unique documents",
+            [
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+            ],
+            -1,
+            [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+        ),
+        (
+            "given (same order duplicate documents and positive limit), return unique documents up to limit",
+            [
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+            ],
+            3,
+            [doc1, doc2, doc3],
+        ),
+        (
+            "given (unordered duplicate documents and positive limit),"
+            "return unique documents up to limit in order of first occurrence",
+            [
+                [doc9, doc8, doc7, doc6, doc5, doc4, doc3, doc2, doc1],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+            ],
+            3,
+            [doc9, doc8, doc7],
+        ),
+    ],
+)
+def test_flatten_unique(
+    name: str,
+    given_docs_list: list[list[Document]],
+    given_limit: int,
+    expected_docs: list[Document],
+):
+    # When
+    actual_docs = flatten_unique(given_docs_list, given_limit)
+
+    # Then
+    assert actual_docs == expected_docs
 
 
 def test_format_documents():
@@ -137,13 +267,13 @@ def test_format_queries():
     assert s == '["this is a test query 1","this is a test query 2"]'
 
 
-def docs_to_reranked_docs(docs: list[Document]) -> RerankedDocs:
+def docs_to_reranked_docs(docs: list[Document]) -> list[RerankedDoc]:
     """
-    Convert a list of documents to a RerankedDocs object.
+    Convert a list of documents to a list of RerankedDoc objects.
     :param docs: A list of documents.
-    :return: A RerankedDocs object.
+    :return: A list of RerankedDoc objects.
     """
-    reranked_docs = RerankedDocs(documents=[])
+    reranked_docs = []
     for doc in docs:
-        reranked_docs.documents.append(doc)
+        reranked_docs.append(RerankedDoc(page_content=doc.page_content))
     return reranked_docs

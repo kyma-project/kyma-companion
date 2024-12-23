@@ -1,0 +1,2 @@
+# Serverless Limitations - Limitation for the Number of Functions
+There is no upper limit of Functions that can be run on Kyma (similar to Kubernetes workloads in general). Once a user defines a Function, its build jobs and runtime Pods will always be requested by Serverless controller. It's up to Kubernetes to schedule them based on the available memory and CPU time on the Kubernetes worker nodes. This is determined mainly by the number of the Kubernetes worker nodes (and the Node auto-scaling capabilities) and their computational capacity.
