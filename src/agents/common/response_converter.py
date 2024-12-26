@@ -6,13 +6,12 @@ from langchain_core.messages import AIMessage
 from langgraph.constants import END
 
 from agents.common.constants import (
+    FINALIZER,
     MESSAGES,
     NEW_YAML,
     NEXT,
-    RESPONSE_CONVERTER,
     UPDATE_YAML,
 )
-from agents.common.state import CompanionState
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -222,7 +221,7 @@ class ResponseConverter:
 
         return replacement_list
 
-    def convert_final_response(self, state: CompanionState) -> dict[str, Any]:
+    def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Main conversion method that orchestrates the entire YAML to HTML conversion process.
 
@@ -232,7 +231,7 @@ class ResponseConverter:
         Returns:
             Dictionary containing converted messages and next state
         """
-        finalizer_response = str(state.messages[-1].content)
+        finalizer_response = str(state["messages"][-1].content)
         try:
             # Extract all YAML blocks
             new_yaml_list, update_yaml_list = self._extract_yaml(finalizer_response)
@@ -261,7 +260,7 @@ class ResponseConverter:
             MESSAGES: [
                 AIMessage(
                     content=finalizer_response,
-                    name=RESPONSE_CONVERTER,
+                    name=FINALIZER,
                 )
             ],
             NEXT: END,

@@ -26,7 +26,6 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     MESSAGES,
-    RESPONSE_CONVERTER,
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
@@ -36,7 +35,6 @@ from agents.common.utils import (
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
-from agents.response_converter.agent import ResponseConverter
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
@@ -107,12 +105,7 @@ class CompanionGraph:
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
-        self.response_converter = ResponseConverter()
-        self.members = [
-            self.kyma_agent.name,
-            self.k8s_agent.name,
-            COMMON,
-        ]
+        self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
         self.graph = self._build_graph()
 
@@ -187,9 +180,6 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
-        workflow.add_node(
-            RESPONSE_CONVERTER, self.response_converter.convert_final_response
-        )
 
         # Set the entrypoint: ENTRY --> supervisor
         workflow.set_entry_point(SUPERVISOR)
@@ -200,17 +190,9 @@ class CompanionGraph:
             workflow.add_edge(member, SUPERVISOR)
 
         # The supervisor dynamically populates the "next" field in the graph.
-        conditional_map: dict[Hashable, str] = {k: k for k in self.members}
-
-        # Route ResponseConverter to ResponseConverter
-        conditional_map[RESPONSE_CONVERTER] = RESPONSE_CONVERTER
-
-        # Define the dynamic conditional edges:
-        # supervisor --> (KymaAgent | KubernetesAgent | Common | ResponseConverter )
+        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
+        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
-
-        # Define the edge: ResponseConverter --> END
-        workflow.add_edge(RESPONSE_CONVERTER, END)
 
         # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)

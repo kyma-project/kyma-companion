@@ -219,7 +219,7 @@ class TestSupervisorAgent:
             "_final_response_chain",
             return_value=mock_final_response_chain,
         ):
-            result = await supervisor_agent._generate_final_response(state)
+            result = await supervisor_agent._get_finalizer_response(state)
 
         assert result == expected_output
         mock_final_response_chain.ainvoke.assert_called_once_with(

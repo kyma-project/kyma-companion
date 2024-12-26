@@ -18,8 +18,8 @@ from agents.common.constants import (
     MESSAGES,
     NEXT,
     PLANNER,
-    RESPONSE_CONVERTER,
 )
+from agents.common.response_converter import ResponseConverter
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
@@ -88,6 +88,7 @@ class SupervisorAgent:
         self.model = gpt_4o
         self.members = members
         self.parser = self._route_create_parser()
+        self.response_converter = ResponseConverter()
         self._planner_chain = self._create_planner_chain(gpt_4o)
         self._graph = self._build_graph()
 
@@ -205,7 +206,7 @@ class SupervisorAgent:
         ).partial(members=self._get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
 
-    async def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
+    async def _get_finalizer_response(self, state: SupervisorState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
@@ -222,7 +223,7 @@ class SupervisorAgent:
                         name=FINALIZER,
                     )
                 ],
-                NEXT: RESPONSE_CONVERTER,
+                NEXT: END,
             }
         except Exception as e:
             logger.error(f"Error in generating final response: {e}")
@@ -235,6 +236,15 @@ class SupervisorAgent:
                 ]
             }
 
+    async def _get_converted_final_response(
+        self, state: SupervisorState
+    ) -> dict[str, Any]:
+        """Convert the generated final response."""
+
+        final_response = await self._get_finalizer_response(state)
+
+        return self.response_converter.convert_final_response(final_response)
+
     def _build_graph(self) -> CompiledGraph:
         # Define a new graph.
         workflow = StateGraph(SupervisorState)
@@ -242,13 +252,17 @@ class SupervisorAgent:
         # Define the nodes of the graph.
         workflow.add_node(PLANNER, self._plan)
         workflow.add_node(ROUTER, self._route)
-        workflow.add_node(FINALIZER, self._generate_final_response)
+        workflow.add_node(FINALIZER, self._get_converted_final_response)
 
         # Set the entrypoint: ENTRY --> (planner | router | finalizer)
         workflow.add_conditional_edges(
             START,
             decide_entry_point,
-            {PLANNER: PLANNER, ROUTER: ROUTER, FINALIZER: FINALIZER},
+            {
+                PLANNER: PLANNER,
+                ROUTER: ROUTER,
+                FINALIZER: FINALIZER,
+            },
         )
 
         # Define the edge: planner --> (router | END)
@@ -257,5 +271,8 @@ class SupervisorAgent:
             decide_route_or_exit,
             {ROUTER: ROUTER, END: END},
         )
+
+        # Define the edge: finalizer --> END
+        workflow.add_edge(FINALIZER, END)
 
         return workflow.compile()
