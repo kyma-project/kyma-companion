@@ -206,7 +206,7 @@ class SupervisorAgent:
         ).partial(members=self._get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
 
-    async def _get_finalizer_response(self, state: SupervisorState) -> dict[str, Any]:
+    async def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
         """Generate the final response."""
 
         final_response_chain = self._final_response_chain(state)
@@ -241,7 +241,7 @@ class SupervisorAgent:
     ) -> dict[str, Any]:
         """Convert the generated final response."""
 
-        final_response = await self._get_finalizer_response(state)
+        final_response = await self._generate_final_response(state)
 
         return self.response_converter.convert_final_response(final_response)
 
