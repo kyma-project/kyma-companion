@@ -131,17 +131,14 @@ class ResponseConverter:
             Formatted HTML string containing YAML and link
         """
         html_content = f"""
-        
         <div class="yaml-block>
             <div class="yaml">
             {yaml_config}
             </div>
-
             <div class="link" link-type="{link_type}">
                 [Apply]({resource_link})
             </div>
         </div>
-        
         """
 
         return html_content

@@ -362,6 +362,87 @@ def test_replace_yaml_with_html(
 
 
 @pytest.mark.parametrize(
+    "yaml_list,yaml_type,expected",
+    [
+        (
+                [
+                    """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: nginx-oom"""
+                ],
+                NEW_YAML,
+                [
+                    f"""
+            <div class="yaml-block>
+                <div class="yaml">
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: nginx-oom
+                </div>
+    
+                <div class="link" link-type="{NEW_YAML}">
+                    [Apply](/namespaces/nginx-oom/Deployment)
+                </div>
+            </div>
+            """
+                ]
+        ),
+        (
+                [
+                    """invalid: :""",
+                    """
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: test-svc
+  namespace: test-ns"""
+                ],
+                UPDATE_YAML,
+                [
+                    """invalid: :""",
+                    f"""
+            <div class="yaml-block>
+                <div class="yaml">
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: test-svc
+  namespace: test-ns
+                </div>
+    
+                <div class="link" link-type="{UPDATE_YAML}">
+                    [Apply](/namespaces/test-ns/Service/test-svc)
+                </div>
+            </div>
+            """
+                ]
+        ),
+        (
+                [],
+                NEW_YAML,
+                []
+        ),
+    ],
+    ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"]
+)
+def test_create_replacement_list(response_converter, yaml_list, yaml_type, expected):
+    result = response_converter._create_replacement_list(yaml_list, yaml_type)
+
+    # Compare lengths
+    assert len(result) == len(expected)
+
+    # Compare each element after normalizing whitespace
+    for res, exp in zip(result, expected):
+        assert ' '.join(res.split()) == ' '.join(exp.split())
+
+
+
+@pytest.mark.parametrize(
     "state_content,expected_content",
     [
         (
@@ -374,13 +455,29 @@ metadata:
   namespace: default
 ```
 </YAML-NEW>""",
-            "[Apply](",
+            """
+        <div class="yaml-block>
+            <div class="yaml">
+            ```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  namespace: default
+```
+            </div>
+            <div class="link" link-type="New">
+                [Apply](/namespaces/default/Deployment)
+            </div>
+        </div>
+        """,
         ),
         ("No YAML content", "No YAML content"),
         ("", ""),
     ],
+ids=["single_valid_yaml", "No YAML in Content", "Empty Response"]
 )
 def test_convert_final_response(response_converter, state_content, expected_content):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
     result = response_converter.convert_final_response(state)
-    assert expected_content in result[MESSAGES][0].content
+    assert " ".join(result['messages'][0].content.split()) == " ".join(expected_content.split())
