@@ -56,8 +56,9 @@ class ResponseConverter:
         """
         Parse YAML string into Python object with error handling.
         Attempts two parsing methods:
-        1. First tries parsing after removing yaml markers
-        2. If that fails, tries parsing the raw string
+        1. First check: if yaml markers available
+           - tries parsing after removing yaml markers
+        2. Else, tries parsing the raw string
 
         Args:
             yaml_config: YAML configuration string
@@ -66,23 +67,20 @@ class ResponseConverter:
             Parsed YAML object or None if parsing fails
         """
         try:
-            # First attempt: Parse by removing yaml markers
-            parsed_yaml = yaml.safe_load(yaml_config[8:-4])
+            # First check: if yaml markers available
+            if yaml_config[:7] == "```yaml":
+                # parsing after removing yaml markers
+                parsed_yaml = yaml.safe_load(yaml_config[8:-4])
+            else:
+                # Parse raw string
+                parsed_yaml = yaml.safe_load(yaml_config)
 
         except Exception as e:
             logger.error(
-                f"Error while parsing the yaml by removing yaml markers  : {yaml_config} , Exception : {e}"
+                f"Error while parsing the yaml : {yaml_config} , Exception : {e}"
             )
 
-            try:
-                # Second attempt: Parse raw string
-                parsed_yaml = yaml.safe_load(yaml_config)
-
-            except Exception as e:
-                logger.error(
-                    f"Error while parsing the raw yaml string : {yaml_config} , Exception : {e}"
-                )
-                return None
+            return None
 
         return parsed_yaml
 
