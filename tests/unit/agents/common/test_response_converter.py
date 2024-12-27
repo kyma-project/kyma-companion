@@ -365,17 +365,17 @@ def test_replace_yaml_with_html(
     "yaml_list,yaml_type,expected",
     [
         (
-                [
-                    """
+            [
+                """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-deployment
   namespace: nginx-oom"""
-                ],
-                NEW_YAML,
-                [
-                    f"""
+            ],
+            NEW_YAML,
+            [
+                f"""
             <div class="yaml-block>
                 <div class="yaml">
 apiVersion: apps/v1
@@ -390,22 +390,22 @@ metadata:
                 </div>
             </div>
             """
-                ]
+            ],
         ),
         (
-                [
-                    """invalid: :""",
-                    """
+            [
+                """invalid: :""",
+                """
 apiVersion: apps/v1
 kind: Service
 metadata:
   name: test-svc
-  namespace: test-ns"""
-                ],
-                UPDATE_YAML,
-                [
-                    """invalid: :""",
-                    f"""
+  namespace: test-ns""",
+            ],
+            UPDATE_YAML,
+            [
+                """invalid: :""",
+                f"""
             <div class="yaml-block>
                 <div class="yaml">
 apiVersion: apps/v1
@@ -419,16 +419,12 @@ metadata:
                     [Apply](/namespaces/test-ns/Service/test-svc)
                 </div>
             </div>
-            """
-                ]
+            """,
+            ],
         ),
-        (
-                [],
-                NEW_YAML,
-                []
-        ),
+        ([], NEW_YAML, []),
     ],
-    ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"]
+    ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"],
 )
 def test_create_replacement_list(response_converter, yaml_list, yaml_type, expected):
     result = response_converter._create_replacement_list(yaml_list, yaml_type)
@@ -437,9 +433,8 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
     assert len(result) == len(expected)
 
     # Compare each element after normalizing whitespace
-    for res, exp in zip(result, expected):
-        assert ' '.join(res.split()) == ' '.join(exp.split())
-
+    for res, exp in zip(result, expected, strict=False):
+        assert " ".join(res.split()) == " ".join(exp.split())
 
 
 @pytest.mark.parametrize(
@@ -475,9 +470,11 @@ metadata:
         ("No YAML content", "No YAML content"),
         ("", ""),
     ],
-ids=["single_valid_yaml", "No YAML in Content", "Empty Response"]
+    ids=["single_valid_yaml", "No YAML in Content", "Empty Response"],
 )
 def test_convert_final_response(response_converter, state_content, expected_content):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
     result = response_converter.convert_final_response(state)
-    assert " ".join(result['messages'][0].content.split()) == " ".join(expected_content.split())
+    assert " ".join(result[MESSAGES][0].content.split()) == " ".join(
+        expected_content.split()
+    )
