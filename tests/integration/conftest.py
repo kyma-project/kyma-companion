@@ -91,6 +91,7 @@ def semantic_similarity_metric(evaluator_model):
             """
             Evaluate whether two answers are semantically similar or convey the same meaning.
             Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
+            Heavily penalize omissions of code blocks between the answers.
             Lightly penalize omissions of detail, focusing on the main idea.
             Vague language is permissible.
             """,
