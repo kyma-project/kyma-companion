@@ -27,6 +27,7 @@ from utils import logging
 logger = logging.get_logger(__name__)
 from utils.settings import REDIS_TTL
 
+
 class JsonAndBinarySerializer(JsonPlusSerializer):
     """A JSON serializer that can handle binary data."""
 

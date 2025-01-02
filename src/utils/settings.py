@@ -68,7 +68,7 @@ LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis
 REDIS_HOST = config("REDIS_HOST", default="localhost")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
-REDIS_TTL = config("REDIS_TTL", default=43200, cast=int) # Default 12 Hours
+REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 # Langfuse
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
