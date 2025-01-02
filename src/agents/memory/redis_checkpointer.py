@@ -25,7 +25,7 @@ from agents.memory.conversation_history import ConversationMessage
 from utils import logging
 
 logger = logging.get_logger(__name__)
-
+from utils.settings import REDIS_TTL
 
 class JsonAndBinarySerializer(JsonPlusSerializer):
     """A JSON serializer that can handle binary data."""
@@ -141,6 +141,8 @@ class RedisSaver(BaseCheckpointSaver):
                         "parent_ts": parent_ts if parent_ts else "",
                     },
                 )  # type: ignore
+                # Set TTL for each message
+                await conn.expire(key, REDIS_TTL)
                 logger.info(
                     f"Checkpoint stored successfully for thread_id: {thread_id}, "
                     f"ts: {checkpoint['ts']}"
