@@ -1,4 +1,5 @@
 """Implementation of a langgraph checkpoint saver using Redis."""
+
 from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import (
@@ -25,7 +26,6 @@ from utils import logging
 from utils.settings import REDIS_TTL
 
 logger = logging.get_logger(__name__)
-
 
 
 class JsonAndBinarySerializer(JsonPlusSerializer):
