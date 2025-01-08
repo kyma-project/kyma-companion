@@ -8,7 +8,9 @@ from langgraph.managed import IsLastStep
 from pydantic import BaseModel, Field
 
 from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
+from agents.reducer.reducers import summarize_and_add_messages_token
 from services.k8s import IK8sClient
+from utils import settings
 
 
 class SubTaskStatus(str, Enum):
@@ -92,7 +94,15 @@ class CompanionState(BaseModel):
         default=None,
     )
 
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages: Annotated[
+        Sequence[BaseMessage],
+        summarize_and_add_messages_token(
+            settings.SUMMARIZATION_TOKEN_LOWER_LIMIT,
+            settings.SUMMARIZATION_TOKEN_UPPER_LIMIT,
+            settings.SUMMARIZATION_MODEL,
+            settings.SUMMARIZATION_TOKENIZER_MODEL,
+        ),
+    ]
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None

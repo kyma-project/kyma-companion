@@ -29,9 +29,6 @@ from agents.common.constants import (
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
-from agents.common.utils import (
-    filter_messages,
-)
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
@@ -126,7 +123,7 @@ class CompanionGraph:
         """Invoke the common node."""
         response = await self._common_chain.ainvoke(
             {
-                "messages": filter_messages(state.messages),
+                "messages": state.messages,
                 "query": subtask,
             },
         )

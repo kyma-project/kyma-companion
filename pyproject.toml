@@ -25,7 +25,7 @@ fastapi = "^0.111.0"
 generative-ai-hub-sdk = {extras = ["all"], version = "^4.1.1"}
 hdbcli = "^2.22.32"
 kubernetes = "^30.1.0"
-langfuse = "^2.39.1"
+langfuse = "^2.57.5"
 langgraph = "^0.2.5"
 poetry-plugin-sort = "^0.2.1"
 pytest = "^8.2.2"

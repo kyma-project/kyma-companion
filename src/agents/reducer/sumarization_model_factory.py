@@ -1,12 +1,11 @@
 from typing import Any
 
-from utils.singleton_meta import SingletonMeta
-from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
-from utils.logging import get_logger
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from agents.reducer.prompts import MESSAGES_SUMMARIZATION_PROMPT
 
-logger = get_logger(__name__)
+from agents.reducer.prompts import MESSAGES_SUMMARIZATION_PROMPT
+from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
+from utils.singleton_meta import SingletonMeta
+
 
 class SummarizationModelFactory(metaclass=SingletonMeta):
     """A factory singleton class to create summarization models."""
@@ -22,24 +21,25 @@ class SummarizationModelFactory(metaclass=SingletonMeta):
         try:
             self._model_factory = model_factory or ModelFactory()
             self._models = {}
+            self._chains = {}
             # models = self._model_factory.create_models()
-        except Exception as e:
-            logger.error(f"Failed to initialize ModelFactory: {e}")
+        except Exception:
             raise
 
     def get_model(self, model_type: ModelType) -> IModel:
         """Get the model for the given model type."""
         # check if the model is already initialized. If not, initialize it.
-        if model_type.name not in self._models:
+        if model_type not in self._models:
             # initialize the requested model and add it to the cache.
-            model = self._model_factory.create_model(model_type.name)
-            self._models[model_type.name] = model
+            model = self._model_factory.create_model(model_type)
+            self._models[model_type] = model
         # return the model.
-        return self._models[model_type.name]
+        return self._models[model_type]
 
     def get_chain(self, model_type: ModelType) -> IModel:
+        """Get the chain for the given model type."""
         # check if the chain is already initialized. If not, initialize it.
-        if model_type.name not in self._chains:
+        if model_type not in self._chains:
             # create a chat prompt template for summarization.
             llm_prompt = ChatPromptTemplate.from_messages(
                 [
@@ -48,6 +48,6 @@ class SummarizationModelFactory(metaclass=SingletonMeta):
                 ]
             )
             # get the summarization model.
-            self._chains[model_type.name] = llm_prompt | self.get_model(model_type).llm.get_num_tokens_from_messages()
+            self._chains[model_type] = llm_prompt | self.get_model(model_type).llm
         # return the chain.
-        return self._chains[model_type.name]
+        return self._chains[model_type]

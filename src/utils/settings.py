@@ -64,7 +64,7 @@ else:
     load_env_from_json()
 
 
-LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+LOG_LEVEL = config("LOG_LEVEL", default="ERROR")
 # Redis
 REDIS_HOST = config("REDIS_HOST", default="localhost")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
@@ -73,7 +73,19 @@ REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
-LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="True")
+LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
+
+# Summarization
+SUMMARIZATION_MODEL = config("SUMMARIZATION_MODEL", default="gpt-4o-mini")
+SUMMARIZATION_TOKENIZER_MODEL = config(
+    "SUMMARIZATION_TOKENIZER_MODEL", default="gpt-4o"
+)
+SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_UPPER_LIMIT", default=2000, cast=int
+)
+SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=3000, cast=int
+)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)

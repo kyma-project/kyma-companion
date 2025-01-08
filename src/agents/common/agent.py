@@ -14,7 +14,6 @@ from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import IS_LAST_STEP, MESSAGES, MY_TASK, OWNER
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import filter_messages
 from utils.models.factory import IModel
 
 
@@ -126,7 +125,7 @@ class BaseAgent:
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
-            MESSAGES: filter_messages(state.messages),
+            MESSAGES: state.messages,
             "query": state.my_task.description,
         }
         response = await self.chain.ainvoke(inputs, config)
