@@ -3,14 +3,12 @@ from enum import Enum
 from typing import Annotated, Literal
 
 from langchain_core.messages import BaseMessage
-from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from pydantic import BaseModel, Field
 
 from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
-from agents.reducer.reducers import summarize_and_add_messages_token
+from agents.reducer.reducers import new_default_summarization_reducer
 from services.k8s import IK8sClient
-from utils import settings
 
 
 class SubTaskStatus(str, Enum):
@@ -94,15 +92,7 @@ class CompanionState(BaseModel):
         default=None,
     )
 
-    messages: Annotated[
-        Sequence[BaseMessage],
-        summarize_and_add_messages_token(
-            settings.SUMMARIZATION_TOKEN_LOWER_LIMIT,
-            settings.SUMMARIZATION_TOKEN_UPPER_LIMIT,
-            settings.SUMMARIZATION_MODEL,
-            settings.SUMMARIZATION_TOKENIZER_MODEL,
-        ),
-    ]
+    messages: Annotated[Sequence[BaseMessage], new_default_summarization_reducer()]
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None
@@ -120,7 +110,7 @@ class CompanionState(BaseModel):
 class BaseAgentState(BaseModel):
     """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
-    messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages: Annotated[Sequence[BaseMessage], new_default_summarization_reducer()]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
 

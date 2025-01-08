@@ -8,7 +8,20 @@ from agents.reducer.utils import (
     filter_messages_by_token_limit,
     summarize_messages,
 )
+from utils import settings
 from utils.models.factory import ModelType
+
+
+def new_default_summarization_reducer() -> Callable[[Messages, Messages], Messages]:
+    """Returns a LangGraph reducer that appends new messages
+    and summarizes old messages if the token limit is exceeded.
+    The token limits and summarization model are taken from the settings."""
+    return summarize_and_add_messages_token(
+        settings.SUMMARIZATION_TOKEN_LOWER_LIMIT,
+        settings.SUMMARIZATION_TOKEN_UPPER_LIMIT,
+        settings.SUMMARIZATION_MODEL,
+        settings.SUMMARIZATION_TOKENIZER_MODEL,
+    )
 
 
 def summarize_and_add_messages_token(
@@ -22,6 +35,12 @@ def summarize_and_add_messages_token(
     The lower limit is used to filter out messages to avoid summarization on every message,
     creating a buffer between the lower and upper limits where summarization will not be triggered.
     """
+
+    # validate the token limits.
+    if token_lower_limit >= token_upper_limit:
+        raise ValueError(
+            f"Token lower limit {token_lower_limit} must be less than token upper limit {token_upper_limit}"
+        )
 
     # initialize the summarization model before returning the callback. So that if the model fails to initialize,
     # then the error is raised early, and the Kyma Graph fails on startup.
