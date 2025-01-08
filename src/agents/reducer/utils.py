@@ -6,18 +6,6 @@ from agents.reducer.sumarization_model_factory import SummarizationModelFactory
 from utils.models.factory import ModelType
 
 
-def add_output_tokens_to_messages(messages: Messages, model_type: ModelType) -> Messages:
-    """Adds the token count of the output of the model to the messages."""
-    chain = SummarizationModelFactory().get_chain(model_type)
-    for msg in messages:
-        if ("usage_metadata" in msg and
-                "output_tokens" in msg["usage_metadata"] and
-                msg["usage_metadata"]["output_tokens"] > 0):
-            continue
-
-
-    return messages
-
 def compute_string_token_count(text: str, model_type: ModelType) -> int:
     """Returns the token count of the string."""
     return len(tiktoken.encoding_for_model(model_type).encode(text=text))
@@ -25,12 +13,8 @@ def compute_string_token_count(text: str, model_type: ModelType) -> int:
 
 def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
     """Returns the token count of the messages."""
-    tokens = 0
-    for msg in msgs:
-        tks = compute_string_token_count(msg.content, model_type)
-        tokens += tks
-    return tokens
-    # return sum(compute_string_token_count(msg.content, model_type) for msg in msgs)
+    return sum(compute_string_token_count(msg.content, model_type) for msg in msgs)
+
 
 def summarize_messages(messages: Messages, model_type: ModelType) -> Messages:
     """Returns the summarized message of the messages."""
