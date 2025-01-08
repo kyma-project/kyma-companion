@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from routers import conversations
 
 app = FastAPI(
-    title="Kyma Companion test",
+    # Some comment; remove it
+    title="Kyma Companion",
 )
 app.include_router(conversations.router)
 
