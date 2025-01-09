@@ -1,5 +1,6 @@
 from typing import Any
 
+from langchain_core.embeddings import Embeddings
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from agents.reducer.prompts import MESSAGES_SUMMARIZATION_PROMPT
@@ -8,25 +9,21 @@ from utils.singleton_meta import SingletonMeta
 
 
 class SummarizationModelFactory(metaclass=SingletonMeta):
-    """A factory singleton class to create summarization models."""
+    """A factory singleton class to create summarization models and chains."""
 
     _model_factory: IModelFactory
-    _models: dict[str, IModel]
+    _models: dict[str, IModel | Embeddings]
     _chains: dict[str, Any]
 
     def __init__(
         self,
         model_factory: IModelFactory | None = None,
     ) -> None:
-        try:
-            self._model_factory = model_factory or ModelFactory()
-            self._models = {}
-            self._chains = {}
-            # models = self._model_factory.create_models()
-        except Exception:
-            raise
+        self._model_factory = model_factory or ModelFactory()
+        self._models = {}
+        self._chains = {}
 
-    def get_model(self, model_type: ModelType) -> IModel:
+    def get_model(self, model_type: ModelType) -> IModel | Embeddings:
         """Get the model for the given model type."""
         # check if the model is already initialized. If not, initialize it.
         if model_type not in self._models:
@@ -36,7 +33,7 @@ class SummarizationModelFactory(metaclass=SingletonMeta):
         # return the model.
         return self._models[model_type]
 
-    def get_chain(self, model_type: ModelType) -> IModel:
+    def get_chain(self, model_type: ModelType) -> Any:
         """Get the chain for the given model type."""
         # check if the chain is already initialized. If not, initialize it.
         if model_type not in self._chains:
