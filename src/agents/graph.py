@@ -30,7 +30,7 @@ from agents.common.constants import (
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
-    filter_messages,
+    filter_messages, hash_url,
 )
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
@@ -211,6 +211,8 @@ class CompanionGraph:
             HumanMessage(content=message.query),
         ]
 
+        hashed_cluster_url = hash_url(k8s_client.get_cluster_url())
+
         async for chunk in self.graph.astream(
             input={
                 "messages": messages,
@@ -223,6 +225,7 @@ class CompanionGraph:
                     "thread_id": conversation_id,
                 },
                 "callbacks": [handler],
+                "tags" : [hashed_cluster_url] #cluster_url as a tag for traceability and rate limiting
             },
         ):
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)

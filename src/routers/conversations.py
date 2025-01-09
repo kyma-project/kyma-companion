@@ -1,3 +1,4 @@
+from datetime import datetime, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -5,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.data import Message
+from agents.common.utils import get_current_day_timestamps_utc, hash_url
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -14,8 +16,10 @@ from routers.common import (
 )
 from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
+from utils.langfuse import LangfuseAPI
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
+from utils.settings import TOKEN_LIMIT_PER_CLUSTER
 from utils.utils import create_session_id
 
 logger = get_logger(__name__)
@@ -44,6 +48,8 @@ async def init_conversation(
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
     logger.info("Initializing new conversation.")
+
+
 
     # Initialize with the session_id. Create a new session_id if not provided.
     session_id = session_id if session_id else create_session_id()
@@ -124,6 +130,35 @@ async def messages(
     service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
+
+    # Check rate limitation
+    if TOKEN_LIMIT_PER_CLUSTER != -1:
+        from_timestamp, to_timestamp = get_current_day_timestamps_utc()
+        hashed_cluster_url = hash_url(x_cluster_url)
+        langfuse_api = LangfuseAPI()
+        total_token_usage = langfuse_api.get_total_token_usage(from_timestamp, to_timestamp, hashed_cluster_url)
+
+        if total_token_usage > TOKEN_LIMIT_PER_CLUSTER:
+            current_utc = datetime.now(UTC)
+            midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
+            time_remaining = midnight_utc - current_utc
+            seconds_remaining = int(time_remaining.total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "Rate limit exceeded",
+                    "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
+                    "current_usage": total_token_usage,
+                    "limit": TOKEN_LIMIT_PER_CLUSTER,
+                    "time_remaining_seconds": seconds_remaining
+                },
+                headers={
+                    "Retry-After": str(seconds_remaining),
+                    "X-RateLimit-Limit": str(TOKEN_LIMIT_PER_CLUSTER),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(int(midnight_utc.timestamp()))
+                }
+            )
 
     # Initialize k8s client for the request.
     try:

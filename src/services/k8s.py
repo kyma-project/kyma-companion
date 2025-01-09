@@ -14,6 +14,10 @@ from requests import Response
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
 
+    def get_cluster_url(self) -> str:
+        """Returns the URL of the Kubernetes cluster."""
+        ...
+
     def model_dump(self) -> None:
         """Dump the model without any confidential data."""
         ...
@@ -116,6 +120,10 @@ class K8sClient:
                 os.remove(self.ca_temp_filename)
             except FileNotFoundError:
                 return
+
+    def get_cluster_url(self) -> str:
+        """Returns the URL of the Kubernetes cluster."""
+        return self.api_server
 
     def model_dump(self) -> None:
         """Dump the model. It should not return any critical information because it is called by checkpointer
