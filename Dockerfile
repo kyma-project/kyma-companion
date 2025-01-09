@@ -12,7 +12,7 @@ COPY config ./config
 # Install Poetry and dependencies in one layer
 RUN pip install --no-cache-dir poetry \
   && poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi \
+  && poetry install --without test,dev --no-interaction --no-ansi \
   && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
