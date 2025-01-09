@@ -11,9 +11,9 @@ COPY config ./config
 
 # Install Poetry and dependencies in one layer
 RUN pip install --no-cache-dir poetry \
-    && poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi \
-    && pip uninstall -y poetry
+  && poetry config virtualenvs.create false \
+  && poetry install --without test,dev --no-interaction --no-ansi \
+  && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
 FROM python:3.12-slim-bullseye
