@@ -1,32 +1,39 @@
 from pydantic import BaseModel
-from typing import List, Optional
 
-# Define the Usage model
+
 class Usage(BaseModel):
-    model: Optional[str]
-    inputUsage: int
-    outputUsage: int
-    totalUsage: int
-    totalCost: float
-    countObservations: int
-    countTraces: int
+    """Represents the usage metrics for an LLM model."""
 
-# Define the DailyMetrics model
+    model: str | None
+    input_usage: int
+    output_usage: int
+    total_usage: int
+    total_cost: float
+    count_observations: int
+    count_traces: int
+
+
 class DailyMetrics(BaseModel):
-    date: str
-    countTraces: int
-    countObservations: int
-    totalCost: float
-    usage: List[Usage]
+    """Represents daily metrics for traces, observations, and costs."""
 
-# Define the Meta model
+    date: str
+    count_traces: int
+    count_observations: int
+    total_cost: float
+    usage: list[Usage]
+
+
 class Meta(BaseModel):
+    """Represents metadata for pagination and item counts."""
+
     page: int
     limit: int
-    totalItems: int
-    totalPages: int
+    total_items: int
+    total_pages: int
 
-# Define the overall MetricsResponse model
+
 class MetricsResponse(BaseModel):
-    data: List[DailyMetrics]
+    """Represents a response containing daily metrics and metadata."""
+
+    data: list[DailyMetrics]
     meta: Meta

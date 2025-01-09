@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -48,8 +48,6 @@ async def init_conversation(
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
     logger.info("Initializing new conversation.")
-
-
 
     # Initialize with the session_id. Create a new session_id if not provided.
     session_id = session_id if session_id else create_session_id()
@@ -136,7 +134,9 @@ async def messages(
         from_timestamp, to_timestamp = get_current_day_timestamps_utc()
         hashed_cluster_url = hash_url(x_cluster_url)
         langfuse_api = LangfuseAPI()
-        total_token_usage = langfuse_api.get_total_token_usage(from_timestamp, to_timestamp, hashed_cluster_url)
+        total_token_usage = langfuse_api.get_total_token_usage(
+            from_timestamp, to_timestamp, hashed_cluster_url
+        )
 
         if total_token_usage > TOKEN_LIMIT_PER_CLUSTER:
             current_utc = datetime.now(UTC)
@@ -150,14 +150,14 @@ async def messages(
                     "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
                     "current_usage": total_token_usage,
                     "limit": TOKEN_LIMIT_PER_CLUSTER,
-                    "time_remaining_seconds": seconds_remaining
+                    "time_remaining_seconds": seconds_remaining,
                 },
                 headers={
                     "Retry-After": str(seconds_remaining),
                     "X-RateLimit-Limit": str(TOKEN_LIMIT_PER_CLUSTER),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(int(midnight_utc.timestamp()))
-                }
+                    "X-RateLimit-Reset": str(int(midnight_utc.timestamp())),
+                },
             )
 
     # Initialize k8s client for the request.
