@@ -253,4 +253,4 @@ doc_indexer/data/*
 .env.*
 
 # ignore scripts in the root folder
-*.sh
+/*.sh
