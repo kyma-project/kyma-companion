@@ -16,11 +16,11 @@ async def root() -> dict:
 
 @app.get("/readyz")
 async def readyz() -> dict:
-    """Endpoint for the Readiness Probe."""
+    """The endpoint for the Readiness Probe."""
     return {"ready": "true"}
 
 
 @app.get("/healthz")
 async def healthz() -> dict:
-    """Endpoint for the Health Probe."""
+    """The endpoint for the Health Probe."""
     return {"healthy": "true"}
