@@ -153,10 +153,7 @@ async def messages(
                     "time_remaining_seconds": seconds_remaining,
                 },
                 headers={
-                    "Retry-After": str(seconds_remaining),
-                    "X-RateLimit-Limit": str(TOKEN_LIMIT_PER_CLUSTER),
-                    "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(int(midnight_utc.timestamp())),
+                    "Retry-After": str(seconds_remaining)
                 },
             )
 
