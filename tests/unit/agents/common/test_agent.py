@@ -5,7 +5,6 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
-    RemoveMessage,
     ToolMessage,
 )
 from langchain_core.prompts import (
@@ -18,7 +17,7 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import BaseAgent
-from agents.common.constants import MESSAGES
+from agents.common.constants import AGENT_MESSAGES
 from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
@@ -154,6 +153,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KubernetesAgent"),
                         SubTask(description="test", assigned_to="KubernetesAgent"),
@@ -172,6 +172,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KymaAgent"),
                     ],
@@ -179,7 +180,7 @@ class TestBaseAgent:
                 ),
                 {
                     "is_last_step": True,
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
                             name="KubernetesAgent",
@@ -193,6 +194,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KymaAgent"),
                         SubTask(
@@ -210,7 +212,7 @@ class TestBaseAgent:
                 ),
                 {
                     "is_last_step": True,
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
                             name="KubernetesAgent",
@@ -240,10 +242,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="This is a dummy response from model.",
                             additional_kwargs={"owner": "KubernetesAgent"},
@@ -251,7 +254,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -265,10 +268,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
                             "Error: This is a dummy exception from model.",
@@ -277,7 +281,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -300,10 +304,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=True,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="Sorry, I need more steps to process the request.",
                             name="KubernetesAgent",
@@ -311,7 +316,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -345,96 +350,6 @@ class TestBaseAgent:
             agent._invoke_chain.assert_called_once_with(given_state, mock_config)
 
     @pytest.mark.parametrize(
-        "given_message, expected_output",
-        [
-            # Test case when the AIMessage have None additional_kwargs.
-            (
-                AIMessage(content="dummy"),
-                False,
-            ),
-            # Test case when the AIMessage have no owner key in additional_kwargs.
-            (
-                AIMessage(content="dummy", additional_kwargs={"key": "value"}),
-                False,
-            ),
-            # Test case when the AIMessage have different owner in additional_kwargs.
-            (
-                AIMessage(
-                    content="dummy",
-                    additional_kwargs={"owner": "value"},
-                    tool_calls=[
-                        {
-                            "args": {
-                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
-                            },
-                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
-                            "name": "k8s_query_tool",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-                False,
-            ),
-            # Test case when the AIMessage have TestAgent owner in additional_kwargs.
-            (
-                AIMessage(
-                    content="dummy",
-                    additional_kwargs={"owner": "KubernetesAgent"},
-                    tool_calls=[
-                        {
-                            "args": {
-                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
-                            },
-                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
-                            "name": "k8s_query_tool",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-                True,
-            ),
-            # Test case when the ToolMessage have non-relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="google_query_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                False,
-            ),
-            # Test case when the ToolMessage have relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="k8s_query_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                True,
-            ),
-            # Test case when the ToolMessage have relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="fetch_pod_logs_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                True,
-            ),
-        ],
-    )
-    def test_is_internal_message(
-        self,
-        mock_models,
-        given_message: BaseMessage,
-        expected_output: bool,
-    ):
-        # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
-
-        # When
-        assert agent.is_internal_message(given_message) == expected_output
-
-    @pytest.mark.parametrize(
         "given_state, expected_output",
         [
             # Test case when the subtask is not completed and tool call messages exists.
@@ -446,7 +361,8 @@ class TestBaseAgent:
                         status=SubTaskStatus.PENDING,
                     ),
                     is_last_step=False,
-                    messages=[
+                    messages=[],
+                    agent_messages=[
                         AIMessage(
                             id="1",
                             content="dummy",
@@ -474,10 +390,8 @@ class TestBaseAgent:
                 ),
                 {
                     "messages": [
-                        RemoveMessage(content="", id="1"),
-                        RemoveMessage(content="", id="2"),
+                        AIMessage(id="3", content="final answer"),
                     ],
-                    "my_task": None,
                 },
             ),
         ],

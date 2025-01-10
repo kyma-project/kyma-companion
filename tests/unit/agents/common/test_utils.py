@@ -363,7 +363,7 @@ def test_filter_messages_default_parameter():
         (
             True,
             None,
-            "__end__",
+            "finalizer",
         ),
     ],
 )
@@ -377,6 +377,7 @@ def test_subtask_selector_edge(
         my_task=my_task,
         is_last_step=is_last_step,
         messages=[],
+        agent_messages=[],
         subtasks=[],
         k8s_client=k8s_client,
     )
@@ -407,7 +408,8 @@ def test_agent_edge(last_message: BaseMessage, expected_output: str):
     state = KubernetesAgentState(
         my_task=None,
         is_last_step=False,
-        messages=[last_message],
+        messages=[],
+        agent_messages=[last_message],
         subtasks=[],
         k8s_client=k8s_client,
     )
