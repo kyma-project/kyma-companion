@@ -2,12 +2,12 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated, Literal
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, SystemMessage
+from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from pydantic import BaseModel, Field
 
 from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
-from agents.reducer.reducers import new_default_summarization_reducer
 from services.k8s import IK8sClient
 
 
@@ -92,11 +92,18 @@ class CompanionState(BaseModel):
         default=None,
     )
 
-    messages: Annotated[Sequence[BaseMessage], new_default_summarization_reducer()]
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages_summary: str = ""
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None
     k8s_client: IK8sClient | None = None
+
+    def get_messages_including_summary(self) -> list[BaseMessage]:
+        """Get messages including the summary message."""
+        if self.messages_summary:
+            return [SystemMessage(content=self.messages_summary)] + self.messages
+        return self.messages
 
     def all_tasks_completed(self) -> bool:
         """Check if all the sub-tasks are completed."""
@@ -110,11 +117,12 @@ class CompanionState(BaseModel):
 class BaseAgentState(BaseModel):
     """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
-    messages: Annotated[Sequence[BaseMessage], new_default_summarization_reducer()]
+    messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
 
     # Subgraph private fields
+    agent_messages: Annotated[Sequence[BaseMessage], add_messages]
     my_task: SubTask | None = None
     is_last_step: IsLastStep
 

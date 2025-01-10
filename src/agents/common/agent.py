@@ -3,30 +3,33 @@ from typing import Any, Literal, Protocol
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
-    BaseMessage,
-    RemoveMessage,
-    ToolMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agents.common.constants import IS_LAST_STEP, MESSAGES, MY_TASK, OWNER
+from agents.common.constants import (
+    AGENT_MESSAGES,
+    IS_LAST_STEP,
+    MESSAGES,
+    MY_TASK,
+)
 from agents.common.state import BaseAgentState, SubTaskStatus
+from agents.common.utils import filter_messages
 from utils.models.factory import IModel
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "__end__"]:
-    """Function that determines whether to end or call agent."""
+    """Function that determines whether to finalize or call agent."""
     if state.is_last_step and state.my_task is None:
-        return "__end__"
+        return "finalizer"
     return "agent"
 
 
 def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
-    last_message = state.messages[-1]
+    last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"
     return "tools"
@@ -72,28 +75,11 @@ class BaseAgent:
         """Get agent node function."""
         return self.graph
 
-    def is_internal_message(self, message: BaseMessage) -> bool:
-        """Check if the message is an internal message."""
-        # if the message is a tool call and the owner is the agent, return True.
-        if (
-            message.additional_kwargs is not None
-            and OWNER in message.additional_kwargs
-            and message.additional_kwargs[OWNER] == self.name
-            and message.tool_calls  # type: ignore
-        ):
-            return True
-
-        # if the message is a tool message and the tool is in the agent's tools, return True.
-        tool_names = [tool.name for tool in self.tools]
-        if isinstance(message, ToolMessage) and message.name in tool_names:
-            return True
-        return False
-
     def _create_chain(self, system_prompt: str) -> Any:
         agent_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt),
-                MessagesPlaceholder(variable_name=MESSAGES),
+                MessagesPlaceholder(variable_name=AGENT_MESSAGES),
                 ("human", "{query}"),
             ]
         )
@@ -115,7 +101,7 @@ class BaseAgent:
 
         return {
             IS_LAST_STEP: True,
-            MESSAGES: [
+            AGENT_MESSAGES: [
                 AIMessage(
                     content="All my subtasks are already completed.",
                     name=self.name,
@@ -125,9 +111,12 @@ class BaseAgent:
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
-            MESSAGES: state.messages,
+            AGENT_MESSAGES: filter_messages(state.agent_messages),
             "query": state.my_task.description,
         }
+        if len(state.agent_messages) == 0:
+            inputs[AGENT_MESSAGES] = filter_messages(state.messages)
+
         response = await self.chain.ainvoke(inputs, config)
         return response
 
@@ -138,7 +127,7 @@ class BaseAgent:
             response = await self._invoke_chain(state, config)
         except Exception as e:
             return {
-                MESSAGES: [
+                AGENT_MESSAGES: [
                     AIMessage(
                         content=f"Sorry, I encountered an error while processing the request. Error: {e}",
                         name=self.name,
@@ -154,7 +143,7 @@ class BaseAgent:
             and response.tool_calls
         ):
             return {
-                MESSAGES: [
+                AGENT_MESSAGES: [
                     AIMessage(
                         content="Sorry, I need more steps to process the request.",
                         name=self.name,
@@ -163,20 +152,14 @@ class BaseAgent:
             }
 
         response.additional_kwargs["owner"] = self.name
-        return {MESSAGES: [response]}
+        return {AGENT_MESSAGES: [response]}
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
-        """Finalizer node will mark the task as completed and clean-up extra messages."""
-        state.my_task.complete()
+        """Finalizer node will mark the task as completed."""
+        if state.my_task is not None:
+            state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
-        return {
-            MESSAGES: [
-                RemoveMessage(id=m.id)  # type: ignore
-                for m in state.messages
-                if self.is_internal_message(m)
-            ],
-            MY_TASK: None,
-        }
+        return {MESSAGES: [state.agent_messages[-1]]}
 
     def _build_graph(self, state_class: type) -> Any:
         # Define a new graph
@@ -185,7 +168,9 @@ class BaseAgent:
         # Define nodes with async awareness
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
-        workflow.add_node("tools", ToolNode(self.tools))
+        workflow.add_node(
+            "tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES)
+        )
         workflow.add_node("finalizer", self._finalizer_node)
 
         # Set the entrypoint: ENTRY --> subtask_selector

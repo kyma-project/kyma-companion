@@ -11,12 +11,13 @@ from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     HumanMessage,
+    RemoveMessage,
     SystemMessage,
     ToolMessage,
 )
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableSequence
+from langchain_core.runnables import RunnableConfig, RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph
@@ -26,17 +27,24 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     MESSAGES,
+    MESSAGES_SUMMARY,
+    SUMMARIZATION,
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
+from agents.summarization.summarization import Summarization
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
+from utils.settings import (
+    SUMMARIZATION_TOKEN_LOWER_LIMIT,
+    SUMMARIZATION_TOKEN_UPPER_LIMIT,
+)
 
 logger = get_logger(__name__)
 
@@ -49,7 +57,13 @@ class CustomJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):  # noqa D102
         if isinstance(
-            obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask
+            obj,
+            RemoveMessage
+            | AIMessage
+            | HumanMessage
+            | SystemMessage
+            | ToolMessage
+            | SubTask,
         ):
             return obj.__dict__
         elif isinstance(obj, IK8sClient):
@@ -102,6 +116,13 @@ class CompanionGraph:
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
+        self.summarization = Summarization(
+            model=gpt_4o_mini,
+            tokenizer_model_type=ModelType.GPT4O,
+            token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
+            token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
+        )
+
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
         self.graph = self._build_graph()
@@ -123,7 +144,7 @@ class CompanionGraph:
         """Invoke the common node."""
         response = await self._common_chain.ainvoke(
             {
-                "messages": state.messages,
+                "messages": state.get_messages_including_summary(),
                 "query": subtask,
             },
         )
@@ -166,6 +187,41 @@ class CompanionGraph:
             ]
         }
 
+    async def _summarization_node(
+        self, state: CompanionState, config: RunnableConfig
+    ) -> dict[str, Any]:
+        """Summarization node to summarize the conversation."""
+        all_messages = [SystemMessage(content=state.messages_summary)] + state.messages
+
+        token_count = self.summarization.get_messages_token_count(all_messages)
+        if token_count <= self.summarization.get_token_upper_limit():
+            return {
+                MESSAGES: [],
+            }
+
+        # filter out messages that can be kept within the token limit.
+        latest_messages = self.summarization.filter_messages_by_token_limit(
+            all_messages
+        )
+
+        if len(latest_messages) == len(all_messages):
+            return {
+                MESSAGES: [],
+            }
+
+        # summarize the remaining old messages
+        msgs_for_summarization = all_messages[: -len(latest_messages)]
+        summary = self.summarization.get_summary(msgs_for_summarization, config)
+
+        # remove excluded messages from state.
+        msgs_to_remove = state.messages[: -len(latest_messages)]
+        delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
+
+        return {
+            MESSAGES_SUMMARY: summary,
+            MESSAGES: delete_messages,
+        }
+
     def _build_graph(self) -> CompiledGraph:
         """Create the companion parent graph."""
 
@@ -177,14 +233,16 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
+        workflow.add_node(SUMMARIZATION, self._summarization_node)
 
         # Set the entrypoint: ENTRY --> supervisor
         workflow.set_entry_point(SUPERVISOR)
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
-        # The agents ALWAYS "report back" to the supervisor.
+        # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
-            workflow.add_edge(member, SUPERVISOR)
+            workflow.add_edge(member, SUMMARIZATION)
+        workflow.add_edge(SUMMARIZATION, SUPERVISOR)
 
         # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}

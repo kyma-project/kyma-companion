@@ -76,17 +76,12 @@ LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
 
 # Summarization
-SUMMARIZATION_MODEL = config("SUMMARIZATION_MODEL", default="gpt-4o-mini")
-SUMMARIZATION_TOKENIZER_MODEL = config(
-    "SUMMARIZATION_TOKENIZER_MODEL", default="gpt-4o"
-)
 SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
     "SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int
 )
 SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
     "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
 )
-SUMMARIZATION_RETRY_COUNT = config("SUMMARIZATION_RETRY_COUNT", default=3, cast=int)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
