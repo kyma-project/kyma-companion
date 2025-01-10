@@ -1,7 +1,7 @@
 import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any, Literal, Tuple
+from typing import Any, Literal
 
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
@@ -127,7 +127,7 @@ def create_node_output(
     }
 
 
-def get_current_day_timestamps_utc() -> Tuple[str, str]:
+def get_current_day_timestamps_utc() -> tuple[str, str]:
     """
     Returns the start and end timestamps for the current day in UTC.
     Start: 00:00:00

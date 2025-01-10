@@ -1,4 +1,4 @@
-from typing import AnyStr, Any
+from typing import Any
 
 import requests
 from langfuse.callback import CallbackHandler
@@ -69,12 +69,13 @@ class LangfuseAPI:
             params["userId"] = user_id
 
         response = requests.get(url, params=params, auth=self.auth)
-
+        metrics_response = None
         if response.status_code == SUCCESS_CODE:
             # Parse the JSON response into the MetricsResponse Pydantic model
-            return MetricsResponse(**response.json())
+            metrics_response = MetricsResponse(**response.json())
         else:
-            return response.raise_for_status()
+            response.raise_for_status()
+        return metrics_response
 
     def get_total_token_usage(
         self, from_timestamp: str, to_timestamp: str, tags: Any = None

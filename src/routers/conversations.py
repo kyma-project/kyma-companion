@@ -152,9 +152,7 @@ async def messages(
                     "limit": TOKEN_LIMIT_PER_CLUSTER,
                     "time_remaining_seconds": seconds_remaining,
                 },
-                headers={
-                    "Retry-After": str(seconds_remaining)
-                },
+                headers={"Retry-After": str(seconds_remaining)},
             )
 
     # Initialize k8s client for the request.

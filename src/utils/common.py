@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class Usage(BaseModel):
     """Represents the usage metrics for an LLM model."""
+
     model: str | None
     input_usage: int = Field(alias="inputUsage")
     output_usage: int = Field(alias="outputUsage")
@@ -14,6 +15,7 @@ class Usage(BaseModel):
 
 class DailyMetrics(BaseModel):
     """Represents daily metrics for traces, observations, and costs."""
+
     date: str
     count_traces: int = Field(alias="countTraces")
     count_observations: int = Field(alias="countObservations")
@@ -23,6 +25,7 @@ class DailyMetrics(BaseModel):
 
 class Meta(BaseModel):
     """Represents metadata for pagination and item counts."""
+
     page: int
     limit: int
     total_items: int = Field(alias="totalItems")
@@ -31,5 +34,6 @@ class Meta(BaseModel):
 
 class MetricsResponse(BaseModel):
     """Represents a response containing daily metrics and metadata."""
+
     data: list[DailyMetrics]
     meta: Meta

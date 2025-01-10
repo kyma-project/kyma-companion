@@ -1,5 +1,6 @@
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
 from requests.exceptions import HTTPError
 
 from agents.common.constants import SUCCESS_CODE
@@ -81,6 +82,7 @@ mock_failed_response = Mock()
 mock_failed_response.status_code = 404
 mock_failed_response.raise_for_status.side_effect = HTTPError("Not Found")
 
+
 @pytest.mark.parametrize(
     "from_timestamp, to_timestamp, tags, user_id, expected_result",
     [
@@ -118,7 +120,9 @@ mock_failed_response.raise_for_status.side_effect = HTTPError("Not Found")
         ),
     ],
 )
-def test_get_daily_metrics(from_timestamp, to_timestamp, tags, user_id, expected_result):
+def test_get_daily_metrics(
+    from_timestamp, to_timestamp, tags, user_id, expected_result
+):
     with patch("requests.get") as mock_get:
         if expected_result:
             mock_get.return_value = mock_success_response
@@ -132,6 +136,7 @@ def test_get_daily_metrics(from_timestamp, to_timestamp, tags, user_id, expected
         else:
             with pytest.raises(HTTPError):
                 api.get_daily_metrics(from_timestamp, to_timestamp, tags, user_id)
+
 
 @pytest.mark.parametrize(
     "from_timestamp, to_timestamp, tags, expected_total_usage",
@@ -159,7 +164,9 @@ def test_get_daily_metrics(from_timestamp, to_timestamp, tags, user_id, expected
         ),
     ],
 )
-def test_get_total_token_usage(from_timestamp, to_timestamp, tags, expected_total_usage):
+def test_get_total_token_usage(
+    from_timestamp, to_timestamp, tags, expected_total_usage
+):
     with patch("requests.get") as mock_get:
         if expected_total_usage > 0:
             mock_get.return_value = mock_success_response
