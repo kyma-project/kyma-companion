@@ -57,13 +57,8 @@ class LLMReranker(IReranker):
     ) -> list[Document]:
         """
         Rerank the documents based on which documents are most relevant to the given queries.
-
-        If the RRF filtration is enabled:
-        - The reranker filters out irrelevant documents using the RRF method capped at the input limit.
-        - Then, it reranks the remaining documents using the LLM model capped at the output limit.
-
-        If the RRF filtration is disabled:
-        - The reranker picks the first unique documents in the order of the input capped at the input limit.
+        - The reranker filters out irrelevant documents using the Reciprocal Rank Fusion (RRF) method
+          capped at the input limit.
         - Then, it reranks the remaining documents using the LLM model capped at the output limit.
 
         :param docs_list: A list of lists of documents.
