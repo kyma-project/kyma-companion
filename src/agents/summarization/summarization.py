@@ -1,12 +1,14 @@
 import copy
+from typing import Any
 
 from langchain_core.messages import (
     MessageLikeRepresentation,
-    ToolMessage,
+    ToolMessage, SystemMessage, RemoveMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import Messages
+from pydantic import BaseModel
 
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
@@ -22,11 +24,15 @@ class Summarization:
         tokenizer_model_type: ModelType,
         token_lower_limit: int,
         token_upper_limit: int,
+        messages_key: str = "messages",
+        messages_summary_key: str = "messages_summary",
     ) -> None:
         self._model = model
         self._tokenizer_model_type = tokenizer_model_type
         self._token_lower_limit = token_lower_limit
         self._token_upper_limit = token_upper_limit
+        self._messages_key = messages_key
+        self._messages_summary_key = messages_summary_key
 
         # create a chat prompt template for summarization.
         llm_prompt = ChatPromptTemplate.from_messages(
@@ -86,3 +92,44 @@ class Summarization:
             config=config,
         )
         return f"Summary of previous chat:\n {res.content}"
+
+    async def summarization_node(
+            self, state: BaseModel, config: RunnableConfig
+    ) -> dict[str, Any]:
+        """Summarization node to summarize the conversation."""
+        state_messages = getattr(state, self._messages_key)
+        state_messages_summary = getattr(state, self._messages_summary_key)
+
+        all_messages = state_messages
+        if state_messages_summary != "":
+            # if there is a summary, prepend it to the messages.
+            all_messages = [SystemMessage(content=state_messages_summary)] + state_messages
+
+        token_count = self.get_messages_token_count(all_messages)
+        if token_count <= self.get_token_upper_limit():
+            return {
+                self._messages_key: [],
+            }
+
+        # filter out messages that can be kept within the token limit.
+        latest_messages = self.filter_messages_by_token_limit(
+            all_messages
+        )
+
+        if len(latest_messages) == len(all_messages):
+            return {
+                self._messages_key: [],
+            }
+
+        # summarize the remaining old messages
+        msgs_for_summarization = all_messages[: -len(latest_messages)]
+        summary = self.get_summary(msgs_for_summarization, config)
+
+        # remove excluded messages from state.
+        msgs_to_remove = state_messages[: -len(latest_messages)]
+        delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
+
+        return {
+            self._messages_summary_key: summary,
+            self._messages_key: delete_messages,
+        }

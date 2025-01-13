@@ -13,11 +13,13 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     IS_LAST_STEP,
     MESSAGES,
-    MY_TASK,
+    MY_TASK, AGENT_MESSAGES_SUMMARY, SUMMARIZATION,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages
+from agents.summarization.summarization import Summarization
 from utils.models.factory import IModel
+from utils.settings import SUMMARIZATION_TOKEN_LOWER_LIMIT, SUMMARIZATION_TOKEN_UPPER_LIMIT
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "__end__"]:
@@ -62,6 +64,14 @@ class BaseAgent:
         self._name = name
         self.model = model
         self.tools = tools
+        self.summarization = Summarization(
+            model=model,
+            tokenizer_model_type=model.name,
+            token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
+            token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
+            messages_key=AGENT_MESSAGES,
+            messages_summary_key=AGENT_MESSAGES_SUMMARY,
+        )
         self.chain = self._create_chain(system_prompt)
         self.graph = self._build_graph(state_class)
         self.graph.step_timeout = 60  # Default timeout, can be overridden
@@ -111,7 +121,7 @@ class BaseAgent:
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         inputs = {
-            AGENT_MESSAGES: filter_messages(state.agent_messages),
+            AGENT_MESSAGES: state.get_agent_messages_including_summary(),
             "query": state.my_task.description,
         }
         if len(state.agent_messages) == 0:
@@ -172,6 +182,7 @@ class BaseAgent:
             "tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES)
         )
         workflow.add_node("finalizer", self._finalizer_node)
+        workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 
         # Set the entrypoint: ENTRY --> subtask_selector
         workflow.set_entry_point("subtask_selector")
@@ -182,8 +193,10 @@ class BaseAgent:
         # Define the edge: agent --> (tool | finalizer)
         workflow.add_conditional_edges("agent", agent_edge)
 
-        # Define the edge: tool --> agent
-        workflow.add_edge("tools", "agent")
+        # Define the edge: tool --> summarization
+        workflow.add_edge("tools", SUMMARIZATION)
+        # Define the edge: summarization --> agent
+        workflow.add_edge(SUMMARIZATION, "agent")
 
         # Define the edge: finalizer --> END
         workflow.add_edge("finalizer", "__end__")

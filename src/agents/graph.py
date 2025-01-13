@@ -121,6 +121,8 @@ class CompanionGraph:
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
+            messages_key=MESSAGES,
+            messages_summary_key=MESSAGES_SUMMARY,
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
@@ -187,41 +189,6 @@ class CompanionGraph:
             ]
         }
 
-    async def _summarization_node(
-        self, state: CompanionState, config: RunnableConfig
-    ) -> dict[str, Any]:
-        """Summarization node to summarize the conversation."""
-        all_messages = [SystemMessage(content=state.messages_summary)] + state.messages
-
-        token_count = self.summarization.get_messages_token_count(all_messages)
-        if token_count <= self.summarization.get_token_upper_limit():
-            return {
-                MESSAGES: [],
-            }
-
-        # filter out messages that can be kept within the token limit.
-        latest_messages = self.summarization.filter_messages_by_token_limit(
-            all_messages
-        )
-
-        if len(latest_messages) == len(all_messages):
-            return {
-                MESSAGES: [],
-            }
-
-        # summarize the remaining old messages
-        msgs_for_summarization = all_messages[: -len(latest_messages)]
-        summary = self.summarization.get_summary(msgs_for_summarization, config)
-
-        # remove excluded messages from state.
-        msgs_to_remove = state.messages[: -len(latest_messages)]
-        delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
-
-        return {
-            MESSAGES_SUMMARY: summary,
-            MESSAGES: delete_messages,
-        }
-
     def _build_graph(self) -> CompiledGraph:
         """Create the companion parent graph."""
 
@@ -233,7 +200,7 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
-        workflow.add_node(SUMMARIZATION, self._summarization_node)
+        workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.

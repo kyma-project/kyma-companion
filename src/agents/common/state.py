@@ -123,8 +123,15 @@ class BaseAgentState(BaseModel):
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
+    agent_messages_summary: str = ""
     my_task: SubTask | None = None
     is_last_step: IsLastStep
+
+    def get_agent_messages_including_summary(self) -> list[BaseMessage]:
+        """Get messages including the summary message."""
+        if self.agent_messages_summary:
+            return [SystemMessage(content=self.agent_messages_summary)] + self.agent_messages
+        return self.messages
 
     class Config:
         arbitrary_types_allowed = True
