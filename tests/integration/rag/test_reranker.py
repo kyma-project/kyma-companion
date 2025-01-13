@@ -29,7 +29,8 @@ def semantic_similarity_metric(evaluator_model):
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
         model=evaluator_model,
-        # TODO: Increase the threshold.
+        # TODO: Increase this threshold to at least 0.7, by improving the quality of the RAG system and
+        # its integration tests.
         threshold=0.5,
     )
 
@@ -37,7 +38,8 @@ def semantic_similarity_metric(evaluator_model):
 @pytest.fixture
 def evaluation_metrics(evaluator_model, semantic_similarity_metric):
     contextual_precision = ContextualPrecisionMetric(
-        # TODO: Increase the threshold.
+        # TODO: Increase this threshold to at least 0.7, by improving the quality of the RAG system and
+        # its integration tests.
         threshold=0.5,
         model=evaluator_model,
         include_reason=True,
