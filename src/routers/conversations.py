@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -13,7 +14,9 @@ from routers.common import (
     InitialQuestionsResponse,
 )
 from services.conversation import ConversationService, IService
+from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.k8s import IK8sClient, K8sClient
+from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.utils import create_session_id
@@ -21,9 +24,24 @@ from utils.utils import create_session_id
 logger = get_logger(__name__)
 
 
-def get_conversation_service() -> IService:
-    """Dependency to get the conversation service instance"""
-    return ConversationService()
+@lru_cache(maxsize=1)
+def init_config() -> Config:
+    """Initialize the config object once."""
+    return get_config()
+
+
+def init_data_sanitizer(
+    config: Annotated[Config, Depends(init_config)]
+) -> IDataSanitizer:
+    """Initialize the data sanitizer instance"""
+    return DataSanitizer(config.sanitization_config)
+
+
+def init_conversation_service(
+    config: Annotated[Config, Depends(init_config)]
+) -> IService:
+    """Initialize the conversation service instance"""
+    return ConversationService(config=config)
 
 
 router = APIRouter(
@@ -38,8 +56,9 @@ async def init_conversation(
     x_cluster_url: Annotated[str, Header()],
     x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
+    conversation_service: Annotated[IService, Depends(init_conversation_service)],
+    data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
     session_id: Annotated[str, Header()] = "",
-    service: IService = Depends(get_conversation_service),  # noqa B008
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
@@ -54,6 +73,7 @@ async def init_conversation(
             api_server=x_cluster_url,
             user_token=x_k8s_authorization,
             certificate_authority_data=x_cluster_certificate_authority_data,
+            data_sanitizer=data_sanitizer,
         )
     except Exception as e:
         logger.error(e)
@@ -63,7 +83,7 @@ async def init_conversation(
 
     try:
         # Create initial questions.
-        questions = service.new_conversation(
+        questions = conversation_service.new_conversation(
             k8s_client=k8s_client,
             message=Message(
                 query="",
@@ -90,13 +110,13 @@ async def init_conversation(
 @router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
 async def followup_questions(
     conversation_id: Annotated[str, Path(title="The ID of the conversation")],
-    service: IService = Depends(get_conversation_service),  # noqa B008
+    conversation_service: Annotated[IService, Depends(init_conversation_service)],
 ) -> JSONResponse:
     """Endpoint to generate follow-up questions for a conversation."""
 
     try:
         # Create follow-up questions.
-        questions = await service.handle_followup_questions(
+        questions = await conversation_service.handle_followup_questions(
             conversation_id=conversation_id
         )
 
@@ -121,7 +141,8 @@ async def messages(
     x_cluster_url: Annotated[str, Header()],
     x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
-    service: IService = Depends(get_conversation_service),  # noqa B008
+    conversation_service: Annotated[IService, Depends(init_conversation_service)],
+    data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
@@ -131,6 +152,7 @@ async def messages(
             api_server=x_cluster_url,
             user_token=x_k8s_authorization,
             certificate_authority_data=x_cluster_certificate_authority_data,
+            data_sanitizer=data_sanitizer,
         )
     except Exception as e:
         logger.error(e)
@@ -141,7 +163,7 @@ async def messages(
     return StreamingResponse(
         (
             prepare_chunk_response(chunk) + b"\n"
-            async for chunk in service.handle_request(
+            async for chunk in conversation_service.handle_request(
                 conversation_id, message, k8s_client
             )
         ),

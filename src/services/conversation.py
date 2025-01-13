@@ -13,6 +13,7 @@ from initial_questions.inital_questions import (
     InitialQuestionsHandler,
 )
 from services.k8s import IK8sClient
+from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
 from utils.settings import REDIS_HOST, REDIS_PORT
@@ -53,12 +54,13 @@ class ConversationService(metaclass=SingletonMeta):
 
     def __init__(
         self,
+        config: Config,
         initial_questions_handler: IInitialQuestionsHandler | None = None,
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
     ) -> None:
         try:
-            self._model_factory = model_factory or ModelFactory()
+            self._model_factory = model_factory or ModelFactory(config=config)
             models = self._model_factory.create_models()
         except Exception as e:
             logger.error(f"Failed to initialize models: {e}")

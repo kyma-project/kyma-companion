@@ -1,52 +1,80 @@
 import json
+from typing import Protocol
 
 import scrubadub
 
+from utils.config import DataSanitizationConfig
+from utils.singleton_meta import SingletonMeta
 
-class DataSanitizer:
+DEFAULT_SENSITIVE_RESOURCES = [
+    "Deployment",
+    "DeploymentList",
+    "Pod",
+    "PodList",
+    "StatefulSet",
+    "StatefulSetList",
+    "DaemonSet",
+    "DaemonSetList",
+]
+
+# List of sensitive environment variable names to remove
+DEFAULT_SENSITIVE_ENV_VARS = [
+    "TOKEN",
+    "SECRET",
+    "PASSWORD",
+    "PASS",
+    "KEY",
+    "CERT",
+    "PRIVATE",
+    "CREDENTIAL",
+    "AUTH",
+]
+
+# Fields that typically contain sensitive data
+DEFAULT_SENSITIVE_FIELD_NAMES = [
+    "password",
+    "secret",
+    "token",
+    "key",
+    "cert",
+    "credential",
+    "private",
+    "auth",
+]
+
+
+class IDataSanitizer(Protocol):
+    """A protocol for a data sanitizer."""
+
+    def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
+        """Sanitize the data by removing sensitive information."""
+        ...
+
+
+class DataSanitizer(metaclass=SingletonMeta):
     """Implementation of the data sanitizer that processes input dictionaries."""
 
-    # List of sensitive environment variable names to remove
-    SENSITIVE_ENV_VARS = {
-        "TOKEN",
-        "SECRET",
-        "PASSWORD",
-        "PASS",
-        "KEY",
-        "CERT",
-        "PRIVATE",
-        "CREDENTIAL",
-        "AUTH",
-    }
+    def __init__(self, config: DataSanitizationConfig = None):
+        self.config = config or DataSanitizationConfig(
+            resources_to_sanitize=DEFAULT_SENSITIVE_RESOURCES,
+            sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
+            sensitive_field_names=DEFAULT_SENSITIVE_FIELD_NAMES,
+        )
 
-    # Fields that typically contain sensitive data
-    SENSITIVE_FIELD_NAMES = {
-        "password",
-        "secret",
-        "token",
-        "key",
-        "cert",
-        "credential",
-        "private",
-        "auth",
-    }
-
-    @staticmethod
-    def sanitize(data: dict | list[dict]) -> dict | list[dict]:
+    def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
         """Sanitize the data by removing sensitive information."""
         if isinstance(data, list):
-            return [DataSanitizer._sanitize_object(obj) for obj in data]
+            return [self._sanitize_object(obj) for obj in data]
         elif isinstance(data, dict):
-            return DataSanitizer._sanitize_object(data)
+            return self._sanitize_object(data)
         raise ValueError("Data must be a list or a dictionary.")
 
-    @staticmethod
-    def _sanitize_object(obj: dict) -> dict:
+    def _sanitize_object(self, obj: dict) -> dict:
         """Sanitize a single object."""
         if not isinstance(obj, dict):
             return obj
 
-        cleaned_obj = DataSanitizer._clean_personal_information(obj)
+        cleaned_obj = self._clean_personal_information(obj)
 
         # Create a copy to avoid modifying the original
         obj = cleaned_obj.copy()
@@ -56,10 +84,10 @@ class DataSanitizer:
             if obj["kind"] == "Secret" or obj["kind"] == "SecretList":
                 if "items" in obj:
                     return [
-                        DataSanitizer._sanitize_secret(item) for item in obj["items"]
+                        self._sanitize_secret(item) for item in obj["items"]
                     ]  # type: ignore
                 else:
-                    return DataSanitizer._sanitize_secret(obj)
+                    return self._sanitize_secret(obj)
             elif obj["kind"] in [
                 "Deployment",
                 "DeploymentList",
@@ -72,22 +100,20 @@ class DataSanitizer:
             ]:
                 if "items" in obj:
                     return [
-                        DataSanitizer._sanitize_workload(item) for item in obj["items"]
+                        self._sanitize_workload(item) for item in obj["items"]
                     ]  # type: ignore
                 else:
-                    return DataSanitizer._sanitize_workload(obj)
+                    return self._sanitize_workload(obj)
 
         # Recursively sanitize all dictionary fields
-        return DataSanitizer._sanitize_dict(obj)
+        return self._sanitize_dict(obj)
 
-    @staticmethod
-    def _sanitize_secret(obj: dict) -> dict:
+    def _sanitize_secret(self, obj: dict) -> dict:
         """Sanitize a secret object."""
         obj["data"] = {}
         return obj
 
-    @staticmethod
-    def _sanitize_workload(obj: dict) -> dict:
+    def _sanitize_workload(self, obj: dict) -> dict:
         """Sanitize a workload object (Deployment, Pod, StatefulSet, DaemonSet)."""
         try:
             # Handle template-based resources (Deployment, StatefulSet, DaemonSet)
@@ -102,7 +128,7 @@ class DataSanitizer:
             # Process each container
             for container in containers:
                 if "env" in container:
-                    container["env"] = DataSanitizer._filter_env_vars(container["env"])
+                    container["env"] = self._filter_env_vars(container["env"])
                 if "envFrom" in container:
                     # Remove all envFrom references as they might contain sensitive data
                     container["envFrom"] = []
@@ -112,15 +138,14 @@ class DataSanitizer:
             # If the structure is not as expected, return the original object
             return obj
 
-    @staticmethod
-    def _filter_env_vars(env_vars: list) -> list:
+    def _filter_env_vars(self, env_vars: list) -> list:
         """Filter out sensitive environment variables."""
         filtered_vars = []
         for env_var in env_vars:
             # Skip if the variable name contains any sensitive keywords
             if any(
                 sensitive_key.lower() in env_var.get("name", "").lower()
-                for sensitive_key in DataSanitizer.SENSITIVE_ENV_VARS
+                for sensitive_key in DEFAULT_SENSITIVE_ENV_VARS
             ):
                 # Replace the value with a placeholder
                 env_var = env_var.copy()
@@ -131,8 +156,7 @@ class DataSanitizer:
             filtered_vars.append(env_var)
         return filtered_vars
 
-    @staticmethod
-    def _sanitize_dict(data: dict) -> dict:
+    def _sanitize_dict(self, data: dict) -> dict:
         """Recursively sanitize a dictionary by looking for sensitive data patterns."""
         result = data.copy()
 
@@ -140,19 +164,14 @@ class DataSanitizer:
             # Check if the key indicates sensitive data
             key_lower = key.lower()
             if any(
-                sensitive in key_lower
-                for sensitive in DataSanitizer.SENSITIVE_FIELD_NAMES
+                sensitive in key_lower for sensitive in DEFAULT_SENSITIVE_FIELD_NAMES
             ):
                 result[key] = "[REDACTED]"
             elif isinstance(value, dict):
-                result[key] = DataSanitizer._sanitize_dict(value)
+                result[key] = self._sanitize_dict(value)
             elif isinstance(value, list):
                 result[key] = [
-                    (
-                        DataSanitizer._sanitize_dict(item)
-                        if isinstance(item, dict)
-                        else item
-                    )
+                    (self._sanitize_dict(item) if isinstance(item, dict) else item)
                     for item in value
                 ]
             else:
@@ -160,8 +179,7 @@ class DataSanitizer:
 
         return result
 
-    @staticmethod
-    def _clean_personal_information(data: dict) -> dict:
+    def _clean_personal_information(self, data: dict) -> dict:
         """Cleans personal information from a string."""
         data_str = json.dumps(data)
 
