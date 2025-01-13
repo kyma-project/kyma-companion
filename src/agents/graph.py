@@ -235,14 +235,14 @@ class CompanionGraph:
         workflow.add_node(COMMON, self._common_node)
         workflow.add_node(SUMMARIZATION, self._summarization_node)
 
-        # Set the entrypoint: ENTRY --> supervisor
-        workflow.set_entry_point(SUPERVISOR)
-
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
             workflow.add_edge(member, SUMMARIZATION)
         workflow.add_edge(SUMMARIZATION, SUPERVISOR)
+
+        # Set the entrypoint: ENTRY --> summarization
+        workflow.set_entry_point(SUMMARIZATION)
 
         # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}

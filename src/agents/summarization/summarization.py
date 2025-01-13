@@ -31,7 +31,6 @@ class Summarization:
         # create a chat prompt template for summarization.
         llm_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", MESSAGES_SUMMARIZATION_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
@@ -63,7 +62,7 @@ class Summarization:
             )
             if tokens > self._token_lower_limit:
                 break
-            filtered_messages.append(copy.deepcopy(msg))
+            filtered_messages.insert(0, copy.deepcopy(msg))
 
         # remove the tool messages from head of the list,
         # because a tool message must be preceded by a system message.
@@ -74,15 +73,16 @@ class Summarization:
 
     def get_summary(self, messages: Messages, config: RunnableConfig) -> str:
         """Returns the summary of the messages."""
+        if len(messages) == 0:
+            return ""
+
         if "tags" not in config:
             config["tags"] = ["summarization"]
         else:
             config["tags"].append("summarization")
 
         res = self._chain.invoke(
-            {"messages": messages},
+            {"messages": messages + [("system", MESSAGES_SUMMARIZATION_PROMPT)]},
             config=config,
         )
-        print("***********SUMMARY************")
-        print(res.content)
-        return res.content
+        return f"Summary of previous chat:\n {res.content}"
