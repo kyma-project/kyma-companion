@@ -38,7 +38,6 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
-from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 
@@ -90,10 +89,11 @@ class CompanionGraph:
     planner_prompt: ChatPromptTemplate
 
     def __init__(
-        self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver
+        self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver, handler = None
     ):
         self.models = models
         self.memory = memory
+        self.handler = handler
 
         gpt_4o_mini = models[ModelType.GPT4O_MINI]
         gpt_4o = models[ModelType.GPT4O]
@@ -212,7 +212,8 @@ class CompanionGraph:
             HumanMessage(content=message.query),
         ]
 
-        hashed_cluster_url = hash_url(k8s_client.get_cluster_url())
+        x_cluster_url = k8s_client.get_api_server()
+        cluster_id = x_cluster_url.split(".")[1]
 
         async for chunk in self.graph.astream(
             input={
@@ -225,10 +226,10 @@ class CompanionGraph:
                 "configurable": {
                     "thread_id": conversation_id,
                 },
-                "callbacks": [handler],
+                "callbacks": [self.handler],
                 "tags": [
-                    hashed_cluster_url
-                ],  # cluster_url as a tag for traceability and rate limiting
+                    cluster_id
+                ],  # cluster_id as a tag for traceability and rate limiting
             },
         ):
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)

@@ -1,9 +1,8 @@
 from typing import Any
-
+from typing import Protocol
 import requests
 from langfuse.callback import CallbackHandler
-from requests.auth import HTTPBasicAuth
-
+from aiohttp import BasicAuth, ClientSession
 from agents.common.constants import SUCCESS_CODE
 from utils.common import MetricsResponse
 from utils.settings import (
@@ -12,34 +11,68 @@ from utils.settings import (
     LANGFUSE_PUBLIC_KEY,
     LANGFUSE_SECRET_KEY,
 )
+from utils.singleton_meta import SingletonMeta
 from utils.utils import string_to_bool
 
-handler = CallbackHandler(
-    secret_key=LANGFUSE_SECRET_KEY,
-    public_key=LANGFUSE_PUBLIC_KEY,
-    host=LANGFUSE_HOST,
-    enabled=string_to_bool(LANGFUSE_ENABLED),
-)
+
+class ILangfuseService(Protocol):
+    """Service interface"""
 
 
-class LangfuseAPI:
+    def handler(self):
+        """Returns the callback handler"""
+        ...
+
+
+    async def get_daily_metrics(
+        self,
+        from_timestamp: str,
+        to_timestamp: str,
+        tags: Any = None,
+        user_id: Any = None,
+    ) -> MetricsResponse | None:
+        """
+        Fetch daily metrics from the Langfuse API."""
+        ...
+
+    async def get_total_token_usage(
+        self, from_timestamp: str, to_timestamp: str, tags: Any = None
+    ) -> int:
+        """
+        Calculate the total token utilization by each cluster filtered by tags.
+        """
+        ...
+
+
+class LangfuseService(metaclass=SingletonMeta):
     """
     A class to interact with the Langfuse API.
 
     Attributes:
-        base_url (str): The base URL for the Langfuse API,  set to LANGFUSE_HOST.
-        public_key (str): The public key used for authentication,  set to LANGFUSE_PUBLIC_KEY.
-        secret_key (str): The secret key used for authentication,  set to LANGFUSE_SECRET_KEY.
-        auth (HTTPBasicAuth): An authentication object created using the public and secret keys.
+        base_url (str): The base URL for the Langfuse API, set to LANGFUSE_HOST.
+        public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
+        secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
+        auth (BasicAuth): An authentication object created using the public and secret keys.
     """
 
     def __init__(self):
         self.base_url = LANGFUSE_HOST
         self.public_key = LANGFUSE_PUBLIC_KEY
         self.secret_key = LANGFUSE_SECRET_KEY
-        self.auth = HTTPBasicAuth(self.public_key, self.secret_key)
+        self.auth = BasicAuth(self.public_key, self.secret_key)
+        self._handler = CallbackHandler(
+            secret_key=LANGFUSE_SECRET_KEY,
+            public_key=LANGFUSE_PUBLIC_KEY,
+            host=LANGFUSE_HOST,
+            enabled=string_to_bool(LANGFUSE_ENABLED),
+        )
 
-    def get_daily_metrics(
+    @property
+    def handler(self):
+        """Returns the callback handler"""
+        return self._handler
+
+    async def get_daily_metrics(
         self,
         from_timestamp: str,
         to_timestamp: str,
@@ -68,16 +101,18 @@ class LangfuseAPI:
         if user_id:
             params["userId"] = user_id
 
-        response = requests.get(url, params=params, auth=self.auth)
-        metrics_response = None
-        if response.status_code == SUCCESS_CODE:
-            # Parse the JSON response into the MetricsResponse Pydantic model
-            metrics_response = MetricsResponse(**response.json())
-        else:
-            response.raise_for_status()
-        return metrics_response
+        async with ClientSession() as session:
+            async with session.get(url, params=params, auth=self.auth) as response:
+                if response.status == SUCCESS_CODE:
+                    # Parse the JSON response into the MetricsResponse Pydantic model
+                    data = await response.json()
+                    metrics_response = MetricsResponse(**data)
+                    return metrics_response
+                else:
+                    response.raise_for_status()
+                    return None
 
-    def get_total_token_usage(
+    async def get_total_token_usage(
         self, from_timestamp: str, to_timestamp: str, tags: Any = None
     ) -> int:
         """
@@ -89,12 +124,13 @@ class LangfuseAPI:
         :return: Total token utilization as an integer.
         """
         # Fetch the daily metrics
-        metrics = self.get_daily_metrics(from_timestamp, to_timestamp, tags)
+        metrics = await self.get_daily_metrics(from_timestamp, to_timestamp, tags)
 
         # Calculate the total token utilization
         total_token_utilization = 0
-        for daily_metric in metrics.data:
-            for usage in daily_metric.usage:
-                total_token_utilization += usage.total_usage
+        if metrics and metrics.data:
+            for daily_metric in metrics.data:
+                for usage in daily_metric.usage:
+                    total_token_utilization += usage.total_usage
 
         return total_token_utilization

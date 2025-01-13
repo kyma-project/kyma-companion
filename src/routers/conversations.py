@@ -16,7 +16,7 @@ from routers.common import (
 )
 from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
-from utils.langfuse import LangfuseAPI
+from utils.langfuse import ILangfuseService, LangfuseService
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.settings import TOKEN_LIMIT_PER_CLUSTER
@@ -24,10 +24,16 @@ from utils.utils import create_session_id
 
 logger = get_logger(__name__)
 
+def get_langfuse_service() -> ILangfuseService:
+    """Dependency to get the langfuse service instance"""
+    return LangfuseService()
 
-def get_conversation_service() -> IService:
+def get_conversation_service(langfuse_service: ILangfuseService = Depends(get_langfuse_service)) -> IService:
     """Dependency to get the conversation service instance"""
-    return ConversationService()
+    return ConversationService(langfuse_handler=langfuse_service.handler)
+
+
+
 
 
 router = APIRouter(
@@ -126,34 +132,14 @@ async def messages(
     x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     service: IService = Depends(get_conversation_service),  # noqa B008
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
     # Check rate limitation
+    total_token_usage = 0
     if TOKEN_LIMIT_PER_CLUSTER != -1:
-        from_timestamp, to_timestamp = get_current_day_timestamps_utc()
-        hashed_cluster_url = hash_url(x_cluster_url)
-        langfuse_api = LangfuseAPI()
-        total_token_usage = langfuse_api.get_total_token_usage(
-            from_timestamp, to_timestamp, hashed_cluster_url
-        )
-
-        if total_token_usage > TOKEN_LIMIT_PER_CLUSTER:
-            current_utc = datetime.now(UTC)
-            midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
-            time_remaining = midnight_utc - current_utc
-            seconds_remaining = int(time_remaining.total_seconds())
-            raise HTTPException(
-                status_code=429,
-                detail={
-                    "error": "Rate limit exceeded",
-                    "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
-                    "current_usage": total_token_usage,
-                    "limit": TOKEN_LIMIT_PER_CLUSTER,
-                    "time_remaining_seconds": seconds_remaining,
-                },
-                headers={"Retry-After": str(seconds_remaining)},
-            )
+        await check_token_usage(x_cluster_url, langfuse_service)
 
     # Initialize k8s client for the request.
     try:
@@ -177,3 +163,33 @@ async def messages(
         ),
         media_type="text/event-stream",
     )
+
+
+async def check_token_usage(x_cluster_url, langfuse_service) -> None:
+    from_timestamp, to_timestamp = get_current_day_timestamps_utc()
+    cluster_id = x_cluster_url.split(".")[1]
+    try:
+
+        total_token_usage = await langfuse_service.get_total_token_usage(
+            from_timestamp, to_timestamp, cluster_id
+        )
+    except Exception as e:
+        logger.error(e)
+        logger.error("failed to connect to the Langfuse API")
+
+    if total_token_usage > TOKEN_LIMIT_PER_CLUSTER:
+        current_utc = datetime.now(UTC)
+        midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
+        time_remaining = midnight_utc - current_utc
+        seconds_remaining = int(time_remaining.total_seconds())
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Rate limit exceeded",
+                "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
+                "current_usage": total_token_usage,
+                "limit": TOKEN_LIMIT_PER_CLUSTER,
+                "time_remaining_seconds": seconds_remaining,
+            },
+            headers={"Retry-After": str(seconds_remaining)},
+        )

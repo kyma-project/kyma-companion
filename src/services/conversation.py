@@ -56,6 +56,7 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
+        langfuse_handler   = None,
     ) -> None:
         try:
             self._model_factory = model_factory or ModelFactory()
@@ -80,6 +81,7 @@ class ConversationService(metaclass=SingletonMeta):
         self._companion_graph = CompanionGraph(
             models,
             memory=redis_saver,
+            handler=langfuse_handler
         )
 
     def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:

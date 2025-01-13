@@ -14,7 +14,7 @@ from requests import Response
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
 
-    def get_cluster_url(self) -> str:
+    def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         ...
 
@@ -121,7 +121,7 @@ class K8sClient:
             except FileNotFoundError:
                 return
 
-    def get_cluster_url(self) -> str:
+    def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         return self.api_server
 
