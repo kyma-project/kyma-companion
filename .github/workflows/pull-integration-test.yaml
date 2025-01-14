@@ -51,6 +51,7 @@ jobs:
         env:
           AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
           HANA_DB_SECRET: ${{ secrets.HANA_DB }}
+          LANGFUSE_KCP_TEST_SECRET: ${{ secrets.LANGFUSE_KCP_TEST_SECRET }}
         run: |
           echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
           echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
@@ -67,8 +68,14 @@ jobs:
           echo "DATABASE_PORT=$(yq eval '.DATABASE_PORT' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
           echo "DOCS_TABLE_NAME=$(yq eval '.DOCS_TABLE_NAME' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
           
+          # Extract HANA DB credentials - updated key names
+          echo "${LANGFUSE_KCP_TEST_SECRET}" > langfuse-kcp-test-secret.yaml
+          echo "LANGFUSE_HOST=$(yq eval '.LANGFUSE_HOST' langfuse-kcp-test-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "LANGFUSE_PUBLIC_KEY=$(yq eval '.LANGFUSE_PUBLIC_KEY' langfuse-kcp-test-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "LANGFUSE_SECRET_KEY=$(yq eval '.LANGFUSE_SECRET_KEY' langfuse-kcp-test-secret.yaml)" >> $GITHUB_OUTPUT
+          
           # cleanup
-          rm -f aicore-secret.yaml hana-db-secret.yaml
+          rm -f aicore-secret.yaml hana-db-secret.yaml langfuse-kcp-test-secret.yaml
 
       - name: Run integration tests
         env:
@@ -89,6 +96,10 @@ jobs:
           DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
           DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
           DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
+          # Langfuse configuration
+          LANGFUSE_HOST:  ${{ steps.int-tests-configs.outputs.LANGFUSE_HOST }}
+          LANGFUSE_PUBLIC_KEY:  ${{ steps.int-tests-configs.outputs.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY:  ${{ steps.int-tests-configs.outputs.LANGFUSE_SECRET_KEY }}
         run: |
           echo "${{ secrets.MODELS_JSON }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration
