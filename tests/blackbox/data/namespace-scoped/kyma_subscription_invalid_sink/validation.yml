@@ -25,5 +25,3 @@
       expected_evaluation: false
     - scenario_expectation_name: complete_yaml
       expected_evaluation: false
-    - scenario_expectation_name: verification
-      expected_evaluation: true

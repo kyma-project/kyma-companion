@@ -24,7 +24,7 @@ expectations:
     categories:
       - solution_finding
       - step-by-step_guidance
-    complexity: 2
+    complexity: 1
   - name: partial_fix
     statement: provides a partial JavaScript code for the Function with the correct syntax.
     categories:

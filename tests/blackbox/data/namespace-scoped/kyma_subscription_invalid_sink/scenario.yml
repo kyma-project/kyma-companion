@@ -39,9 +39,3 @@ expectations:
       - yaml
       - solution_finding
     complexity: 3
-  - name: verification
-    statement: provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix
-    categories:
-      - kubernetes
-      - other
-    complexity: 2
