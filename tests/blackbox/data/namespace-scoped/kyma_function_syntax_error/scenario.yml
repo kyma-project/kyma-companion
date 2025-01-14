@@ -44,4 +44,4 @@ expectations:
       - yaml
       - solution_finding
       - completeness
-    complexity: 2
+    complexity: 3
