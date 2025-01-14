@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
+from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
 from agents.common.utils import get_current_day_timestamps_utc
 from routers.common import (
@@ -16,7 +17,7 @@ from routers.common import (
 )
 from services.conversation import ConversationService, IService
 from services.k8s import IK8sClient, K8sClient
-from utils.langfuse import ILangfuseService, LangfuseService
+from services.langfuse import ILangfuseService, LangfuseService
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.settings import TOKEN_LIMIT_PER_CLUSTER
@@ -202,7 +203,7 @@ async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
         time_remaining = midnight_utc - current_utc
         seconds_remaining = int(time_remaining.total_seconds())
         raise HTTPException(
-            status_code=429,
+            status_code=ERROR_RATE_LIMIT_CODE,
             detail={
                 "error": "Rate limit exceeded",
                 "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",

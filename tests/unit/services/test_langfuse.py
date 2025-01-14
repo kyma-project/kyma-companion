@@ -6,11 +6,11 @@ from aiohttp import ClientResponseError
 from aiohttp.web_exceptions import HTTPError
 from fastapi import HTTPException
 
-from agents.common.constants import SUCCESS_CODE
+from agents.common.constants import ERROR_RATE_LIMIT_CODE, SUCCESS_CODE
 from agents.common.utils import get_current_day_timestamps_utc
 from routers.conversations import check_token_usage
+from services.langfuse import LangfuseService
 from utils.common import MetricsResponse
-from utils.langfuse import LangfuseService
 from utils.settings import TOKEN_LIMIT_PER_CLUSTER
 
 ERROR_STATUS_CODE = 500
@@ -218,8 +218,6 @@ async def test_get_total_token_usage(
                 await api.get_total_token_usage(from_timestamp, to_timestamp, tags)
 
 
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "x_cluster_url, total_token_usage, expected_exception, expected_detail",
@@ -272,13 +270,13 @@ async def test_check_token_usage(
     seconds_remaining = int(time_remaining.total_seconds())
 
     if expected_detail:
-        expected_detail['time_remaining_seconds'] = seconds_remaining
+        expected_detail["time_remaining_seconds"] = seconds_remaining
 
     if expected_exception:
         with pytest.raises(expected_exception) as exc_info:
             await check_token_usage(x_cluster_url, langfuse_service)
 
-        assert exc_info.value.status_code == 429
+        assert exc_info.value.status_code == ERROR_RATE_LIMIT_CODE
         assert exc_info.value.detail == expected_detail
         assert exc_info.value.headers == {"Retry-After": str(seconds_remaining)}
     else:
@@ -290,4 +288,3 @@ async def test_check_token_usage(
     langfuse_service.get_total_token_usage.assert_called_once_with(
         from_timestamp, to_timestamp, cluster_id
     )
-

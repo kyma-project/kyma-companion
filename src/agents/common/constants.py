@@ -37,3 +37,5 @@ K8S_AGENT = "KubernetesAgent"
 KYMA_AGENT = "KymaAgent"
 
 SUCCESS_CODE = 200
+
+ERROR_RATE_LIMIT_CODE = 429
