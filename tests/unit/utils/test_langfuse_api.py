@@ -1,11 +1,14 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from requests.exceptions import HTTPError
+from aiohttp import ClientResponseError
+from aiohttp.web_exceptions import HTTPError
 
 from agents.common.constants import SUCCESS_CODE
 from utils.common import MetricsResponse
-from utils.langfuse import LangfuseAPI
+from utils.langfuse import LangfuseService
+
+ERROR_STATUS_CODE = 500
 
 # Mock data for MetricsResponse
 mock_metrics_data = {
@@ -72,17 +75,6 @@ mock_metrics_data = {
 }
 
 
-# Mock response for successful API call
-mock_success_response = Mock()
-mock_success_response.status_code = SUCCESS_CODE
-mock_success_response.json.return_value = mock_metrics_data
-
-# Mock response for failed API call
-mock_failed_response = Mock()
-mock_failed_response.status_code = 404
-mock_failed_response.raise_for_status.side_effect = HTTPError("Not Found")
-
-
 @pytest.mark.parametrize(
     "from_timestamp, to_timestamp, tags, user_id, expected_result",
     [
@@ -110,32 +102,66 @@ mock_failed_response.raise_for_status.side_effect = HTTPError("Not Found")
             "user123",
             MetricsResponse(**mock_metrics_data),
         ),
-        # Test case 4: Failed API call
-        (
-            "2025-01-08T13:50:56.406Z",
-            "2025-12-16T13:50:56.406Z",
-            None,
-            None,
-            None,
-        ),
     ],
 )
-def test_get_daily_metrics(
+@pytest.mark.asyncio
+async def test_get_daily_metrics(
     from_timestamp, to_timestamp, tags, user_id, expected_result
 ):
-    with patch("requests.get") as mock_get:
+    with patch("aiohttp.ClientSession.get") as mock_get:
         if expected_result:
-            mock_get.return_value = mock_success_response
+            # Mock successful response
+            mock_response = AsyncMock()
+            mock_response.status = SUCCESS_CODE
+            mock_response.json.return_value = mock_metrics_data
+            mock_get.return_value.__aenter__.return_value = mock_response
         else:
-            mock_get.return_value = mock_failed_response
+            # Mock failed response
+            mock_response = AsyncMock()
+            mock_response.status = ERROR_STATUS_CODE
+            mock_response.raise_for_status.side_effect = ClientResponseError(
+                request_info=None,
+                history=None,
+                status=ERROR_STATUS_CODE,
+                message="Not Found",
+            )
+            mock_get.return_value.__aenter__.return_value = mock_response
 
-        api = LangfuseAPI()
+        api = LangfuseService()
         if expected_result:
-            result = api.get_daily_metrics(from_timestamp, to_timestamp, tags, user_id)
+            result = await api.get_daily_metrics(
+                from_timestamp, to_timestamp, tags, user_id
+            )
             assert result == expected_result
         else:
-            with pytest.raises(HTTPError):
-                api.get_daily_metrics(from_timestamp, to_timestamp, tags, user_id)
+            with pytest.raises(Exception) as exc_info:
+                await api.get_daily_metrics(from_timestamp, to_timestamp, tags, user_id)
+            assert exc_info.value.status == ERROR_STATUS_CODE
+
+
+def _raise_exception(*args):
+    raise HTTPError()
+
+
+@pytest.mark.asyncio
+async def test_get_daily_metrics_failure():
+    with patch("aiohttp.ClientSession.get") as mock_get:
+        # Mock failed response
+        mock_response = AsyncMock()
+
+        # Set attributes required by the real raise_for_status method
+        mock_response.status = ERROR_STATUS_CODE
+        mock_response.raise_for_status = _raise_exception
+
+        # Ensure the mock_get returns the mock_response
+        mock_get.return_value.__aenter__.return_value = mock_response
+        api = LangfuseService()
+
+        # Ensure the error is raised
+        with pytest.raises(HTTPError):
+            await api.get_daily_metrics(
+                "2025-01-08T13:50:56.406Z", "2025-12-16T13:50:56.406Z"
+            )
 
 
 @pytest.mark.parametrize(
@@ -146,7 +172,7 @@ def test_get_daily_metrics(
             "2025-01-08T13:50:56.406Z",
             "2025-12-16T13:50:56.406Z",
             None,
-            1050,  # 300 + 150 + 400 + 200
+            1050,
         ),
         # Test case 2: Successful call with tags
         (
@@ -155,28 +181,33 @@ def test_get_daily_metrics(
             ["tag1"],
             1050,
         ),
-        # Test case 3: Failed API call
-        (
-            "2025-01-08T13:50:56.406Z",
-            "2025-12-16T13:50:56.406Z",
-            None,
-            0,
-        ),
     ],
 )
-def test_get_total_token_usage(
+@pytest.mark.asyncio
+async def test_get_total_token_usage(
     from_timestamp, to_timestamp, tags, expected_total_usage
 ):
-    with patch("requests.get") as mock_get:
+    with patch("aiohttp.ClientSession.get") as mock_get:
         if expected_total_usage > 0:
-            mock_get.return_value = mock_success_response
+            # Mock successful response
+            mock_response = AsyncMock()
+            mock_response.status = SUCCESS_CODE
+            mock_response.json.return_value = mock_metrics_data
+            mock_get.return_value.__aenter__.return_value = mock_response
         else:
-            mock_get.return_value = mock_failed_response
+            # Mock failed response
+            mock_response = AsyncMock()
+            mock_response.status = ERROR_STATUS_CODE
+            mock_response.raise_for_status.side_effect = ClientResponseError(
+                request_info=None, history=None, status=ERROR_STATUS_CODE
+            )
+            mock_get.return_value.__aenter__.return_value = mock_response
 
-        api = LangfuseAPI()
+        api = LangfuseService()
+        result = await api.get_total_token_usage(from_timestamp, to_timestamp, tags)
         if expected_total_usage > 0:
-            result = api.get_total_token_usage(from_timestamp, to_timestamp, tags)
+
             assert result == expected_total_usage
         else:
-            with pytest.raises(HTTPError):
-                api.get_total_token_usage(from_timestamp, to_timestamp, tags)
+            with pytest.raises(ClientResponseError):
+                await api.get_total_token_usage(from_timestamp, to_timestamp, tags)

@@ -1,8 +1,8 @@
-from typing import Any
-from typing import Protocol
-import requests
-from langfuse.callback import CallbackHandler
+from typing import Any, Protocol
+
 from aiohttp import BasicAuth, ClientSession
+from langfuse.callback import CallbackHandler
+
 from agents.common.constants import SUCCESS_CODE
 from utils.common import MetricsResponse
 from utils.settings import (
@@ -18,11 +18,9 @@ from utils.utils import string_to_bool
 class ILangfuseService(Protocol):
     """Service interface"""
 
-
-    def handler(self):
+    def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         ...
-
 
     async def get_daily_metrics(
         self,
@@ -68,7 +66,7 @@ class LangfuseService(metaclass=SingletonMeta):
         )
 
     @property
-    def handler(self):
+    def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         return self._handler
 
@@ -101,16 +99,16 @@ class LangfuseService(metaclass=SingletonMeta):
         if user_id:
             params["userId"] = user_id
 
-        async with ClientSession() as session:
-            async with session.get(url, params=params, auth=self.auth) as response:
-                if response.status == SUCCESS_CODE:
-                    # Parse the JSON response into the MetricsResponse Pydantic model
-                    data = await response.json()
-                    metrics_response = MetricsResponse(**data)
-                    return metrics_response
-                else:
-                    response.raise_for_status()
-                    return None
+        async with ClientSession() as session, session.get(
+            url, params=params, auth=self.auth
+        ) as response:
+            if response.status == SUCCESS_CODE:
+                # Parse the JSON response into the MetricsResponse Pydantic model
+                data = await response.json()
+                return MetricsResponse(**data)
+            # If status is not successful, raise the HTTP error
+            response.raise_for_status()
+            return None
 
     async def get_total_token_usage(
         self, from_timestamp: str, to_timestamp: str, tags: Any = None

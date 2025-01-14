@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.data import Message
-from agents.common.utils import get_current_day_timestamps_utc, hash_url
+from agents.common.utils import get_current_day_timestamps_utc
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -24,16 +24,31 @@ from utils.utils import create_session_id
 
 logger = get_logger(__name__)
 
+
 def get_langfuse_service() -> ILangfuseService:
     """Dependency to get the langfuse service instance"""
     return LangfuseService()
 
-def get_conversation_service(langfuse_service: ILangfuseService = Depends(get_langfuse_service)) -> IService:
-    """Dependency to get the conversation service instance"""
+
+def get_conversation_service(
+    langfuse_service: ILangfuseService | None = None,
+) -> IService:
+    """
+    Dependency to get the conversation service instance.
+
+    Args:
+        langfuse_service (Optional[ILangfuseService]): An optional instance of the Langfuse service.
+            If not provided, it will be resolved using the `Depends` mechanism.
+
+    Returns:
+        IService: An instance of the conversation service.
+    """
+    if langfuse_service is None:
+        from fastapi import Depends
+
+        langfuse_service = Depends(get_langfuse_service)
+
     return ConversationService(langfuse_handler=langfuse_service.handler)
-
-
-
 
 
 router = APIRouter(
@@ -137,7 +152,7 @@ async def messages(
     """Endpoint to send a message to the Kyma companion"""
 
     # Check rate limitation
-    total_token_usage = 0
+
     if TOKEN_LIMIT_PER_CLUSTER != -1:
         await check_token_usage(x_cluster_url, langfuse_service)
 
@@ -165,9 +180,27 @@ async def messages(
     )
 
 
-async def check_token_usage(x_cluster_url, langfuse_service) -> None:
+async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
+    """
+    Checks the total token usage for a specific cluster within the current day (UTC) and raises an HTTPException
+    if the usage exceeds the predefined token limit.
+
+    Args:
+        x_cluster_url (str): The URL of the cluster, from which the cluster ID is extracted.
+        langfuse_service (Any): An instance of a service that provides access to the
+                                Langfuse API to retrieve token usage data.
+
+    Raises:
+        HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
+                        an HTTP 429 error is raised
+                        with details about the current usage,
+                        the limit, and the time remaining until the limit resets at midnight UTC.
+
+    """
+
     from_timestamp, to_timestamp = get_current_day_timestamps_utc()
     cluster_id = x_cluster_url.split(".")[1]
+    total_token_usage = 0
     try:
 
         total_token_usage = await langfuse_service.get_total_token_usage(

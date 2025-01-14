@@ -324,7 +324,7 @@ class TestCompanionGraph:
     ):
         # Given:
         mock_k8s_client = Mock(spec=IK8sClient)
-        mock_k8s_client.get_cluster_url.return_value = "hashed_url"
+        mock_k8s_client.get_api_server.return_value = "url.cluster_url.test_url"
 
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):

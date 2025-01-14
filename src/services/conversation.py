@@ -1,6 +1,8 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol, cast
 
+from langfuse.callback import CallbackHandler
+
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
@@ -56,7 +58,7 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
-        langfuse_handler   = None,
+        langfuse_handler: CallbackHandler | None = None,
     ) -> None:
         try:
             self._model_factory = model_factory or ModelFactory()
@@ -79,9 +81,7 @@ class ConversationService(metaclass=SingletonMeta):
         # Set up the Kyma Graph which allows access to stored conversation histories.
         redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         self._companion_graph = CompanionGraph(
-            models,
-            memory=redis_saver,
-            handler=langfuse_handler
+            models, memory=redis_saver, handler=langfuse_handler
         )
 
     def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:

@@ -31,7 +31,6 @@ from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
     filter_messages,
-    hash_url,
 )
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
@@ -89,7 +88,10 @@ class CompanionGraph:
     planner_prompt: ChatPromptTemplate
 
     def __init__(
-        self, models: dict[str, IModel | Embeddings], memory: BaseCheckpointSaver, handler = None
+        self,
+        models: dict[str, IModel | Embeddings],
+        memory: BaseCheckpointSaver,
+        handler: Any = None,
     ):
         self.models = models
         self.memory = memory
