@@ -1,9 +1,12 @@
 import copy
 from typing import Any
 
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     MessageLikeRepresentation,
-    ToolMessage, SystemMessage, RemoveMessage,
+    RemoveMessage,
+    SystemMessage,
+    ToolMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
@@ -20,7 +23,7 @@ class Summarization:
 
     def __init__(
         self,
-        model: IModel,
+        model: IModel | Embeddings,
         tokenizer_model_type: ModelType,
         token_lower_limit: int,
         token_upper_limit: int,
@@ -52,7 +55,7 @@ class Summarization:
         """Returns the token lower limit."""
         return self._token_lower_limit
 
-    def get_messages_token_count(self, messages: Messages) -> str:
+    def get_messages_token_count(self, messages: Messages) -> int:
         """Returns the token count of the messages."""
         return compute_messages_token_count(messages, self._tokenizer_model_type)
 
@@ -60,7 +63,7 @@ class Summarization:
         self, messages: list[MessageLikeRepresentation]
     ) -> list[MessageLikeRepresentation]:
         """Returns the messages that can be kept within the token limit."""
-        filtered_messages = []
+        filtered_messages: list[MessageLikeRepresentation] = []
         # iterate the messages in reverse order and keep message if token limit is not exceeded.
         tokens = 0
         for msg in reversed(messages):
@@ -78,7 +81,9 @@ class Summarization:
                 return filtered_messages[i:]
         return filtered_messages
 
-    def get_summary(self, messages: Messages, config: RunnableConfig) -> str:
+    def get_summary(
+        self, messages: list[MessageLikeRepresentation], config: RunnableConfig
+    ) -> str:
         """Returns the summary of the messages."""
         if len(messages) == 0:
             return ""
@@ -95,7 +100,7 @@ class Summarization:
         return f"Summary of previous chat:\n {res.content}"
 
     async def summarization_node(
-            self, state: BaseModel, config: RunnableConfig
+        self, state: BaseModel, config: RunnableConfig
     ) -> dict[str, Any]:
         """Summarization node to summarize the conversation."""
         state_messages = getattr(state, self._messages_key)
@@ -104,7 +109,9 @@ class Summarization:
         all_messages = state_messages
         if state_messages_summary != "":
             # if there is a summary, prepend it to the messages.
-            all_messages = [SystemMessage(content=state_messages_summary)] + state_messages
+            all_messages = [
+                SystemMessage(content=state_messages_summary)
+            ] + state_messages
 
         token_count = self.get_messages_token_count(all_messages)
         if token_count <= self.get_token_upper_limit():
@@ -113,9 +120,7 @@ class Summarization:
             }
 
         # filter out messages that can be kept within the token limit.
-        latest_messages = self.filter_messages_by_token_limit(
-            all_messages
-        )
+        latest_messages = self.filter_messages_by_token_limit(all_messages)
 
         if len(latest_messages) == len(all_messages):
             return {

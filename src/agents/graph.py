@@ -17,7 +17,7 @@ from langchain_core.messages import (
 )
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableConfig, RunnableSequence
+from langchain_core.runnables import RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph

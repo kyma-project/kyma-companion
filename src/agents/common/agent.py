@@ -11,18 +11,23 @@ from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import (
     AGENT_MESSAGES,
+    AGENT_MESSAGES_SUMMARY,
     IS_LAST_STEP,
     MESSAGES,
-    MY_TASK, AGENT_MESSAGES_SUMMARY, SUMMARIZATION,
+    MY_TASK,
+    SUMMARIZATION,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages
 from agents.summarization.summarization import Summarization
-from utils.models.factory import IModel
-from utils.settings import SUMMARIZATION_TOKEN_LOWER_LIMIT, SUMMARIZATION_TOKEN_UPPER_LIMIT
+from utils.models.factory import IModel, ModelType
+from utils.settings import (
+    SUMMARIZATION_TOKEN_LOWER_LIMIT,
+    SUMMARIZATION_TOKEN_UPPER_LIMIT,
+)
 
 
-def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "__end__"]:
+def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
     """Function that determines whether to finalize or call agent."""
     if state.is_last_step and state.my_task is None:
         return "finalizer"
@@ -66,7 +71,7 @@ class BaseAgent:
         self.tools = tools
         self.summarization = Summarization(
             model=model,
-            tokenizer_model_type=model.name,
+            tokenizer_model_type=ModelType(model.name),
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=AGENT_MESSAGES,
