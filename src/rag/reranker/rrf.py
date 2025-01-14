@@ -4,7 +4,7 @@ from rag.reranker.utils import document_to_str, str_to_document
 
 
 def get_relevant_documents(
-    docs_list: list[list[Document]], k: int = 60, limit: int = 10
+    docs_list: list[list[Document]], k: int = 60, limit: int = -1
 ) -> list[Document]:
     """
     Get the most relevant documents from a list of documents.
@@ -14,9 +14,11 @@ def get_relevant_documents(
     Assumption: The documents are unique within each list.
     :param docs_list: A list of lists of documents.
     :param k: The reciprocal rank factor.
-    :param limit: The maximum number of documents to return.
+    :param limit: The maximum number of documents to return. If -1, return all relevant unique documents.
     :return: A list of relevant documents.
     """
+    if limit == 0:
+        return []
     scores = {}
     for docs in docs_list:
         for rank, doc in enumerate(docs):
@@ -28,4 +30,4 @@ def get_relevant_documents(
         str_to_document(doc_str)
         for doc_str, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)
     ]
-    return relevant_docs[:limit]
+    return relevant_docs if limit < 0 else relevant_docs[:limit]

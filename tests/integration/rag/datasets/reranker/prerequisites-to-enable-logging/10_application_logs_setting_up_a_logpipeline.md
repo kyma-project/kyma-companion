@@ -1,0 +1,2 @@
+# Application Logs - Setting up a LogPipeline
+In the following steps, you can see how to construct and deploy a typical LogPipeline. Learn more about the available [parameters and attributes](resources/02-logpipeline.md).

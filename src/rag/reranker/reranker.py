@@ -57,41 +57,75 @@ class LLMReranker(IReranker):
     ) -> list[Document]:
         """
         Rerank the documents based on which documents are most relevant to the given queries.
-        The documents are first filtered based on their relevance to the queries and capped at the input limit.
-        Then, the LLM reranker is used to rerank the filtered documents and capped at the output limit.
-        Finally, the reranked documents are returned.
+        - The reranker filters out irrelevant documents using the Reciprocal Rank Fusion (RRF) method
+          capped at the input limit.
+        - Then, it reranks the remaining documents using the LLM model capped at the output limit.
+
         :param docs_list: A list of lists of documents.
         :param queries: A list of queries.
-        :param input_limit: The maximum number of documents to consider for reranking.
+        :param input_limit: The maximum number of documents to consider as an input for the LLM reranker.
         :param output_limit: The maximum number of documents to return.
         :return: A list of reranked documents.
         """
         logger.info(f"Reranking documents for queries: {queries}")
-
-        # filtration to prevent reranking irrelevant documents
-        relevant_docs = get_relevant_documents(docs_list, limit=input_limit)
-
+        docs = []
         try:
-            # reranking using the LLM model
-            response: RerankedDocs = await self.chain.ainvoke(
-                {
-                    "documents": format_documents(relevant_docs),
-                    "queries": format_queries(queries),
-                    "limit": output_limit,
-                }
-            )
-
-            # return reranked documents capped at the output limit
-            reranked_docs = [
-                Document(page_content=doc.page_content)
-                for doc in response.documents[:output_limit]
-            ]
-            return reranked_docs
+            docs = get_relevant_documents(docs_list, input_limit)
+            if not docs:
+                docs = flatten_unique(docs_list, output_limit)
+            return await self._chain_ainvoke(docs, queries, output_limit)
         except Exception as e:
             logger.error(
-                f"Failed to rerank documents, return filtered documents instead: {e}"
+                f"Failed to rerank documents, return top {output_limit} unique documents: {e}"
             )
-            return relevant_docs[:output_limit]
+            return docs[:output_limit]
+
+    async def _chain_ainvoke(
+        self, docs: list[Document], queries: list[str], limit: int
+    ) -> list[Document]:
+        """
+        Invoke the reranker model with the relevant documents and queries.
+        :param docs: A list of documents.
+        :param queries: A list of queries.
+        :param limit: The maximum number of documents to return.
+        :return: A list of reranked documents.
+        """
+
+        # reranking using the LLM model
+        response: RerankedDocs = await self.chain.ainvoke(
+            {
+                "documents": format_documents(docs),
+                "queries": format_queries(queries),
+                "limit": limit,
+            }
+        )
+        # return reranked documents capped at the output limit
+        reranked_docs = [
+            Document(page_content=doc.page_content)
+            for doc in response.documents[:limit]
+        ]
+        return reranked_docs
+
+
+def flatten_unique(docs_list: list[list[Document]], limit: int = -1) -> list[Document]:
+    """
+    Flatten the list of lists of documents and return the first unique documents up to the limit.
+    :param docs_list: A list of lists of documents.
+    :param limit: The maximum number of documents to return. If -1, return all unique documents.
+    :return: A list of unique documents.
+    """
+    if limit == 0:
+        return []
+    documents: list[Document] = []
+    for docs in docs_list:
+        for doc in docs:
+            if doc not in documents:
+                documents.append(doc)
+            if len(documents) == limit:
+                break
+        if len(documents) == limit:
+            break
+    return documents
 
 
 def format_documents(docs: list[Document]) -> str:

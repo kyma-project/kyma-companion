@@ -1,0 +1,2 @@
+# Traces - Kyma Modules With Tracing Capabilities
+Kyma bundles several modules that can be involved in user flows. Applications involved in a distributed trace must propagate the trace context to keep the trace complete. Optionally, they can enrich the trace with custom spans, which requires reporting them to the backend.
