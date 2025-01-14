@@ -42,6 +42,8 @@ DEFAULT_SENSITIVE_FIELD_NAMES = [
     "auth",
 ]
 
+REDACTED_VALUE = "[REDACTED]"
+
 
 class IDataSanitizer(Protocol):
     """A protocol for a data sanitizer."""
@@ -60,6 +62,7 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
             sensitive_field_names=DEFAULT_SENSITIVE_FIELD_NAMES,
         )
+        self.scrubber = scrubadub.Scrubber()
 
     def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
         """Sanitize the data by removing sensitive information."""
@@ -88,16 +91,7 @@ class DataSanitizer(metaclass=SingletonMeta):
                     ]  # type: ignore
                 else:
                     return self._sanitize_secret(obj)
-            elif obj["kind"] in [
-                "Deployment",
-                "DeploymentList",
-                "Pod",
-                "PodList",
-                "StatefulSet",
-                "StatefulSetList",
-                "DaemonSet",
-                "DaemonSetList",
-            ]:
+            elif obj["kind"] in self.config.resources_to_sanitize:
                 if "items" in obj:
                     return [
                         self._sanitize_workload(item) for item in obj["items"]
@@ -145,14 +139,14 @@ class DataSanitizer(metaclass=SingletonMeta):
             # Skip if the variable name contains any sensitive keywords
             if any(
                 sensitive_key.lower() in env_var.get("name", "").lower()
-                for sensitive_key in DEFAULT_SENSITIVE_ENV_VARS
+                for sensitive_key in self.config.sensitive_env_vars
             ):
                 # Replace the value with a placeholder
                 env_var = env_var.copy()
                 if "value" in env_var:
-                    env_var["value"] = "[REDACTED]"
+                    env_var["value"] = REDACTED_VALUE
                 if "valueFrom" in env_var:
-                    env_var["valueFrom"] = {"description": "[REDACTED]"}
+                    env_var["valueFrom"] = {"description": REDACTED_VALUE}
             filtered_vars.append(env_var)
         return filtered_vars
 
@@ -164,9 +158,10 @@ class DataSanitizer(metaclass=SingletonMeta):
             # Check if the key indicates sensitive data
             key_lower = key.lower()
             if any(
-                sensitive in key_lower for sensitive in DEFAULT_SENSITIVE_FIELD_NAMES
+                sensitive in key_lower
+                for sensitive in self.config.sensitive_field_names
             ):
-                result[key] = "[REDACTED]"
+                result[key] = REDACTED_VALUE
             elif isinstance(value, dict):
                 result[key] = self._sanitize_dict(value)
             elif isinstance(value, list):
@@ -183,6 +178,6 @@ class DataSanitizer(metaclass=SingletonMeta):
         """Cleans personal information from a string."""
         data_str = json.dumps(data)
 
-        sanitized_data_str = scrubadub.clean(data_str)
+        sanitized_data_str = self.scrubber.clean(data_str)
 
         return json.loads(sanitized_data_str)
