@@ -38,6 +38,7 @@ class Summarization:
         llm_prompt = ChatPromptTemplate.from_messages(
             [
                 MessagesPlaceholder(variable_name="messages"),
+                ("system", MESSAGES_SUMMARIZATION_PROMPT),
             ]
         )
         # get the summarization model.
@@ -88,7 +89,7 @@ class Summarization:
             config["tags"].append("summarization")
 
         res = self._chain.invoke(
-            {"messages": messages + [("system", MESSAGES_SUMMARIZATION_PROMPT)]},
+            {"messages": messages},
             config=config,
         )
         return f"Summary of previous chat:\n {res.content}"
