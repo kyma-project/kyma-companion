@@ -31,23 +31,9 @@ def get_langfuse_service() -> ILangfuseService:
 
 
 def get_conversation_service(
-    langfuse_service: ILangfuseService | None = None,
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> IService:
-    """
-    Dependency to get the conversation service instance.
-
-    Args:
-        langfuse_service (Optional[ILangfuseService]): An optional instance of the Langfuse service.
-            If not provided, it will be resolved using the `Depends` mechanism.
-
-    Returns:
-        IService: An instance of the conversation service.
-    """
-    if langfuse_service is None:
-        from fastapi import Depends
-
-        langfuse_service = Depends(get_langfuse_service)
-
+    """Dependency to get the conversation service instance"""
     return ConversationService(langfuse_handler=langfuse_service.handler)
 
 
