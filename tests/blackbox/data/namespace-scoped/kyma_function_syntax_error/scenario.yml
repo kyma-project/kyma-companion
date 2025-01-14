@@ -30,3 +30,18 @@ expectations:
     categories:
       - solution_finding
     complexity: 2
+  - name: partial_yaml
+    statement: provides a partial yaml for the Function with the correct syntax for its JavaScript source code.
+    categories:
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml for the Function with the correct syntax for its JavaScript source code.
+    categories:
+      - kyma
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 2
