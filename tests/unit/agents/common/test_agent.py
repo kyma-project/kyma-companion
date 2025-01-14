@@ -46,9 +46,15 @@ class TestAgent(BaseAgent):
 
 @pytest.fixture
 def mock_models():
+    gpt40 = MagicMock(spec=IModel)
+    gpt40.name = ModelType.GPT4O
+
+    text_embedding_3_large = MagicMock(spec=Embeddings)
+    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
+
     return {
-        ModelType.GPT4O: Mock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: Mock(spec=Embeddings),
+        ModelType.GPT4O: gpt40,
+        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
     }
 
 
@@ -126,20 +132,22 @@ class TestBaseAgent:
 
         # Then
         # check nodes.
-        assert len(graph.nodes) == 5  # noqa
+        assert len(graph.nodes) == 6  # noqa
         assert graph.nodes.keys() == {
             "__start__",
             "subtask_selector",
             "agent",
             "tools",
             "finalizer",
+            "Summarization",
         }
         # check edges.
-        assert len(graph.builder.edges) == 3  # noqa
+        assert len(graph.builder.edges) == 4  # noqa
         assert graph.builder.edges == {
-            ("tools", "agent"),
+            ("Summarization", "agent"),
             ("__start__", "subtask_selector"),
             ("finalizer", "__end__"),
+            ("tools", "Summarization"),
         }
         # check conditional edges.
         assert len(graph.builder.branches) == 2  # noqa

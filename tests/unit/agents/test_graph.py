@@ -16,10 +16,19 @@ from utils.models.factory import IModel, ModelType
 
 @pytest.fixture
 def mock_models():
+    gpt40_mini = MagicMock(spec=IModel)
+    gpt40_mini.name = ModelType.GPT4O_MINI
+
+    gpt40 = MagicMock(spec=IModel)
+    gpt40.name = ModelType.GPT4O
+
+    text_embedding_3_large = MagicMock(spec=Embeddings)
+    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
+
     return {
-        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
-        ModelType.GPT4O: MagicMock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
+        ModelType.GPT4O_MINI: gpt40_mini,
+        ModelType.GPT4O: gpt40,
+        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
     }
 
 
