@@ -11,9 +11,9 @@ from agents.common.utils import get_current_day_timestamps_utc
 from routers.conversations import check_token_usage
 from services.langfuse import LangfuseService
 from utils.common import MetricsResponse
-from utils.settings import TOKEN_LIMIT_PER_CLUSTER
 
 ERROR_STATUS_CODE = 500
+TOKEN_LIMIT_PER_CLUSTER = 1000
 
 # Mock data for MetricsResponse
 mock_metrics_data = {
@@ -274,17 +274,22 @@ async def test_check_token_usage(
 
     if expected_exception:
         with pytest.raises(expected_exception) as exc_info:
-            await check_token_usage(x_cluster_url, langfuse_service)
+            await check_token_usage(
+                x_cluster_url, langfuse_service, TOKEN_LIMIT_PER_CLUSTER
+            )
 
         assert exc_info.value.status_code == ERROR_RATE_LIMIT_CODE
         assert exc_info.value.detail == expected_detail
         assert exc_info.value.headers == {"Retry-After": str(seconds_remaining)}
     else:
-        await check_token_usage(x_cluster_url, langfuse_service)
+        await check_token_usage(
+            x_cluster_url, langfuse_service, TOKEN_LIMIT_PER_CLUSTER
+        )
 
     # Verify that the Langfuse service was called with the correct arguments
     from_timestamp, to_timestamp = get_current_day_timestamps_utc()
     cluster_id = x_cluster_url.split(".")[1]
+
     langfuse_service.get_total_token_usage.assert_called_once_with(
         from_timestamp, to_timestamp, cluster_id
     )

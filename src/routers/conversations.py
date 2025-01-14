@@ -139,9 +139,7 @@ async def messages(
     """Endpoint to send a message to the Kyma companion"""
 
     # Check rate limitation
-
-    if TOKEN_LIMIT_PER_CLUSTER != -1:
-        await check_token_usage(x_cluster_url, langfuse_service)
+    await check_token_usage(x_cluster_url, langfuse_service)
 
     # Initialize k8s client for the request.
     try:
@@ -167,7 +165,11 @@ async def messages(
     )
 
 
-async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
+async def check_token_usage(
+    x_cluster_url: str,
+    langfuse_service: Any,
+    token_limit: int = TOKEN_LIMIT_PER_CLUSTER,
+) -> None:
     """
     Checks the total token usage for a specific cluster within the current day (UTC) and raises an HTTPException
     if the usage exceeds the predefined token limit.
@@ -176,6 +178,7 @@ async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
         x_cluster_url (str): The URL of the cluster, from which the cluster ID is extracted.
         langfuse_service (Any): An instance of a service that provides access to the
                                 Langfuse API to retrieve token usage data.
+        token_limit : Default TOKEN_LIMIT_PER_CLUSTER
 
     Raises:
         HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
@@ -185,6 +188,8 @@ async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
 
     """
 
+    if token_limit == -1:
+        return
     from_timestamp, to_timestamp = get_current_day_timestamps_utc()
     cluster_id = x_cluster_url.split(".")[1]
     total_token_usage = 0
@@ -197,7 +202,7 @@ async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
         logger.error(e)
         logger.error("failed to connect to the Langfuse API")
 
-    if total_token_usage > TOKEN_LIMIT_PER_CLUSTER:
+    if total_token_usage > token_limit:
         current_utc = datetime.now(UTC)
         midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
         time_remaining = midnight_utc - current_utc
@@ -206,9 +211,9 @@ async def check_token_usage(x_cluster_url: str, langfuse_service: Any) -> None:
             status_code=ERROR_RATE_LIMIT_CODE,
             detail={
                 "error": "Rate limit exceeded",
-                "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
+                "message": f"Daily token limit of {token_limit} exceeded for this cluster",
                 "current_usage": total_token_usage,
-                "limit": TOKEN_LIMIT_PER_CLUSTER,
+                "limit": token_limit,
                 "time_remaining_seconds": seconds_remaining,
             },
             headers={"Retry-After": str(seconds_remaining)},
