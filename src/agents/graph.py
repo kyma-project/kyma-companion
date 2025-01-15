@@ -181,7 +181,7 @@ class CompanionGraph:
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
 
-        # Set the entrypoint: ENTRY --> supervisor
+        # Set the entrypoint: ENTRY --> supervisor.
         workflow.set_entry_point(SUPERVISOR)
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
