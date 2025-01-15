@@ -188,8 +188,10 @@ async def check_token_usage(
 
     """
 
+    # Check if any limit is set, if no limit specified do not proceed
     if token_limit == -1:
         return
+
     from_timestamp, to_timestamp = get_current_day_timestamps_utc()
     cluster_id = x_cluster_url.split(".")[1]
     total_token_usage = 0

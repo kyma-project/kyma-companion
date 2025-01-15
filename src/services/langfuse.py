@@ -51,6 +51,7 @@ class LangfuseService(metaclass=SingletonMeta):
         public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
         secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
         auth (BasicAuth): An authentication object created using the public and secret keys.
+        _handler (CallbackHandler) : A callback handler for langfuse.
     """
 
     def __init__(self):

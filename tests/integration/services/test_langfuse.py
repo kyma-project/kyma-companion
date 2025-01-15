@@ -49,7 +49,7 @@ async def test_get_total_token_usage(langfuse_service):
 @pytest.mark.parametrize(
     "messages , input_token_count",
     [
-        # Finalizer answers based on K8S and Kyma agents' responses
+        # Messages for input
         (
             [
                 SystemMessage(
@@ -114,7 +114,7 @@ async def test_langfuse_end_to_end(
     semantic_similarity_metric,
     langfuse_service,
 ):
-    # Given: A conversation state with messages
+    # Conversation state with messages
     state = create_mock_state(messages)
 
     # Generate a random UUID
@@ -125,7 +125,7 @@ async def test_langfuse_end_to_end(
         "configurable": {
             "thread_id": "test_conversation_id",
         },
-        "callbacks": [langfuse_service.handler],  # Replace with your callback handler
+        "callbacks": [langfuse_service.handler],
         "tags": [cluster_id],
     }
 
