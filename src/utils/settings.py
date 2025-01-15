@@ -64,7 +64,7 @@ else:
     load_env_from_json()
 
 
-LOG_LEVEL = config("LOG_LEVEL", default="ERROR")
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis
 REDIS_HOST = config("REDIS_HOST", default="localhost")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)

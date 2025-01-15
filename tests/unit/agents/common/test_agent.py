@@ -5,6 +5,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
+    HumanMessage,
     ToolMessage,
 )
 from langchain_core.prompts import (
@@ -122,6 +123,56 @@ class TestBaseAgent:
 
         # check step 2: model
         assert isinstance(chain.steps[1], RunnableLambda)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "given_state, expected_inputs",
+        [
+            # Test case when agent_messages is empty, should use from messages field.
+            (
+                TestAgentState(
+                    is_last_step=False,
+                    messages=[HumanMessage(content="What is K8s?")],
+                    agent_messages=[],
+                    subtasks=[],
+                    k8s_client=Mock(spec=IK8sClient),
+                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                ),
+                {
+                    "agent_messages": [HumanMessage(content="What is K8s?")],
+                    "query": "test",
+                },
+            ),
+            # Test case when agent_messages is non-empty, should not use from messages field.
+            (
+                TestAgentState(
+                    is_last_step=False,
+                    messages=[HumanMessage(content="What is K8s?")],
+                    agent_messages=[HumanMessage(content="What is an agent?")],
+                    subtasks=[],
+                    k8s_client=Mock(spec=IK8sClient),
+                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                ),
+                {
+                    "agent_messages": [HumanMessage(content="What is an agent?")],
+                    "query": "test",
+                },
+            ),
+        ],
+    )
+    async def test_invoke_chain(
+        self, mock_models, given_state: TestAgentState, expected_inputs: dict
+    ):
+        # Given
+        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent.chain = Mock()
+        agent.chain.ainvoke = AsyncMock()
+
+        # When
+        _ = await agent._invoke_chain(given_state, {})
+
+        # Then
+        agent.chain.ainvoke.assert_called_once_with(expected_inputs, {})
 
     def test_build_graph(self, mock_models):
         # Given
@@ -360,7 +411,7 @@ class TestBaseAgent:
     @pytest.mark.parametrize(
         "given_state, expected_output",
         [
-            # Test case when the subtask is not completed and tool call messages exists.
+            # Test case when the subtask is completed. Should return last message from agent_messages.
             (
                 TestAgentState(
                     my_task=SubTask(
