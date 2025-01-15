@@ -1,0 +1,39 @@
+- description: This mock response explains that the Subscription source configuration is invalid.
+  scenario_id: kyma-subscription-invalid-source
+  mock_response_content: |-
+    "The issue with your Kyma Subscription `my-sub` in the `kyma-subscription-invalid-source` namespace is due to a validation error. 
+     The `spec.source` field is empty, which is causing the subscription to fail validation. Here's how you can fix it:
+     
+     1. **Update the Subscription Source**: You need to specify a valid source for your subscription. The `spec.source` field must not be empty. Update your subscription with a valid source value.
+     
+     2. **Apply the Changes**: Once you have updated the source, apply the changes to your subscription. You can do this using `kubectl`:
+     
+        ```bash
+        kubectl -n kyma-subscription-invalid-source apply -f your-subscription-file.yaml
+        ```
+     
+        Make sure `your-subscription-file.yaml` contains the corrected configuration with a valid `spec.source`.
+     
+     3. **Verify the Subscription**: After applying the changes, check the status of the subscription to ensure it is now valid and ready:
+     
+        ```bash
+        kubectl -n kyma-subscription-invalid-source get subscriptions.eventing.kyma-project.io my-sub -o yaml
+        ```
+     
+        Look for the `conditions` field in the output to confirm that the subscription is valid and ready.
+     
+     By ensuring that the `spec.source` is correctly defined, your subscription should pass validation and become ready.
+    "
+  expected_evaluations:
+    - scenario_expectation_name: subscription_config_error
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_correct_source
+      expected_evaluation: true
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: verification
+      expected_evaluation: true

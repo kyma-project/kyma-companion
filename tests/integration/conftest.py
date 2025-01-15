@@ -88,9 +88,13 @@ def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
         evaluation_steps=[
-            "Evaluate whether two answers are semantically similar or convey the same meaning.",
-            "Lightly penalize omissions of detail, focusing on the main idea",
-            "Vague language is permissible",
+            """
+            Evaluate whether two answers are semantically similar or convey the same meaning.
+            Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
+            Heavily penalize omissions of code blocks or changes in code blocks between the answers.
+            Lightly penalize omissions of detail, focusing on the main idea.
+            Vague language is permissible.
+            """,
         ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,

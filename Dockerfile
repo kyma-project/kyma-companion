@@ -10,7 +10,7 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN pip install --no-cache-dir poetry \
+RUN pip install --no-cache-dir poetry>=2.0  \
   && poetry config virtualenvs.create false \
   && poetry install --without test,dev --no-interaction --no-ansi \
   && pip uninstall -y poetry

@@ -1,0 +1,2 @@
+# Application Logs
+With application logs, you can debug an application and derive the internal state of an application. When logs are emitted with the correct severity level and context, they're essential for observing an application.

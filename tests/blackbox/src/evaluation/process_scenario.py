@@ -54,6 +54,8 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
     # Set the status to complete, if we made it through the whole test without issues.
     scenario.complete()
 
+    logger.info("finished processing of scenario.")
+
 
 def initialize_conversation(
     companion_client, payload, config, logger, scenario

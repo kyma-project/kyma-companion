@@ -1,0 +1,2 @@
+# Traces - Setting up a TracePipeline
+In the following steps, you can see how to construct and deploy a typical TracePipeline. Learn more about the available [parameters and attributes](resources/04-tracepipeline.md).

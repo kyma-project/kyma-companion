@@ -69,7 +69,7 @@ from integration.agents.test_common_node import create_mock_state
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
-                HumanMessage(content="What is Kyma?"),
+                HumanMessage(content="Describe Kyma in detail"),
                 AIMessage(name="KymaAgent", content="It is a color of fish."),
             ],
             dedent(
