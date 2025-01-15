@@ -7,7 +7,6 @@ from typing import Protocol, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
-from requests import Response
 
 from services.data_sanitizer import DataSanitizer
 from utils import logging
@@ -23,7 +22,7 @@ class IK8sClient(Protocol):
         """Dump the model without any confidential data."""
         ...
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         ...
 
@@ -154,7 +153,7 @@ class K8sClient:
             "Content-Type": "application/json",
         }
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         response = requests.get(
             url=f"{self.api_server}/{uri.lstrip('/')}",
@@ -169,7 +168,7 @@ class K8sClient:
 
         if self.data_sanitizer:
             return self.data_sanitizer.sanitize(response.json())
-        return response
+        return response.json()
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
@@ -244,9 +243,7 @@ class K8sClient:
 
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
-        result = self.execute_get_api_request(
-            "apis/metrics.k8s.io/v1beta1/nodes"
-        ).json()
+        result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
         return list(result["items"])
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
@@ -303,7 +300,11 @@ class K8sClient:
         if is_terminated:
             uri += "&previous=true"
 
-        response = self.execute_get_api_request(uri)
+        response = requests.get(
+            url=f"{self.api_server}/{uri.lstrip('/')}",
+            headers=self._get_auth_headers(),
+            verify=self.ca_temp_filename,
+        )
         if response.status_code != HTTPStatus.OK:
             raise ValueError(
                 f"Failed to fetch logs for pod {name} in namespace {namespace} "

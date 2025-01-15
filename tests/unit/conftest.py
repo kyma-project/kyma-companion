@@ -17,6 +17,7 @@ def mock_config():
             ModelConfig(
                 name=ModelType.GEMINI_10_PRO, deployment_id="dep3", temperature=0
             ),
+            ModelConfig(name="unsupported_model", deployment_id="dep4", temperature=0),
         ]
     )
 
