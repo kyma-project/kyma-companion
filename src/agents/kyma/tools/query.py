@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
-from services.k8s import DataSanitizer, IK8sClient
+from services.k8s import IK8sClient
 
 
 class KymaQueryToolArgs(BaseModel):
@@ -35,7 +35,7 @@ def kyma_query_tool(
                 f"The result is not a list or dict, but a {type(result)}"
             )
 
-        return DataSanitizer.sanitize(result)
+        return result
     except Exception as e:
         raise Exception(
             f"failed executing kyma_query_tool with URI: {uri},"

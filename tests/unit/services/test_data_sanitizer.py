@@ -12,30 +12,8 @@ class TestDataSanitizer:
         self.data_sanitizer = DataSanitizer()
         yield
 
-    @pytest.fixture
-    def custom_config(self):
-        """Create a custom DataSanitizationConfig."""
-        return DataSanitizationConfig(
-            resources_to_sanitize=["Pod"],
-            sensitive_env_vars=["SECRET"],
-            sensitive_field_names=["password"],
-        )
-
-    def test_singleton_pattern(self):
-        """Test that DataSanitizer follows the singleton pattern."""
-        sanitizer1 = DataSanitizer()
-        sanitizer2 = DataSanitizer()
-        assert sanitizer1 is sanitizer2
-
-    def test_custom_config(self):
-        """Test DataSanitizer with custom configuration."""
-        config = DataSanitizationConfig(
-            resources_to_sanitize=["Pod"],
-            sensitive_env_vars=["CUSTOM_SECRET"],
-        )
-        sanitizer = DataSanitizer(config)
-
-        test_data = {
+    test_data = [
+        {
             "kind": "Pod",
             "metadata": {
                 "name": "my-pod",
@@ -46,38 +24,109 @@ class TestDataSanitizer:
                     {
                         "name": "app",
                         "env": [
-                            {"name": "CUSTOM_SECRET", "value": "secret"},
-                            {"name": "NORMAL_VAR", "value": "normal"},
+                            {"name": "CUSTOM_SECRET", "value": "custom_secret"},
+                            {"name": "NORMAL_VAR", "value": "normal_val"},
+                            {"name": "SECRET_VAR", "value": "secret_val"},
                         ],
                     }
                 ]
             },
-        }
-
-        sanitized = sanitizer.sanitize(test_data)
-        assert sanitized["spec"]["containers"][0]["env"][0]["value"] == REDACTED_VALUE
-        assert sanitized["spec"]["containers"][0]["env"][1]["value"] == "normal"
-
-    def test_sanitize_invalid_input(self):
-        """Test that sanitize raises ValueError for invalid input types."""
-        with pytest.raises(ValueError, match="Data must be a list or a dictionary."):
-            self.data_sanitizer.sanitize("invalid input")
-
-    def test_personal_information_sanitization(self):
-        """Test that personal information is properly sanitized."""
-        test_data = {
-            "email": "john.doe@example.com",
-            "phone": "+49 555 1234567",
-        }
-
-        sanitized = self.data_sanitizer.sanitize(test_data)
-
-        # The exact replacements might vary based on scrubadub's behavior
-        assert "john.doe@example.com" not in str(sanitized)
-        assert "+49 555 1234567" not in str(sanitized)
+        },
+        {
+            "kind": "ConfigMap",
+            "metadata": {"name": "my-configmap"},
+            "data": {"username": "admin", "password": "secret"},
+        },
+    ]
 
     @pytest.mark.parametrize(
-        "k8s_resource,resource_type",
+        "custom_config,resource, expected_results",
+        [
+            (
+                DataSanitizationConfig(
+                    resources_to_sanitize=["Pod"],
+                    sensitive_env_vars=["CUSTOM_SECRET"],
+                    sensitive_field_names=["password"],
+                ),
+                test_data,
+                [
+                    {
+                        "kind": "Pod",
+                        "metadata": {
+                            "name": "my-pod",
+                            "customer_id": "123",
+                        },
+                        "spec": {
+                            "containers": [
+                                {
+                                    "name": "app",
+                                    "env": [
+                                        {
+                                            "name": "CUSTOM_SECRET",
+                                            "value": REDACTED_VALUE,
+                                        },
+                                        {"name": "NORMAL_VAR", "value": "normal_val"},
+                                        {"name": "SECRET_VAR", "value": "secret_val"},
+                                    ],
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        "kind": "ConfigMap",
+                        "metadata": {"name": "my-configmap"},
+                        "data": {"username": "admin", "password": REDACTED_VALUE},
+                    },
+                ],
+            ),
+            (
+                DataSanitizationConfig(
+                    resources_to_sanitize=["Pod"],
+                    sensitive_env_vars=["NORMAL_VAR"],
+                    sensitive_field_names=["username"],
+                ),
+                test_data,
+                [
+                    {
+                        "kind": "Pod",
+                        "metadata": {
+                            "name": "my-pod",
+                            "customer_id": "123",
+                        },
+                        "spec": {
+                            "containers": [
+                                {
+                                    "name": "app",
+                                    "env": [
+                                        {
+                                            "name": "CUSTOM_SECRET",
+                                            "value": "custom_secret",
+                                        },
+                                        {"name": "NORMAL_VAR", "value": REDACTED_VALUE},
+                                        {"name": "SECRET_VAR", "value": "secret_val"},
+                                    ],
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        "kind": "ConfigMap",
+                        "metadata": {"name": "my-configmap"},
+                        "data": {"username": REDACTED_VALUE, "password": "secret"},
+                    },
+                ],
+            ),
+        ],
+    )
+    def test_custom_config(self, custom_config, resource, expected_results):
+        """Test DataSanitizer with custom configuration."""
+        DataSanitizer._instances = {}  # reset singleton instance
+        sanitizer = DataSanitizer(config=custom_config)
+        sanitized = sanitizer.sanitize(resource)
+        assert sanitized == expected_results
+
+    @pytest.mark.parametrize(
+        "k8s_resource,expected_results",
         [
             (
                 {
@@ -88,8 +137,18 @@ class TestDataSanitizer:
                         "username": "admin",
                         "password": "super-secret",
                     },
+                    "stringData": {
+                        "username": "admin",
+                        "password": "super-secret",
+                    },
                 },
-                "Secret",
+                {
+                    "apiVersion": "v1",
+                    "kind": "Secret",
+                    "metadata": {"name": "my-secret"},
+                    "data": {},
+                    "stringData": {},
+                },
             ),
             (
                 {
@@ -110,26 +169,380 @@ class TestDataSanitizer:
                         },
                     ],
                 },
-                "SecretList",
+                {
+                    "apiVersion": "v1",
+                    "kind": "SecretList",
+                    "items": [
+                        {
+                            "apiVersion": "v1",
+                            "kind": "Secret",
+                            "metadata": {"name": "secret1"},
+                            "data": {},
+                        },
+                        {
+                            "apiVersion": "v1",
+                            "kind": "Secret",
+                            "metadata": {"name": "secret2"},
+                            "data": {},
+                        },
+                    ],
+                },
             ),
         ],
     )
-    def test_sanitize_k8s_secrets(self, k8s_resource, resource_type):
+    def test_sanitize_k8s_secrets(self, k8s_resource, expected_results):
         """Test sanitization of Kubernetes Secret resources."""
         sanitized = self.data_sanitizer.sanitize(k8s_resource)
-
-        if resource_type == "Secret":
-            assert sanitized["kind"] == "Secret"
-            assert sanitized["metadata"]["name"] == "my-secret"
-            assert sanitized["data"] == {}
-        else:  # SecretList
-            assert isinstance(sanitized, list)
-            assert len(sanitized) == 2
-            assert all(item["data"] == {} for item in sanitized)
+        assert sanitized == expected_results
 
     @pytest.mark.parametrize(
-        "k8s_resource,resource_type",
+        "test_data,expected_results, error",
         [
+            # Basic data structure test
+            (
+                {
+                    "username": "admin",
+                    "password": "secret123",
+                    "email": "admin@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "settings": {
+                        "debug": True,
+                        "secret_key": "abc123",
+                        "database": {
+                            "host": "localhost",
+                            "password": "db-password",
+                        },
+                    },
+                },
+                {
+                    "username": REDACTED_VALUE,
+                    "password": REDACTED_VALUE,
+                    "email": "{{EMAIL}}",
+                    "first_name": REDACTED_VALUE,
+                    "last_name": REDACTED_VALUE,
+                    "settings": {
+                        "debug": True,
+                        "secret_key": REDACTED_VALUE,
+                        "database": {
+                            "host": "localhost",
+                            "password": REDACTED_VALUE,
+                        },
+                    },
+                },
+                None,
+            ),
+            # List of dictionaries test
+            (
+                [
+                    {"name": "app1", "api_key": "key1"},
+                    {"name": "app2", "api_key": "key2"},
+                ],
+                [
+                    {"name": "app1", "api_key": REDACTED_VALUE},
+                    {"name": "app2", "api_key": REDACTED_VALUE},
+                ],
+                None,
+            ),
+            # Nested PII test
+            (
+                {
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": "app-config",
+                        "annotations": {
+                            "description": "Contact email: john.doe@example.com",
+                            "nested": {
+                                "contact": "phone: 1800 555-5555",
+                                "details": {
+                                    "address": "123 Main St, NY",
+                                    "ssn": "123-45-6789",
+                                },
+                            },
+                        },
+                    },
+                    "data": {
+                        "config.json": '{"admin_email": "admin@example.com"}',
+                    },
+                },
+                {
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": "app-config",
+                        "annotations": {
+                            "description": "Contact email: {{EMAIL}}",
+                            "nested": {
+                                "contact": "phone: {{PHONE}}",
+                                "details": {
+                                    "address": "123 Main St, NY",
+                                    "ssn": "{{SOCIAL_SECURITY_NUMBER}}",
+                                },
+                            },
+                        },
+                    },
+                    "data": {
+                        "config.json": '{"admin_email": "{{EMAIL}}"}',
+                    },
+                },
+                None,
+            ),
+            # Mixed list with PII
+            (
+                {
+                    "users": [
+                        {"name": "John Doe", "email": "john@example.com"},
+                        {"name": "Jane Smith", "phone": "1800 555-5555"},
+                        {"name": "Bob Wilson", "normal_field": "value"},
+                    ]
+                },
+                {
+                    "users": [
+                        {"name": "John Doe", "email": "{{EMAIL}}"},
+                        {"name": "Jane Smith", "phone": "{{PHONE}}"},
+                        {"name": "Bob Wilson", "normal_field": "value"},
+                    ]
+                },
+                None,
+            ),
+            (
+                {
+                    "email": "john.doe@example.com",
+                    "phone": "+49 555 1234567",
+                    "description": "any test information",
+                },
+                {
+                    "email": "{{EMAIL}}",
+                    "phone": "{{PHONE}}",
+                    "description": "any test information",
+                },
+                None,
+            ),
+            # personal information in yaml file
+            (
+                {
+                    "kind": "ConfigMap",
+                    "metadata": {"name": "my-configmap"},
+                    "data": {
+                        "email": "john.doe@example.com",
+                        "phone": "+49 555 1234567",
+                        "description": "any test information",
+                    },
+                },
+                {
+                    "kind": "ConfigMap",
+                    "metadata": {"name": "my-configmap"},
+                    "data": {
+                        "email": "{{EMAIL}}",
+                        "phone": "{{PHONE}}",
+                        "description": "any test information",
+                    },
+                },
+                None,
+            ),
+            # invalid input
+            (
+                "invalid input",
+                None,
+                ValueError,
+            ),
+        ],
+    )
+    def test_data_structures_and_pii(self, test_data, expected_results, error):
+        """Test sanitization of various data structures and PII data."""
+        if error:
+            with pytest.raises(error, match="Data must be a list or a dictionary."):
+                self.data_sanitizer.sanitize(test_data)
+        else:
+            sanitized = self.data_sanitizer.sanitize(test_data)
+            assert sanitized == expected_results
+
+    @pytest.mark.parametrize(
+        "test_data,expected_results",
+        [
+            # StatefulSet test
+            (
+                {
+                    "kind": "StatefulSet",
+                    "metadata": {"name": "stateful-app"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {"name": "SECRET_KEY", "value": "secret"},
+                                            {"name": "NORMAL_KEY", "value": "normal"},
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+                {
+                    "kind": "StatefulSet",
+                    "metadata": {"name": "stateful-app"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {
+                                                "name": "SECRET_KEY",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                            {
+                                                "name": "NORMAL_KEY",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+            ),
+            # DaemonSet test
+            (
+                {
+                    "kind": "DaemonSet",
+                    "metadata": {"name": "daemon-app"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {"name": "API_TOKEN", "value": "token123"},
+                                            {"name": "LOG_LEVEL", "value": "debug"},
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+                {
+                    "kind": "DaemonSet",
+                    "metadata": {"name": "daemon-app"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {
+                                                "name": "API_TOKEN",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                            {"name": "LOG_LEVEL", "value": "debug"},
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+            ),
+            # Empty containers test
+            (
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "empty-pod"},
+                    "spec": {"containers": []},
+                },
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "empty-pod"},
+                    "spec": {"containers": []},
+                },
+            ),
+            # Null/empty value tests
+            (
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "null-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {"name": "SECRET_KEY", "value": None},
+                                    {"name": "EMPTY_SECRET", "value": ""},
+                                ],
+                            }
+                        ]
+                    },
+                },
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "null-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {"name": "SECRET_KEY", "value": REDACTED_VALUE},
+                                    {"name": "EMPTY_SECRET", "value": REDACTED_VALUE},
+                                ],
+                            }
+                        ]
+                    },
+                },
+            ),
+            # valueFrom only test
+            (
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "value-from-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {
+                                        "name": "SECRET_KEY",
+                                        "valueFrom": {
+                                            "secretKeyRef": {
+                                                "name": "secret",
+                                                "key": "key",
+                                            }
+                                        },
+                                    }
+                                ],
+                            }
+                        ]
+                    },
+                },
+                {
+                    "kind": "Pod",
+                    "metadata": {"name": "value-from-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {
+                                        "name": "SECRET_KEY",
+                                        "valueFrom": {
+                                            "secretKeyRef": {
+                                                "name": "secret",
+                                                "key": "key",
+                                            }
+                                        },
+                                    }
+                                ],
+                            }
+                        ]
+                    },
+                },
+            ),
             (
                 {
                     "apiVersion": "apps/v1",
@@ -172,7 +585,47 @@ class TestDataSanitizer:
                         }
                     },
                 },
-                "Deployment",
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "metadata": {"name": "my-app"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {"name": "DEBUG", "value": "true"},
+                                            {
+                                                "name": "EMAIL",
+                                                "value": "{{EMAIL}}",
+                                            },
+                                            {"name": "NAME", "value": "John Doe"},
+                                            {
+                                                "name": "API_TOKEN",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                            {
+                                                "name": "DB_PASSWORD",
+                                                "valueFrom": {
+                                                    "secretKeyRef": {
+                                                        "name": "db-secret",
+                                                        "key": "password",
+                                                    }
+                                                },
+                                            },
+                                        ],
+                                        "envFrom": [
+                                            {"secretRef": {"name": "app-secrets"}},
+                                            {"configMapRef": {"name": "app-config"}},
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
             ),
             (
                 {
@@ -193,133 +646,66 @@ class TestDataSanitizer:
                         ]
                     },
                 },
-                "Pod",
+                {
+                    "apiVersion": "v1",
+                    "kind": "Pod",
+                    "metadata": {"name": "my-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {"name": "APP_NAME", "value": "my-app"},
+                                    {"name": "SECRET_KEY", "value": REDACTED_VALUE},
+                                    {"name": "NAME", "value": "John Doe"},
+                                    {"name": "EMAIL", "value": "{{EMAIL}}"},
+                                ],
+                            }
+                        ]
+                    },
+                },
             ),
-        ],
-    )
-    def test_sanitize_k8s_workloads(self, k8s_resource, resource_type):
-        """Test sanitization of Kubernetes workload resources."""
-        sanitized = self.data_sanitizer.sanitize(k8s_resource)
-
-        if resource_type == "Deployment":
-            containers = sanitized["spec"]["template"]["spec"]["containers"]
-            env_vars = containers[0]["env"]
-
-            assert any(
-                var["name"] == "DEBUG" and var["value"] == "true" for var in env_vars
-            )
-            assert any(
-                var["name"] == "API_TOKEN" and var["value"] == "[REDACTED]"
-                for var in env_vars
-            )
-            assert any(
-                var["name"] == "DB_PASSWORD"
-                and var["valueFrom"] == {"description": "[REDACTED]"}
-                for var in env_vars
-            )
-            assert any(
-                var["name"] == "EMAIL" and var["value"] == "{{EMAIL}}"
-                for var in env_vars
-            )
-            assert containers[0]["envFrom"] == []
-
-        else:  # Pod
-            env_vars = sanitized["spec"]["containers"][0]["env"]
-            assert any(
-                var["name"] == "APP_NAME" and var["value"] == "my-app"
-                for var in env_vars
-            )
-            assert any(
-                var["name"] == "SECRET_KEY" and var["value"] == "[REDACTED]"
-                for var in env_vars
-            )
-            assert any(
-                var["name"] == "EMAIL" and var["value"] == "{{EMAIL}}"
-                for var in env_vars
-            )
-
-    @pytest.mark.parametrize(
-        "test_data,expected_results",
-        [
             (
                 {
-                    "username": "admin",
-                    "password": "secret123",
-                    "email": "admin@example.com",
-                    "first_name": "John",
-                    "last_name": "Doe",
-                    "settings": {
-                        "debug": True,
-                        "secret_key": "abc123",
-                        "database": {
-                            "host": "localhost",
-                            "password": "db-password",
-                        },
+                    "apiVersion": "v1",
+                    "kind": "Pod",
+                    "metadata": {"name": "my-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {"name": "APP_NAME", "value": "my-app"},
+                                    {"name": "NAME", "value": "John Doe"},
+                                    {"name": "TEST1", "value": "test1"},
+                                    {"name": "TEST2", "value": "test2"},
+                                ],
+                            }
+                        ]
                     },
                 },
                 {
-                    "username_preserved": ("username", "admin"),
-                    "password_redacted": ("password", "[REDACTED]"),
-                    "email_hidden": ("email", "{{EMAIL}}"),
-                    "first_name_hidden": ("first_name", "{{FIRST_NAME}}"),
-                    "last_name_hidden": ("last_name", "{{LAST_NAME}}"),
-                    "nested_preserved": ("debug", True),
-                    "nested_redacted": ("secret_key", "[REDACTED]"),
-                    "deeply_nested_preserved": ("host", "localhost"),
-                    "deeply_nested_redacted": ("password", "[REDACTED]"),
-                },
-            ),
-            (
-                [
-                    {"name": "app1", "api_key": "key1"},
-                    {"name": "app2", "api_key": "key2"},
-                ],
-                {
-                    "length": 2,
-                    "names_preserved": True,
-                    "sensitive_redacted": True,
+                    "apiVersion": "v1",
+                    "kind": "Pod",
+                    "metadata": {"name": "my-pod"},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "app",
+                                "env": [
+                                    {"name": "APP_NAME", "value": "my-app"},
+                                    {"name": "NAME", "value": "John Doe"},
+                                    {"name": "TEST1", "value": "test1"},
+                                    {"name": "TEST2", "value": "test2"},
+                                ],
+                            }
+                        ]
+                    },
                 },
             ),
         ],
     )
-    def test_sanitize_data_structures(self, test_data, expected_results):
-        """Test sanitization of various data structures."""
+    def test_kubernetes_resources(self, test_data, expected_results):
+        """Test sanitization of various Kubernetes resource types and edge cases."""
         sanitized = self.data_sanitizer.sanitize(test_data)
-
-        if isinstance(test_data, dict):
-            assert (
-                sanitized[expected_results["username_preserved"][0]]
-                == expected_results["username_preserved"][1]
-            )
-            assert (
-                sanitized[expected_results["password_redacted"][0]]
-                == expected_results["password_redacted"][1]
-            )
-            assert (
-                sanitized[expected_results["email_hidden"][0]]
-                == expected_results["email_hidden"][1]
-            )
-            assert (
-                sanitized["settings"][expected_results["nested_preserved"][0]]
-                == expected_results["nested_preserved"][1]
-            )
-            assert (
-                sanitized["settings"][expected_results["nested_redacted"][0]]
-                == expected_results["nested_redacted"][1]
-            )
-            assert (
-                sanitized["settings"]["database"][
-                    expected_results["deeply_nested_preserved"][0]
-                ]
-                == expected_results["deeply_nested_preserved"][1]
-            )
-            assert (
-                sanitized["settings"]["database"][
-                    expected_results["deeply_nested_redacted"][0]
-                ]
-                == expected_results["deeply_nested_redacted"][1]
-            )
-        else:  # list
-            assert len(sanitized) == expected_results["length"]
-            assert all(item["name"].startswith("app") for item in sanitized)
-            assert all(item["api_key"] == "[REDACTED]" for item in sanitized)
+        assert sanitized == expected_results

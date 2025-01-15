@@ -28,6 +28,8 @@ DEFAULT_SENSITIVE_ENV_VARS = [
     "PRIVATE",
     "CREDENTIAL",
     "AUTH",
+    "USERNAME",
+    "USER_NAME",
 ]
 
 # Fields that typically contain sensitive data
@@ -40,6 +42,12 @@ DEFAULT_SENSITIVE_FIELD_NAMES = [
     "credential",
     "private",
     "auth",
+    "username",
+    "user_name",
+    "firstname",
+    "first_name",
+    "lastname",
+    "last_name",
 ]
 
 REDACTED_VALUE = "[REDACTED]"
@@ -85,12 +93,7 @@ class DataSanitizer(metaclass=SingletonMeta):
         # Handle specific Kubernetes resource types
         if "kind" in obj:
             if obj["kind"] == "Secret" or obj["kind"] == "SecretList":
-                if "items" in obj:
-                    return [
-                        self._sanitize_secret(item) for item in obj["items"]
-                    ]  # type: ignore
-                else:
-                    return self._sanitize_secret(obj)
+                return self._sanitize_secret(obj)
             elif obj["kind"] in self.config.resources_to_sanitize:
                 if "items" in obj:
                     return [
@@ -104,7 +107,14 @@ class DataSanitizer(metaclass=SingletonMeta):
 
     def _sanitize_secret(self, obj: dict) -> dict:
         """Sanitize a secret object."""
-        obj["data"] = {}
+        obj = obj.copy()
+        if "items" in obj:  # SecretList
+            obj["items"] = [self._sanitize_secret(item) for item in obj["items"]]
+        else:  # Secret
+            if "data" in obj:
+                obj["data"] = {}
+            if "stringData" in obj:
+                obj["stringData"] = {}
         return obj
 
     def _sanitize_workload(self, obj: dict) -> dict:
@@ -123,16 +133,12 @@ class DataSanitizer(metaclass=SingletonMeta):
             for container in containers:
                 if "env" in container:
                     container["env"] = self._filter_env_vars(container["env"])
-                if "envFrom" in container:
-                    # Remove all envFrom references as they might contain sensitive data
-                    container["envFrom"] = []
 
             return obj
         except KeyError:
-            # If the structure is not as expected, return the original object
             return obj
 
-    def _filter_env_vars(self, env_vars: list) -> list:
+    def _filter_env_vars(self, env_vars: list[dict]) -> list[dict]:
         """Filter out sensitive environment variables."""
         filtered_vars = []
         for env_var in env_vars:
@@ -145,8 +151,7 @@ class DataSanitizer(metaclass=SingletonMeta):
                 env_var = env_var.copy()
                 if "value" in env_var:
                     env_var["value"] = REDACTED_VALUE
-                if "valueFrom" in env_var:
-                    env_var["valueFrom"] = {"description": REDACTED_VALUE}
+
             filtered_vars.append(env_var)
         return filtered_vars
 
