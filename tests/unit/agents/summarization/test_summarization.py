@@ -218,8 +218,6 @@ class TestSummarization:
             return_value=AIMessage(content="summary content")
         )
         assert summarization.get_summary(messages, config) == expected_summary
-        if len(messages) != 0:
-            assert "summarization" in config["tags"]
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

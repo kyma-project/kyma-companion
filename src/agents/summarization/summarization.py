@@ -88,11 +88,6 @@ class Summarization:
         if len(messages) == 0:
             return ""
 
-        if "tags" not in config:
-            config["tags"] = ["summarization"]
-        else:
-            config["tags"].append("summarization")
-
         res = self._chain.invoke(
             {"messages": messages},
             config=config,
