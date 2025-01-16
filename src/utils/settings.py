@@ -69,11 +69,11 @@ LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
 REDIS_HOST = config("REDIS_HOST", default="localhost")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
-REDIS_USER = config("REDIS_USER", default="")
-REDIS_PASSWORD = config("REDIS_PASSWORD", default="")
-REDIS_DB_NUMBER = config("REDIS_DB_NUMBER", default=0, cast=int)
-user_part = f"{REDIS_USER}:" if REDIS_USER else ""
-auth_part = f"{user_part}{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD else ""
+REDIS_USER = config("REDIS_USER", default="")  # optional
+REDIS_PASSWORD = config("REDIS_PASSWORD", default="")  # optional
+REDIS_DB_NUMBER = config("REDIS_DB_NUMBER", default=0, cast=int)  # optional
+user_part = f"{REDIS_USER}" if REDIS_USER else ""
+auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD else ""
 REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 # Langfuse
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
