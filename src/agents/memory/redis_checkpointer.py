@@ -23,6 +23,7 @@ from redis.asyncio import Redis as AsyncRedis
 
 from agents.memory.conversation_history import ConversationMessage
 from utils import logging
+from utils.settings import REDIS_TTL
 
 logger = logging.get_logger(__name__)
 
@@ -141,6 +142,8 @@ class RedisSaver(BaseCheckpointSaver):
                         "parent_ts": parent_ts if parent_ts else "",
                     },
                 )  # type: ignore
+                # Set TTL for each message
+                await conn.expire(key, REDIS_TTL)
                 logger.info(
                     f"Checkpoint stored successfully for thread_id: {thread_id}, "
                     f"ts: {checkpoint['ts']}"
