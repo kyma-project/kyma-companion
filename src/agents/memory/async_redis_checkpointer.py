@@ -1,8 +1,9 @@
 """Implementation of a langgraph checkpoint saver using Redis."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Sequence
 from typing import (
     Any,
+    TypeVar,
 )
 
 from langchain_core.runnables import RunnableConfig
@@ -20,6 +21,8 @@ from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
 REDIS_KEY_SEPARATOR = "$"
+
+T = TypeVar("T")
 
 
 # Utilities shared by both RedisSaver and AsyncRedisSaver
@@ -80,21 +83,26 @@ def _parse_redis_checkpoint_writes_key(redis_key: str) -> dict:
     }
 
 
+def _safe_decode(key: str | bytes) -> str:
+    """Safely decode a key that might be bytes or str."""
+    return key.decode() if isinstance(key, bytes) else key
+
+
 def _filter_keys(
-    keys: list[str], before: RunnableConfig | None, limit: int | None
-) -> list:
+    keys: list[str | bytes], before: RunnableConfig | None, limit: int | None
+) -> list[str | bytes]:
     """Filter and sort Redis keys based on optional criteria."""
     if before:
         keys = [
             k
             for k in keys
-            if _parse_redis_checkpoint_key(k.decode())["checkpoint_id"]
+            if _parse_redis_checkpoint_key(_safe_decode(k))["checkpoint_id"]
             < before["configurable"]["checkpoint_id"]
         ]
 
     keys = sorted(
         keys,
-        key=lambda k: _parse_redis_checkpoint_key(k.decode())["checkpoint_id"],
+        key=lambda k: _parse_redis_checkpoint_key(_safe_decode(k))["checkpoint_id"],
         reverse=True,
     )
     if limit:
@@ -120,7 +128,7 @@ def _load_writes(
 def _parse_redis_checkpoint_data(
     serde: SerializerProtocol,
     key: str,
-    data: dict,
+    data: dict[bytes, bytes],
     pending_writes: list[PendingWrite] | None = None,
 ) -> CheckpointTuple | None:
     """Parse checkpoint data retrieved from Redis."""
@@ -131,7 +139,7 @@ def _parse_redis_checkpoint_data(
     thread_id = parsed_key["thread_id"]
     checkpoint_ns = parsed_key["checkpoint_ns"]
     checkpoint_id = parsed_key["checkpoint_id"]
-    config = {
+    config: RunnableConfig = {
         "configurable": {
             "thread_id": thread_id,
             "checkpoint_ns": checkpoint_ns,
@@ -140,9 +148,9 @@ def _parse_redis_checkpoint_data(
     }
 
     checkpoint = serde.loads_typed((data[b"type"].decode(), data[b"checkpoint"]))
-    metadata = serde.loads(data[b"metadata"].decode())
+    metadata = serde.loads(data[b"metadata"])
     parent_checkpoint_id = data.get(b"parent_checkpoint_id", b"").decode()
-    parent_config = (
+    parent_config: RunnableConfig | None = (
         {
             "configurable": {
                 "thread_id": thread_id,
@@ -179,6 +187,12 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         """
         conn = AsyncRedis(host=host, port=port, db=db)
         return cls(conn)
+
+    async def _redis_call(self, awaitable: Awaitable[T] | T) -> T:
+        """Helper method to handle Redis async calls that may return Awaitable[T] | T."""
+        if isinstance(awaitable, Awaitable):
+            return await awaitable
+        return awaitable
 
     async def aput(
         self,
@@ -219,7 +233,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             ),
         }
 
-        await self.conn.hset(key, mapping=data)
+        await self._redis_call(self.conn.hset(key, mapping=data))
         return {
             "configurable": {
                 "thread_id": thread_id,
@@ -231,8 +245,9 @@ class AsyncRedisSaver(BaseCheckpointSaver):
     async def aput_writes(
         self,
         config: RunnableConfig,
-        writes: list[tuple[str, Any]],
+        writes: Sequence[tuple[str, Any]],
         task_id: str,
+        task_path: str = "",
     ) -> None:
         """Store intermediate writes linked to a checkpoint asynchronously.
 
@@ -259,11 +274,11 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             data = {"channel": channel, "type": type_, "value": serialized_value}
             if all(w[0] in WRITES_IDX_MAP for w in writes):
                 # Use HSET which will overwrite existing values
-                await self.conn.hset(key, mapping=data)
+                await self._redis_call(self.conn.hset(key, mapping=data))
             else:
                 # Use HSETNX which will not overwrite existing values
                 for field, value in data.items():
-                    await self.conn.hsetnx(key, field, value)
+                    await self._redis_call(self.conn.hsetnx(key, field, value))
 
     async def aget_tuple(self, config: RunnableConfig) -> CheckpointTuple | None:
         """Get a checkpoint tuple from Redis asynchronously.
@@ -288,7 +303,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         )
         if not checkpoint_key:
             return None
-        checkpoint_data = await self.conn.hgetall(checkpoint_key)
+        checkpoint_data = await self._redis_call(self.conn.hgetall(checkpoint_key))
 
         # load pending writes
         checkpoint_id = (
@@ -306,7 +321,6 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         self,
         config: RunnableConfig | None,
         *,
-        # TODO: implement filtering
         filter: dict[str, Any] | None = None,
         before: RunnableConfig | None = None,
         limit: int | None = None,
@@ -326,22 +340,25 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         Yields:
             AsyncIterator[CheckpointTuple]: An asynchronous iterator of matching checkpoint tuples.
         """
+        if config is None:
+            raise ValueError("Config is required")
         thread_id = config["configurable"]["thread_id"]
         checkpoint_ns = config["configurable"].get("checkpoint_ns", "")
         pattern = _make_redis_checkpoint_key(thread_id, checkpoint_ns, "*")
         keys = _filter_keys(await self.conn.keys(pattern), before, limit)
         for key in keys:
-            data = await self.conn.hgetall(key)
+            data = await self._redis_call(self.conn.hgetall(_safe_decode(key)))
             if data and b"checkpoint" in data and b"metadata" in data:
-                checkpoint_id = _parse_redis_checkpoint_key(key.decode())[
+                checkpoint_id = _parse_redis_checkpoint_key(_safe_decode(key))[
                     "checkpoint_id"
                 ]
                 pending_writes = await self._aload_pending_writes(
                     thread_id, checkpoint_ns, checkpoint_id
                 )
-                yield _parse_redis_checkpoint_data(
+                if result := _parse_redis_checkpoint_data(
                     self.serde, key.decode(), data, pending_writes=pending_writes
-                )
+                ):
+                    yield result
 
     async def _aload_pending_writes(
         self, thread_id: str, checkpoint_ns: str, checkpoint_id: str
@@ -356,7 +373,9 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         pending_writes = _load_writes(
             self.serde,
             {
-                (parsed_key["task_id"], parsed_key["idx"]): await self.conn.hgetall(key)
+                (parsed_key["task_id"], parsed_key["idx"]): await self._redis_call(
+                    self.conn.hgetall(key)
+                )
                 for key, parsed_key in sorted(
                     zip(matching_keys, parsed_keys, strict=False),
                     key=lambda x: x[1]["idx"],
@@ -384,6 +403,6 @@ class AsyncRedisSaver(BaseCheckpointSaver):
 
         latest_key = max(
             all_keys,
-            key=lambda k: _parse_redis_checkpoint_key(k.decode())["checkpoint_id"],
+            key=lambda k: _parse_redis_checkpoint_key(_safe_decode(k))["checkpoint_id"],
         )
-        return latest_key.decode()
+        return _safe_decode(latest_key)

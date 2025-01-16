@@ -64,7 +64,7 @@ class IDataSanitizer(Protocol):
 class DataSanitizer(metaclass=SingletonMeta):
     """Implementation of the data sanitizer that processes input dictionaries."""
 
-    def __init__(self, config: DataSanitizationConfig = None):
+    def __init__(self, config: DataSanitizationConfig | None = None):
         self.config = config or DataSanitizationConfig(
             resources_to_sanitize=DEFAULT_SENSITIVE_RESOURCES,
             sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
@@ -94,11 +94,12 @@ class DataSanitizer(metaclass=SingletonMeta):
         if "kind" in obj:
             if obj["kind"] == "Secret" or obj["kind"] == "SecretList":
                 return self._sanitize_secret(obj)
-            elif obj["kind"] in self.config.resources_to_sanitize:
+            elif obj["kind"] in (self.config.resources_to_sanitize or []):
                 if "items" in obj:
-                    return [
+                    obj["items"] = [
                         self._sanitize_workload(item) for item in obj["items"]
-                    ]  # type: ignore
+                    ]
+                    return obj
                 else:
                     return self._sanitize_workload(obj)
 
@@ -185,4 +186,4 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         sanitized_data_str = self.scrubber.clean(data_str)
 
-        return json.loads(sanitized_data_str)
+        return dict(json.loads(sanitized_data_str))

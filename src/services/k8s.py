@@ -3,12 +3,12 @@ import copy
 import os
 import tempfile
 from http import HTTPStatus
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
 
-from services.data_sanitizer import DataSanitizer
+from services.data_sanitizer import IDataSanitizer
 from utils import logging
 
 logger = logging.get_logger(__name__)
@@ -91,15 +91,15 @@ class K8sClient:
     user_token: str
     certificate_authority_data: str
     ca_temp_filename: str = ""
-    dynamic_client: dynamic.DynamicClient = None
-    data_sanitizer: DataSanitizer = None
+    dynamic_client: dynamic.DynamicClient
+    data_sanitizer: IDataSanitizer | None
 
     def __init__(
         self,
         api_server: str,
         user_token: str,
         certificate_authority_data: str,
-        data_sanitizer: DataSanitizer = None,
+        data_sanitizer: IDataSanitizer | None = None,
     ):
         """Initialize the K8sClient object."""
         self.api_server = api_server
@@ -168,7 +168,7 @@ class K8sClient:
 
         if self.data_sanitizer:
             return self.data_sanitizer.sanitize(response.json())
-        return response.json()
+        return response.json()  # type: ignore
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
@@ -180,7 +180,7 @@ class K8sClient:
         # convert objects to dictionaries.
         items = [item.to_dict() for item in result.items]
         if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(items)
+            return self.data_sanitizer.sanitize(items)  # type: ignore
         return items
 
     def get_resource(
@@ -197,7 +197,7 @@ class K8sClient:
             .to_dict()
         )
         if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(resource)
+            return cast(dict, self.data_sanitizer.sanitize(resource))
         return resource  # type: ignore
 
     def describe_resource(
@@ -244,7 +244,7 @@ class K8sClient:
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
         result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
-        return list(result["items"])
+        return list[dict](result["items"])  # type: ignore
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
@@ -256,7 +256,7 @@ class K8sClient:
         # convert objects to dictionaries and return.
         events = [event.to_dict() for event in result.items]
         if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(events)
+            return list[dict](self.data_sanitizer.sanitize(events))
         return events
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
