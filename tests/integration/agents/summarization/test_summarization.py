@@ -1,27 +1,40 @@
 import pytest
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
-
-from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
-from utils.models.factory import ModelType
-from agents.summarization.summarization import Summarization
-from deepeval.metrics import SummarizationMetric
-from deepeval.test_case import LLMTestCase
 from deepeval import evaluate
-from integration.agents.summarization.fixtures.messages import conversation_sample_1, conversation_sample_2, conversation_sample_3, conversation_sample_4
+from deepeval.metrics import ConversationalGEval
+from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from langchain_core.messages import BaseMessage
+
+from agents.summarization.prompts import (
+    MESSAGES_SUMMARIZATION_INSTRUCTIONS,
+)
+from agents.summarization.summarization import Summarization
+from integration.agents.summarization.fixtures.messages import (
+    conversation_sample_1,
+    conversation_sample_2,
+    conversation_sample_3,
+    conversation_sample_4,
+)
+from utils.models.factory import ModelType
+
 
 @pytest.fixture
 def summarization_metric(evaluator_model):
-    return SummarizationMetric(
-        threshold=0.7,
+    return ConversationalGEval(
+        name="Correctness",
         model=evaluator_model,
-        include_reason=True,
-        assessment_questions=[
-            f"Does the summary concisely represent the conversation as per the following prompt: \n\n {MESSAGES_SUMMARIZATION_PROMPT}?",
-            "Does the summary enlist all the important points using bullets?",
-            "There are no duplicate points in the summary.",
+        threshold=0.5,
+        # criteria="Determine whether the generated summary is factually correct based on the given conversation history.",
+        # NOTE: you can only provide either criteria or evaluation_steps, and not both
+        evaluation_steps=[
+            "Determine whether the generated summary is factually correct based on the given conversation history.",
+            "The summary must concisely represent the main issues, points or topics discussed in the given chat history.",
+            "There must not be any duplicate points in the summary.",
+            "Penalize heavily if any extra information is added to the summary not present in the original conversation.",
+            f"The summary should follow the following given instructions:\n {MESSAGES_SUMMARIZATION_INSTRUCTIONS}",
         ],
+        evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
         async_mode=False,
-        verbose_mode = True,
+        verbose_mode=True,
     )
 
 
@@ -29,12 +42,13 @@ def summarization_metric(evaluator_model):
 def summarization_model(app_models):
     return app_models[ModelType.GPT4O_MINI]
 
+
 @pytest.fixture
 def tokenizer_info():
     return {
         "model_type": ModelType.GPT4O,
         "token_lower_limit": 2000,
-        "token_upper_limit": 3000
+        "token_upper_limit": 3000,
     }
 
 
@@ -47,7 +61,13 @@ def tokenizer_info():
         conversation_sample_4,
     ],
 )
-def test_get_summary(summarization_metric, summarization_model, tokenizer_info, messages: list[BaseMessage]):
+def test_get_summary(
+    summarization_metric,
+    summarization_model,
+    tokenizer_info,
+    messages: list[BaseMessage],
+):
+    # given
     summarization = Summarization(
         model=summarization_model,
         tokenizer_model_type=tokenizer_info["model_type"],
@@ -55,9 +75,14 @@ def test_get_summary(summarization_metric, summarization_model, tokenizer_info, 
         token_upper_limit=tokenizer_info["token_upper_limit"],
     )
 
-    actual_summary = summarization.get_summary(messages, {})
+    # when
+    generated_summary = summarization.get_summary(messages, {})
 
-    test_case = LLMTestCase(input=str(messages), actual_output=actual_summary)
+    # then
+    # test_case = LLMTestCase(input=str(messages), actual_output=actual_summary)
+    test_case = ConversationalTestCase(
+        turns=[LLMTestCase(input=str(messages), actual_output=generated_summary)]
+    )
     results = evaluate(
         test_cases=[test_case],
         metrics=[summarization_metric],
