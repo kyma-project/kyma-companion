@@ -1,9 +1,8 @@
 import os
-from http import HTTPStatus
 
 import pytest
-from requests import Response
 
+from services.data_sanitizer import DataSanitizer
 from services.k8s import K8sClient
 
 
@@ -23,7 +22,12 @@ def k8s_client() -> K8sClient:
     if certificate_authority_data == "":
         raise ValueError("TEST_CLUSTER_CA_DATA: environment variable not set")
 
-    return K8sClient(api_server, user_token, certificate_authority_data)
+    return K8sClient(
+        api_server,
+        user_token,
+        certificate_authority_data,
+        data_sanitizer=DataSanitizer(),
+    )
 
 
 class TestK8sClient:
@@ -40,8 +44,9 @@ class TestK8sClient:
 
         # then
         # the return type should be a list.
-        assert type(result) == Response
-        assert result.status_code == HTTPStatus.OK
+        assert isinstance(result, (dict | list))
+        assert "kind" in result
+        assert result["kind"] == "NodeMetricsList"
 
     @pytest.mark.parametrize(
         "given_api_version, given_kind, given_namespace",
