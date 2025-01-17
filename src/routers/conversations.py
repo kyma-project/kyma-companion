@@ -174,14 +174,13 @@ async def check_token_usage(
     Checks the total token usage for a specific cluster within the current day (UTC) and raises an HTTPException
     if the usage exceeds the predefined token limit.
 
-    Args:
-        x_cluster_url (str): The URL of the cluster, from which the cluster ID is extracted.
-        langfuse_service (Any): An instance of a service that provides access to the
-                                Langfuse API to retrieve token usage data.
-        token_limit : Default TOKEN_LIMIT_PER_CLUSTER
 
-    Raises:
-        HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
+    :param x_cluster_url: The URL of the cluster, from which the cluster ID is extracted.
+    :param langfuse_service: An instance of a service that provides access to the
+                                Langfuse API to retrieve token usage data.
+    :param token_limit: Default TOKEN_LIMIT_PER_CLUSTER
+
+    :raises HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
                         an HTTP 429 error is raised
                         with details about the current usage,
                         the limit, and the time remaining until the limit resets at midnight UTC.
