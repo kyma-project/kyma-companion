@@ -16,12 +16,15 @@ from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
     agent_node,
+    compute_messages_token_count,
+    compute_string_token_count,
     create_agent,
     filter_messages,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
+from utils.models.factory import ModelType
 
 # Mock the logging setup
 mock_logger = Mock()
@@ -363,7 +366,7 @@ def test_filter_messages_default_parameter():
         (
             True,
             None,
-            "__end__",
+            "finalizer",
         ),
     ],
 )
@@ -377,6 +380,7 @@ def test_subtask_selector_edge(
         my_task=my_task,
         is_last_step=is_last_step,
         messages=[],
+        agent_messages=[],
         subtasks=[],
         k8s_client=k8s_client,
     )
@@ -407,8 +411,54 @@ def test_agent_edge(last_message: BaseMessage, expected_output: str):
     state = KubernetesAgentState(
         my_task=None,
         is_last_step=False,
-        messages=[last_message],
+        messages=[],
+        agent_messages=[last_message],
         subtasks=[],
         k8s_client=k8s_client,
     )
     assert agent_edge(state) == expected_output
+
+
+@pytest.mark.parametrize(
+    "text, model_type, expected_token_count",
+    [
+        ("Hello, world!", ModelType.GPT4O, 4),
+        ("This is a test.", ModelType.GPT4O, 5),  # Example token count
+        ("", ModelType.GPT4O, 0),  # Empty string
+        (
+            "A longer text input to test the token count.",
+            ModelType.GPT4O,
+            10,
+        ),  # Example token count
+    ],
+)
+def test_compute_string_token_count(text, model_type, expected_token_count):
+    assert compute_string_token_count(text, model_type) == expected_token_count
+
+
+@pytest.mark.parametrize(
+    "msgs, model_type, expected_token_count",
+    [
+        (
+            [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
+            ModelType.GPT4O,
+            3,  # Example token count
+        ),
+        (
+            [
+                HumanMessage(content="This is a test."),
+                AIMessage(content="Another test."),
+            ],
+            ModelType.GPT4O,
+            8,  # Example token count
+        ),
+        ([], ModelType.GPT4O, 0),  # No messages
+        (
+            [HumanMessage(content="A longer text input to test the token count.")],
+            ModelType.GPT4O,
+            10,  # Example token count
+        ),
+    ],
+)
+def test_compute_messages_token_count(msgs, model_type, expected_token_count):
+    assert compute_messages_token_count(msgs, model_type) == expected_token_count

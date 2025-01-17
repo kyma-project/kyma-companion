@@ -1,5 +1,5 @@
 import logging.config
-from logging import Logger
+from logging import Logger, getLogger
 from pathlib import Path
 
 import yaml
@@ -15,6 +15,6 @@ with open(config_path) as f:
 
 def get_logger(name: str) -> Logger:
     """Returns a preconfigured logger instance."""
-    logger = logging.getLogger(name)
+    logger = getLogger(name)
     logger.setLevel(LOG_LEVEL)
     return logger

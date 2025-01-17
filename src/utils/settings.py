@@ -79,7 +79,15 @@ REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
-LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="True")
+LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
+
+# Summarization
+SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int
+)
+SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
+)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)

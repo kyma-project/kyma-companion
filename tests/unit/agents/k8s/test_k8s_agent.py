@@ -1,15 +1,18 @@
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
+from utils.models.factory import IModel, ModelType
 
 
 @pytest.fixture
 def mock_model():
-    return Mock()
+    gpt40 = MagicMock(spec=IModel)
+    gpt40.name = ModelType.GPT4O
+    return gpt40
 
 
 def test_kubernetes_agent_init(mock_model):
