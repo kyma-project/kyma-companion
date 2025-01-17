@@ -223,14 +223,6 @@ class TestSummarization:
     @pytest.mark.parametrize(
         "state_messages, state_messages_summary, token_lower_limit, token_upper_limit, expected_result",
         [
-            # # Test case, where the token limit is not exceeded.
-            # (
-            #         [HumanMessage(id="1", content="Hello"), AIMessage(id="2", content="Hi there")],
-            #         "",
-            #         100,
-            #         200,
-            #         {"messages": []}
-            # ),
             # Test case, where the token limit is exceeded.
             (
                 [

@@ -52,7 +52,7 @@ class TestCompanionState:
     @pytest.mark.parametrize(
         "messages, messages_summary, expected",
         [
-            # Test case when messages_summary is not empty.
+            # Test case when messages_summary is not empty, should add the previous summary as first message.
             (
                 [
                     AIMessage(content="Message 1", id="1"),
@@ -65,7 +65,7 @@ class TestCompanionState:
                     AIMessage(content="Message 2", id="2"),
                 ],
             ),
-            # Test case when messages_summary is empty.
+            # Test case when messages_summary is empty, should not add the previous summary as first message.
             (
                 [
                     AIMessage(content="Message 1", id="1"),
@@ -153,7 +153,7 @@ class TestAgentState:
     @pytest.mark.parametrize(
         "messages, messages_summary, expected",
         [
-            # Test case when messages_summary is not empty.
+            # Test case when messages_summary is not empty, should add the previous summary as first message.
             (
                 [
                     AIMessage(content="Message 1", id="1"),
@@ -166,7 +166,7 @@ class TestAgentState:
                     AIMessage(content="Message 2", id="2"),
                 ],
             ),
-            # Test case when messages_summary is empty.
+            # Test case when messages_summary is empty, should not add the previous summary as first message.
             (
                 [
                     AIMessage(content="Message 1", id="1"),

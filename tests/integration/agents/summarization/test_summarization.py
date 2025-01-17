@@ -79,7 +79,6 @@ def test_get_summary(
     generated_summary = summarization.get_summary(messages, {})
 
     # then
-    # test_case = LLMTestCase(input=str(messages), actual_output=actual_summary)
     test_case = ConversationalTestCase(
         turns=[LLMTestCase(input=str(messages), actual_output=generated_summary)]
     )
