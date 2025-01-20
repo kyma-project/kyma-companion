@@ -16,7 +16,7 @@ from services.k8s import IK8sClient
 from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
-from utils.settings import REDIS_HOST, REDIS_PORT
+from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PORT
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -78,9 +78,8 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
-        # redis_saver = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
         checkpointer = AsyncRedisSaver.from_conn_info(
-            host=REDIS_HOST, port=REDIS_PORT, db=0
+            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
         )
         self._companion_graph = CompanionGraph(
             models,

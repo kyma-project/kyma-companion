@@ -31,6 +31,10 @@ T = TypeVar("T")
 def _make_redis_checkpoint_key(
     thread_id: str, checkpoint_ns: str, checkpoint_id: str
 ) -> str:
+    """Create a Redis key for storing checkpoint data.
+
+    Returns a Redis key string in the format "checkpoint$thread_id$namespace$checkpoint_id".
+    """
     return REDIS_KEY_SEPARATOR.join(
         ["checkpoint", thread_id, checkpoint_ns, checkpoint_id]
     )
@@ -43,6 +47,10 @@ def _make_redis_checkpoint_writes_key(
     task_id: str,
     idx: int | None,
 ) -> str:
+    """Create a Redis key for storing checkpoint writes data.
+
+    Returns a Redis key string in the format "writes$thread_id$namespace$checkpoint_id$task_id$idx".
+    """
     if idx is None:
         return REDIS_KEY_SEPARATOR.join(
             ["writes", thread_id, checkpoint_ns, checkpoint_id, task_id]
@@ -54,6 +62,10 @@ def _make_redis_checkpoint_writes_key(
 
 
 def _parse_redis_checkpoint_key(redis_key: str) -> dict:
+    """Parse a Redis checkpoint key.
+
+    Returns a dictionary containing the parsed checkpoint data.
+    """
     namespace, thread_id, checkpoint_ns, checkpoint_id = redis_key.split(
         REDIS_KEY_SEPARATOR
     )
@@ -68,6 +80,10 @@ def _parse_redis_checkpoint_key(redis_key: str) -> dict:
 
 
 def _parse_redis_checkpoint_writes_key(redis_key: str) -> dict:
+    """Parse a Redis checkpoint writes key.
+
+    Returns a dictionary containing the parsed checkpoint writes data.
+    """
     namespace, thread_id, checkpoint_ns, checkpoint_id, task_id, idx = redis_key.split(
         REDIS_KEY_SEPARATOR
     )
@@ -91,7 +107,10 @@ def _safe_decode(key: str | bytes) -> str:
 def _filter_keys(
     keys: list[str | bytes], before: RunnableConfig | None, limit: int | None
 ) -> list[str | bytes]:
-    """Filter and sort Redis keys based on optional criteria."""
+    """
+    Filter and sort Redis keys based on optional criteria.
+    Returns list of filtered and sorted Redis keys.
+    """
     if before:
         keys = [
             k

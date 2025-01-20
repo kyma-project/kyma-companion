@@ -709,6 +709,136 @@ class TestDataSanitizer:
                     },
                 },
             ),
+            # job resource with env variables
+            (
+                {
+                    "kind": "Job",
+                    "metadata": {"name": "my-job"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {"name": "SECRET_KEY", "value": "secret"}
+                                        ],
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                },
+                {
+                    "kind": "Job",
+                    "metadata": {"name": "my-job"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {
+                                                "name": "SECRET_KEY",
+                                                "value": REDACTED_VALUE,
+                                            }
+                                        ],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+            ),
+            # cronjob resource with env variables
+            (
+                {
+                    "kind": "CronJob",
+                    "metadata": {"name": "my-cronjob"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {"name": "SECRET_KEY", "value": "secret"}
+                                        ],
+                                    }
+                                ]
+                            },
+                        }
+                    },
+                },
+                {
+                    "kind": "CronJob",
+                    "metadata": {"name": "my-cronjob"},
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "name": "app",
+                                        "env": [
+                                            {
+                                                "name": "SECRET_KEY",
+                                                "value": REDACTED_VALUE,
+                                            }
+                                        ],
+                                    }
+                                ]
+                            },
+                        }
+                    },
+                },
+            ),
+            # test PV with labels with sensitive data
+            (
+                {
+                    "kind": "PersistentVolume",
+                    "metadata": {"name": "my-pv", "labels": {"key": "value"}},
+                    "spec": {
+                        "accessModes": ["ReadWriteOnce"],
+                        "capacity": {"storage": "10Gi"},
+                        "persistentVolumeReclaimPolicy": "Retain",
+                    },
+                },
+                {
+                    "kind": "PersistentVolume",
+                    "metadata": {
+                        "name": "my-pv",
+                        "labels": {"key": REDACTED_VALUE},
+                    },
+                    "spec": {
+                        "accessModes": ["ReadWriteOnce"],
+                        "capacity": {"storage": "10Gi"},
+                        "persistentVolumeReclaimPolicy": "Retain",
+                    },
+                },
+            ),
+            # test PVC with labels with sensitive data
+            (
+                {
+                    "kind": "PersistentVolumeClaim",
+                    "metadata": {"name": "my-pvc", "labels": {"key": "value"}},
+                    "spec": {
+                        "accessModes": ["ReadWriteOnce"],
+                        "resources": {"requests": {"storage": "10Gi"}},
+                    },
+                },
+                {
+                    "kind": "PersistentVolumeClaim",
+                    "metadata": {
+                        "name": "my-pvc",
+                        "labels": {"key": REDACTED_VALUE},
+                    },
+                    "spec": {
+                        "accessModes": ["ReadWriteOnce"],
+                        "resources": {"requests": {"storage": "10Gi"}},
+                    },
+                },
+            ),
         ],
     )
     def test_kubernetes_resources(self, test_data, expected_results):

@@ -15,6 +15,10 @@ DEFAULT_SENSITIVE_RESOURCES = [
     "StatefulSetList",
     "DaemonSet",
     "DaemonSetList",
+    "Job",
+    "JobList",
+    "CronJob",
+    "CronJobList",
 ]
 
 # List of sensitive environment variable names to remove
