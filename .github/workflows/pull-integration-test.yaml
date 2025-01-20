@@ -18,6 +18,10 @@ on:
       - "doc_indexer/**"
       - "scripts/**"
 
+## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
+## integration-tests in the create-release.yml workflow as well.
+
+
 jobs:
   integration-test:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
