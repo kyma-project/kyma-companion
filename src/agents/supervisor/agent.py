@@ -29,7 +29,6 @@ from agents.supervisor.prompts import (
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
     filter_messages_via_checks,
-    filter_most_recent_messages,
     is_finalizer_message,
     is_human_message,
     is_system_message,
@@ -142,7 +141,7 @@ class SupervisorAgent:
         filtered_messages = filter_messages_via_checks(
             state.messages, [is_human_message, is_system_message, is_finalizer_message]
         )
-        reduces_messages = filter_most_recent_messages(filtered_messages, 10)
+        reduces_messages = filter_messages(filtered_messages)
 
         plan: Plan = await self._planner_chain.ainvoke(
             input={
@@ -213,7 +212,7 @@ class SupervisorAgent:
 
         try:
             final_response = await final_response_chain.ainvoke(
-                {"messages": filter_messages(state.messages)},
+                {"messages": state.messages},
             )
 
             return {

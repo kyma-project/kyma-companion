@@ -24,13 +24,17 @@ echo "Creating security scan configuration file:"
 
 cat <<EOF | tee ${FILENAME}
 module-name: kyma-companion
-rc-tag: ${TAG}
+kind: kcp
 protecode:
   - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${TAG}
+checkmarx-one:
+  preset: python-default
+  exclude:
+    - "tests/**"
+    - "**/tests/**"
 whitesource:
   language: python
-  subprojects: false
   exclude:
-    - "**/test/**"
-    - "**/*_test"
+    - "tests/**"
+    - "**/tests/**"
 EOF
