@@ -371,8 +371,14 @@ class TestDataSanitizer:
                                     {
                                         "name": "app",
                                         "env": [
-                                            {"name": "SECRET_KEY", "value": "secret"},
-                                            {"name": "NORMAL_KEY", "value": "normal"},
+                                            {
+                                                "name": "SECRET_KEY",
+                                                "value": "secret",
+                                            },
+                                            {
+                                                "name": "NORMAL_KEY",
+                                                "value": "normal",
+                                            },
                                         ],
                                     }
                                 ]
