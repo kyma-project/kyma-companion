@@ -1,0 +1,93 @@
+- description: This mock response explains that the Function has a syntax error in its source code and provides a solution to fix it.
+  scenario_id: kyma-function-syntax-error
+  mock_response_content: |-
+    "The issue with your Kyma Function is a syntax error in the JavaScript code due to a missing closing quotation mark in the return statement. 
+     Here's the problematic part of your function's code:
+     
+     ```javascript
+     module.exports = {
+       main: function (event, context) {
+         return "Hello World!;
+       }
+     }
+     ```
+     
+     To fix this syntax error, you need to add the missing closing quotation mark at the end of the string. Here's the corrected code:
+     
+     ```javascript
+     module.exports = {
+       main: function (event, context) {
+         return "Hello World!";
+       }
+     }
+     ```
+    "
+  expected_evaluations:
+    - scenario_expectation_name: function_syntax_error
+      expected_evaluation: true
+    - scenario_expectation_name: function_correct_syntax
+      expected_evaluation: true
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: partial_fix
+      expected_evaluation: true
+- description: This mock response explains that the Function has a syntax error in its source code and provides a full yaml for the Function to fix it.
+  scenario_id: kyma-function-syntax-error
+  mock_response_content: |-
+    "The issue with your Kyma Function is a syntax error in the JavaScript code due to a missing closing quotation mark in the return statement. 
+     Here's the problematic part of your function's code:
+     
+     ```javascript
+     module.exports = {
+       main: function (event, context) {
+         return "Hello World!;
+       }
+     }
+     ```
+     
+     To fix this syntax error, you need to add the missing closing quotation mark at the end of the string. Here's the corrected code:
+     
+     ```javascript
+     module.exports = {
+       main: function (event, context) {
+         return "Hello World!";
+       }
+     }
+    ```
+    
+    Here is the corrected YAML for the Function with the correct syntax for the Function JavaScript source code:
+    
+    ```yaml
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    metadata:
+      name: my-function-0
+      namespace: kyma-function-syntax-error
+    spec:
+      runtime: nodejs20
+      scaleConfig:
+        minReplicas: 1
+        maxReplicas: 2
+      source:
+        inline:
+          source: |
+            module.exports = {
+              main: function (event, context) {
+                return "Hello World!";
+              }
+            }
+     ```
+    "
+  expected_evaluations:
+    - scenario_expectation_name: function_syntax_error
+      expected_evaluation: true
+    - scenario_expectation_name: function_correct_syntax
+      expected_evaluation: true
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: partial_fix
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: true
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: true

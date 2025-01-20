@@ -1,0 +1,43 @@
+---
+# Namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyma-subscription-invalid-source
+  labels:
+    istio-injection: enabled
+---
+# Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: kyma-subscription-invalid-source
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+# Subscription
+---
+apiVersion: eventing.kyma-project.io/v1alpha2
+kind: Subscription
+metadata:
+  labels:
+    app.kubernetes.io/name: my-sub
+  name: my-sub
+  namespace: kyma-subscription-invalid-source
+spec:
+  config:
+    maxInFlightMessages: "10"
+  sink: http://my-service.kyma-subscription-invalid-source.svc.cluster.local
+  source: ""
+  typeMatching: standard
+  types:
+    - event.happened.v1
+---

@@ -1,0 +1,31 @@
+---
+# Namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyma-function-syntax-error
+  labels:
+    istio-injection: enabled
+---
+# Function
+---
+apiVersion: serverless.kyma-project.io/v1alpha2
+kind: Function
+metadata:
+  name: my-function-0
+  namespace: kyma-function-syntax-error
+spec:
+  runtime: nodejs20
+  scaleConfig:
+    minReplicas: 1
+    maxReplicas: 2
+  source:
+    inline:
+      source: |
+        module.exports = {
+          main: function (event, context) {
+            return "Hello World!;
+          }
+        }
+---

@@ -86,7 +86,10 @@ class RAGSystem:
 
         # rerank documents
         reranked_docs = await self.reranker.arerank(
-            all_docs, [query.text], input_limit=10, output_limit=top_k
+            all_docs,
+            [query.text],
+            input_limit=1000,
+            output_limit=top_k,
         )
 
         logger.info(f"Retrieved {len(reranked_docs)} documents.")

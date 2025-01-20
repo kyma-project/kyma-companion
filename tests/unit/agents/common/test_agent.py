@@ -5,7 +5,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
-    RemoveMessage,
+    HumanMessage,
     ToolMessage,
 )
 from langchain_core.prompts import (
@@ -18,7 +18,7 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import BaseAgent
-from agents.common.constants import MESSAGES
+from agents.common.constants import AGENT_MESSAGES
 from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
@@ -47,9 +47,15 @@ class TestAgent(BaseAgent):
 
 @pytest.fixture
 def mock_models():
+    gpt40 = MagicMock(spec=IModel)
+    gpt40.name = ModelType.GPT4O
+
+    text_embedding_3_large = MagicMock(spec=Embeddings)
+    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
+
     return {
-        ModelType.GPT4O: Mock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: Mock(spec=Embeddings),
+        ModelType.GPT4O: gpt40,
+        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
     }
 
 
@@ -118,6 +124,56 @@ class TestBaseAgent:
         # check step 2: model
         assert isinstance(chain.steps[1], RunnableLambda)
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "given_state, expected_inputs",
+        [
+            # Test case when agent_messages is empty, should use from messages field.
+            (
+                TestAgentState(
+                    is_last_step=False,
+                    messages=[HumanMessage(content="What is K8s?")],
+                    agent_messages=[],
+                    subtasks=[],
+                    k8s_client=Mock(spec=IK8sClient),
+                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                ),
+                {
+                    "agent_messages": [HumanMessage(content="What is K8s?")],
+                    "query": "test",
+                },
+            ),
+            # Test case when agent_messages is non-empty, should not use from messages field.
+            (
+                TestAgentState(
+                    is_last_step=False,
+                    messages=[HumanMessage(content="What is K8s?")],
+                    agent_messages=[HumanMessage(content="What is an agent?")],
+                    subtasks=[],
+                    k8s_client=Mock(spec=IK8sClient),
+                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                ),
+                {
+                    "agent_messages": [HumanMessage(content="What is an agent?")],
+                    "query": "test",
+                },
+            ),
+        ],
+    )
+    async def test_invoke_chain(
+        self, mock_models, given_state: TestAgentState, expected_inputs: dict
+    ):
+        # Given
+        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent.chain = Mock()
+        agent.chain.ainvoke = AsyncMock()
+
+        # When
+        _ = await agent._invoke_chain(given_state, {})
+
+        # Then
+        agent.chain.ainvoke.assert_called_once_with(expected_inputs, {})
+
     def test_build_graph(self, mock_models):
         # Given
         agent = TestAgent(mock_models[ModelType.GPT4O])
@@ -127,20 +183,22 @@ class TestBaseAgent:
 
         # Then
         # check nodes.
-        assert len(graph.nodes) == 5  # noqa
+        assert len(graph.nodes) == 6  # noqa
         assert graph.nodes.keys() == {
             "__start__",
             "subtask_selector",
             "agent",
             "tools",
             "finalizer",
+            "Summarization",
         }
         # check edges.
-        assert len(graph.builder.edges) == 3  # noqa
+        assert len(graph.builder.edges) == 4  # noqa
         assert graph.builder.edges == {
-            ("tools", "agent"),
+            ("Summarization", "agent"),
             ("__start__", "subtask_selector"),
             ("finalizer", "__end__"),
+            ("tools", "Summarization"),
         }
         # check conditional edges.
         assert len(graph.builder.branches) == 2  # noqa
@@ -154,6 +212,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KubernetesAgent"),
                         SubTask(description="test", assigned_to="KubernetesAgent"),
@@ -172,6 +231,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KymaAgent"),
                     ],
@@ -179,7 +239,7 @@ class TestBaseAgent:
                 ),
                 {
                     "is_last_step": True,
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
                             name="KubernetesAgent",
@@ -193,6 +253,7 @@ class TestBaseAgent:
                     my_task=None,
                     is_last_step=False,
                     messages=[],
+                    agent_messages=[],
                     subtasks=[
                         SubTask(description="test", assigned_to="KymaAgent"),
                         SubTask(
@@ -210,7 +271,7 @@ class TestBaseAgent:
                 ),
                 {
                     "is_last_step": True,
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="All my subtasks are already completed.",
                             name="KubernetesAgent",
@@ -240,10 +301,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="This is a dummy response from model.",
                             additional_kwargs={"owner": "KubernetesAgent"},
@@ -251,7 +313,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -265,10 +327,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="Sorry, I encountered an error while processing the request. "
                             "Error: This is a dummy exception from model.",
@@ -277,7 +340,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -300,10 +363,11 @@ class TestBaseAgent:
                     ),
                     is_last_step=True,
                     messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
-                    MESSAGES: [
+                    AGENT_MESSAGES: [
                         AIMessage(
                             content="Sorry, I need more steps to process the request.",
                             name="KubernetesAgent",
@@ -311,7 +375,7 @@ class TestBaseAgent:
                     ]
                 },
                 {
-                    "messages": [AIMessage(content="dummy message 1")],
+                    AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
                     "query": "test task 1",
                 },
             ),
@@ -345,99 +409,9 @@ class TestBaseAgent:
             agent._invoke_chain.assert_called_once_with(given_state, mock_config)
 
     @pytest.mark.parametrize(
-        "given_message, expected_output",
-        [
-            # Test case when the AIMessage have None additional_kwargs.
-            (
-                AIMessage(content="dummy"),
-                False,
-            ),
-            # Test case when the AIMessage have no owner key in additional_kwargs.
-            (
-                AIMessage(content="dummy", additional_kwargs={"key": "value"}),
-                False,
-            ),
-            # Test case when the AIMessage have different owner in additional_kwargs.
-            (
-                AIMessage(
-                    content="dummy",
-                    additional_kwargs={"owner": "value"},
-                    tool_calls=[
-                        {
-                            "args": {
-                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
-                            },
-                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
-                            "name": "k8s_query_tool",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-                False,
-            ),
-            # Test case when the AIMessage have TestAgent owner in additional_kwargs.
-            (
-                AIMessage(
-                    content="dummy",
-                    additional_kwargs={"owner": "KubernetesAgent"},
-                    tool_calls=[
-                        {
-                            "args": {
-                                "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
-                            },
-                            "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
-                            "name": "k8s_query_tool",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-                True,
-            ),
-            # Test case when the ToolMessage have non-relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="google_query_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                False,
-            ),
-            # Test case when the ToolMessage have relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="k8s_query_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                True,
-            ),
-            # Test case when the ToolMessage have relevant tool name.
-            (
-                ToolMessage(
-                    content="dummy",
-                    name="fetch_pod_logs_tool",
-                    tool_call_id="call_JZM1Sbccr9nQ49KLT21qG4W6",
-                ),
-                True,
-            ),
-        ],
-    )
-    def test_is_internal_message(
-        self,
-        mock_models,
-        given_message: BaseMessage,
-        expected_output: bool,
-    ):
-        # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
-
-        # When
-        assert agent.is_internal_message(given_message) == expected_output
-
-    @pytest.mark.parametrize(
         "given_state, expected_output",
         [
-            # Test case when the subtask is not completed and tool call messages exists.
+            # Test case when the subtask is completed. Should return last message from agent_messages.
             (
                 TestAgentState(
                     my_task=SubTask(
@@ -446,7 +420,8 @@ class TestBaseAgent:
                         status=SubTaskStatus.PENDING,
                     ),
                     is_last_step=False,
-                    messages=[
+                    messages=[],
+                    agent_messages=[
                         AIMessage(
                             id="1",
                             content="dummy",
@@ -474,10 +449,8 @@ class TestBaseAgent:
                 ),
                 {
                     "messages": [
-                        RemoveMessage(content="", id="1"),
-                        RemoveMessage(content="", id="2"),
+                        AIMessage(id="3", content="final answer"),
                     ],
-                    "my_task": None,
                 },
             ),
         ],

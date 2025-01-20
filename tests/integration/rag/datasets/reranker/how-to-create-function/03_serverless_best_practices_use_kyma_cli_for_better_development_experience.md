@@ -1,0 +1,11 @@
+# Serverless Best Practices - Use Kyma CLI for Better Development Experience
+Defining your Function from the Kyma dashboard is very quick and easy, but it might not be enough to satisfy your needs as a developer. To code and test more complex cases, you may want to write your Function in your favorite IDE or run and debug the Function on your local machine, before actually deploying in Kyma runtime. Also, you might want to avoid recreating the same Functions manually from the UI on a different environment. In the end, having deployable artifacts is more desirable. This is where Kyma CLI comes in handy, as it enables you to keep your Function's code and configuration in the form of a workspace.
+Initialize a scaffold for a brand new Function using the `kyma init function` command or fetch the current state of an existing Function deployed in your Kyma runtime using `kyma sync function`.
+Focus on the Function code and develop it from your favorite IDE. Configure your Functions directly in the [`config.yaml` manifest file](technical-reference/07-60-function-configuration-file.md)
+> [!TIP]
+> Use `kyma init function --vscode` to generate a `.json` schema, which can be used in VSCode for autocompletion.
+Kyma CLI helps you run your code locally with a single `kyma run function` command. You can run your Function using your local Docker daemon with the same runtime Docker context, as if it was run in Kyma runtime.
+> [!TIP]
+> Use `kyma run function` with `--hot-deploy` and spare yourself unnecessary restarts of the Functions whenever you test a changed Function logic. Also, use [`--debug` option](tutorials/01-40-debug-function.md) to allow connecting with your favorite debugger.
+![kyma-cli-functions](../assets/svls-kyma-cli-functions.png)
+Having written and tested your Function locally, simply deploy it to the Kyma runtime with the `kyma apply function` command, used in the folder of your Function's workspace. The command reads the files, translates them to the Kubernetes manifests, and deploys the Function.

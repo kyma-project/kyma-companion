@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from langchain_core.embeddings import Embeddings
@@ -12,10 +12,15 @@ from utils.models.factory import IModel, ModelType
 
 @pytest.fixture
 def mock_models():
-    """Create mock models dictionary with required model types."""
+    gpt40 = MagicMock(spec=IModel)
+    gpt40.name = ModelType.GPT4O
+
+    text_embedding_3_large = MagicMock(spec=Embeddings)
+    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
+
     return {
-        ModelType.GPT4O: Mock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: Mock(spec=Embeddings),
+        ModelType.GPT4O: gpt40,
+        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
     }
 
 

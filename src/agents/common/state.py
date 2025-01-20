@@ -2,7 +2,11 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated, Literal
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import (
+    BaseMessage,
+    MessageLikeRepresentation,
+    SystemMessage,
+)
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from pydantic import BaseModel, Field
@@ -93,10 +97,22 @@ class CompanionState(BaseModel):
     )
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
+    messages_summary: str = ""
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None
     k8s_client: IK8sClient | None = None
+
+    def get_messages_including_summary(self) -> list[MessageLikeRepresentation]:
+        """Get messages including the summary message."""
+        if self.messages_summary:
+            return list(
+                add_messages(
+                    SystemMessage(content=self.messages_summary),
+                    list[MessageLikeRepresentation](self.messages),
+                )
+            )
+        return list(self.messages)
 
     def all_tasks_completed(self) -> bool:
         """Check if all the sub-tasks are completed."""
@@ -115,8 +131,21 @@ class BaseAgentState(BaseModel):
     k8s_client: IK8sClient
 
     # Subgraph private fields
+    agent_messages: Annotated[Sequence[BaseMessage], add_messages]
+    agent_messages_summary: str = ""
     my_task: SubTask | None = None
     is_last_step: IsLastStep
+
+    def get_agent_messages_including_summary(self) -> list[MessageLikeRepresentation]:
+        """Get messages including the summary message."""
+        if self.agent_messages_summary:
+            return list(
+                add_messages(
+                    SystemMessage(content=self.agent_messages_summary),
+                    list[MessageLikeRepresentation](self.agent_messages),
+                )
+            )
+        return list(self.agent_messages)
 
     class Config:
         arbitrary_types_allowed = True
