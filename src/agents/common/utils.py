@@ -130,7 +130,6 @@ def create_node_output(
     }
 
 
-
 def get_current_day_timestamps_utc() -> tuple[str, str]:
     """
     Returns the start and end timestamps for the current day in UTC.
@@ -164,6 +163,7 @@ def hash_url(url: str) -> str:
     """
     return hashlib.md5(url.encode()).hexdigest()
 
+
 def compute_string_token_count(text: str, model_type: ModelType) -> int:
     """Returns the token count of the string."""
     return len(tiktoken.encoding_for_model(model_type).encode(text=text))
@@ -175,4 +175,3 @@ def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
         compute_string_token_count(str(msg.content), model_type) for msg in msgs
     )
     return sum(tokens_per_msg)
-

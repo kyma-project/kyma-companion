@@ -11,7 +11,7 @@ from services.langfuse import LangfuseService
 from utils.common import MetricsResponse
 
 LANGFUSE_MAX_ATTEMPTS = 10
-RETRY_WAIT_TIME = 5
+RETRY_WAIT_TIME = 20
 
 
 @pytest.fixture
