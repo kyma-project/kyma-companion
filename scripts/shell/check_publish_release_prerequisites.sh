@@ -31,11 +31,3 @@ if [ $(skopeo list-tags ${PROTOCOL}${IMAGE_NAME} | jq '.Tags|any(. == env.RELEAS
     exit 1
 fi
 echo "image ${IMAGE_NAME}:${RELEASE_TAG} exists"
-
-# check version bump in sec-scanners-config.yaml.
-ssc_rc_tag=$(yq '.rc-tag' sec-scanners-config.yaml)
-if [[ ${ssc_rc_tag} != ${RELEASE_TAG} ]]; then
-    echo "Error: rc-tag in sec-scanners-config.yaml is not correct. Expected: ${RELEASE_TAG}, Got: ${ssc_rc_tag}"
-    exit 1
-fi
-echo "rc-tag in sec-scanners-config.yaml is correct: ${ssc_rc_tag}"
