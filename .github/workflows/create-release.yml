@@ -201,6 +201,8 @@ jobs:
     name: Bump image in sec-scanners-config on release branch
     needs: [ validate-input-params, run-unit-tests, run-integration-tests]
     runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
