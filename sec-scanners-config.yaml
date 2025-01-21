@@ -1,7 +1,7 @@
 module-name: kyma-companion
 kind: kcp
 protecode:
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:main
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:0.0.1
 checkmarx-one:
   preset: python-default
   exclude:
