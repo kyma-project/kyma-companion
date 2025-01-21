@@ -4,7 +4,8 @@ import pytest
 from langchain_core.messages import AIMessage
 
 from agents.common.data import Message
-from services.conversation import ConversationService
+from services.conversation import TOKEN_LIMIT, ConversationService
+from utils.models.factory import ModelType
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
@@ -34,8 +35,9 @@ class TestConversation:
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
+        mock_models = {ModelType.GPT4O_MINI: mock_model}
         with patch("services.conversation.ModelFactory") as mock:
-            mock.return_value.create_model.return_value = mock_model
+            mock.return_value.create_models.return_value = mock_models
             yield mock
 
     @pytest.fixture
@@ -54,33 +56,31 @@ class TestConversation:
 
     @pytest.fixture
     def mock_redis_saver(self):
-        async def async_mock_add_conversation_message(*args, **kwargs):
-            pass
-
-        with patch("services.conversation.RedisSaver") as mock:
-            mock.return_value.add_conversation_message = AsyncMock(
-                side_effect=async_mock_add_conversation_message
-            )
+        with patch("services.conversation.AsyncRedisSaver") as mock:
+            mock.from_conn_info.return_value = Mock()
             yield mock
 
     @pytest.fixture
-    def mock_init_pool(self):
-        with patch("services.conversation.initialize_async_pool") as mock:
-            yield mock
+    def mock_config(self):
+        mock_config = Mock()
+        mock_config.sanitization_config = Mock()
+        return mock_config
 
     def test_new_conversation(
         self,
         mock_model_factory,
         mock_companion_graph,
         mock_redis_saver,
-        mock_init_pool,
+        mock_config,
     ) -> None:
         # Given:
         mock_handler = Mock()
         mock_handler.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
+        mock_handler.apply_token_limit = Mock(return_value=POD_YAML)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
         conversation_service = ConversationService(
-            initial_questions_handler=mock_handler
+            config=mock_config,
+            initial_questions_handler=mock_handler,
         )
 
         mock_k8s_client = Mock()
@@ -92,13 +92,19 @@ class TestConversation:
 
         # Then:
         assert result == QUESTIONS
+        mock_handler.fetch_relevant_data_from_k8s_cluster.assert_called_once_with(
+            message=TEST_MESSAGE, k8s_client=mock_k8s_client
+        )
+        mock_handler.apply_token_limit.assert_called_once_with(POD_YAML, TOKEN_LIMIT)
+        mock_handler.generate_questions.assert_called_once_with(context=POD_YAML)
 
     @pytest.mark.asyncio
     async def test_handle_followup_questions(
         self,
         mock_model_factory,
         mock_companion_graph,
-        mock_init_pool,
+        mock_redis_saver,
+        mock_config,
     ) -> None:
         # Given:
         dummy_conversation_history = [
@@ -111,7 +117,8 @@ class TestConversation:
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
         # initialize ConversationService instance.
         conversation_service = ConversationService(
-            followup_questions_handler=mock_handler
+            config=mock_config,
+            followup_questions_handler=mock_handler,
         )
         conversation_service._followup_questions_handler = mock_handler
         # define mock for CompanionGraph.
@@ -133,13 +140,17 @@ class TestConversation:
 
     @pytest.mark.asyncio
     async def test_handle_request(
-        self, mock_model_factory, mock_init_pool, mock_redis_saver, mock_companion_graph
+        self,
+        mock_model_factory,
+        mock_redis_saver,
+        mock_companion_graph,
+        mock_config,
     ):
         # Given:
         mock_k8s_client = Mock()
 
         # When:
-        messaging_service = ConversationService()
+        messaging_service = ConversationService(config=mock_config)
 
         # Then:
         result = [

@@ -3,7 +3,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from utils.config import Config, ModelConfig, get_config
+from utils.config import Config, DataSanitizationConfig, ModelConfig, get_config
 
 
 @pytest.mark.parametrize(
@@ -27,14 +27,48 @@ from utils.config import Config, ModelConfig, get_config
                         "deployment_id": "dep2",
                         "temperature": 0.5
                     }
-                ]
+                ],
+                "sanitization_config": {
+                    "resources_to_sanitize": ["Deployment", "DeploymentList", "Pod", "PodList"],
+                    "sensitive_field_names": ["password", "secret", "token", "key", "cert", "credential", "private", "auth"],
+                    "sensitive_env_vars": ["TOKEN", "SECRET", "PASSWORD", "PASS", "KEY", "CERT", "PRIVATE", "CREDENTIAL", "AUTH"]
+                }
             }
             """,
             Config(
                 models=[
                     ModelConfig(name="model1", deployment_id="dep1", temperature=0.0),
                     ModelConfig(name="model2", deployment_id="dep2", temperature=0.5),
-                ]
+                ],
+                sanitization_config=DataSanitizationConfig(
+                    resources_to_sanitize=[
+                        "Deployment",
+                        "DeploymentList",
+                        "Pod",
+                        "PodList",
+                    ],
+                    sensitive_field_names=[
+                        "password",
+                        "secret",
+                        "token",
+                        "key",
+                        "cert",
+                        "credential",
+                        "private",
+                        "auth",
+                    ],
+                    sensitive_env_vars=[
+                        "TOKEN",
+                        "SECRET",
+                        "PASSWORD",
+                        "PASS",
+                        "KEY",
+                        "CERT",
+                        "PRIVATE",
+                        "CREDENTIAL",
+                        "AUTH",
+                    ],
+                ),
             ),
         ),
         (
@@ -49,15 +83,51 @@ from utils.config import Config, ModelConfig, get_config
                         "deployment_id": "single_dep",
                         "temperature": 1
                     }
-                ]
+                ],
+                "sanitization_config": {
+                    "resources_to_sanitize": ["Deployment", "DeploymentList", "Pod", "PodList"],
+                    "sensitive_field_names": ["password", "secret", "token", "key", "cert", "credential", "private", "auth"],
+                    "sensitive_env_vars": ["TOKEN", "SECRET", "PASSWORD", "PASS", "KEY", "CERT", "PRIVATE", "CREDENTIAL", "AUTH"]
+                }
             }
             """,
             Config(
                 models=[
                     ModelConfig(
-                        name="single_model", deployment_id="single_dep", temperature=1
+                        name="single_model",
+                        deployment_id="single_dep",
+                        temperature=1,
                     )
-                ]
+                ],
+                sanitization_config=DataSanitizationConfig(
+                    resources_to_sanitize=[
+                        "Deployment",
+                        "DeploymentList",
+                        "Pod",
+                        "PodList",
+                    ],
+                    sensitive_field_names=[
+                        "password",
+                        "secret",
+                        "token",
+                        "key",
+                        "cert",
+                        "credential",
+                        "private",
+                        "auth",
+                    ],
+                    sensitive_env_vars=[
+                        "TOKEN",
+                        "SECRET",
+                        "PASSWORD",
+                        "PASS",
+                        "KEY",
+                        "CERT",
+                        "PRIVATE",
+                        "CREDENTIAL",
+                        "AUTH",
+                    ],
+                ),
             ),
         ),
         (
@@ -69,7 +139,7 @@ from utils.config import Config, ModelConfig, get_config
                 "models": []
             }
             """,
-            Config(models=[]),
+            Config(models=[], sanitization_config=None),
         ),
     ],
 )

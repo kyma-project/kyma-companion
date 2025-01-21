@@ -17,10 +17,20 @@ class ModelConfig(BaseModel):
     temperature: float = 0.0
 
 
+class DataSanitizationConfig(BaseModel):
+    """Sanitization configuration."""
+
+    resources_to_sanitize: list[str] | None = None
+    sensitive_field_names: list[str] | None = None
+    sensitive_env_vars: list[str] | None = None
+    sensitive_field_to_exclude: list[str] | None = None
+
+
 class Config(BaseModel):
     """Configuration of the application"""
 
     models: list[ModelConfig]
+    sanitization_config: DataSanitizationConfig | None = None
 
 
 def find_config_file(start_path: Path, target: str) -> Path:
@@ -66,7 +76,8 @@ def get_config() -> Config:
             data = json.load(file)
         # Extract only the "models" part of the configuration
         models_data = data.get("models", [])
-        config = Config(models=models_data)
+        sanitization_config = data.get("sanitization_config", None)
+        config = Config(models=models_data, sanitization_config=sanitization_config)
         return config
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON format in config file {config_file}: {e}")
