@@ -35,7 +35,12 @@ class TestDataSanitizer:
         {
             "kind": "ConfigMap",
             "metadata": {"name": "my-configmap"},
-            "data": {"username": "admin", "password": "secret"},
+            "data": {
+                "username": "admin",
+                "password": "test_password",
+                "secret_key": "test_secret_key",
+                "secretName": "test_secretName",
+            },
         },
     ]
 
@@ -46,7 +51,8 @@ class TestDataSanitizer:
                 DataSanitizationConfig(
                     resources_to_sanitize=["Pod"],
                     sensitive_env_vars=["CUSTOM_SECRET"],
-                    sensitive_field_names=["password"],
+                    sensitive_field_names=["password", "secret_key", "secretName"],
+                    sensitive_field_to_exclude=["secretName", "secret_key"],
                 ),
                 test_data,
                 [
@@ -75,7 +81,12 @@ class TestDataSanitizer:
                     {
                         "kind": "ConfigMap",
                         "metadata": {"name": "my-configmap"},
-                        "data": {"username": "admin", "password": REDACTED_VALUE},
+                        "data": {
+                            "username": "admin",
+                            "password": REDACTED_VALUE,
+                            "secret_key": "test_secret_key",  # Not redacted due to exclusion
+                            "secretName": "test_secretName",  # Not redacted due to exclusion
+                        },
                     },
                 ],
             ),
@@ -83,7 +94,8 @@ class TestDataSanitizer:
                 DataSanitizationConfig(
                     resources_to_sanitize=["Pod"],
                     sensitive_env_vars=["NORMAL_VAR"],
-                    sensitive_field_names=["username"],
+                    sensitive_field_names=["username", "password"],
+                    sensitive_field_to_exclude=["username"],
                 ),
                 test_data,
                 [
@@ -112,7 +124,12 @@ class TestDataSanitizer:
                     {
                         "kind": "ConfigMap",
                         "metadata": {"name": "my-configmap"},
-                        "data": {"username": REDACTED_VALUE, "password": "secret"},
+                        "data": {
+                            "username": "admin",  # Not redacted due to exclusion
+                            "password": REDACTED_VALUE,
+                            "secret_key": "test_secret_key",
+                            "secretName": "test_secretName",
+                        },
                     },
                 ],
             ),
@@ -837,6 +854,169 @@ class TestDataSanitizer:
                         "accessModes": ["ReadWriteOnce"],
                         "resources": {"requests": {"storage": "10Gi"}},
                     },
+                },
+            ),
+            # test APIRule resources
+            (
+                {
+                    "apiVersion": "gateway.kyma-project.io/v2alpha1",
+                    "kind": "APIRule",
+                    "metadata": {
+                        "name": "my-kyma-resource",
+                        "namespace": "kyma-system",
+                    },
+                    "spec": {
+                        "hosts": ["subdomain.domain.com"],
+                        "service": {"name": "service", "port": "8080"},
+                        "gateway": "kyma-system/kyma-gateway",
+                        "rules": [
+                            {
+                                "jwt": {
+                                    "authentications": [
+                                        {"issuer": "issuer", "jwksUri": "jwksUri"}
+                                    ]
+                                },
+                                "methods": ["GET"],
+                                "path": "/*",
+                            }
+                        ],
+                    },
+                },
+                {
+                    "apiVersion": "gateway.kyma-project.io/v2alpha1",
+                    "kind": "APIRule",
+                    "metadata": {
+                        "name": "my-kyma-resource",
+                        "namespace": "kyma-system",
+                    },
+                    "spec": {
+                        "hosts": ["subdomain.domain.com"],
+                        "service": {"name": "service", "port": "8080"},
+                        "gateway": "kyma-system/kyma-gateway",
+                        "rules": [
+                            {
+                                "jwt": {
+                                    "authentications": REDACTED_VALUE,
+                                },
+                                "methods": ["GET"],
+                                "path": "/*",
+                            }
+                        ],
+                    },
+                },
+            ),
+            # test api rule with sensitive data
+            (
+                {
+                    "apiVersion": "gateway.kyma-project.io/v2alpha1",
+                    "kind": "APIRule",
+                    "metadata": {"name": "test-apirule", "namespace": "test-namespace"},
+                    "spec": {
+                        "hosts": ["test.domain.com"],
+                        "service": {"name": "test-service", "port": "8080"},
+                        "gateway": "kyma-gateway/kyma-system",
+                        "rules": [
+                            {
+                                "extAuth": {"authorizers": ["oauth2-proxy"]},
+                                "methods": ["GET"],
+                                "path": "/*",
+                            }
+                        ],
+                    },
+                },
+                {
+                    "apiVersion": "gateway.kyma-project.io/v2alpha1",
+                    "kind": "APIRule",
+                    "metadata": {"name": "test-apirule", "namespace": "test-namespace"},
+                    "spec": {
+                        "hosts": ["test.domain.com"],
+                        "service": {"name": "test-service", "port": "8080"},
+                        "gateway": "kyma-gateway/kyma-system",
+                        "rules": [
+                            {
+                                "extAuth": REDACTED_VALUE,
+                                "methods": ["GET"],
+                                "path": "/*",
+                            }
+                        ],
+                    },
+                },
+            ),
+            # test serverless resource
+            (
+                {
+                    "apiVersion": "operator.kyma-project.io/v1alpha1",
+                    "kind": "Serverless",
+                    "metadata": {
+                        "finalizers": [
+                            "serverless-operator.kyma-project.io/deletion-hook"
+                        ],
+                        "name": "default",
+                    },
+                    "namespace": "kyma-system",
+                    "spec": {
+                        "dockerRegistry": {
+                            "enableInternal": False,
+                            "secretName": "my-secret",
+                        },
+                        "eventing": {
+                            "endpoint": "http://eventing-publisher-proxy.kyma-system.svc.cluster.local/publish",
+                        },
+                        "tracing": {
+                            "endpoint": "http://telemetry-otlp-traces.kyma-system.svc.cluster.local:4318/v1/traces",
+                        },
+                        "secretName": "my-secret",
+                    },
+                    "eventing": {
+                        "endpoint": "http://eventing-publisher-proxy.kyma-system.svc.cluster.local/publish",
+                    },
+                    "tracing": {
+                        "endpoint": "http://telemetry-otlp-traces.kyma-system.svc.cluster.local:4318/v1/traces",
+                    },
+                    "targetCPUUtilizationPercentage": 50,
+                    "functionRequeueDuration": "5m",
+                    "functionBuildExecutorArgs": "--insecure,--skip-tls-verify,--skip-unused-stages,--log-format=text,--cache=true,--use-new-run,--compressed-caching=false",
+                    "functionBuildMaxSimultaneousJobs": 5,
+                    "healthzLivenessTimeout": "10s",
+                    "defaultBuildJobPreset": "normal",
+                    "defaultRuntimePodPreset": "M",
+                },
+                {
+                    "apiVersion": "operator.kyma-project.io/v1alpha1",
+                    "kind": "Serverless",
+                    "metadata": {
+                        "finalizers": [
+                            "serverless-operator.kyma-project.io/deletion-hook"
+                        ],
+                        "name": "default",
+                    },
+                    "namespace": "kyma-system",
+                    "spec": {
+                        "dockerRegistry": {
+                            "enableInternal": False,
+                            "secretName": "my-secret",
+                        },
+                        "eventing": {
+                            "endpoint": "{{URL}}",
+                        },
+                        "tracing": {
+                            "endpoint": "{{URL}}",
+                        },
+                        "secretName": "my-secret",
+                    },
+                    "eventing": {
+                        "endpoint": "{{URL}}",
+                    },
+                    "tracing": {
+                        "endpoint": "{{URL}}",
+                    },
+                    "targetCPUUtilizationPercentage": 50,
+                    "functionRequeueDuration": "5m",
+                    "functionBuildExecutorArgs": "--insecure,--skip-tls-verify,--skip-unused-stages,--log-format=text,--cache=true,--use-new-run,--compressed-caching=false",
+                    "functionBuildMaxSimultaneousJobs": 5,
+                    "healthzLivenessTimeout": "10s",
+                    "defaultBuildJobPreset": "normal",
+                    "defaultRuntimePodPreset": "M",
                 },
             ),
         ],

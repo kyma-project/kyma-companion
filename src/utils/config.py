@@ -23,6 +23,7 @@ class DataSanitizationConfig(BaseModel):
     resources_to_sanitize: list[str] | None = None
     sensitive_field_names: list[str] | None = None
     sensitive_env_vars: list[str] | None = None
+    sensitive_field_to_exclude: list[str] | None = None
 
 
 class Config(BaseModel):

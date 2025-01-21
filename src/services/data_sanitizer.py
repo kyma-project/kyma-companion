@@ -28,12 +28,11 @@ DEFAULT_SENSITIVE_ENV_VARS = [
     "PASSWORD",
     "PASS",
     "KEY",
-    "CERT",
-    "PRIVATE",
-    "CREDENTIAL",
     "AUTH",
     "USERNAME",
     "USER_NAME",
+    "CLIENT_ID",
+    "CLIENT_SECRET",
 ]
 
 # Fields that typically contain sensitive data
@@ -52,6 +51,14 @@ DEFAULT_SENSITIVE_FIELD_NAMES = [
     "first_name",
     "lastname",
     "last_name",
+    "client_id",
+    "client_secret",
+]
+
+# default fields to exclude from sanitization
+DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE = [
+    "secretName",
+    "authorizers",
 ]
 
 REDACTED_VALUE = "[REDACTED]"
@@ -73,6 +80,7 @@ class DataSanitizer(metaclass=SingletonMeta):
             resources_to_sanitize=DEFAULT_SENSITIVE_RESOURCES,
             sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
             sensitive_field_names=DEFAULT_SENSITIVE_FIELD_NAMES,
+            sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
         )
         self.scrubber = scrubadub.Scrubber()
 
@@ -165,10 +173,15 @@ class DataSanitizer(metaclass=SingletonMeta):
         result = data.copy()
 
         for key, value in data.items():
+            # Check if the key should be excluded from sanitization
+            if (
+                self.config.sensitive_field_to_exclude
+                and key in self.config.sensitive_field_to_exclude
+            ):
+                result[key] = value
             # Check if the key indicates sensitive data
-            key_lower = key.lower()
-            if any(
-                sensitive in key_lower
+            elif any(
+                sensitive in key.lower()
                 for sensitive in self.config.sensitive_field_names
             ):
                 result[key] = REDACTED_VALUE
