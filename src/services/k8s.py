@@ -3,11 +3,15 @@ import copy
 import os
 import tempfile
 from http import HTTPStatus
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
-from requests import Response
+
+from services.data_sanitizer import IDataSanitizer
+from utils import logging
+
+logger = logging.get_logger(__name__)
 
 
 @runtime_checkable
@@ -22,13 +26,11 @@ class IK8sClient(Protocol):
         """Dump the model without any confidential data."""
         ...
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         ...
 
-    def list_resources(
-        self, api_version: str, kind: str, namespace: str, sanitize: bool = True
-    ) -> list:
+    def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         """List resources of a specific kind in a namespace."""
         ...
 
@@ -38,7 +40,6 @@ class IK8sClient(Protocol):
         kind: str,
         name: str,
         namespace: str,
-        sanitize: bool = True,
     ) -> dict:
         """Get a specific resource by name in a namespace."""
         ...
@@ -49,7 +50,6 @@ class IK8sClient(Protocol):
         kind: str,
         name: str,
         namespace: str,
-        sanitize: bool = True,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         ...
@@ -95,10 +95,15 @@ class K8sClient:
     user_token: str
     certificate_authority_data: str
     ca_temp_filename: str = ""
-    dynamic_client: dynamic.DynamicClient = None
+    dynamic_client: dynamic.DynamicClient
+    data_sanitizer: IDataSanitizer | None
 
     def __init__(
-        self, api_server: str, user_token: str, certificate_authority_data: str
+        self,
+        api_server: str,
+        user_token: str,
+        certificate_authority_data: str,
+        data_sanitizer: IDataSanitizer | None = None,
     ):
         """Initialize the K8sClient object."""
         self.api_server = api_server
@@ -112,6 +117,8 @@ class K8sClient:
         self.ca_temp_filename = ca_file.name
 
         self.dynamic_client = self._create_dynamic_client()
+
+        self.data_sanitizer = data_sanitizer
 
     def __del__(self):
         """Destructor to remove the temporary file containing certificate authority data."""
@@ -154,7 +161,7 @@ class K8sClient:
             "Content-Type": "application/json",
         }
 
-    def execute_get_api_request(self, uri: str) -> Response:
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         response = requests.get(
             url=f"{self.api_server}/{uri.lstrip('/')}",
@@ -162,11 +169,16 @@ class K8sClient:
             verify=self.ca_temp_filename,
         )
 
-        return response
+        if response.status_code != HTTPStatus.OK:
+            raise ValueError(
+                f"Failed to execute GET request to the Kubernetes API. Error: {response.text}"
+            )
 
-    def list_resources(
-        self, api_version: str, kind: str, namespace: str, sanitize: bool = True
-    ) -> list[dict]:
+        if self.data_sanitizer:
+            return self.data_sanitizer.sanitize(response.json())
+        return response.json()  # type: ignore
+
+    def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
         Provide empty string for namespace to list resources in all namespaces."""
         result = self.dynamic_client.resources.get(
@@ -175,8 +187,8 @@ class K8sClient:
 
         # convert objects to dictionaries.
         items = [item.to_dict() for item in result.items]
-        if sanitize:
-            return DataSanitizer.sanitize(items)  # type: ignore
+        if self.data_sanitizer:
+            return self.data_sanitizer.sanitize(items)  # type: ignore
         return items
 
     def get_resource(
@@ -185,7 +197,6 @@ class K8sClient:
         kind: str,
         name: str,
         namespace: str,
-        sanitize: bool = True,
     ) -> dict:
         """Get a specific resource by name in a namespace."""
         resource = (
@@ -193,8 +204,8 @@ class K8sClient:
             .get(name=name, namespace=namespace)
             .to_dict()
         )
-        if sanitize:
-            return DataSanitizer.sanitize(resource)  # type: ignore
+        if self.data_sanitizer:
+            return cast(dict, self.data_sanitizer.sanitize(resource))
         return resource  # type: ignore
 
     def describe_resource(
@@ -203,7 +214,6 @@ class K8sClient:
         kind: str,
         name: str,
         namespace: str,
-        sanitize: bool = True,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         resource = self.get_resource(api_version, kind, name, namespace)
@@ -216,15 +226,17 @@ class K8sClient:
         for event in result["events"]:
             del event["involvedObject"]
 
-        if sanitize:
-            return DataSanitizer.sanitize(result)  # type: ignore
+        if self.data_sanitizer:
+            return self.data_sanitizer.sanitize(result)  # type: ignore
         return result
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
         """List all pods that are not in the Running phase.
         Provide empty string for namespace to list all pods."""
         all_pods = self.list_resources(
-            api_version="v1", kind="Pod", namespace=namespace
+            api_version="v1",
+            kind="Pod",
+            namespace=namespace,
         )
         # filter pods by status and convert object to dictionary.
         items = []
@@ -239,10 +251,8 @@ class K8sClient:
 
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
-        result = self.execute_get_api_request(
-            "apis/metrics.k8s.io/v1beta1/nodes"
-        ).json()
-        return list(result["items"])
+        result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
+        return list[dict](result["items"])  # type: ignore
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
@@ -252,7 +262,10 @@ class K8sClient:
         )
 
         # convert objects to dictionaries and return.
-        return [event.to_dict() for event in result.items]
+        events = [event.to_dict() for event in result.items]
+        if self.data_sanitizer:
+            return list[dict](self.data_sanitizer.sanitize(events))
+        return events
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
@@ -295,7 +308,11 @@ class K8sClient:
         if is_terminated:
             uri += "&previous=true"
 
-        response = self.execute_get_api_request(uri)
+        response = requests.get(
+            url=f"{self.api_server}/{uri.lstrip('/')}",
+            headers=self._get_auth_headers(),
+            verify=self.ca_temp_filename,
+        )
         if response.status_code != HTTPStatus.OK:
             raise ValueError(
                 f"Failed to fetch logs for pod {name} in namespace {namespace} "
@@ -306,29 +323,3 @@ class K8sClient:
         for line in response.iter_lines():
             logs.append(str(line))
         return logs
-
-
-class DataSanitizer:
-    """Sanitize the data by from Kubernetes resources removing sensitive information."""
-
-    @staticmethod
-    def sanitize(data: dict | list[dict]) -> dict | list[dict]:
-        """Sanitize the data by removing sensitive information."""
-        if isinstance(data, list):
-            return [DataSanitizer._sanitize_object(obj) for obj in data]
-        elif isinstance(data, dict):
-            return DataSanitizer._sanitize_object(data)
-        raise ValueError("Data must be a list or a dictionary.")
-
-    @staticmethod
-    def _sanitize_object(obj: dict) -> dict:
-        """Sanitize a single object."""
-        if obj["kind"] == "Secret":
-            return DataSanitizer._sanitize_secret(obj)
-        return obj
-
-    @staticmethod
-    def _sanitize_secret(obj: dict) -> dict:
-        """Sanitize a secret object."""
-        obj["data"] = {}
-        return obj

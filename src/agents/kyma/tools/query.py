@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
-from services.k8s import DataSanitizer, IK8sClient
+from services.k8s import IK8sClient
 
 
 class KymaQueryToolArgs(BaseModel):
@@ -28,15 +28,14 @@ def kyma_query_tool(
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
-        response = k8s_client.execute_get_api_request(uri)
-        result = response.json()
+        result = k8s_client.execute_get_api_request(uri)
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing kyma_query_tool with URI: {uri}."
                 f"The result is not a list or dict, but a {type(result)}"
             )
 
-        return DataSanitizer.sanitize(result)
+        return result
     except Exception as e:
         raise Exception(
             f"failed executing kyma_query_tool with URI: {uri},"

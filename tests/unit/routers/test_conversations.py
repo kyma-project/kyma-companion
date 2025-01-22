@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from agents.common.data import Message
 from main import app
-from routers.conversations import get_conversation_service
+from routers.conversations import init_conversation_service
 from services.conversation import IService
 from services.k8s import IK8sClient
 
@@ -59,8 +59,7 @@ def client_factory():
         def get_mock_service():
             return mock_service
 
-        app.dependency_overrides[get_conversation_service] = get_mock_service
-
+        app.dependency_overrides[init_conversation_service] = get_mock_service
         test_client = TestClient(app)
 
         return test_client

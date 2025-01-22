@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
-from services.k8s import DataSanitizer, IK8sClient
+from services.k8s import IK8sClient
 
 
 class K8sQueryToolArgs(BaseModel):
@@ -26,15 +26,14 @@ def k8s_query_tool(
     The returned data is sanitized to remove any sensitive information.
     For example, it will always remove the `data` field of a `Secret` object."""
     try:
-        response = k8s_client.execute_get_api_request(uri)
-        result = response.json()
+        result = k8s_client.execute_get_api_request(uri)
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing k8s_query_tool with URI: {uri}."
                 f"The result is not a list or dict, but a {type(result)}"
             )
 
-        return DataSanitizer.sanitize(result)
+        return result
     except Exception as e:
         raise Exception(
             f"failed executing k8s_query_tool with URI: {uri},"
