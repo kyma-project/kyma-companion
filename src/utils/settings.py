@@ -1,11 +1,9 @@
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 
-from decouple import Config, RepositoryEnv, config
-from dotenv import find_dotenv
+from decouple import config
 
 
 def load_env_from_json() -> None:
