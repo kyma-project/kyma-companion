@@ -20,6 +20,8 @@ from langgraph.checkpoint.base import (
 from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
+from utils.settings import REDIS_TTL
+
 REDIS_KEY_SEPARATOR = "$"
 
 T = TypeVar("T")
@@ -253,6 +255,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         }
 
         await self._redis_call(self.conn.hset(key, mapping=data))
+        # Set TTL for each message
+        # await self.conn.expire(key, REDIS_TTL)
         return {
             "configurable": {
                 "thread_id": thread_id,
