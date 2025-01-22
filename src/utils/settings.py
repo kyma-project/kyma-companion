@@ -8,13 +8,6 @@ from decouple import Config, RepositoryEnv, config
 from dotenv import find_dotenv
 
 
-def is_running_pytest() -> bool:
-    """Check if the code is running with pytest.
-    This is needed to identify if tests are running.
-    """
-    return "pytest" in sys.modules
-
-
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
@@ -43,27 +36,10 @@ def load_env_from_json() -> None:
         logging.error(f"Error loading config from {config_path}: {e}")
         raise
 
+# Load the environment variables from the json file.
+load_env_from_json()
 
-if is_running_pytest():
-    # For tests use .env.test if available
-    env_path = find_dotenv(".env.test")
-    if env_path and os.path.exists(env_path):
-        repository = RepositoryEnv(env_path)
-        for key, value in repository.data.items():
-            os.environ[key] = str(value)
-        config = Config(repository)
-    else:
-        # Load the config.json if no .env.test file is found
-        logging.warning("No .test.env file found. Using config.json.")
-        load_env_from_json()
-
-    # deepeval specific environment variables
-    DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
-else:
-    # For production load the env variables needed dynamically from the config.json.
-    load_env_from_json()
-
-
+# Read the configs.
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
