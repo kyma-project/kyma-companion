@@ -1,8 +1,6 @@
 from datetime import UTC, datetime
-from typing import Annotated, Any
 from functools import lru_cache
-from typing import Annotated
-
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
@@ -31,17 +29,10 @@ from utils.utils import create_session_id
 logger = get_logger(__name__)
 
 
-
 def get_langfuse_service() -> ILangfuseService:
     """Dependency to get the langfuse service instance"""
     return LangfuseService()
 
-
-def get_conversation_service(
-    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
-) -> IService:
-    """Dependency to get the conversation service instance"""
-    return ConversationService(langfuse_handler=langfuse_service.handler)
 
 @lru_cache(maxsize=1)
 def init_config() -> Config:
@@ -62,6 +53,13 @@ def init_conversation_service(
     """Initialize the conversation service instance"""
     return ConversationService(config=config)
 
+
+def get_conversation_service(
+    config: Annotated[Config, Depends(init_config)],
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
+) -> IService:
+    """Dependency to get the conversation service instance"""
+    return ConversationService(langfuse_handler=langfuse_service.handler, config=config)
 
 
 router = APIRouter(
@@ -161,13 +159,9 @@ async def messages(
     x_cluster_url: Annotated[str, Header()],
     x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
-
-    service: IService = Depends(get_conversation_service),  # noqa B008
-    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
-
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
-
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 

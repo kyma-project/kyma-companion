@@ -85,9 +85,7 @@ class ConversationService(metaclass=SingletonMeta):
             host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
         )
         self._companion_graph = CompanionGraph(
-
             models, memory=checkpointer, handler=langfuse_handler
-
         )
 
     def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
