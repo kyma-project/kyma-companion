@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, AsyncMock
 
 import pytest
 from langchain_core.messages import (
@@ -204,7 +204,8 @@ class TestSummarization:
             ),
         ],
     )
-    def test_get_summary(self, messages, config, expected_summary):
+    @pytest.mark.asyncio
+    async def test_get_summary(self, messages, config, expected_summary):
         model = Mock()
         model.llm = Mock()
         summarization = Summarization(
@@ -214,10 +215,10 @@ class TestSummarization:
             token_upper_limit=200,
         )
         summarization._chain = Mock()
-        summarization._chain.invoke = MagicMock(
+        summarization._chain.ainvoke = AsyncMock(
             return_value=AIMessage(content="summary content")
         )
-        assert summarization.get_summary(messages, config) == expected_summary
+        assert await summarization.get_summary(messages, config) == expected_summary
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -285,7 +286,7 @@ class TestSummarization:
             token_upper_limit=token_upper_limit,
         )
         summarization._chain = Mock()
-        summarization._chain.invoke = MagicMock(
+        summarization._chain.ainvoke = AsyncMock(
             return_value=AIMessage(content="summary content")
         )
 
