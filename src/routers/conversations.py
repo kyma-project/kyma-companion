@@ -48,17 +48,10 @@ def init_data_sanitizer(
 
 
 def init_conversation_service(
-    config: Annotated[Config, Depends(init_config)]
-) -> IService:
-    """Initialize the conversation service instance"""
-    return ConversationService(config=config)
-
-
-def get_conversation_service(
     config: Annotated[Config, Depends(init_config)],
     langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> IService:
-    """Dependency to get the conversation service instance"""
+    """Initialize the conversation service instance"""
     return ConversationService(langfuse_handler=langfuse_service.handler, config=config)
 
 
