@@ -1,11 +1,14 @@
+from datetime import UTC, datetime
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
+from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
+from agents.common.utils import get_current_day_timestamps_utc
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -16,12 +19,19 @@ from routers.common import (
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.k8s import IK8sClient, K8sClient
+from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
+from utils.settings import TOKEN_LIMIT_PER_CLUSTER
 from utils.utils import create_session_id
 
 logger = get_logger(__name__)
+
+
+def get_langfuse_service() -> ILangfuseService:
+    """Dependency to get the langfuse service instance"""
+    return LangfuseService()
 
 
 @lru_cache(maxsize=1)
@@ -38,10 +48,11 @@ def init_data_sanitizer(
 
 
 def init_conversation_service(
-    config: Annotated[Config, Depends(init_config)]
+    config: Annotated[Config, Depends(init_config)],
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> IService:
     """Initialize the conversation service instance"""
-    return ConversationService(config=config)
+    return ConversationService(langfuse_handler=langfuse_service.handler, config=config)
 
 
 router = APIRouter(
@@ -143,8 +154,12 @@ async def messages(
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
+    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
+
+    # Check rate limitation
+    await check_token_usage(x_cluster_url, langfuse_service)
 
     # Initialize k8s client for the request.
     try:
@@ -169,3 +184,59 @@ async def messages(
         ),
         media_type="text/event-stream",
     )
+
+
+async def check_token_usage(
+    x_cluster_url: str,
+    langfuse_service: Any,
+    token_limit: int = TOKEN_LIMIT_PER_CLUSTER,
+) -> None:
+    """
+    Checks the total token usage for a specific cluster within the current day (UTC) and raises an HTTPException
+    if the usage exceeds the predefined token limit.
+
+
+    :param x_cluster_url: The URL of the cluster, from which the cluster ID is extracted.
+    :param langfuse_service: An instance of a service that provides access to the
+                                Langfuse API to retrieve token usage data.
+    :param token_limit: Default TOKEN_LIMIT_PER_CLUSTER
+
+    :raises HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
+                        an HTTP 429 error is raised
+                        with details about the current usage,
+                        the limit, and the time remaining until the limit resets at midnight UTC.
+
+    """
+
+    # Check if any limit is set, if no limit specified do not proceed
+    if token_limit == -1:
+        return
+
+    from_timestamp, to_timestamp = get_current_day_timestamps_utc()
+    cluster_id = x_cluster_url.split(".")[1]
+    total_token_usage = 0
+    try:
+
+        total_token_usage = await langfuse_service.get_total_token_usage(
+            from_timestamp, to_timestamp, cluster_id
+        )
+    except Exception as e:
+        logger.error(e)
+        logger.error("failed to connect to the Langfuse API")
+
+    if total_token_usage > token_limit:
+        current_utc = datetime.now(UTC)
+        midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
+        time_remaining = midnight_utc - current_utc
+        seconds_remaining = int(time_remaining.total_seconds())
+        raise HTTPException(
+            status_code=ERROR_RATE_LIMIT_CODE,
+            detail={
+                "error": "Rate limit exceeded",
+                "message": f"Daily token limit of {token_limit} exceeded for this cluster",
+                "current_usage": total_token_usage,
+                "limit": token_limit,
+                "time_remaining_seconds": seconds_remaining,
+            },
+            headers={"Retry-After": str(seconds_remaining)},
+        )

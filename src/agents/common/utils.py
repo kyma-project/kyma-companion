@@ -1,4 +1,6 @@
+import hashlib
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import tiktoken
@@ -126,6 +128,40 @@ def create_node_output(
         SUBTASKS: subtasks,
         ERROR: error,
     }
+
+
+def get_current_day_timestamps_utc() -> tuple[str, str]:
+    """
+    Returns the start and end timestamps for the current day in UTC.
+    Start: 00:00:00
+    End: 23:59:59
+    """
+    # Get the current date in UTC
+    now = datetime.now(UTC)
+
+    # Start of the day (00:00:00)
+    start_of_day = datetime(now.year, now.month, now.day, 0, 0, 0)
+
+    # End of the day (23:59:59)
+    end_of_day = datetime(now.year, now.month, now.day, 23, 59, 59)
+
+    # Format the timestamps in ISO format
+    from_timestamp = start_of_day.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    to_timestamp = end_of_day.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    return from_timestamp, to_timestamp
+
+
+def hash_url(url: str) -> str:
+    """
+    Generate a 32-character MD5 hash of a given URL.
+
+    :url (str): The URL string to be hashed.
+
+    Returns:
+        str: A 32-character hexadecimal string representing the MD5 hash.
+    """
+    return hashlib.md5(url.encode()).hexdigest()
 
 
 def compute_string_token_count(text: str, model_type: ModelType) -> int:

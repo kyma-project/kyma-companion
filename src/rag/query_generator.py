@@ -60,5 +60,9 @@ class QueryGenerator:
             queries = await self._chain.ainvoke({"query": query})
             return cast(Queries, queries)
         except Exception:
-            logger.exception("Error generating queries")
-            raise
+            logger.exception(
+                "Error generating alternative queries for the query: %s",
+                query,
+            )
+            logger.info("Returning the original query as a fallback")
+            return Queries(queries=[query])
