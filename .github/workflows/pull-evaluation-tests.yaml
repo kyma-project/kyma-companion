@@ -75,7 +75,7 @@ jobs:
 
       - name: Add config.json for companion
         run: |
-          echo "${{ secrets.CONFIG_TEST }}" | base64 --decode | jq > ./config/config.json
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
@@ -121,8 +121,10 @@ jobs:
           helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
       - name: Companion Deploy - Create secret
+        env:
+          COMPANION_CONFIG_BASE64: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
-          export COMPANION_CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          kubectl create namespace ai-system
           ./scripts/k8s/create-secret.sh
 
       - name: Companion Deploy - Apply companion manifests
