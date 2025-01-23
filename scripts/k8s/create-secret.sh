@@ -27,5 +27,5 @@ metadata:
   namespace: ai-system
 type: Opaque
 data:
-  companion-config.json: $COMPANION_CONFIG_BASE64
+  "companion-config.json": "$COMPANION_CONFIG_BASE64"
 EOF
