@@ -1,12 +1,33 @@
 import json
 from typing import Any
 
-from agents.common.constants import PLANNER
+from agents.common.constants import PLANNER, K8S_AGENT, KYMA_AGENT, K8S_AGENT_TASK_DESCRIPTION, \
+    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION
+from agents.k8s.agent import KubernetesAgent
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+
+def reformat_subtasks(subtasks: dict[str, Any]) -> list[dict[str, Any]]:
+    tasks= []
+    for subtask in subtasks:
+        task = {}
+        if subtask["assigned_to"] == K8S_AGENT :
+            task["type"] = K8S_AGENT
+            task["value"] = K8S_AGENT_TASK_DESCRIPTION
+        if subtask["assigned_to"] == KYMA_AGENT :
+            task["type"] = KYMA_AGENT
+            task["value"] = KYMA_AGENT_TASK_DESCRIPTION
+        if subtask["assigned_to"] == COMMON :
+            task["type"] = COMMON
+            task["value"] = COMMON_TASK_DESCRIPTION
+        else :
+            task["type"] = "Other"
+            task["value"] = "Answering rest of the task"
+        tasks.append(task)
+    return tasks
 
 def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
     """Process agent data and return the last message only."""
@@ -24,6 +45,8 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
 
     if agent == SUPERVISOR:
         answer["next"] = agent_data.get("next")
+
+        answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
     return {"agent": agent, "answer": answer}
 
