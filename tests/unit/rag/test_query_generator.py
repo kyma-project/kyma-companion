@@ -90,6 +90,7 @@ class TestQueryGenerator:
         self, mock_model, mock_llm, query, chain_output, expected_output, error
     ):
         """Test agenerate_queries method."""
+        # Given
         mock_chain = AsyncMock()
         with patch.object(QueryGenerator, "_create_chain", return_value=mock_chain):
             generator = QueryGenerator(mock_model)
@@ -98,7 +99,8 @@ class TestQueryGenerator:
                 mock_chain.ainvoke.side_effect = error
             else:
                 mock_chain.ainvoke.return_value = chain_output
-
+            # When
             result = await generator.agenerate_queries(query)
+            # Then
             assert result == expected_output
             mock_chain.ainvoke.assert_called_once_with({"query": query})
