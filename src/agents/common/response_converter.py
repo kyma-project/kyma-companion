@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, Protocol
 
 import yaml
 from langchain_core.messages import AIMessage
@@ -15,6 +15,16 @@ from agents.common.constants import (
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class IResponseConverter(Protocol):
+    """Protocol for IResponseConverter."""
+
+    def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
+        """
+        Main conversion method that orchestrates the entire YAML to HTML conversion process.
+        """
+        ...
 
 
 class ResponseConverter:

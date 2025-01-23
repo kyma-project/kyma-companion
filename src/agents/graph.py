@@ -28,6 +28,7 @@ from agents.common.constants import (
     MESSAGES,
 )
 from agents.common.data import Message
+from agents.common.response_converter import ResponseConverter
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import (
     filter_messages,
@@ -103,6 +104,7 @@ class CompanionGraph:
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
+            response_converter=ResponseConverter(),
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
