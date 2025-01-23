@@ -18,6 +18,9 @@ fi
 # base64 encode the file and save it to a variable.
 COMPANION_CONFIG_BASE64="$(cat $COMPANION_CONFIG_PATH | jq -c | base64)"
 
+echo $COMPANION_CONFIG_BASE64 | base64 --decode | jq .DOCS_TABLE_NAME
+
+echo "Creating secret companion-config in ai-system namespace."
 # create a secret with the base64 encoded file.
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
