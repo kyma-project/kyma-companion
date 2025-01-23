@@ -11,6 +11,7 @@ from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     HumanMessage,
+    RemoveMessage,
     SystemMessage,
     ToolMessage,
 )
@@ -26,21 +27,24 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     MESSAGES,
+    MESSAGES_SUMMARY,
+    SUMMARIZATION,
 )
 from agents.common.data import Message
-from agents.common.response_converter import ResponseConverter
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
-from agents.common.utils import (
-    filter_messages,
-)
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
+from agents.summarization.summarization import Summarization
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.langfuse import handler
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
+from utils.settings import (
+    SUMMARIZATION_TOKEN_LOWER_LIMIT,
+    SUMMARIZATION_TOKEN_UPPER_LIMIT,
+)
 
 logger = get_logger(__name__)
 
@@ -53,7 +57,13 @@ class CustomJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):  # noqa D102
         if isinstance(
-            obj, AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask
+            obj,
+            RemoveMessage
+            | AIMessage
+            | HumanMessage
+            | SystemMessage
+            | ToolMessage
+            | SubTask,
         ):
             return obj.__dict__
         elif isinstance(obj, IK8sClient):
@@ -104,7 +114,15 @@ class CompanionGraph:
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
-            response_converter=ResponseConverter(),
+        )
+
+        self.summarization = Summarization(
+            model=gpt_4o_mini,
+            tokenizer_model_type=ModelType.GPT4O,
+            token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
+            token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
+            messages_key=MESSAGES,
+            messages_summary_key=MESSAGES_SUMMARY,
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
@@ -128,7 +146,7 @@ class CompanionGraph:
         """Invoke the common node."""
         response = await self._common_chain.ainvoke(
             {
-                "messages": filter_messages(state.messages),
+                "messages": state.get_messages_including_summary(),
                 "query": subtask,
             },
         )
@@ -182,14 +200,16 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
-
-        # Set the entrypoint: ENTRY --> supervisor
-        workflow.set_entry_point(SUPERVISOR)
+        workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
-        # The agents ALWAYS "report back" to the supervisor.
+        # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
-            workflow.add_edge(member, SUPERVISOR)
+            workflow.add_edge(member, SUMMARIZATION)
+        workflow.add_edge(SUMMARIZATION, SUPERVISOR)
+
+        # Set the entrypoint: ENTRY --> summarization
+        workflow.set_entry_point(SUMMARIZATION)
 
         # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}

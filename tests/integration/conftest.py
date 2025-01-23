@@ -10,9 +10,10 @@ from langchain_core.messages import BaseMessage
 
 from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
-from agents.memory.redis_checkpointer import RedisSaver, initialize_async_pool
+from agents.memory.async_redis_checkpointer import AsyncRedisSaver
+from utils.config import get_config
 from utils.models.factory import ModelFactory, ModelType
-from utils.settings import REDIS_HOST, REDIS_PORT, REDIS_URL
+from utils.settings import REDIS_HOST, REDIS_PORT
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -37,8 +38,13 @@ class LangChainOpenAI(DeepEvalBaseLLM):
 
 
 @pytest.fixture(scope="session")
-def app_models():
-    model_factory = ModelFactory()
+def init_config():
+    return get_config()
+
+
+@pytest.fixture(scope="session")
+def app_models(init_config):
+    model_factory = ModelFactory(config=init_config)
     return {
         ModelType.GPT4O_MINI: model_factory.create_model(ModelType.GPT4O_MINI),
         ModelType.GPT4O: model_factory.create_model(ModelType.GPT4O),
@@ -71,7 +77,7 @@ def start_fake_redis():
 
 @pytest.fixture(scope="session")
 def companion_graph(app_models, start_fake_redis):
-    memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
+    memory = AsyncRedisSaver.from_conn_info(host=REDIS_HOST, port=REDIS_PORT, db=0)
     graph = CompanionGraph(app_models, memory)
     return graph
 
@@ -88,9 +94,13 @@ def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",
         evaluation_steps=[
-            "Evaluate whether two answers are semantically similar or convey the same meaning.",
-            "Lightly penalize omissions of detail, focusing on the main idea",
-            "Vague language is permissible",
+            """
+            Evaluate whether two answers are semantically similar or convey the same meaning.
+            Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
+            Heavily penalize omissions of code blocks or changes in code blocks between the answers.
+            Lightly penalize omissions of detail, focusing on the main idea.
+            Vague language is permissible.
+            """,
         ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,

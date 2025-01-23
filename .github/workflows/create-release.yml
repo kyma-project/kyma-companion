@@ -14,12 +14,13 @@ run-name: Create release ${{ inputs.name }}
 # 2. Validate the release tag if its formated like x.y.z.
 # 3. Check if the release branch `release-x.y` already exists. If not, fail the workflow.
 # 4. Check if release tag already exists. If yes, fail the workflow.
-# 5. Run unit tests from the release branch.
-# 6. Create a git tag from the release branch.
-# 7. Build a container image against the git tag and push it to registry.
-# 8. Create a draft release against the git tag.
-# 9. Create a PR to bump image in sec-scanners-config in main branch and wait until the PR is approved and merged.
-# 10. Check if all the pre-requisites are met for publishing the release.
+# 5. Run unit tests and integration tests from the release branch.
+# 6. Create a PR to bump image in sec-scanners-config in release branch and wait until the PR is approved and merged.
+# 7. Create a git tag from the release branch.
+# 8. Build a container image against the git tag and push it to registry.
+# 9. Create a draft release against the git tag.
+# 10. Create a PR to bump image in sec-scanners-config in main branch and wait until the PR is approved and merged.
+# 11. Check if all the pre-requisites are met for publishing the release.
 # NOTE: The draft release needs to be manually reviewed and published.
 
 on:
@@ -107,12 +108,152 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json 
+
       - name: Run tests
         run: poetry run poe test
 
+  run-integration-tests:
+    name: Run integration tests
+    needs: validate-input-params
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${RELEASE_BRANCH}
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Prepare test configurations
+        id: int-tests-configs
+        env:
+          AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
+          HANA_DB_SECRET: ${{ secrets.HANA_DB }}
+        run: |
+          echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
+          echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_CLIENT_SECRET=$(yq eval '.stringData.clientsecret' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
+
+          # Extract HANA DB credentials - updated key names
+          echo "${HANA_DB_SECRET}" > hana-db-secret.yaml
+          echo "DATABASE_URL=$(yq eval '.DATABASE_URL' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_USER=$(yq eval '.DATABASE_USER' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PASSWORD=$(yq eval '.DATABASE_PASSWORD' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DATABASE_PORT=$(yq eval '.DATABASE_PORT' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+          echo "DOCS_TABLE_NAME=$(yq eval '.DOCS_TABLE_NAME' hana-db-secret.yaml)" >> $GITHUB_OUTPUT
+
+          # cleanup
+          rm -f aicore-secret.yaml hana-db-secret.yaml
+
+      - name: Run integration tests
+        env:
+          LOG_LEVEL: "DEBUG"
+          # AI Core configurations.
+          AICORE_CLIENT_ID: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.int-tests-configs.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ steps.int-tests-configs.outputs.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ steps.int-tests-configs.outputs.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ steps.int-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
+          # Gardener test cluster configurations.
+          TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
+          TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
+          TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
+          # HANA DB configurations
+          DATABASE_URL: ${{ steps.int-tests-configs.outputs.DATABASE_URL }}
+          DATABASE_USER: ${{ steps.int-tests-configs.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.int-tests-configs.outputs.DATABASE_PASSWORD }}
+          DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
+          DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
+        run: |
+          echo "${{ secrets.CONFIG_TEST }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
+          poetry run poe test-integration
+
+  bump-sec-scanners-release-branch:
+    name: Bump image in sec-scanners-config on release branch
+    needs: [ validate-input-params, run-unit-tests, run-integration-tests]
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${RELEASE_BRANCH}
+
+      - name: Update sec-scanners-config.yaml
+        if: ${{ inputs.sec-scanners-config }}
+        run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
+
+      - name: Create PR if anything changed
+        if: ${{ inputs.sec-scanners-config }}
+        env:
+          BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}-rb
+          RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
+          GIT_NAME: ${{ vars.GIT_BOT_NAME }}
+          GIT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+          GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+        run: |
+          prs=$(gh pr list -A ${{ vars.GIT_BOT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
+          if echo $prs | tr " " '\n' | grep -F -q -x ${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}; then
+            echo "PR already exists, no need to create a new one"
+            echo "PR_NUMBER=$(gh pr list --search "base:${{ env.RELEASE_BRANCH }} head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> $GITHUB_ENV
+          elif [ -z "$(git status --porcelain)" ]; then
+            echo "Nothing changed, no need to create PR"
+            echo "PR_NUMBER=-1" >> $GITHUB_ENV
+          else
+            PR_STATUS=$(./scripts/shell/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}" "${RELEASE_BRANCH}")
+            echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> $GITHUB_ENV
+          fi
+
+      - name: Await PR merge (user input required)
+        if: ${{ inputs.sec-scanners-config }}
+        timeout-minutes: 45
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$PR_NUMBER" -gt 0 ]; then
+            ./scripts/shell/await_pr_merge.sh
+          else
+            echo "Step skipped"
+          fi
+
   create-git-tag:
     name: Create git tag for release
-    needs: [ validate-input-params, run-unit-tests]
+    needs: [ validate-input-params, bump-sec-scanners-release-branch]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).

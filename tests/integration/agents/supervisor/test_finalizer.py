@@ -69,7 +69,7 @@ from integration.agents.test_common_node import create_mock_state
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
-                HumanMessage(content="What is Kyma?"),
+                HumanMessage(content="Describe Kyma in detail"),
                 AIMessage(name="KymaAgent", content="It is a color of fish."),
             ],
             dedent(
@@ -233,7 +233,6 @@ from integration.agents.test_common_node import create_mock_state
             `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
             These types allow Kubernetes to offer different ways to expose applications depending on the use case and
             the environment in which the cluster is running.
-
             A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you to
             execute custom business logic in response to events or HTTP requests. Functions are typically written in
             JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
@@ -278,7 +277,6 @@ from integration.agents.test_common_node import create_mock_state
             2. **NodePort**: This type exposes the service on each node's IP at a static port. It makes the service accessible from outside the cluster using `<NodeIP>:<NodePort>`.
             3. **LoadBalancer**: This type is used in cloud environments to expose the service externally using a cloud provider's load balancer.
             4. **ExternalName**: This maps the service to the contents of the `externalName` field (e.g., `foo.bar.example.com`), returning a CNAME record with the name.
-
             A Kyma Function is a lightweight, serverless function that runs on the Kyma platform, which is built on top of
             Kubernetes. It allows developers to write code in a simple way to handle specific tasks or events without
             managing the underlying infrastructure. Kyma Functions are typically used for extending applications,
@@ -336,7 +334,6 @@ from integration.agents.test_common_node import create_mock_state
             5. **Ordered Rolling Updates**: Updates are performed one pod at a time in a controlled manner
             StatefulSets are ideal for applications like databases, message queues, and other stateful workloads that require
             stable network identities and persistent storage.
-
             A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you to
             execute custom business logic in response to events or HTTP requests. Functions are typically written in
             JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
@@ -459,7 +456,6 @@ from integration.agents.test_common_node import create_mock_state
                     }
                 }
                 ```
-                
                 Here is how you can deploy the hello world nodejs script as a Kyma function:
                 You should define a function resource in the `function.yaml` file:
                 ```yaml
@@ -482,6 +478,78 @@ from integration.agents.test_common_node import create_mock_state
                 ```bash
                 kubectl apply -f function.yaml
                 ```
+                """
+            ),
+        ),
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_namespace': 'test-namespace'}"
+                ),
+                HumanMessage(
+                    content="what is the latest istio version included in Kyma?"
+                ),
+                AIMessage(
+                    name="KymaAgent",
+                    content="The latest Istio version included in Kyma is 1.24.1.",
+                ),
+            ],
+            "The latest Istio version included in Kyma is 1.24.1.",
+        ),
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="list me deployments in this namespace"),
+                AIMessage(
+                    name="KymaAgent",
+                    content=dedent(
+                        """
+                        There is one deployment in the `nginx-oom` namespace:
+                        
+                        1. **Deployment Name:** nginx
+                           - **Labels:** app: nginx
+                           - **Replicas:** 1
+                           - **Image:** nginx
+                           - **Resource Limits:** 
+                             - CPU: 250m
+                             - Memory: 2Mi
+                           - **Resource Requests:**
+                             - CPU: 250m
+                             - Memory: 1Mi
+                           - **Environment Variables:**
+                             - ACCESS_TOKEN: abcdefg
+                        
+                        The deployment is currently facing issues:
+                        - **Available Status:** False
+                          - **Reason:** MinimumReplicasUnavailable
+                          - **Message:** Deployment does not have minimum availability.
+                        - **Progressing Status:** False
+                          - **Reason:** ProgressDeadlineExceeded
+                          - **Message:** ReplicaSet "nginx-66b87d8476" has timed out progressing.
+                        """
+                    ),
+                ),
+            ],
+            dedent(
+                """
+                There is one deployment in the `nginx-oom` namespace:
+
+                1. **Deployment Name:** nginx
+                   - **Labels:** app: nginx
+                   - **Replicas:** 1
+                   - **Image:** nginx
+                   - **Resource Limits:** 
+                     - CPU: 250m
+                     - Memory: 2Mi
+                   - **Resource Requests:**
+                     - CPU: 250m
+                     - Memory: 1Mi
+                   - **Environment Variables:**
+                     - ACCESS_TOKEN: abcdefg
+                     
+                The deployment is currently facing issues with availability and progress.
                 """
             ),
         ),

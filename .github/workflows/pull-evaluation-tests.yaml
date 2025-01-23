@@ -189,7 +189,6 @@ jobs:
         id: eval-tests-configs
         env:
           AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
-          HANA_DB_SECRET: ${{ secrets.HANA_DB }}
         run: |
           # AI Core configurations.
           echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml

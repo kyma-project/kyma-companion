@@ -234,6 +234,7 @@ __pycache__
 .secrets
 scripts/k8s/aicore-secret.yaml
 scripts/k8s/companion-configmap.yaml
+.python-version
 
 commands.md
 .env.dev
@@ -253,4 +254,4 @@ doc_indexer/data/*
 .env.*
 
 # ignore scripts in the root folder
-*.sh
+/*.sh

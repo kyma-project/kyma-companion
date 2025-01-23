@@ -18,6 +18,10 @@ on:
       - "doc_indexer/**"
       - "scripts/**"
 
+## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
+## integration-tests in the create-release.yml workflow as well.
+
+
 jobs:
   integration-test:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
@@ -90,5 +94,5 @@ jobs:
           DATABASE_PORT: ${{ steps.int-tests-configs.outputs.DATABASE_PORT }}
           DOCS_TABLE_NAME: ${{ steps.int-tests-configs.outputs.DOCS_TABLE_NAME }}
         run: |
-          echo "${{ secrets.MODELS_JSON }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.CONFIG_TEST }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration

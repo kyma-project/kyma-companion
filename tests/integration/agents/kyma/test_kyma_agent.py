@@ -83,6 +83,7 @@ def kyma_agent(app_models):
         (
             "Should return right solution for API Rule with wrong access strategy",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
@@ -145,6 +146,7 @@ def kyma_agent(app_models):
         (
             "Should return Kyma resource query tool call for the first user query call",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
@@ -175,6 +177,7 @@ def kyma_agent(app_models):
         (
             "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
@@ -223,6 +226,7 @@ def kyma_agent(app_models):
         (
             "Should return right solution for Serverless Function with syntax error",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
@@ -287,6 +291,7 @@ def kyma_agent(app_models):
         (
             "Should return right solution for Serverless Function with no replicas",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(
                         content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
@@ -349,6 +354,7 @@ def kyma_agent(app_models):
         (
             "Should return right solution for general Kyma question - only need Kyma Doc Search",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
@@ -392,6 +398,7 @@ def kyma_agent(app_models):
         (
             "Should make kyma doc tool search once when no relevant documentation is found",
             KymaAgentState(
+                agent_messages=[],
                 messages=[
                     AIMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),

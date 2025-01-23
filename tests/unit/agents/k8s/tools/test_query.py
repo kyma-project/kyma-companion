@@ -41,7 +41,7 @@ def sample_k8s_sanitized_secret():
             "v1/secret/my-secret",
             sample_k8s_secret(),
             None,
-            sample_k8s_sanitized_secret(),
+            sample_k8s_secret(),
             None,
         ),
         # Test case: the execute_get_api_request returns an exception.
@@ -78,7 +78,7 @@ def test_k8s_query_tool(
     if given_exception:
         k8s_client.execute_get_api_request.side_effect = given_exception
     else:
-        k8s_client.execute_get_api_request.return_value.json.return_value = given_object
+        k8s_client.execute_get_api_request.return_value = given_object
 
     # When: invoke the tool.
     result = tool_node.invoke(

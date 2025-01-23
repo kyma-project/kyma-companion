@@ -19,17 +19,17 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
-from agents.common.response_converter import IResponseConverter
+from agents.common.response_converter import IResponseConverter, ResponseConverter
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
+    FINALIZER_PROMPT_FOLLOW_UP,
     PLANNER_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
     filter_messages_via_checks,
-    filter_most_recent_messages,
     is_finalizer_message,
     is_human_message,
     is_system_message,
@@ -93,7 +93,9 @@ class SupervisorAgent:
         self.model = gpt_4o
         self.members = members
         self.parser = self._route_create_parser()
-        self.response_converter = response_converter
+        self.response_converter: IResponseConverter = (
+            response_converter or ResponseConverter()
+        )
         self._planner_chain = self._create_planner_chain(gpt_4o)
         self._graph = self._build_graph()
 
@@ -148,7 +150,7 @@ class SupervisorAgent:
         filtered_messages = filter_messages_via_checks(
             state.messages, [is_human_message, is_system_message, is_finalizer_message]
         )
-        reduces_messages = filter_most_recent_messages(filtered_messages, 10)
+        reduces_messages = filter_messages(filtered_messages)
 
         plan: Plan = await self._planner_chain.ainvoke(
             input={
@@ -205,8 +207,9 @@ class SupervisorAgent:
 
         prompt = ChatPromptTemplate.from_messages(
             [
-                MessagesPlaceholder(variable_name="messages"),
                 ("system", FINALIZER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("system", FINALIZER_PROMPT_FOLLOW_UP),
             ]
         ).partial(members=self._get_members_str(), query=last_human_message.content)
         return prompt | self.model.llm  # type: ignore
@@ -218,7 +221,7 @@ class SupervisorAgent:
 
         try:
             final_response = await final_response_chain.ainvoke(
-                {"messages": filter_messages(state.messages)},
+                {"messages": state.messages},
             )
 
             return {

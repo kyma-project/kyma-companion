@@ -1,10 +1,12 @@
 from collections.abc import Sequence
 from typing import Any, Literal
 
+import tiktoken
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
+from langgraph.graph.message import Messages
 
 from agents.common.constants import (
     CONTINUE,
@@ -18,6 +20,7 @@ from agents.common.constants import (
 )
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from utils.logging import get_logger
+from utils.models.factory import ModelType
 
 logger = get_logger(__name__)
 
@@ -123,3 +126,16 @@ def create_node_output(
         SUBTASKS: subtasks,
         ERROR: error,
     }
+
+
+def compute_string_token_count(text: str, model_type: ModelType) -> int:
+    """Returns the token count of the string."""
+    return len(tiktoken.encoding_for_model(model_type).encode(text=text))
+
+
+def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
+    """Returns the token count of the messages."""
+    tokens_per_msg = (
+        compute_string_token_count(str(msg.content), model_type) for msg in msgs
+    )
+    return sum(tokens_per_msg)
