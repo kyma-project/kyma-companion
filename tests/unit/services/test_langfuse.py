@@ -113,6 +113,16 @@ mock_metrics_data = {
 async def test_get_daily_metrics(
     from_timestamp, to_timestamp, tags, user_id, expected_result
 ):
+    """
+    Test the `get_daily_metrics` method of the LangfuseService class.
+
+    This test verifies that the method correctly handles successful API responses
+    and raises appropriate exceptions for failed responses. It tests three scenarios:
+    1. A successful call with no tags or user_id.
+    2. A successful call with tags.
+    3. A successful call with a user_id.
+
+    """
     with patch("aiohttp.ClientSession.get") as mock_get:
         if expected_result:
             # Mock successful response
@@ -150,6 +160,7 @@ def _raise_exception(*args):
 
 @pytest.mark.asyncio
 async def test_get_daily_metrics_failure():
+    """This test verifies that the method raises an HTTPError when the API call fails."""
     with patch("aiohttp.ClientSession.get") as mock_get:
         # Mock failed response
         mock_response = AsyncMock()
@@ -192,6 +203,12 @@ async def test_get_daily_metrics_failure():
 async def test_get_total_token_usage(
     from_timestamp, to_timestamp, tags, expected_total_usage
 ):
+    """
+    This test verifies that the method correctly calculates the total token usage
+    based on the provided timestamps and optional tags. It tests two scenarios:
+    1. A successful call with no tags.
+    2. A successful call with tags.
+    """
     with patch("aiohttp.ClientSession.get") as mock_get:
         if expected_total_usage > 0:
             # Mock successful response
@@ -254,6 +271,13 @@ async def test_get_total_token_usage(
 async def test_check_token_usage(
     x_cluster_url, total_token_usage, expected_exception, expected_detail
 ):
+    """
+    This test verifies that the function correctly checks the token usage for a cluster
+    and raises an HTTPException if the usage exceeds the daily limit. It tests three scenarios:
+    1. Token usage is below the limit, no exception is raised.
+    2. Token usage exceeds the limit, an HTTPException is raised.
+    3. The Langfuse API fails, no exception is raised.
+    """
     # Mock the Langfuse service
     langfuse_service = AsyncMock()
 
