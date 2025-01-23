@@ -3,19 +3,26 @@ from typing import Protocol
 from common.config import Config
 from common.logger import get_logger
 from gen_ai_hub.proxy import get_proxy_client
+from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
 from pydantic import BaseModel
 
 logger = get_logger(__name__)
 
-proxy_client = get_proxy_client("gen-ai-hub")
+proxy_client: BaseProxyClient | None = None
+
+def get_gen_ai_proxy_client() -> BaseProxyClient:
+    global proxy_client
+    if proxy_client is None:
+        proxy_client = get_proxy_client("gen-ai-hub")
+    return proxy_client
 
 
 class ModelConfig(BaseModel):
     name: str
     deployment_id: str
-    temperature: int
+    temperature: int = 0
 
 
 class Model(Protocol):
@@ -32,7 +39,7 @@ class OpenAIModel(Model):
     def __init__(self, config: ModelConfig):
         self._name = config.name
         self.model = ChatOpenAI(
-            deployment_id=config.deployment_id, proxy_client=proxy_client, temperature=0
+            deployment_id=config.deployment_id, proxy_client=get_gen_ai_proxy_client(), temperature=0
         )
 
     def invoke(self, content: str) -> str:
@@ -51,7 +58,7 @@ class GeminiModel(Model):
     def __init__(self, config: ModelConfig):
         self._name = config.name
         self.model = GenerativeModel(
-            proxy_client=proxy_client,
+            proxy_client=get_gen_ai_proxy_client(),
             model_name=config.name,
             deployment_id=config.deployment_id,
         )
@@ -77,6 +84,9 @@ def get_models(config: Config) -> list:
                 llms.append(OpenAIModel(config))
             elif config.name.startswith("gemini"):
                 llms.append(GeminiModel(config))
+            elif config.name.startswith("text"):
+                logger.info(f"Skipping validating text model: {config.name}")
+                continue
             else:
                 raise ValueError(f"Model {config.name} not supported.")
         logger.info(f"Loaded {len(llms)} models")
