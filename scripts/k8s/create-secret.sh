@@ -16,7 +16,7 @@ if [ ! -f "$COMPANION_CONFIG_PATH" ]; then
 fi
 
 # base64 encode the file and save it to a variable.
-COMPANION_CONFIG_BASE64="$(cat $COMPANION_CONFIG_PATH | base64)"
+COMPANION_CONFIG_BASE64="$(cat $COMPANION_CONFIG_PATH | jq -c | base64)"
 
 # create a secret with the base64 encoded file.
 cat <<EOF | kubectl apply -f -
