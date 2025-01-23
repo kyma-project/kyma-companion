@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 proxy_client: BaseProxyClient | None = None
 
 def get_gen_ai_proxy_client() -> BaseProxyClient:
-    global proxy_client
+    global proxy_client # noqa
     if proxy_client is None:
         proxy_client = get_proxy_client("gen-ai-hub")
     return proxy_client
