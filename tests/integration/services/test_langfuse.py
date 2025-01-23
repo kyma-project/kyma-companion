@@ -16,11 +16,16 @@ RETRY_WAIT_TIME = 20
 
 @pytest.fixture
 def langfuse_service():
+    """Fixture to provide an instance of LangfuseService for testing."""
     return LangfuseService()
 
 
 @pytest.mark.asyncio
 async def test_get_daily_metrics(langfuse_service):
+    """
+    This test checks that the method returns a non-None response and that the response
+    is an instance of `MetricsResponse`.
+    """
     # Define the timestamps for the test
     to_timestamp, from_timestamp = get_current_day_timestamps_utc()
 
@@ -34,6 +39,10 @@ async def test_get_daily_metrics(langfuse_service):
 
 @pytest.mark.asyncio
 async def test_get_total_token_usage(langfuse_service):
+    """
+    This test checks that the method returns a non-negative integer representing
+    the total token usage within the specified time range.
+    """
     # Define the timestamps for the test
     to_timestamp, from_timestamp = get_current_day_timestamps_utc()
 
@@ -114,12 +123,19 @@ async def test_langfuse_end_to_end(
     semantic_similarity_metric,
     langfuse_service,
 ):
+    """
+    End-to-end test case for Langfuse integration.
+
+    This test simulates a conversation with a companion graph, sends the conversation to Langfuse,
+    and verifies that the total token count recorded by Langfuse matches or exceeds the expected
+    input token count.
+
+    """
     # Conversation state with messages
     state = create_mock_state(messages)
 
     # Generate a random UUID
-    random_guid = uuid.uuid4()
-    cluster_id = str(random_guid).replace("-", "")
+    cluster_id = uuid.uuid4().hex
 
     config_data = {
         "configurable": {
