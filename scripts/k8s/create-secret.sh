@@ -15,9 +15,14 @@ if [ ! -f "$COMPANION_CONFIG_PATH" ]; then
   exit 1
 fi
 
+echo "test file 1:"
+cat $COMPANION_CONFIG_PATH | jq .DOCS_TABLE_NAME
+
+echo "test file 2:"
 # base64 encode the file and save it to a variable.
 COMPANION_CONFIG_BASE64="$(cat $COMPANION_CONFIG_PATH | jq -c | base64)"
 
+echo "test file 3:"
 echo $COMPANION_CONFIG_BASE64 | base64 --decode | jq .DOCS_TABLE_NAME
 
 echo "Creating secret companion-config in ai-system namespace."
