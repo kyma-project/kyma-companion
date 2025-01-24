@@ -60,6 +60,7 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 - Include ALL the provided code blocks (YAML, JavaScript, JSON, etc.) in the final response.
 - Remove any information regarding the agents and your decision-making process from your final response.
 - Do not add any more headers or sub-headers to the final response.
+- If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
 """
 
 FINALIZER_PROMPT_FOLLOW_UP = """

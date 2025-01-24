@@ -383,7 +383,8 @@ class TestCompanionGraph:
 
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(
-                mock_models, members=["KymaAgent", "KubernetesAgent", "Common"]
+                mock_models,
+                members=["KymaAgent", "KubernetesAgent", "Common"],
             )
 
             mock_build_graph.assert_called_once()
