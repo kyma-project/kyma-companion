@@ -1019,6 +1019,116 @@ class TestDataSanitizer:
                     "defaultRuntimePodPreset": "M",
                 },
             ),
+            # delete "kubectl.kubernetes.io/last-applied-configuration" field completely
+            (
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "metadata": {
+                        "annotations": {
+                            "deployment.kubernetes.io/revision": "1",
+                            "kubectl.kubernetes.io/last-applied-configuration": '{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"nginx"},"name":"nginx","namespace":"test-sanit"},"spec":{"replicas":3,"selector":{"matchLabels":{"app":"nginx"}},"template":{"metadata":{"labels":{"app":"nginx"}},"spec":{"containers":[{"env":[{"name":"TOKEN","value":"test token"},{"name":"PASSWORD","value":"test password"},{"name":"CLIENT_ID","value":"test client ID"},{"name":"USER_NAME","value":"test user name"}],"image":"nginx:1.14.2","name":"nginx","ports":[{"containerPort":80}]}]}}}}\n',
+                        },
+                    },
+                    "name": "nginx",
+                    "namespace": "test-sanit",
+                    "spec": {
+                        "progressDeadlineSeconds": 600,
+                        "replicas": 3,
+                        "revisionHistoryLimit": 10,
+                        "selector": {"matchLabels": {"app": "nginx"}},
+                        "strategy": {
+                            "rollingUpdate": {
+                                "maxSurge": "25%",
+                                "maxUnavailable": "25%",
+                            },
+                            "type": "RollingUpdate",
+                        },
+                        "template": {
+                            "metadata": {
+                                "labels": {"app": "nginx"},
+                            },
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "env": [
+                                            {"name": "TOKEN", "value": "test token"},
+                                            {
+                                                "name": "PASSWORD",
+                                                "value": "test password",
+                                            },
+                                            {
+                                                "name": "CLIENT_ID",
+                                                "value": "test client ID",
+                                            },
+                                            {
+                                                "name": "USER_NAME",
+                                                "value": "test user name",
+                                            },
+                                        ],
+                                        "image": "nginx:1.14.2",
+                                        "name": "nginx",
+                                        "ports": [{"containerPort": 80}],
+                                    }
+                                ],
+                            },
+                        },
+                    },
+                },
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "metadata": {
+                        "annotations": {
+                            "deployment.kubernetes.io/revision": "1",
+                        }
+                    },
+                    "name": "nginx",
+                    "namespace": "test-sanit",
+                    "spec": {
+                        "progressDeadlineSeconds": 600,
+                        "replicas": 3,
+                        "revisionHistoryLimit": 10,
+                        "selector": {"matchLabels": {"app": "nginx"}},
+                        "strategy": {
+                            "rollingUpdate": {
+                                "maxSurge": "25%",
+                                "maxUnavailable": "25%",
+                            },
+                            "type": "RollingUpdate",
+                        },
+                        "template": {
+                            "metadata": {
+                                "labels": {"app": "nginx"},
+                            },
+                            "spec": {
+                                "containers": [
+                                    {
+                                        "env": [
+                                            {"name": "TOKEN", "value": REDACTED_VALUE},
+                                            {
+                                                "name": "PASSWORD",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                            {
+                                                "name": "CLIENT_ID",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                            {
+                                                "name": "USER_NAME",
+                                                "value": REDACTED_VALUE,
+                                            },
+                                        ],
+                                        "image": "nginx:1.14.2",
+                                        "name": "nginx",
+                                        "ports": [{"containerPort": 80}],
+                                    }
+                                ],
+                            },
+                        },
+                    },
+                },
+            ),
         ],
     )
     def test_kubernetes_resources(self, test_data, expected_results):
