@@ -54,5 +54,5 @@ jobs:
         env:
           LOG_LEVEL: "DEBUG"
         run: |
-          echo "${{ secrets.CONFIG_TEST }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.INTERATION_TEST_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration
