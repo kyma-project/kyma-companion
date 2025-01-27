@@ -1,21 +1,21 @@
 import argparse
 import asyncio
-import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from validation.utils.data_loader import load_data  # noqa
+from common.config import Config
 from validation.model_validation import create_validation  # noqa
+from validation.utils.data_loader import load_data  # noqa
 from validation.utils.models import get_models  # noqa
-
-DEFAULT_DATA_DIR: str = "./data/namespace-scoped"
 
 
 async def main(full_report: bool = False) -> None:
-    data = load_data(os.getenv("VALIDATION_DATA_PATH", DEFAULT_DATA_DIR))
-    models = get_models()
+    # load the configuration.
+    config = Config()
+
+    # load models and data.
+    models = get_models(config)
+    data = load_data(config.namespace_scoped_test_data_path)
+
+    # create validation and run it.
     validation = create_validation(models, data)
     await validation.validate()
     validation.print_results()

@@ -1,6 +1,5 @@
 from typing import Protocol
 
-from common.config import Config
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from langchain.output_parsers.boolean import BooleanOutputParser
 from langchain.prompts import PromptTemplate
@@ -22,12 +21,12 @@ class ChatOpenAIValidator:
     model: ChatOpenAI
     output_parser: BooleanOutputParser
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, name: str, temperature: str, deployment_id: str) -> None:
         self.model = ChatOpenAI(
-            model_name=config.model_name,
-            temperature=config.model_temperature,
-            deployment_id=config.aicore_deployment_id_gpt4_mini,
-            config_id=config.aicore_configuration_id_gpt4_mini,
+            model_name=name,
+            temperature=temperature,
+            deployment_id=deployment_id,
+            # config_id=config.aicore_configuration_id_gpt4_mini,
         )
         self.output_parser = BooleanOutputParser()
 
