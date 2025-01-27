@@ -1,7 +1,5 @@
 PLANNER = "Planner"
 
-COMMON = "Common"
-
 SUMMARIZATION = "Summarization"
 
 FINALIZER = "Finalizer"
