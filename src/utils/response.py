@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 from agents.common.constants import PLANNER, K8S_AGENT, KYMA_AGENT, K8S_AGENT_TASK_DESCRIPTION, \
-    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION
+    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION, SUMMARIZATION
 from agents.k8s.agent import KubernetesAgent
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
@@ -51,7 +51,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
     return {"agent": agent, "answer": answer}
 
 
-def prepare_chunk_response(chunk: bytes) -> bytes:
+def prepare_chunk_response(chunk: bytes) -> bytes | None:
     """Converts and prepares a final chunk response."""
     try:
         data = json.loads(chunk)
@@ -62,6 +62,10 @@ def prepare_chunk_response(chunk: bytes) -> bytes:
         ).encode()
 
     agent = next(iter(data.keys()), None)
+
+    # skip summarization node
+    if agent == SUMMARIZATION:
+        return None
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
         return json.dumps(
@@ -69,6 +73,7 @@ def prepare_chunk_response(chunk: bytes) -> bytes:
         ).encode()
 
     new_data = process_response(data, agent)
+
 
     return json.dumps(
         {
