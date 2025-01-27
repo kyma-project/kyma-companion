@@ -11,6 +11,7 @@ from agents.common.constants import COMMON
 from agents.common.data import Message
 from agents.common.state import CompanionState, SubTask
 from agents.graph import CompanionGraph
+from services.k8s import IK8sClient
 from utils.models.factory import IModel, ModelType
 
 
@@ -331,7 +332,8 @@ class TestCompanionGraph:
         expected_error,
     ):
         # Given:
-        mock_k8s_client = Mock()
+        mock_k8s_client = Mock(spec=IK8sClient)
+        mock_k8s_client.get_api_server.return_value = "url.cluster_url.test_url"
 
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):
@@ -381,7 +383,8 @@ class TestCompanionGraph:
 
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(
-                mock_models, members=["KymaAgent", "KubernetesAgent", "Common"]
+                mock_models,
+                members=["KymaAgent", "KubernetesAgent", "Common"],
             )
 
             mock_build_graph.assert_called_once()

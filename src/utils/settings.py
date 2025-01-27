@@ -94,3 +94,5 @@ DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)
 DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
+
+TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", -1, cast=int)

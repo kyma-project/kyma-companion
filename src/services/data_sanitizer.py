@@ -133,6 +133,9 @@ class DataSanitizer(metaclass=SingletonMeta):
     def _sanitize_workload(self, obj: dict) -> dict:
         """Sanitize a workload object (Deployment, Pod, StatefulSet, DaemonSet)."""
         try:
+            # First remove last-applied-configuration
+            obj = self._remove_last_applied_configuration(obj)
+
             # Handle template-based resources (Deployment, StatefulSet, DaemonSet)
             if "spec" in obj and "template" in obj["spec"]:
                 containers = obj["spec"]["template"]["spec"]["containers"]
@@ -172,6 +175,9 @@ class DataSanitizer(metaclass=SingletonMeta):
         """Recursively sanitize a dictionary by looking for sensitive data patterns."""
         result = data.copy()
 
+        # First remove last-applied-configuration if exists
+        result = self._remove_last_applied_configuration(result)
+
         for key, value in data.items():
             # Check if the key should be excluded from sanitization
             if (
@@ -204,3 +210,19 @@ class DataSanitizer(metaclass=SingletonMeta):
         sanitized_data_str = self.scrubber.clean(data_str)
 
         return dict(json.loads(sanitized_data_str))
+
+    @staticmethod
+    def _remove_last_applied_configuration(data: dict) -> dict:
+        """Remove kubectl.kubernetes.io/last-applied-configuration annotation if it exists."""
+        if "metadata" in data and "annotations" in data["metadata"]:
+            if (
+                "kubectl.kubernetes.io/last-applied-configuration"
+                in data["metadata"]["annotations"]
+            ):
+                del data["metadata"]["annotations"][
+                    "kubectl.kubernetes.io/last-applied-configuration"
+                ]
+            # Remove empty annotations dict if it's the last annotation
+            if not data["metadata"]["annotations"]:
+                del data["metadata"]["annotations"]
+        return data

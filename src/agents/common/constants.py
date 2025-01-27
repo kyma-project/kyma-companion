@@ -49,3 +49,13 @@ KYMA_AGENT_TASK_DESCRIPTION = "Fetching data from Kyma"
 COMMON = "Common"
 
 COMMON_TASK_DESCRIPTION = "Answering general queries"
+
+RESPONSE_CONVERTER = "ResponseConverter"
+
+NEW_YAML = "New"
+
+UPDATE_YAML = "Update"
+
+SUCCESS_CODE = 200
+
+ERROR_RATE_LIMIT_CODE = 429
