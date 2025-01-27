@@ -42,7 +42,9 @@ class Config:
         self.test_data_path = config("TEST_DATA_PATH", default="./data")
         self.namespace_scoped_test_data_path = f"{self.test_data_path}/namespace-scoped"
 
-        self.companion_api_url = config("COMPANION_API_URL", default="http://localhost:8000")
+        self.companion_api_url = config(
+            "COMPANION_API_URL", default="http://localhost:8000"
+        )
         self.companion_token = config("COMPANION_TOKEN", default="not-needed")
         self.test_cluster_url = config("TEST_CLUSTER_URL")
         self.test_cluster_ca_data = config("TEST_CLUSTER_CA_DATA")
@@ -50,15 +52,22 @@ class Config:
 
         self.model_name = config("MODEL_NAME", default="gpt-4o-mini")
         self.iterations = config("ITERATIONS", default=3, cast=int)
-        self.streaming_response_timeout = config("STREAMING_RESPONSE_TIMEOUT", default=600, cast=int) # seconds
+        self.streaming_response_timeout = config(
+            "STREAMING_RESPONSE_TIMEOUT", default=600, cast=int
+        )  # seconds
         self.max_workers = config("MAX_WORKERS", default=1, cast=int)
-        self.retry_wait_time = config("RETRY_WAIT_TIME", default=60, cast=int) # seconds
-        self.retry_max_wait_time = config("RETRY_MAX_WAIT_TIME", default=600, cast=int) # seconds
-
+        self.retry_wait_time = config(
+            "RETRY_WAIT_TIME", default=60, cast=int
+        )  # seconds
+        self.retry_max_wait_time = config(
+            "RETRY_MAX_WAIT_TIME", default=600, cast=int
+        )  # seconds
 
     def __load_env_from_json(self) -> None:
         """Load the configuration from the config.json file."""
-        default_config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
+        default_config_path = (
+            Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
+        )
         config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
         try:
@@ -85,14 +94,12 @@ class Config:
             logging.error(f"Error loading config from {config_path}: {e}")
             raise
 
-
     def get_model_config(self, model_name: str) -> dict:
         for model in self.models:
             if model["name"] == model_name:
                 return model
 
         raise ValueError(f"Model {model_name} not found in the configuration.")
-
 
     def get_models(self) -> dict:
         return self.models

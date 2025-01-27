@@ -12,8 +12,9 @@ logger = get_logger(__name__)
 
 proxy_client: BaseProxyClient | None = None
 
+
 def get_gen_ai_proxy_client() -> BaseProxyClient:
-    global proxy_client # noqa
+    global proxy_client  # noqa
     if proxy_client is None:
         proxy_client = get_proxy_client("gen-ai-hub")
     return proxy_client
@@ -39,7 +40,9 @@ class OpenAIModel(Model):
     def __init__(self, config: ModelConfig):
         self._name = config.name
         self.model = ChatOpenAI(
-            deployment_id=config.deployment_id, proxy_client=get_gen_ai_proxy_client(), temperature=0
+            deployment_id=config.deployment_id,
+            proxy_client=get_gen_ai_proxy_client(),
+            temperature=0,
         )
 
     def invoke(self, content: str) -> str:

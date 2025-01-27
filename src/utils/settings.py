@@ -34,6 +34,7 @@ def load_env_from_json() -> None:
         logging.error(f"Error loading config from {config_path}: {e}")
         raise
 
+
 # Load the environment variables from the json file.
 load_env_from_json()
 
