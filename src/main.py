@@ -11,6 +11,7 @@ app.include_router(conversations.router)
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
+    # test change
     return {"message": "Hello from Kyma Companion!"}
 
 
