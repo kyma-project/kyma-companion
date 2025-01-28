@@ -18,18 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Initialize AI Core Credentials and Models to Validate
-        id: aicore-creds
-        run: |
-          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > aicore-secret.yaml
-          echo "::set-output name=AICORE_CLIENT_ID::$(yq eval '.stringData.clientid' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_CLIENT_SECRET::$(yq eval '.stringData.clientsecret' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_AUTH_URL::$(yq eval '.stringData.auth_url' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_BASE_URL::$(yq eval '.stringData.base_url' aicore-secret.yaml)"
-          echo "::set-output name=AICORE_RESOURCE_GROUP::$(yq eval '.stringData.resource_group' aicore-secret.yaml)"
-          # cleanup
-          rm -f aicore-secret.yaml
-
       - name: Extract Python version
         id: python-version
         run: ./../../scripts/shell/extract-python-version.sh
@@ -49,11 +37,7 @@ jobs:
 
       - name: Run Evaluator Validation
         run: |
-          echo "${{ secrets.MODELS_TO_VALIDATE }}" > config/validation/models.yml
+          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "saved config to $CONFIG_PATH!"
           poetry run python src/run_validation.py
-        env:
-          AICORE_CLIENT_ID: ${{ steps.aicore-creds.outputs.AICORE_CLIENT_ID }}
-          AICORE_CLIENT_SECRET: ${{ steps.aicore-creds.outputs.AICORE_CLIENT_SECRET }}
-          AICORE_AUTH_URL: ${{ steps.aicore-creds.outputs.AICORE_AUTH_URL }}
-          AICORE_BASE_URL: ${{ steps.aicore-creds.outputs.AICORE_BASE_URL }}
-          AICORE_RESOURCE_GROUP: ${{ steps.aicore-creds.outputs.AICORE_RESOURCE_GROUP }}

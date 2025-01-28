@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: companion
+  namespace: ai-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: companion
+  namespace: ai-system
+  labels:
+    app.kubernetes.io/name: companion
+    app.kubernetes.io/instance: companion
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: companion
+    app.kubernetes.io/instance: companion
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8000
+      nodePort: 32000  # You can specify a port in the range 30000-32767
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: companion
+  namespace: ai-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: companion
+      app.kubernetes.io/instance: companion
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: companion
+        app.kubernetes.io/instance: companion
+    spec:
+      serviceAccountName: companion
+      containers:
+      - name: companion
+        image: kyma-companion:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi" # Minimum amount of memory guaranteed
+            cpu: "500m" # Equivalent to 0.5 of a CPU
+          limits:
+            memory: "3Gi" # Maximum amount of memory the container can use
+            cpu: "4" # Equivalent to 4 of a CPU
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: CONFIG_PATH
+          value: "/etc/secret/companion-config.json"
+        volumeMounts:
+          - name: companion-config
+            mountPath: /etc/secret/companion-config.json
+            subPath: companion-config.json
+      volumes:
+        - name: companion-config
+          secret:
+            secretName: companion-config
