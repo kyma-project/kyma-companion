@@ -1,5 +1,5 @@
 import pytest
-from deepeval import assert_test
+from deepeval import evaluate
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -195,12 +195,26 @@ async def test_invoke_planner(
     # Then: We evaluate based on query type
     if not general_query:
         # For Kyma or K8s queries, the generated plan is checked for correctness
-        planner_correctness_metric.measure(test_case)
+        # Then: We evaluate the response using deepeval metrics
+        eval_results = evaluate(
+            test_cases=[test_case],
+            metrics=[
+                planner_correctness_metric,
+            ],
+        )
+        assert all(
+            result.success for result in eval_results.test_results
+        ), "Not all metrics passed"
 
-        print(f"Score: {planner_correctness_metric.score}")
-        print(f"Reason: {planner_correctness_metric.reason}")
-
-        assert_test(test_case, [planner_correctness_metric])
     else:
         # For general queries, check answer relevancy where planner directly answers
-        assert_test(test_case, [answer_relevancy_metric])
+        # Then: We evaluate the response using deepeval metrics
+        eval_results = evaluate(
+            test_cases=[test_case],
+            metrics=[
+                answer_relevancy_metric,
+            ],
+        )
+        assert all(
+            result.success for result in eval_results.test_results
+        ), "Not all metrics passed"
