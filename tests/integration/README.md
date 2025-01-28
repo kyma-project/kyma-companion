@@ -16,32 +16,17 @@ To run the Integration tests, follow these steps:
     poetry install
     ```
 
-2. Prepare the `.env.test` file based on the following template:
+2. Prepare the `config-integration.json` file based on the [template](../../config/config-example.json).
 
-    ```
-   LOG_LEVEL=                           # Allowed values: "INFO", "DEBUG", "ERROR", "WARNING"
-   TEST_CLUSTER_URL=                    # Kubernetes Cluster (with test-cases configured) URL.
-   TEST_CLUSTER_CA_DATA=                # Kubernetes Cluster (with test-cases configured) Certificate Authority Data.
-   TEST_CLUSTER_AUTH_TOKEN=             # Kubernetes Cluster (with test-cases configured) Authentication Token.
-   AICORE_AUTH_URL=                     # AI-Core Auth URL.
-   AICORE_BASE_URL=                     # AI-Core Base URL.
-   AICORE_CLIENT_ID=                    # AI-Core Client ID.
-   AICORE_CLIENT_SECRET=                # AI-Core Client Secret.
-   AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
-    ```
-
-3. Run the following command to set up the environment variables in your system:
+3. Run the following command to set up `CONFIG_PATH` environment variable in your system:
 
     ```bash
-    export $(xargs < .env.test)
+    export CONFIG_PATH=<path_to_config-integration.json>
     ```
 
 4. Run the integration tests:
 
     ```bash
    poetry run poe test-integration
-   # OR
-   poetry shell
-   poe test-integration
     ```
 
