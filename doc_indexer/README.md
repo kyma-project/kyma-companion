@@ -19,7 +19,7 @@ To run the project locally, follow these steps:
 poetry install
 ```
 
-2. Prepare the `config-doc-indexer.json` file based on the [template](../../config/config-example.json).
+2. Prepare the `config-doc-indexer.json` file based on the [template](../config/config-example.json).
 
 3. Run the fetcher to pull documents from the specified sources in the `docs_sources.json` [file](./docs_sources.json):
 
