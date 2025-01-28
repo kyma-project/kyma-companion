@@ -19,35 +19,10 @@ To run the project locally, follow these steps:
 poetry install
 ```
 
-2. Create .env file in the root of the project and add the following variables:
-```yaml
-LOG_LEVEL=INFO # Set the log level to INFO, DEBUG, WARNING, or ERROR
+2. Prepare the `config-doc-indexer.json` file based on the [template](../../config/config-example.json).
 
-# AI Core credentials
-AICORE_AUTH_URL=
-AICORE_CLIENT_ID=
-AICORE_CLIENT_SECRET=
-AICORE_RESOURCE_GROUP=
-AICORE_BASE_URL=
+3. Run the fetcher to pull documents from the specified sources in the `docs_sources.json` [file](./docs_sources.json):
 
-# Embedding Model
-EMBEDDING_MODEL_DEPLOYMENT_ID=
-EMBEDDING_MODEL_NAME=
-
-# Kyma docs path
-DOCS_SOURCES_FILE_PATH=  # Path to the file with the list of documentation sources. Default: "docs_sources.json"
-DOCS_PATH=...
-
-# HANA Cloud DB
-DATABASE_URL=
-DATABASE_PORT=
-DATABASE_USER=
-DATABASE_PASSWORD=
-```
-
-It is important to pay attention that `DOCS_PATH` is the path to the Kyma documentation markdown files.
-
-3. Run the fetcher to pull documents from the specified sources in the `DOCS_SOURCES_FILE_PATH` file:
 ```bash
 poetry run python src/main.py fetch
 ```
@@ -59,7 +34,7 @@ poetry run python src/main.py index
 
 ## Testing
 
-The `.env` file can also be used for testing. You can create a separate `.env.test` file with similar content to `.env`.
+The `config-doc-indexer.json` file can also be used for testing.
 To run the unit and integration tests, use the following command:
 
 ```bash

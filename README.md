@@ -63,22 +63,6 @@ poetry install
 
 This creates a new virtual environment and installs the project's dependencies.
 
-### Activate the Virtual Environment
-
-To use the virtual environment, follow this procedure.
-
-> [!NOTE] Run these commands in the root directory of your project, where the `pyproject.toml` file is located.
-
-1. Use `poetry shell` to start a new shell session with the virtual environment activated:
-
-        ```bash
-        poetry shell
-        ```
-
-   Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
-2. Use `poetry run` to execute a command.
-3. Use the `deactivate` command to exit the virtual environment.
-
 If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
 ## Use Poe the Poet as Task Runner
@@ -144,7 +128,7 @@ poetry poe codecheck
 To fix linting and formatting issues, use the following command:
 
 ```bash
-poetry poe codefix
+poetry poe code-fix
 ```
 
 Mypy does not support fixing issues automatically.
