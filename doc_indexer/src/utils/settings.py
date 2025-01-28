@@ -5,7 +5,7 @@ from pathlib import Path
 
 from decouple import config
 
-from utils.models import ModelConfig
+from utils.model_config import ModelConfig
 
 project_root = os.path.dirname(os.path.abspath(__file__))
 

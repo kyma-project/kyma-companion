@@ -6,19 +6,10 @@ from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
-from pydantic import BaseModel
 
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
-
-
-class ModelConfig(BaseModel):
-    """Model for the deployment request"""
-
-    name: str
-    deployment_id: str
-    temperature: float = 0.0
 
 
 @lru_cache(maxsize=1)
