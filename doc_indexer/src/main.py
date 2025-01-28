@@ -17,8 +17,9 @@ from utils.settings import (
     DOCS_PATH,
     DOCS_SOURCES_FILE_PATH,
     DOCS_TABLE_NAME,
-    EMBEDDING_MODEL_DEPLOYMENT_ID,
+    EMBEDDING_MODEL_NAME,
     TMP_DIR,
+    get_embedding_model_config,
 )
 
 TASK_FETCH = "fetch"
@@ -42,8 +43,9 @@ def run_fetcher() -> None:
 def run_indexer() -> None:
     """Entry function to run the indexer."""
     # init embedding model
+    embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
     create_embedding = create_embedding_factory(openai_embedding_creator)
-    embeddings_model = create_embedding(EMBEDDING_MODEL_DEPLOYMENT_ID)
+    embeddings_model = create_embedding(embedding_model.deployment_id)
     # setup connection to Hana Cloud DB
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
