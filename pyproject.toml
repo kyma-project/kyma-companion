@@ -37,7 +37,7 @@ scrubadub = {extras = ["all"], version = "^2.0.1"}
 tiktoken = "^0.7.0"
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.1.2"
+deepeval = "^2.2.0"
 fakeredis = "^2.23.3"
 prettytable = "^3.10.2"
 pytest = "^8.2.2"

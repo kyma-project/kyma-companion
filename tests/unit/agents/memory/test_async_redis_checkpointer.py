@@ -297,30 +297,185 @@ class TestAsyncRedisSaver:
 
 
 class TestUtilityFunctions:
-    def test_make_redis_checkpoint_key(self):
-        key = _make_redis_checkpoint_key("thread1", "ns1", "chk1")
-        assert key == "checkpoint$thread1$ns1$chk1"
+    @pytest.mark.parametrize(
+        "thread_id, checkpoint_ns, checkpoint_id, expected_key",
+        [
+            # Basic case
+            ("thread1", "ns1", "chk1", "checkpoint$thread1$ns1$chk1"),
+            # Special characters
+            ("thread-1", "ns/1", "chk.1", "checkpoint$thread-1$ns/1$chk.1"),
+            # Long identifiers
+            (
+                "thread_very_long_123",
+                "namespace_very_long_456",
+                "checkpoint_very_long_789",
+                "checkpoint$thread_very_long_123$namespace_very_long_456$checkpoint_very_long_789",
+            ),
+            # Empty namespace (should be filtered out)
+            ("thread1", "", "chk1", "checkpoint$thread1$$chk1"),
+            # Empty thread_id
+            ("", "ns1", "chk1", "checkpoint$$ns1$chk1"),
+            # Empty checkpoint_id
+            ("thread1", "ns1", "", "checkpoint$thread1$ns1$"),
+        ],
+    )
+    def test_make_redis_checkpoint_key(
+        self,
+        thread_id: str,
+        checkpoint_ns: str,
+        checkpoint_id: str,
+        expected_key: str,
+    ) -> None:
+        """Test the _make_redis_checkpoint_key function with various inputs."""
 
-    def test_make_redis_checkpoint_writes_key(self):
-        key = _make_redis_checkpoint_writes_key("thread1", "ns1", "chk1", "task1", 0)
-        assert key == "writes$thread1$ns1$chk1$task1$0"
+        key = _make_redis_checkpoint_key(thread_id, checkpoint_ns, checkpoint_id)
+        assert key == expected_key
 
-        key_no_idx = _make_redis_checkpoint_writes_key(
-            "thread1", "ns1", "chk1", "task1", None
+    @pytest.mark.parametrize(
+        "thread_id, checkpoint_ns, checkpoint_id, task_id, idx, expected_key",
+        [
+            # Basic case with index
+            ("thread1", "ns1", "chk1", "task1", 0, "writes$thread1$ns1$chk1$task1$0"),
+            # Case without index (None)
+            ("thread1", "ns1", "chk1", "task1", None, "writes$thread1$ns1$chk1$task1"),
+            # Special characters in identifiers
+            (
+                "thread-1",
+                "ns/1",
+                "chk.1",
+                "task:1",
+                0,
+                "writes$thread-1$ns/1$chk.1$task:1$0",
+            ),
+            # Long identifiers
+            (
+                "thread_very_long_123",
+                "namespace_very_long_456",
+                "checkpoint_very_long_789",
+                "task_very_long_012",
+                1,
+                "writes$thread_very_long_123$namespace_very_long_456$checkpoint_very_long_789$task_very_long_012$1",
+            ),
+            # Empty namespace
+            ("thread1", "", "chk1", "task1", 0, "writes$thread1$$chk1$task1$0"),
+            # Empty thread_id
+            ("", "ns1", "chk1", "task1", 0, "writes$$ns1$chk1$task1$0"),
+            # Negative index
+            ("thread1", "ns1", "chk1", "task1", -1, "writes$thread1$ns1$chk1$task1$-1"),
+            # Large index
+            (
+                "thread1",
+                "ns1",
+                "chk1",
+                "task1",
+                999999,
+                "writes$thread1$ns1$chk1$task1$999999",
+            ),
+        ],
+    )
+    def test_make_redis_checkpoint_writes_key(
+        self,
+        thread_id: str,
+        checkpoint_ns: str,
+        checkpoint_id: str,
+        task_id: str,
+        idx: int | None,
+        expected_key: str,
+    ) -> None:
+        """Test the _make_redis_checkpoint_writes_key function with various inputs."""
+        key = _make_redis_checkpoint_writes_key(
+            thread_id, checkpoint_ns, checkpoint_id, task_id, idx
         )
-        assert key_no_idx == "writes$thread1$ns1$chk1$task1"
+        assert key == expected_key
 
-    def test_parse_redis_checkpoint_key(self):
-        key = "checkpoint$thread1$ns1$chk1"
-        result = _parse_redis_checkpoint_key(key)
-        assert result == {
-            "thread_id": "thread1",
-            "checkpoint_ns": "ns1",
-            "checkpoint_id": "chk1",
-        }
+    @pytest.mark.parametrize(
+        "key, expected_result, should_raise",
+        [
+            # Valid cases
+            (
+                "checkpoint$thread1$ns1$chk1",
+                {
+                    "thread_id": "thread1",
+                    "checkpoint_ns": "ns1",
+                    "checkpoint_id": "chk1",
+                },
+                False,
+            ),
+            # Special characters in identifiers
+            (
+                "checkpoint$thread-1$ns/1$chk.1",
+                {
+                    "thread_id": "thread-1",
+                    "checkpoint_ns": "ns/1",
+                    "checkpoint_id": "chk.1",
+                },
+                False,
+            ),
+            # Empty namespace
+            (
+                "checkpoint$thread1$$chk1",
+                {
+                    "thread_id": "thread1",
+                    "checkpoint_ns": "",
+                    "checkpoint_id": "chk1",
+                },
+                False,
+            ),
+            # Long identifiers
+            (
+                "checkpoint$thread_very_long_123$namespace_very_long_456$checkpoint_very_long_789",
+                {
+                    "thread_id": "thread_very_long_123",
+                    "checkpoint_ns": "namespace_very_long_456",
+                    "checkpoint_id": "checkpoint_very_long_789",
+                },
+                False,
+            ),
+            # UUID-like identifiers
+            (
+                "checkpoint$550e8400-e29b-41d4-a716-446655440000$ns1$chk1",
+                {
+                    "thread_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "checkpoint_ns": "ns1",
+                    "checkpoint_id": "chk1",
+                },
+                False,
+            ),
+            # Invalid cases - wrong prefix
+            ("invalid$thread1$ns1$chk1", None, True),
+            # Invalid cases - wrong number of segments
+            ("checkpoint$thread1$ns1", None, True),
+            ("checkpoint$thread1$ns1$chk1$extra", None, True),
+            # Invalid cases - empty segments
+            (
+                "checkpoint$$$",
+                {
+                    "thread_id": "",
+                    "checkpoint_ns": "",
+                    "checkpoint_id": "",
+                },
+                False,
+            ),
+            # Invalid cases - completely wrong format
+            ("invalid_key", None, True),
+            # Invalid cases - missing separator
+            ("checkpointthread1ns1chk1", None, True),
+        ],
+    )
+    def test_parse_redis_checkpoint_key(self, key, expected_result, should_raise):
+        """Test _parse_redis_checkpoint_key with various inputs using table-driven tests.
 
-        with pytest.raises(ValueError):
-            _parse_redis_checkpoint_key("invalid$key")
+        Args:
+            key: Input Redis key to parse
+            expected_result: Expected dictionary output for valid keys
+            should_raise: Whether ValueError should be raised
+        """
+        if should_raise:
+            with pytest.raises(ValueError):
+                _parse_redis_checkpoint_key(key)
+        else:
+            result = _parse_redis_checkpoint_key(key)
+            assert result == expected_result
 
     def test_parse_redis_checkpoint_writes_key(self):
         key = "writes$thread1$ns1$chk1$task1$0"

@@ -32,7 +32,6 @@ def _make_redis_checkpoint_key(
     thread_id: str, checkpoint_ns: str, checkpoint_id: str
 ) -> str:
     """Create a Redis key for storing checkpoint data.
-
     Returns a Redis key string in the format "checkpoint$thread_id$namespace$checkpoint_id".
     """
     return REDIS_KEY_SEPARATOR.join(
@@ -271,6 +270,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         """Store intermediate writes linked to a checkpoint asynchronously.
 
         This method saves intermediate writes associated with a checkpoint to the database.
+        Critical for fault tolerance: stores successful node outputs even if other nodes
+        in the same superstep fail, preventing unnecessary re-execution on retry.
 
         Args:
             config (RunnableConfig): Configuration of the related checkpoint.
