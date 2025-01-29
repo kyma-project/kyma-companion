@@ -88,15 +88,13 @@ class SupervisorAgent:
         members: list[str],
         response_converter: IResponseConverter | None = None,
     ) -> None:
-        gpt_4o = cast(IModel, models[ModelType.GPT4O])
-
-        self.model = gpt_4o
+        self.model = cast(IModel, models[ModelType.GPT4O_MINI])
         self.members = members
         self.parser = self._route_create_parser()
         self.response_converter: IResponseConverter = (
             response_converter or ResponseConverter()
         )
-        self._planner_chain = self._create_planner_chain(gpt_4o)
+        self._planner_chain = self._create_planner_chain(self.model)
         self._graph = self._build_graph()
 
     def _get_members_str(self) -> str:
