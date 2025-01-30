@@ -30,11 +30,9 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
-
-    if agent == SUPERVISOR:
+    if agent_data.get("subtasks"):
         answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
-        if agent_data.get("next") != END:
-            answer["content"] = ""
+
 
 
 
