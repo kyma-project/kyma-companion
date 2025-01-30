@@ -16,6 +16,7 @@ from agents.common.constants import (
     MESSAGES,
     MY_TASK,
     SUMMARIZATION,
+    SUBTASKS,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages
@@ -174,7 +175,7 @@ class BaseAgent:
         if state.my_task is not None:
             state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
-        return {MESSAGES: [state.agent_messages[-1]], "subtasks": state.subtasks}
+        return {MESSAGES: [state.agent_messages[-1]], SUBTASKS: state.subtasks}
 
     def _build_graph(self, state_class: type) -> Any:
         # Define a new graph

@@ -4,7 +4,7 @@ from typing import Any
 from langgraph.constants import END
 
 from agents.common.constants import PLANNER, K8S_AGENT, KYMA_AGENT, K8S_AGENT_TASK_DESCRIPTION, \
-    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION, SUMMARIZATION
+    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION, SUMMARIZATION, NEXT
 from agents.k8s.agent import KubernetesAgent
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
@@ -13,8 +13,8 @@ logger = get_logger(__name__)
 
 def reformat_subtasks(subtasks: dict[str, Any]) -> list[dict[str, Any]]:
     tasks= []
-    for subtask in subtasks:
-        task = {"task_name": subtask["task_title"], "status": subtask["status"], "agent": subtask["assigned_to"]}
+    for i,subtask in enumerate(subtasks):
+        task = {"task_id": i ,"task_name": subtask["task_title"], "status": subtask["status"], "agent": subtask["assigned_to"]}
 
         tasks.append(task)
     return tasks
@@ -28,11 +28,17 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
         return {"agent": agent, "error": agent_data["error"]}
 
     answer = {}
+
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
+
     if agent_data.get("subtasks"):
         answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
+    if agent == SUPERVISOR :
+        answer[NEXT] = agent_data.get(NEXT)
+        if agent_data[NEXT] != END:
+            answer["content"] = ""
 
 
 
@@ -55,6 +61,7 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
     # skip summarization node
     if agent == SUMMARIZATION:
         return None
+
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
         return json.dumps(
