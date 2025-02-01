@@ -195,7 +195,7 @@ class CompanionGraph:
     def _build_graph(self) -> CompiledGraph:
         """Create the companion parent graph."""
 
-        # Define a new graph.
+        # Define a new kyma graph.
         workflow = StateGraph(CompanionState)
 
         # Define the nodes of the graph.
@@ -204,6 +204,7 @@ class CompanionGraph:
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
+
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
