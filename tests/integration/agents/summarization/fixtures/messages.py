@@ -172,3 +172,48 @@ conversation_sample_4 = [
         "id": "run-bb08cbe8-a29f-42cf-bb4d-46191ae6f1fe-0",
     },
 ]
+
+conversation_sample_5 = [
+    {
+        "content": "The user query is related to: {'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
+        "type": "system",
+        "id": "86c0a5f2-74ca-450a-a7c0-3fae4345a060",
+    },
+    {
+        "content": "What is causing the deployment to be unavailable?",
+        "type": "human",
+        "id": "401c21a2-3795-426f-bbb2-bef05dd1db31",
+    },
+    {
+        "content": "The deployment is unavailable due to the following reasons:\n\n1. **Resource Limits**: The `nginx` container in the deployment has very low memory limits set. The memory limit is set to `2Mi` (2 Mebibytes), and the memory request is set to `1Mi` (1 Mebibyte). These values are extremely low and likely insufficient for the `nginx` container to operate properly, leading to potential out-of-memory (OOM) issues.\n\n2. **Deployment Conditions**:\n   - The `Available` condition is `False` with the reason `MinimumReplicasUnavailable`, indicating that the deployment does not have the minimum number of replicas available.\n   - The `Progressing` condition is `False` with the reason `ProgressDeadlineExceeded`, meaning that the ReplicaSet `nginx-66b87d8476` has timed out while progressing.\n\nThese conditions suggest that the deployment is unable to start the required number of pods due to the insufficient memory limits, causing the deployment to be unavailable. Adjusting the memory limits and requests to more appropriate values should help resolve the issue.",
+        "type": "ai",
+        "id": "run-7c4b3521-d0cf-4f7e-8e62-a57936feefc3-0",
+    },
+    {
+        "content": "The deployment is unavailable due to the following reasons:\n\n1. **Resource Limits**: The `nginx` container in the deployment has very low memory limits set. The memory limit is set to `2Mi` (2 Mebibytes), and the memory request is set to `1Mi` (1 Mebibyte). These values are extremely low and likely insufficient for the `nginx` container to operate properly, leading to potential out-of-memory (OOM) issues.\n\n2. **Deployment Conditions**:\n   - The `Available` condition is `False` with the reason `MinimumReplicasUnavailable`, indicating that the deployment does not have the minimum number of replicas available.\n   - The `Progressing` condition is `False` with the reason `ProgressDeadlineExceeded`, meaning that the ReplicaSet `nginx-66b87d8476` has timed out while progressing.\n\nThese conditions suggest that the deployment is unable to start the required number of pods due to the insufficient memory limits, causing the deployment to be unavailable. Adjusting the memory limits and requests to more appropriate values should help resolve the issue.",
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "29219073-0028-43d7-82bf-87ef22e65255",
+    },
+    {
+        "content": "The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
+        "type": "system",
+        "id": "b556062e-5553-45fd-95f2-ded631d99653",
+    },
+    {
+        "content": "Why is the Pod in error state?",
+        "type": "human",
+        "id": "37c47e55-7fc9-4efe-8fc9-6e6880eadb49",
+    },
+    {
+        "content": 'The Pod `pod-check` in the `bitnami-role-missing` namespace is in a "Failed" state. The container `kubectl-container` within this Pod terminated with an exit code of 1, indicating an error occurred during its execution. The specific reason for the failure is not directly available from the Pod\'s status, and I was unable to fetch the logs for the terminated container to provide more detailed information.\n\nThe Pod is attempting to execute the command `kubectl get pods`, which requires appropriate permissions. The Pod is using the service account `pod-reader-sa`. If this service account does not have the necessary permissions to list pods, it could lead to the command failing and the container exiting with an error.\n\nTo resolve this issue, you should check the role and role binding associated with the `pod-reader-sa` service account to ensure it has the necessary permissions to execute `kubectl get pods`.',
+        "type": "ai",
+        "id": "run-6166ee4b-3b5f-4e41-a6c3-7ad9c344c72e-0",
+    },
+    {
+        "content": "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because the container `kubectl-container` within this Pod terminated with an exit code of 1. This exit code indicates that an error occurred during the execution of the container's command.\n\nThe Pod is attempting to execute the command `kubectl get pods`, which requires appropriate permissions. The Pod is using the service account `pod-reader-sa`. If this service account does not have the necessary permissions to list pods, it could lead to the command failing and the container exiting with an error.\n\nTo resolve this issue, you should check the role and role binding associated with the `pod-reader-sa` service account to ensure it has the necessary permissions to execute `kubectl get pods`.",
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "27861fd9-02e5-47a3-9f2e-fde074e489de",
+    },
+]

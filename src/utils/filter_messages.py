@@ -45,3 +45,11 @@ def is_system_message(message: BaseMessage) -> bool:
     'filter_messages_via_checks' function.
     """
     return isinstance(message, SystemMessage)
+
+
+def is_ai_message(message: BaseMessage) -> bool:
+    """
+    Check if a message is an AI message. Can be used as a check in the
+    'filter_messages_via_checks' function.
+    """
+    return isinstance(message, AIMessage)

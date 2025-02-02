@@ -1,28 +1,34 @@
 import pytest
 from deepeval import evaluate
-from deepeval.metrics import GEval
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import ConversationalGEval
+from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
-from integration.agents.test_common_node import create_mock_state
+from tests.integration.agents.summarization.fixtures.messages import (
+    conversation_sample_2,
+    conversation_sample_5,
+)
+from tests.integration.conftest import convert_dict_to_messages, create_mock_state
 
 
 # Correctness metric for not general queries that needs planning
 @pytest.fixture
 def planner_correctness_metric(evaluator_model):
-    return GEval(
+    return ConversationalGEval(
         name="Correctness",
-        criteria=""
-        "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). "
-        "It is okay if the output contains one subtask."
-        "Check if the output is in valid JSON format"
-        "Verify that the JSON contains required keys: 'subtasks'",
+        evaluation_steps=[
+            "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). ",
+            "The output can contain a single subtask.",
+            "Check if the output is in valid JSON format",
+            "Verify that the JSON contains required keys: 'subtasks'",
+        ],
         evaluation_params=[
-            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.INPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
         ],
         model=evaluator_model,
         threshold=0.8,
+        verbose_mode=True,
     )
 
 
@@ -186,29 +192,37 @@ async def test_invoke_planner(
 
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
-    test_case = LLMTestCase(
-        input=messages[-1].content,
-        actual_output=result.json(),
-        expected_output=expected_answer,
-    )
 
     # Then: We evaluate based on query type
     if not general_query:
-        # For Kyma or K8s queries, the generated plan is checked for correctness
-        # Then: We evaluate the response using deepeval metrics
-        eval_results = evaluate(
-            test_cases=[test_case],
-            metrics=[
-                planner_correctness_metric,
-            ],
+        test_case = ConversationalTestCase(
+            turns=[
+                LLMTestCase(
+                    input=str(messages),
+                    actual_output=result.json(),
+                    expected_output=expected_answer,
+                )
+            ]
         )
+        results = evaluate(
+            test_cases=[test_case],
+            metrics=[planner_correctness_metric],
+            run_async=False,
+        )
+        # assert that all metrics passed
         assert all(
-            result.success for result in eval_results.test_results
+            result.success for result in results.test_results
         ), "Not all metrics passed"
-
     else:
         # For general queries, check answer relevancy where planner directly answers
         # Then: We evaluate the response using deepeval metrics
+
+        test_case = LLMTestCase(
+            input=messages[-1].content,
+            actual_output=result.json(),
+            expected_output=expected_answer,
+        )
+
         eval_results = evaluate(
             test_cases=[test_case],
             metrics=[
@@ -218,3 +232,95 @@ async def test_invoke_planner(
         assert all(
             result.success for result in eval_results.test_results
         ), "Not all metrics passed"
+
+
+@pytest.fixture
+def planner_conversation_history_metric(evaluator_model):
+    return ConversationalGEval(
+        name="Conversation History Correctness",
+        evaluation_steps=[
+            "Check the actual output that semantically matches expected output and answers the user query.",
+        ],
+        evaluation_params=[
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+        ],
+        model=evaluator_model,
+        threshold=0.8,
+        async_mode=False,
+        verbose_mode=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "messages, query, expected_answer",
+    [
+        (
+            conversation_sample_2,
+            "what was the issue?",
+            "The serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
+            "with `replicas: 0`, which means it is not set to run any pods. This is why the pod is not ready, "
+            "as there are no replicas specified to be running.",
+        ),
+        # (
+        #     conversation_sample_2,
+        #     "what were all issues you told me?",
+        #     "The `nginx` deployment in the `nginx-oom` namespace is unavailable due to low memory limits "
+        #     "set for the container, which are insufficient for proper operation."
+        #     "Moreover, the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
+        #     "with `replicas: 0`, which means it is not set to run any pods. This is why the pod is not ready, "
+        #     "as there are no replicas specified to be running.",
+        # ),
+        (
+            conversation_sample_5,
+            "what was the issue?",
+            "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because "
+            "the container `kubectl-container` within this Pod terminated with an exit code of 1. ",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_planner_with_conversation_history(
+    messages,
+    query,
+    expected_answer,
+    companion_graph,
+    planner_conversation_history_metric,
+):
+    """Tests if the planner properly considers conversation history when planning tasks."""
+    # Given: A conversation state with messages
+    all_messages = convert_dict_to_messages(messages)
+    all_messages.append(HumanMessage(content=query))
+    state = create_mock_state(all_messages)
+
+    # When: The supervisor agent's planner is invoked
+    result = await companion_graph.supervisor_agent._invoke_planner(state)
+
+    # Then: We evaluate the response using deepeval metrics
+
+    # Verify planner provided a direct response without subtasks
+    assert result.response is not None, "Expected planner to provide a direct response"
+    assert (
+        not result.subtasks
+    ), "Expected no subtasks since the answer is from the conversation history"
+
+    test_case = ConversationalTestCase(
+        turns=[
+            LLMTestCase(
+                input=str(all_messages),
+                actual_output=result.response,
+                expected_output=expected_answer,
+            )
+        ]
+    )
+    results = evaluate(
+        test_cases=[test_case],
+        metrics=[planner_conversation_history_metric],
+        run_async=False,
+    )
+    # assert that all metrics passed
+
+    assert all(
+        result.success for result in results.test_results
+    ), "Not all metrics passed"

@@ -183,7 +183,6 @@ def kyma_agent(app_models):
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
-                    HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
                         tool_calls=[
