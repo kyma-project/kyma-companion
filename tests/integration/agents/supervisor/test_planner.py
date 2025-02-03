@@ -3,11 +3,13 @@ from deepeval import evaluate
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from tests.integration.agents.summarization.fixtures.messages import (
+
+from integration.agents.fixtures.messages import (
     conversation_sample_2,
     conversation_sample_5,
+    conversation_sample_6,
 )
-from tests.integration.conftest import convert_dict_to_messages, create_mock_state
+from integration.conftest import convert_dict_to_messages, create_mock_state
 
 
 # Correctness metric for not general queries that needs planning
@@ -254,29 +256,54 @@ def planner_conversation_history_metric(evaluator_model):
 
 
 @pytest.mark.parametrize(
-    "messages, query, expected_answer",
+    "messages, query, expected_answer, subtasks",
     [
         (
+            # answer the question based from the conversation history
             conversation_sample_2,
             "what was the issue?",
             "The serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
             "with `replicas: 0`, which means it is not set to run any pods. This is why the pod is not ready, "
             "as there are no replicas specified to be running.",
+            None,
         ),
-        # (
-        #     conversation_sample_2,
-        #     "what were all issues you told me?",
-        #     "The `nginx` deployment in the `nginx-oom` namespace is unavailable due to low memory limits "
-        #     "set for the container, which are insufficient for proper operation."
-        #     "Moreover, the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
-        #     "with `replicas: 0`, which means it is not set to run any pods. This is why the pod is not ready, "
-        #     "as there are no replicas specified to be running.",
-        # ),
         (
+            # answer the question based from the conversation history
             conversation_sample_5,
-            "what was the issue?",
+            "what was the cause?",
             "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because "
             "the container `kubectl-container` within this Pod terminated with an exit code of 1. ",
+            None,
+        ),
+        (
+            # given the conversation, the planner knows that the user wants to expose the function
+            # and assigns the task to the Kyma agent
+            conversation_sample_6,
+            "how to expose it?",
+            None,
+            [
+                {
+                    "description": "how to expose it?",
+                    "assigned_to": "KymaAgent",
+                    "status": "pending",
+                    "result": None,
+                }
+            ],
+        ),
+        (
+            # given the conversation, the planner knows that the user wants to convert the function to javascript
+            # and assigns the task to the Kyma agent
+            conversation_sample_6,
+            "convert it to javascript",
+            None,
+            [
+                {
+                    "description": "convert the Kyma function that prints 'Hello World' from Python to JavaScript",
+                    "assigned_to": "KymaAgent",
+                    "status": "pending",
+                    "result": None,
+                }
+            ],
         ),
     ],
 )
@@ -285,6 +312,7 @@ async def test_planner_with_conversation_history(
     messages,
     query,
     expected_answer,
+    subtasks,
     companion_graph,
     planner_conversation_history_metric,
 ):
@@ -298,29 +326,59 @@ async def test_planner_with_conversation_history(
     result = await companion_graph.supervisor_agent._invoke_planner(state)
 
     # Then: We evaluate the response using deepeval metrics
+    if subtasks is None:
+        # Verify planner provided a direct response without subtasks
+        assert (
+            result.response is not None
+        ), "Expected planner to provide a direct response"
+        assert (
+            not result.subtasks
+        ), "Expected no subtasks since the answer is from the conversation history"
 
-    # Verify planner provided a direct response without subtasks
-    assert result.response is not None, "Expected planner to provide a direct response"
-    assert (
-        not result.subtasks
-    ), "Expected no subtasks since the answer is from the conversation history"
+        test_case = ConversationalTestCase(
+            turns=[
+                LLMTestCase(
+                    input=str(all_messages),
+                    actual_output=result.response,
+                    expected_output=expected_answer,
+                )
+            ]
+        )
+        results = evaluate(
+            test_cases=[test_case],
+            metrics=[planner_conversation_history_metric],
+            run_async=False,
+        )
+        # assert that all metrics passed
 
-    test_case = ConversationalTestCase(
-        turns=[
-            LLMTestCase(
-                input=str(all_messages),
-                actual_output=result.response,
-                expected_output=expected_answer,
-            )
-        ]
-    )
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=[planner_conversation_history_metric],
-        run_async=False,
-    )
-    # assert that all metrics passed
+        assert all(
+            result.success for result in results.test_results
+        ), "Not all metrics passed"
+    else:
+        # verify that the planner did not provide a direct response
+        assert (
+            result.response is None
+        ), "Expected planner should not provide a direct response"
+        assert (
+            result.subtasks is not None
+        ), "Expected subtasks to be the same as the expected subtasks"
 
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+        # verify that the subtasks are the same as the expected subtasks
+        test_case = ConversationalTestCase(
+            turns=[
+                LLMTestCase(
+                    input=str(all_messages),
+                    actual_output=str(result.subtasks),
+                    expected_output=str(subtasks),
+                )
+            ]
+        )
+        results = evaluate(
+            test_cases=[test_case],
+            metrics=[planner_conversation_history_metric],
+            run_async=False,
+        )
+        # assert that all metrics passed
+        assert all(
+            result.success for result in results.test_results
+        ), "Not all metrics passed"

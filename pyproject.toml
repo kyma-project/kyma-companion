@@ -68,9 +68,6 @@ pythonpath = [
 testpaths = [
     "tests",
 ]
-env_files = [
-    ".env.test"
-]
 
 [tool.poe.tasks]
 lint = "ruff check ."

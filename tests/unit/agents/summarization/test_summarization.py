@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.messages import (

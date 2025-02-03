@@ -217,3 +217,28 @@ conversation_sample_5 = [
         "id": "27861fd9-02e5-47a3-9f2e-fde074e489de",
     },
 ]
+
+
+conversation_sample_6 = [
+    {
+        "content": "The user query is related to: {'resource_namespace': 'test-ns'}",
+        "type": "system",
+        "id": "5a1b0ec9-ba45-40b7-9f10-7010e350b981",
+    },
+    {
+        "content": "Create a kyma function that prints hello world in Python",
+        "type": "human",
+        "id": "8250db12-35e7-44e9-94c1-97d5fbacb87b",
+    },
+    {
+        "content": 'To create a Kyma function in Python that prints "Hello World", follow these steps:\n\n1. **Initialize the Function:**\n   Navigate to the directory where you want to create the function and run the following command to initialize a Python function:\n\n   ```bash\n   kyma init function --runtime python312 --name hello-world-function\n   ```\n\n   This command will create the necessary files with default configurations for a Python function.\n\n2. **Review the Created Files:**\n   After initialization, you will have the following files in your directory:\n   - `config.yaml`: Contains the function\'s configuration.\n   - `handler.py`: Contains the function\'s code with a simple "Hello World" logic.\n   - `requirements.txt`: For any custom dependencies your function might need.\n\n3. **Deploy the Function:**\n   Apply the function to your Kyma cluster using the following command:\n\n   ```bash\n   kyma apply function\n   ```\n\n4. **Verify the Function:**\n   To ensure the function is correctly deployed, you can describe it using:\n\n   ```bash\n   kubectl describe function hello-world-function\n   ```\n\n5. **Edit the Function (if needed):**\n   If you need to modify the function to ensure it prints "Hello World", you can edit the `handler.py` file or directly edit the function in the cluster:\n\n   ```bash\n   kubectl edit function hello-world-function\n   ```\n\n   Ensure the source code in the function looks like this:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\n6. **Synchronize Changes:**\n   If you made changes directly in the cluster, synchronize them back to your local workspace:\n\n   ```bash\n   kyma sync function hello-world-function\n   ```\n\n7. **Check the Local Code:**\n   Verify that your local `handler.py` reflects the desired logic:\n\n   ```bash\n   cat handler.py\n   ```\n\n   It should contain:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\nBy following these steps, you will have a Kyma function in Python that prints "Hello World".',
+        "type": "ai",
+        "id": "run-55c1acc3-58e0-4371-9ab5-e07c615f3497-0",
+    },
+    {
+        "content": 'To create a Kyma function in Python that prints "Hello World", follow these steps:\n\n1. **Initialize the Function:**\n   Navigate to the directory where you want to create the function and run the following command to initialize a Python function:\n\n   ```bash\n   kyma init function --runtime python312 --name hello-world-function\n   ```\n\n2. **Edit the Function Code:**\n   After initialization, you will have a file named `handler.py`. Edit this file to include the following code, which will return "Hello World":\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\n3. **Deploy the Function:**\n   Apply the function to your Kyma cluster using the following command:\n\n   ```bash\n   kyma apply function\n   ```\n\n4. **Verify the Function:**\n   To ensure the function is correctly deployed, you can describe it using:\n\n   ```bash\n   kubectl describe function hello-world-function\n   ```\n\n5. **Check the Local Code:**\n   Verify that your local `handler.py` reflects the desired logic:\n\n   ```bash\n   cat handler.py\n   ```\n\n   It should contain:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\nBy following these steps, you will have successfully created a Kyma function in Python that prints "Hello World".',
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "101a9756-73c7-4665-b109-7a9a24621e97",
+    },
+]
