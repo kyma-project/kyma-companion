@@ -4,7 +4,8 @@ from typing import Any
 from langgraph.constants import END
 
 from agents.common.constants import PLANNER, K8S_AGENT, KYMA_AGENT, K8S_AGENT_TASK_DESCRIPTION, \
-    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION, SUMMARIZATION, NEXT
+    KYMA_AGENT_TASK_DESCRIPTION, COMMON, COMMON_TASK_DESCRIPTION, SUMMARIZATION, NEXT, FINALIZER
+from agents.common.state import SubTaskStatus
 from agents.k8s.agent import KubernetesAgent
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
@@ -35,13 +36,17 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
     if agent_data.get("subtasks"):
         answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
-    if agent == SUPERVISOR :
+
+
+    if agent == SUPERVISOR:
         answer[NEXT] = agent_data.get(NEXT)
-        if agent_data[NEXT] != END:
-            answer["content"] = ""
-
-
-
+    else:
+        if agent_data.get("subtasks"):
+            pending_subtask = [subtask["assigned_to"] for subtask in agent_data.get("subtasks") if subtask["status"] == SubTaskStatus.PENDING]
+            if pending_subtask:
+                answer[NEXT] = pending_subtask[0]
+            else:
+                answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer}
 
@@ -60,6 +65,12 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
 
     # skip summarization node
     if agent == SUMMARIZATION:
+        return None
+
+    agent_data = data[agent]
+    last_agent = agent_data["messages"][-1].get("name")
+    # skip all intermediate supervisor response
+    if agent == SUPERVISOR and last_agent != PLANNER and last_agent != FINALIZER:
         return None
 
     if not agent:
