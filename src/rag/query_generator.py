@@ -8,6 +8,7 @@ from rag.prompts import (
     QUERY_GENERATOR_PROMPT_TEMPLATE,
 )
 from utils import logging
+from utils.chain import ainvoke_chain
 from utils.models.factory import IModel
 
 logger = logging.get_logger(__name__)
@@ -57,7 +58,10 @@ class QueryGenerator:
     async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
         try:
-            queries = await self._chain.ainvoke({"query": query})
+            queries = await ainvoke_chain(
+                self._chain,
+                {"query": query},
+            )
             return cast(Queries, queries)
         except Exception:
             logger.exception(
