@@ -328,3 +328,89 @@ class TestSupervisorAgent:
 
             assert result == expected_output
             mock_invoke_planner.assert_called_once_with(state)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "description, side_effect, expected_calls, expected_result, expected_error",
+        [
+            (
+                "Success after two failures",
+                [
+                    ValueError("Attempt 1 failed"),
+                    ValueError("Attempt 2 failed"),
+                    Plan(
+                        response=None,
+                        subtasks=[
+                            SubTask(description="Test task 1", assigned_to=K8S_AGENT)
+                        ],
+                    ),
+                ],
+                3,
+                Plan(
+                    response=None,
+                    subtasks=[
+                        SubTask(description="Test task 1", assigned_to=K8S_AGENT)
+                    ],
+                ),
+                None,
+            ),
+            (
+                "Immediate success without retries",
+                Plan(
+                    response=None,
+                    subtasks=[
+                        SubTask(description="Test task 2", assigned_to=K8S_AGENT)
+                    ],
+                ),
+                1,
+                Plan(
+                    response=None,
+                    subtasks=[
+                        SubTask(description="Test task 2", assigned_to=K8S_AGENT)
+                    ],
+                ),
+                None,
+            ),
+            (
+                "Different error types",
+                [
+                    ValueError("Value error"),
+                    RuntimeError("Runtime error"),
+                    ValueError("Connection error"),
+                ],
+                3,
+                None,
+                ValueError("Connection error"),
+            ),
+        ],
+    )
+    async def test_invoke_planner_retry_behavior(
+        self,
+        supervisor_agent,
+        description,
+        side_effect,
+        expected_calls,
+        expected_result,
+        expected_error,
+    ):
+        """Table-driven test for _invoke_planner retry behavior covering multiple scenarios."""
+        state = SupervisorState(messages=[HumanMessage(content="Test query")])
+        mock_chain = AsyncMock()
+
+        # Configure mock to return/raise based on side_effect
+        if isinstance(side_effect, list):
+            mock_chain.ainvoke.side_effect = side_effect
+        else:
+            mock_chain.ainvoke.return_value = side_effect
+
+        with patch.object(supervisor_agent, "_planner_chain", mock_chain):
+            if expected_error:
+                with pytest.raises(type(expected_error)) as exc_info:
+                    await supervisor_agent._invoke_planner(state)
+                assert str(expected_error) in str(exc_info.value)
+            else:
+                result = await supervisor_agent._invoke_planner(state)
+                assert result == expected_result
+
+            # Verify the number of calls
+            assert mock_chain.ainvoke.call_count == expected_calls
