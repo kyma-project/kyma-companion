@@ -5,6 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from rag.prompts import GENERATOR_PROMPT
+from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -33,8 +34,9 @@ class Generator:
         # Convert Document objects to a list of their page_content
         docs_content = "\n\n".join(doc.page_content for doc in relevant_docs)
         try:
-            response = await self.rag_chain.ainvoke(
-                {"context": docs_content, "query": query}
+            response = await ainvoke_chain(
+                self.rag_chain,
+                {"context": docs_content, "query": query},
             )
         except Exception as e:
             logger.exception(f"Error generating response for query: {query}")
