@@ -133,5 +133,4 @@ class ConversationService(metaclass=SingletonMeta):
         async for chunk in self._companion_graph.astream(
             conversation_id, message, k8s_client
         ):
-            logger.debug(f"Sending chunk: {chunk}")
             yield chunk.encode()

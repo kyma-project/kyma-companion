@@ -5,7 +5,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.constants import END
 
-from agents.common.constants import COMMON, PLANNER
+from agents.common.constants import COMMON, ERROR, PLANNER
 from agents.common.state import CompanionState, Plan, SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
@@ -273,13 +273,7 @@ class TestSupervisorAgent:
                 "What is a Kubernetes pod?",
                 '{"response":null, "subtasks": null}',
                 {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: No subtasks are created for the given query: What is a Kubernetes pod?",
-                            name=PLANNER,
-                        )
-                    ]
+                    ERROR: "Unexpected error while processing the request. Please try again later.",
                 },
                 None,
             ),
@@ -305,13 +299,7 @@ class TestSupervisorAgent:
                 "What is a Kubernetes service?",
                 '{"response":null,"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: fake error",
-                            name=PLANNER,
-                        )
-                    ]
+                    ERROR: "Unexpected error while processing the request. Please try again later.",
                 },
                 "fake error",
             ),
