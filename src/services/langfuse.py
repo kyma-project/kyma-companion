@@ -40,6 +40,13 @@ class ILangfuseService(Protocol):
         """
         ...
 
+    def masking_production_data(self, data: str) -> str:
+        """
+        masking_production_data removes sensitive information from traces
+        if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
+        """
+        ...
+
 
 class LangfuseService(metaclass=SingletonMeta):
     """
@@ -75,8 +82,13 @@ class LangfuseService(metaclass=SingletonMeta):
 
     def masking_production_data(self, data: str) -> str:
         """
-        masking_production_data removes sensitive information from traces
-        if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
+        Removes sensitive information from traces.
+
+        Args:
+            data (dict): The data containing sensitive information.
+
+        Returns:
+            dict: The data with sensitive information removed.
         """
         if not self.debug_enabled:
             return "REDACTED"
