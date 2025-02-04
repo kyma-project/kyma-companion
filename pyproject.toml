@@ -34,6 +34,7 @@ python-decouple = "^3.8"
 redis = "^5.0.8"
 requests = "^2.32.3"
 scrubadub = {extras = ["all"], version = "^2.0.1"}
+tenacity = "^9.0.0"
 tiktoken = "^0.7.0"
 
 [tool.poetry.group.test.dependencies]
@@ -67,6 +68,9 @@ pythonpath = [
 ]
 testpaths = [
     "tests",
+]
+env_files = [
+    ".env.test"
 ]
 
 [tool.poe.tasks]

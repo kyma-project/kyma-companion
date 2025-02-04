@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Literal, cast
 
 from langchain_core.embeddings import Embeddings
@@ -9,9 +10,11 @@ from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 from pydantic import BaseModel, Field
+from tenacity import after_log, before_log, retry, stop_after_attempt, wait_exponential
 
 from agents.common.constants import (
     COMMON,
+    ERROR,
     FINALIZER,
     K8S_AGENT,
     KYMA_AGENT,
@@ -19,6 +22,7 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
+from agents.common.exceptions import SubtasksMissingError
 from agents.common.response_converter import IResponseConverter, ResponseConverter
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
@@ -145,8 +149,15 @@ class SupervisorAgent:
         )
         return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=4),
+        reraise=True,
+        before=before_log(logger, logging.WARNING),
+        after=after_log(logger, logging.DEBUG),
+    )
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
-        """Invoke the planner."""
+        """Invoke the planner with retry logic using tenacity."""
 
         filtered_messages = filter_messages_via_checks(
             state.messages,
@@ -187,23 +198,16 @@ class SupervisorAgent:
 
             # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
             if not plan.subtasks:
-                raise Exception(
-                    f"No subtasks are created for the given query: {state.messages[-1].content}"
-                )
+                raise SubtasksMissingError(str(state.messages[-1].content))
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )
-        except Exception as e:
-            logger.error(f"Error in planning: {e}")
+        except Exception:
+            logger.exception("Error in planning")
             return {
-                MESSAGES: [
-                    AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
-                        name=PLANNER,
-                    )
-                ]
+                ERROR: "Unexpected error while processing the request. Please try again later.",
             }
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
