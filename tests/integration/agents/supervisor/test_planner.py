@@ -38,7 +38,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
-            '{"subtasks": null, "response": "Berlin"   }',
+            '{"subtasks":null,"response":"The capital of Germany is Berlin."}',
             True,
         ),
         (
@@ -102,10 +102,10 @@ def planner_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="What is Kubernetes? Explain Kyma function"),
+                HumanMessage(content="What is Kubernetes and Explain Kyma function"),
             ],
-            '{"subtasks": [{ "description": "What is Kubernetes?", "assigned_to": "KubernetesAgent","status" : "pending"},'
-            '{"description": "Explain Kyma function", "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
+            '{"subtasks": [{ "description": "What is Kubernetes",  "assigned_to": "KubernetesAgent","status" : "pending"},'
+            '{"description": "Explain Kyma function",  "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
             False,
         ),
         (
@@ -192,15 +192,10 @@ async def test_invoke_planner(
         expected_output=expected_answer,
     )
 
-    # Then: We evaluate based on query type
-    if not general_query:
-        # For Kyma or K8s queries, the generated plan is checked for correctness
-        planner_correctness_metric.measure(test_case)
+    # the generated plan is checked for correctness
+    planner_correctness_metric.measure(test_case)
 
-        print(f"Score: {planner_correctness_metric.score}")
-        print(f"Reason: {planner_correctness_metric.reason}")
+    print(f"Score: {planner_correctness_metric.score}")
+    print(f"Reason: {planner_correctness_metric.reason}")
 
-        assert_test(test_case, [planner_correctness_metric])
-    else:
-        # For general queries, check answer relevancy where planner directly answers
-        assert_test(test_case, [answer_relevancy_metric])
+    assert_test(test_case, [planner_correctness_metric])

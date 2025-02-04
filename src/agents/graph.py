@@ -28,8 +28,8 @@ from agents.common.constants import (
     COMMON,
     MESSAGES,
     MESSAGES_SUMMARY,
-    SUMMARIZATION,
     SUBTASKS,
+    SUMMARIZATION,
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput

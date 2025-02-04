@@ -175,6 +175,7 @@ class SupervisorAgent:
             if plan.response:
                 return create_node_output(
                     message=AIMessage(content=plan.response, name=PLANNER),
+                    subtasks=[],  # empty subtask to make the companion response consistent
                     next=END,
                 )
 

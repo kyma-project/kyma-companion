@@ -19,9 +19,10 @@ from services.k8s import IK8sClient
 class TestSubTask:
     # Test data for SubTask
     @pytest.mark.parametrize(
-        "description, assigned_to, status, result, expected_status",
+        "description, task_title,assigned_to, status, result, expected_status",
         [
             (
+                "Task 1",
                 "Task 1",
                 "KymaAgent",
                 SubTaskStatus.PENDING,
@@ -30,6 +31,7 @@ class TestSubTask:
             ),
             (
                 "Task 2",
+                "Task 2",
                 "KymaAgent",
                 SubTaskStatus.PENDING,
                 "Result",
@@ -37,9 +39,12 @@ class TestSubTask:
             ),
         ],
     )
-    def test_complete(self, description, assigned_to, status, result, expected_status):
+    def test_complete(
+        self, description, task_title, assigned_to, status, result, expected_status
+    ):
         subtask = SubTask(
             description=description,
+            task_title=task_title,
             assigned_to=assigned_to,
             status=status,
             result=result,
@@ -107,11 +112,13 @@ class TestAgentState:
                 [
                     SubTask(
                         description="Task 1",
+                        task_title="Task 1",
                         assigned_to="KymaAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
                     SubTask(
                         description="Task 2",
+                        task_title="Task 2",
                         assigned_to="KubernetesAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
@@ -125,11 +132,13 @@ class TestAgentState:
                 [
                     SubTask(
                         description="Task 1",
+                        task_title="Task 1",
                         assigned_to="KymaAgent",
                         status=SubTaskStatus.COMPLETED,
                     ),
                     SubTask(
                         description="Task 2",
+                        task_title="Task 2",
                         assigned_to="KubernetesAgent",
                         status=SubTaskStatus.PENDING,
                     ),
