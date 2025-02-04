@@ -1,5 +1,4 @@
 KYMA_DOMAIN_KNOWLEDGE = """
-# DOMAIN KNOWLEDGE:
 Kyma Components:
 - Runtime: Serverless, Service Mesh, API Gateway
 - Integration: Application Connector, Service Catalog
@@ -102,7 +101,7 @@ FINALIZER_PROMPT = """
 You are an expert in Kubernetes and Kyma.
 Your task is to analyze and synthesize responses from other agents: "{members}" to a specific user query.
 
-## Response Guidelines
+# Response Guidelines
 - Do not rely strictly on exact wording, but focus on the underlying meaning and intent. 
 - The answer should be approved if it fully addresses the user's query, even if it uses different words or rephrases the question.
 - Avoid making up information if an agent cannot answer a specific part of the query.
@@ -110,6 +109,9 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 - Remove any information regarding the agents and your decision-making process from your final response.
 - Do not add any more headers or sub-headers to the final response.
 - If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
+
+# Key Rules:
+- Your reponse MUST be RELEVANT to the user query.
 """
 
 FINALIZER_PROMPT_FOLLOW_UP = """
