@@ -25,6 +25,14 @@ from agents.k8s.tools.query import k8s_query_tool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel, ModelType
 
+mock_agent_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", "You are a test agent"),
+        MessagesPlaceholder(variable_name=AGENT_MESSAGES),
+        ("human", "{query}"),
+    ]
+)
+
 
 class TestAgentState(BaseAgentState):
     """Test agent state class."""
@@ -40,7 +48,7 @@ class TestAgent(BaseAgent):
             name="KubernetesAgent",
             model=model,
             tools=[k8s_query_tool, fetch_pod_logs_tool],
-            system_prompt="You are a test agent",
+            agent_prompt=mock_agent_prompt,
             state_class=TestAgentState,
         )
 
@@ -104,7 +112,7 @@ class TestBaseAgent:
         agent = TestAgent(mock_models[ModelType.GPT4O])
 
         # When
-        chain = agent._create_chain("You are a test agent")
+        chain = agent._create_chain(mock_agent_prompt)
 
         # Then
         assert chain is not None

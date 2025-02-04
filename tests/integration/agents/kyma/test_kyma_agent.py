@@ -7,7 +7,7 @@ from deepeval.metrics import (
     GEval,
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
@@ -85,7 +85,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(
+                    SystemMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
@@ -148,10 +148,9 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(
+                    SystemMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
-                    HumanMessage(content="What is wrong with api rule?"),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
                 subtasks=[
@@ -179,10 +178,9 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(
+                    SystemMessage(
                         content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
-                    HumanMessage(content="What is wrong with api rule?"),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
@@ -228,7 +226,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(
+                    SystemMessage(
                         content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
                     HumanMessage(content="what is wrong?"),
@@ -293,7 +291,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(
+                    SystemMessage(
                         content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
                     ),
                     HumanMessage(
@@ -356,7 +354,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",
@@ -400,7 +398,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    AIMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",

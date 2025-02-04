@@ -172,3 +172,73 @@ conversation_sample_4 = [
         "id": "run-bb08cbe8-a29f-42cf-bb4d-46191ae6f1fe-0",
     },
 ]
+
+conversation_sample_5 = [
+    {
+        "content": "The user query is related to: {'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
+        "type": "system",
+        "id": "86c0a5f2-74ca-450a-a7c0-3fae4345a060",
+    },
+    {
+        "content": "What is causing the deployment to be unavailable?",
+        "type": "human",
+        "id": "401c21a2-3795-426f-bbb2-bef05dd1db31",
+    },
+    {
+        "content": "The deployment is unavailable due to the following reasons:\n\n1. **Resource Limits**: The `nginx` container in the deployment has very low memory limits set. The memory limit is set to `2Mi` (2 Mebibytes), and the memory request is set to `1Mi` (1 Mebibyte). These values are extremely low and likely insufficient for the `nginx` container to operate properly, leading to potential out-of-memory (OOM) issues.\n\n2. **Deployment Conditions**:\n   - The `Available` condition is `False` with the reason `MinimumReplicasUnavailable`, indicating that the deployment does not have the minimum number of replicas available.\n   - The `Progressing` condition is `False` with the reason `ProgressDeadlineExceeded`, meaning that the ReplicaSet `nginx-66b87d8476` has timed out while progressing.\n\nThese conditions suggest that the deployment is unable to start the required number of pods due to the insufficient memory limits, causing the deployment to be unavailable. Adjusting the memory limits and requests to more appropriate values should help resolve the issue.",
+        "type": "ai",
+        "id": "run-7c4b3521-d0cf-4f7e-8e62-a57936feefc3-0",
+    },
+    {
+        "content": "The deployment is unavailable due to the following reasons:\n\n1. **Resource Limits**: The `nginx` container in the deployment has very low memory limits set. The memory limit is set to `2Mi` (2 Mebibytes), and the memory request is set to `1Mi` (1 Mebibyte). These values are extremely low and likely insufficient for the `nginx` container to operate properly, leading to potential out-of-memory (OOM) issues.\n\n2. **Deployment Conditions**:\n   - The `Available` condition is `False` with the reason `MinimumReplicasUnavailable`, indicating that the deployment does not have the minimum number of replicas available.\n   - The `Progressing` condition is `False` with the reason `ProgressDeadlineExceeded`, meaning that the ReplicaSet `nginx-66b87d8476` has timed out while progressing.\n\nThese conditions suggest that the deployment is unable to start the required number of pods due to the insufficient memory limits, causing the deployment to be unavailable. Adjusting the memory limits and requests to more appropriate values should help resolve the issue.",
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "29219073-0028-43d7-82bf-87ef22e65255",
+    },
+    {
+        "content": "The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
+        "type": "system",
+        "id": "b556062e-5553-45fd-95f2-ded631d99653",
+    },
+    {
+        "content": "Why is the Pod in error state?",
+        "type": "human",
+        "id": "37c47e55-7fc9-4efe-8fc9-6e6880eadb49",
+    },
+    {
+        "content": 'The Pod `pod-check` in the `bitnami-role-missing` namespace is in a "Failed" state. The container `kubectl-container` within this Pod terminated with an exit code of 1, indicating an error occurred during its execution. The specific reason for the failure is not directly available from the Pod\'s status, and I was unable to fetch the logs for the terminated container to provide more detailed information.\n\nThe Pod is attempting to execute the command `kubectl get pods`, which requires appropriate permissions. The Pod is using the service account `pod-reader-sa`. If this service account does not have the necessary permissions to list pods, it could lead to the command failing and the container exiting with an error.\n\nTo resolve this issue, you should check the role and role binding associated with the `pod-reader-sa` service account to ensure it has the necessary permissions to execute `kubectl get pods`.',
+        "type": "ai",
+        "id": "run-6166ee4b-3b5f-4e41-a6c3-7ad9c344c72e-0",
+    },
+    {
+        "content": "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because the container `kubectl-container` within this Pod terminated with an exit code of 1. This exit code indicates that an error occurred during the execution of the container's command.\n\nThe Pod is attempting to execute the command `kubectl get pods`, which requires appropriate permissions. The Pod is using the service account `pod-reader-sa`. If this service account does not have the necessary permissions to list pods, it could lead to the command failing and the container exiting with an error.\n\nTo resolve this issue, you should check the role and role binding associated with the `pod-reader-sa` service account to ensure it has the necessary permissions to execute `kubectl get pods`.",
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "27861fd9-02e5-47a3-9f2e-fde074e489de",
+    },
+]
+
+
+conversation_sample_6 = [
+    {
+        "content": "The user query is related to: {'resource_namespace': 'test-ns'}",
+        "type": "system",
+        "id": "5a1b0ec9-ba45-40b7-9f10-7010e350b981",
+    },
+    {
+        "content": "Create a kyma function that prints hello world in Python",
+        "type": "human",
+        "id": "8250db12-35e7-44e9-94c1-97d5fbacb87b",
+    },
+    {
+        "content": 'To create a Kyma function in Python that prints "Hello World", follow these steps:\n\n1. **Initialize the Function:**\n   Navigate to the directory where you want to create the function and run the following command to initialize a Python function:\n\n   ```bash\n   kyma init function --runtime python312 --name hello-world-function\n   ```\n\n   This command will create the necessary files with default configurations for a Python function.\n\n2. **Review the Created Files:**\n   After initialization, you will have the following files in your directory:\n   - `config.yaml`: Contains the function\'s configuration.\n   - `handler.py`: Contains the function\'s code with a simple "Hello World" logic.\n   - `requirements.txt`: For any custom dependencies your function might need.\n\n3. **Deploy the Function:**\n   Apply the function to your Kyma cluster using the following command:\n\n   ```bash\n   kyma apply function\n   ```\n\n4. **Verify the Function:**\n   To ensure the function is correctly deployed, you can describe it using:\n\n   ```bash\n   kubectl describe function hello-world-function\n   ```\n\n5. **Edit the Function (if needed):**\n   If you need to modify the function to ensure it prints "Hello World", you can edit the `handler.py` file or directly edit the function in the cluster:\n\n   ```bash\n   kubectl edit function hello-world-function\n   ```\n\n   Ensure the source code in the function looks like this:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\n6. **Synchronize Changes:**\n   If you made changes directly in the cluster, synchronize them back to your local workspace:\n\n   ```bash\n   kyma sync function hello-world-function\n   ```\n\n7. **Check the Local Code:**\n   Verify that your local `handler.py` reflects the desired logic:\n\n   ```bash\n   cat handler.py\n   ```\n\n   It should contain:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\nBy following these steps, you will have a Kyma function in Python that prints "Hello World".',
+        "type": "ai",
+        "id": "run-55c1acc3-58e0-4371-9ab5-e07c615f3497-0",
+    },
+    {
+        "content": 'To create a Kyma function in Python that prints "Hello World", follow these steps:\n\n1. **Initialize the Function:**\n   Navigate to the directory where you want to create the function and run the following command to initialize a Python function:\n\n   ```bash\n   kyma init function --runtime python312 --name hello-world-function\n   ```\n\n2. **Edit the Function Code:**\n   After initialization, you will have a file named `handler.py`. Edit this file to include the following code, which will return "Hello World":\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\n3. **Deploy the Function:**\n   Apply the function to your Kyma cluster using the following command:\n\n   ```bash\n   kyma apply function\n   ```\n\n4. **Verify the Function:**\n   To ensure the function is correctly deployed, you can describe it using:\n\n   ```bash\n   kubectl describe function hello-world-function\n   ```\n\n5. **Check the Local Code:**\n   Verify that your local `handler.py` reflects the desired logic:\n\n   ```bash\n   cat handler.py\n   ```\n\n   It should contain:\n\n   ```python\n   def main(event, context):\n       return "Hello World"\n   ```\n\nBy following these steps, you will have successfully created a Kyma function in Python that prints "Hello World".',
+        "type": "ai",
+        "name": "Finalizer",
+        "id": "101a9756-73c7-4665-b109-7a9a24621e97",
+    },
+]
