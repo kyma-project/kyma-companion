@@ -6,21 +6,21 @@ Sample Queries and Responses:
 - Kyma or Kubernetes related queries:
 
   Query: "What is Kyma serverless? what is the status of my cluster?"
- 
+
     "response": None,
       "subtasks": [
-          ("description": "What is Kyma serverless?","assigned_to": "KymaAgent") ,
-          ("description": "what is the status of my cluster?","assigned_to": "KubernetesAgent")]
-          
-     
-  Query: "Create a hello world app and deploy it with Kyma?"
-  
+          ("description": "What is Kyma serverless?","assigned_to": "KymaAgent" , "task_title" : "Fetching info about Kyma serverless") ,
+          ("description": "what is the status of my cluster?","assigned_to": "KubernetesAgent", "task_title" : "Checking status of cluster")]
+
+
+  Query: "What is kubernetes and Create a hello world app and deploy it with Kyma?"
+
   "response": None,
   "subtasks": [
-           ( "description": "Create a hello world app", "assigned_to": "Common"),
+           ("description": "What is kubernetes", "assigned_to": "KubernetesAgent"),
+           ("description": "Create a hello world app", "assigned_to": "Common"),
            ("description": "deploy the app with Kyma","assigned_to": "KymaAgent")
     ]
- 
 
 Guidelines:
 

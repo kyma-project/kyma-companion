@@ -38,10 +38,16 @@ class TestSupervisorAgent:
             (
                 [
                     SubTask(
-                        description="Task 1", assigned_to=K8S_AGENT, status="pending"
+                        description="Task 1",
+                        task_title="Task 1",
+                        assigned_to=K8S_AGENT,
+                        status="pending",
                     ),
                     SubTask(
-                        description="Task 2", assigned_to=KYMA_AGENT, status="pending"
+                        description="Task 2",
+                        task_title="Task 2",
+                        assigned_to=KYMA_AGENT,
+                        status="pending",
                     ),
                 ],
                 [
@@ -51,10 +57,16 @@ class TestSupervisorAgent:
                 K8S_AGENT,
                 [
                     SubTask(
-                        description="Task 1", assigned_to=K8S_AGENT, status="pending"
+                        description="Task 1",
+                        task_title="Task 1",
+                        assigned_to=K8S_AGENT,
+                        status="pending",
                     ),
                     SubTask(
-                        description="Task 2", assigned_to=KYMA_AGENT, status="pending"
+                        description="Task 2",
+                        task_title="Task 2",
+                        assigned_to=KYMA_AGENT,
+                        status="pending",
                     ),
                 ],
                 None,
@@ -63,6 +75,7 @@ class TestSupervisorAgent:
                 [
                     SubTask(
                         description="Task 2",
+                        task_title="Task 2",
                         assigned_to=KYMA_AGENT,
                         status="in_progress",
                     )
@@ -72,6 +85,7 @@ class TestSupervisorAgent:
                 [
                     SubTask(
                         description="Task 2",
+                        task_title="Task 2",
                         assigned_to=KYMA_AGENT,
                         status="in_progress",
                     )
@@ -81,14 +95,20 @@ class TestSupervisorAgent:
             (
                 [
                     SubTask(
-                        description="Task 3", assigned_to=K8S_AGENT, status="completed"
+                        description="Task 3",
+                        task_title="Task 3",
+                        assigned_to=K8S_AGENT,
+                        status="completed",
                     )
                 ],
                 [],
                 FINALIZER,
                 [
                     SubTask(
-                        description="Task 3", assigned_to=K8S_AGENT, status="completed"
+                        description="Task 3",
+                        task_title="Task 3",
+                        assigned_to=K8S_AGENT,
+                        status="completed",
                     )
                 ],
                 None,
@@ -233,19 +253,22 @@ class TestSupervisorAgent:
             (
                 "Plans multiple subtasks successfully",
                 "How do I deploy a Kyma function?",
-                '{"response":null, "subtasks": [{"description": "Explain Kyma function deployment", "assigned_to": "KymaAgent" ,"status" : "pending"},'
-                '{"description": "Explain K8s deployment", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
+                '{"response":null, "subtasks": [{"description": "Explain Kyma function deployment", "task_title": "Explain Kyma function deployment", "assigned_to": "KymaAgent" ,"status" : "pending"},'
+                '{"description": "Explain K8s deployment", "task_title": "Explain K8s deployment", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
                         SubTask(
                             description="Explain Kyma function deployment",
+                            task_title="Explain Kyma function deployment",
                             assigned_to=KYMA_AGENT,
                         ),
                         SubTask(
-                            description="Explain K8s deployment", assigned_to=K8S_AGENT
+                            description="Explain K8s deployment",
+                            task_title="Explain K8s deployment",
+                            assigned_to=K8S_AGENT,
                         ),
                     ],
-                    "messages": [],
+                    "messages": [AIMessage(content="", name="Planner")],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -254,15 +277,16 @@ class TestSupervisorAgent:
             (
                 "Plans a single subtask successfully",
                 "What is a Kubernetes pod?",
-                '{"response":null, "subtasks": [{"description": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
+                '{"response":null, "subtasks": [{"description": "Explain Kubernetes pod concept","task_title": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
                         SubTask(
                             description="Explain Kubernetes pod concept",
+                            task_title="Explain Kubernetes pod concept",
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [],
+                    "messages": [AIMessage(content="", name="Planner")],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -296,7 +320,7 @@ class TestSupervisorAgent:
                         )
                     ],
                     "next": END,
-                    "subtasks": None,
+                    "subtasks": [],
                 },
                 None,
             ),

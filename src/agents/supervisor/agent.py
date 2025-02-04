@@ -175,6 +175,7 @@ class SupervisorAgent:
             if plan.response:
                 return create_node_output(
                     message=AIMessage(content=plan.response, name=PLANNER),
+                    subtasks=[],  # empty subtask to make the companion response consistent
                     next=END,
                 )
 
@@ -185,6 +186,7 @@ class SupervisorAgent:
                 )
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
+                message=AIMessage(content="", name=PLANNER),
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )

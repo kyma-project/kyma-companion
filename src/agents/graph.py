@@ -28,6 +28,7 @@ from agents.common.constants import (
     COMMON,
     MESSAGES,
     MESSAGES_SUMMARY,
+    SUBTASKS,
     SUMMARIZATION,
 )
 from agents.common.data import Message
@@ -172,6 +173,7 @@ class CompanionGraph:
                                 name=COMMON,
                             )
                         ],
+                        SUBTASKS: state.subtasks,
                     }
                 except Exception as e:
                     logger.error(f"Error in common node: {e}")
@@ -181,7 +183,8 @@ class CompanionGraph:
                                 content="Sorry, I am unable to process the request.",
                                 name=COMMON,
                             )
-                        ]
+                        ],
+                        SUBTASKS: state.subtasks,
                     }
         return {
             MESSAGES: [
@@ -189,7 +192,8 @@ class CompanionGraph:
                     content="All my subtasks are already completed.",
                     name=COMMON,
                 )
-            ]
+            ],
+            SUBTASKS: state.subtasks,
         }
 
     def _build_graph(self) -> CompiledGraph:

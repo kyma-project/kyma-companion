@@ -136,7 +136,11 @@ class TestBaseAgent:
                     agent_messages=[],
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
-                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                    my_task=SubTask(
+                        description="test",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
                 ),
                 {
                     "agent_messages": [HumanMessage(content="What is K8s?")],
@@ -151,7 +155,11 @@ class TestBaseAgent:
                     agent_messages=[HumanMessage(content="What is an agent?")],
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
-                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                    my_task=SubTask(
+                        description="test",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
                 ),
                 {
                     "agent_messages": [HumanMessage(content="What is an agent?")],
@@ -214,14 +222,24 @@ class TestBaseAgent:
                     messages=[],
                     agent_messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to="KubernetesAgent"),
-                        SubTask(description="test", assigned_to="KubernetesAgent"),
+                        SubTask(
+                            description="test",
+                            task_title="test",
+                            assigned_to="KubernetesAgent",
+                        ),
+                        SubTask(
+                            description="test",
+                            task_title="test",
+                            assigned_to="KubernetesAgent",
+                        ),
                     ],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
                 {
                     "my_task": SubTask(
-                        description="test", assigned_to="KubernetesAgent"
+                        description="test",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
                     ),
                 },
             ),
@@ -233,7 +251,11 @@ class TestBaseAgent:
                     messages=[],
                     agent_messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to="KymaAgent"),
+                        SubTask(
+                            description="test",
+                            task_title="test",
+                            assigned_to="KymaAgent",
+                        ),
                     ],
                     k8s_client=Mock(spec=IK8sClient),
                 ),
@@ -255,14 +277,20 @@ class TestBaseAgent:
                     messages=[],
                     agent_messages=[],
                     subtasks=[
-                        SubTask(description="test", assigned_to="KymaAgent"),
+                        SubTask(
+                            description="test",
+                            task_title="test",
+                            assigned_to="KymaAgent",
+                        ),
                         SubTask(
                             description="test1",
+                            task_title="test1",
                             assigned_to="KubernetesAgent",
                             status=SubTaskStatus.COMPLETED,
                         ),
                         SubTask(
                             description="test2",
+                            task_title="test2",
                             assigned_to="KubernetesAgent",
                             status=SubTaskStatus.COMPLETED,
                         ),
@@ -297,7 +325,9 @@ class TestBaseAgent:
                 None,
                 TestAgentState(
                     my_task=SubTask(
-                        description="test task 1", assigned_to="KubernetesAgent"
+                        description="test task 1",
+                        task_title="test task 1",
+                        assigned_to="KubernetesAgent",
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
@@ -323,7 +353,9 @@ class TestBaseAgent:
                 ValueError("This is a dummy exception from model."),
                 TestAgentState(
                     my_task=SubTask(
-                        description="test task 1", assigned_to="KubernetesAgent"
+                        description="test task 1",
+                        task_title="test task 1",
+                        assigned_to="KubernetesAgent",
                     ),
                     is_last_step=False,
                     messages=[AIMessage(content="dummy message 1")],
@@ -359,7 +391,9 @@ class TestBaseAgent:
                 None,
                 TestAgentState(
                     my_task=SubTask(
-                        description="test task 1", assigned_to="KubernetesAgent"
+                        description="test task 1",
+                        task_title="test task 1",
+                        assigned_to="KubernetesAgent",
                     ),
                     is_last_step=True,
                     messages=[AIMessage(content="dummy message 1")],
@@ -416,6 +450,7 @@ class TestBaseAgent:
                 TestAgentState(
                     my_task=SubTask(
                         description="test task 1",
+                        task_title="test task 1",
                         assigned_to="KubernetesAgent",
                         status=SubTaskStatus.PENDING,
                     ),
@@ -451,6 +486,7 @@ class TestBaseAgent:
                     "messages": [
                         AIMessage(id="3", content="final answer"),
                     ],
+                    "subtasks": [],
                 },
             ),
         ],

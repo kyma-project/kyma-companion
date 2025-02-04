@@ -127,11 +127,14 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "What is wrong with ApiRule?",
+                        "task_title": "What is wrong with ApiRule?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is wrong with API rule?", assigned_to="KymaAgent"
+                    description="What is wrong with API rule?",
+                    task_title="What is wrong with API rule?",
+                    assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),
                 is_last_step=False,
@@ -157,11 +160,14 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "What is wrong with ApiRule?",
+                        "task_title": "What is wrong with ApiRule?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is wrong with api rule?", assigned_to="KymaAgent"
+                    description="What is wrong with api rule?",
+                    task_title="What is wrong with api rule?",
+                    assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
@@ -206,11 +212,14 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "What is wrong with ApiRule?",
+                        "task_title": "What is wrong with ApiRule?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is wrong with ApiRule?", assigned_to="KymaAgent"
+                    description="What is wrong with ApiRule?",
+                    task_title="What is wrong with ApiRule?",
+                    assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
@@ -270,11 +279,13 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
                     description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
@@ -332,11 +343,13 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "Why the pod of the serverless Function is not ready?",
+                        "task_title": "Why the pod of the serverless Function is not ready?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
                     description="Why the pod of the serverless Function is not ready?",
+                    task_title="Why the pod of the serverless Function is not ready?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
@@ -378,11 +391,13 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "what are the BTP Operator features?",
+                        "task_title": "what are the BTP Operator features?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
                     description="What are the BTP Operator features?",
+                    task_title="What are the BTP Operator features?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
@@ -422,11 +437,13 @@ def kyma_agent(app_models):
                 subtasks=[
                     {
                         "description": "what are the BTP Operator features?",
+                        "task_title": "what are the BTP Operator features?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
                     description="What are the BTP Operator features?",
+                    task_title="What are the BTP Operator features?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa

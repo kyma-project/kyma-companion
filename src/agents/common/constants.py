@@ -1,7 +1,5 @@
 PLANNER = "Planner"
 
-COMMON = "Common"
-
 SUMMARIZATION = "Summarization"
 
 FINALIZER = "Finalizer"
@@ -42,7 +40,15 @@ OWNER = "owner"
 
 K8S_AGENT = "KubernetesAgent"
 
+K8S_AGENT_TASK_DESCRIPTION = "Fetching data from Kubernetes"
+
 KYMA_AGENT = "KymaAgent"
+
+KYMA_AGENT_TASK_DESCRIPTION = "Fetching data from Kyma"
+
+COMMON = "Common"
+
+COMMON_TASK_DESCRIPTION = "Answering general queries"
 
 RESPONSE_CONVERTER = "ResponseConverter"
 
