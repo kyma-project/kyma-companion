@@ -6,6 +6,7 @@ from langfuse.callback import CallbackHandler
 from agents.common.constants import SUCCESS_CODE
 from utils.common import MetricsResponse
 from utils.settings import (
+    LANGFUSE_DEBUG_MODE,
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
     LANGFUSE_PUBLIC_KEY,
@@ -33,9 +34,7 @@ class ILangfuseService(Protocol):
         Fetch daily metrics from the Langfuse API."""
         ...
 
-    async def get_total_token_usage(
-        self, from_timestamp: str, to_timestamp: str, tags: Any = None
-    ) -> int:
+    async def get_total_token_usage(self, from_timestamp: str, to_timestamp: str, tags: Any = None) -> int:
         """
         Calculate the total token utilization by each cluster filtered by tags.
         """
@@ -51,25 +50,37 @@ class LangfuseService(metaclass=SingletonMeta):
         public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
         secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
         auth (BasicAuth): An authentication object created using the public and secret keys.
+        debug_enabled (bool): A boolean flag to enable debug mode, set to LANGFUSE_DEBUG_MODE.
         _handler (CallbackHandler) : A callback handler for langfuse.
     """
 
     def __init__(self):
-        self.base_url = LANGFUSE_HOST
-        self.public_key = LANGFUSE_PUBLIC_KEY
-        self.secret_key = LANGFUSE_SECRET_KEY
+        self.base_url = str(LANGFUSE_HOST)
+        self.public_key = str(LANGFUSE_PUBLIC_KEY)
+        self.secret_key = str(LANGFUSE_SECRET_KEY)
         self.auth = BasicAuth(self.public_key, self.secret_key)
         self._handler = CallbackHandler(
-            secret_key=LANGFUSE_SECRET_KEY,
-            public_key=LANGFUSE_PUBLIC_KEY,
-            host=LANGFUSE_HOST,
-            enabled=string_to_bool(LANGFUSE_ENABLED),
+            secret_key=str(LANGFUSE_SECRET_KEY),
+            public_key=str(LANGFUSE_PUBLIC_KEY),
+            host=self.base_url,
+            enabled=string_to_bool(str(LANGFUSE_ENABLED)),
+            mask=self.masking_production_data,
         )
+        self.debug_enabled = string_to_bool(str(LANGFUSE_DEBUG_MODE))
 
     @property
     def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         return self._handler
+
+    def masking_production_data(self, data: str) -> str:
+        """
+        masking_production_data removes sensitive information from traces
+        if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
+        """
+        if not self.debug_enabled:
+            return "REDACTED"
+        return data
 
     async def get_daily_metrics(
         self,
@@ -100,9 +111,7 @@ class LangfuseService(metaclass=SingletonMeta):
         if user_id:
             params["userId"] = user_id
 
-        async with ClientSession() as session, session.get(
-            url, params=params, auth=self.auth
-        ) as response:
+        async with ClientSession() as session, session.get(url, params=params, auth=self.auth) as response:
             if response.status == SUCCESS_CODE:
                 # Parse the JSON response into the MetricsResponse Pydantic model
                 data = await response.json()
@@ -111,9 +120,7 @@ class LangfuseService(metaclass=SingletonMeta):
             response.raise_for_status()
             return None
 
-    async def get_total_token_usage(
-        self, from_timestamp: str, to_timestamp: str, tags: Any = None
-    ) -> int:
+    async def get_total_token_usage(self, from_timestamp: str, to_timestamp: str, tags: Any = None) -> int:
         """
         Calculate the total token utilization by each cluster filtered by tags.
 
@@ -131,5 +138,4 @@ class LangfuseService(metaclass=SingletonMeta):
             for daily_metric in metrics.data:
                 for usage in daily_metric.usage:
                     total_token_utilization += usage.total_usage
-
         return total_token_utilization
