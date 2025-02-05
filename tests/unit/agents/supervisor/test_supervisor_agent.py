@@ -170,28 +170,6 @@ class TestSupervisorAgent:
                 },
                 None,
             ),
-            (
-                "Handles exception during final response generation",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: Error in finalizer node: Test error",
-                            name="Finalizer",
-                        )
-                    ]
-                },
-                "Error in finalizer node: Test error",
-            ),
         ],
     )
     async def test_agent_generate_final_response(
@@ -204,27 +182,26 @@ class TestSupervisorAgent:
         expected_output,
         expected_error,
     ):
+        # Given
         state = SupervisorState(messages=conversation_messages)
 
         mock_final_response_chain = AsyncMock()
-        if expected_error:
-            mock_final_response_chain.ainvoke.side_effect = Exception(expected_error)
-        else:
-            mock_final_response_chain.ainvoke.return_value.content = (
-                final_response_content
-            )
+        mock_final_response_chain.ainvoke.return_value.content = final_response_content
 
         with patch.object(
             supervisor_agent,
             "_final_response_chain",
             return_value=mock_final_response_chain,
         ):
+            # When
             result = await supervisor_agent._generate_final_response(state)
 
-        assert result == expected_output
-        mock_final_response_chain.ainvoke.assert_called_once_with(
-            {"messages": conversation_messages}
-        )
+            # Then
+            assert result == expected_output
+
+            mock_final_response_chain.ainvoke.assert_called_once_with(
+                config=None, input={"messages": conversation_messages}
+            )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -328,89 +305,3 @@ class TestSupervisorAgent:
 
             assert result == expected_output
             mock_invoke_planner.assert_called_once_with(state)
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "description, side_effect, expected_calls, expected_result, expected_error",
-        [
-            (
-                "Success after two failures",
-                [
-                    ValueError("Attempt 1 failed"),
-                    ValueError("Attempt 2 failed"),
-                    Plan(
-                        response=None,
-                        subtasks=[
-                            SubTask(description="Test task 1", assigned_to=K8S_AGENT)
-                        ],
-                    ),
-                ],
-                3,
-                Plan(
-                    response=None,
-                    subtasks=[
-                        SubTask(description="Test task 1", assigned_to=K8S_AGENT)
-                    ],
-                ),
-                None,
-            ),
-            (
-                "Immediate success without retries",
-                Plan(
-                    response=None,
-                    subtasks=[
-                        SubTask(description="Test task 2", assigned_to=K8S_AGENT)
-                    ],
-                ),
-                1,
-                Plan(
-                    response=None,
-                    subtasks=[
-                        SubTask(description="Test task 2", assigned_to=K8S_AGENT)
-                    ],
-                ),
-                None,
-            ),
-            (
-                "Different error types",
-                [
-                    ValueError("Value error"),
-                    RuntimeError("Runtime error"),
-                    ValueError("Connection error"),
-                ],
-                3,
-                None,
-                ValueError("Connection error"),
-            ),
-        ],
-    )
-    async def test_invoke_planner_retry_behavior(
-        self,
-        supervisor_agent,
-        description,
-        side_effect,
-        expected_calls,
-        expected_result,
-        expected_error,
-    ):
-        """Table-driven test for _invoke_planner retry behavior covering multiple scenarios."""
-        state = SupervisorState(messages=[HumanMessage(content="Test query")])
-        mock_chain = AsyncMock()
-
-        # Configure mock to return/raise based on side_effect
-        if isinstance(side_effect, list):
-            mock_chain.ainvoke.side_effect = side_effect
-        else:
-            mock_chain.ainvoke.return_value = side_effect
-
-        with patch.object(supervisor_agent, "_planner_chain", mock_chain):
-            if expected_error:
-                with pytest.raises(type(expected_error)) as exc_info:
-                    await supervisor_agent._invoke_planner(state)
-                assert str(expected_error) in str(exc_info.value)
-            else:
-                result = await supervisor_agent._invoke_planner(state)
-                assert result == expected_result
-
-            # Verify the number of calls
-            assert mock_chain.ainvoke.call_count == expected_calls

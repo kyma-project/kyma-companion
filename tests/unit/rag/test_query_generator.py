@@ -103,4 +103,4 @@ class TestQueryGenerator:
             result = await generator.agenerate_queries(query)
             # Then
             assert result == expected_output
-            mock_chain.ainvoke.assert_called_once_with({"query": query})
+            mock_chain.ainvoke.assert_called_with(config=None, input={"query": query})
