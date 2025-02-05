@@ -259,7 +259,7 @@ def planner_conversation_history_metric(evaluator_model):
     "messages, query, expected_answer, subtasks",
     [
         (
-            # answer the question based from the conversation history
+            # answer the question based on the conversation history
             conversation_sample_2,
             "what was the issue?",
             "The serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
@@ -268,7 +268,7 @@ def planner_conversation_history_metric(evaluator_model):
             None,
         ),
         (
-            # answer the question based from the conversation history
+            # answer the question based on the conversation history
             conversation_sample_5,
             "what was the cause?",
             "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because "
