@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from langchain.chains.base import Chain
+from langchain.schema.runnable import RunnableConfig, RunnableSequence
 from tenacity import (
     RetryCallState,
     retry,
@@ -34,11 +34,11 @@ def after_log(retry_state: RetryCallState) -> None:
     reraise=True,
 )
 async def ainvoke_chain(
-    chain: Chain,
+    chain: RunnableSequence,
     inputs: dict[str, Any] | Any,
     *,
-    config: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    config: RunnableConfig | None = None,
+) -> Any:
     """Invokes a LangChain chain asynchronously.
     Retries the LLM calls if they fail with the provided wait strategy.
     Tries 3 times, waits 2 seconds between attempts, i.e. 2, 5.
@@ -52,7 +52,7 @@ async def ainvoke_chain(
             Defaults to None.
 
     Returns:
-        Dict[str, Any]: The chain execution results
+        Any: The chain execution results
     """
     # Convert single value input to dict if needed
     chain_inputs = inputs if isinstance(inputs, dict) else {"input": inputs}

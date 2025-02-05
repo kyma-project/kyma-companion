@@ -38,7 +38,7 @@ tenacity = "^9.0.0"
 tiktoken = "^0.7.0"
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.1.2"
+deepeval = "^2.3.2"
 fakeredis = "^2.23.3"
 prettytable = "^3.10.2"
 pytest = "^8.2.2"

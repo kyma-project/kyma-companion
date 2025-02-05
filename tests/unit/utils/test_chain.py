@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain.chains.base import Chain
+from langchain.schema.runnable import RunnableConfig
 
 from utils.chain import ainvoke_chain
 
@@ -80,7 +81,7 @@ def mock_chain():
 async def test_ainvoke_chain(
     mock_chain,
     input_data: dict[str, Any] | str,
-    config: dict[str, Any] | None,
+    config: RunnableConfig | None,
     mock_response: Any,
     expected_chain_input: dict[str, Any],
     expected_output: dict[str, Any] | None,
