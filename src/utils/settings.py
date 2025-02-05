@@ -56,6 +56,7 @@ LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
+LANGFUSE_DEBUG_MODE = config("LANGFUSE_DEBUG_MODE", default="False")
 
 # Summarization
 SUMMARIZATION_TOKEN_UPPER_LIMIT = config(

@@ -6,6 +6,7 @@ from langfuse.callback import CallbackHandler
 from agents.common.constants import SUCCESS_CODE
 from utils.common import MetricsResponse
 from utils.settings import (
+    LANGFUSE_DEBUG_MODE,
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
     LANGFUSE_PUBLIC_KEY,
@@ -41,6 +42,13 @@ class ILangfuseService(Protocol):
         """
         ...
 
+    def masking_production_data(self, data: str) -> str:
+        """
+        masking_production_data removes sensitive information from traces
+        if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
+        """
+        ...
+
 
 class LangfuseService(metaclass=SingletonMeta):
     """
@@ -51,25 +59,42 @@ class LangfuseService(metaclass=SingletonMeta):
         public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
         secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
         auth (BasicAuth): An authentication object created using the public and secret keys.
+        debug_enabled (bool): A boolean flag to enable debug mode, set to LANGFUSE_DEBUG_MODE.
         _handler (CallbackHandler) : A callback handler for langfuse.
     """
 
     def __init__(self):
-        self.base_url = LANGFUSE_HOST
-        self.public_key = LANGFUSE_PUBLIC_KEY
-        self.secret_key = LANGFUSE_SECRET_KEY
+        self.base_url = str(LANGFUSE_HOST)
+        self.public_key = str(LANGFUSE_PUBLIC_KEY)
+        self.secret_key = str(LANGFUSE_SECRET_KEY)
         self.auth = BasicAuth(self.public_key, self.secret_key)
         self._handler = CallbackHandler(
-            secret_key=LANGFUSE_SECRET_KEY,
-            public_key=LANGFUSE_PUBLIC_KEY,
-            host=LANGFUSE_HOST,
-            enabled=string_to_bool(LANGFUSE_ENABLED),
+            secret_key=self.secret_key,
+            public_key=self.public_key,
+            host=self.base_url,
+            enabled=string_to_bool(str(LANGFUSE_ENABLED)),
+            mask=self.masking_production_data,
         )
+        self.debug_enabled = string_to_bool(str(LANGFUSE_DEBUG_MODE))
 
     @property
     def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         return self._handler
+
+    def masking_production_data(self, data: str) -> str:
+        """
+        Removes sensitive information from traces.
+
+        Args:
+            data (dict): The data containing sensitive information.
+
+        Returns:
+            dict: The data with sensitive information removed.
+        """
+        if not self.debug_enabled:
+            return "REDACTED"
+        return data
 
     async def get_daily_metrics(
         self,
@@ -131,5 +156,4 @@ class LangfuseService(metaclass=SingletonMeta):
             for daily_metric in metrics.data:
                 for usage in daily_metric.usage:
                     total_token_utilization += usage.total_usage
-
         return total_token_utilization
