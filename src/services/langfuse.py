@@ -34,7 +34,9 @@ class ILangfuseService(Protocol):
         Fetch daily metrics from the Langfuse API."""
         ...
 
-    async def get_total_token_usage(self, from_timestamp: str, to_timestamp: str, tags: Any = None) -> int:
+    async def get_total_token_usage(
+        self, from_timestamp: str, to_timestamp: str, tags: Any = None
+    ) -> int:
         """
         Calculate the total token utilization by each cluster filtered by tags.
         """
@@ -123,7 +125,9 @@ class LangfuseService(metaclass=SingletonMeta):
         if user_id:
             params["userId"] = user_id
 
-        async with ClientSession() as session, session.get(url, params=params, auth=self.auth) as response:
+        async with ClientSession() as session, session.get(
+            url, params=params, auth=self.auth
+        ) as response:
             if response.status == SUCCESS_CODE:
                 # Parse the JSON response into the MetricsResponse Pydantic model
                 data = await response.json()
@@ -132,7 +136,9 @@ class LangfuseService(metaclass=SingletonMeta):
             response.raise_for_status()
             return None
 
-    async def get_total_token_usage(self, from_timestamp: str, to_timestamp: str, tags: Any = None) -> int:
+    async def get_total_token_usage(
+        self, from_timestamp: str, to_timestamp: str, tags: Any = None
+    ) -> int:
         """
         Calculate the total token utilization by each cluster filtered by tags.
 
