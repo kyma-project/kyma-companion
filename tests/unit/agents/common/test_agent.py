@@ -6,6 +6,7 @@ from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     HumanMessage,
+    SystemMessage,
     ToolMessage,
 )
 from langchain_core.prompts import (
@@ -18,7 +19,7 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
 from agents.common.agent import BaseAgent
-from agents.common.constants import AGENT_MESSAGES
+from agents.common.constants import AGENT_MESSAGES, ERROR
 from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
@@ -144,26 +145,40 @@ class TestBaseAgent:
                     agent_messages=[],
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
-                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                    my_task=SubTask(
+                        description="test 1", assigned_to="KubernetesAgent"
+                    ),
                 ),
                 {
-                    "agent_messages": [HumanMessage(content="What is K8s?")],
-                    "query": "test",
+                    "agent_messages": [
+                        HumanMessage(
+                            content="What is K8s?",
+                        )
+                    ],
+                    "query": "test 1",
                 },
             ),
-            # Test case when agent_messages is non-empty, should not use from messages field.
+            # Test case when agent_messages is non-empty, should use get_agent_messages_including_summary
             (
                 TestAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
-                    agent_messages=[HumanMessage(content="What is an agent?")],
+                    agent_messages=[HumanMessage(content="What is deployment?")],
+                    agent_messages_summary="Summary of previous messages: K8s is orchestration tool. Deployment is workload resource.",
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
-                    my_task=SubTask(description="test", assigned_to="KubernetesAgent"),
+                    my_task=SubTask(
+                        description="test 2", assigned_to="KubernetesAgent"
+                    ),
                 ),
                 {
-                    "agent_messages": [HumanMessage(content="What is an agent?")],
-                    "query": "test",
+                    "agent_messages": [
+                        SystemMessage(
+                            content="Summary of previous messages: K8s is orchestration tool. Deployment is workload resource.",
+                        ),
+                        HumanMessage(content="What is deployment?"),
+                    ],
+                    "query": "test 2",
                 },
             ),
         ],
@@ -176,11 +191,20 @@ class TestBaseAgent:
         agent.chain = Mock()
         agent.chain.ainvoke = AsyncMock()
 
-        # When
-        _ = await agent._invoke_chain(given_state, {})
+        await agent._invoke_chain(given_state, {})
 
         # Then
-        agent.chain.ainvoke.assert_called_once_with(expected_inputs, {})
+        # Get the actual call arguments
+        assert agent.chain.ainvoke.call_count == 1
+        actual_call = agent.chain.ainvoke.call_args
+        actual_input = actual_call.kwargs["input"]
+
+        # Remove id field from messages for comparison as it is not deterministic
+        actual_messages = actual_input.get("agent_messages", [])
+        expected_messages = expected_inputs.get("agent_messages", [])
+        for msg in actual_messages + expected_messages:
+            msg.id = None
+        assert actual_input == expected_inputs
 
     def test_build_graph(self, mock_models):
         # Given
@@ -341,11 +365,11 @@ class TestBaseAgent:
                 {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: This is a dummy exception from model.",
+                            content="Sorry, An error occurred while processing the request: This is a dummy exception from model.",
                             name="KubernetesAgent",
                         )
-                    ]
+                    ],
+                    ERROR: "An error occurred while processing the request: This is a dummy exception from model.",
                 },
                 {
                     AGENT_MESSAGES: [AIMessage(content="dummy message 1")],

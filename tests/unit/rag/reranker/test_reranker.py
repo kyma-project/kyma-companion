@@ -149,8 +149,9 @@ class TestLLMReranker:
 
         # Then
         assert actual_docs_list == expected_docs_list
-        reranker.chain.ainvoke.assert_called_once_with(
-            {
+        reranker.chain.ainvoke.assert_called_with(
+            config=None,
+            input={
                 "documents": format_documents(given_relevant_docs),
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
