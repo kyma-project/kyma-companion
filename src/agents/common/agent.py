@@ -4,7 +4,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
 )
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
@@ -12,6 +12,7 @@ from langgraph.prebuilt import ToolNode
 from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
+    ERROR,
     IS_LAST_STEP,
     MESSAGES,
     MY_TASK,
@@ -20,11 +21,15 @@ from agents.common.constants import (
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages
 from agents.summarization.summarization import Summarization
+from utils.chain import ainvoke_chain
+from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 from utils.settings import (
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
+
+logger = get_logger(__name__)
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
@@ -63,7 +68,7 @@ class BaseAgent:
         name: str,
         model: IModel | Embeddings,
         tools: list,
-        system_prompt: str,
+        agent_prompt: ChatPromptTemplate,
         state_class: type,
     ):
         self._name = name
@@ -77,7 +82,8 @@ class BaseAgent:
             messages_key=AGENT_MESSAGES,
             messages_summary_key=AGENT_MESSAGES_SUMMARY,
         )
-        self.chain = self._create_chain(system_prompt)
+
+        self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
         self.graph.step_timeout = 60  # Default timeout, can be overridden
 
@@ -90,14 +96,7 @@ class BaseAgent:
         """Get agent node function."""
         return self.graph
 
-    def _create_chain(self, system_prompt: str) -> Any:
-        agent_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                MessagesPlaceholder(variable_name=AGENT_MESSAGES),
-                ("human", "{query}"),
-            ]
-        )
+    def _create_chain(self, agent_prompt: ChatPromptTemplate) -> Any:
         return agent_prompt | self.model.llm.bind_tools(self.tools)
 
     def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
@@ -132,7 +131,11 @@ class BaseAgent:
         if len(state.agent_messages) == 0:
             inputs[AGENT_MESSAGES] = filter_messages(state.messages)
 
-        response = await self.chain.ainvoke(inputs, config)
+        response = await ainvoke_chain(
+            self.chain,
+            inputs,
+            config=config,
+        )
         return response
 
     async def _model_node(
@@ -141,13 +144,16 @@ class BaseAgent:
         try:
             response = await self._invoke_chain(state, config)
         except Exception as e:
+            error_message = f"An error occurred while processing the request: {e}"
+            logger.error(error_message)
             return {
                 AGENT_MESSAGES: [
                     AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
+                        content=f"Sorry, {error_message}",
                         name=self.name,
                     )
-                ]
+                ],
+                ERROR: error_message,
             }
 
         # if the recursive limit is reached and the response is a tool call, return a message.

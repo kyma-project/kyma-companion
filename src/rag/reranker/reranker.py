@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.rrf import get_relevant_documents
 from rag.reranker.utils import document_to_str
+from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -92,12 +93,13 @@ class LLMReranker(IReranker):
         """
 
         # reranking using the LLM model
-        response: RerankedDocs = await self.chain.ainvoke(
+        response: RerankedDocs = await ainvoke_chain(
+            self.chain,
             {
                 "documents": format_documents(docs),
                 "queries": format_queries(queries),
                 "limit": limit,
-            }
+            },
         )
         # return reranked documents capped at the output limit
         reranked_docs = [

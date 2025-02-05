@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
+from utils.chain import ainvoke_chain
 from utils.models.factory import IModel, ModelType
 
 
@@ -81,14 +82,15 @@ class Summarization:
                 return filtered_messages[i:]
         return filtered_messages
 
-    def get_summary(
+    async def get_summary(
         self, messages: list[MessageLikeRepresentation], config: RunnableConfig
     ) -> str:
         """Returns the summary of the messages."""
         if len(messages) == 0:
             return ""
 
-        res = self._chain.invoke(
+        res = await ainvoke_chain(
+            self._chain,
             {"messages": messages},
             config=config,
         )
@@ -124,7 +126,7 @@ class Summarization:
 
         # summarize the remaining old messages
         msgs_for_summarization = all_messages[: -len(latest_messages)]
-        summary = self.get_summary(msgs_for_summarization, config)
+        summary = await self.get_summary(msgs_for_summarization, config)
 
         # remove excluded messages from state.
         msgs_to_remove = state_messages[: -len(latest_messages)]
