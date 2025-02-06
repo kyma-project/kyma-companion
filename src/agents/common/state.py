@@ -77,7 +77,8 @@ class Plan(BaseModel):
     )
 
     response: str | None = Field(
-        description="only if query is irrelevant to Kyma and Kubernetes"
+        description="direct response to the user query if the query is either irrelevant to Kyma and Kubernetes or "
+        "if the answer is already in the conversation history"
     )
 
 

@@ -18,7 +18,7 @@ langchain-openai = "^0.1.14"
 poetry-plugin-sort = "^0.2.1"
 prettytable = "^3.10.2"
 pydantic = "^2.8.2"
-
+python-decouple = "^3.8"
 python-dotenv = "^1.0.1"
 termcolor = "^2.4.0"
 wcwidth = "^0.2.13"

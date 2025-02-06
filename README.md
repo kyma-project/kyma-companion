@@ -63,35 +63,8 @@ poetry install
 
 This creates a new virtual environment and installs the project's dependencies.
 
-### Activate the Virtual Environment
-
-To use the virtual environment, follow this procedure.
-
-> [!NOTE] Run these commands in the root directory of your project, where the `pyproject.toml` file is located.
-
-1. Use `poetry shell` to start a new shell session with the virtual environment activated:
-
-        ```bash
-        poetry shell
-        ```
-
-   Now, you can run Python and any installed packages in this shell. They will use the virtual environment. 
-2. Use `poetry run` to execute a command.
-3. Use the `deactivate` command to exit the virtual environment.
-
 If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
-## Use Poe the Poet as Task Runner
-
-[Poe the Poet](https://poethepoet.natn.io/index.html) is a task runner that simplifies running common tasks in a Python project.
-
-To have the command available as `poetry poe <command>` (as seen in the following examples), install poe as a plugin to Poetry:
-
-```bash
-poetry self add 'poethepoet[poetry_plugin]'
-```
-
-If you don't install this plugin, you must run poe as a script within the Poetry environment using `poetry run poe <command>`.
 
 ## Development
 
@@ -114,7 +87,7 @@ poetry run fastapi dev src/main.py --port 8000
 Or, with a poe task:
 
 ```bash
-$ poetry poe run-local
+$ poetry run poe run-local
 ```
 
 It is recommended to run Kyma Companion with Poetry because it activates and uses its virtual environment if not activated yet.
@@ -138,13 +111,13 @@ To use a configuration file from a different location, set the `CONFIG_PATH` env
 To execute linting, formatting, and type checking using Ruff, Black, and mypy, respectively use the following command:
 
 ```bash
-poetry poe codecheck
+poetry run poe codecheck
 ```
 
 To fix linting and formatting issues, use the following command:
 
 ```bash
-poetry poe codefix
+poetry run poe code-fix
 ```
 
 Mypy does not support fixing issues automatically.
@@ -154,7 +127,7 @@ Mypy does not support fixing issues automatically.
 It is recommended to execute the [Ruff](https://docs.astral.sh/ruff/) linting check with the poe lint task with the following command:
 
 ```bash
-poetry poe lint
+poetry run poe lint
 ```
 
 Alternatively, you can also do it with `ruff check` directly, where Ruff may have a different version in a different virtual environment.
@@ -162,7 +135,7 @@ Alternatively, you can also do it with `ruff check` directly, where Ruff may hav
 Linting errors can be fixed with the following command, which applies only the safe fixes by default:
 
 ```bash
-poetry poe lint-fix
+poetry run poe lint-fix
 ```
 
 > [!WARNING]
@@ -173,13 +146,13 @@ Use the command with caution, as it may change the code in an unexpected way.
 To execute the [Black](https://black.readthedocs.io/en/stable/) formatting check with the poe format task, use the following command:
 
 ```bash
-poetry poe format
+poetry run poe format
 ```
 
 You can fix formatting erros with the following command:
 
 ```bash
-poetry poe format-fix
+poetry run poe format-fix
 ```
 
 ### Type Checking
@@ -187,7 +160,7 @@ poetry poe format-fix
 To execute type checking with [mypy](https://mypy-lang.org/), use the following command:
 
 ```bash
-poetry poe typecheck
+poetry run poe typecheck
 ```
 
 Mypy does not support fixing issues automatically.
@@ -200,7 +173,7 @@ Mypy does not support fixing issues automatically.
 The tests written in the [pytest framework](https://docs.pytest.org/en/stable/) can be executed with the following command:
 
 ```bash
-poetry poe test
+poetry run poe test
 ```
 
 Or, with the following command:

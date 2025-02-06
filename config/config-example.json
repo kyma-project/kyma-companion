@@ -1,0 +1,43 @@
+{
+  "AICORE_AUTH_URL": "<VALUE>",
+  "AICORE_BASE_URL": "<VALUE>",
+  "AICORE_CLIENT_ID": "<VALUE>",
+  "AICORE_CLIENT_SECRET": "<VALUE>",
+  "AICORE_RESOURCE_GROUP": "default",
+
+  "REDIS_URL": "redis://localhost:6379",
+  "REDIS_HOST": "localhost",
+  "REDIS_PORT": "6379",
+
+  "TEST_CLUSTER_URL": "<VALUE>",
+  "TEST_CLUSTER_CA_DATA": "<VALUE>",
+  "TEST_CLUSTER_AUTH_TOKEN": "<VALUE>",
+
+  "LANGFUSE_HOST": "<VALUE>",
+  "LANGFUSE_SECRET_KEY": "<VALUE>",
+  "LANGFUSE_PUBLIC_KEY": "<VALUE>",
+  "LANGFUSE_ENABLED": "True",
+
+  "DATABASE_URL": "<VALUE>",
+  "DATABASE_USER": "<VALUE>",
+  "DATABASE_PASSWORD": "<VALUE>",
+  "DATABASE_PORT": "443",
+  "DOCS_TABLE_NAME": "<VALUE>",
+
+  "models": [
+    {
+      "name": "gpt-4o",
+      "deployment_id": "<VALUE>",
+      "temperature": 0
+    },
+    {
+      "name": "gpt-4o-mini",
+      "deployment_id": "<VALUE>",
+      "temperature": 0
+    },
+    {
+      "name": "text-embedding-3-large",
+      "deployment_id": "<VALUE>"
+    }
+  ]
+}

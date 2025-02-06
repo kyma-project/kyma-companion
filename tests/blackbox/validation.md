@@ -12,39 +12,16 @@ To run the validation, follow these steps:
     poetry install
     ```
 
-2. Add LLMs data to `config/validation/models.yml` that are to be validated. The data should be in the following format:
+2. Prepare the `config-validation.json` file based on the [template](../../config/config-example.json).
 
-   ```yaml
-   - name: "gpt-4"
-     deployment_id: {deployment_id_gpt_4}
-   - name: "gemini-1.5-pro"
-     deployment_id: {deployment_id_gemini_1_5_pro}
-    ```
-
-3. Prepare the `.env.validation` file based on the following template:
-
-    ```
-   AICORE_AUTH_URL=                     # AI-Core Auth URL.
-   AICORE_BASE_URL=                     # AI-Core Base URL.
-   AICORE_CLIENT_ID=                    # AI-Core Client ID.
-   AICORE_CLIENT_SECRET=                # AI-Core Client Secret.
-   AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
-   
-   VALIDATION_DATA_PATH=                # Optional: Path to the validation data folder, default is ./data
-   MODEL_CONFIG_PATH=                   # Optional: Path to the model config file, default is ./config/validation/models.yml
-    ```
-
-3. Run the following command to set up the environment variables in your system:
+3. Run the following command to set up `CONFIG_PATH` environment variable in your system:
 
     ```bash
-    export $(xargs < .env.validation)
+    export CONFIG_PATH=<path_to_config-validation.json>
     ```
 
 4. Run the validation:
 
     ```bash
    poetry run python src/run_validation.py
-   # OR
-   poetry shell
-   python src/run_validation.py
     ```

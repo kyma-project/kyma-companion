@@ -12,14 +12,16 @@ from src.utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
-    EMBEDDING_MODEL_DEPLOYMENT_ID,
+    EMBEDDING_MODEL_NAME,
+    get_embedding_model_config,
 )
 
 
 @pytest.fixture(scope="session")
 def embedding_model():
+    embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
     create_embedding = create_embedding_factory(openai_embedding_creator)
-    embedding_model = create_embedding(EMBEDDING_MODEL_DEPLOYMENT_ID)
+    embedding_model = create_embedding(embedding_model.deployment_id)
     return embedding_model
 
 
