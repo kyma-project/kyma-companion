@@ -88,7 +88,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="why the pod is failing?"),
             ],
-            "{'subtasks': [{  'description': 'why the pod is failing?', 'assigned_to': 'KubernetesAgent' ,'status' : 'pending'}] , 'response': null}",
+            "{'subtasks': None , 'response': 'pods is failing due to a context cancellation.'}",
             False,
         ),
         (
