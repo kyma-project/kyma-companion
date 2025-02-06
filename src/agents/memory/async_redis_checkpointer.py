@@ -255,8 +255,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         }
 
         await self._redis_call(self.conn.hset(key, mapping=data))
-        # Set TTL for each message
-        await self.conn.expire(key, REDIS_TTL)
+        # Set TTL for each checkpoint
+        await self._redis_call(self.conn.expire(key, REDIS_TTL))
         return {
             "configurable": {
                 "thread_id": thread_id,
