@@ -256,7 +256,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
 
         await self._redis_call(self.conn.hset(key, mapping=data))
         # Set TTL for each message
-        # await self.conn.expire(key, REDIS_TTL)
+        await self.conn.expire(key, REDIS_TTL)
         return {
             "configurable": {
                 "thread_id": thread_id,
@@ -302,6 +302,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
                 # Use HSETNX which will not overwrite existing values
                 for field, value in data.items():
                     await self._redis_call(self.conn.hsetnx(key, field, value))
+            # Set TTL for each write
+            await self._redis_call(self.conn.expire(key, REDIS_TTL))
 
     async def aget_tuple(self, config: RunnableConfig) -> CheckpointTuple | None:
         """Get a checkpoint tuple from Redis asynchronously.
