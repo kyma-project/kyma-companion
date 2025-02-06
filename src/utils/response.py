@@ -14,8 +14,8 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def reformat_subtasks(subtasks: dict[Any, Any]) -> list[dict[str, Any]]:
-    """Reformate subtasks list for companion response"""
+def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
+    """Reformat subtasks list for companion response"""
     tasks = []
     if subtasks:
         for i, subtask in enumerate(subtasks):
