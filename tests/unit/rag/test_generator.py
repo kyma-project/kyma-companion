@@ -112,6 +112,6 @@ class TestGenerator:
 
             # Verify chain was called with correct arguments
             docs_content = "\n\n".join(doc.page_content for doc in docs_content)
-            mock_chain.ainvoke.assert_called_once_with(
-                {"context": docs_content, "query": query}
+            mock_chain.ainvoke.assert_called_with(
+                config=None, input={"context": docs_content, "query": query}
             )
