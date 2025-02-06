@@ -8,7 +8,7 @@ from agents.summarization.prompts import (
     MESSAGES_SUMMARIZATION_INSTRUCTIONS,
 )
 from agents.summarization.summarization import Summarization
-from integration.agents.summarization.fixtures.messages import (
+from integration.agents.fixtures.messages import (
     conversation_sample_1,
     conversation_sample_2,
     conversation_sample_3,
@@ -61,7 +61,8 @@ def tokenizer_info():
         conversation_sample_4,
     ],
 )
-def test_get_summary(
+@pytest.mark.asyncio
+async def test_get_summary(
     summarization_metric,
     summarization_model,
     tokenizer_info,
@@ -76,7 +77,7 @@ def test_get_summary(
     )
 
     # when
-    generated_summary = summarization.get_summary(messages, {})
+    generated_summary = await summarization.get_summary(messages, {})
 
     # then
     test_case = ConversationalTestCase(

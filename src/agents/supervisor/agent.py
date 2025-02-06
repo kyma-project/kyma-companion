@@ -19,16 +19,19 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
+from agents.common.response_converter import IResponseConverter, ResponseConverter
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
     FINALIZER_PROMPT_FOLLOW_UP,
-    PLANNER_PROMPT,
+    PLANNER_STEP_INSTRUCTIONS,
+    PLANNER_SYSTEM_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
 from utils.filter_messages import (
     filter_messages_via_checks,
+    is_ai_message,
     is_finalizer_message,
     is_human_message,
     is_system_message,
@@ -81,13 +84,19 @@ class SupervisorAgent:
     members: list[str] = []
     plan_parser = PydanticOutputParser(pydantic_object=Plan)
 
-    def __init__(self, models: dict[str, IModel | Embeddings], members: list[str]):
-        gpt_4o = cast(IModel, models[ModelType.GPT4O])
-
-        self.model = gpt_4o
+    def __init__(
+        self,
+        models: dict[str, IModel | Embeddings],
+        members: list[str],
+        response_converter: IResponseConverter | None = None,
+    ) -> None:
+        self.model = cast(IModel, models[ModelType.GPT4O_MINI])
         self.members = members
         self.parser = self._route_create_parser()
-        self._planner_chain = self._create_planner_chain(gpt_4o)
+        self.response_converter: IResponseConverter = (
+            response_converter or ResponseConverter()
+        )
+        self._planner_chain = self._create_planner_chain(self.model)
         self._graph = self._build_graph()
 
     def _get_members_str(self) -> str:
@@ -127,8 +136,9 @@ class SupervisorAgent:
     def _create_planner_chain(self, model: IModel) -> RunnableSequence:
         self.planner_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", PLANNER_PROMPT),
+                ("system", PLANNER_SYSTEM_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
+                ("system", PLANNER_STEP_INSTRUCTIONS),
             ]
         ).partial(
             kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
@@ -139,7 +149,13 @@ class SupervisorAgent:
         """Invoke the planner."""
 
         filtered_messages = filter_messages_via_checks(
-            state.messages, [is_human_message, is_system_message, is_finalizer_message]
+            state.messages,
+            [
+                is_human_message,
+                is_system_message,
+                is_finalizer_message,
+                is_ai_message,
+            ],
         )
         reduces_messages = filter_messages(filtered_messages)
 
@@ -235,6 +251,15 @@ class SupervisorAgent:
                 ]
             }
 
+    async def _get_converted_final_response(
+        self, state: SupervisorState
+    ) -> dict[str, Any]:
+        """Convert the generated final response."""
+
+        final_response = await self._generate_final_response(state)
+
+        return self.response_converter.convert_final_response(final_response)
+
     def _build_graph(self) -> CompiledGraph:
         # Define a new graph.
         workflow = StateGraph(SupervisorState)
@@ -242,7 +267,7 @@ class SupervisorAgent:
         # Define the nodes of the graph.
         workflow.add_node(PLANNER, self._plan)
         workflow.add_node(ROUTER, self._route)
-        workflow.add_node(FINALIZER, self._generate_final_response)
+        workflow.add_node(FINALIZER, self._get_converted_final_response)
 
         # Set the entrypoint: ENTRY --> (planner | router | finalizer)
         workflow.add_conditional_edges(

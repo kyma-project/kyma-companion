@@ -23,40 +23,16 @@ To run the Evaluation tests, follow these steps:
     poetry install
     ```
 
-2. Prepare the `.env.evaluation` file based on the following template:
+2. Prepare the `config-evaluation.json` file based on the [template](../../config/config-example.json).
 
-    ```
-   LOG_LEVEL=                           # Allowed values: "INFO", "DEBUG", "ERROR", "WARNING"
-   TEST_DATA_PATH=                      # Directory path of test data. e.g. "/Users/<username>/git/kyma-project/kyma-companion/tests/data".
-   MODEL_NAME=                          # [Optional] Model name to use for validator.
-   COMPANION_API_URL=                   # Kyma Companion API URL. e.g. "http://localhost:8080/api/v1/pods/stream".
-   COMPANION_TOKEN=                     # [Optional] Kyma Companion API Authentication Token.
-   TEST_CLUSTER_URL=                    # Kubernetes Cluster (with test-cases configured) URL.
-   TEST_CLUSTER_CA_DATA=                # Kubernetes Cluster (with test-cases configured) Certificate Authority Data.
-   TEST_CLUSTER_AUTH_TOKEN=             # Kubernetes Cluster (with test-cases configured) Authentication Token.
-   AICORE_AUTH_URL=                     # AI-Core Auth URL.
-   AICORE_BASE_URL=                     # AI-Core Base URL.
-   AICORE_CLIENT_ID=                    # AI-Core Client ID.
-   AICORE_CLIENT_SECRET=                # AI-Core Client Secret.
-   AICORE_RESOURCE_GROUP=               # AI-Core Resource Group.
-   AICORE_CONFIGURATION_ID_GPT4_MINI=   # AI-Core Configuration ID for GPT-4 mini.
-   AICORE_DEPLOYMENT_ID_GPT4_MINI=      # AI-Core Deployment ID for GPT-4 mini.
-   DEFAULT_RETRY_WAIT_TIME=             # [Optional] The number of seconds we increase the retry wait time by when querying the Companion API. Default is 60.
-   DEFAULT_RETRY_MAX_WAIT_TIME=         # [Optional] The maximum retry wait time in seconds when querying the Companion API. Default is 600.
-
-    ```
-
-3. Run the following command to set up the environment variables in your system:
+3. Run the following command to set up `CONFIG_PATH` environment variable in your system:
 
     ```bash
-    export $(xargs < .env.evaluation)
+    export CONFIG_PATH=<path_to_config-evaluation.json>
     ```
 
 4. Run the Evaluation tests:
 
     ```bash
    poetry run python src/run_evaluation.py
-   # OR
-   poetry shell
-   python src/run_evaluation.py
     ```

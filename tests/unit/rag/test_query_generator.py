@@ -69,7 +69,7 @@ class TestQueryGenerator:
         assert isinstance(chain.steps[0], ChatPromptTemplate)
 
     @pytest.mark.parametrize(
-        "query, chain_output, expected_output, expected_error",
+        "query, chain_output, expected_output, error",
         [
             (
                 "What is Kyma?",
@@ -80,29 +80,27 @@ class TestQueryGenerator:
             (
                 "How to deploy function?",
                 None,
-                None,
+                Queries(queries=["How to deploy function?"]),
                 Exception("Error generating queries"),
             ),
         ],
     )
     @pytest.mark.asyncio
     async def test_agenerate_queries(
-        self, mock_model, mock_llm, query, chain_output, expected_output, expected_error
+        self, mock_model, mock_llm, query, chain_output, expected_output, error
     ):
         """Test agenerate_queries method."""
+        # Given
         mock_chain = AsyncMock()
         with patch.object(QueryGenerator, "_create_chain", return_value=mock_chain):
             generator = QueryGenerator(mock_model)
             # When/Then
-            if expected_error:
-                mock_chain.ainvoke.side_effect = expected_error
-
-                with pytest.raises(type(expected_error)) as exc_info:
-                    await generator.agenerate_queries(query)
-                assert str(exc_info.value) == str(expected_error)
+            if error:
+                mock_chain.ainvoke.side_effect = error
             else:
                 mock_chain.ainvoke.return_value = chain_output
-
-                result = await generator.agenerate_queries(query)
-                assert result == expected_output
-                mock_chain.ainvoke.assert_called_once_with({"query": query})
+            # When
+            result = await generator.agenerate_queries(query)
+            # Then
+            assert result == expected_output
+            mock_chain.ainvoke.assert_called_once_with({"query": query})

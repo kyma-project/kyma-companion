@@ -6,7 +6,12 @@ from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.models.base_model import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCaseParams
 from fakeredis import TcpFakeServer
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 
 from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
@@ -109,6 +114,27 @@ def semantic_similarity_metric(evaluator_model):
         model=evaluator_model,
         threshold=0.7,
     )
+
+
+def convert_dict_to_messages(messages: dict) -> list[BaseMessage]:
+    # convert messages from BaseMessage to SystemMessage, HumanMessage, AIMessage
+    # if message.type is not "ai", "human", or "system", keep base message
+    return [
+        (
+            SystemMessage(content=message.get("content"), name=message.get("name"))
+            if message.get("type") == "system"
+            else (
+                HumanMessage(content=message.get("content"), name=message.get("name"))
+                if message.get("type") == "human"
+                else (
+                    AIMessage(content=message.get("content"), name=message.get("name"))
+                    if message.get("type") == "ai"
+                    else message
+                )
+            )
+        )
+        for message in messages
+    ]
 
 
 def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:

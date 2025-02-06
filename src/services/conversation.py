@@ -1,6 +1,8 @@
 from collections.abc import AsyncGenerator
 from typing import Protocol, cast
 
+from langfuse.callback import CallbackHandler
+
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
@@ -58,6 +60,7 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
+        langfuse_handler: CallbackHandler | None = None,
     ) -> None:
         try:
             self._model_factory = model_factory or ModelFactory(config=config)
@@ -82,8 +85,7 @@ class ConversationService(metaclass=SingletonMeta):
             host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
         )
         self._companion_graph = CompanionGraph(
-            models,
-            memory=checkpointer,
+            models, memory=checkpointer, handler=langfuse_handler
         )
 
     def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:

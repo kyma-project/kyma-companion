@@ -1,18 +1,9 @@
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 
-from decouple import Config, RepositoryEnv, config
-from dotenv import find_dotenv
-
-
-def is_running_pytest() -> bool:
-    """Check if the code is running with pytest.
-    This is needed to identify if tests are running.
-    """
-    return "pytest" in sys.modules
+from decouple import config
 
 
 def load_env_from_json() -> None:
@@ -44,27 +35,12 @@ def load_env_from_json() -> None:
         raise
 
 
-if is_running_pytest():
-    # For tests use .env.test if available
-    env_path = find_dotenv(".env.test")
-    if env_path and os.path.exists(env_path):
-        repository = RepositoryEnv(env_path)
-        for key, value in repository.data.items():
-            os.environ[key] = str(value)
-        config = Config(repository)
-    else:
-        # Load the config.json if no .env.test file is found
-        logging.warning("No .test.env file found. Using config.json.")
-        load_env_from_json()
+# Load the environment variables from the json file.
+load_env_from_json()
 
-    # deepeval specific environment variables
-    DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
-else:
-    # For production load the env variables needed dynamically from the config.json.
-    load_env_from_json()
-
-
+# Read the configs.
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
 REDIS_HOST = config("REDIS_HOST", default="localhost")
@@ -81,6 +57,7 @@ LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
+LANGFUSE_DEBUG_MODE = config("LANGFUSE_DEBUG_MODE", default="False")
 
 # Summarization
 SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
@@ -95,3 +72,5 @@ DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)
 DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
+
+TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", -1, cast=int)

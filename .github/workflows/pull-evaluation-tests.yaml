@@ -1,13 +1,6 @@
 name: "Evaluation tests"
 run-name: "Evaluation tests"
 
-# Required repository secrets:
-# - AICORE_SECRET
-# - COMPANION_CONFIGMAP
-# - GARDENER_TEST_CLUSTER_URL
-# - GARDENER_TEST_CLUSTER_AUTH_TOKEN
-# - GARDENER_TEST_CLUSTER_CA_DATA
-
 on:
   pull_request_target:
     types: [labeled, opened, synchronize, reopened, ready_for_review]
@@ -123,34 +116,26 @@ jobs:
           echo "Installing Redis using Helm..."
           helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
-      - name: Companion Deploy - Create namespace
-        run: |
-          kubectl apply -f scripts/k8s/companion-namespace.yaml
-
       - name: Companion Deploy - Create secret
+        env:
+          COMPANION_CONFIG_BASE64: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
-          echo "${{ secrets.AICORE_SECRET }}" | base64 -d > scripts/k8s/aicore-secret.yaml
-          kubectl apply -f scripts/k8s/aicore-secret.yaml
-          rm -f scripts/k8s/aicore-secret.yaml
+          kubectl create namespace ai-system
+          ./scripts/k8s/create-secret.sh
 
-      - name: Companion Deploy - Create ConfigMap
+      - name: Companion Deploy - Apply companion manifests
         run: |
-          echo "${{ secrets.COMPANION_CONFIGMAP_JSON }}" | base64 -d > scripts/k8s/companion-configmap.yaml
-          kubectl apply -f scripts/k8s/companion-configmap.yaml
-          rm -f scripts/k8s/companion-configmap.yaml
+          kubectl apply -f scripts/k8s/companion-k3d-manifest.yaml
 
       - name: Companion Deploy - Update image name in Deployment
         run: |
-          sed -i "s|example.com/ai-backend:stable|${{env.IMAGE_NAME}}|g" scripts/k8s/companion-deployment.yaml
-
-      - name: Companion Deploy - Create Deployment and NodePort Service
-        run: |
-          kubectl apply -f scripts/k8s/companion-deployment.yaml
+          echo "Updating companion image to ${IMAGE_NAME}..."
+          kubectl -n ai-system set image deployment/companion companion=${IMAGE_NAME}
 
       - name: Companion Deploy - Wait for deployment
         run: |
-          echo "Waiting for backend pods (labels: app=ai-backend) to be ready..."
-          kubectl wait --for=condition=Ready pod -l 'app=ai-backend' -n ai-core --timeout=300s
+          echo "Waiting for companion deployment to be ready..."
+          kubectl wait --for=condition=Available deployment companion -n ai-system --timeout=300s
           sleep 30
 
       - name: Companion Deploy - Test reachability through NodePort
@@ -160,9 +145,9 @@ jobs:
       - name: Companion Deploy - Debug information
         if: failure()
         run: |
-          kubectl get deploy -n ai-core
-          kubectl get pod -n ai-core
-          kubectl logs -n ai-core -l app=ai-backend
+          kubectl get deploy -n ai-system
+          kubectl get pod -n ai-system
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion
 
       - name: Evaluation Tests Setup - Extract project Python version
         working-directory: tests/blackbox
@@ -185,47 +170,21 @@ jobs:
         working-directory: tests/blackbox
         run: poetry install
 
-      - name: Evaluation Tests Setup - Prepare test configurations
-        id: eval-tests-configs
-        env:
-          AICORE_SECRET: ${{ secrets.AICORE_SECRET }}
-        run: |
-          # AI Core configurations.
-          echo "${AICORE_SECRET}" | base64 -d > aicore-secret.yaml
-          echo "AICORE_CLIENT_ID=$(yq eval '.stringData.clientid' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_CLIENT_SECRET=$(yq eval '.stringData.clientsecret' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_AUTH_URL=$(yq eval '.stringData.auth_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_BASE_URL=$(yq eval '.stringData.base_url' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_RESOURCE_GROUP=$(yq eval '.stringData.resource_group' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_CONFIGURATION_ID_GPT4_MINI=$(yq eval '.stringData.configuration_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          echo "AICORE_DEPLOYMENT_ID_GPT4_MINI=$(yq eval '.stringData.deployment_id_gpt4_mini' aicore-secret.yaml)" >> $GITHUB_OUTPUT
-          # cleanup
-          rm -f aicore-secret.yaml
-
       - name: Run Evaluation Tests
         working-directory: tests/blackbox
         env:
           LOG_LEVEL: "DEBUG"
           TEST_DATA_PATH: "./data"
           COMPANION_API_URL: "http://localhost:32000"
-          # Gardener test cluster configurations.
-          TEST_CLUSTER_URL: ${{ secrets.GARDENER_TEST_CLUSTER_URL }}
-          TEST_CLUSTER_CA_DATA: ${{ secrets.GARDENER_TEST_CLUSTER_CA_DATA }}
-          TEST_CLUSTER_AUTH_TOKEN: ${{ secrets.GARDENER_TEST_CLUSTER_AUTH_TOKEN }}
-          # AI Core configurations.
-          AICORE_CLIENT_ID: ${{ steps.eval-tests-configs.outputs.AICORE_CLIENT_ID }}
-          AICORE_CLIENT_SECRET: ${{ steps.eval-tests-configs.outputs.AICORE_CLIENT_SECRET }}
-          AICORE_AUTH_URL: ${{ steps.eval-tests-configs.outputs.AICORE_AUTH_URL }}
-          AICORE_BASE_URL: ${{ steps.eval-tests-configs.outputs.AICORE_BASE_URL }}
-          AICORE_RESOURCE_GROUP: ${{ steps.eval-tests-configs.outputs.AICORE_RESOURCE_GROUP }}
-          AICORE_CONFIGURATION_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_CONFIGURATION_ID_GPT4_MINI }}
-          AICORE_DEPLOYMENT_ID_GPT4_MINI: ${{ steps.eval-tests-configs.outputs.AICORE_DEPLOYMENT_ID_GPT4_MINI }}
         run: |
+          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "saved config to $CONFIG_PATH!"
           poetry run python src/run_evaluation.py
 
       - name: Evaluation Tests - Debug information
         if: failure()
         run: |
-          kubectl get deploy -n ai-core
-          kubectl get pod -n ai-core
-          kubectl logs -n ai-core -l app=ai-backend
+          kubectl get deploy -n ai-system
+          kubectl get pod -n ai-system
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion
