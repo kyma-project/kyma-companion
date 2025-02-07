@@ -146,7 +146,7 @@ class TestBaseAgent:
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
                     my_task=SubTask(
-                        description="test",
+                        description="test 1",
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
@@ -170,7 +170,7 @@ class TestBaseAgent:
                     subtasks=[],
                     k8s_client=Mock(spec=IK8sClient),
                     my_task=SubTask(
-                        description="test",
+                        description="test 2",
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
