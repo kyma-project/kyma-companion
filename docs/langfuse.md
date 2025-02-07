@@ -1,4 +1,4 @@
-## Local deployment
+# LangFuse Local Deployment
 
 ### Set up Redis
 
