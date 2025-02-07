@@ -4,7 +4,8 @@
 
 A local instance of LangFuse brings its own Redis instance with some basic authentication setup. The password defaults to `myredissecret` (if you do not specify the env var `REDIS_AUTH`) and LangFuse automatically uses the database number `0` of that Redis instance (remember that by default, it comes with 16 databases, 0 to 15).
 If you also run a local instance of `Redis` for the `Companion`, you have two options.
-a) You let the `Companion` use the Redis instance that comes with Langfuse and addressing database `1` by adding these lines in your `config/config.json`:
+
+1. You let the Companion use the Redis instance that comes with LangFuse and addressing database `1` by adding these lines in your `config/config.json`:
 
 ```json
   "REDIS_PASSWORD": "myredissecret",
