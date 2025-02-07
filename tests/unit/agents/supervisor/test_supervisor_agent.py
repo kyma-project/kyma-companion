@@ -5,7 +5,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.constants import END
 
-from agents.common.constants import COMMON, PLANNER
+from agents.common.constants import COMMON, ERROR, PLANNER
 from agents.common.state import CompanionState, Plan, SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
@@ -190,28 +190,6 @@ class TestSupervisorAgent:
                 },
                 None,
             ),
-            (
-                "Handles exception during final response generation",
-                "What is Kubernetes?",
-                [
-                    HumanMessage(content="What is Kubernetes?"),
-                    AIMessage(
-                        content="Kubernetes is a container orchestration platform.",
-                        name="KubernetesAgent",
-                    ),
-                ],
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: Error in finalizer node: Test error",
-                            name="Finalizer",
-                        )
-                    ]
-                },
-                "Error in finalizer node: Test error",
-            ),
         ],
     )
     async def test_agent_generate_final_response(
@@ -224,27 +202,26 @@ class TestSupervisorAgent:
         expected_output,
         expected_error,
     ):
+        # Given
         state = SupervisorState(messages=conversation_messages)
 
         mock_final_response_chain = AsyncMock()
-        if expected_error:
-            mock_final_response_chain.ainvoke.side_effect = Exception(expected_error)
-        else:
-            mock_final_response_chain.ainvoke.return_value.content = (
-                final_response_content
-            )
+        mock_final_response_chain.ainvoke.return_value.content = final_response_content
 
         with patch.object(
             supervisor_agent,
             "_final_response_chain",
             return_value=mock_final_response_chain,
         ):
+            # When
             result = await supervisor_agent._generate_final_response(state)
 
-        assert result == expected_output
-        mock_final_response_chain.ainvoke.assert_called_once_with(
-            {"messages": conversation_messages}
-        )
+            # Then
+            assert result == expected_output
+
+            mock_final_response_chain.ainvoke.assert_called_once_with(
+                config=None, input={"messages": conversation_messages}
+            )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -297,13 +274,7 @@ class TestSupervisorAgent:
                 "What is a Kubernetes pod?",
                 '{"response":null, "subtasks": null}',
                 {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: No subtasks are created for the given query: What is a Kubernetes pod?",
-                            name=PLANNER,
-                        )
-                    ]
+                    ERROR: "Unexpected error while processing the request. Please try again later.",
                 },
                 None,
             ),
@@ -329,13 +300,7 @@ class TestSupervisorAgent:
                 "What is a Kubernetes service?",
                 '{"response":null,"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I encountered an error while processing the request. "
-                            "Error: fake error",
-                            name=PLANNER,
-                        )
-                    ]
+                    ERROR: "Unexpected error while processing the request. Please try again later.",
                 },
                 "fake error",
             ),

@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from agents.common.constants import (
     COMMON,
+    ERROR,
     FINALIZER,
     K8S_AGENT,
     KYMA_AGENT,
@@ -19,6 +20,7 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
 )
+from agents.common.exceptions import SubtasksMissingError
 from agents.common.response_converter import IResponseConverter, ResponseConverter
 from agents.common.state import Plan
 from agents.common.utils import create_node_output, filter_messages
@@ -29,6 +31,7 @@ from agents.supervisor.prompts import (
     PLANNER_SYSTEM_PROMPT,
 )
 from agents.supervisor.state import SupervisorState
+from utils.chain import ainvoke_chain
 from utils.filter_messages import (
     filter_messages_via_checks,
     is_ai_message,
@@ -146,7 +149,7 @@ class SupervisorAgent:
         return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
-        """Invoke the planner."""
+        """Invoke the planner with retry logic using tenacity."""
 
         filtered_messages = filter_messages_via_checks(
             state.messages,
@@ -159,8 +162,9 @@ class SupervisorAgent:
         )
         reduces_messages = filter_messages(filtered_messages)
 
-        plan: Plan = await self._planner_chain.ainvoke(
-            input={
+        plan: Plan = await ainvoke_chain(
+            self._planner_chain,
+            {
                 "messages": reduces_messages,
             },
         )
@@ -188,24 +192,17 @@ class SupervisorAgent:
 
             # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
             if not plan.subtasks:
-                raise Exception(
-                    f"No subtasks are created for the given query: {state.messages[-1].content}"
-                )
+                raise SubtasksMissingError(str(state.messages[-1].content))
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
                 message=AIMessage(content="", name=PLANNER),
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )
-        except Exception as e:
-            logger.error(f"Error in planning: {e}")
+        except Exception:
+            logger.exception("Error in planning")
             return {
-                MESSAGES: [
-                    AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
-                        name=PLANNER,
-                    )
-                ]
+                ERROR: "Unexpected error while processing the request. Please try again later.",
             }
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
@@ -228,39 +225,38 @@ class SupervisorAgent:
 
         final_response_chain = self._final_response_chain(state)
 
-        try:
-            final_response = await final_response_chain.ainvoke(
-                {"messages": state.messages},
-            )
+        final_response = await ainvoke_chain(
+            final_response_chain,
+            {"messages": state.messages},
+        )
 
-            return {
-                MESSAGES: [
-                    AIMessage(
-                        content=final_response.content,
-                        name=FINALIZER,
-                    )
-                ],
-                NEXT: END,
-            }
-        except Exception as e:
-            logger.error(f"Error in generating final response: {e}")
-            return {
-                MESSAGES: [
-                    AIMessage(
-                        content=f"Sorry, I encountered an error while processing the request. Error: {e}",
-                        name=FINALIZER,
-                    )
-                ]
-            }
+        return {
+            MESSAGES: [
+                AIMessage(
+                    content=final_response.content,
+                    name=FINALIZER,
+                )
+            ],
+            NEXT: END,
+        }
 
     async def _get_converted_final_response(
         self, state: SupervisorState
     ) -> dict[str, Any]:
         """Convert the generated final response."""
-
-        final_response = await self._generate_final_response(state)
-
-        return self.response_converter.convert_final_response(final_response)
+        try:
+            final_response = await self._generate_final_response(state)
+            return self.response_converter.convert_final_response(final_response)
+        except Exception:
+            logger.exception("Error in generating final response")
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content="Sorry, I encountered an error while processing the request. Try again later.",
+                        name=FINALIZER,
+                    )
+                ]
+            }
 
     def _build_graph(self) -> CompiledGraph:
         # Define a new graph.

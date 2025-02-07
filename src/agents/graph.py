@@ -39,6 +39,7 @@ from agents.prompts import COMMON_QUESTION_PROMPT
 from agents.summarization.summarization import Summarization
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
+from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 from utils.settings import (
@@ -148,7 +149,8 @@ class CompanionGraph:
 
     async def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
         """Invoke the common node."""
-        response = await self._common_chain.ainvoke(
+        response = await ainvoke_chain(
+            self._common_chain,
             {
                 "messages": state.get_messages_including_summary(),
                 "query": subtask,
