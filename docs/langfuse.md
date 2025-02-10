@@ -24,7 +24,7 @@ Then you set your `config/config.json` to:
 "REDIS_PORT": "6380",
 ```
 
-### Deploy Langfuse locally
+### Deploy LangFuse Locally
 
 Get a local copy of the LangFuse repository:
 
