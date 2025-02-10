@@ -48,7 +48,7 @@ open http://localhost:3000/auth/sign-up
 4. Create an account, and choose **+ New Organization**. Give your organization a name, and choose **Next**. 
 
 5. On the **Invite Members** page, give your project a name, and choose **Create**.
-On the next page, hit the `API Keys` menu point, then hit the `+ Create new API keys` button. Copy the `Secret Key`, `Secret Key` and `Host` and paste them as values in to your `kyma-companion`'s `config/config.json` for your `LANGFUSE_HOST`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_PUBLIC_KEY` keys:
+6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for , **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
 ```json
 ...
