@@ -14,7 +14,7 @@ If you also run a local instance of Redis for the Companion, you have the follow
 
 or
 
-1. Set up your Redis instance directly with the Companion to run on a different port, for example, `6380` (the default port for Redis is `6Y379`).
+1. Set up your Redis instance directly with the Companion to run on a different port, for example, `6380` (the default port for Redis is `6379`).
 
    ```shell
    docker run -d --name redis -p 6380:6379 redis
