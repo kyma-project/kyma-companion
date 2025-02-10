@@ -360,7 +360,7 @@ def test_filter_messages_default_parameter():
     [
         (
             False,
-            SubTask(description="test", assigned_to=K8S_AGENT),
+            SubTask(description="test", task_title="test", assigned_to=K8S_AGENT),
             "agent",
         ),
         (

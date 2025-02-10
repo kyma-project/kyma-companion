@@ -88,6 +88,7 @@ class TestCompanionGraph:
                         description="Explain Python",
                         assigned_to=COMMON,
                         status="pending",
+                        task_title="Explain Python",
                     )
                 ],
                 [HumanMessage(content="What is Java?")],
@@ -95,9 +96,18 @@ class TestCompanionGraph:
                 {
                     "messages": [
                         AIMessage(
-                            content="Python is a high-level programming language. "
-                            "Java is a general-purpose programming language.",
-                            name=COMMON,
+                            content="Python is a high-level programming language. Java is a general-purpose programming language.",
+                            additional_kwargs={},
+                            response_metadata={},
+                            name="Common",
+                        )
+                    ],
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Python",
+                            task_title="Explain Python",
+                            assigned_to="Common",
+                            status="completed",
                         )
                     ],
                 },
@@ -108,11 +118,13 @@ class TestCompanionGraph:
                 [
                     SubTask(
                         description="Explain Python",
+                        task_title="Explain Python",
                         assigned_to=COMMON,
                         status="pending",
                     ),
                     SubTask(
                         description="Explain Java",
+                        task_title="Explain Java",
                         assigned_to=COMMON,
                         status="pending",
                     ),
@@ -127,6 +139,20 @@ class TestCompanionGraph:
                             name=COMMON,
                         )
                     ],
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Python",
+                            task_title="Explain Python",
+                            assigned_to="Common",
+                            status="completed",
+                        ),
+                        SubTask(
+                            description="Explain Java",
+                            task_title="Explain Java",
+                            assigned_to="Common",
+                            status="pending",
+                        ),
+                    ],
                 },
                 None,
             ),
@@ -135,6 +161,7 @@ class TestCompanionGraph:
                 [
                     SubTask(
                         description="Explain Python",
+                        task_title="Explain Python",
                         assigned_to=COMMON,
                         status="completed",
                     )
@@ -148,6 +175,14 @@ class TestCompanionGraph:
                             name=COMMON,
                         )
                     ],
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Python",
+                            task_title="Explain Python",
+                            assigned_to="Common",
+                            status="completed",
+                        )
+                    ],
                 },
                 None,
             ),
@@ -156,6 +191,7 @@ class TestCompanionGraph:
                 [
                     SubTask(
                         description="Explain Python",
+                        task_title="Explain Python",
                         assigned_to=COMMON,
                         status="pending",
                     )
@@ -168,7 +204,15 @@ class TestCompanionGraph:
                             content="Sorry, I am unable to process the request.",
                             name=COMMON,
                         )
-                    ]
+                    ],
+                    "subtasks": [
+                        SubTask(
+                            description="Explain Python",
+                            task_title="Explain Python",
+                            assigned_to="Common",
+                            status="pending",
+                        )
+                    ],
                 },
                 "Error in common node: Test error",
             ),

@@ -28,9 +28,12 @@ class SubTask(BaseModel):
     description: str = Field(
         description="user query with original wording for the assigned agent"
     )
+    task_title: str = Field(
+        description="""Generate a title of 4 to 5 words, only use these:
+          'Retrieving', 'Fetching', 'Extracting' or 'Checking'. Never use 'Creating'."""
+    )
     assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]  # type: ignore
     status: str = Field(default=SubTaskStatus.PENDING)
-    result: str | None = None
 
     def complete(self) -> None:
         """Update the result of the task."""

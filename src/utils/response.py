@@ -1,11 +1,33 @@
 import json
 from typing import Any
 
-from agents.common.constants import PLANNER
+from agents.common.constants import (
+    FINALIZER,
+    NEXT,
+    PLANNER,
+    SUMMARIZATION,
+)
+from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
+    """Reformat subtasks list for companion response"""
+    tasks = []
+    if subtasks:
+        for i, subtask in enumerate(subtasks):
+            task = {
+                "task_id": i,
+                "task_name": subtask["task_title"],
+                "status": subtask["status"],
+                "agent": subtask["assigned_to"],
+            }
+
+            tasks.append(task)
+    return tasks
 
 
 def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
@@ -16,19 +38,30 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
         return {"agent": agent, "error": agent_data["error"]}
 
     answer = {}
+
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
 
-    if agent == PLANNER:
-        answer["subtasks"] = agent_data.get("subtasks")
+    answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
     if agent == SUPERVISOR:
-        answer["next"] = agent_data.get("next")
+        answer[NEXT] = agent_data.get(NEXT)
+    else:
+        if agent_data.get("subtasks"):
+            pending_subtask = [
+                subtask["assigned_to"]
+                for subtask in agent_data.get("subtasks")
+                if subtask["status"] == SubTaskStatus.PENDING
+            ]
+            if pending_subtask:
+                answer[NEXT] = pending_subtask[0]
+            else:
+                answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer}
 
 
-def prepare_chunk_response(chunk: bytes) -> bytes:
+def prepare_chunk_response(chunk: bytes) -> bytes | None:
     """Converts and prepares a final chunk response."""
     try:
         data = json.loads(chunk)
@@ -39,11 +72,23 @@ def prepare_chunk_response(chunk: bytes) -> bytes:
         ).encode()
 
     agent = next(iter(data.keys()), None)
+
+    # skip summarization node
+    if agent == SUMMARIZATION:
+        return None
+
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
         return json.dumps(
             {"event": "unknown", "data": {"error": "No agent found"}}
         ).encode()
+
+    agent_data = data[agent]
+    if agent_data.get("messages"):
+        last_agent = agent_data["messages"][-1].get("name")
+        # skip all intermediate supervisor response
+        if agent == SUPERVISOR and last_agent != PLANNER and last_agent != FINALIZER:
+            return None
 
     new_data = process_response(data, agent)
 

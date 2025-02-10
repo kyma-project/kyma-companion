@@ -46,7 +46,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
-            '{"subtasks": null, "response": "Berlin"   }',
+            '{"subtasks":null,"response":"The capital of Germany is Berlin."}',
             True,
         ),
         (
@@ -88,7 +88,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="why the pod is failing?"),
             ],
-            "{'subtasks': [{  'description': 'why the pod is failing?', 'assigned_to': 'KubernetesAgent' ,'status' : 'pending'}] , 'response': null}",
+            "{'subtasks': None , 'response': 'pods is failing due to a context cancellation.'}",
             False,
         ),
         (
@@ -110,10 +110,10 @@ def planner_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="What is Kubernetes? Explain Kyma function"),
+                HumanMessage(content="What is Kubernetes and Explain Kyma function"),
             ],
-            '{"subtasks": [{ "description": "What is Kubernetes?", "assigned_to": "KubernetesAgent","status" : "pending"},'
-            '{"description": "Explain Kyma function", "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
+            '{"subtasks": [{ "description": "What is Kubernetes",  "assigned_to": "KubernetesAgent","status" : "pending"},'
+            '{"description": "Explain Kyma function",  "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
             False,
         ),
         (

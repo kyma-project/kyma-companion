@@ -2,73 +2,90 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from utils.response import prepare_chunk_response
+from utils.response import prepare_chunk_response, reformat_subtasks
 
 
 @pytest.mark.parametrize(
     "input, expected",
     [
         (
+            # Agent Response with tasks
             # input
-            b'{"Planner": {"messages": [{"content": "Task decomposed into subtasks and assigned '
-            b'to agents: [{\\"description\\": \\"Create a Hello World Python Serverless '
-            b'Function in Kyma.\\", \\"assigned_to\\": \\"KymaAgent\\", \\"status\\": '
-            b'\\"pending\\", \\"result\\": null}, {\\"description\\": \\"Create an API '
-            b'Rule to expose the Python Serverless Function externally.\\", \\"assigned_to\\": '
-            b'\\"KymaAgent\\", \\"status\\": \\"pending\\", \\"result\\": null}]", "additional_kwargs": {}, '
-            b'"response_metadata": {}, "type": "ai", "name": "Planner", "id": null, "example": false, '
-            b'"tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}], "next": "Continue", '
-            b'"subtasks": [{"description": "Create a Hello World Python Serverless Function in Kyma.", '
-            b'"assigned_to": "KymaAgent", "status": "pending", "result": null}, {"description": '
-            b'"Create an API Rule to expose the Python Serverless Function externally.", "assigned_to": '
-            b'"KymaAgent", "status": "pending", "result": null}], "final_response": null, "error": null}}',
+            b'{"KubernetesAgent": { "messages": [{"additional_kwargs": {}, "content": "The Pod named is running and ready.", '
+            b'"name": "KubernetesAgent"}], '
+            b'"subtasks": '
+            b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
+            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "__end__"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "Planner", "answer": {"content": '
-            b'"Task decomposed into subtasks and assigned to agents: [{\\"description\\": '
-            b'\\"Create a Hello World Python Serverless Function in Kyma.\\", \\"assigned_to\\": '
-            b'\\"KymaAgent\\", \\"status\\": \\"pending\\", \\"result\\": null}, {\\"description\\": '
-            b'\\"Create an API Rule to expose the Python Serverless Function externally.\\", '
-            b'\\"assigned_to\\": \\"KymaAgent\\", \\"status\\": \\"pending\\", \\"result\\": null}]", '
-            b'"subtasks": [{"description": "Create a Hello World Python Serverless '
-            b'Function in Kyma.", "assigned_to": "KymaAgent", "status": "pending", '
-            b'"result": null}, {"description": "Create an API Rule to expose the Python '
-            b'Serverless Function externally.", "assigned_to": "KymaAgent", "status": "pending", '
-            b'"result": null}]}}}',
+            b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"c'
+            b'ontent": "The Pod named is running and ready.", "tasks": [{"task_id": 0, "ta'
+            b'sk_name": "Checking status of pods", "status": "completed", "agent": "Kubern'
+            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
+            b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
+            b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
+            b'Agent"}], "next": "Common"}}}',
         ),
         (
+            # Supervisor Agent with last agent planner
             # input
-            b'{"Supervisor": {"messages": [{"content": "{\\n  \\"next\\": \\"KymaAgent\\"\\n}", '
-            b'"additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", '
-            b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}], '
-            b'"next": "KymaAgent", "subtasks": '
-            b'[{"description": "Create a Hello World Python Serverless Function in Kyma.", "assigned_to": '
-            b'"KymaAgent", "status": "pending", "result": null}, {"description": '
-            b'"Create an API Rule to expose the Python Serverless Function externally.", '
-            b'"assigned_to": "KymaAgent", "status": "pending", "result": null}]}}',
+            b'{"Supervisor": { "messages": [{"additional_kwargs": {}, "content": "", '
+            b'"name": "Planner"}], '
+            b'"subtasks": '
+            b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "pending", "task_title": "Checking status of pods"}, '
+            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "KubernetesAgent"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": '
-            b'{"content": "{\\n  \\"next\\": \\"KymaAgent\\"\\n}", '
-            b'"next": "KymaAgent"}}}',
+            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"c'
+            b'ontent": "", "tasks": [{"task_id": 0, "ta'
+            b'sk_name": "Checking status of pods", "status": "pending", "agent": "Kubern'
+            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
+            b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
+            b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
+            b'Agent"}], "next": "KubernetesAgent"}}}',
         ),
         (
+            # Supervisor Agent with last agent finalizer
             # input
-            b'{"KymaAgent": {"messages": [{"content": "To create an API Rule in Kyma to '
-            b'expose a service externally", "additional_kwargs": {}, "response_metadata": {}, '
-            b'"type": "ai", "name": "Supervisor", "id": null, "example": false, "tool_calls": [], '
-            b'"invalid_tool_calls": [], "usage_metadata": null}]}}',
+            b'{"Supervisor": { "messages": [{"additional_kwargs": {}, "content": "final response", '
+            b'"name": "Finalizer"}], '
+            b'"subtasks": '
+            b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
+            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "completed", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "completed", "task_title": "Fetching steps to create kyma function"}], "next": "__end__"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
-            b'"To create an API Rule in Kyma to expose a service externally"}}}',
+            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"c'
+            b'ontent": "final response", "tasks": [{"task_id": 0, "ta'
+            b'sk_name": "Checking status of pods", "status": "completed", "agent": "Kubern'
+            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
+            b'hon", "status": "completed", "agent": "Common"}, {"task_id": 2, "task_name": "'
+            b'Fetching steps to create kyma function", "status": "completed", "agent": "Kyma'
+            b'Agent"}], "next": "__end__"}}}',
         ),
         (
+            # Skip response from supervisor if agent is not planner or not finalizer
             # input
-            b'{"KubernetesAgent": {"messages": [{"content": "To create a kubernetes deployment", '
-            b'"additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", '
-            b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}',
+            b'{"Supervisor": { "messages": [{"additional_kwargs": {}, "content": "The Pod named is running and ready.", '
+            b'"name": "KubernetesAgent"}], '
+            b'"subtasks": '
+            b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
+            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "KymaAgent"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", '
-            b'"answer": {"content": "To create a kubernetes deployment"}}}',
+            None,
         ),
+        (
+            # Direct response from planner
+            # input
+            b'{"Supervisor": {"messages": [{"additional_kwargs": {}, "content": "The capital of India is New Delhi.", '
+            b'"name": "Planner", "response_metadata": {}, "tool_calls": []}], '
+            b'"subtasks": [], "next": "__end__", "error": null}}',
+            # expected
+            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
+            b't": "The capital of India is New Delhi.", "tasks": [], "next": "__end__"}}}',
+        ),
+        # Skip response if agent is Summarization
+        (b'{"Summarization": {"messages": []}}', None),
         (
             # input
             b'{"KubernetesAgent": {"error": "Error occurred"}}',
@@ -76,6 +93,7 @@ from utils.response import prepare_chunk_response
             b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "error": "Error occurred"}}',
         ),
         (
+            # Error response for invalid json
             # input
             b'{"InvalidJSON"',
             # expected
@@ -92,3 +110,96 @@ from utils.response import prepare_chunk_response
 @patch("utils.response.get_logger", Mock())
 def test_prepare_chunk_response(input, expected):
     assert prepare_chunk_response(input) == expected
+
+
+@pytest.mark.parametrize(
+    "subtasks, expected_output",
+    [
+        # Test case 1: Empty subtasks
+        ([], []),
+        # Test case 2: Single subtask
+        (
+            [
+                {
+                    "assigned_to": "KubernetesAgent",
+                    "description": "what is my pods status",
+                    "status": "completed",
+                    "task_title": "Checking status of pods",
+                }
+            ],
+            [
+                {
+                    "task_id": 0,
+                    "task_name": "Checking status of pods",
+                    "status": "completed",
+                    "agent": "KubernetesAgent",
+                }
+            ],
+        ),
+        # Test case 3: Multiple subtasks
+        (
+            [
+                {
+                    "assigned_to": "KubernetesAgent",
+                    "description": "what is my pods status",
+                    "status": "completed",
+                    "task_title": "Checking status of pods",
+                },
+                {
+                    "assigned_to": "Common",
+                    "description": "how to write hello world code in python",
+                    "status": "pending",
+                    "task_title": "Retrieving hello world code in python",
+                },
+                {
+                    "assigned_to": "KymaAgent",
+                    "description": "how to create kyma function",
+                    "status": "pending",
+                    "task_title": "Fetching steps to create kyma function",
+                },
+            ],
+            [
+                {
+                    "task_id": 0,
+                    "task_name": "Checking status of pods",
+                    "status": "completed",
+                    "agent": "KubernetesAgent",
+                },
+                {
+                    "task_id": 1,
+                    "task_name": "Retrieving hello world code in python",
+                    "status": "pending",
+                    "agent": "Common",
+                },
+                {
+                    "task_id": 2,
+                    "task_name": "Fetching steps to create kyma function",
+                    "status": "pending",
+                    "agent": "KymaAgent",
+                },
+            ],
+        ),
+        # Test case 4: Missing keys (should raise KeyError)
+        (
+            [
+                {
+                    "assigned_to": "KubernetesAgent",
+                    "description": "what is my pods status",
+                    "status": "completed",
+                }
+            ],
+            KeyError,
+        ),
+        # Test case 5: Incorrect data types (should raise TypeError)
+        ("not a dictionary", TypeError),
+        # Test case 6: None input
+        (None, []),
+    ],
+)
+def test_reformat_subtasks(subtasks, expected_output):
+    if expected_output in [KeyError, TypeError]:
+        with pytest.raises(expected_output):
+            reformat_subtasks(subtasks)
+    else:
+        result = reformat_subtasks(subtasks)
+        assert result == expected_output

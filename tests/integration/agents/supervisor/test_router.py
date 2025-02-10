@@ -24,7 +24,12 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=K8S_AGENT, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=K8S_AGENT,
+                    status="pending",
+                ),
             ],
             K8S_AGENT,
         ),
@@ -37,7 +42,12 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=KYMA_AGENT, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=KYMA_AGENT,
+                    status="pending",
+                ),
             ],
             KYMA_AGENT,
         ),
@@ -50,7 +60,12 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=COMMON, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=COMMON,
+                    status="pending",
+                ),
             ],
             COMMON,
         ),
@@ -67,8 +82,18 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=K8S_AGENT, status="pending"),
-                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=K8S_AGENT,
+                    status="pending",
+                ),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=KYMA_AGENT,
+                    status="pending",
+                ),
             ],
             K8S_AGENT,
         ),
@@ -81,8 +106,18 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=KYMA_AGENT, status="pending"),
-                SubTask(description="Task 2", assigned_to=K8S_AGENT, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=KYMA_AGENT,
+                    status="pending",
+                ),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=K8S_AGENT,
+                    status="pending",
+                ),
             ],
             KYMA_AGENT,
         ),
@@ -95,8 +130,18 @@ from integration.agents.test_common_node import create_mock_state
                 )
             ],
             [
-                SubTask(description="Task 1", assigned_to=COMMON, status="pending"),
-                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=COMMON,
+                    status="pending",
+                ),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=KYMA_AGENT,
+                    status="pending",
+                ),
             ],
             COMMON,
         ),
@@ -114,9 +159,17 @@ from integration.agents.test_common_node import create_mock_state
             ],
             [
                 SubTask(
-                    description="Task 1", assigned_to=KYMA_AGENT, status="completed"
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=KYMA_AGENT,
+                    status="completed",
                 ),
-                SubTask(description="Task 2", assigned_to=K8S_AGENT, status="pending"),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=K8S_AGENT,
+                    status="pending",
+                ),
             ],
             K8S_AGENT,
         ),
@@ -130,9 +183,17 @@ from integration.agents.test_common_node import create_mock_state
             ],
             [
                 SubTask(
-                    description="Task 1", assigned_to=K8S_AGENT, status="completed"
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=K8S_AGENT,
+                    status="completed",
                 ),
-                SubTask(description="Task 2", assigned_to=KYMA_AGENT, status="pending"),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=KYMA_AGENT,
+                    status="pending",
+                ),
             ],
             KYMA_AGENT,
         ),
@@ -146,9 +207,17 @@ from integration.agents.test_common_node import create_mock_state
             ],
             [
                 SubTask(
-                    description="Task 1", assigned_to=KYMA_AGENT, status="completed"
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=KYMA_AGENT,
+                    status="completed",
                 ),
-                SubTask(description="Task 2", assigned_to=COMMON, status="pending"),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=COMMON,
+                    status="pending",
+                ),
             ],
             COMMON,
         ),
