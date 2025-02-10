@@ -158,6 +158,140 @@ class TestAsyncRedisSaver:
         )
 
     @pytest.mark.parametrize(
+        "config, checkpoint_data, ttl",
+        [
+            # Test Case 5 Sec ttl
+            (
+                {
+                    "configurable": {
+                        "thread_id": "thread-1",
+                        "checkpoint_ns": "ns1",
+                        "checkpoint_id": "chk-1",
+                    }
+                },
+                {
+                    "checkpoint": create_checkpoint("chk-1"),
+                    "metadata": create_metadata(1),
+                },
+                5,
+            ),
+            # Test Case 10 Sec ttl
+            (
+                {
+                    "configurable": {
+                        "thread_id": "thread-1",
+                        "checkpoint_ns": "ns1",
+                        "checkpoint_id": "chk-1",
+                    }
+                },
+                {
+                    "checkpoint": create_checkpoint("chk-1"),
+                    "metadata": create_metadata(1),
+                },
+                10,
+            ),
+        ],
+    )
+    async def test_aput_redis_ttl(
+        self,
+        async_redis_saver,
+        fake_async_redis,
+        config,
+        checkpoint_data,
+        ttl,
+    ):
+
+        await async_redis_saver.aput(
+            config,
+            checkpoint_data["checkpoint"],
+            checkpoint_data["metadata"],
+            {},
+            redis_ttl=ttl,
+        )
+
+        result = await async_redis_saver.aget_tuple(config)
+
+        # Check if the data is stored
+        assert result is not None
+
+        # Wait for the TTL to expire
+        await asyncio.sleep(ttl + 2)  # Adding 2 second to ensure TTL has expired
+
+        # Check if the data is deleted after TTL
+        stored_data_after_ttl = await async_redis_saver.aget_tuple(config)
+        assert not stored_data_after_ttl, "Data should be deleted after TTL"
+
+    @pytest.mark.parametrize(
+        "config, writes, task_id, expected_data, ttl",
+        [
+            # Basic write
+            (
+                {
+                    "configurable": {
+                        "thread_id": "thread-1",
+                        "checkpoint_ns": "ns1",
+                        "checkpoint_id": "chk-1",
+                    }
+                },
+                [("channel1", "value1")],
+                "task1",
+                {"channel": "channel1", "value": "value1"},
+                5,
+            ),
+            # Multiple writes
+            (
+                {
+                    "configurable": {
+                        "thread_id": "thread-1",
+                        "checkpoint_ns": "ns1",
+                        "checkpoint_id": "chk-1",
+                    }
+                },
+                [("channel1", "value1"), ("channel2", "value2")],
+                "task1",
+                {"channel": "channel1", "value": "value1"},
+                10,  # Check first write
+            ),
+        ],
+    )
+    async def test_redis_ttl_for_writes(
+        self,
+        async_redis_saver,
+        fake_async_redis,
+        config,
+        writes,
+        task_id,
+        expected_data,
+        ttl,
+    ):
+        # Store the data in Redis with a TTL
+        await async_redis_saver.aput_writes(config, writes, task_id, redis_ttl=ttl)
+
+        # Generate the Redis key
+        key = _make_redis_checkpoint_writes_key(
+            config["configurable"]["thread_id"],
+            config["configurable"]["checkpoint_ns"],
+            config["configurable"]["checkpoint_id"],
+            task_id,
+            0,
+        )
+
+        # Check if the data is stored correctly
+        stored_data = await fake_async_redis.hgetall(key)
+        assert stored_data[b"channel"] == expected_data["channel"].encode()
+        assert (
+            stored_data[b"value"]
+            == async_redis_saver.serde.dumps_typed(expected_data["value"])[1]
+        )
+
+        # Wait for the TTL to expire
+        await asyncio.sleep(ttl + 2)  # Adding 2 second to ensure TTL has expired
+
+        # Check if the data is deleted after TTL
+        stored_data_after_ttl = await fake_async_redis.hgetall(key)
+        assert not stored_data_after_ttl, "Data should be deleted after TTL"
+
+    @pytest.mark.parametrize(
         "config, checkpoint_data, expected_result",
         [
             # Basic case

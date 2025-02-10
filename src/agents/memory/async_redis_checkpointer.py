@@ -20,6 +20,8 @@ from langgraph.checkpoint.base import (
 from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
+from utils.settings import REDIS_TTL
+
 REDIS_KEY_SEPARATOR = "$"
 
 T = TypeVar("T")
@@ -219,6 +221,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         checkpoint: Checkpoint,
         metadata: CheckpointMetadata,
         new_versions: ChannelVersions,
+        redis_ttl: int = REDIS_TTL,
     ) -> RunnableConfig:
         """Save a checkpoint to the database asynchronously.
 
@@ -230,6 +233,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             checkpoint (Checkpoint): The checkpoint to save.
             metadata (CheckpointMetadata): Additional metadata to save with the checkpoint.
             new_versions (ChannelVersions): New channel versions as of this write.
+            redis_ttl (Int): Time to live for the Redis checkpoint.
 
         Returns:
             RunnableConfig: Updated configuration after storing the checkpoint.
@@ -253,6 +257,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         }
 
         await self._redis_call(self.conn.hset(key, mapping=data))
+        # Set TTL for each checkpoint
+        await self._redis_call(self.conn.expire(key, redis_ttl))
         return {
             "configurable": {
                 "thread_id": thread_id,
@@ -267,6 +273,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         writes: Sequence[tuple[str, Any]],
         task_id: str,
         task_path: str = "",
+        redis_ttl: int = REDIS_TTL,
     ) -> None:
         """Store intermediate writes linked to a checkpoint asynchronously.
 
@@ -276,6 +283,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             config (RunnableConfig): Configuration of the related checkpoint.
             writes (Sequence[Tuple[str, Any]]): List of writes to store, each as (channel, value) pair.
             task_id (str): Identifier for the task creating the writes.
+            redis_ttl (Int): Time to live for the writes.
         """
         thread_id = config["configurable"]["thread_id"]
         checkpoint_ns = config["configurable"]["checkpoint_ns"]
@@ -298,6 +306,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
                 # Use HSETNX which will not overwrite existing values
                 for field, value in data.items():
                     await self._redis_call(self.conn.hsetnx(key, field, value))
+            # Set TTL for each write
+            await self._redis_call(self.conn.expire(key, redis_ttl))
 
     async def aget_tuple(self, config: RunnableConfig) -> CheckpointTuple | None:
         """Get a checkpoint tuple from Redis asynchronously.
