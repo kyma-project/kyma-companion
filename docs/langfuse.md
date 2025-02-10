@@ -12,7 +12,7 @@ If you also run a local instance of `Redis` for the `Companion`, you have two op
   "REDIS_DB_NUMBER": "1",
 ```
 
-b) Setup your `Redis` instance which you usually use directly with the `Companion` to run on a different port like `6380` (default port for redis is 6379)
+2. Set up your Redis instance directly with the Companion to run on a different port, for example, `6380` (the default port for Redis is `6379`).
 
 ```
 docker run -d --name redis -p 6380:6379 redis
