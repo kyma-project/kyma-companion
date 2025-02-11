@@ -1,10 +1,10 @@
 # Configuring Kyma Companion for Langfuse
 
-We support the following [configurations](../config/config-example.json) for [Langfuse](https://langfuse.com/docs) in the KymaCompanion:
+We support the following [configurations](../config/config-example.json) for [Langfuse](https://langfuse.com/docs) in the Kyma Companion:
 
    ```json
-   "LANGFUSE_HOST": <Your Host>,
-   "LANGFUSE_SECRET_KEY": <your secret key>,
+   "LANGFUSE_HOST": "<Your Host>",
+   "LANGFUSE_SECRET_KEY": "<your secret key>",
    "LANGFUSE_PUBLIC_KEY": "<your public key>",
    "LANGFUSE_DEBUG_MODE": "<True/False>",
    "LANGFUSE_ENABLED": "<True/False>",
@@ -69,7 +69,6 @@ or
 6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for, **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
   ```json
-  ...
   "LANGFUSE_HOST": "https://localhost:3000",
   "LANGFUSE_SECRET_KEY": "<your secret key>",
   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
@@ -130,7 +129,6 @@ or
 6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for, **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
    ```json
-   ...
    "LANGFUSE_HOST": "https://langfuse.<YOUR HOST>:3000",
    "LANGFUSE_SECRET_KEY": "<your secret key>",
    "LANGFUSE_PUBLIC_KEY": "<your public key>",
