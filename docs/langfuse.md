@@ -11,8 +11,8 @@ We support the following [configurations](../config/config-example.json) for [La
    ```
 
 The `LANGFUSE_HOST` is the host address of your Langfuse instance.
-The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance.
-With `LANGFUSE_DEBUG_MODE` we will hide the content of user interactions with the Kyma Companion in the Langfuse traces to prevent privacy issues. The default value is `False`.
+The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance. You can learn more about this in the following sections.
+With `LANGFUSE_DEBUG_MODE` we will hide the content of user interactions with the Kyma Companion in the Langfuse traces to prevent privacy issues in any production environment. The default value is `False`.
 Finally, with `LANGFUSE_ENABLED` you can enable or disable the Langfuse integration. The default value is `True`, so you have to set it to `True` if you want to be able to see the content for development work.
 
 # Deploying Langfuse Locally
