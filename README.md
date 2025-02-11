@@ -12,9 +12,9 @@ Kyma Companion provides in-app context-sensitive help and general assistance to 
 
 Required software:
 
- - Python 3.12.\*
- - [Poetry](https://python-poetry.org/)
- - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available -->
+- Python 3.12.\*
+- [Poetry](https://python-poetry.org/)
+- [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available -->
 
 ## Manage Dependencies
 
@@ -65,10 +65,9 @@ This creates a new virtual environment and installs the project's dependencies.
 
 If you are a PyCharm user and want to use the virtual environment created by Poetry, follow the [configuration guides](https://www.jetbrains.com/help/pycharm/poetry.html).
 
-
 ## Development
 
-### Redis Server 
+### Redis Server
 
 Before running the application, you must provide the Redis server. It stores the conversation with a large language model (LLM).
 Therefore, provide **REDIS_URL** as an environment variable.
@@ -87,7 +86,7 @@ poetry run fastapi dev src/main.py --port 8000
 Or, with a poe task:
 
 ```bash
-$ poetry run poe run-local
+poetry run poe run-local
 ```
 
 It is recommended to run Kyma Companion with Poetry because it activates and uses its virtual environment if not activated yet.
@@ -98,13 +97,17 @@ It is recommended to run Kyma Companion with Poetry because it activates and use
 
 Because the companion uses the FastAPI framework, read the following documentation on how to debug the application with the respective IDE:
 
-* [PyCharm](https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project)
-* [VS Code](https://code.visualstudio.com/docs/python/tutorial-fastapi)
+- [PyCharm](https://www.jetbrains.com/help/pycharm/fastapi-project.html#create-project)
+- [VS Code](https://code.visualstudio.com/docs/python/tutorial-fastapi)
 
 ### Configuration
 
 For local development, you can configure LLMs by modifying the `config/config.json` file.
 To use a configuration file from a different location, set the `CONFIG_PATH` environment variable to the path of your desired JSON configuration file.
+
+### Tracing
+
+We use [Langfuse](https://langfuse.com/) for tracing. For a quick guide on how to set up Langfuse and connect it to the `kyma-companion` take a look [here](/docs/langfuse.md).
 
 ## Code Checks
 
@@ -165,7 +168,6 @@ poetry run poe typecheck
 
 Mypy does not support fixing issues automatically.
 
-
 ## Tests
 
 ### Unit Tests
@@ -192,7 +194,7 @@ For details about blackbox tests, read the [Blackbox Tests README file](./tests/
 
 ## Release Process
 
-Release testing and release creation are two separate processes. 
+Release testing and release creation are two separate processes.
 For details about release testing, read the [Contributor README](./docs/contributor/README.md) file.
 
 ## Contributing
