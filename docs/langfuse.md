@@ -1,11 +1,28 @@
-# Deploying LangFuse Locally
+# Configuring Kyma Companion for Langfuse
+
+We support the following [configurations](../config/config-example.json) for [Langfuse](https://langfuse.com/docs) in the KymaCompanion:
+
+   ```json
+   "LANGFUSE_HOST": <Your Host>,
+   "LANGFUSE_SECRET_KEY": <your secret key>,
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",
+   "LANGFUSE_DEBUG_MODE": "<True/False>",
+   "LANGFUSE_ENABLED": "<True/False>",
+   ```
+
+The `LANGFUSE_HOST` is the host address of your Langfuse instance.
+The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance.
+With `LANGFUSE_DEBUG_MODE` we will hide the content of user interactions with the Kyma Companion in the Langfuse traces to prevent privacy issues. The default value is `False`.
+Finally, with `LANGFUSE_ENABLED` you can enable or disable the Langfuse integration. The default value is `True`, so you have to set it to `True` if you want to be able to see the content for development work.
+
+# Deploying Langfuse Locally
 
 ## Set Up Redis
 
-A local instance of [LangFuse](https://langfuse.com/docs) brings its own Redis instance with some basic authentication setup. If you don't specify the env var `REDIS_AUTH`, the password defaults to `myredissecret` and LangFuse automatically uses the database number `0` of that Redis instance (remember that by default, it comes with 16 databases, 0 to 15).
+A local instance of [Langfuse](https://langfuse.com/docs) brings its own Redis instance with some basic authentication setup. If you don't specify the env var `REDIS_AUTH`, the password defaults to `myredissecret` and Langfuse automatically uses the database number `0` of that Redis instance (remember that by default, it comes with 16 databases, 0 to 15).
 If you also run a local instance of Redis for the Companion, you have the following options:
 
-1. Let the Companion use the Redis instance that comes with LangFuse and addressing database `1` by adding these lines in your `config/config.json`:
+1. Let the Companion use the Redis instance that comes with Langfuse and addressing database `1` by adding these lines in your `config/config.json`:
 
    ```json
    "REDIS_PASSWORD": "myredissecret",
@@ -26,9 +43,9 @@ or
   "REDIS_PORT": "6380",
   ```
 
-## Deploy LangFuse Locally
+## Set Up Langfuse Locally
 
-1. Clone the LangFuse repository to your local machine:
+1. Clone the Langfuse repository to your local machine:
 
    ```bash
    git clone https://github.com/langfuse/langfuse.gitcd langfuse
@@ -58,7 +75,7 @@ or
   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
   ```
 
-## Deploy LangFuse on Kubernetes
+# Deploy Langfuse on Kubernetes
 
 1. To configure the minimal setup run:
 
@@ -116,5 +133,5 @@ or
    ...
    "LANGFUSE_HOST": "https://langfuse.<YOUR HOST>:3000",
    "LANGFUSE_SECRET_KEY": "<your secret key>",
-   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",
    ```
