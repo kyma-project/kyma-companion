@@ -21,7 +21,7 @@ from agents.common.constants import (
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages
-from agents.summarization.summarization import Summarization
+from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
@@ -75,7 +75,7 @@ class BaseAgent:
         self._name = name
         self.model = model
         self.tools = tools
-        self.summarization = Summarization(
+        self.summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType(model.name),
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,

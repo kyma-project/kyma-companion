@@ -36,7 +36,7 @@ from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
-from agents.summarization.summarization import Summarization
+from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.chain import ainvoke_chain
@@ -121,7 +121,7 @@ class CompanionGraph:
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
-        self.summarization = Summarization(
+        self.summarization = MessageSummarizer(
             model=gpt_4o_mini,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
