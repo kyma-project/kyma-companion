@@ -51,7 +51,7 @@ or
    "REDIS_PORT": "6380",
    ```
 
-## Set Up Langfuse Locally
+### Set Up Langfuse Locally
 
 1. Clone the Langfuse repository to your local machine:
 
