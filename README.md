@@ -10,7 +10,6 @@ Kyma Companion provides in-app context-sensitive help and general assistance to 
 
 ## Prerequisites
 
-
 - Python 3.12.x
 - [Poetry](https://python-poetry.org/)
 - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available -->
@@ -92,16 +91,16 @@ It is recommended to run Kyma Companion with Poetry because it activates and use
 
 As an alternative, you can run the application with the following command directly via Python, using [`uvicorn`](https://www.uvicorn.org/) instead of `FastAPI`:
 
-```bash
-ptyhon src/main.py
-```
+   ```bash
+   ptyhon src/main.py
+   ```
 
 If you need auto-reloading, you can add the corresponding argument in the `src/main.py`:
 
-```python
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-```
+   ```python
+   if __name__ == "__main__":
+       uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+   ```
 
 ### Debugging
 
