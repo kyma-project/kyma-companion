@@ -39,9 +39,9 @@ or
 
 2. Set your `config/config.json` to:
 
-  ```json
-  "REDIS_PORT": "6380",
-  ```
+   ```json
+   "REDIS_PORT": "6380",
+   ```
 
 ## Set Up Langfuse Locally
 
@@ -68,11 +68,11 @@ or
 5. On the **Invite Members** page, give your project a name, and choose **Create**.
 6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for, **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
-  ```json
-  "LANGFUSE_HOST": "https://localhost:3000",
-  "LANGFUSE_SECRET_KEY": "<your secret key>",
-  "LANGFUSE_PUBLIC_KEY": "<your public key>",  
-  ```
+   ```json
+   "LANGFUSE_HOST": "https://localhost:3000",
+   "LANGFUSE_SECRET_KEY": "<your secret key>",
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
+   ```
 
 # Deploy Langfuse on Kubernetes
 
