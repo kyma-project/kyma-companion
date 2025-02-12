@@ -1,11 +1,36 @@
-# Deploying LangFuse Locally
+# Using Langfuse in Kyma Companion
 
-## Set Up Redis
+For tracing, Kyma Companion uses [Langfuse](https://langfuse.com/docs).
 
-A local instance of [LangFuse](https://langfuse.com/docs) brings its own Redis instance with some basic authentication setup. If you don't specify the env var `REDIS_AUTH`, the password defaults to `myredissecret` and LangFuse automatically uses the database number `0` of that Redis instance (remember that by default, it comes with 16 databases, 0 to 15).
+## Configuration of Kyma Companion
+
+To use Langfuse in Kyma Companion, you must configure the following parameters:
+
+   ```json
+   "LANGFUSE_HOST": "<Your Host>",
+   "LANGFUSE_SECRET_KEY": "<your secret key>",
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",
+   "LANGFUSE_DEBUG_MODE": "<True/False>",
+   "LANGFUSE_ENABLED": "<True/False>",
+   ```
+
+where
+
+* The `LANGFUSE_HOST` is the host address of your Langfuse instance.
+* The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance.
+* With `LANGFUSE_DEBUG_MODE` you can hide the content of user interactions with Kyma Companion in Langfuse traces to prevent privacy issues in any production environment. The default value is `False`.
+* With `LANGFUSE_ENABLED` you can enable or disable the Langfuse integration. The default value is `True`. Set it to `True` to see the content for development work.
+
+For more information, see the [`config-example.json`](../config/config-example.json).
+
+## Deploying Langfuse Locally
+
+### Set Up Redis
+
+A local instance of [Langfuse](https://langfuse.com/docs) brings its own Redis instance with some basic authentication setup. If you don't specify the env var `REDIS_AUTH`, the password defaults to `myredissecret` and Langfuse automatically uses the database number `0` of that Redis instance (remember that by default, it comes with 16 databases, 0 to 15).
 If you also run a local instance of Redis for the Companion, you have the following options:
 
-1. Let the Companion use the Redis instance that comes with LangFuse and addressing database `1` by adding these lines in your `config/config.json`:
+1. Let the Companion use the Redis instance that comes with Langfuse and addressing database `1` by adding these lines in your `config/config.json`:
 
    ```json
    "REDIS_PASSWORD": "myredissecret",
@@ -22,13 +47,13 @@ or
 
 2. Set your `config/config.json` to:
 
-  ```json
-  "REDIS_PORT": "6380",
-  ```
+   ```json
+   "REDIS_PORT": "6380",
+   ```
 
-## Deploy LangFuse Locally
+### Set Up Langfuse Locally
 
-1. Clone the LangFuse repository to your local machine:
+1. Clone the Langfuse repository to your local machine:
 
    ```bash
    git clone https://github.com/langfuse/langfuse.gitcd langfuse
@@ -51,14 +76,13 @@ or
 5. On the **Invite Members** page, give your project a name, and choose **Create**.
 6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for, **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
-  ```json
-  ...
-  "LANGFUSE_HOST": "https://localhost:3000",
-  "LANGFUSE_SECRET_KEY": "<your secret key>",
-  "LANGFUSE_PUBLIC_KEY": "<your public key>",  
-  ```
+   ```json
+   "LANGFUSE_HOST": "https://localhost:3000",
+   "LANGFUSE_SECRET_KEY": "<your secret key>",
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
+   ```
 
-## Deploy LangFuse on Kubernetes
+## Deploying Langfuse on Kubernetes
 
 1. To configure the minimal setup run:
 
@@ -113,8 +137,7 @@ or
 6. Go to **API Keys**, and choose **+ Create new API keys**. Copy the `Secret Key`, `Public Key`, and `Host`, and paste them as values into your Kyma Companion's `config/config.json` for, **LANGFUSE_SECRET_KEY**, **LANGFUSE_PUBLIC_KEY**, and **LANGFUSE_HOST**:
 
    ```json
-   ...
    "LANGFUSE_HOST": "https://langfuse.<YOUR HOST>:3000",
    "LANGFUSE_SECRET_KEY": "<your secret key>",
-   "LANGFUSE_PUBLIC_KEY": "<your public key>",  
+   "LANGFUSE_PUBLIC_KEY": "<your public key>",
    ```
