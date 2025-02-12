@@ -82,7 +82,7 @@ or
    "LANGFUSE_PUBLIC_KEY": "<your public key>",  
    ```
 
-# Deploy Langfuse on Kubernetes
+## Deploying Langfuse on Kubernetes
 
 1. To configure the minimal setup run:
 
