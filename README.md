@@ -92,10 +92,10 @@ It is recommended to run Kyma Companion with Poetry because it activates and use
 As an alternative, you can run the application with the following command directly via Python, using [`uvicorn`](https://www.uvicorn.org/) instead of `FastAPI`:
 
    ```bash
-   ptyhon src/main.py
+   python src/main.py
    ```
 
-If you need auto-reloading, you can add the corresponding argument in the `src/main.py`:
+If you need auto-reloading, you can add the corresponding key word argument in the `src/main.py`:
 
    ```python
    if __name__ == "__main__":
