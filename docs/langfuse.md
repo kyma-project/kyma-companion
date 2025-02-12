@@ -14,10 +14,14 @@ To use Langfuse in Kyma Companion, you must configure the following parameters:
    "LANGFUSE_ENABLED": "<True/False>",
    ```
 
-The `LANGFUSE_HOST` is the host address of your Langfuse instance.
-The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance. You can learn more about this in the following sections.
-With `LANGFUSE_DEBUG_MODE` we will hide the content of user interactions with the Kyma Companion in the Langfuse traces to prevent privacy issues in any production environment. The default value is `False`.
-Finally, with `LANGFUSE_ENABLED` you can enable or disable the Langfuse integration. The default value is `True`, so you have to set it to `True` if you want to be able to see the content for development work.
+where
+
+* The `LANGFUSE_HOST` is the host address of your Langfuse instance.
+* The `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` can be retrieved from your Langfuse instance.
+* With `LANGFUSE_DEBUG_MODE` you can hide the content of user interactions with Kyma Companion in Langfuse traces to prevent privacy issues in any production environment. The default value is `False`.
+* With `LANGFUSE_ENABLED` you can enable or disable the Langfuse integration. The default value is `True`. Set it to `True` to see the content for development work.
+
+For more information, see the [`config-example.json`](../config/config-example.json).
 
 # Deploying Langfuse Locally
 
