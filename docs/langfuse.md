@@ -23,7 +23,7 @@ where
 
 For more information, see the [`config-example.json`](../config/config-example.json).
 
-# Deploying Langfuse Locally
+## Deploying Langfuse Locally
 
 ## Set Up Redis
 
