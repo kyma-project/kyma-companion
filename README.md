@@ -11,7 +11,7 @@ Kyma Companion provides in-app context-sensitive help and general assistance to 
 ## Prerequisites
 
 
-- Python 3.12.\*
+- Python 3.12.x
 - [Poetry](https://python-poetry.org/)
 - [Redis server](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis) <!--the link must be replaced when the OS documentation is available -->
 
