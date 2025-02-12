@@ -1,4 +1,8 @@
-# Configuring Kyma Companion for Langfuse
+# Using Langfuse in Kyma Companion
+
+For tracing, Kyma Companion uses [Langfuse](https://langfuse.com/docs).
+
+## Configuration
 
 We support the following [configurations](../config/config-example.json) for [Langfuse](https://langfuse.com/docs) in the Kyma Companion:
 
