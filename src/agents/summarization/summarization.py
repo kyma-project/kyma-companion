@@ -15,11 +15,14 @@ from pydantic import BaseModel
 
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
+from utils import logging
 from utils.chain import ainvoke_chain
 from utils.models.factory import IModel, ModelType
 
+logger = logging.get_logger(__name__)
 
-class Summarization:
+
+class MessageSummarizer:
     """Summarization helper class."""
 
     def __init__(
@@ -85,16 +88,30 @@ class Summarization:
     async def get_summary(
         self, messages: list[MessageLikeRepresentation], config: RunnableConfig
     ) -> str:
-        """Returns the summary of the messages."""
+        """Returns the summary of the messages.
+        If the summarization fails, it will return the remaining old messages.
+        Remaining old summarized messages plus the latest messages outside the token limit.
+        """
         if len(messages) == 0:
             return ""
 
-        res = await ainvoke_chain(
-            self._chain,
-            {"messages": messages},
-            config=config,
-        )
-        return f"Summary of previous chat:\n {res.content}"
+        try:
+            res = await ainvoke_chain(
+                self._chain,
+                {"messages": messages},
+                config=config,
+            )
+            result = res.content
+        except Exception:
+            logger.exception(
+                "Error while summarizing messages. Falling back to the remaining old messages."
+            )
+
+            # fallback to the remaining old messages
+            messages_str = "\n\n".join([str(msg.content) for msg in messages])
+            result = messages_str
+
+        return f"Summary of previous chat:\n {result}"
 
     async def summarization_node(
         self, state: BaseModel, config: RunnableConfig
@@ -117,19 +134,21 @@ class Summarization:
             }
 
         # filter out messages that can be kept within the token limit.
-        latest_messages = self.filter_messages_by_token_limit(all_messages)
+        latest_messages_within_token_limit = self.filter_messages_by_token_limit(
+            all_messages
+        )
 
-        if len(latest_messages) == len(all_messages):
+        if len(latest_messages_within_token_limit) == len(all_messages):
             return {
                 self._messages_key: [],
             }
 
         # summarize the remaining old messages
-        msgs_for_summarization = all_messages[: -len(latest_messages)]
-        summary = await self.get_summary(msgs_for_summarization, config)
+        old_msgs_to_summarize = all_messages[: -len(latest_messages_within_token_limit)]
+        summary = await self.get_summary(old_msgs_to_summarize, config)
 
         # remove excluded messages from state.
-        msgs_to_remove = state_messages[: -len(latest_messages)]
+        msgs_to_remove = state_messages[: -len(latest_messages_within_token_limit)]
         delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
 
         return {

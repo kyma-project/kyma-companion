@@ -11,7 +11,7 @@ from langchain_core.messages import (
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
-from agents.summarization.summarization import Summarization
+from agents.summarization.summarization import MessageSummarizer
 from utils.models.factory import IModel, ModelType
 
 
@@ -32,7 +32,7 @@ class TestSummarization:
     ):
         model = Mock(spec=IModel)
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=tokenizer_model_type,
             token_lower_limit=token_lower_limit,
@@ -60,7 +60,7 @@ class TestSummarization:
     def test_get_token_upper_limit(self, token_upper_limit):
         model = Mock(spec=IModel)
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=100,
@@ -79,7 +79,7 @@ class TestSummarization:
     def test_get_token_lower_limit(self, token_lower_limit):
         model = Mock(spec=IModel)
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=token_lower_limit,
@@ -114,7 +114,7 @@ class TestSummarization:
     def test_get_messages_token_count(self, messages, model_type, expected_token_count):
         model = Mock()
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=model_type,
             token_lower_limit=100,
@@ -168,7 +168,7 @@ class TestSummarization:
     ):
         model = Mock()
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=token_lower_limit,
@@ -178,53 +178,85 @@ class TestSummarization:
         assert filtered_messages == expected_filtered_messages
 
     @pytest.mark.parametrize(
-        "messages, config, expected_summary",
+        "messages, config, expected_summary, mock_response",
         [
+            # Existing successful case
             (
                 [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
                 RunnableConfig(tags=["test"]),
-                "Summary of previous chat:\n summary content",  # Example summary content
+                "Summary of previous chat:\n summary content 1",
+                AIMessage(content="summary content 1"),
             ),
+            # Empty messages case
+            (
+                [],
+                RunnableConfig(tags=[]),
+                "",
+                None,  # No mock response needed for empty case
+            ),
+            # Fallback case when summarization fails
             (
                 [
                     HumanMessage(content="This is a test."),
                     AIMessage(content="Another test."),
                 ],
                 RunnableConfig(tags=[]),
-                "Summary of previous chat:\n summary content",  # Example summary content
+                "Summary of previous chat:\n summary content 2",  # Example summary content
+                AIMessage(content="summary content 2"),
             ),
-            ([], RunnableConfig(tags=["test"]), ""),
+            (
+                [
+                    HumanMessage(content="Hello"),
+                    AIMessage(content="Hi there"),
+                    HumanMessage(content="How are you?"),
+                ],
+                RunnableConfig(tags=["test"]),
+                "Summary of previous chat:\n Hello\n\nHi there\n\nHow are you?",
+                Exception("Summarization failed"),
+            ),
+            # Another successful case
             (
                 [
                     SystemMessage(content="System message"),
                     HumanMessage(content="A longer text input to test the summary."),
                 ],
                 RunnableConfig(tags=["test"]),
-                "Summary of previous chat:\n summary content",  # Example summary content
+                "Summary of previous chat:\n summary content 3",
+                AIMessage(content="summary content 3"),
             ),
         ],
     )
     @pytest.mark.asyncio
-    async def test_get_summary(self, messages, config, expected_summary):
+    async def test_get_summary(self, messages, config, expected_summary, mock_response):
         model = Mock()
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=100,
             token_upper_limit=200,
         )
         summarization._chain = Mock()
-        summarization._chain.ainvoke = AsyncMock(
-            return_value=AIMessage(content="summary content")
-        )
-        assert await summarization.get_summary(messages, config) == expected_summary
+
+        if isinstance(mock_response, Exception):
+            summarization._chain.ainvoke = AsyncMock(side_effect=mock_response)
+        elif mock_response is not None:
+            summarization._chain.ainvoke = AsyncMock(return_value=mock_response)
+
+        result = await summarization.get_summary(messages, config)
+        assert result == expected_summary
+
+        # Verify chain invocation
+        if messages:
+            summarization._chain.ainvoke.assert_called()
+        else:
+            summarization._chain.ainvoke.assert_not_called()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "state_messages, state_messages_summary, token_lower_limit, token_upper_limit, expected_result",
+        "state_messages, state_messages_summary, token_lower_limit, token_upper_limit, expected_result, error",
         [
-            # Test case, where the token limit is exceeded.
+            # Test case 1: Successful summarization exceeding the token limit.
             (
                 [
                     HumanMessage(
@@ -251,9 +283,42 @@ class TestSummarization:
                         RemoveMessage(id="3"),
                     ],
                 },
+                None,
+            ),
+            # Test case 2: Failed summarization with fallback
+            (
+                [
+                    HumanMessage(
+                        id="1", content="This is the first message. It is very long."
+                    ),
+                    AIMessage(
+                        id="2", content="This is the second message. It is very long."
+                    ),
+                    HumanMessage(
+                        id="3", content="This is the third message. It is very long."
+                    ),
+                    AIMessage(
+                        id="4", content="This is the fourth message. It is very long."
+                    ),
+                ],
+                "Previous summary",
+                20,
+                35,
+                {
+                    "messages_summary": "Summary of previous chat:\n Previous summary\n\n"
+                    "This is the first message. It is very long.\n\n"
+                    "This is the second message. It is very long.\n\n"
+                    "This is the third message. It is very long.",
+                    "messages": [
+                        RemoveMessage(id="1"),
+                        RemoveMessage(id="2"),
+                        RemoveMessage(id="3"),
+                    ],
+                },
+                Exception("Summarization failed"),
             ),
             # Test case, where there are no messages.
-            ([], "", 100, 200, {"messages": []}),
+            ([], "", 100, 200, {"messages": []}, None),
             # Test case, where the token limit is not exceeded.
             (
                 [
@@ -266,6 +331,7 @@ class TestSummarization:
                 100,
                 200,
                 {"messages": []},
+                None,
             ),
         ],
     )
@@ -276,19 +342,25 @@ class TestSummarization:
         token_lower_limit,
         token_upper_limit,
         expected_result,
+        error,
     ):
-        model = Mock()
+        model = Mock(spec=IModel)
         model.llm = Mock()
-        summarization = Summarization(
+        summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=token_lower_limit,
             token_upper_limit=token_upper_limit,
         )
         summarization._chain = Mock()
-        summarization._chain.ainvoke = AsyncMock(
-            return_value=AIMessage(content="summary content")
-        )
+
+        # Configure chain mock behavior based on error
+        if error:
+            summarization._chain.ainvoke = AsyncMock(side_effect=error)
+        else:
+            summarization._chain.ainvoke = AsyncMock(
+                return_value=AIMessage(content="summary content")
+            )
 
         class TestState(BaseModel):
             messages: list
