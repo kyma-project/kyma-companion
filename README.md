@@ -10,7 +10,6 @@ Kyma Companion provides in-app context-sensitive help and general assistance to 
 
 ## Prerequisites
 
-Required software:
 
 - Python 3.12.\*
 - [Poetry](https://python-poetry.org/)
