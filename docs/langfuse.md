@@ -2,7 +2,7 @@
 
 For tracing, Kyma Companion uses [Langfuse](https://langfuse.com/docs).
 
-## Configuration
+## Configuration of Kyma Companion
 
 To use Langfuse in Kyma Companion, you must configure the following parameters:
 
