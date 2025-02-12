@@ -4,7 +4,7 @@ For tracing, Kyma Companion uses [Langfuse](https://langfuse.com/docs).
 
 ## Configuration
 
-We support the following [configurations](../config/config-example.json) for [Langfuse](https://langfuse.com/docs) in the Kyma Companion:
+To use Langfuse in Kyma Companion, you must configure the following parameters:
 
    ```json
    "LANGFUSE_HOST": "<Your Host>",
