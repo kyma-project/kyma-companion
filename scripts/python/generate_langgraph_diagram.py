@@ -34,20 +34,20 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 from agents.graph import CompanionGraph
 from agents.k8s.agent import KubernetesAgent
 from agents.kyma.agent import KymaAgent
-from agents.memory.redis_checkpointer import (  # noqa: E402
-    RedisSaver,
-    initialize_async_pool,
-)
+from agents.memory.async_redis_checkpointer import AsyncRedisSaver
+from utils.config import get_config
 from utils.models.factory import ModelFactory, ModelType  # noqa: E402
-from utils.settings import REDIS_URL
+from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PORT
 
 if not os.getenv("CONFIG_PATH"):
-    os.environ["CONFIG_PATH"] = "config/config.yml"
-
-model_factory = ModelFactory()
+    os.environ["CONFIG_PATH"] = "config/config.json"
+config = get_config()
+model_factory = ModelFactory(config=config)
 models = model_factory.create_models()
 
-memory = RedisSaver(async_connection=initialize_async_pool(url=REDIS_URL))
+memory = AsyncRedisSaver.from_conn_info(
+    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
+)
 graph = CompanionGraph(models, memory)
 
 print("Generating graph diagram for the companion graph...")
