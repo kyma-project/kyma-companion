@@ -30,15 +30,22 @@ def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     return tasks
 
 
-def process_response(data: dict[str, Any], agent: str) -> dict[str, Any]:
+def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     """Process agent data and return the last message only."""
     agent_data = data[agent]
 
     if "error" in agent_data and agent_data["error"]:
-        return {"agent": agent, "error": agent_data["error"]}
+        if agent == SUMMARIZATION:
+            # we don't show summarization node, but only error
+            return {"error": agent_data["error"]}
+        else:
+            return {"agent": agent, "error": agent_data["error"]}
+
+    # skip summarization node
+    if agent == SUMMARIZATION:
+        return None
 
     answer = {}
-
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
 
@@ -73,10 +80,6 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
 
     agent = next(iter(data.keys()), None)
 
-    # skip summarization node
-    if agent == SUMMARIZATION:
-        return None
-
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
         return json.dumps(
@@ -92,9 +95,13 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
 
     new_data = process_response(data, agent)
 
-    return json.dumps(
-        {
-            "event": "agent_action",
-            "data": new_data,
-        }
-    ).encode()
+    return (
+        json.dumps(
+            {
+                "event": "agent_action",
+                "data": new_data,
+            }
+        ).encode()
+        if new_data
+        else None
+    )

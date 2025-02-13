@@ -7,14 +7,17 @@ from langchain_core.messages import (
     RemoveMessage,
     SystemMessage,
     ToolMessage,
+    AIMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import Messages
 from pydantic import BaseModel
 
+from agents.common.constants import ERROR, MESSAGES, NEXT
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
+from agents.supervisor.agent import SUPERVISOR
 from utils import logging
 from utils.chain import ainvoke_chain
 from utils.models.factory import IModel, ModelType
@@ -88,30 +91,17 @@ class MessageSummarizer:
     async def get_summary(
         self, messages: list[MessageLikeRepresentation], config: RunnableConfig
     ) -> str:
-        """Returns the summary of the messages.
-        If the summarization fails, it will return the remaining old messages.
-        Remaining old summarized messages plus the latest messages outside the token limit.
-        """
+        """Returns the summary of the messages."""
+
         if len(messages) == 0:
             return ""
 
-        try:
-            res = await ainvoke_chain(
-                self._chain,
-                {"messages": messages},
-                config=config,
-            )
-            result = res.content
-        except Exception:
-            logger.exception(
-                "Error while summarizing messages. Falling back to the remaining old messages."
-            )
-
-            # fallback to the remaining old messages
-            messages_str = "\n\n".join([str(msg.content) for msg in messages])
-            result = messages_str
-
-        return f"Summary of previous chat:\n {result}"
+        res = await ainvoke_chain(
+            self._chain,
+            {"messages": messages},
+            config=config,
+        )
+        return f"Summary of previous chat:\n {res.content}"
 
     async def summarization_node(
         self, state: BaseModel, config: RunnableConfig
@@ -145,8 +135,18 @@ class MessageSummarizer:
 
         # summarize the remaining old messages
         old_msgs_to_summarize = all_messages[: -len(latest_messages_within_token_limit)]
-        summary = await self.get_summary(old_msgs_to_summarize, config)
-
+        try:
+            summary = await self.get_summary(old_msgs_to_summarize, config)
+        except Exception:
+            logger.exception("Error while summarizing messages.")
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content="Unexpected error while processing the request. Please try again later.",
+                    )
+                ],
+                ERROR: "Unexpected error while processing the request. Please try again later.",
+            }
         # remove excluded messages from state.
         msgs_to_remove = state_messages[: -len(latest_messages_within_token_limit)]
         delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
@@ -154,4 +154,5 @@ class MessageSummarizer:
         return {
             self._messages_summary_key: summary,
             self._messages_key: delete_messages,
+            NEXT: SUPERVISOR,
         }

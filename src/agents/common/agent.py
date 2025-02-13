@@ -8,10 +8,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
+from langgraph.constants import END
 
 from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
+    CONTINUE,
     ERROR,
     IS_LAST_STEP,
     MESSAGES,
@@ -20,7 +22,7 @@ from agents.common.constants import (
     SUMMARIZATION,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import filter_messages
+from agents.common.utils import filter_messages, should_continue
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -207,8 +209,15 @@ class BaseAgent:
 
         # Define the edge: tool --> summarization
         workflow.add_edge("tools", SUMMARIZATION)
-        # Define the edge: summarization --> agent
-        workflow.add_edge(SUMMARIZATION, "agent")
+        # Define the edge: summarization --> agent | error_handler
+        workflow.add_conditional_edges(
+            SUMMARIZATION,
+            should_continue,
+            {
+                CONTINUE: "agent",
+                END: END,
+            },
+        )
 
         # Define the edge: finalizer --> END
         workflow.add_edge("finalizer", "__end__")
