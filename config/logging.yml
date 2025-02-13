@@ -13,11 +13,6 @@ handlers:
     formatter: standard
     stream: ext://sys.stdout
 
-  file_handler:
-    class: logging.FileHandler
-    filename: app.log
-    formatter: standard
-
 root:
   level: INFO
-  handlers: [console, file_handler]
+  handlers: [console]
