@@ -7,14 +7,13 @@ from langchain_core.messages import (
     RemoveMessage,
     SystemMessage,
     ToolMessage,
-    AIMessage,
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import Messages
 from pydantic import BaseModel
 
-from agents.common.constants import ERROR, MESSAGES, NEXT
+from agents.common.constants import ERROR, NEXT
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
 from agents.supervisor.agent import SUPERVISOR
@@ -140,11 +139,6 @@ class MessageSummarizer:
         except Exception:
             logger.exception("Error while summarizing messages.")
             return {
-                MESSAGES: [
-                    AIMessage(
-                        content="Unexpected error while processing the request. Please try again later.",
-                    )
-                ],
                 ERROR: "Unexpected error while processing the request. Please try again later.",
             }
         # remove excluded messages from state.

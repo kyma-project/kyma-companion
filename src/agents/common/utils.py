@@ -2,15 +2,15 @@ import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any, Literal
-from pydantic import BaseModel
 
 import tiktoken
 from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
-from langgraph.graph.message import Messages
 from langgraph.constants import END
+from langgraph.graph.message import Messages
+from pydantic import BaseModel
 
 from agents.common.constants import (
     CONTINUE,
@@ -180,4 +180,7 @@ def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
 
 
 def should_continue(state: BaseModel) -> str:
-    return END if state.error else CONTINUE
+    """
+    Returns END if there is an error, else CONTINUE.
+    """
+    return END if hasattr(state, ERROR) and state.error else CONTINUE  # type: ignore

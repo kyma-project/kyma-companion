@@ -12,6 +12,7 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
 from agents.summarization.summarization import MessageSummarizer
+from agents.supervisor.agent import SUPERVISOR
 from utils.models.factory import IModel, ModelType
 
 
@@ -204,16 +205,6 @@ class TestSummarization:
                 "Summary of previous chat:\n summary content 2",  # Example summary content
                 AIMessage(content="summary content 2"),
             ),
-            (
-                [
-                    HumanMessage(content="Hello"),
-                    AIMessage(content="Hi there"),
-                    HumanMessage(content="How are you?"),
-                ],
-                RunnableConfig(tags=["test"]),
-                "Summary of previous chat:\n Hello\n\nHi there\n\nHow are you?",
-                Exception("Summarization failed"),
-            ),
             # Another successful case
             (
                 [
@@ -282,6 +273,7 @@ class TestSummarization:
                         RemoveMessage(id="2"),
                         RemoveMessage(id="3"),
                     ],
+                    "next": SUPERVISOR,
                 },
                 None,
             ),
@@ -305,15 +297,7 @@ class TestSummarization:
                 20,
                 35,
                 {
-                    "messages_summary": "Summary of previous chat:\n Previous summary\n\n"
-                    "This is the first message. It is very long.\n\n"
-                    "This is the second message. It is very long.\n\n"
-                    "This is the third message. It is very long.",
-                    "messages": [
-                        RemoveMessage(id="1"),
-                        RemoveMessage(id="2"),
-                        RemoveMessage(id="3"),
-                    ],
+                    "error": "Unexpected error while processing the request. Please try again later.",
                 },
                 Exception("Summarization failed"),
             ),
