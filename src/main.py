@@ -1,4 +1,3 @@
-import uvicorn
 from fastapi import FastAPI
 
 from routers import conversations
@@ -25,7 +24,3 @@ async def readyz() -> dict:
 async def healthz() -> dict:
     """The endpoint for the Health Probe."""
     return {"healthy": "true"}
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
