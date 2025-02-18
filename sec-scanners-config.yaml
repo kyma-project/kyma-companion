@@ -1,7 +1,12 @@
 module-name: kyma-companion
 kind: kcp
 bdba:
+  # kyma-companion
   - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:main
+  # langfuse
+  - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse-worker:3.28.3
+  - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse:3.28.3
+  - europe-docker.pkg.dev/kyma-project/prod/external/bitnami/clickhouse:24.12.3-debian-12-r1
 checkmarx-one:
   preset: python-default
   exclude:
