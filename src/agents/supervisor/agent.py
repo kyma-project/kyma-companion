@@ -65,7 +65,7 @@ def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINAL
     """When entering the supervisor subgraph, decide the entry point: plan, route, or finalize."""
 
     # if all subtasks are completed, finalize the response
-    if state.subtasks and all(subtask.completed() for subtask in state.subtasks):
+    if state.subtasks and all(not subtask.pending() for subtask in state.subtasks):
         logger.debug("Finalizing as all subtasks are completed.")
         return FINALIZER
 
@@ -125,7 +125,7 @@ class SupervisorAgent:
     def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
         for subtask in state.subtasks:
-            if not subtask.completed():
+            if subtask.pending():
                 next_agent = subtask.assigned_to
                 return {
                     "next": next_agent,

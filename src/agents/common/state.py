@@ -20,6 +20,7 @@ class SubTaskStatus(str, Enum):
 
     PENDING = "pending"
     COMPLETED = "completed"
+    ERROR = "error"
 
 
 class SubTask(BaseModel):
@@ -42,6 +43,10 @@ class SubTask(BaseModel):
     def completed(self) -> bool:
         """Check if the task is completed."""
         return self.status == SubTaskStatus.COMPLETED
+
+    def pending(self) -> bool:
+        """Check if the task is pending."""
+        return self.status == SubTaskStatus.PENDING
 
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
@@ -133,6 +138,7 @@ class BaseAgentState(BaseModel):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
     k8s_client: IK8sClient
+    is_last: bool = False
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
