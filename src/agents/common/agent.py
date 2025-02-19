@@ -145,12 +145,15 @@ class BaseAgent:
         try:
             response = await self._invoke_chain(state, config)
         except Exception as e:
-            error_message = f"An error occurred while processing the request: {e}"
+            error_message = (
+                f"An unexpected error occurred while processing your request: {e}"
+            )
             logger.error(error_message)
             return {
                 AGENT_MESSAGES: [
                     AIMessage(
-                        content=f"Sorry, {error_message}",
+                        content="Sorry, an unexpected error occurred while processing your request."
+                        "Please try again later.",
                         name=self.name,
                     )
                 ],

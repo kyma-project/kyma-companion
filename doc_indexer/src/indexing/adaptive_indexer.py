@@ -304,9 +304,9 @@ class AdaptiveSplitMarkdownIndexer:
                         f"Indexed final batch {batch_count} with {len(batch)} chunks"
                     )
 
-            except Exception as e:
-                logger.error(
-                    f"Error while storing documents batch {batch_count + 1} in HanaDB: {str(e)}"
+            except Exception:
+                logger.exception(
+                    f"Error while storing documents batch {batch_count + 1} in HanaDB"
                 )
                 raise
 

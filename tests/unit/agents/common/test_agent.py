@@ -393,11 +393,11 @@ class TestBaseAgent:
                 {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Sorry, An error occurred while processing the request: This is a dummy exception from model.",
+                            content="Sorry, an unexpected error occurred while processing your request.Please try again later.",
                             name="KubernetesAgent",
                         )
                     ],
-                    ERROR: "An error occurred while processing the request: This is a dummy exception from model.",
+                    ERROR: "An unexpected error occurred while processing your request: This is a dummy exception from model.",
                 },
                 {
                     AGENT_MESSAGES: [AIMessage(content="dummy message 1")],

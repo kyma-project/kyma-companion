@@ -79,9 +79,9 @@ def get_config() -> Config:
         sanitization_config = data.get("sanitization_config", None)
         config = Config(models=models_data, sanitization_config=sanitization_config)
         return config
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON format in config file {config_file}: {e}")
+    except json.JSONDecodeError:
+        logger.exception(f"Invalid JSON format in config file {config_file}")
         raise
-    except Exception as e:
-        logger.error(f"Error loading config from {config_file}: {e}")
+    except Exception:
+        logger.exception(f"Error loading config from {config_file}")
         raise

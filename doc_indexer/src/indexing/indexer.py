@@ -30,8 +30,8 @@ def create_chunks(
             chunks = text_splitter.split_text(doc.page_content)
             all_chunks.extend([chunk for chunk in chunks if chunk.page_content.strip()])
         logger.info(f"Successfully created {len(all_chunks)} document chunks.")
-    except Exception as e:
-        logger.error(f"Error while creating document chunks: {e}")
+    except Exception:
+        logger.exception("Error while creating document chunks")
         raise
 
     return all_chunks
@@ -120,9 +120,9 @@ class MarkdownIndexer:
                 if i + CHUNKS_BATCH_SIZE < len(all_chunks):
                     time.sleep(3)
 
-            except Exception as e:
-                logger.error(
-                    f"Error while storing documents batch {i//CHUNKS_BATCH_SIZE + 1} in HanaDB: {str(e)}"
+            except Exception:
+                logger.exception(
+                    f"Error while storing documents batch {i//CHUNKS_BATCH_SIZE + 1} in HanaDB"
                 )
                 raise
 
