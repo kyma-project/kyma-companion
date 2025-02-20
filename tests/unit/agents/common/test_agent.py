@@ -393,7 +393,7 @@ class TestBaseAgent:
                 {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Sorry, An error occurred while processing the request: This is a dummy exception from model.",
+                            content="Sorry, An error occurred while processing the request",
                             name="KubernetesAgent",
                         )
                     ],
@@ -465,6 +465,10 @@ class TestBaseAgent:
         # When
         result = await agent._model_node(given_state, mock_config)
         assert result == expected_output
+
+        # Test if status is updated to ERROR when there is an exception
+        if given_invoke_error is not None:
+            assert given_state.my_task.status == SubTaskStatus.ERROR
 
         # Then
         if expected_invoke_inputs != {}:

@@ -20,6 +20,7 @@ class SubTaskStatus(str, Enum):
 
     PENDING = "pending"
     COMPLETED = "completed"
+    ERROR = "error"
 
 
 class SubTask(BaseModel):
@@ -42,6 +43,14 @@ class SubTask(BaseModel):
     def completed(self) -> bool:
         """Check if the task is completed."""
         return self.status == SubTaskStatus.COMPLETED
+
+    def is_pending(self) -> bool:
+        """Check if the task is pending."""
+        return self.status == SubTaskStatus.PENDING
+
+    def is_error(self) -> bool:
+        """Check if the task is error status."""
+        return self.status == SubTaskStatus.ERROR
 
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
