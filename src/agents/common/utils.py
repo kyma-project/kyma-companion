@@ -183,4 +183,6 @@ def should_continue(state: BaseModel) -> str:
     """
     Returns END if there is an error, else CONTINUE.
     """
-    return END if hasattr(state, ERROR) and state.error else CONTINUE  # type: ignore
+    if hasattr(state, "error") and state.error:
+        return END
+    return CONTINUE

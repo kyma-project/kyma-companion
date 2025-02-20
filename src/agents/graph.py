@@ -234,7 +234,6 @@ class CompanionGraph:
                 END: END,
             },
         )
-        # workflow.add_edge(ERROR_HANDLER, END)
 
         # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)
