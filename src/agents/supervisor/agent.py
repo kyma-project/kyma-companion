@@ -64,9 +64,9 @@ def decide_route_or_exit(state: SupervisorState) -> Literal[ROUTER, END]:  # typ
 def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINALIZER]:  # type: ignore
     """When entering the supervisor subgraph, decide the entry point: plan, route, or finalize."""
 
-    # if all subtasks are completed, finalize the response
-    if state.subtasks and all(not subtask.pending() for subtask in state.subtasks):
-        logger.debug("Finalizing as all subtasks are completed.")
+    # if no subtasks is pending, finalize the response
+    if state.subtasks and all(not subtask.is_pending() for subtask in state.subtasks):
+        logger.debug("Routing to Finilizer as no subtasks is pending.")
         return FINALIZER
 
     # if subtasks exists but not all are completed, router delegates to the next agent
@@ -125,7 +125,7 @@ class SupervisorAgent:
     def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
         for subtask in state.subtasks:
-            if subtask.pending():
+            if subtask.is_pending():
                 next_agent = subtask.assigned_to
                 return {
                     "next": next_agent,
@@ -222,6 +222,20 @@ class SupervisorAgent:
 
     async def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
         """Generate the final response."""
+
+        # If all required agents failed: tell user that we can't give them response due to agent failure
+        if state.subtasks and all(subtask.is_error() for subtask in state.subtasks):
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content="We're unable to provide a response at this time due to agent failure. "
+                        "Our team has been notified and is working to resolve the issue. "
+                        "Please try again or reach out to our support team for further assistance.",
+                        name=FINALIZER,
+                    )
+                ],
+                NEXT: END,
+            }
 
         final_response_chain = self._final_response_chain(state)
 

@@ -122,7 +122,6 @@ class BaseAgent:
                 )
             ],
             IS_LAST_STEP: True,
-            "is_last": True,
         }
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
@@ -144,10 +143,6 @@ class BaseAgent:
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
-            if state.my_task and state.my_task.assigned_to == "KubernetesAgent":
-                raise Exception(
-                    "This is test exception ... need to be removed before code push"
-                )
             response = await self._invoke_chain(state, config)
         except Exception as e:
             error_message = f"An error occurred while processing the request: {e}"

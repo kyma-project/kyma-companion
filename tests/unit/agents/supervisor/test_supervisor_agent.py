@@ -77,7 +77,7 @@ class TestSupervisorAgent:
                         description="Task 2",
                         task_title="Task 2",
                         assigned_to=KYMA_AGENT,
-                        status="in_progress",
+                        status="pending",
                     )
                 ],
                 [AIMessage(content="Fake message")],
@@ -87,7 +87,7 @@ class TestSupervisorAgent:
                         description="Task 2",
                         task_title="Task 2",
                         assigned_to=KYMA_AGENT,
-                        status="in_progress",
+                        status="pending",
                     )
                 ],
                 None,
@@ -139,7 +139,7 @@ class TestSupervisorAgent:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "description, input_query, conversation_messages, final_response_content, expected_output, expected_error",
+        "description, input_query, conversation_messages, subtasks, final_response_content, expected_output, expected_error",
         [
             (
                 "Generates final response successfully",
@@ -153,6 +153,14 @@ class TestSupervisorAgent:
                     AIMessage(
                         content="In Kubernetes, deployment involves...",
                         name="KubernetesAgent",
+                    ),
+                ],
+                [
+                    SubTask(
+                        description="Explain Kyma function deployment",
+                        task_title="Explain Kyma function deployment",
+                        assigned_to=KYMA_AGENT,
+                        status="completed",
                     ),
                 ],
                 "To deploy a Kyma function, follow these steps: "
@@ -183,9 +191,55 @@ class TestSupervisorAgent:
                         name="KubernetesAgent",
                     ),
                 ],
+                [
+                    SubTask(
+                        description="Explain Kubernetes",
+                        task_title="Explain Kubernetes",
+                        assigned_to=K8S_AGENT,
+                        status="completed",
+                    ),
+                ],
                 "",
                 {
                     "messages": [AIMessage(content="", name="Finalizer")],
+                    "next": "__end__",
+                },
+                "",
+            ),
+            (
+                "Do not generate final response as all subtasks failed",
+                "What is Kubernetes? and what is KYMA",
+                [
+                    HumanMessage(content="What is Kubernetes?"),
+                    AIMessage(
+                        content="Kubernetes is a container orchestration platform.",
+                        name="KubernetesAgent",
+                    ),
+                ],
+                [
+                    SubTask(
+                        description="Explain Kubernetes",
+                        task_title="Explain Kubernetes",
+                        assigned_to=K8S_AGENT,
+                        status="error",
+                    ),
+                    SubTask(
+                        description="Explain Kyma",
+                        task_title="Explain Kyma",
+                        assigned_to=KYMA_AGENT,
+                        status="error",
+                    ),
+                ],
+                None,  # this content should be handled by finalizer itself
+                {
+                    "messages": [
+                        AIMessage(
+                            content="We're unable to provide a response at this time due to agent failure."
+                            "Our team has been notified and is working to resolve the issue."
+                            "Please try again or reach out to our support team for further assistance.",
+                            name="Finalizer",
+                        )
+                    ],
                     "next": "__end__",
                 },
                 None,
@@ -198,15 +252,19 @@ class TestSupervisorAgent:
         description,
         input_query,
         conversation_messages,
+        subtasks,
         final_response_content,
         expected_output,
         expected_error,
     ):
         # Given
-        state = SupervisorState(messages=conversation_messages)
+        state = SupervisorState(messages=conversation_messages, subtasks=subtasks)
 
         mock_final_response_chain = AsyncMock()
-        mock_final_response_chain.ainvoke.return_value.content = final_response_content
+        if final_response_content:
+            mock_final_response_chain.ainvoke.return_value.content = (
+                final_response_content
+            )
 
         with patch.object(
             supervisor_agent,
@@ -219,9 +277,10 @@ class TestSupervisorAgent:
             # Then
             assert result == expected_output
 
-            mock_final_response_chain.ainvoke.assert_called_once_with(
-                config=None, input={"messages": conversation_messages}
-            )
+            if final_response_content:
+                mock_final_response_chain.ainvoke.assert_called_once_with(
+                    config=None, input={"messages": conversation_messages}
+                )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -324,7 +383,9 @@ class TestSupervisorAgent:
             else:
                 mock_invoke_planner.return_value = Plan.parse_raw(mock_plan_content)
 
-            state = SupervisorState(messages=[HumanMessage(content=input_query)])
+            state = SupervisorState(
+                messages=[HumanMessage(content=input_query)], subtasks=[]
+            )
             result = await supervisor_agent._plan(state)
 
             assert result == expected_output
