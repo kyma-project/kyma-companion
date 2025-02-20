@@ -234,8 +234,8 @@ class TestSupervisorAgent:
                 {
                     "messages": [
                         AIMessage(
-                            content="We're unable to provide a response at this time due to agent failure."
-                            "Our team has been notified and is working to resolve the issue."
+                            content="We're unable to provide a response at this time due to agent failure. "
+                            "Our team has been notified and is working to resolve the issue. "
                             "Please try again or reach out to our support team for further assistance.",
                             name="Finalizer",
                         )
@@ -261,7 +261,7 @@ class TestSupervisorAgent:
         state = SupervisorState(messages=conversation_messages, subtasks=subtasks)
 
         mock_final_response_chain = AsyncMock()
-        if final_response_content:
+        if final_response_content is not None:
             mock_final_response_chain.ainvoke.return_value.content = (
                 final_response_content
             )
@@ -277,7 +277,7 @@ class TestSupervisorAgent:
             # Then
             assert result == expected_output
 
-            if final_response_content:
+            if final_response_content is not None:
                 mock_final_response_chain.ainvoke.assert_called_once_with(
                     config=None, input={"messages": conversation_messages}
                 )
