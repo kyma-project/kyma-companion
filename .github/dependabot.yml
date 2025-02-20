@@ -1,0 +1,32 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "poetry"
+    directory: "/" # Location of your pyproject.toml file
+    schedule:
+      interval: "daily" # <-- remove this line and uncomment the weekly schedule underneath if the results are fine
+      #interval: "weekly"
+      #day: "monday"
+      #time: "07:00"
+    commit-message:
+      prefix: "deps(dependabot)"
+  - package-ecosystem: "docker" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+      day: monday
+      time: "07:00"
+    commit-message:
+      prefix: "deps(dependabot)"
+  - package-ecosystem: "github-actions" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+      day: monday
+      time: "07:00"
+    commit-message:
+      prefix: "deps(dependabot)"
