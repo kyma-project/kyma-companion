@@ -156,14 +156,14 @@ def get_current_day_timestamps_utc() -> tuple[str, str]:
 
 def hash_url(url: str) -> str:
     """
-    Generate a 32-character MD5 hash of a given URL.
+    Generate SHA256 hash of a given URL.
 
     :url (str): The URL string to be hashed.
 
     Returns:
-        str: A 32-character hexadecimal string representing the MD5 hash.
+        str: A 64-character hexadecimal string representing the SHA256 hash.
     """
-    return hashlib.md5(url.encode()).hexdigest()
+    return hashlib.sha256(url.encode()).hexdigest()
 
 
 def compute_string_token_count(text: str, model_type: ModelType) -> int:

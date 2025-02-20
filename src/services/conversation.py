@@ -65,8 +65,8 @@ class ConversationService(metaclass=SingletonMeta):
         try:
             self._model_factory = model_factory or ModelFactory(config=config)
             models = self._model_factory.create_models()
-        except Exception as e:
-            logger.error(f"Failed to initialize models: {e}")
+        except Exception:
+            logger.exception("Failed to initialize models")
             raise
 
         model_mini = cast(IModel, models[ModelType.GPT4O_MINI])

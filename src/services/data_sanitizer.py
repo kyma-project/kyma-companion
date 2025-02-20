@@ -62,6 +62,8 @@ DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE = [
 ]
 
 REDACTED_VALUE = "[REDACTED]"
+SECRET_LIST_KIND_NAME = "SecretList"
+SECRET_KIND_NAME = "Secret"
 
 
 class IDataSanitizer(Protocol):
@@ -104,7 +106,7 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         # Handle specific Kubernetes resource types
         if "kind" in obj:
-            if obj["kind"] == "Secret" or obj["kind"] == "SecretList":
+            if obj["kind"] == SECRET_KIND_NAME or obj["kind"] == SECRET_LIST_KIND_NAME:
                 return self._sanitize_secret(obj)
             elif obj["kind"] in (self.config.resources_to_sanitize or []):
                 if "items" in obj:

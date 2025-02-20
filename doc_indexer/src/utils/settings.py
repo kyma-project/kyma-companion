@@ -31,8 +31,8 @@ def load_env_from_json() -> None:
                     os.environ[key] = str(value)
                 else:
                     os.environ[MODELS_CONFIGS_KEY] = json.dumps(value)
-    except json.JSONDecodeError as e:
-        logging.error(f"Invalid JSON format in config file {config_path}: {e}")
+    except json.JSONDecodeError:
+        logging.exception(f"Invalid JSON format in config file {config_path}")
         raise
     except FileNotFoundError:
         logging.error(
@@ -40,8 +40,8 @@ def load_env_from_json() -> None:
             f"{default_config_path} or set the CONFIG_PATH environment variable."
         )
         raise
-    except Exception as e:
-        logging.error(f"Error loading config from {config_path}: {e}")
+    except Exception:
+        logging.exception(f"Error loading config from {config_path}")
         raise
 
 

@@ -222,9 +222,8 @@ async def check_token_usage(
         total_token_usage = await langfuse_service.get_total_token_usage(
             from_timestamp, to_timestamp, cluster_id
         )
-    except Exception as e:
-        logger.error(e)
-        logger.error("failed to connect to the Langfuse API")
+    except Exception:
+        logger.exception("failed to connect to the Langfuse API")
 
     if total_token_usage > token_limit:
         current_utc = datetime.now(UTC)

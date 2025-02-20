@@ -179,8 +179,8 @@ class CompanionGraph:
                         ],
                         SUBTASKS: state.subtasks,
                     }
-                except Exception as e:
-                    logger.error(f"Error in common node: {e}")
+                except Exception:
+                    logger.exception("Error in common node")
                     return {
                         MESSAGES: [
                             AIMessage(

@@ -85,10 +85,8 @@ class ResponseConverter:
                 # Parse raw string
                 parsed_yaml = yaml.safe_load(yaml_config)
 
-        except Exception as e:
-            logger.error(
-                f"Error while parsing the yaml : {yaml_config} , Exception : {e}"
-            )
+        except Exception:
+            logger.exception(f"Error while parsing the yaml : {yaml_config}")
 
             return None
 
@@ -112,9 +110,9 @@ class ResponseConverter:
             namespace = yaml_config["metadata"]["namespace"]
             deployment_name = yaml_config["metadata"]["name"]
             resource_type = yaml_config["kind"]
-        except Exception as e:
-            logger.error(
-                f"Error in generating link, skipping the yaml: {yaml_config} , Exception : {e}"
+        except Exception:
+            logger.exception(
+                f"Error in generating link, skipping the yaml: {yaml_config}"
             )
             return None
 
@@ -258,8 +256,8 @@ class ResponseConverter:
                     finalizer_response, replacement_list, UPDATE_YAML
                 )
 
-        except Exception as e:
-            logger.error(f"Error in converting final response: {e}")
+        except Exception:
+            logger.exception("Error in converting final response")
 
         return {
             MESSAGES: [
