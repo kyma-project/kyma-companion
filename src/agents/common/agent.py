@@ -145,8 +145,8 @@ class BaseAgent:
         try:
             response = await self._invoke_chain(state, config)
         except Exception as e:
-            error_message = f"An error occurred while processing the request: {e}"
-            logger.error(error_message)
+            error_message = "An error occurred while processing the request"
+            logger.error(error_message + f": {e}")
 
             # Update current subtask status
             if state.my_task:
