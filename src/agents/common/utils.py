@@ -8,7 +8,9 @@ from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
+from langgraph.constants import END
 from langgraph.graph.message import Messages
+from pydantic import BaseModel
 
 from agents.common.constants import (
     CONTINUE,
@@ -175,3 +177,12 @@ def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
         compute_string_token_count(str(msg.content), model_type) for msg in msgs
     )
     return sum(tokens_per_msg)
+
+
+def should_continue(state: BaseModel) -> str:
+    """
+    Returns END if there is an error, else CONTINUE.
+    """
+    if hasattr(state, "error") and state.error:
+        return END
+    return CONTINUE

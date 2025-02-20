@@ -219,7 +219,8 @@ class TestBaseAgent:
 
         # Then
         # check nodes.
-        assert len(graph.nodes) == 6  # noqa
+        node_number = 6
+        assert len(graph.nodes) == node_number
         assert graph.nodes.keys() == {
             "__start__",
             "subtask_selector",
@@ -229,15 +230,16 @@ class TestBaseAgent:
             "Summarization",
         }
         # check edges.
-        assert len(graph.builder.edges) == 4  # noqa
+        edge_number = 3
+        assert len(graph.builder.edges) == edge_number
         assert graph.builder.edges == {
-            ("Summarization", "agent"),
             ("__start__", "subtask_selector"),
             ("finalizer", "__end__"),
             ("tools", "Summarization"),
         }
         # check conditional edges.
-        assert len(graph.builder.branches) == 2  # noqa
+        branch_number = 3
+        assert len(graph.builder.branches) == branch_number
 
     @pytest.mark.parametrize(
         "given_state, expected_output",
