@@ -235,7 +235,6 @@ class TestSupervisorAgent:
                     "messages": [
                         AIMessage(
                             content="We're unable to provide a response at this time due to agent failure. "
-                            "Our team has been notified and is working to resolve the issue. "
                             "Please try again or reach out to our support team for further assistance.",
                             name="Finalizer",
                         )

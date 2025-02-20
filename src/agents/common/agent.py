@@ -146,7 +146,8 @@ class BaseAgent:
             response = await self._invoke_chain(state, config)
         except Exception as e:
             error_message = "An error occurred while processing the request"
-            logger.error(error_message + f": {e}")
+            error_message_with_trace = error_message + f": {e}"
+            logger.error(error_message_with_trace)
 
             # Update current subtask status
             if state.my_task:
@@ -159,7 +160,7 @@ class BaseAgent:
                         name=self.name,
                     )
                 ],
-                ERROR: error_message,
+                ERROR: error_message_with_trace,
             }
 
         # if the recursive limit is reached and the response is a tool call, return a message.
