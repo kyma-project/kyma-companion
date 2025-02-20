@@ -382,9 +382,7 @@ class TestSupervisorAgent:
             else:
                 mock_invoke_planner.return_value = Plan.parse_raw(mock_plan_content)
 
-            state = SupervisorState(
-                messages=[HumanMessage(content=input_query)], subtasks=[]
-            )
+            state = SupervisorState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)
 
             assert result == expected_output
