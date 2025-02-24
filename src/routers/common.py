@@ -10,7 +10,7 @@ class InitConversationBody(BaseModel):
     """Request body for initializing a conversation endpoint."""
 
     resource_kind: str
-    resource_name: str
+    resource_name: str = ""
     resource_api_version: str = ""
     namespace: str = ""
 

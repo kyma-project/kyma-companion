@@ -7,7 +7,7 @@ from langchain_core.messages import BaseMessage
 from agents.summarization.prompts import (
     MESSAGES_SUMMARIZATION_INSTRUCTIONS,
 )
-from agents.summarization.summarization import Summarization
+from agents.summarization.summarization import MessageSummarizer
 from integration.agents.fixtures.messages import (
     conversation_sample_1,
     conversation_sample_2,
@@ -69,7 +69,7 @@ async def test_get_summary(
     messages: list[BaseMessage],
 ):
     # given
-    summarization = Summarization(
+    summarization = MessageSummarizer(
         model=summarization_model,
         tokenizer_model_type=tokenizer_info["model_type"],
         token_lower_limit=tokenizer_info["token_lower_limit"],

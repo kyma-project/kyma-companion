@@ -3,10 +3,10 @@ from deepeval import evaluate
 from deepeval.metrics import (
     ContextualPrecisionMetric,
     ContextualRecallMetric,
-    ContextualRelevancyMetric,
     FaithfulnessMetric,
+    GEval,
 )
-from deepeval.test_case import LLMTestCase
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from integration.rag.datasets.eventing import cases as eventing_cases
 from integration.rag.datasets.istio import cases as istio_cases
@@ -16,17 +16,38 @@ from rag.system import Query, RAGSystem
 
 
 @pytest.fixture
-def evaluation_metrics(evaluator_model, answer_relevancy_metric):
+def contextual_relevancy_metric(evaluator_model):
+    return GEval(
+        name="ContextualRelevancy",
+        model=evaluator_model,
+        threshold=0.5,
+        # criteria="Determine whether the generated summary is factually correct based on the given conversation history.",
+        # NOTE: you can only provide either criteria or evaluation_steps, and not both
+        evaluation_steps=[
+            "Evaluate if the retrieved context directly addresses and is relevant to the query",
+            "Check if the context contains key concepts and facts related to the query",
+            "A document is relevant if it contains information that directly helps answer the query",
+            "A document is considered **relevant** if it contains information that directly helps answer the query and aligns with the query's intent.",
+        ],
+        evaluation_params=[
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.RETRIEVAL_CONTEXT,
+        ],
+        async_mode=False,
+        verbose_mode=True,
+    )
+
+
+@pytest.fixture
+def evaluation_metrics(
+    evaluator_model, answer_relevancy_metric, contextual_relevancy_metric
+):
     # test the reranking of the retrieved documents
     contextual_precision = ContextualPrecisionMetric(
         threshold=0.5, model=evaluator_model, include_reason=True
     )
     # calculates how much retrieved context aligns with the expected output
     contextual_recall = ContextualRecallMetric(
-        threshold=0.5, model=evaluator_model, include_reason=True
-    )
-    # calculates how much retrieved context is relevant to the query
-    contextual_relevancy = ContextualRelevancyMetric(
         threshold=0.5, model=evaluator_model, include_reason=True
     )
 
@@ -36,7 +57,7 @@ def evaluation_metrics(evaluator_model, answer_relevancy_metric):
     return [
         contextual_precision,
         contextual_recall,
-        contextual_relevancy,
+        contextual_relevancy_metric,
         answer_relevancy_metric,
         faithfulness,
     ]

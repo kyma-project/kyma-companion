@@ -13,13 +13,18 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import Messages
 from pydantic import BaseModel
 
+from agents.common.constants import ERROR, NEXT
 from agents.common.utils import compute_messages_token_count, compute_string_token_count
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
+from agents.supervisor.agent import SUPERVISOR
+from utils import logging
 from utils.chain import ainvoke_chain
 from utils.models.factory import IModel, ModelType
 
+logger = logging.get_logger(__name__)
 
-class Summarization:
+
+class MessageSummarizer:
     """Summarization helper class."""
 
     def __init__(
@@ -86,6 +91,7 @@ class Summarization:
         self, messages: list[MessageLikeRepresentation], config: RunnableConfig
     ) -> str:
         """Returns the summary of the messages."""
+
         if len(messages) == 0:
             return ""
 
@@ -117,22 +123,30 @@ class Summarization:
             }
 
         # filter out messages that can be kept within the token limit.
-        latest_messages = self.filter_messages_by_token_limit(all_messages)
+        latest_messages_within_token_limit = self.filter_messages_by_token_limit(
+            all_messages
+        )
 
-        if len(latest_messages) == len(all_messages):
+        if len(latest_messages_within_token_limit) == len(all_messages):
             return {
                 self._messages_key: [],
             }
 
         # summarize the remaining old messages
-        msgs_for_summarization = all_messages[: -len(latest_messages)]
-        summary = await self.get_summary(msgs_for_summarization, config)
-
+        old_msgs_to_summarize = all_messages[: -len(latest_messages_within_token_limit)]
+        try:
+            summary = await self.get_summary(old_msgs_to_summarize, config)
+        except Exception:
+            logger.exception("Error while summarizing messages.")
+            return {
+                ERROR: "Unexpected error while processing the request. Please try again later.",
+            }
         # remove excluded messages from state.
-        msgs_to_remove = state_messages[: -len(latest_messages)]
+        msgs_to_remove = state_messages[: -len(latest_messages_within_token_limit)]
         delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
 
         return {
             self._messages_summary_key: summary,
             self._messages_key: delete_messages,
+            NEXT: SUPERVISOR,
         }

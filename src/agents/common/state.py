@@ -148,6 +148,7 @@ class BaseAgentState(BaseModel):
     agent_messages_summary: str = ""
     my_task: SubTask | None = None
     is_last_step: IsLastStep
+    error: str | None = None
 
     def get_agent_messages_including_summary(self) -> list[MessageLikeRepresentation]:
         """Get messages including the summary message."""

@@ -10,7 +10,7 @@ from agents.common.constants import (
     GRAPH_STEP_TIMEOUT_SECONDS,
     KYMA_AGENT,
 )
-from agents.kyma.prompts import KYMA_AGENT_PROMPT
+from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import kyma_query_tool
 from agents.kyma.tools.search import SearchKymaDocTool
@@ -35,6 +35,7 @@ class KymaAgent(BaseAgent):
                 ("system", KYMA_AGENT_PROMPT),
                 MessagesPlaceholder(variable_name=AGENT_MESSAGES),
                 ("human", "{query}"),
+                ("system", KYMA_AGENT_INSTRUCTIONS),
             ]
         ).partial(
             kyma_query_tool=kyma_query_tool.name,

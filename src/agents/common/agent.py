@@ -6,12 +6,14 @@ from langchain_core.messages import (
 )
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
+    CONTINUE,
     ERROR,
     IS_LAST_STEP,
     MESSAGES,
@@ -20,8 +22,8 @@ from agents.common.constants import (
     SUMMARIZATION,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import filter_messages
-from agents.summarization.summarization import Summarization
+from agents.common.utils import filter_messages, should_continue
+from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
@@ -75,7 +77,7 @@ class BaseAgent:
         self._name = name
         self.model = model
         self.tools = tools
-        self.summarization = Summarization(
+        self.summarization = MessageSummarizer(
             model=model,
             tokenizer_model_type=ModelType(model.name),
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
@@ -156,7 +158,8 @@ class BaseAgent:
             return {
                 AGENT_MESSAGES: [
                     AIMessage(
-                        content=f"Sorry, {error_message}",
+                        content="Sorry, an unexpected error occurred while processing your request."
+                        "Please try again later.",
                         name=self.name,
                     )
                 ],
@@ -213,8 +216,15 @@ class BaseAgent:
 
         # Define the edge: tool --> summarization
         workflow.add_edge("tools", SUMMARIZATION)
-        # Define the edge: summarization --> agent
-        workflow.add_edge(SUMMARIZATION, "agent")
+        # Define the edge: summarization --> agent | error_handler
+        workflow.add_conditional_edges(
+            SUMMARIZATION,
+            should_continue,
+            {
+                CONTINUE: "agent",
+                END: END,
+            },
+        )
 
         # Define the edge: finalizer --> END
         workflow.add_edge("finalizer", "__end__")

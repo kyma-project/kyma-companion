@@ -8,7 +8,9 @@ from gen_ai_hub.proxy.langchain import ChatOpenAI
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.prompts import MessagesPlaceholder
+from langgraph.constants import END
 from langgraph.graph.message import Messages
+from pydantic import BaseModel
 
 from agents.common.constants import (
     CONTINUE,
@@ -154,14 +156,14 @@ def get_current_day_timestamps_utc() -> tuple[str, str]:
 
 def hash_url(url: str) -> str:
     """
-    Generate a 32-character MD5 hash of a given URL.
+    Generate SHA256 hash of a given URL.
 
     :url (str): The URL string to be hashed.
 
     Returns:
-        str: A 32-character hexadecimal string representing the MD5 hash.
+        str: A 64-character hexadecimal string representing the SHA256 hash.
     """
-    return hashlib.md5(url.encode()).hexdigest()
+    return hashlib.sha256(url.encode()).hexdigest()
 
 
 def compute_string_token_count(text: str, model_type: ModelType) -> int:
@@ -175,3 +177,12 @@ def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
         compute_string_token_count(str(msg.content), model_type) for msg in msgs
     )
     return sum(tokens_per_msg)
+
+
+def should_continue(state: BaseModel) -> str:
+    """
+    Returns END if there is an error, else CONTINUE.
+    """
+    if hasattr(state, "error") and state.error:
+        return END
+    return CONTINUE

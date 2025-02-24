@@ -26,6 +26,7 @@ from langgraph.graph.graph import CompiledGraph
 from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
+    CONTINUE,
     MESSAGES,
     MESSAGES_SUMMARY,
     SUBTASKS,
@@ -33,10 +34,11 @@ from agents.common.constants import (
 )
 from agents.common.data import Message
 from agents.common.state import CompanionState, Plan, SubTask, UserInput
+from agents.common.utils import should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.prompts import COMMON_QUESTION_PROMPT
-from agents.summarization.summarization import Summarization
+from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from utils.chain import ainvoke_chain
@@ -121,7 +123,7 @@ class CompanionGraph:
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
-        self.summarization = Summarization(
+        self.summarization = MessageSummarizer(
             model=gpt_4o_mini,
             tokenizer_model_type=ModelType.GPT4O,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
@@ -177,8 +179,8 @@ class CompanionGraph:
                         ],
                         SUBTASKS: state.subtasks,
                     }
-                except Exception as e:
-                    logger.error(f"Error in common node: {e}")
+                except Exception:
+                    logger.exception("Error in common node")
                     return {
                         MESSAGES: [
                             AIMessage(
@@ -215,7 +217,6 @@ class CompanionGraph:
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
             workflow.add_edge(member, SUMMARIZATION)
-        workflow.add_edge(SUMMARIZATION, SUPERVISOR)
 
         # Set the entrypoint: ENTRY --> summarization
         workflow.set_entry_point(SUMMARIZATION)
@@ -224,6 +225,15 @@ class CompanionGraph:
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
         # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
+
+        workflow.add_conditional_edges(
+            SUMMARIZATION,
+            should_continue,
+            {
+                CONTINUE: SUPERVISOR,
+                END: END,
+            },
+        )
 
         # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)
@@ -251,6 +261,7 @@ class CompanionGraph:
                 "input": user_input,
                 "k8s_client": k8s_client,
                 "subtasks": [],
+                "error": None,
             },
             config={
                 "configurable": {

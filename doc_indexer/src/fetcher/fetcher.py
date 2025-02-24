@@ -52,11 +52,9 @@ class DocumentsFetcher:
         try:
             scroller = Scroller(repo_dir, module_output_dir, source)
             scroller.scroll()
-        except Exception as e:
-            logger.error(
-                f"Error while scrolling documents for: {source.name}: {str(e)}"
-            )
-            raise e
+        except Exception:
+            logger.exception(f"Error while scrolling documents for: {source.name}")
+            raise
         finally:
             # delete the directories if they exist
             logger.debug(f"Deleting the temporary directory: {repo_dir}")
