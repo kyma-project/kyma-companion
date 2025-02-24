@@ -110,20 +110,20 @@ class BaseAgent:
         for subtask in state.subtasks:
             if (
                 subtask.assigned_to == self.name
-                and subtask.status != SubTaskStatus.COMPLETED
+                and subtask.status == SubTaskStatus.PENDING
             ):
                 return {
                     MY_TASK: subtask,
                 }
 
         return {
-            IS_LAST_STEP: True,
             AGENT_MESSAGES: [
                 AIMessage(
                     content="All my subtasks are already completed.",
                     name=self.name,
                 )
             ],
+            IS_LAST_STEP: True,
         }
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
@@ -147,10 +147,14 @@ class BaseAgent:
         try:
             response = await self._invoke_chain(state, config)
         except Exception as e:
-            error_message = (
-                f"An unexpected error occurred while processing your request: {e}"
-            )
-            logger.error(error_message)
+            error_message = "An error occurred while processing the request"
+            error_message_with_trace = error_message + f": {e}"
+            logger.error(error_message_with_trace)
+
+            # Update current subtask status
+            if state.my_task:
+                state.my_task.status = SubTaskStatus.ERROR
+
             return {
                 AGENT_MESSAGES: [
                     AIMessage(
@@ -159,7 +163,7 @@ class BaseAgent:
                         name=self.name,
                     )
                 ],
-                ERROR: error_message,
+                ERROR: error_message_with_trace,
             }
 
         # if the recursive limit is reached and the response is a tool call, return a message.
@@ -183,7 +187,7 @@ class BaseAgent:
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
-        if state.my_task is not None:
+        if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
             state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
         return {MESSAGES: [state.agent_messages[-1]], SUBTASKS: state.subtasks}
