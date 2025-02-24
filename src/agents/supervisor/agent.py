@@ -178,7 +178,7 @@ class SupervisorAgent:
         state.error = None
 
         try:
-            raise Exception("test exception")
+
             plan = await self._invoke_planner(
                 state,  # last message is the user query
             )
