@@ -7,7 +7,7 @@ from decouple import config
 
 from utils.model_config import ModelConfig
 
-project_root = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")
 
 MODELS_CONFIGS_KEY = "MODELS_CONFIGS"
 
