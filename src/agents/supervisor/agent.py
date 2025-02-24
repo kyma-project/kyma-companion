@@ -178,6 +178,7 @@ class SupervisorAgent:
         state.error = None
 
         try:
+            raise Exception("test exception")
             plan = await self._invoke_planner(
                 state,  # last message is the user query
             )
@@ -201,9 +202,16 @@ class SupervisorAgent:
             )
         except Exception:
             logger.exception("Error in planning")
-            return {
-                ERROR: "Unexpected error while processing the request. Please try again later.",
-            }
+
+            return create_node_output(
+                message=AIMessage(
+                    content="Unexpected error while processing the request. Please try again later.",
+                    name=PLANNER,
+                ),
+                subtasks=[],  # empty subtask to make the companion response consistent
+                next=END,
+                error="Unexpected error while processing the request. Please try again later.",
+            )
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
         # last human message must be the query

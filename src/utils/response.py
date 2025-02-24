@@ -37,9 +37,9 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     if "error" in agent_data and agent_data["error"]:
         if agent == SUMMARIZATION:
             # we don't show summarization node, but only error
-            return {"error": agent_data["error"]}
+            return {"agent": None,  "error": agent_data["error"] , "answer" : {}}
         else:
-            return {"agent": agent, "error": agent_data["error"]}
+            return {"agent": agent, "error": agent_data["error"],  "answer" : {}}
 
     # skip summarization node
     if agent == SUMMARIZATION:
@@ -65,7 +65,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             else:
                 answer[NEXT] = FINALIZER
 
-    return {"agent": agent, "answer": answer}
+    return {"agent": agent, "answer": answer, "error": None}
 
 
 def prepare_chunk_response(chunk: bytes) -> bytes | None:
