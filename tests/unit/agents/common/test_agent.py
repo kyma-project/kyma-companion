@@ -399,7 +399,7 @@ class TestBaseAgent:
                             name="KubernetesAgent",
                         )
                     ],
-                    ERROR: "An unexpected error occurred while processing your request: This is a dummy exception from model.",
+                    ERROR: "An error occurred while processing the request: This is a dummy exception from model.",
                 },
                 {
                     AGENT_MESSAGES: [AIMessage(content="dummy message 1")],
