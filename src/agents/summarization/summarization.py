@@ -100,13 +100,16 @@ class MessageSummarizer:
             {"messages": messages},
             config=config,
         )
+        logger.debug("Messages summary completed")
         return f"Summary of previous chat:\n {res.content}"
 
     async def summarization_node(
         self, state: BaseModel, config: RunnableConfig
     ) -> dict[str, Any]:
         """Summarization node to summarize the conversation."""
+        logger.debug("Summarization node started")
         state_messages = getattr(state, self._messages_key)
+
         state_messages_summary = getattr(state, self._messages_summary_key)
 
         all_messages = state_messages
@@ -119,6 +122,7 @@ class MessageSummarizer:
         token_count = self.get_messages_token_count(all_messages)
         if token_count <= self.get_token_upper_limit():
             return {
+                ERROR: None,
                 self._messages_key: [],
             }
 
@@ -129,12 +133,14 @@ class MessageSummarizer:
 
         if len(latest_messages_within_token_limit) == len(all_messages):
             return {
+                ERROR: None,
                 self._messages_key: [],
             }
 
         # summarize the remaining old messages
         old_msgs_to_summarize = all_messages[: -len(latest_messages_within_token_limit)]
         try:
+            logger.debug("Getting summary for messages")
             summary = await self.get_summary(old_msgs_to_summarize, config)
         except Exception:
             logger.exception("Error while summarizing messages.")
@@ -146,6 +152,7 @@ class MessageSummarizer:
         delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
 
         return {
+            ERROR: None,
             self._messages_summary_key: summary,
             self._messages_key: delete_messages,
             NEXT: SUPERVISOR,
