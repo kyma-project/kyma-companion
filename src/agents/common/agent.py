@@ -20,7 +20,6 @@ from agents.common.constants import (
     MY_TASK,
     SUBTASKS,
     SUMMARIZATION,
-    K8S_AGENT,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import filter_messages, should_continue
@@ -146,8 +145,6 @@ class BaseAgent:
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
-            if self.name == K8S_AGENT:
-                raise Exception("test exception")
             response = await self._invoke_chain(state, config)
         except Exception as e:
             error_message = "An error occurred while processing the request"

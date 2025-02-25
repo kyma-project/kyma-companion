@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 
 from agents.common.constants import (
     COMMON,
-    ERROR,
     FINALIZER,
     K8S_AGENT,
     KYMA_AGENT,
@@ -178,7 +177,6 @@ class SupervisorAgent:
         state.error = None
 
         try:
-
             plan = await self._invoke_planner(
                 state,  # last message is the user query
             )
