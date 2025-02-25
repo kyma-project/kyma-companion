@@ -40,8 +40,11 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
         agent_error = agent_data["error"]
         if agent == SUMMARIZATION:
             # we don't show summarization node, but only error
-            return {"agent": None, "error": agent_error,
-                    "answer": { "content": "", "tasks": [], NEXT : END}}
+            return {
+                "agent": None,
+                "error": agent_error,
+                "answer": {"content": "", "tasks": [], NEXT: END},
+            }
 
     # skip summarization node
     if agent == SUMMARIZATION:
