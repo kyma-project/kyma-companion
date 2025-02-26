@@ -108,7 +108,7 @@ class CompanionState(BaseModel):
         description="user input with user query and resource(s) contextual information",
         default=None,
     )
-
+    thread_owner: str = ""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     messages_summary: str = ""
     next: str | None = None

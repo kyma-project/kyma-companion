@@ -24,7 +24,7 @@ from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.settings import TOKEN_LIMIT_PER_CLUSTER
-from utils.utils import create_session_id
+from utils.utils import create_session_id, get_user_identifier_from_token
 
 logger = get_logger(__name__)
 
@@ -121,9 +121,13 @@ async def init_conversation(
 @router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
 async def followup_questions(
     conversation_id: Annotated[str, Path(title="The ID of the conversation")],
+    x_k8s_authorization: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
 ) -> JSONResponse:
     """Endpoint to generate follow-up questions for a conversation."""
+
+    # Authorize the user to access the conversation.
+    await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
 
     try:
         # Create follow-up questions.
@@ -157,6 +161,9 @@ async def messages(
     langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
+
+    # Authorize the user to access the conversation.
+    await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, langfuse_service)
@@ -240,4 +247,19 @@ async def check_token_usage(
                 "time_remaining_seconds": seconds_remaining,
             },
             headers={"Retry-After": str(seconds_remaining)},
+        )
+
+
+async def authorize_user(
+    conversation_id: str, x_k8s_authorization: str, conversation_service: IService
+) -> None:
+    """Authorize the user to access the conversation."""
+    try:
+        user_identifier = get_user_identifier_from_token(x_k8s_authorization)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid token") from e
+
+    if not await conversation_service.authorize_user(conversation_id, user_identifier):
+        raise HTTPException(
+            status_code=403, detail="User not authorized to access the conversation"
         )
