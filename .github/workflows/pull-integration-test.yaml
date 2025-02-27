@@ -20,7 +20,7 @@ on:
 
 ## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
 ## integration-tests in the create-release.yml workflow as well.
-
+permissions: read-all
 
 jobs:
   integration-test:
