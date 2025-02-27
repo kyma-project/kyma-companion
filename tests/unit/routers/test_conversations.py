@@ -12,6 +12,11 @@ from routers.conversations import init_conversation_service
 from services.conversation import IService
 from services.k8s import IK8sClient
 
+SAMPLE_JWT_TOKEN = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0Ijox"
+    "NTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+)
+
 
 #
 class MockService(IService):
@@ -31,6 +36,9 @@ class MockService(IService):
             "Test follow-up question 2",
             "Test follow-up question 3",
         ]
+
+    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
+        return True
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
@@ -76,7 +84,7 @@ def client_factory():
     [
         (
             {
-                "x-k8s-authorization": "non-empty-auth",
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
@@ -92,7 +100,7 @@ def client_factory():
         ),
         (
             {
-                "x-k8s-authorization": "non-empty-auth",
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
@@ -331,6 +339,7 @@ def test_followup_questions(
     # when
     response = test_client.get(
         f"/api/conversations/{conversation_id}/questions",
+        headers={"x-k8s-authorization": SAMPLE_JWT_TOKEN},
     )
 
     # then
