@@ -160,3 +160,64 @@ class TestConversation:
             )
         ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "test_description, conversation_id, user_identifier, thread_owner, expected_result",
+        [
+            (
+                "owner is None, should update owner and authorize",
+                "conversation1",
+                "user1",
+                None,
+                True,
+            ),
+            (
+                "owner is the same as user, should authorize",
+                "conversation2",
+                "user2",
+                "user2",
+                True,
+            ),
+            (
+                "owner is different from user, should not authorize",
+                "conversation3",
+                "user3",
+                "user4",
+                False,
+            ),
+        ],
+    )
+    async def test_authorize_user(
+        self,
+        test_description,
+        mock_model_factory,
+        mock_redis_saver,
+        mock_companion_graph,
+        mock_config,
+        conversation_id,
+        user_identifier,
+        thread_owner,
+        expected_result,
+    ):
+        # Given
+        mock_companion_graph = Mock()
+        mock_companion_graph.aget_thread_owner = AsyncMock(return_value=thread_owner)
+        mock_companion_graph.aupdate_thread_owner = AsyncMock()
+
+        conversation_service = ConversationService(config=mock_config)
+        conversation_service._companion_graph = mock_companion_graph
+
+        # When
+        result = await conversation_service.authorize_user(
+            conversation_id, user_identifier
+        )
+
+        # Then
+        assert result == expected_result
+        if thread_owner is None:
+            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(
+                conversation_id, user_identifier
+            )
+        else:
+            mock_companion_graph.aupdate_thread_owner.assert_not_called()
