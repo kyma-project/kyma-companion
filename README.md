@@ -89,7 +89,7 @@ Or, with a poe task:
 
 It is recommended to run Kyma Companion with Poetry because it activates and uses its virtual environment if not activated yet.
 
-As an alternative, you can run the application with the following command directly via Python, using [`uvicorn`](https://www.uvicorn.org/) instead of `FastAPI`:
+Alternatively, you can run the application directly using Python and [`uvicorn`](https://www.uvicorn.org/) instead of `FastAPI`. To do this, run the following command:
 
    ```bash
    python src/main.py
