@@ -5,6 +5,9 @@ import pytest
 
 from utils import utils
 from utils.utils import (
+    JWT_TOKEN_EMAIL,
+    JWT_TOKEN_SERVICE_ACCOUNT,
+    JWT_TOKEN_SUB,
     create_session_id,
     get_user_identifier_from_token,
     parse_k8s_token,
@@ -95,19 +98,19 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
     [
         (
             "valid token with sub",
-            {"sub": "user123"},
+            {JWT_TOKEN_SUB: "user123"},
             "user123",
             None,
         ),
         (
             "valid token with email",
-            {"email": "user@example.com"},
+            {JWT_TOKEN_EMAIL: "user@example.com"},
             "user@example.com",
             None,
         ),
         (
             "valid token with service account name",
-            {"kubernetes.io/serviceaccount/service-account.name": "service-account"},
+            {JWT_TOKEN_SERVICE_ACCOUNT: "service-account"},
             "service-account",
             None,
         ),

@@ -4,6 +4,10 @@ from typing import Any
 
 import jwt
 
+JWT_TOKEN_SUB = "sub"
+JWT_TOKEN_EMAIL = "email"
+JWT_TOKEN_SERVICE_ACCOUNT = "kubernetes.io/serviceaccount/service-account.name"
+
 
 def create_ndjson_str(obj: dict) -> str:
     """
@@ -57,15 +61,15 @@ def get_user_identifier_from_token(token: str) -> str:
     """Get the user identifier from the token."""
     try:
         payload = parse_k8s_token(token)
-        if "sub" in payload and payload["sub"] != "":
-            return str(payload["sub"])
-        elif "email" in payload and payload["email"] != "":
-            return str(payload["email"])
+        if JWT_TOKEN_SUB in payload and payload[JWT_TOKEN_SUB] != "":
+            return str(payload[JWT_TOKEN_SUB])
+        elif JWT_TOKEN_EMAIL in payload and payload[JWT_TOKEN_EMAIL] != "":
+            return str(payload[JWT_TOKEN_EMAIL])
         elif (
-            "kubernetes.io/serviceaccount/service-account.name" in payload
-            and payload["kubernetes.io/serviceaccount/service-account.name"] != ""
+            JWT_TOKEN_SERVICE_ACCOUNT in payload
+            and payload[JWT_TOKEN_SERVICE_ACCOUNT] != ""
         ):
-            return str(payload["kubernetes.io/serviceaccount/service-account.name"])
-        raise Exception("Invalid token: User identifier not found in token")
+            return str(payload[JWT_TOKEN_SERVICE_ACCOUNT])
+        raise ValueError("Invalid token: User identifier not found in token")
     except Exception as e:
         raise ValueError("Failed to get user identifier from token") from e

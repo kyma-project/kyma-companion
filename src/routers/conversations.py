@@ -257,6 +257,7 @@ async def authorize_user(
     try:
         user_identifier = get_user_identifier_from_token(x_k8s_authorization)
     except Exception as e:
+        logger.error(e)
         raise HTTPException(status_code=401, detail="Invalid token") from e
 
     if not await conversation_service.authorize_user(conversation_id, user_identifier):
