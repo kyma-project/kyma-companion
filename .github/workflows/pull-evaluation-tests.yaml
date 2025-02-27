@@ -20,6 +20,8 @@ on:
       - CODEOWNERS
       - LICENSE
 
+permissions: read-all
+
 # global env variables.
 env:
   DOCKER_TIMEOUT: 30
