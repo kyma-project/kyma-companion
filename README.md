@@ -99,7 +99,7 @@ To enable auto-reloading, pass the `--reload` argument:
     ```bash
     python src/main.pt --reload
     ```
-For IDEs (Pycharm, VS Code), you need to pass this argument in the run/debug configuration.
+For IDEs, such as Pycharm or VS Code, you must pass this argument in the run or debug configuration.
 
 ### Debugging
 
