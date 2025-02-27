@@ -96,7 +96,9 @@ As an alternative, you can run the application with the following command direct
    ```
 
 To enable auto-reloading, pass the `--reload` argument:
-`python src/main.py --reload`
+    ```bash
+    python src/main.pt --reload
+    ```
 For IDEs (Pycharm, VS Code), you need to pass this argument in the run/debug configuration.
 
 ### Debugging
