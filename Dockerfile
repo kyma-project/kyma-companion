@@ -1,4 +1,4 @@
-FROM python:3.12-alpine3.21 as builder
+FROM python:3.12-alpine3.21 AS builder
 
 # Set the working directory in the container
 WORKDIR /app
@@ -9,11 +9,13 @@ COPY src ./src
 COPY data ./data
 COPY config ./config
 
+RUN apk add --no-cache build-base
+
 # Install Poetry and dependencies in one layer
-RUN pip install --no-cache-dir poetry>=2.0  \
-  && poetry config virtualenvs.create false \
-  && poetry install --without test,dev --no-interaction --no-ansi \
-  && pip uninstall -y poetry
+RUN pip install --no-cache-dir poetry>=2.0
+RUN poetry config virtualenvs.create false
+RUN poetry install --without test,dev --no-interaction --no-ansi
+RUN pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
 FROM python:3.12-alpine3.21
