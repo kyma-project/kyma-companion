@@ -36,8 +36,8 @@ T = TypeVar("T")
 class IUsageMemory(Protocol):
     """Interface for LLM token usage memory."""
 
-    async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> None:
-        """Write LLM usage data to Redis."""
+    async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> str:
+        """Write LLM usage data to Redis. Return the key."""
 
     async def adelete_expired_llm_usage_records(
         self, cluster_id: str, ttl: int
@@ -477,13 +477,14 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         )
         return _safe_decode(latest_key)
 
-    async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> None:
-        """Write LLM usage data to Redis."""
+    async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> str:
+        """Write LLM usage data to Redis. Return the key."""
+        key = _make_llm_usage_key(cluster_id)
         if ttl > 0:
-            await self.conn.set(
-                _make_llm_usage_key(cluster_id), json.dumps(data), ex=ttl
-            )
-        await self.conn.set(_make_llm_usage_key(cluster_id), json.dumps(data))
+            await self.conn.set(key, json.dumps(data), ex=ttl)
+        else:
+            await self.conn.set(key, json.dumps(data))
+        return key
 
     async def adelete_expired_llm_usage_records(
         self, cluster_id: str, ttl: int
