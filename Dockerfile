@@ -9,9 +9,8 @@ COPY src ./src
 COPY data ./data
 COPY config ./config
 
-RUN apk add --no-cache build-base
-
 # Install Poetry and dependencies in one layer
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir poetry>=2.0
 RUN poetry config virtualenvs.create false
 RUN poetry install --without test,dev --no-interaction --no-ansi
