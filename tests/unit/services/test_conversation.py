@@ -221,3 +221,39 @@ class TestConversation:
             )
         else:
             mock_companion_graph.aupdate_thread_owner.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "cluster_id, usage_limit_exceeded",
+        [
+            ("cluster1", True),
+            ("cluster2", False),
+            ("cluster3", True),
+        ],
+    )
+    async def test_is_usage_limit_exceeded(
+        self,
+        mock_model_factory,
+        mock_redis_saver,
+        mock_companion_graph,
+        mock_config,
+        cluster_id,
+        usage_limit_exceeded,
+    ):
+        # Given
+        mock_usage_limiter = Mock()
+        mock_usage_limiter.adelete_expired_records = AsyncMock()
+        mock_usage_limiter.ais_usage_limit_exceeded = AsyncMock(
+            return_value=usage_limit_exceeded
+        )
+
+        conversation_service = ConversationService(config=mock_config)
+        conversation_service._usage_limiter = mock_usage_limiter
+
+        # When
+        result = await conversation_service.is_usage_limit_exceeded(cluster_id)
+
+        # Then
+        assert result == usage_limit_exceeded
+        mock_usage_limiter.adelete_expired_records.assert_called_once_with(cluster_id)
+        mock_usage_limiter.ais_usage_limit_exceeded.assert_called_once_with(cluster_id)

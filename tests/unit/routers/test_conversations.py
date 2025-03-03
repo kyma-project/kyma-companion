@@ -8,6 +8,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
 from main import app
 from routers.conversations import authorize_user, init_conversation_service
@@ -167,6 +168,33 @@ def client_factory():
             },
             {"status_code": 403, "content-type": "application/json"},
         ),
+        (
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            6,
+            {
+                "query": "Test query",
+                "resource_kind": "",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "detail": {
+                        "error": "Rate limit exceeded",
+                        "limit": 5000000,
+                        "message": "Daily token limit exceeded for this cluster",
+                        "time_remaining_seconds": 86400,
+                    },
+                },
+            },
+        ),
     ],
 )
 def test_messages_endpoint(
@@ -195,6 +223,7 @@ def test_messages_endpoint(
     if (
         expected_output["status_code"] == HTTPStatus.UNAUTHORIZED
         or expected_output["status_code"] == HTTPStatus.FORBIDDEN
+        or expected_output["status_code"] == ERROR_RATE_LIMIT_CODE
     ):
         # return if test case is to check for invalid token.
         return
@@ -380,7 +409,7 @@ def test_init_conversation(
             },
         ),
         (
-            # should successfully return follow-up questions.
+            # should return error when user is not authorized.
             {
                 "x-k8s-authorization": jwt.encode(
                     {"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"
@@ -393,6 +422,27 @@ def test_init_conversation(
                 "status_code": 403,
                 "content-type": "application/json",
                 "body": {"detail": "User not authorized to access the conversation"},
+            },
+        ),
+        (
+            # should return token usage exceeded error.
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+            },
+            "a8172829-7f6c-4c76-aa16-e91edc7a14c8",
+            None,
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "detail": {
+                        "error": "Rate limit exceeded",
+                        "limit": 5000000,
+                        "message": "Daily token limit exceeded for this cluster",
+                        "time_remaining_seconds": 86400,
+                    },
+                },
             },
         ),
     ],
