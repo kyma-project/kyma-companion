@@ -41,6 +41,12 @@ class MockService(IService):
             return False
         return True
 
+    async def is_usage_limit_exceeded(self, cluster_id: str) -> bool:
+        """Check if the token usage limit is exceeded for the given cluster_id."""
+        if cluster_id == "EXCEEDED":
+            return True
+        return False
+
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
@@ -343,6 +349,7 @@ def test_init_conversation(
             # should successfully return follow-up questions.
             {
                 "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "a8172829-7f6c-4c76-aa16-e91edc7a14c9",
             None,
@@ -362,6 +369,7 @@ def test_init_conversation(
             # should return error when conversation service fails.
             {
                 "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "d8725492-deb2-4d81-8ee1-ac74d61e84c5",
             ValueError("service failed"),
@@ -377,6 +385,7 @@ def test_init_conversation(
                 "x-k8s-authorization": jwt.encode(
                     {"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"
                 ),
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "a8172829-7f6c-4c76-aa16-e91edc7a14c8",
             None,
