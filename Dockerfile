@@ -11,6 +11,7 @@ COPY config ./config
 
 # Install Poetry and dependencies in one layer
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+Run pip wheel --no-cache-dir --use-pep517 "shapely (==2.0.6)"
 RUN pip install --no-cache-dir poetry>=2.0
 RUN poetry config virtualenvs.create false
 RUN poetry install --without test,dev --no-interaction --no-ansi
