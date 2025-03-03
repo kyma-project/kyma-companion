@@ -1420,37 +1420,37 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "generative-ai-hub-sdk"
-version = "4.4.3"
+version = "4.1.1"
 description = "generative AI hub SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "generative_ai_hub_sdk-4.4.3-py3-none-any.whl", hash = "sha256:7217387f73b14f81858109768d3c71332d48fd62e730c8b65babe36928ef741d"},
+    {file = "generative_ai_hub_sdk-4.1.1-py3-none-any.whl", hash = "sha256:9e2e0ca8eac12f22f6f207bc0b137200d04e2045ff36209bac9e92731416edf7"},
 ]
 
 [package.dependencies]
-ai-core-sdk = ">=2.5.7"
+ai-core-sdk = ">=2.4.14"
 boto3 = {version = "1.35.27", optional = true, markers = "extra == \"all\""}
 click = ">=8.1.7"
 dacite = ">=1.8.1"
 google-cloud-aiplatform = {version = "1.61.0", optional = true, markers = "extra == \"all\""}
-httpx = ">=0.27.0"
 langchain = {version = ">=0.3.0,<0.4.0", optional = true, markers = "extra == \"all\""}
 langchain-aws = {version = "0.2.1", optional = true, markers = "extra == \"all\""}
 langchain-community = {version = ">=0.3.0,<0.4.0", optional = true, markers = "extra == \"all\""}
 langchain-google-vertexai = {version = "2.0.1", optional = true, markers = "extra == \"all\""}
-langchain-openai = {version = ">=0.2.14", optional = true, markers = "extra == \"all\""}
+langchain-openai = {version = "0.2.9", optional = true, markers = "extra == \"all\""}
 openai = ">=1.56.0"
 overloading = "0.5.0"
 packaging = ">=23.2"
 pydantic = "2.9.2"
+requests = ">=2.32.3"
 
 [package.extras]
-all = ["boto3 (==1.35.27)", "google-cloud-aiplatform (==1.61.0)", "langchain (>=0.3.0,<0.4.0)", "langchain-aws (==0.2.1)", "langchain-community (>=0.3.0,<0.4.0)", "langchain-google-vertexai (==2.0.1)", "langchain-openai (>=0.2.14)"]
+all = ["boto3 (==1.35.27)", "google-cloud-aiplatform (==1.61.0)", "langchain (>=0.3.0,<0.4.0)", "langchain-aws (==0.2.1)", "langchain-community (>=0.3.0,<0.4.0)", "langchain-google-vertexai (==2.0.1)", "langchain-openai (==0.2.9)"]
 amazon = ["boto3 (==1.35.27)"]
 google = ["google-cloud-aiplatform (==1.61.0)"]
-langchain = ["langchain (>=0.3.0,<0.4.0)", "langchain-aws (==0.2.1)", "langchain-community (>=0.3.0,<0.4.0)", "langchain-google-vertexai (==2.0.1)", "langchain-openai (>=0.2.14)"]
+langchain = ["langchain (>=0.3.0,<0.4.0)", "langchain-aws (==0.2.1)", "langchain-community (>=0.3.0,<0.4.0)", "langchain-google-vertexai (==2.0.1)", "langchain-openai (==0.2.9)"]
 
 [[package]]
 name = "google-api-core"
@@ -2619,19 +2619,19 @@ mistral = ["langchain-mistralai (>=0.2.0,<1)"]
 
 [[package]]
 name = "langchain-openai"
-version = "0.3.2"
+version = "0.2.9"
 description = "An integration package connecting OpenAI and LangChain"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_openai-0.3.2-py3-none-any.whl", hash = "sha256:8674183805e26d3ae3f78cc44f79fe0b2066f61e2de0e7e18be3b86f0d3b2759"},
-    {file = "langchain_openai-0.3.2.tar.gz", hash = "sha256:c2c80ac0208eb7cefdef96f6353b00fa217979ffe83f0a21cc8666001df828c1"},
+    {file = "langchain_openai-0.2.9-py3-none-any.whl", hash = "sha256:2723015e56879f9e5edfcb175fdbec6c296c1b3bf65caad28579ce9c4d1bd652"},
+    {file = "langchain_openai-0.2.9.tar.gz", hash = "sha256:38a0f2004f17cdad622d46d4dcfb92d75adbf51909dadc76d0360dd94b0d4f70"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.3.31,<0.4.0"
-openai = ">=1.58.1,<2.0.0"
+langchain-core = ">=0.3.17,<0.4.0"
+openai = ">=1.54.0,<2.0.0"
 tiktoken = ">=0.7,<1"
 
 [[package]]
