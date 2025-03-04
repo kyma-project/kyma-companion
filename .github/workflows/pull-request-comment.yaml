@@ -6,12 +6,14 @@ on:
     branches:
       - "main"
       - "release-**"
+
+permissions:
+  issues: write
+
 jobs:
   comment:
     name: Notes for PR
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
     steps:
       - name: Install comment cli
         uses: shmokmt/actions-setup-github-comment@93d9e7c3ea11e473e3061a8dbed8231faea13dea
