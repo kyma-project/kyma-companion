@@ -26,13 +26,11 @@ from unit.rag.reranker.fixtures import (
 )
 
 
-@pytest.mark.asyncio
 class TestLLMReranker:
     """
     Test class for the LLMReranker class.
     """
 
-    @pytest.mark.asyncio
     def test_init(self):
         """
         Test the initialization of the LLMReranker class.
@@ -64,8 +62,7 @@ class TestLLMReranker:
         "expected_docs_list",
         [
             (
-                "given (duplicate documents and exception raised) "
-                "return unique relevant documents",
+                "given (duplicate documents and exception raised) return unique relevant documents",
                 [
                     # duplicate documents
                     [doc1, doc4, doc7],
@@ -88,8 +85,7 @@ class TestLLMReranker:
                 [doc1, doc2, doc3, doc4, doc5],
             ),
             (
-                "given (duplicate documents and exception not raised) "
-                "return unique relevant documents",
+                "given (duplicate documents and exception not raised) return unique relevant documents",
                 [
                     # duplicate documents
                     [doc1, doc4, doc7],
