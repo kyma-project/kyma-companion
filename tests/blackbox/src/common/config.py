@@ -79,6 +79,10 @@ class Config:
 
                 # Set environment variables for all keys except "models"
                 for key, value in config_file.items():
+                    if key in os.environ:
+                        logging.warning(
+                            f"Environment variable {key} is already set. Not overriding it with value from config file."
+                        )
                     if key != "models":  # Skip models
                         os.environ[key] = str(value)
                     else:
