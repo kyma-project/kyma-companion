@@ -83,6 +83,7 @@ class Config:
                         logging.warning(
                             f"Environment variable {key} is already set. Not overriding it with value from config file."
                         )
+                        continue
                     if key != "models":  # Skip models
                         os.environ[key] = str(value)
                     else:
