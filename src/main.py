@@ -17,7 +17,7 @@ async def root() -> dict:
 
 @app.get("/readyz")
 async def readyz() -> dict:
-    """The endpoint for the Readiness Probe."""
+    """The endpoint for the Readiness Probe!"""
     return {"ready": "true"}
 
 
