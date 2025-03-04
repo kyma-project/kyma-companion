@@ -8,8 +8,7 @@ on:
       - "release-**"
 
 permissions:
-  issues: write
-
+  pull-requests: write
 jobs:
   comment:
     name: Notes for PR
