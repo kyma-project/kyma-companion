@@ -333,6 +333,14 @@ class TestSupervisorAgent:
                 '{"response":null, "subtasks": null}',
                 {
                     ERROR: "Unexpected error while processing the request. Please try again later.",
+                    "messages": [
+                        AIMessage(
+                            content="Unexpected error while processing the request. Please try again later.",
+                            name=PLANNER,
+                        )
+                    ],
+                    "next": END,
+                    "subtasks": [],
                 },
                 None,
             ),
@@ -359,6 +367,14 @@ class TestSupervisorAgent:
                 '{"response":null,"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     ERROR: "Unexpected error while processing the request. Please try again later.",
+                    "messages": [
+                        AIMessage(
+                            content="Unexpected error while processing the request. Please try again later.",
+                            name=PLANNER,
+                        )
+                    ],
+                    "next": END,
+                    "subtasks": [],
                 },
                 "fake error",
             ),
