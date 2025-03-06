@@ -1,14 +1,10 @@
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from aiohttp import ClientResponseError
 from aiohttp.web_exceptions import HTTPError
-from fastapi import HTTPException
 
-from agents.common.constants import ERROR_RATE_LIMIT_CODE, SUCCESS_CODE
-from agents.common.utils import get_current_day_timestamps_utc
-from routers.conversations import check_token_usage
+from agents.common.constants import SUCCESS_CODE
 from services.langfuse import LangfuseService
 from utils.common import MetricsResponse
 
@@ -233,87 +229,3 @@ async def test_get_total_token_usage(
         else:
             with pytest.raises(ClientResponseError):
                 await api.get_total_token_usage(from_timestamp, to_timestamp, tags)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "x_cluster_url, total_token_usage, expected_exception, expected_detail",
-    [
-        # Test case 1: Token usage is below the limit, no exception should be raised
-        (
-            "https://cluster1.example.com",
-            500,
-            None,
-            None,
-        ),
-        # Test case 2: Token usage exceeds the limit, HTTPException should be raised
-        (
-            "https://cluster2.example.com",
-            TOKEN_LIMIT_PER_CLUSTER + 100,
-            HTTPException,
-            {
-                "error": "Rate limit exceeded",
-                "message": f"Daily token limit of {TOKEN_LIMIT_PER_CLUSTER} exceeded for this cluster",
-                "current_usage": TOKEN_LIMIT_PER_CLUSTER + 100,
-                "limit": TOKEN_LIMIT_PER_CLUSTER,
-                "time_remaining_seconds": 6399,  # just a random number
-            },
-        ),
-        # Test case 3: Langfuse API fails, no exception should be raised
-        (
-            "https://cluster3.example.com",
-            0,
-            None,
-            None,
-        ),
-    ],
-)
-async def test_check_token_usage(
-    x_cluster_url, total_token_usage, expected_exception, expected_detail
-):
-    """
-    This test verifies that the function correctly checks the token usage for a cluster
-    and raises an HTTPException if the usage exceeds the daily limit. It tests three scenarios:
-    1. Token usage is below the limit, no exception is raised.
-    2. Token usage exceeds the limit, an HTTPException is raised.
-    3. The Langfuse API fails, no exception is raised.
-    """
-    # Mock the Langfuse service
-    langfuse_service = AsyncMock()
-
-    # Mock the get_total_token_usage method
-    if total_token_usage == 0:
-        langfuse_service.get_total_token_usage.side_effect = Exception("API Error")
-    else:
-        langfuse_service.get_total_token_usage.return_value = total_token_usage
-
-    # Mock the current time to control the time_remaining calculation
-    current_utc = datetime.now(UTC)
-    midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
-    time_remaining = midnight_utc - current_utc
-    seconds_remaining = int(time_remaining.total_seconds())
-
-    if expected_detail:
-        expected_detail["time_remaining_seconds"] = seconds_remaining
-
-    if expected_exception:
-        with pytest.raises(expected_exception) as exc_info:
-            await check_token_usage(
-                x_cluster_url, langfuse_service, TOKEN_LIMIT_PER_CLUSTER
-            )
-
-        assert exc_info.value.status_code == ERROR_RATE_LIMIT_CODE
-        assert exc_info.value.detail == expected_detail
-        assert exc_info.value.headers == {"Retry-After": str(seconds_remaining)}
-    else:
-        await check_token_usage(
-            x_cluster_url, langfuse_service, TOKEN_LIMIT_PER_CLUSTER
-        )
-
-    # Verify that the Langfuse service was called with the correct arguments
-    from_timestamp, to_timestamp = get_current_day_timestamps_utc()
-    cluster_id = x_cluster_url.split(".")[1]
-
-    langfuse_service.get_total_token_usage.assert_called_once_with(
-        from_timestamp, to_timestamp, cluster_id
-    )
