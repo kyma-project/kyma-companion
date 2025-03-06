@@ -5,6 +5,7 @@ from langchain_core.messages import AIMessage
 
 from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
+from services.usage import UsageExceedReport
 from utils.models.factory import ModelType
 
 TIME_STAMP = 1.8
@@ -226,9 +227,25 @@ class TestConversation:
     @pytest.mark.parametrize(
         "cluster_id, usage_limit_exceeded",
         [
-            ("cluster1", True),
-            ("cluster2", False),
-            ("cluster3", True),
+            (
+                "cluster1",
+                UsageExceedReport(
+                    cluster_id="cluster1",
+                    token_limit=100,
+                    total_tokens_used=200,
+                    reset_seconds_left=1000,
+                ),
+            ),
+            ("cluster2", None),
+            (
+                "cluster3",
+                UsageExceedReport(
+                    cluster_id="cluster1",
+                    token_limit=500,
+                    total_tokens_used=600,
+                    reset_seconds_left=3000,
+                ),
+            ),
         ],
     )
     async def test_is_usage_limit_exceeded(

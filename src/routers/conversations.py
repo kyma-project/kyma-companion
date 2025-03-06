@@ -21,7 +21,6 @@ from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
-from utils.settings import TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL
 from utils.utils import create_session_id, get_user_identifier_from_token
 
 logger = get_logger(__name__)
@@ -199,16 +198,19 @@ async def messages(
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:
     """Check if the token usage limit is exceeded for the cluster."""
     cluster_id = x_cluster_url.split(".")[1]
-    if await conversation_service.is_usage_limit_exceeded(cluster_id):
+
+    report = await conversation_service.is_usage_limit_exceeded(cluster_id)
+    if report is not None:
         raise HTTPException(
             status_code=ERROR_RATE_LIMIT_CODE,
             detail={
                 "error": "Rate limit exceeded",
-                "message": "Daily token limit exceeded for this cluster",
-                "limit": TOKEN_LIMIT_PER_CLUSTER,
-                "time_remaining_seconds": TOKEN_USAGE_RESET_INTERVAL,
+                "message": f"Daily token limit of {report.token_limit} exceeded for this cluster",
+                "current_usage": report.total_tokens_used,
+                "limit": report.token_limit,
+                "time_remaining_seconds": report.reset_seconds_left,
             },
-            headers={"Retry-After": str(TOKEN_USAGE_RESET_INTERVAL)},
+            headers={"Retry-After": str(report.reset_seconds_left)},
         )
 
 

@@ -15,7 +15,7 @@ from initial_questions.inital_questions import (
     InitialQuestionsHandler,
 )
 from services.k8s import IK8sClient
-from services.usage import IUsageTracker, UsageTracker
+from services.usage import IUsageTracker, UsageExceedReport, UsageTracker
 from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
@@ -54,7 +54,9 @@ class IService(Protocol):
         """Authorize the user to access the conversation."""
         ...
 
-    async def is_usage_limit_exceeded(self, cluster_id: str) -> bool:
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
         ...
 
@@ -167,7 +169,9 @@ class ConversationService(metaclass=SingletonMeta):
         # If the owner is the same as the user, we can authorize the user.
         return owner == user_identifier
 
-    async def is_usage_limit_exceeded(self, cluster_id: str) -> bool:
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
         # Delete expired records before checking the usage limit.
         await self._usage_limiter.adelete_expired_records(cluster_id)

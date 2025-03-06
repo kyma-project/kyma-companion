@@ -1,3 +1,4 @@
+import time
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -16,6 +17,16 @@ class UsageModel(BaseModel):
     input: int
     output: int
     total: int
+    epoch: float = time.time()
+
+
+class UsageExceedReport(BaseModel):
+    """Usage exceed report model."""
+
+    cluster_id: str
+    token_limit: int
+    total_tokens_used: int
+    reset_seconds_left: int
 
 
 class UsageTrackerCallback(AsyncCallbackHandler):
@@ -51,7 +62,9 @@ class IUsageTracker(Protocol):
     async def adelete_expired_records(self, cluster_id: str) -> None:
         """Delete the expired records for the given cluster_id."""
 
-    async def ais_usage_limit_exceeded(self, cluster_id: str) -> bool:
+    async def ais_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
         """Check if the token limit is exceeded for the given cluster_id."""
 
 
@@ -69,17 +82,35 @@ class UsageTracker(IUsageTracker):
             cluster_id, self.reset_interval_sec
         )
 
-    async def ais_usage_limit_exceeded(self, cluster_id: str) -> bool:
+    async def ais_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
         """Check if the token limit is exceeded for the given cluster_id."""
         if self.token_limit == -1:
-            return False
+            return None
         records = await self.memory.alist_llm_usage_records(
             cluster_id, self.reset_interval_sec
         )
         # parse the records as Pydantic model to verify the structure.
         records = [UsageModel(**record) for record in records]
         total_usage = sum(record.total for record in records)
-        return total_usage > self.token_limit
+
+        # return if token usage limit is not exceeded.
+        if total_usage < self.token_limit:
+            return None
+
+        # find the latest record to calculate the reset_seconds_left
+        latest_record = max(records, key=lambda record: record.epoch)
+        reset_seconds_left = int(
+            float(self.reset_interval_sec) - (time.time() - latest_record.epoch)
+        )
+
+        return UsageExceedReport(
+            cluster_id=cluster_id,
+            token_limit=self.token_limit,
+            total_tokens_used=total_usage,
+            reset_seconds_left=reset_seconds_left,
+        )
 
 
 # Helper methods
@@ -181,19 +212,6 @@ def _parse_usage_model(usage: pydantic.BaseModel | dict) -> dict[str, Any] | Non
             )  # For Bedrock, the token count is a list when streamed
 
             usage_model[langfuse_key] = final_count  # type: ignore
-
-    if isinstance(usage_model, dict):
-        if "input_token_details" in usage_model:
-            input_token_details = usage_model.pop("input_token_details", {})
-
-            for key, value in input_token_details.items():
-                usage_model[f"input_{key}"] = value
-
-        if "output_token_details" in usage_model:
-            output_token_details = usage_model.pop("output_token_details", {})
-
-            for key, value in output_token_details.items():
-                usage_model[f"output_{key}"] = value
 
     if isinstance(usage_model, pydantic.BaseModel):
         return dict(usage_model)

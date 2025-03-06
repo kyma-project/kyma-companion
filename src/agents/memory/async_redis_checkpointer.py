@@ -489,8 +489,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
     async def adelete_expired_llm_usage_records(
         self, cluster_id: str, ttl: int
     ) -> None:
-        """Delete expired LLM usage records.
-        Returns the list of keys that were deleted."""
+        """Delete expired LLM usage records."""
         keys = await self.conn.keys(_get_llm_usage_key_filter(cluster_id))
         keys_to_delete = []
         for key in keys:

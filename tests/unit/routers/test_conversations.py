@@ -11,9 +11,14 @@ from fastapi.testclient import TestClient
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
 from main import app
-from routers.conversations import authorize_user, init_conversation_service
+from routers.conversations import (
+    authorize_user,
+    check_token_usage,
+    init_conversation_service,
+)
 from services.conversation import IService
 from services.k8s import IK8sClient
+from services.usage import UsageExceedReport
 
 SAMPLE_JWT_TOKEN = jwt.encode({"sub": "user123"}, "secret", algorithm="HS256")
 
@@ -42,11 +47,18 @@ class MockService(IService):
             return False
         return True
 
-    async def is_usage_limit_exceeded(self, cluster_id: str) -> bool:
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
         if cluster_id == "EXCEEDED":
-            return True
-        return False
+            return UsageExceedReport(
+                cluster_id=cluster_id,
+                token_limit=1000,
+                total_tokens_used=1000,
+                reset_seconds_left=60,
+            )
+        return None
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
@@ -437,10 +449,11 @@ def test_init_conversation(
                 "content-type": "application/json",
                 "body": {
                     "detail": {
+                        "current_usage": 1000,
                         "error": "Rate limit exceeded",
-                        "limit": 5000000,
-                        "message": "Daily token limit exceeded for this cluster",
-                        "time_remaining_seconds": 86400,
+                        "limit": 1000,
+                        "message": "Daily token limit of 1000 exceeded for this cluster",
+                        "time_remaining_seconds": 60,
                     },
                 },
             },
@@ -473,6 +486,44 @@ def test_followup_questions(
         assert response_body["questions"] == expected_output["body"]["questions"]
     else:
         assert response_body == expected_output["body"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "cluster_url, usage_report, expected_exception",
+    [
+        (
+            "https://api.k8s-id.example.com",
+            None,
+            None,
+        ),
+        (
+            "https://api.k8s-id.example.com",
+            UsageExceedReport(
+                cluster_id="k8s-id",
+                token_limit=1000,
+                total_tokens_used=1000,
+                reset_seconds_left=60,
+            ),
+            HTTPException,
+        ),
+    ],
+)
+async def test_check_token_usage(cluster_url, usage_report, expected_exception):
+    # Mock the conversation_service
+    mock_conversation_service = Mock()
+    mock_conversation_service.is_usage_limit_exceeded = AsyncMock(
+        return_value=usage_report
+    )
+
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            await check_token_usage(cluster_url, mock_conversation_service)
+    else:
+        await check_token_usage(cluster_url, mock_conversation_service)
+        mock_conversation_service.is_usage_limit_exceeded.assert_called_once_with(
+            "k8s-id"
+        )
 
 
 @pytest.mark.asyncio
