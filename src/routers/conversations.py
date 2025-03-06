@@ -18,7 +18,7 @@ from routers.common import (
 )
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
-from services.k8s import IK8sClient, K8sClient
+from services.k8s import IK8sClient, K8sClient, K8sAuthHeaders
 from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
@@ -65,15 +65,27 @@ router = APIRouter(
 async def init_conversation(
     data: InitConversationBody,
     x_cluster_url: Annotated[str, Header()],
-    x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
     session_id: Annotated[str, Header()] = "",
+    x_k8s_authorization: Annotated[str, Header()] = None,
+    x_client_certificate_data: Annotated[str, Header()] = None,
+    x_client_key_data: Annotated[str, Header()] = None
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
     logger.info("Initializing new conversation.")
+
+    # Validate if all the required K8s headers are provided.
+    k8s_auth_headers = K8sAuthHeaders(
+        x_cluster_url=x_cluster_url,
+        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
+        x_k8s_authorization=x_k8s_authorization,
+        x_client_certificate_data=x_client_certificate_data,
+        x_client_key_data=x_client_key_data,
+    )
+    k8s_auth_headers.validate()
 
     # Initialize with the session_id. Create a new session_id if not provided.
     session_id = session_id if session_id else create_session_id()
@@ -81,9 +93,7 @@ async def init_conversation(
     # Initialize k8s client for the request.
     try:
         k8s_client: IK8sClient = K8sClient(
-            api_server=x_cluster_url,
-            user_token=x_k8s_authorization,
-            certificate_authority_data=x_cluster_certificate_authority_data,
+            k8s_auth_headers=k8s_auth_headers,
             data_sanitizer=data_sanitizer,
         )
     except Exception as e:
@@ -121,10 +131,24 @@ async def init_conversation(
 @router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
 async def followup_questions(
     conversation_id: Annotated[str, Path(title="The ID of the conversation")],
-    x_k8s_authorization: Annotated[str, Header()],
+    x_cluster_url: Annotated[str, Header()],
+    x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
+    x_k8s_authorization: Annotated[str, Header()] = None,
+    x_client_certificate_data: Annotated[str, Header()] = None,
+    x_client_key_data: Annotated[str, Header()] = None
 ) -> JSONResponse:
     """Endpoint to generate follow-up questions for a conversation."""
+
+    # Validate if all the required K8s headers are provided.
+    k8s_auth_headers = K8sAuthHeaders(
+        x_cluster_url=x_cluster_url,
+        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
+        x_k8s_authorization=x_k8s_authorization,
+        x_client_certificate_data=x_client_certificate_data,
+        x_client_key_data=x_client_key_data,
+    )
+    k8s_auth_headers.validate()
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
@@ -154,13 +178,25 @@ async def messages(
     ],
     message: Annotated[Message, Body(title="The message to send")],
     x_cluster_url: Annotated[str, Header()],
-    x_k8s_authorization: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
     langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
+    x_k8s_authorization: Annotated[str, Header()] = None,
+    x_client_certificate_data: Annotated[str, Header()] = None,
+    x_client_key_data: Annotated[str, Header()] = None
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
+
+    # Validate if all the required K8s headers are provided.
+    k8s_auth_headers = K8sAuthHeaders(
+        x_cluster_url=x_cluster_url,
+        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
+        x_k8s_authorization=x_k8s_authorization,
+        x_client_certificate_data=x_client_certificate_data,
+        x_client_key_data=x_client_key_data,
+    )
+    k8s_auth_headers.validate()
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
@@ -171,9 +207,7 @@ async def messages(
     # Initialize k8s client for the request.
     try:
         k8s_client: IK8sClient = K8sClient(
-            api_server=x_cluster_url,
-            user_token=x_k8s_authorization,
-            certificate_authority_data=x_cluster_certificate_authority_data,
+            k8s_auth_headers=k8s_auth_headers,
             data_sanitizer=data_sanitizer,
         )
     except Exception as e:

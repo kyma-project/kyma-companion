@@ -2,16 +2,65 @@ import base64
 import copy
 import os
 import tempfile
+from enum import Enum
 from http import HTTPStatus
-from typing import Protocol, cast, runtime_checkable
+from typing import Protocol, cast, runtime_checkable, Any, Self
 
 import requests
 from kubernetes import client, dynamic
+from pydantic import BaseModel
 
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+class AuthType(str, Enum):
+    """Status of the sub-task."""
+
+    TOKEN = "token"
+    CLIENT_CERTIFICATE = "client_certificate"
+    UNKNOWN = "unknown"
+
+
+class K8sAuthHeaders(BaseModel):
+    """Model for Kubernetes API authentication headers."""
+
+    x_cluster_url: str
+    x_cluster_certificate_authority_data: str
+    x_k8s_authorization: str | None
+    x_client_certificate_data: str | None
+    x_client_key_data: str | None
+
+    def validate(self) -> None:
+        if self.x_cluster_url == "":
+            raise ValueError("x-cluster-url header is required.")
+        if self.x_cluster_certificate_authority_data == "":
+            raise ValueError("x-cluster-certificate-authority-data header is required.")
+        if self.x_k8s_authorization is None and (self.x_client_certificate_data is None or self.x_client_key_data is None):
+            raise ValueError(
+                "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+            )
+
+    def get_auth_type(self) -> AuthType:
+        if self.x_k8s_authorization:
+            return AuthType.TOKEN
+        if self.x_client_certificate_data and self.x_client_key_data:
+            return AuthType.CLIENT_CERTIFICATE
+        return AuthType.UNKNOWN
+
+    def get_decoded_certificate_authority_data(self) -> bytes:
+        """Decode the certificate authority data."""
+        return base64.b64decode(self.k8s_auth_headers.x_cluster_certificate_authority_data)
+
+    def get_decoded_client_certificate_data(self) -> bytes:
+        """Decode the certificate authority data."""
+        return base64.b64decode(self.k8s_auth_headers.x_client_certificate_data)
+
+    def get_decoded_client_key_data(self) -> bytes:
+        """Decode the certificate authority data."""
+        return base64.b64decode(self.k8s_auth_headers.x_client_key_data)
 
 
 @runtime_checkable
@@ -91,72 +140,99 @@ class IK8sClient(Protocol):
 class K8sClient:
     """Client to interact with the Kubernetes API."""
 
-    api_server: str
-    user_token: str
-    certificate_authority_data: str
+    k8s_auth_headers: K8sAuthHeaders
     ca_temp_filename: str = ""
+    client_cert_temp_filename: str = ""
+    client_key_temp_filename: str = ""
     dynamic_client: dynamic.DynamicClient
     data_sanitizer: IDataSanitizer | None
 
     def __init__(
         self,
-        api_server: str,
-        user_token: str,
-        certificate_authority_data: str,
+        k8s_auth_headers: K8sAuthHeaders,
         data_sanitizer: IDataSanitizer | None = None,
     ):
         """Initialize the K8sClient object."""
-        self.api_server = api_server
-        self.user_token = user_token
-        self.certificate_authority_data = certificate_authority_data
+        self.k8s_auth_headers = k8s_auth_headers
 
         # Write the certificate authority data to a temporary file.
         ca_file = tempfile.NamedTemporaryFile(delete=False)
-        ca_file.write(self._get_decoded_ca_data())
+        ca_file.write(self.k8s_auth_headers.get_decoded_certificate_authority_data())
         ca_file.close()
         self.ca_temp_filename = ca_file.name
+
+        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
+            # Write the client certificate data to a temporary file.
+            client_cert_file = tempfile.NamedTemporaryFile(delete=False)
+            client_cert_file.write(self.k8s_auth_headers.get_decoded_client_certificate_data())
+            client_cert_file.close()
+            self.client_cert_temp_filename = client_cert_file.name
+
+            # Write the client key data to a temporary file.
+            client_key_file = tempfile.NamedTemporaryFile(delete=False)
+            client_key_file.write(self.k8s_auth_headers.get_decoded_client_key_data())
+            client_key_file.close()
+            self.client_key_temp_filename = client_key_file.name
 
         self.dynamic_client = self._create_dynamic_client()
 
         self.data_sanitizer = data_sanitizer
 
+
     def __del__(self):
-        """Destructor to remove the temporary file containing certificate authority data."""
+        """Destructor to remove the temporary file containing certificates data."""
         if self.ca_temp_filename != "":
             try:
                 os.remove(self.ca_temp_filename)
             except FileNotFoundError:
                 return
 
+        if self.client_cert_temp_filename != "":
+            try:
+                os.remove(self.client_cert_temp_filename)
+            except FileNotFoundError:
+                return
+
+        if self.client_key_temp_filename != "":
+            try:
+                os.remove(self.client_key_temp_filename)
+            except FileNotFoundError:
+                return
+
+
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
-        return self.api_server
+        return self.k8s_auth_headers.x_cluster_url
 
     def model_dump(self) -> None:
         """Dump the model. It should not return any critical information because it is called by checkpointer
         to store the object in database."""
         return None
 
-    def _get_decoded_ca_data(self) -> bytes:
-        """Decode the certificate authority data."""
-        return base64.b64decode(self.certificate_authority_data)
 
     def _create_dynamic_client(self) -> dynamic.DynamicClient:
         """Create a dynamic client for the K8s API."""
         # Create configuration object for client.
         conf = client.Configuration()
-        conf.host = self.api_server
-        conf.api_key["authorization"] = self.user_token
-        conf.api_key_prefix["authorization"] = "Bearer"
+        conf.host = self.get_api_server()
         conf.verify_ssl = True
         conf.ssl_ca_cert = self.ca_temp_filename
+
+        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
+            conf.cert_file = self.client_cert_temp_filename
+            conf.key_file = self.client_key_temp_filename
+        elif self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN:
+            conf.api_key_prefix["authorization"] = "Bearer"
+            conf.api_key["authorization"] = self.k8s_auth_headers.x_k8s_authorization
+        else:
+            raise ValueError("Unknown authentication type.")
 
         return dynamic.DynamicClient(client.api_client.ApiClient(configuration=conf))
 
     def _get_auth_headers(self) -> dict:
         """Get the authentication headers for the Kubernetes API request."""
         return {
-            "Authorization": "Bearer " + self.user_token,
+            "Authorization": "Bearer " + self.k8s_auth_headers.x_k8s_authorization,
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
@@ -164,7 +240,7 @@ class K8sClient:
     def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         response = requests.get(
-            url=f"{self.api_server}/{uri.lstrip('/')}",
+            url=f"{self.get_api_server()}/{uri.lstrip('/')}",
             headers=self._get_auth_headers(),
             verify=self.ca_temp_filename,
         )
@@ -309,7 +385,7 @@ class K8sClient:
             uri += "&previous=true"
 
         response = requests.get(
-            url=f"{self.api_server}/{uri.lstrip('/')}",
+            url=f"{self.get_api_server()}/{uri.lstrip('/')}",
             headers=self._get_auth_headers(),
             verify=self.ca_temp_filename,
         )
