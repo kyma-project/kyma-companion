@@ -242,12 +242,16 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         self.conn = conn
 
     @classmethod
-    def from_conn_info(cls, *, host: str, port: int, db: int) -> "AsyncRedisSaver":
+    def from_conn_info(
+        cls, *, host: str, port: int, db: int, password: str
+    ) -> "AsyncRedisSaver":
         """Create a new AsyncRedisSaver with the given connection info.
 
         This is a synchronous method that will fail fast if Redis connection cannot be established.
         """
-        conn = AsyncRedis(host=host, port=port, db=db)
+        conn = AsyncRedis(
+            host=host, port=port, db=db, password=password if password != "" else None
+        )
         return cls(conn)
 
     async def _redis_call(self, awaitable: Awaitable[T] | T) -> T:

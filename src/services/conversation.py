@@ -22,6 +22,7 @@ from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
 from utils.settings import (
     REDIS_DB_NUMBER,
     REDIS_HOST,
+    REDIS_PASSWORD,
     REDIS_PORT,
     TOKEN_LIMIT_PER_CLUSTER,
     TOKEN_USAGE_RESET_INTERVAL,
@@ -100,7 +101,10 @@ class ConversationService(metaclass=SingletonMeta):
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
         checkpointer = AsyncRedisSaver.from_conn_info(
-            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=REDIS_DB_NUMBER,
+            password=REDIS_PASSWORD,
         )
         self._usage_limiter = UsageTracker(
             checkpointer, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL

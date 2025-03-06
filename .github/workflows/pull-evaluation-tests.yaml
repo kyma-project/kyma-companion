@@ -95,7 +95,7 @@ jobs:
       - name: K3d Setup - Provision K3d cluster
         run: |
           echo "::group::K3d - Provision"
-          k3d cluster create test-cluster --verbose --agents=1 -p 9080:80@loadbalancer -p 9443:443@loadbalancer -p "32000:32000@agent:0"
+          k3d cluster create test-cluster --verbose --agents=1 -p 9080:80@loadbalancer -p 9443:443@loadbalancer -p "32000:32000@agent:0" -p "32100:32100@agent:0"
           echo "::endgroup::"
 
       - name: K3d Setup - Verify K3d context
@@ -115,6 +115,11 @@ jobs:
           helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
           echo "Installing Redis using Helm..."
           helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
+
+      - name: Redis Setup - Change NodePort
+        run: |
+          kubectl patch service redis-stack -n redis --type='json' -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value": 32100}]'
+          kubectl get svc -n redis redis-stack -o yaml
 
       - name: Companion Deploy - Create secret
         env:
@@ -176,6 +181,7 @@ jobs:
           LOG_LEVEL: "DEBUG"
           TEST_DATA_PATH: "./data"
           COMPANION_API_URL: "http://localhost:32000"
+          REDIS_URL: "redis://localhost:32100"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
