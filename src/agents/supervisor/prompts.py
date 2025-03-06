@@ -120,6 +120,6 @@ To do this, follow these instructions:
   - You MUST include ALL the provided code blocks (YAML, JavaScript, JSON, etc.) in the final response.
   - remove any information that are irrelevant to the user query.
 3. Finally, generate a final response that answers the user query based on the synthesized responses.
-4. If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
-
+4. If there is any YAML config in agent response, put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
+5. Do not add any new YAML configs.
 """
