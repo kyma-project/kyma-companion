@@ -106,7 +106,6 @@ Your task is to analyze and synthesize responses from other agents: "{members}" 
 - Include ALL the provided code blocks (YAML, JavaScript, JSON, etc.) in the final response.
 - Remove any information regarding the agents and your decision-making process from your final response.
 - Do not add any more headers or sub-headers to the final response.
-- If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
 
 # Key Rules:
 - Your reponse MUST be RELEVANT to the user query.
@@ -121,4 +120,6 @@ To do this, follow these instructions:
   - You MUST include ALL the provided code blocks (YAML, JavaScript, JSON, etc.) in the final response.
   - remove any information that are irrelevant to the user query.
 3. Finally, generate a final response that answers the user query based on the synthesized responses.
+4. If there is any YAML config , put the config in <YAML-NEW> </YAML-NEW> or <YAML-UPDATE> </YAML-UPDATE> block based on whether it is for new deployment or updating existing deployment.
+
 """
