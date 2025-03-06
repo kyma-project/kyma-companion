@@ -43,6 +43,10 @@ class IService(Protocol):
         """Handle a request for a conversation"""
         ...
 
+    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
+        """Authorize the user to access the conversation."""
+        ...
+
 
 class ConversationService(metaclass=SingletonMeta):
     """
@@ -134,3 +138,15 @@ class ConversationService(metaclass=SingletonMeta):
             conversation_id, message, k8s_client
         ):
             yield chunk.encode()
+
+    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
+        """Authorize the user to access the conversation."""
+        owner = await self._companion_graph.aget_thread_owner(conversation_id)
+        # If the owner is None, we can update the owner to the current user.
+        if owner is None:
+            await self._companion_graph.aupdate_thread_owner(
+                conversation_id, user_identifier
+            )
+            return True
+        # If the owner is the same as the user, we can authorize the user.
+        return owner == user_identifier

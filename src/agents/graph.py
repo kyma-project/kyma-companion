@@ -289,3 +289,36 @@ class CompanionGraph:
         if latest_state.values and "messages" in latest_state.values:
             return latest_state.values["messages"]  # type: ignore
         return []
+
+    async def aget_thread_owner(self, conversation_id: str) -> str | None:
+        """Get the owner of the thread."""
+        state = await self.graph.aget_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
+        if (
+            state
+            and state.values
+            and "thread_owner" in state.values
+            and state.values["thread_owner"] != ""
+        ):
+            return str(state.values["thread_owner"])
+        return None
+
+    async def aupdate_thread_owner(
+        self, conversation_id: str, user_identifier: str
+    ) -> None:
+        """Update the owner of the thread."""
+        await self.graph.aupdate_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            },
+            {
+                "thread_owner": user_identifier,
+            },
+        )

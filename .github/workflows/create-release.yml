@@ -75,9 +75,13 @@ jobs:
       release_branch: ${{ steps.export-branch-name.outputs.release_branch }}
 
   run-unit-tests:
+    ## **IMPORTANT**: If any changes are made to how to run the unit tests
+    ## in the release-workflow, make sure to update the steps
+    ## in the unit-test.yaml workflow as well.
     name: Run unit tests
     needs: validate-input-params
     runs-on: ubuntu-latest
+    permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
@@ -117,9 +121,13 @@ jobs:
         run: poetry run poe test
 
   run-integration-tests:
+    ## **IMPORTANT**: If any changes are made to how to run the integration tests
+    ## in the release-workflow, make sure to update
+    ## in the run-integration-test.yaml workflow as well.
     name: Run integration tests
     needs: validate-input-params
     runs-on: ubuntu-latest
+    permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:

@@ -11,6 +11,7 @@ on:
       - "doc_indexer/**"
       - CODEOWNERS
       - LICENSE
+      - "sec-scanners-config.yaml"
 
 ## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
 ## in the create-release.yml workflow as well.
@@ -18,6 +19,9 @@ on:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: none
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

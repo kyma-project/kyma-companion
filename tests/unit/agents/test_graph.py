@@ -498,3 +498,106 @@ class TestCompanionGraph:
                 },
             }
         )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "conversation_id, state_values, expected_owner",
+        [
+            (
+                "conversation1",
+                {"thread_owner": "user1"},
+                "user1",
+            ),
+            (
+                "conversation2",
+                {"thread_owner": ""},
+                None,
+            ),
+            (
+                "conversation3",
+                {},
+                None,
+            ),
+        ],
+    )
+    async def test_aget_thread_owner(
+        self, companion_graph, conversation_id, state_values, expected_owner
+    ):
+        # Given
+        state_snapshot = StateSnapshot(
+            values=state_values,
+            next=(),
+            config=RunnableConfig(),
+            tasks=(),
+            metadata=None,
+            created_at=None,
+            parent_config=None,
+        )
+        companion_graph.graph.aget_state = AsyncMock(return_value=state_snapshot)
+
+        # When
+        result = await companion_graph.aget_thread_owner(conversation_id)
+
+        # Then
+        assert result == expected_owner
+        companion_graph.graph.aget_state.assert_called_once_with(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "conversation_id, user_identifier, initial_state_values, expected_state_values",
+        [
+            (
+                "conversation1",
+                "user1",
+                {"thread_owner": ""},
+                {"thread_owner": "user1"},
+            ),
+            (
+                "conversation2",
+                "user2",
+                {},
+                {"thread_owner": "user2"},
+            ),
+        ],
+    )
+    async def test_aupdate_thread_owner(
+        self,
+        companion_graph,
+        conversation_id,
+        user_identifier,
+        initial_state_values,
+        expected_state_values,
+    ):
+        # Given
+        initial_state_snapshot = StateSnapshot(
+            values=initial_state_values,
+            next=(),
+            config=RunnableConfig(),
+            tasks=(),
+            metadata=None,
+            created_at=None,
+            parent_config=None,
+        )
+        companion_graph.graph.aget_state = AsyncMock(
+            return_value=initial_state_snapshot
+        )
+        companion_graph.graph.aupdate_state = AsyncMock()
+
+        # When
+        await companion_graph.aupdate_thread_owner(conversation_id, user_identifier)
+
+        # Then
+        companion_graph.graph.aupdate_state.assert_called_once_with(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            },
+            expected_state_values,
+        )
