@@ -44,16 +44,14 @@ class TestAgentState(BaseAgentState):
 class TestAgent(BaseAgent):
     """Concrete implementation of BaseAgent for testing."""
 
-
-@pytest.fixture
-def test_agent(model: IModel):
-    return TestAgent(
-        name="KubernetesAgent",
-        model=model,
-        tools=[k8s_query_tool, fetch_pod_logs_tool],
-        agent_prompt=mock_agent_prompt,
-        state_class=TestAgentState,
-    )
+    def __init__(self, model: IModel):
+        super().__init__(
+            name="KubernetesAgent",
+            model=model,
+            tools=[k8s_query_tool, fetch_pod_logs_tool],
+            agent_prompt=mock_agent_prompt,
+            state_class=TestAgentState,
+        )
 
 
 @pytest.fixture
@@ -89,11 +87,11 @@ class TestBaseAgent:
     """Test base agent class."""
 
     def test_name(self, mock_models):
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         assert agent.name == "KubernetesAgent"
 
     def test_agent_init(self, mock_models):
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         assert agent.tools == [k8s_query_tool, fetch_pod_logs_tool]
         assert agent.model == mock_models[ModelType.GPT4O]
         assert agent.graph is not None
@@ -101,7 +99,7 @@ class TestBaseAgent:
 
     def test_agent_node(self, mock_models):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
 
         # When
         result = agent.agent_node()
@@ -112,7 +110,7 @@ class TestBaseAgent:
 
     def test_create_chain(self, mock_models):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
 
         # When
         chain = agent._create_chain(mock_agent_prompt)
@@ -193,7 +191,7 @@ class TestBaseAgent:
         self, mock_models, given_state: TestAgentState, expected_inputs: dict
     ):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = Mock()
         agent.chain.ainvoke = AsyncMock()
 
@@ -214,7 +212,7 @@ class TestBaseAgent:
 
     def test_build_graph(self, mock_models):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
 
         # When
         graph = agent._build_graph(TestAgentState)
@@ -344,7 +342,7 @@ class TestBaseAgent:
     def test_subtask_selector_node(
         self, mock_models, given_state: TestAgentState, expected_output: dict
     ):
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         assert agent._subtask_selector_node(given_state) == expected_output
 
     @pytest.mark.asyncio
@@ -458,7 +456,7 @@ class TestBaseAgent:
         expected_invoke_inputs: dict,
     ):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = AsyncMock()
         agent._invoke_chain = AsyncMock()
         if given_invoke_response is not None:
@@ -471,7 +469,7 @@ class TestBaseAgent:
         assert result == expected_output
 
         # Test if status is updated to ERROR when there is an exception
-        if given_invoke_error is not None and given_state.my_task is not None:
+        if given_invoke_error is not None:
             assert given_state.my_task.status == SubTaskStatus.ERROR
 
         # Then
@@ -534,10 +532,9 @@ class TestBaseAgent:
         expected_output: dict,
     ):
         # Given
-        agent = test_agent(mock_models[ModelType.GPT4O])
+        agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = MagicMock()
 
         # When
-        assert agent._finalizer_node(given_state, Mock()) == expected_output
-        if given_state.my_task is not None:
-            assert given_state.my_task.status == SubTaskStatus.COMPLETED
+        assert agent._finalizer_node(given_state, mock_config) == expected_output
+        assert given_state.my_task.status == SubTaskStatus.COMPLETED
