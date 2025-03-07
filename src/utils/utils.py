@@ -86,7 +86,7 @@ def get_user_identifier_from_client_certificate(client_certificate_data: bytes) 
         )
         # check if the Common Name (CN) is present in the subject.
         for name in cert.subject:
-            if name.oid._name in CN_KEYS:
+            if name.oid._name in CN_KEYS and name.value != "":
                 return str(name.value)
         if str(cert.serial_number) != "":
             return str(cert.serial_number)

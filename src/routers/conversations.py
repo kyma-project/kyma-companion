@@ -86,7 +86,10 @@ async def init_conversation(
         x_client_certificate_data=x_client_certificate_data,
         x_client_key_data=x_client_key_data,
     )
-    k8s_auth_headers.validate_headers()
+    try:
+        k8s_auth_headers.validate_headers()
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Initialize with the session_id. Create a new session_id if not provided.
     session_id = session_id if session_id else create_session_id()
@@ -149,7 +152,10 @@ async def followup_questions(
         x_client_certificate_data=x_client_certificate_data,
         x_client_key_data=x_client_key_data,
     )
-    k8s_auth_headers.validate_headers()
+    try:
+        k8s_auth_headers.validate_headers()
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, k8s_auth_headers, conversation_service)
@@ -199,7 +205,10 @@ async def messages(
         x_client_certificate_data=x_client_certificate_data,
         x_client_key_data=x_client_key_data,
     )
-    k8s_auth_headers.validate_headers()
+    try:
+        k8s_auth_headers.validate_headers()
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, k8s_auth_headers, conversation_service)
