@@ -10,7 +10,7 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN apk update && apk add --no-cache gcc build-base python3-dev geos geos-dev
+RUN apk update && apk add --no-cache gcc build-base python3-dev geos geos-dev libc-dev linux-headers
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir poetry>=2.0  \
   && poetry config virtualenvs.create false \
