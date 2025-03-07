@@ -305,7 +305,9 @@ def kyma_agent(app_models):
                     SystemMessage(
                         content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
                     ),
-                    HumanMessage(content="Why is the pod of the serverless Function not ready?"),
+                    HumanMessage(
+                        content="Why is the pod of the serverless Function not ready?"
+                    ),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -511,4 +513,6 @@ async def test_invoke_chain(
                 run_async=False,
             )
             # assert that all metrics passed
-            assert all(result.success for result in results.test_results), "Not all metrics passed"
+            assert all(
+                result.success for result in results.test_results
+            ), "Not all metrics passed"
