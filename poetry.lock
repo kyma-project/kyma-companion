@@ -845,20 +845,20 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "2.3.2"
+version = "2.5.1"
 description = "The Open-Source LLM Evaluation Framework."
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-2.3.2-py3-none-any.whl", hash = "sha256:e32e39c5c1c7606a4850169bd4c0ff72809eabcc30eed91b4d6ee451491a3f3c"},
-    {file = "deepeval-2.3.2.tar.gz", hash = "sha256:8f52768908e5cfbfb3e9ca772d0605f98c2500ae874f9657bc43df36227a4a41"},
+    {file = "deepeval-2.5.1-py3-none-any.whl", hash = "sha256:66e2c65a0596593dd4818c307a280f52b6e710dff7283194a2d31363e4806107"},
+    {file = "deepeval-2.5.1.tar.gz", hash = "sha256:f4361b00ca94b7a1d7e37c51391882b6c487912772c7b17683cd448f7795456a"},
 ]
 
 [package.dependencies]
 datasets = "*"
 docx2txt = ">=0.8,<1.0"
-grpcio = "1.67.1"
+grpcio = ">=1.67.1,<2.0.0"
 importlib-metadata = ">=6.0.2"
 langchain = "*"
 langchain-community = "*"
@@ -866,6 +866,7 @@ langchain-core = "*"
 langchain_openai = "*"
 llama-index = "*"
 nest-asyncio = "*"
+ollama = "*"
 opentelemetry-api = ">=1.24.0,<2.0.0"
 opentelemetry-exporter-otlp-proto-grpc = ">=1.24.0,<2.0.0"
 opentelemetry-sdk = ">=1.24.0,<2.0.0"
@@ -3577,6 +3578,22 @@ files = [
 rsa = ["cryptography (>=3.0.0)"]
 signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
+
+[[package]]
+name = "ollama"
+version = "0.4.7"
+description = "The official Python client for Ollama."
+optional = false
+python-versions = "<4.0,>=3.8"
+groups = ["test"]
+files = [
+    {file = "ollama-0.4.7-py3-none-any.whl", hash = "sha256:85505663cca67a83707be5fb3aeff0ea72e67846cea5985529d8eca4366564a1"},
+    {file = "ollama-0.4.7.tar.gz", hash = "sha256:891dcbe54f55397d82d289c459de0ea897e103b86a3f1fad0fdb1895922a75ff"},
+]
+
+[package.dependencies]
+httpx = ">=0.27,<0.29"
+pydantic = ">=2.9.0,<3.0.0"
 
 [[package]]
 name = "openai"
