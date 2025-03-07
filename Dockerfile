@@ -10,6 +10,7 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
+RUN apt update && apt upgrade -y 
 RUN pip install --no-cache-dir poetry>=2.0  \
   && poetry config virtualenvs.create false \
   && poetry install --without test,dev --no-interaction --no-ansi \
@@ -17,6 +18,7 @@ RUN pip install --no-cache-dir poetry>=2.0  \
 
 # Start a new stage for a smaller final image
 FROM python:3.12-slim-bullseye
+RUN apt update && apt upgrade -y 
 
 WORKDIR /app
 
