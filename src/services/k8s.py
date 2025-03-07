@@ -33,7 +33,7 @@ class K8sAuthHeaders(BaseModel):
     x_client_certificate_data: str | None
     x_client_key_data: str | None
 
-    def validate(self) -> None:
+    def validate_headers(self) -> None:
         """Validate the Kubernetes API authentication headers."""
         if self.x_cluster_url == "":
             raise ValueError("x-cluster-url header is required.")
@@ -57,17 +57,19 @@ class K8sAuthHeaders(BaseModel):
 
     def get_decoded_certificate_authority_data(self) -> bytes:
         """Decode the certificate authority data."""
-        return base64.b64decode(
-            self.k8s_auth_headers.x_cluster_certificate_authority_data
-        )
+        return base64.b64decode(self.x_cluster_certificate_authority_data)
 
     def get_decoded_client_certificate_data(self) -> bytes:
         """Decode the certificate authority data."""
-        return base64.b64decode(self.k8s_auth_headers.x_client_certificate_data)
+        if self.x_client_certificate_data is None:
+            raise ValueError("Client certificate data is not available.")
+        return base64.b64decode(self.x_client_certificate_data)
 
     def get_decoded_client_key_data(self) -> bytes:
         """Decode the certificate authority data."""
-        return base64.b64decode(self.k8s_auth_headers.x_client_key_data)
+        if self.x_client_key_data is None:
+            raise ValueError("Client key data is not available.")
+        return base64.b64decode(self.x_client_key_data)
 
 
 @runtime_checkable
@@ -237,18 +239,30 @@ class K8sClient:
 
     def _get_auth_headers(self) -> dict:
         """Get the authentication headers for the Kubernetes API request."""
-        return {
-            "Authorization": "Bearer " + self.k8s_auth_headers.x_k8s_authorization,
+        headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
 
+        if (
+            self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN
+            and self.k8s_auth_headers.x_k8s_authorization
+        ):
+            headers["Authorization"] = (
+                "Bearer " + self.k8s_auth_headers.x_k8s_authorization
+            )
+        return headers
+
     def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
+        cert = None
+        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
+            cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
         response = requests.get(
             url=f"{self.get_api_server()}/{uri.lstrip('/')}",
             headers=self._get_auth_headers(),
             verify=self.ca_temp_filename,
+            cert=cert,
         )
 
         if response.status_code != HTTPStatus.OK:

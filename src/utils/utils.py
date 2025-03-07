@@ -3,10 +3,13 @@ import uuid
 from typing import Any
 
 import jwt
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 
 JWT_TOKEN_SUB = "sub"
 JWT_TOKEN_EMAIL = "email"
 JWT_TOKEN_SERVICE_ACCOUNT = "kubernetes.io/serviceaccount/service-account.name"
+CN_KEYS = ["common_name", "commonName"]
 
 
 def create_ndjson_str(obj: dict) -> str:
@@ -73,3 +76,22 @@ def get_user_identifier_from_token(token: str) -> str:
         raise ValueError("Invalid token: User identifier not found in token")
     except Exception as e:
         raise ValueError("Failed to get user identifier from token") from e
+
+
+def get_user_identifier_from_client_certificate(client_certificate_data: bytes) -> str:
+    """Get the user identifier from the client certificate."""
+    try:
+        cert = x509.load_pem_x509_certificate(
+            client_certificate_data, default_backend()
+        )
+        # check if the Common Name (CN) is present in the subject.
+        for name in cert.subject:
+            if name.oid._name in CN_KEYS:
+                return str(name.value)
+        if str(cert.serial_number) != "":
+            return str(cert.serial_number)
+        raise ValueError(
+            "Invalid client certificate: User identifier not found in certificate"
+        )
+    except Exception as e:
+        raise ValueError("Failed to get user identifier from client certificate") from e
