@@ -8,11 +8,17 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
 from main import app
-from routers.conversations import authorize_user, init_conversation_service
+from routers.conversations import (
+    authorize_user,
+    check_token_usage,
+    init_conversation_service,
+)
 from services.conversation import IService
 from services.k8s import IK8sClient
+from services.usage import UsageExceedReport
 
 SAMPLE_JWT_TOKEN = jwt.encode({"sub": "user123"}, "secret", algorithm="HS256")
 
@@ -40,6 +46,19 @@ class MockService(IService):
         if user_identifier == "UNAUTHORIZED":
             return False
         return True
+
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
+        """Check if the token usage limit is exceeded for the given cluster_id."""
+        if cluster_id == "EXCEEDED":
+            return UsageExceedReport(
+                cluster_id=cluster_id,
+                token_limit=1000,
+                total_tokens_used=1000,
+                reset_seconds_left=60,
+            )
+        return None
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
@@ -161,6 +180,33 @@ def client_factory():
             },
             {"status_code": 403, "content-type": "application/json"},
         ),
+        (
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            6,
+            {
+                "query": "Test query",
+                "resource_kind": "",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "detail": {
+                        "error": "Rate limit exceeded",
+                        "limit": 5000000,
+                        "message": "Daily token limit exceeded for this cluster",
+                        "time_remaining_seconds": 86400,
+                    },
+                },
+            },
+        ),
     ],
 )
 def test_messages_endpoint(
@@ -189,6 +235,7 @@ def test_messages_endpoint(
     if (
         expected_output["status_code"] == HTTPStatus.UNAUTHORIZED
         or expected_output["status_code"] == HTTPStatus.FORBIDDEN
+        or expected_output["status_code"] == ERROR_RATE_LIMIT_CODE
     ):
         # return if test case is to check for invalid token.
         return
@@ -343,6 +390,7 @@ def test_init_conversation(
             # should successfully return follow-up questions.
             {
                 "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "a8172829-7f6c-4c76-aa16-e91edc7a14c9",
             None,
@@ -362,6 +410,7 @@ def test_init_conversation(
             # should return error when conversation service fails.
             {
                 "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "d8725492-deb2-4d81-8ee1-ac74d61e84c5",
             ValueError("service failed"),
@@ -372,11 +421,12 @@ def test_init_conversation(
             },
         ),
         (
-            # should successfully return follow-up questions.
+            # should return error when user is not authorized.
             {
                 "x-k8s-authorization": jwt.encode(
                     {"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"
                 ),
+                "x-cluster-url": "https://api.k8s.example.com",
             },
             "a8172829-7f6c-4c76-aa16-e91edc7a14c8",
             None,
@@ -384,6 +434,28 @@ def test_init_conversation(
                 "status_code": 403,
                 "content-type": "application/json",
                 "body": {"detail": "User not authorized to access the conversation"},
+            },
+        ),
+        (
+            # should return token usage exceeded error.
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+            },
+            "a8172829-7f6c-4c76-aa16-e91edc7a14c8",
+            None,
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "detail": {
+                        "current_usage": 1000,
+                        "error": "Rate limit exceeded",
+                        "limit": 1000,
+                        "message": "Daily token limit of 1000 exceeded for this cluster",
+                        "time_remaining_seconds": 60,
+                    },
+                },
             },
         ),
     ],
@@ -414,6 +486,44 @@ def test_followup_questions(
         assert response_body["questions"] == expected_output["body"]["questions"]
     else:
         assert response_body == expected_output["body"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "cluster_url, usage_report, expected_exception",
+    [
+        (
+            "https://api.k8s-id.example.com",
+            None,
+            None,
+        ),
+        (
+            "https://api.k8s-id.example.com",
+            UsageExceedReport(
+                cluster_id="k8s-id",
+                token_limit=1000,
+                total_tokens_used=1000,
+                reset_seconds_left=60,
+            ),
+            HTTPException,
+        ),
+    ],
+)
+async def test_check_token_usage(cluster_url, usage_report, expected_exception):
+    # Mock the conversation_service
+    mock_conversation_service = Mock()
+    mock_conversation_service.is_usage_limit_exceeded = AsyncMock(
+        return_value=usage_report
+    )
+
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            await check_token_usage(cluster_url, mock_conversation_service)
+    else:
+        await check_token_usage(cluster_url, mock_conversation_service)
+        mock_conversation_service.is_usage_limit_exceeded.assert_called_once_with(
+            "k8s-id"
+        )
 
 
 @pytest.mark.asyncio
