@@ -1,6 +1,5 @@
-from datetime import UTC, datetime
 from functools import lru_cache
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
@@ -8,7 +7,6 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
-from agents.common.utils import get_current_day_timestamps_utc
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -18,12 +16,11 @@ from routers.common import (
 )
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
-from services.k8s import IK8sClient, K8sClient, K8sAuthHeaders
+from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
-from utils.settings import TOKEN_LIMIT_PER_CLUSTER
 from utils.utils import create_session_id, get_user_identifier_from_token
 
 logger = get_logger(__name__)
@@ -71,7 +68,7 @@ async def init_conversation(
     session_id: Annotated[str, Header()] = "",
     x_k8s_authorization: Annotated[str, Header()] = None,
     x_client_certificate_data: Annotated[str, Header()] = None,
-    x_client_key_data: Annotated[str, Header()] = None
+    x_client_key_data: Annotated[str, Header()] = None,
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
@@ -136,7 +133,7 @@ async def followup_questions(
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     x_k8s_authorization: Annotated[str, Header()] = None,
     x_client_certificate_data: Annotated[str, Header()] = None,
-    x_client_key_data: Annotated[str, Header()] = None
+    x_client_key_data: Annotated[str, Header()] = None,
 ) -> JSONResponse:
     """Endpoint to generate follow-up questions for a conversation."""
 
@@ -152,6 +149,9 @@ async def followup_questions(
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
+
+    # Check rate limitation
+    await check_token_usage(x_cluster_url, conversation_service)
 
     try:
         # Create follow-up questions.
@@ -184,7 +184,7 @@ async def messages(
     langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
     x_k8s_authorization: Annotated[str, Header()] = None,
     x_client_certificate_data: Annotated[str, Header()] = None,
-    x_client_key_data: Annotated[str, Header()] = None
+    x_client_key_data: Annotated[str, Header()] = None,
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
@@ -202,7 +202,7 @@ async def messages(
     await authorize_user(conversation_id, x_k8s_authorization, conversation_service)
 
     # Check rate limitation
-    await check_token_usage(x_cluster_url, langfuse_service)
+    await check_token_usage(x_cluster_url, conversation_service)
 
     # Initialize k8s client for the request.
     try:
@@ -229,58 +229,22 @@ async def messages(
     )
 
 
-async def check_token_usage(
-    x_cluster_url: str,
-    langfuse_service: Any,
-    token_limit: int = TOKEN_LIMIT_PER_CLUSTER,
-) -> None:
-    """
-    Checks the total token usage for a specific cluster within the current day (UTC) and raises an HTTPException
-    if the usage exceeds the predefined token limit.
-
-
-    :param x_cluster_url: The URL of the cluster, from which the cluster ID is extracted.
-    :param langfuse_service: An instance of a service that provides access to the
-                                Langfuse API to retrieve token usage data.
-    :param token_limit: Default TOKEN_LIMIT_PER_CLUSTER
-
-    :raises HTTPException:  If the total token usage exceeds the daily limit (`TOKEN_LIMIT_PER_CLUSTER`),
-                        an HTTP 429 error is raised
-                        with details about the current usage,
-                        the limit, and the time remaining until the limit resets at midnight UTC.
-
-    """
-
-    # Check if any limit is set, if no limit specified do not proceed
-    if token_limit == -1:
-        return
-
-    from_timestamp, to_timestamp = get_current_day_timestamps_utc()
+async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:
+    """Check if the token usage limit is exceeded for the cluster."""
     cluster_id = x_cluster_url.split(".")[1]
-    total_token_usage = 0
-    try:
 
-        total_token_usage = await langfuse_service.get_total_token_usage(
-            from_timestamp, to_timestamp, cluster_id
-        )
-    except Exception:
-        logger.exception("failed to connect to the Langfuse API")
-
-    if total_token_usage > token_limit:
-        current_utc = datetime.now(UTC)
-        midnight_utc = current_utc.replace(hour=23, minute=59, second=59)
-        time_remaining = midnight_utc - current_utc
-        seconds_remaining = int(time_remaining.total_seconds())
+    report = await conversation_service.is_usage_limit_exceeded(cluster_id)
+    if report is not None:
         raise HTTPException(
             status_code=ERROR_RATE_LIMIT_CODE,
             detail={
                 "error": "Rate limit exceeded",
-                "message": f"Daily token limit of {token_limit} exceeded for this cluster",
-                "current_usage": total_token_usage,
-                "limit": token_limit,
-                "time_remaining_seconds": seconds_remaining,
+                "message": f"Daily token limit of {report.token_limit} exceeded for this cluster",
+                "current_usage": report.total_tokens_used,
+                "limit": report.token_limit,
+                "time_remaining_seconds": report.reset_seconds_left,
             },
-            headers={"Retry-After": str(seconds_remaining)},
+            headers={"Retry-After": str(report.reset_seconds_left)},
         )
 
 

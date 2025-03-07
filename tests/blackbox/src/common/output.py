@@ -96,3 +96,7 @@ def print_response_times_summary() -> None:
         ]
     )
     print(table)
+
+
+def print_token_usage(token_used: int) -> None:
+    print_header(f"Total token used by evaluation tests: {token_used}")

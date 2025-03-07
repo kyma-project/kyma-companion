@@ -15,10 +15,18 @@ from initial_questions.inital_questions import (
     InitialQuestionsHandler,
 )
 from services.k8s import IK8sClient
+from services.usage import IUsageTracker, UsageExceedReport, UsageTracker
 from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from utils.settings import (
+    REDIS_DB_NUMBER,
+    REDIS_HOST,
+    REDIS_PASSWORD,
+    REDIS_PORT,
+    TOKEN_LIMIT_PER_CLUSTER,
+    TOKEN_USAGE_RESET_INTERVAL,
+)
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -47,6 +55,12 @@ class IService(Protocol):
         """Authorize the user to access the conversation."""
         ...
 
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
+        """Check if the token usage limit is exceeded for the given cluster_id."""
+        ...
+
 
 class ConversationService(metaclass=SingletonMeta):
     """
@@ -57,6 +71,7 @@ class ConversationService(metaclass=SingletonMeta):
     _init_questions_handler: IInitialQuestionsHandler
     _kyma_graph: IGraph
     _model_factory: IModelFactory
+    _usage_limiter: IUsageTracker
 
     def __init__(
         self,
@@ -91,6 +106,10 @@ class ConversationService(metaclass=SingletonMeta):
             db=REDIS_DB_NUMBER,
             password=REDIS_PASSWORD,
         )
+        self._usage_limiter = UsageTracker(
+            checkpointer, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL
+        )
+
         self._companion_graph = CompanionGraph(
             models, memory=checkpointer, handler=langfuse_handler
         )
@@ -153,3 +172,12 @@ class ConversationService(metaclass=SingletonMeta):
             return True
         # If the owner is the same as the user, we can authorize the user.
         return owner == user_identifier
+
+    async def is_usage_limit_exceeded(
+        self, cluster_id: str
+    ) -> UsageExceedReport | None:
+        """Check if the token usage limit is exceeded for the given cluster_id."""
+        # Delete expired records before checking the usage limit.
+        await self._usage_limiter.adelete_expired_records(cluster_id)
+        # Check if the usage limit is exceeded.
+        return await self._usage_limiter.ais_usage_limit_exceeded(cluster_id)

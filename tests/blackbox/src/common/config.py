@@ -23,6 +23,7 @@ class Config:
     test_cluster_url: str  # Gardener test cluster API server URL.
     test_cluster_ca_data: str  # Gardener test cluster CA data.
     test_cluster_auth_token: str  # Gardener test cluster authentication token.
+    redis_url: str  # Redis URL.
 
     model_name: str
 
@@ -62,6 +63,7 @@ class Config:
         self.retry_max_wait_time = config(
             "RETRY_MAX_WAIT_TIME", default=600, cast=int
         )  # seconds
+        self.redis_url = config("REDIS_URL", default="redis://localhost:6379")
 
     def __load_env_from_json(self) -> None:
         """Load the configuration from the config.json file."""
@@ -77,6 +79,11 @@ class Config:
 
                 # Set environment variables for all keys except "models"
                 for key, value in config_file.items():
+                    if key in os.environ:
+                        logging.warning(
+                            f"Environment variable {key} is already set. Not overriding it with value from config file."
+                        )
+                        continue
                     if key != "models":  # Skip models
                         os.environ[key] = str(value)
                     else:
