@@ -306,7 +306,7 @@ def kyma_agent(app_models):
                         content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
                     ),
                     HumanMessage(
-                        content="Why the pod of the serverless Function is not ready?"
+                        content="Why is the pod of the serverless Function not ready?"
                     ),
                     AIMessage(
                         content="",
@@ -340,14 +340,14 @@ def kyma_agent(app_models):
                 ],
                 subtasks=[
                     {
-                        "description": "Why the pod of the serverless Function is not ready?",
-                        "task_title": "Why the pod of the serverless Function is not ready?",
+                        "description": "Why is the pod of the serverless Function not ready?",
+                        "task_title": "Why is the pod of the serverless Function not ready?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Why the pod of the serverless Function is not ready?",
-                    task_title="Why the pod of the serverless Function is not ready?",
+                    description="Why is the pod of the serverless Function not ready?",
+                    task_title="Why is the pod of the serverless Function not ready?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa

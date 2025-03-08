@@ -53,7 +53,7 @@ conversation_sample_2 = [
         "id": "1f97f2b8-0005-45f9-9e83-6effc4dc1ace",
     },
     {
-        "content": "Why the pod of the serverless Function is not ready?",
+        "content": "Why is the pod of the serverless Function not ready?",
         "type": "human",
         "id": "2a64482c-452b-46d6-be92-a43a0c0d298f",
     },
@@ -81,7 +81,7 @@ conversation_sample_3 = [
         "id": "1f97f2b8-0005-45f9-9e83-6effc4dc1ace",
     },
     {
-        "content": "Why the pod of the serverless Function is not ready?",
+        "content": "Why is the pod of the serverless Function not ready?",
         "type": "human",
         "id": "2a64482c-452b-46d6-be92-a43a0c0d298f",
     },
@@ -162,7 +162,7 @@ conversation_sample_4 = [
         "id": "1f97f2b8-0005-45f9-9e83-6effc4dc1ace",
     },
     {
-        "content": "Why the pod of the serverless Function is not ready?",
+        "content": "Why is the pod of the serverless Function not ready?",
         "type": "human",
         "id": "2a64482c-452b-46d6-be92-a43a0c0d298f",
     },
