@@ -11,6 +11,16 @@ set -o pipefail # prevents errors in a pipeline from being masked
 echo "Getting Python version from pyproject.toml"
 
 # Extract Python version from pyproject.toml and set it as a GitHub Actions environment variable
-PYTHON_VERSION=$(grep -oP 'requires-python = "\K[^"]+' pyproject.toml | sed 's/==//; s/\.\*//')
-echo "PYTHON_VERSION=${PYTHON_VERSION}" >>"$GITHUB_ENV"
 
+while IFS= read -r line; do
+  if [[ $line == "requires-python"* ]]; then
+    PYTHON_VERSION=$(echo "$line" | grep -oP 'requires-python = "\K[^"]+' | sed 's/==//; s/\.\*//')
+    break
+  fi
+  if [[ $line == "python"* ]]; then
+    PYTHON_VERSION=$(echo "$line" | grep -oP 'python = "\K[^"]+' | sed 's/\"//g')
+    break
+  fi
+done <pyproject.toml
+
+echo "PYTHON_VERSION=${PYTHON_VERSION}" >>"$GITHUB_ENV"
