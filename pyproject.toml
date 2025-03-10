@@ -14,53 +14,11 @@ authors = [
   { name = "Piotr Bochynski", email = "piotr.bochynski@sap.com" },
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
 ]
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
 [tool.poetry]
 packages = [{ include = "src" }]
 package-mode = false
-
-[tool.poetry.dependencies]
-python = "~3.12"
-ai-core-sdk = "^2.3.11"
-black = "^24.8.0"
-fastapi = "^0.111.0"
-generative-ai-hub-sdk = {extras = ["all"], version = "^4.1.1"}
-hdbcli = "^2.22.32"
-kubernetes = "^30.1.0"
-langfuse = "^2.57.5"
-langgraph = "^0.2.5"
-poetry-plugin-sort = "^0.2.1"
-pyjwt = "^2.10.1"
-pytest = "^8.2.2"
-pytest-rerunfailures = "^15.0"
-python-decouple = "^3.8"
-redis = "^5.0.8"
-requests = "^2.32.3"
-scrubadub = {extras = ["all"], version = "^2.0.1"}
-tenacity = "^9.0.0"
-tiktoken = "^0.7.0"
-
-[tool.poetry.group.test.dependencies]
-deepeval = "^2.3.2"
-fakeredis = "^2.23.3"
-prettytable = "^3.10.2"
-pytest = "^8.2.2"
-pytest-asyncio = "^0.23.7"
-pytest-dotenv = "^0.5.2"
-pytest-mock = "^3.14.0"
-pytest-rerunfailures = "^15.0"
-pyyaml = "^6.0.1"
-termcolor = "^2.4.0"
-types-pyyaml = "^6.0.12.20240311"
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-flake8 = "^7.1.0"
-flake8-bugbear = "^24.4.26"
-ipython = "^8.26.0"
-mypy = "^1.10.1"
-poethepoet = "^0.27.0"
-ruff = "v0.4.10"
-types-requests = "^2.32.0.20240712"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
