@@ -111,9 +111,8 @@ class K8sClient:
         self.certificate_authority_data = certificate_authority_data
 
         # Write the certificate authority data to a temporary file.
-        ca_file = tempfile.NamedTemporaryFile(delete=False)
-        ca_file.write(self._get_decoded_ca_data())
-        ca_file.close()
+        with tempfile.NamedTemporaryFile(delete=False) as ca_file:
+            ca_file.write(self._get_decoded_ca_data())
         self.ca_temp_filename = ca_file.name
 
         self.dynamic_client = self._create_dynamic_client()
