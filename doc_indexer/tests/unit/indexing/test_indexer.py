@@ -238,11 +238,14 @@ def test_index(
     indexer.db.delete.side_effect = delete_error
     indexer.db.add_documents.side_effect = add_error
 
-    with patch.object(indexer, "_load_documents", return_value=loaded_docs), patch(
-        "indexing.indexer.create_chunks", return_value=expected_chunks
-    ) as mock_create_chunks, patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5), patch(
-        "time.sleep"
-    ) as mock_sleep:  # Add mock for sleep
+    with (
+        patch.object(indexer, "_load_documents", return_value=loaded_docs),
+        patch(
+            "indexing.indexer.create_chunks", return_value=expected_chunks
+        ) as mock_create_chunks,
+        patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
+        patch("time.sleep") as mock_sleep,
+    ):  # Add mock for sleep
 
         indexer.headers_to_split_on = headers_to_split_on
 
