@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bullseye AS builder
+FROM python:3.13-slim-bullseye AS builder
 
 # Set the working directory in the container
 WORKDIR /app
@@ -10,9 +10,9 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN pip install --no-cache-dir poetry>=2.0  \
+RUN pip install --no-cache-dir poetry>=2.1  \
   && poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi \
+  && poetry install --without dev,test --no-interaction --no-ansi \
   && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
