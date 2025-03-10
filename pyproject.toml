@@ -1,20 +1,21 @@
-[tool.poetry]
+[project]
 name = "kyma-companion"
 version = "0.1.0"
 description = "Kyma Companion is AI Kyma assistant that helps you to manage your Kyma runtime"
-authors = [
-    "Muhammad Faizan m.faizan@sap.com",
-    "Aleksei Chernyshov aleksei.chernyshov@sap.com",
-    "Carina Kothe carina.kothe@sap.com",
-    "Friedrich Wilken jens.wilken@sap.com",
-    "Tibor Kiss tibor.kiss01@sap.com",
-    "Marco Bebway marco.bebway@sap.com",
-    "Piotr Bochynski piotr.bochynski@sap.com",
-    "Mansur Uralov m.uralov@sap.com",
-]
 readme = "README.md"
-packages = [{ include = "src" }]
 license = "Apache-2.0"
+authors = [
+  { name = "Muhammad Faizan", email = "m.faizan@sap.com" },
+  { name = "Aleksei Chernyshov", email = "aleksei.chernyshov@sap.com" },
+  { name = "Carina Kothe", email = "carina.kothe@sap.com" },
+  { name = "Friedrich Wilken", email = "jens.wilken@sap.com" },
+  { name = "Tibor Kiss", email = "tibor.kiss01@sap.com" },
+  { name = "Marco Bebway", email = "marco.bebway@sap.com" },
+  { name = "Piotr Bochynski", email = "piotr.bochynski@sap.com" },
+  { name = "Mansur Uralov", email = "m.uralov@sap.com" },
+]
+[tool.poetry]
+packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.dependencies]
@@ -64,15 +65,9 @@ types-requests = "^2.32.0.20240712"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra"
-pythonpath = [
-    "src"
-]
-testpaths = [
-    "tests",
-]
-env_files = [
-    ".env.test"
-]
+pythonpath = ["src"]
+testpaths = ["tests"]
+env_files = [".env.test"]
 
 [tool.poe.tasks]
 lint = "ruff check ."
