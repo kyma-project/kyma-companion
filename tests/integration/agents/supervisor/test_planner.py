@@ -86,7 +86,7 @@ def planner_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="why the pod is failing?"),
+                HumanMessage(content="why is the pod failing?"),
             ],
             "{'subtasks': None , 'response': 'pods is failing due to a context cancellation.'}",
             False,

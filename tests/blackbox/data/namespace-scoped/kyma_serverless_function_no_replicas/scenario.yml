@@ -1,6 +1,6 @@
 id: kyma-serverless-function-no-replicas
 description: The Pod of the Serverless Function is not ready because the function is configured with 0 replicas.
-user_query: Why the pod of the serverless Function is not ready?
+user_query: Why is the pod of the serverless Function not ready?
 resource:
   kind: Function
   api_version: serverless.kyma-project.io/v1alpha2
