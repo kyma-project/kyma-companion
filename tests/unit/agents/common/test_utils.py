@@ -344,7 +344,7 @@ def test_filter_messages(
 
     assert len(result) == len(expected_output)
     for res_msg, exp_msg in zip(result, expected_output, strict=False):
-        assert type(res_msg) == type(exp_msg)
+        assert type(res_msg) is type(exp_msg)
         assert res_msg.content == exp_msg.content
 
 
