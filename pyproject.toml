@@ -36,7 +36,7 @@ dependencies = [
 packages = [{ include = "src" }]
 package-mode = false
 
-[tool.poetry.group."=test".dependencies]
+[tool.poetry.group.test.dependencies]
 deepeval = "^2.5.2"
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
@@ -50,7 +50,7 @@ termcolor = "^2.5.0"
 types-pyyaml = "^6.0.12.20241230"
 
 
-[tool.poetry.group."=dev".dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
 flake8 = "^7.1.2"
 flake8-bugbear = "^24.12.12"
