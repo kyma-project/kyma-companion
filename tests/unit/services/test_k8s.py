@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from services.k8s import K8sClient
+from services.k8s import AuthType, K8sAuthHeaders, K8sClient
 
 
 def sample_k8s_secret():
@@ -48,6 +48,233 @@ def sample_k8s_pod():
     }
 
 
+class TestK8sAuthHeaders:
+    @pytest.mark.parametrize(
+        "given_ca_data, expected_result",
+        [
+            (
+                # "should be able to decode base64 encoded ca data",
+                "dGhpcyBpcyBhIHRlc3QgY2EgZGF0YQ==",
+                b"this is a test ca data",
+            ),
+        ],
+    )
+    def test_get_decoded_certificate_authority_data(
+        self, given_ca_data, expected_result
+    ):
+        # given
+        k8s_headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data=given_ca_data,
+            x_k8s_authorization=None,
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+
+        # when
+        decoded_ca_data = k8s_headers.get_decoded_certificate_authority_data()
+
+        # then
+        assert isinstance(decoded_ca_data, bytes)
+        assert decoded_ca_data == expected_result
+
+    @pytest.mark.parametrize(
+        "given_client_cert_data, expected_result, expected_error",
+        [
+            (
+                # "should decode base64 encoded client certificate data",
+                "dGhpcyBpcyBhIHRlc3QgY2VydCBkYXRh",
+                b"this is a test cert data",
+                None,
+            ),
+            (
+                # "should return None for empty client certificate data",
+                None,
+                "",
+                ValueError,
+            ),
+        ],
+    )
+    def test_get_decoded_client_certificate_data(
+        self, given_client_cert_data, expected_result, expected_error
+    ):
+        # given
+        k8s_headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization=None,
+            x_client_certificate_data=given_client_cert_data,
+            x_client_key_data=None,
+        )
+
+        # when/then
+        if expected_error:
+            with pytest.raises(expected_error):
+                k8s_headers.get_decoded_client_certificate_data()
+        else:
+            decoded_cert_data = k8s_headers.get_decoded_client_certificate_data()
+            assert decoded_cert_data == expected_result
+
+    @pytest.mark.parametrize(
+        "given_client_key_data, expected_result, expected_exception",
+        [
+            (
+                "dGhpcyBpcyBhIHRlc3Qga2V5IGRhdGE=",
+                b"this is a test key data",
+                None,
+            ),
+            (
+                None,
+                None,
+                ValueError,
+            ),
+        ],
+    )
+    def test_get_decoded_client_key_data(
+        self, given_client_key_data, expected_result, expected_exception
+    ):
+        # given
+        k8s_headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization=None,
+            x_client_certificate_data=None,
+            x_client_key_data=given_client_key_data,
+        )
+
+        # when/then
+        if expected_exception:
+            with pytest.raises(expected_exception):
+                k8s_headers.get_decoded_client_key_data()
+        else:
+            decoded_key_data = k8s_headers.get_decoded_client_key_data()
+            assert decoded_key_data == expected_result
+
+    @pytest.mark.parametrize(
+        "x_k8s_authorization, x_client_certificate_data, x_client_key_data, expected_auth_type",
+        [
+            ("sample-token", None, None, AuthType.TOKEN),
+            (None, "sample-cert", "sample-key", AuthType.CLIENT_CERTIFICATE),
+            (None, None, None, AuthType.UNKNOWN),
+        ],
+    )
+    def test_get_auth_type(
+        self,
+        x_k8s_authorization,
+        x_client_certificate_data,
+        x_client_key_data,
+        expected_auth_type,
+    ):
+        # given
+        k8s_headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization=x_k8s_authorization,
+            x_client_certificate_data=x_client_certificate_data,
+            x_client_key_data=x_client_key_data,
+        )
+
+        # when/then
+        assert k8s_headers.get_auth_type() == expected_auth_type
+
+    @pytest.mark.parametrize(
+        "k8s_headers, expected_error_msg",
+        [
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data="abc",
+                ),
+                None,
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data=None,
+                    x_client_key_data=None,
+                ),
+                None,
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization=None,
+                    x_client_certificate_data="abc",
+                    x_client_key_data="abc",
+                ),
+                None,
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data="abc",
+                ),
+                "x-cluster-url header is required.",
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data="abc",
+                ),
+                "x-cluster-certificate-authority-data header is required.",
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization=None,
+                    x_client_certificate_data=None,
+                    x_client_key_data=None,
+                ),
+                "Either x-k8s-authorization header or "
+                + "x-client-certificate-data and x-client-key-data headers are required.",
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization=None,
+                    x_client_certificate_data=None,
+                    x_client_key_data="abc",
+                ),
+                "Either x-k8s-authorization header or "
+                + "x-client-certificate-data and x-client-key-data headers are required.",
+            ),
+            (
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization=None,
+                    x_client_certificate_data="abc",
+                    x_client_key_data=None,
+                ),
+                "Either x-k8s-authorization header or "
+                + "x-client-certificate-data and x-client-key-data headers are required.",
+            ),
+        ],
+    )
+    def test_validate_headers(self, k8s_headers, expected_error_msg):
+        # given
+        if expected_error_msg is not None:
+            with pytest.raises(ValueError) as e:
+                k8s_headers.validate_headers()
+            assert expected_error_msg in str(e.value)
+        else:
+            assert k8s_headers.validate_headers() is None
+
+
 class TestK8sClient:
     @pytest.fixture
     def k8s_client(self):
@@ -55,40 +282,37 @@ class TestK8sClient:
             k8s_client = K8sClient()
             return k8s_client
 
-    @pytest.mark.parametrize(
-        "test_description, given_ca_data, expected_result",
-        [
-            (
-                "should be able to decode base64 encoded ca data",
-                "dGhpcyBpcyBhIHRlc3QgY2EgZGF0YQ==",
-                b"this is a test ca data",
-            ),
-        ],
-    )
-    def test_get_decoded_ca_data(
-        self, k8s_client, test_description, given_ca_data, expected_result
-    ):
-        # given
-        k8s_client.certificate_authority_data = given_ca_data
-
-        # when
-        decoded_ca_data = k8s_client._get_decoded_ca_data()
-
-        # then
-        assert isinstance(decoded_ca_data, bytes)
-        assert decoded_ca_data == expected_result
-
     def test_model_dump(self, k8s_client):
         assert k8s_client.model_dump() is None
 
     @pytest.mark.parametrize(
-        "test_description, given_user_token, expected_result",
+        "test_description, k8s_headers, expected_result",
         [
             (
-                "should return correct headers",
-                "sample-token",
+                "should return correct headers when user token is set",
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="sample-token",
+                    x_client_certificate_data=None,
+                    x_client_key_data=None,
+                ),
                 {
                     "Authorization": "Bearer sample-token",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+            ),
+            (
+                "should return correct headers when user token is not set",
+                K8sAuthHeaders(
+                    x_cluster_url="abc",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization=None,
+                    x_client_certificate_data=None,
+                    x_client_key_data=None,
+                ),
+                {
                     "Accept": "application/json",
                     "Content-Type": "application/json",
                 },
@@ -96,10 +320,10 @@ class TestK8sClient:
         ],
     )
     def test_get_auth_headers(
-        self, k8s_client, test_description, given_user_token, expected_result
+        self, k8s_client, test_description, k8s_headers, expected_result
     ):
         # given
-        k8s_client.user_token = given_user_token
+        k8s_client.k8s_auth_headers = k8s_headers
 
         # when
         result = k8s_client._get_auth_headers()
@@ -129,7 +353,13 @@ class TestK8sClient:
     ):
         # given
         k8s_client.api_server = "https://api.example.com"
-        k8s_client.user_token = "test-token"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url="abc",
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
         k8s_client.ca_temp_filename = "test-ca-file"
         k8s_client.data_sanitizer = data_sanitizer
 
