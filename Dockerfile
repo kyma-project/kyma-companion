@@ -10,6 +10,7 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
+RUN apt install build-essential gcc clang
 RUN pip install --no-cache-dir poetry>=2.1  \
   && poetry config virtualenvs.create false \
   && poetry install --without dev,test --no-interaction --no-ansi \
