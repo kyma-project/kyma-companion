@@ -3,9 +3,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_header, print_test_results
+from common.output import print_header, print_test_results, print_token_usage
 from evaluation.process_scenario import process_scenario
 from evaluation.scenario.scenario import ScenarioList
+from evaluation.validator.usage_data import TokenUsageDataValidator
 from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import IValidator
 
@@ -26,6 +27,9 @@ def main() -> None:
 
     # initialize the response validator.
     validator: IValidator = create_validator(config)
+    usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
+    token_usage_before_run = usage_tracker_validator.get_total_token_usage()
+    usage_tracker_validator.disconnect()
 
     # add each scenario to the executor.
     with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
@@ -46,11 +50,14 @@ def main() -> None:
     time_taken = round((time.time() - start_time) / 60, 2)
     print(f"Total time taken by evaluation tests: {time_taken} minutes.")
 
-    # TODO: uncomment this when we want fail the job if tests fail.
-    # # Pass or fail the tests.
-    # is_passed, reason = scenario_list.is_test_passed()
-    # if not is_passed:
-    #     raise Exception(f"Tests failed: {reason}")
+    # validate that the token usage data is added to redis db.
+    usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
+    token_usage_after_run = usage_tracker_validator.get_total_token_usage()
+    total_usage = token_usage_after_run - token_usage_before_run
+    if total_usage <= 0:
+        logger.error("No token usage data found in redis db.")
+        raise Exception("*** Tests failed: No token usage data found in redis db.")
+    print_token_usage(total_usage)
 
     if scenario_list.is_test_failed():
         print_header("Tests FAILED.")

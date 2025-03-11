@@ -37,10 +37,12 @@ from agents.common.state import CompanionState, Plan, SubTask, UserInput
 from agents.common.utils import should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
+from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import COMMON_QUESTION_PROMPT
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
+from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
@@ -58,9 +60,10 @@ class CustomJSONEncoder(json.JSONEncoder):
     Default JSON cannot serialize these objects.
     """
 
-    def default(self, obj):  # noqa D102
+    def default(self, o):  # noqa D102
+        """Custom JSON encoder for RemoveMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage, and SubTask."""
         if isinstance(
-            obj,
+            o,
             RemoveMessage
             | AIMessage
             | HumanMessage
@@ -68,10 +71,10 @@ class CustomJSONEncoder(json.JSONEncoder):
             | ToolMessage
             | SubTask,
         ):
-            return obj.__dict__
-        elif isinstance(obj, IK8sClient):
-            return obj.model_dump()
-        return super().default(obj)
+            return o.__dict__
+        elif isinstance(o, IK8sClient):
+            return o.model_dump()
+        return super().default(o)
 
 
 class IGraph(Protocol):
@@ -267,7 +270,10 @@ class CompanionGraph:
                 "configurable": {
                     "thread_id": conversation_id,
                 },
-                "callbacks": [self.handler],
+                "callbacks": [
+                    self.handler,
+                    UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
+                ],
                 "tags": [
                     cluster_id
                 ],  # cluster_id as a tag for traceability and rate limiting
