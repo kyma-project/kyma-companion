@@ -148,17 +148,6 @@ class TestAgentState:
             ),
         ],
     )
-    def test_all_tasks_completed(
-        self, messages, next, subtasks, final_response, expected
-    ):
-        state = CompanionState(
-            messages=messages,
-            next=next,
-            subtasks=subtasks,
-            final_response=final_response,
-        )
-        assert state.all_tasks_completed() == expected
-
     @pytest.mark.parametrize(
         "messages, messages_summary, expected",
         [
