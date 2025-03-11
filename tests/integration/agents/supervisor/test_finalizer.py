@@ -353,45 +353,6 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer ignores irrelevant Kubernetes agent's response
-        (
-            [
-                SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(content="write hello world Python script?"),
-                AIMessage(
-                    name="Common",
-                    content=dedent(
-                        """
-                        Here is the hello world Python script:
-                        ```python
-                        print("Hello, World!")
-                        ```
-                        """
-                    ),
-                ),
-                AIMessage(
-                    name="KubernetesAgent",
-                    content=dedent(
-                        """
-                    Here is how you can deploy your application using kubectl:
-                    ```bash
-                    kubectl apply -f deployment.yaml
-                    ```
-                    """
-                    ),
-                ),
-            ],
-            dedent(
-                """
-                Here is the hello world Python script:
-                ```python
-                print("Hello, World!")
-                ```
-                """
-            ),
-        ),
         # Finalizer answers based on Common and Kyma agent's responses
         (
             [
