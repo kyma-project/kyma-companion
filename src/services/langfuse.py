@@ -125,9 +125,10 @@ class LangfuseService(metaclass=SingletonMeta):
         if user_id:
             params["userId"] = user_id
 
-        async with ClientSession() as session, session.get(
-            url, params=params, auth=self.auth
-        ) as response:
+        async with (
+            ClientSession() as session,
+            session.get(url, params=params, auth=self.auth) as response,
+        ):
             if response.status == SUCCESS_CODE:
                 # Parse the JSON response into the MetricsResponse Pydantic model
                 data = await response.json()

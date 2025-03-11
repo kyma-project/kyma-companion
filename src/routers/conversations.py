@@ -38,7 +38,7 @@ def init_config() -> Config:
 
 
 def init_data_sanitizer(
-    config: Annotated[Config, Depends(init_config)]
+    config: Annotated[Config, Depends(init_config)],
 ) -> IDataSanitizer:
     """Initialize the data sanitizer instance"""
     return DataSanitizer(config.sanitization_config)

@@ -43,9 +43,7 @@ class MockService(IService):
         ]
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
-        if user_identifier == "UNAUTHORIZED":
-            return False
-        return True
+        return user_identifier != "UNAUTHORIZED"
 
     async def is_usage_limit_exceeded(
         self, cluster_id: str

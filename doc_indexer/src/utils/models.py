@@ -23,7 +23,7 @@ def init_proxy_client() -> BaseProxyClient:
 
 
 def create_embedding_factory(
-    embedding_creator: Callable[[str, Any], Embeddings]
+    embedding_creator: Callable[[str, Any], Embeddings],
 ) -> Callable[[str], Embeddings]:
     """Create a factory function for embedding models."""
 
