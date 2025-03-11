@@ -93,7 +93,7 @@ def conversation_service(app_models, companion_graph):
                 content="The user query is related to: "
                 "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
             ),
-            HumanMessage(content="why the pod is failing?"),
+            HumanMessage(content="why is the pod failing?"),
             AIMessage(
                 content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
                 "`CrashLoopBackOff` state. The last termination reason was `StartError`"
