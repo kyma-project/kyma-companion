@@ -48,7 +48,7 @@ def agent_node(
     state: CompanionState, agent: AgentExecutor, name: str
 ) -> dict[str, Any]:
     """Agent node."""
-    if state.subtasks is not None:
+    if state.subtasks:
         for subtask in state.subtasks:
             if (
                 subtask.assigned_to == name
