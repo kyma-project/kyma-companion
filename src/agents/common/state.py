@@ -129,6 +129,8 @@ class CompanionState(BaseModel):
 
     def all_tasks_completed(self) -> bool:
         """Check if all the sub-tasks are completed."""
+        if self.subtasks is None:
+            return True
         return all(task.status == SubTaskStatus.COMPLETED for task in self.subtasks)
 
     class Config:

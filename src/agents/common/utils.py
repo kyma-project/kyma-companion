@@ -48,24 +48,28 @@ def agent_node(
     state: CompanionState, agent: AgentExecutor, name: str
 ) -> dict[str, Any]:
     """Agent node."""
-    for subtask in state.subtasks:
-        if subtask.assigned_to == name and subtask.status != SubTaskStatus.COMPLETED:
-            try:
-                # TODO: move to a specific agent folder and extend it for each agent
-                # TODO: can improved to query all the subtasks at once
-                result = agent.invoke(
-                    {"messages": state.messages, "input": subtask.description}
-                )
-                subtask.complete()
-                return {
-                    MESSAGES: [AIMessage(content=result["output"], name=name)],
-                }
-            except Exception as e:
-                logger.error(f"Error in agent {name}: {e}")
-                return {
-                    ERROR: str(e),
-                    NEXT: EXIT,
-                }
+    if state.subtasks is not None:
+        for subtask in state.subtasks:
+            if (
+                subtask.assigned_to == name
+                and subtask.status != SubTaskStatus.COMPLETED
+            ):
+                try:
+                    # TODO: move to a specific agent folder and extend it for each agent
+                    # TODO: can improved to query all the subtasks at once
+                    result = agent.invoke(
+                        {"messages": state.messages, "input": subtask.description}
+                    )
+                    subtask.complete()
+                    return {
+                        MESSAGES: [AIMessage(content=result["output"], name=name)],
+                    }
+                except Exception as e:
+                    logger.error(f"Error in agent {name}: {e}")
+                    return {
+                        ERROR: str(e),
+                        NEXT: EXIT,
+                    }
     return {
         MESSAGES: [
             AIMessage(
