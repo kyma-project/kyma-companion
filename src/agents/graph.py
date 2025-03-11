@@ -60,9 +60,10 @@ class CustomJSONEncoder(json.JSONEncoder):
     Default JSON cannot serialize these objects.
     """
 
-    def default(self, obj):  # noqa D102
+    def default(self, o):  # noqa D102
+        """Custom JSON encoder for AIMessage, HumanMessage, and SubTask."""
         if isinstance(
-            obj,
+            o,
             RemoveMessage
             | AIMessage
             | HumanMessage
@@ -70,10 +71,10 @@ class CustomJSONEncoder(json.JSONEncoder):
             | ToolMessage
             | SubTask,
         ):
-            return obj.__dict__
-        elif isinstance(obj, IK8sClient):
-            return obj.model_dump()
-        return super().default(obj)
+            return o.__dict__
+        elif isinstance(o, IK8sClient):
+            return o.model_dump()
+        return super().default(o)
 
 
 class IGraph(Protocol):
