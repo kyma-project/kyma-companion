@@ -255,11 +255,12 @@ class TestK8sClient:
         k8s_client.data_sanitizer = data_sanitizer
 
         # Mock get_resource and list_k8s_events_for_resource
-        with patch.object(
-            k8s_client, "get_resource"
-        ) as mock_get_resource, patch.object(
-            k8s_client, "list_k8s_events_for_resource"
-        ) as mock_list_events:
+        with (
+            patch.object(k8s_client, "get_resource") as mock_get_resource,
+            patch.object(
+                k8s_client, "list_k8s_events_for_resource"
+            ) as mock_list_events,
+        ):
             mock_get_resource.return_value = raw_data
             mock_list_events.return_value = raw_events
 

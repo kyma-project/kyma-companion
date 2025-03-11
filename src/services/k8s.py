@@ -298,11 +298,7 @@ class K8sClient:
         tail_limit: int,
     ) -> list[str]:
         """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
-        uri = (
-            f"api/v1/namespaces/{namespace}/pods/{name}/log"
-            f"?container={container_name}"
-            f"&tailLines={tail_limit}"
-        )
+        uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
 
         if is_terminated:
             uri += "&previous=true"
