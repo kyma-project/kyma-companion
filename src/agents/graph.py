@@ -61,7 +61,7 @@ class CustomJSONEncoder(json.JSONEncoder):
     """
 
     def default(self, o):  # noqa D102
-        """Custom JSON encoder for AIMessage, HumanMessage, and SubTask."""
+        """Custom JSON encoder for RemoveMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage, and SubTask."""
         if isinstance(
             o,
             RemoveMessage
