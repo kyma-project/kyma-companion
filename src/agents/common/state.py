@@ -8,7 +8,7 @@ from langchain_core.messages import (
     SystemMessage,
 )
 from langgraph.graph import add_messages
-from langgraph.managed import IsLastStep
+from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 
 from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
@@ -145,6 +145,8 @@ class BaseAgentState(BaseModel):
     my_task: SubTask | None = None
     is_last_step: IsLastStep
     error: str | None = None
+
+    remaining_steps: RemainingSteps
 
     def get_agent_messages_including_summary(self) -> list[MessageLikeRepresentation]:
         """Get messages including the summary message."""
