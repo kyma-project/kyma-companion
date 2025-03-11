@@ -164,25 +164,25 @@ class K8sClient:
         """Initialize the K8sClient object."""
         self.k8s_auth_headers = k8s_auth_headers
 
-        # Write the certificate authority data to a temporary file.
-        ca_file = tempfile.NamedTemporaryFile(delete=False)
-        ca_file.write(self.k8s_auth_headers.get_decoded_certificate_authority_data())
-        ca_file.close()
+        with tempfile.NamedTemporaryFile(delete=False) as ca_file:
+            ca_file.write(
+                self.k8s_auth_headers.get_decoded_certificate_authority_data()
+            )
         self.ca_temp_filename = ca_file.name
 
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             # Write the client certificate data to a temporary file.
-            client_cert_file = tempfile.NamedTemporaryFile(delete=False)
-            client_cert_file.write(
-                self.k8s_auth_headers.get_decoded_client_certificate_data()
-            )
-            client_cert_file.close()
+            with tempfile.NamedTemporaryFile(delete=False) as client_cert_file:
+                client_cert_file.write(
+                    self.k8s_auth_headers.get_decoded_client_certificate_data()
+                )
             self.client_cert_temp_filename = client_cert_file.name
 
             # Write the client key data to a temporary file.
-            client_key_file = tempfile.NamedTemporaryFile(delete=False)
-            client_key_file.write(self.k8s_auth_headers.get_decoded_client_key_data())
-            client_key_file.close()
+            with tempfile.NamedTemporaryFile(delete=False) as client_key_file:
+                client_key_file.write(
+                    self.k8s_auth_headers.get_decoded_client_key_data()
+                )
             self.client_key_temp_filename = client_key_file.name
 
         self.dynamic_client = self._create_dynamic_client()
