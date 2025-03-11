@@ -29,9 +29,9 @@ class K8sAuthHeaders(BaseModel):
 
     x_cluster_url: str
     x_cluster_certificate_authority_data: str
-    x_k8s_authorization: str | None
-    x_client_certificate_data: str | None
-    x_client_key_data: str | None
+    x_k8s_authorization: str | None = None
+    x_client_certificate_data: str | None = None
+    x_client_key_data: str | None = None
 
     def validate_headers(self) -> None:
         """Validate the Kubernetes API authentication headers."""
