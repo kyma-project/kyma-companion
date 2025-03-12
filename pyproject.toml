@@ -52,6 +52,7 @@ types-pyyaml = "^6.0.12.20241230"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
+cryptography = "^44.0.2"
 flake8 = "^7.1.2"
 flake8-bugbear = "^24.12.12"
 ipython = "^9.0.2"
