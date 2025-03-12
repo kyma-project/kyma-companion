@@ -3,13 +3,15 @@ import os
 import pytest
 
 from services.data_sanitizer import DataSanitizer
-from services.k8s import K8sClient
+from services.k8s import K8sAuthHeaders, K8sClient
 
 
 @pytest.fixture
 def k8s_client() -> K8sClient:
     # Note: These tests uses the same cluster which is used in evaluation tests.
     # read Test cluster information from environment variables.
+    # IMPORTANT: These tests use the token based authentication for the k8s cluster.
+
     api_server = os.environ.get("TEST_CLUSTER_URL", "")
     if api_server == "":
         raise ValueError("TEST_CLUSTER_URL: environment variable not set")
@@ -22,10 +24,16 @@ def k8s_client() -> K8sClient:
     if certificate_authority_data == "":
         raise ValueError("TEST_CLUSTER_CA_DATA: environment variable not set")
 
+    k8s_auth_headers = K8sAuthHeaders(
+        x_cluster_url=api_server,
+        x_cluster_certificate_authority_data=certificate_authority_data,
+        x_k8s_authorization=user_token,
+    )
+
+    k8s_auth_headers.validate_headers()
+
     return K8sClient(
-        api_server,
-        user_token,
-        certificate_authority_data,
+        k8s_auth_headers,
         data_sanitizer=DataSanitizer(),
     )
 

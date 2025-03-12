@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 
 from agents.common.constants import (
     COMMON,
-    ERROR,
     FINALIZER,
     K8S_AGENT,
     KYMA_AGENT,
@@ -201,9 +200,16 @@ class SupervisorAgent:
             )
         except Exception:
             logger.exception("Error in planning")
-            return {
-                ERROR: "Unexpected error while processing the request. Please try again later.",
-            }
+
+            return create_node_output(
+                message=AIMessage(
+                    content="Unexpected error while processing the request. Please try again later.",
+                    name=PLANNER,
+                ),
+                subtasks=[],  # empty subtask to make the companion response consistent
+                next=END,
+                error="Unexpected error while processing the request. Please try again later.",
+            )
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
         # last human message must be the query

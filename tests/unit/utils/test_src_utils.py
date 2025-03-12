@@ -1,7 +1,14 @@
+import datetime
 import re
 
 import jwt
 import pytest
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.x509.oid import NameOID
 
 from utils import utils
 from utils.utils import (
@@ -9,6 +16,7 @@ from utils.utils import (
     JWT_TOKEN_SERVICE_ACCOUNT,
     JWT_TOKEN_SUB,
     create_session_id,
+    get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
     parse_k8s_token,
 )
@@ -140,3 +148,79 @@ def test_get_user_identifier_from_token(
     else:
         user_identifier = get_user_identifier_from_token(token)
         assert user_identifier == expected_result
+
+
+# Sample PEM certificates for testing
+def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
+    # Generate a private key
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048, backend=default_backend()
+    )
+
+    issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, "test"),
+        ]
+    )
+
+    subject = x509.Name([])
+    if common_name:
+        subject = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COMMON_NAME, common_name),
+            ]
+        )
+
+    # Build the certificate
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(private_key.public_key())
+        .serial_number(int(serial_number))
+        .not_valid_before(datetime.datetime.utcnow())
+        .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=365))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(private_key, hashes.SHA256(), default_backend())
+    )
+
+    # Serialize the certificate to PEM format
+    pem_cert = cert.public_bytes(Encoding.PEM)
+    return pem_cert
+
+
+# Test cases
+@pytest.mark.parametrize(
+    "client_certificate_data, expected_user_identifier, expected_error",
+    [
+        # Test case 1: Certificate with Common Name
+        (
+            generate_pem_cert("test_user", "12345"),
+            "test_user",
+            None,
+        ),
+        # Test case 2: Certificate without Common Name but with serial number
+        (
+            generate_pem_cert("", "67890"),
+            "67890",
+            None,
+        ),
+        # Test case 3: Invalid certificate data (e.g., not a valid PEM)
+        (
+            b"Invalid certificate data",
+            "",
+            ValueError,
+        ),
+    ],
+)
+def test_get_user_identifier_from_client_certificate(
+    client_certificate_data, expected_user_identifier, expected_error
+):
+    if expected_error:
+        with pytest.raises(ValueError):
+            get_user_identifier_from_client_certificate(client_certificate_data)
+    else:
+        assert (
+            get_user_identifier_from_client_certificate(client_certificate_data)
+            == expected_user_identifier
+        )
