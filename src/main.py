@@ -15,6 +15,9 @@ async def root() -> dict:
     return {"message": "Kyma Companion!"}
 
 
+"""Test commit."""
+
+
 @app.get("/readyz")
 async def readyz() -> dict:
     """The endpoint for the Readiness Probe."""
