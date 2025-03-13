@@ -526,7 +526,7 @@ files = [
     {file = "cffi-1.17.1-cp39-cp39-win_amd64.whl", hash = "sha256:d016c76bdd850f3c626af19b0542c9677ba156e4ee4fccfdd7848803533ef662"},
     {file = "cffi-1.17.1.tar.gz", hash = "sha256:1c39c6016c32bc48dd54561950ebd6836e1670f2ae46128f67cf49e789c52824"},
 ]
-markers = {main = "platform_python_implementation == \"PyPy\"", test = "platform_python_implementation == \"PyPy\""}
+markers = {test = "platform_python_implementation == \"PyPy\""}
 
 [package.dependencies]
 pycparser = "*"
@@ -695,7 +695,7 @@ version = "44.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 optional = false
 python-versions = "!=3.9.0,!=3.9.1,>=3.7"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "cryptography-44.0.2-cp37-abi3-macosx_10_9_universal2.whl", hash = "sha256:efcfe97d1b3c79e486554efddeb8f6f53a4cdd4cf6086642784fa31fc384e1d7"},
     {file = "cryptography-44.0.2-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:29ecec49f3ba3f3849362854b7253a9f59799e3763b0c9d0826259a88efa02f1"},
@@ -858,14 +858,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "2.5.2"
+version = "2.5.3"
 description = "The Open-Source LLM Evaluation Framework."
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-2.5.2-py3-none-any.whl", hash = "sha256:dc6246c7d9576656234ada0ce35115ba41b73161a6f6f7bd1a16139428b1403a"},
-    {file = "deepeval-2.5.2.tar.gz", hash = "sha256:8647dd573664b5d1e9ecf98269e02ea237e5c38d28b0e93d8099fbc9f681e578"},
+    {file = "deepeval-2.5.3-py3-none-any.whl", hash = "sha256:091c61ce29907531ef2cf85f484d73ae1143d34c1687c5a4eb26fa16421ba1db"},
+    {file = "deepeval-2.5.3.tar.gz", hash = "sha256:652e25340a358cf5e347fffa3a8b63025293993150c06a6d7972146990fbe639"},
 ]
 
 [package.dependencies]
@@ -4640,7 +4640,7 @@ files = [
     {file = "pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc"},
     {file = "pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6"},
 ]
-markers = {main = "platform_python_implementation == \"PyPy\"", test = "platform_python_implementation == \"PyPy\""}
+markers = {test = "platform_python_implementation == \"PyPy\""}
 
 [[package]]
 name = "pydantic"
@@ -7188,4 +7188,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "0da2ba9f3b370068a7663b2c80c704d20696f28b48f2282c28741178f56702a0"
+content-hash = "b3214501170ea34975e086dd14cc2eaa54d7c77fc15438a1453492528b24b9f7"

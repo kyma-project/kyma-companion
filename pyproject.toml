@@ -17,6 +17,7 @@ authors = [
 requires-python = "==3.12.*"
 dependencies = [
   "ai-core-sdk (>=2.4.2,<2.5.0)",
+  "cryptography (>=44.0.2,<45.0.0)",
   "fastapi[standard] (>=0.115.11,<0.116.0)",
   "generative-ai-hub-sdk[all] (>=4.1.1,<4.2.0)",
   "hdbcli (>=2.23.27,<3.0.0)",
@@ -37,7 +38,7 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.5.2"
+deepeval = "^2.5.3"
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
