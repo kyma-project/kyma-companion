@@ -16,6 +16,7 @@ KYMA_AGENT_INSTRUCTIONS = """
      a. Analyze the conversation and the output of the tool calls
      b. Decide if further tool calls are needed
      c. If no tool call is needed, generate your final response and solutions with complete resource definitions
+6. Wherever possible provide user with a YAML config.
 """
 
 

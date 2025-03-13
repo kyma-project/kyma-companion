@@ -163,7 +163,7 @@ class BaseAgent:
                         name=self.name,
                     )
                 ],
-                ERROR: error_message_with_trace,
+                ERROR: error_message,  # we dont send trace to frontend
             }
 
         # if the recursive limit is reached and the response is a tool call, return a message.

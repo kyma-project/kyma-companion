@@ -267,6 +267,7 @@ class TestSummarization:
                 20,
                 35,
                 {
+                    "error": None,
                     "messages_summary": "Summary of previous chat:\n summary content",
                     "messages": [
                         RemoveMessage(id="1"),
@@ -302,7 +303,7 @@ class TestSummarization:
                 Exception("Summarization failed"),
             ),
             # Test case, where there are no messages.
-            ([], "", 100, 200, {"messages": []}, None),
+            ([], "", 100, 200, {"error": None, "messages": []}, None),
             # Test case, where the token limit is not exceeded.
             (
                 [
@@ -314,7 +315,7 @@ class TestSummarization:
                 "",
                 100,
                 200,
-                {"messages": []},
+                {"error": None, "messages": []},
                 None,
             ),
         ],

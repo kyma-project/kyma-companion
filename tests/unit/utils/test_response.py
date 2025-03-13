@@ -24,7 +24,7 @@ from utils.response import prepare_chunk_response, reformat_subtasks
             b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
             b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
             b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
-            b'Agent"}], "next": "Common"}}}',
+            b'Agent"}], "next": "Common"}, "error": null}}',
         ),
         (
             # Supervisor Agent with last agent planner
@@ -42,7 +42,7 @@ from utils.response import prepare_chunk_response, reformat_subtasks
             b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
             b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
             b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
-            b'Agent"}], "next": "KubernetesAgent"}}}',
+            b'Agent"}], "next": "KubernetesAgent"}, "error": null}}',
         ),
         (
             # Supervisor Agent with last agent finalizer
@@ -60,7 +60,7 @@ from utils.response import prepare_chunk_response, reformat_subtasks
             b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
             b'hon", "status": "completed", "agent": "Common"}, {"task_id": 2, "task_name": "'
             b'Fetching steps to create kyma function", "status": "completed", "agent": "Kyma'
-            b'Agent"}], "next": "__end__"}}}',
+            b'Agent"}], "next": "__end__"}, "error": null}}',
         ),
         (
             # Skip response from supervisor if agent is not planner or not finalizer
@@ -82,7 +82,8 @@ from utils.response import prepare_chunk_response, reformat_subtasks
             b'"subtasks": [], "next": "__end__", "error": null}}',
             # expected
             b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
-            b't": "The capital of India is New Delhi.", "tasks": [], "next": "__end__"}}}',
+            b't": "The capital of India is New Delhi.", "tasks": [], "next": "__end__"}, "'
+            b'error": null}}',
         ),
         # Skip response if agent is Summarization
         (b'{"Summarization": {"messages": []}}', None),
@@ -90,7 +91,8 @@ from utils.response import prepare_chunk_response, reformat_subtasks
             # input
             b'{"KubernetesAgent": {"error": "Error occurred"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "error": "Error occurred"}}',
+            b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"t'
+            b'asks": []}, "error": "Error occurred"}}',
         ),
         (
             # Error response for invalid json
