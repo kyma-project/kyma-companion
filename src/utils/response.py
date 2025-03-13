@@ -61,15 +61,30 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
         answer[NEXT] = agent_data.get(NEXT)
     else:
         if agent_data.get("subtasks"):
+            # get pending subtasks
             pending_subtask = [
                 subtask["assigned_to"]
                 for subtask in agent_data.get("subtasks")
                 if subtask["status"] == SubTaskStatus.PENDING
             ]
+            # if subtask pending, assign Next to first pending task
             if pending_subtask:
                 answer[NEXT] = pending_subtask[0]
             else:
-                answer[NEXT] = FINALIZER
+                # all subtask completed
+
+                # if there was only one common agent subtask
+                # we don't goto finalizer
+                if(
+                    answer["tasks"]
+                    and len(answer["tasks"]) == 1
+                    and answer["tasks"][0]["agent"] == COMMON
+                ):
+                    # as there is no finalizer for this
+                    answer[NEXT] = "__end__"
+                else:
+                    # for all other case , we goto finalizer
+                    answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer, "error": agent_error}
 
