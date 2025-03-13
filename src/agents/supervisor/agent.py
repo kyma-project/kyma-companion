@@ -65,7 +65,7 @@ def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINAL
 
     # if no subtasks is pending, finalize the response
     if state.subtasks and all(not subtask.is_pending() for subtask in state.subtasks):
-        logger.debug("Routing to Finilizer as no subtasks is pending.")
+        logger.debug("Routing to Finalizer as no subtasks is pending.")
         return FINALIZER
 
     # if subtasks exists but not all are completed, router delegates to the next agent

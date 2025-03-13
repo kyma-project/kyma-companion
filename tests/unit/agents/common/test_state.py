@@ -202,6 +202,7 @@ class TestAgentState:
             subtasks=[],
             my_task=None,
             is_last_step=False,
+            remaining_steps=25,
         )
 
         # when
