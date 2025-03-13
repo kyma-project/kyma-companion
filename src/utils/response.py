@@ -51,27 +51,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
         answer["content"] = agent_data["messages"][-1].get("content")
     answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
-    # Handle response when single subtask assigned to common
-    # check if there is only one common subtask
-    if (
-            answer["tasks"]
-            and len(answer["tasks"]) == 1
-            and answer["tasks"][0]["agent"] == COMMON
-    ):
-        task = answer["tasks"][0]
-
-        # as we don't want to show subtasks to users when single common subtask
-        # skip planner response
-        last_agent = agent_data["messages"][-1].get("name")
-        if last_agent == PLANNER:
-            return None
-        else:
-            # send only common agent response
-            answer[NEXT] = "__end__"
-            answer["tasks"] = [] # send empty tasks
-            return {"agent": agent, "answer": answer}
-
-
     # assign NEXT
     if agent == SUPERVISOR:
         answer[NEXT] = agent_data.get(NEXT)

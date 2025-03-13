@@ -228,11 +228,19 @@ class CompanionGraph:
         workflow.add_node(COMMON, self._common_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 
-        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
+        # Define the edges: (KymaAgent | KubernetesAgent) --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
+            # common node connected via conditional edge to summarization node.
             if member != COMMON:
                 workflow.add_edge(member, SUMMARIZATION)
+
+        # Define the conditional edge: COMMON --> (SUMMARIZATION | END)
+        workflow.add_conditional_edges(
+            COMMON,
+            common_node_route_or_exit,
+            {SUMMARIZATION: SUMMARIZATION, END: END},
+        )
 
         # Set the entrypoint: ENTRY --> summarization
         workflow.set_entry_point(SUMMARIZATION)
@@ -241,13 +249,6 @@ class CompanionGraph:
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
         # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
-
-        # Define the conditional edge: COMMON --> (SUMMARIZATION | END)
-        workflow.add_conditional_edges(
-            COMMON,
-            common_node_route_or_exit,
-            {SUMMARIZATION: SUMMARIZATION, END: END},
-        )
 
         workflow.add_conditional_edges(
             SUMMARIZATION,
