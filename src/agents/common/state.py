@@ -52,6 +52,10 @@ class SubTask(BaseModel):
         """Check if the task is error status."""
         return self.status == SubTaskStatus.ERROR
 
+    def is_common_subtask(self) -> bool:
+        """Check if the task is assigned to common agent."""
+        return self.assigned_to == COMMON
+
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
 # Currently, we are using pydantic v1.
@@ -83,11 +87,6 @@ class Plan(BaseModel):
 
     subtasks: list[SubTask] | None = Field(
         description="different subtasks for user query, should be in sorted order"
-    )
-
-    response: str | None = Field(
-        description="direct response to the user query if the query is either irrelevant to Kyma and Kubernetes or "
-        "if the answer is already in the conversation history"
     )
 
 

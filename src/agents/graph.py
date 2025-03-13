@@ -1,10 +1,6 @@
 import json
 from collections.abc import AsyncIterator, Hashable
-from typing import (
-    Any,
-    Protocol,
-    cast,
-)
+from typing import Any, Protocol, cast, Literal
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
@@ -52,6 +48,22 @@ from utils.settings import (
 )
 
 logger = get_logger(__name__)
+
+
+def common_node_route_or_exit(state: CompanionState) -> Literal[SUMMARIZATION, END]:  # type: ignore
+    """Return the next node whether to continue or exit with a direct response."""
+    # if only one common agent task -> then END
+    # no need to invoke finalizer
+    if (
+        state.subtasks
+        and len(state.subtasks) == 1
+        and state.subtasks[0].is_common_subtask()
+        and state.subtasks[0].completed()
+    ):
+        logger.debug("Only one common subtask found. No need to route further")
+        return END
+    # else continue the graph
+    return SUMMARIZATION
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -216,10 +228,19 @@ class CompanionGraph:
         workflow.add_node(COMMON, self._common_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 
-        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> supervisor
+        # Define the edges: (KymaAgent | KubernetesAgent) --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
-            workflow.add_edge(member, SUMMARIZATION)
+            # common node connected via conditional edge to summarization node.
+            if member != COMMON:
+                workflow.add_edge(member, SUMMARIZATION)
+
+        # Define the conditional edge: COMMON --> (SUMMARIZATION | END)
+        workflow.add_conditional_edges(
+            COMMON,
+            common_node_route_or_exit,
+            {SUMMARIZATION: SUMMARIZATION, END: END},
+        )
 
         # Set the entrypoint: ENTRY --> summarization
         workflow.set_entry_point(SUMMARIZATION)

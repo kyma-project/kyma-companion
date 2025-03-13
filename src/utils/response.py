@@ -7,7 +7,7 @@ from agents.common.constants import (
     FINALIZER,
     NEXT,
     PLANNER,
-    SUMMARIZATION,
+    SUMMARIZATION, COMMON,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -50,12 +50,13 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     if agent == SUMMARIZATION:
         return None
 
+
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
-
     answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
+    # assign NEXT
     if agent == SUPERVISOR:
         answer[NEXT] = agent_data.get(NEXT)
     else:
