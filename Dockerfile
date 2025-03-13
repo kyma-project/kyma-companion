@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bullseye AS builder
+FROM python:3.12-slim-bullseye AS builder
 
 # Set the working directory in the container
 WORKDIR /app
