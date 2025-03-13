@@ -39,9 +39,7 @@ class TestSubTask:
             ),
         ],
     )
-    def test_complete(
-        self, description, task_title, assigned_to, status, result, expected_status
-    ):
+    def test_complete(self, description, task_title, assigned_to, status, result, expected_status):
         subtask = SubTask(
             description=description,
             task_title=task_title,
@@ -102,52 +100,6 @@ class TestCompanionState:
 
 
 class TestAgentState:
-    # Test data for AgentState
-    @pytest.mark.parametrize(
-        "messages, next, subtasks, final_response, expected",
-        [
-            (
-                [],
-                None,
-                [
-                    SubTask(
-                        description="Task 1",
-                        task_title="Task 1",
-                        assigned_to="KymaAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                    SubTask(
-                        description="Task 2",
-                        task_title="Task 2",
-                        assigned_to="KubernetesAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                ],
-                "",
-                True,
-            ),
-            (
-                [],
-                None,
-                [
-                    SubTask(
-                        description="Task 1",
-                        task_title="Task 1",
-                        assigned_to="KymaAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                    SubTask(
-                        description="Task 2",
-                        task_title="Task 2",
-                        assigned_to="KubernetesAgent",
-                        status=SubTaskStatus.PENDING,
-                    ),
-                ],
-                "",
-                False,
-            ),
-        ],
-    )
     @pytest.mark.parametrize(
         "messages, messages_summary, expected",
         [
@@ -178,9 +130,7 @@ class TestAgentState:
             ),
         ],
     )
-    def test_get_agent_messages_including_summary(
-        self, messages, messages_summary, expected
-    ):
+    def test_get_agent_messages_including_summary(self, messages, messages_summary, expected):
         # given
         state = BaseAgentState(
             messages=[],
