@@ -124,6 +124,8 @@ class SupervisorAgent:
 
     def _route(self, state: SupervisorState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
+
+        # Check for pending subtasks
         for subtask in state.subtasks:
             if subtask.is_pending():
                 next_agent = subtask.assigned_to
@@ -131,6 +133,8 @@ class SupervisorAgent:
                     "next": next_agent,
                     "subtasks": state.subtasks,
                 }
+
+        # else route to finalizer
         return {
             "next": FINALIZER,
             "subtasks": state.subtasks,
@@ -183,16 +187,17 @@ class SupervisorAgent:
             )
 
             # return the response if planner responded directly
-            if plan.response:
-                return create_node_output(
-                    message=AIMessage(content=plan.response, name=PLANNER),
-                    subtasks=[],  # empty subtask to make the companion response consistent
-                    next=END,
-                )
+            # if plan.response:
+            #     return create_node_output(
+            #         message=AIMessage(content=plan.response, name=PLANNER),
+            #         subtasks=[],  # empty subtask to make the companion response consistent
+            #         next=END,
+            #     )
 
-            # if the Planner did not respond directly but also failed to create any subtasks, raise an exception
+            # if the Planner failed to create any subtasks, raise an exception
             if not plan.subtasks:
                 raise SubtasksMissingError(str(state.messages[-1].content))
+
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
                 message=AIMessage(content="", name=PLANNER),
@@ -256,7 +261,7 @@ class SupervisorAgent:
     async def _get_converted_final_response(
         self, state: SupervisorState
     ) -> dict[str, Any]:
-        """Convert the generated final response."""
+        """Convert the generated final response"""
         try:
             final_response = await self._generate_final_response(state)
             return self.response_converter.convert_final_response(final_response)
@@ -284,11 +289,7 @@ class SupervisorAgent:
         workflow.add_conditional_edges(
             START,
             decide_entry_point,
-            {
-                PLANNER: PLANNER,
-                ROUTER: ROUTER,
-                FINALIZER: FINALIZER,
-            },
+            {PLANNER: PLANNER, ROUTER: ROUTER, FINALIZER: FINALIZER},
         )
 
         # Define the edge: planner --> (router | END)
