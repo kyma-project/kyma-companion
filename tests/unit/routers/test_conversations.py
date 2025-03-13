@@ -308,18 +308,19 @@ def test_messages_endpoint(
 
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
-        b'"To create an API Rule in Kyma to expose a service externally", "tasks": []}}}\n'
+        b'"To create an API Rule in Kyma to expose a service externally", "tasks": []}, "error": null}}\n'
         in content
     )
     assert (
         b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"content": '
-        b'"To create a kubernetes deployment", "tasks": []}}}\n' in content
+        b'"To create a kubernetes deployment", "tasks": []}, "error": null}}\n'
+        in content
     )
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content'
         b'": "To create an API Rule in Kyma to expose a service externally", "tasks": '
-        b'[]}}}\n{"event": "agent_action", "data": {"agent": "KubernetesAgent", "an'
-        b'swer": {"content": "To create a kubernetes deployment", "tasks": []}}}\n'
+        b'[]}, "error": null}}\n{"event": "agent_action", "data": {"agent": "KubernetesAgent", "an'
+        b'swer": {"content": "To create a kubernetes deployment", "tasks": []}, "error": null}}\n'
         in content
     )
 
