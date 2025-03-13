@@ -127,10 +127,6 @@ class CompanionState(BaseModel):
             )
         return list(self.messages)
 
-    def all_tasks_completed(self) -> bool:
-        """Check if all the sub-tasks are completed."""
-        return all(task.status == SubTaskStatus.COMPLETED for task in self.subtasks)
-
     class Config:
         arbitrary_types_allowed = True
         fields = {"k8s_client": {"exclude": True}}
