@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 
-RUN apt update && apt dist-upgrade
+RUN apt update && apt dist-upgrade -y
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
