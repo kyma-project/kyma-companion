@@ -33,6 +33,8 @@ from integration.agents.fixtures.serverless_function import (
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 
+AGENT_STEPS_NUMBER = 25
+
 
 @pytest.fixture
 def correctness_metric(evaluator_model):
@@ -138,6 +140,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
             EXPECTED_API_RULE_RESPONSE,
@@ -170,6 +173,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
@@ -221,6 +225,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             None,
             EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
@@ -288,6 +293,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),  # context
             None,  # retrieval_context
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
@@ -352,6 +358,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             None,
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
@@ -400,6 +407,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             "",
             EXPECTED_BTP_MANAGER_RESPONSE,
@@ -446,6 +454,7 @@ def kyma_agent(app_models):
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
             ),
             "",
             "I couldn't find specific documentation on the features of the BTP Operator in the Kyma documentation. "
