@@ -67,13 +67,6 @@ Query: "What is kubernetes and Create a hello world app and deploy it with Kyma?
            ("description": "Create a hello world app", "assigned_to": "Common"),
            ("description": "deploy the app with Kyma","assigned_to": "KymaAgent")
     ]
-
-- Answer exists in the conversation history and direct response:
-  Query: "what was the cause for the issue?"
-  Previous Messages/conversation history: [{{{{"content": "Why is the Kyma function now working?", type="human"}}}}, {{{{"content": "The Kyma Function is not working because its service is unavailable.", type="ai"}}}}]
-
-  "response": "The Kyma Function is failing due to its service is unavailable.",
-  "subtasks": None
 """
 
 FINALIZER_PROMPT = """

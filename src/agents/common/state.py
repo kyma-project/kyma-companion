@@ -23,6 +23,18 @@ class SubTaskStatus(str, Enum):
     ERROR = "error"
 
 
+class GatekeeperResponse(BaseModel):
+    """Gatekeeper response data model."""
+
+    direct_response: str = Field(
+        description="direct response only if query is unrelated to Kyma or Kubernetes or can be answered using the conversation history"
+    )
+    forward_query: bool = Field(
+        default=False,
+        description="Forward query true when you forward to multi agent system",
+    )
+
+
 class SubTask(BaseModel):
     """Sub-task data model."""
 

@@ -27,14 +27,26 @@ from agents.common.constants import (
     MESSAGES_SUMMARY,
     SUBTASKS,
     SUMMARIZATION,
+    GATEKEEPER,
+    INITIAL_SUMMARIZATION,
+    NEXT,
 )
 from agents.common.data import Message
-from agents.common.state import CompanionState, Plan, SubTask, UserInput
+from agents.common.state import (
+    CompanionState,
+    Plan,
+    SubTask,
+    UserInput,
+    GatekeeperResponse,
+)
 from agents.common.utils import should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
-from agents.prompts import COMMON_QUESTION_PROMPT
+from agents.prompts import (
+    COMMON_QUESTION_PROMPT,
+    GATEKEEPER_PROMPT,
+)
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
@@ -51,6 +63,22 @@ logger = get_logger(__name__)
 
 
 def common_node_route_or_exit(state: CompanionState) -> Literal[SUMMARIZATION, END]:  # type: ignore
+    """Return the next node whether to continue or exit with a direct response."""
+    # if only one common agent task -> then END
+    # no need to invoke finalizer
+    if (
+        state.subtasks
+        and len(state.subtasks) == 1
+        and state.subtasks[0].is_common_subtask()
+        and state.subtasks[0].completed()
+    ):
+        logger.debug("Only one common subtask found. No need to route further")
+        return END
+    # else continue the graph
+    return SUMMARIZATION
+
+
+def gatekeeper_route_or_exit(state: CompanionState) -> Literal[SUMMARIZATION, END]:  # type: ignore
     """Return the next node whether to continue or exit with a direct response."""
     # if only one common agent task -> then END
     # no need to invoke finalizer
@@ -149,6 +177,9 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
+        self._gatekeeper_chain = self._create_gatekeeper_chain(
+            cast(IModel, gpt_4o_mini)
+        )
         self.graph = self._build_graph()
 
     @staticmethod
@@ -215,6 +246,80 @@ class CompanionGraph:
             SUBTASKS: state.subtasks,
         }
 
+    @staticmethod
+    def _create_gatekeeper_chain(model: IModel) -> RunnableSequence:
+        """Gatekeeper node chain to handle general queries
+        and queries that can answered from conversation history."""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", GATEKEEPER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("human", "query: {query}"),
+            ]
+        )
+        return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
+
+    async def _invoke_gatekeeper_node(
+        self, state: CompanionState, user_query: str
+    ) -> GatekeeperResponse:
+        """Invoke the Gatekeeper node."""
+        response = await ainvoke_chain(
+            self._gatekeeper_chain,
+            {
+                "messages": state.get_messages_including_summary(),
+                "query": user_query,
+            },
+        )
+        return response
+
+    async def _gatekeeper_node(self, state: CompanionState) -> dict[str, Any]:
+        """Gatekeeper node to handle general and queries that can answered from conversation history."""
+
+        try:
+            last_human_message = next(
+                (
+                    msg
+                    for msg in reversed(state.messages)
+                    if isinstance(msg, HumanMessage)
+                ),
+            )
+            response = await self._invoke_gatekeeper_node(state, last_human_message)
+
+            if response.forward_query:
+                return {
+                    NEXT: SUPERVISOR,
+                    MESSAGES: [
+                        AIMessage(
+                            content="",
+                            name=GATEKEEPER,
+                        )
+                    ],
+                    SUBTASKS: [],
+                }
+            return {
+                NEXT: END,
+                MESSAGES: [
+                    AIMessage(
+                        content=response.direct_response,
+                        name=GATEKEEPER,
+                    )
+                ],
+                SUBTASKS: [],
+            }
+        except Exception:
+            logger.exception("Error in gatekeeper node")
+            return {
+                NEXT: END,
+                MESSAGES: [
+                    AIMessage(
+                        content="Sorry, I am unable to process the request.",
+                        name=GATEKEEPER,
+                    )
+                ],
+                SUBTASKS: [],
+            }
+
     def _build_graph(self) -> CompiledGraph:
         """Create the companion parent graph."""
 
@@ -226,24 +331,30 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(COMMON, self._common_node)
+        workflow.add_node(GATEKEEPER, self._gatekeeper_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
+        workflow.add_node(INITIAL_SUMMARIZATION, self.summarization.summarization_node)
 
-        # Define the edges: (KymaAgent | KubernetesAgent) --> supervisor
+        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> summarization --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
-            # common node connected via conditional edge to summarization node.
-            if member != COMMON:
-                workflow.add_edge(member, SUMMARIZATION)
+            workflow.add_edge(member, SUMMARIZATION)
 
-        # Define the conditional edge: COMMON --> (SUMMARIZATION | END)
+        # Set the entrypoint: ENTRY --> Initial_Summarization
+        workflow.set_entry_point(INITIAL_SUMMARIZATION)
+
+        # Define the edges: Initial_Summarization --> Gatekeeper
+        workflow.add_edge(INITIAL_SUMMARIZATION, GATEKEEPER)
+
+        # Define the dynamic conditional edges: Gatekeeper --> (SUPERVISOR | END)
         workflow.add_conditional_edges(
-            COMMON,
-            common_node_route_or_exit,
-            {SUMMARIZATION: SUMMARIZATION, END: END},
+            GATEKEEPER,
+            lambda x: x.next,
+            {
+                SUPERVISOR: SUPERVISOR,
+                END: END,
+            },
         )
-
-        # Set the entrypoint: ENTRY --> summarization
-        workflow.set_entry_point(SUMMARIZATION)
 
         # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}

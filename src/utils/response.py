@@ -7,7 +7,7 @@ from agents.common.constants import (
     FINALIZER,
     NEXT,
     PLANNER,
-    SUMMARIZATION, COMMON,
+    SUMMARIZATION, COMMON, INITIAL_SUMMARIZATION, GATEKEEPER,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -38,7 +38,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
-        if agent == SUMMARIZATION:
+        if agent == SUMMARIZATION or agent == INITIAL_SUMMARIZATION:
             # we don't show summarization node, but only error
             return {
                 "agent": None,
@@ -47,7 +47,11 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             }
 
     # skip summarization node
-    if agent == SUMMARIZATION:
+    if agent == SUMMARIZATION or agent == INITIAL_SUMMARIZATION:
+        return None
+
+    # skip gatekeeper node, if request was forwarded to supervisor
+    if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
         return None
 
 
@@ -57,7 +61,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
     # assign NEXT
-    if agent == SUPERVISOR:
+    if agent == SUPERVISOR or agent == GATEKEEPER:
         answer[NEXT] = agent_data.get(NEXT)
     else:
         if agent_data.get("subtasks"):
@@ -71,20 +75,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             if pending_subtask:
                 answer[NEXT] = pending_subtask[0]
             else:
-                # all subtask completed
-
-                # if there was only one common agent subtask
-                # we don't goto finalizer
-                if(
-                    answer["tasks"]
-                    and len(answer["tasks"]) == 1
-                    and answer["tasks"][0]["agent"] == COMMON
-                ):
-                    # as there is no finalizer for this
-                    answer[NEXT] = "__end__"
-                else:
-                    # for all other case , we goto finalizer
-                    answer[NEXT] = FINALIZER
+                answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer, "error": agent_error}
 

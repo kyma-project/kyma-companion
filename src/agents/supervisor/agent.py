@@ -185,14 +185,6 @@ class SupervisorAgent:
                 state,  # last message is the user query
             )
 
-            # return the response if planner responded directly
-            # if plan.response:
-            #     return create_node_output(
-            #         message=AIMessage(content=plan.response, name=PLANNER),
-            #         subtasks=[],  # empty subtask to make the companion response consistent
-            #         next=END,
-            #     )
-
             # if the Planner failed to create any subtasks, raise an exception
             if not plan.subtasks:
                 raise SubtasksMissingError(str(state.messages[-1].content))
