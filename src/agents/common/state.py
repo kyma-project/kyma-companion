@@ -11,6 +11,9 @@ from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
+from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
+from agents.common.data import Message
+
 from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
 from services.k8s import IK8sClient
 from utils.utils import to_sequence_messages
@@ -73,27 +76,22 @@ class SubTask(BaseModel):
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
 # Currently, we are using pydantic v1.
-class UserInput(BaseModel):
-    """User input data model."""
+class ResourceInformation(BaseModel):
+    """K8s/Kyma resource information."""
 
-    query: str
     resource_kind: str | None = None
     resource_api_version: str | None = None
     resource_name: str | None = None
     namespace: str | None = None
 
-    def get_resource_information(self) -> dict[str, str]:
-        """Get resource information."""
-        result = {}
-        if self.resource_kind is not None and self.resource_kind != "":
-            result["resource_kind"] = self.resource_kind
-        if self.resource_api_version is not None and self.resource_api_version != "":
-            result["resource_api_version"] = self.resource_api_version
-        if self.resource_name is not None and self.resource_name != "":
-            result["resource_name"] = self.resource_name
-        if self.namespace is not None and self.namespace != "":
-            result["resource_namespace"] = self.namespace
-        return result
+    @classmethod
+    def from_message(cls, message: Message) -> "ResourceInformation":
+        return cls(
+            resource_kind=message.resource_kind,
+            resource_api_version=message.resource_api_version,
+            resource_name=message.resource_name,
+            namespace=message.namespace,
+        )
 
 
 class Plan(BaseModel):
@@ -104,11 +102,20 @@ class Plan(BaseModel):
     )
 
 
-class CompanionState(BaseModel):
+class BaseState(BaseModel):
+    """Base state for all states."""
+
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    resource_information: Annotated[
+        ResourceInformation, lambda old, new: new or old or None
+    ]
+
+
+class CompanionState(BaseState):
     """State for the main companion graph.
 
     Attributes:
-        input: UserInput: user input with user query and resource(s) contextual information
+        input: ResourceInformation: Kubernetes/Kyma resource(s) information
         messages: list[BaseMessage]: messages exchanged between agents and user
         next: str: next LangGraph node to be called. It can be KymaAgent, KubernetesAgent, or Finalizer.
         subtasks: list[SubTask]: different steps/subtasks to follow
@@ -117,13 +124,6 @@ class CompanionState(BaseModel):
 
     """
 
-    input: Annotated[
-        UserInput | None,
-        Field(
-            description="user input with user query and resource(s) contextual information",
-            default=None,
-        ),
-    ]
     thread_owner: str = ""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     messages_summary: str = ""
@@ -156,7 +156,7 @@ class CompanionState(BaseModel):
         return self.messages
 
 
-class BaseAgentState(BaseModel):
+class BaseAgentState(BaseState):
     """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
