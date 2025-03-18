@@ -7,10 +7,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON
+from agents.common.constants import COMMON, GATEKEEPER
 from agents.common.data import Message
-from agents.common.state import CompanionState, SubTask
+from agents.common.state import CompanionState, SubTask, GatekeeperResponse
 from agents.graph import CompanionGraph
+from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
 from utils.models.factory import IModel, ModelType
 
@@ -50,23 +51,40 @@ def mock_common_chain():
 
 
 @pytest.fixture
+def mock_gatekeeper_chain():
+    mock = AsyncMock()
+    return mock
+
+
+@pytest.fixture
 def mock_graph():
     return Mock()
 
 
 @pytest.fixture
 def companion_graph(
-    mock_models, mock_memory, mock_graph, mock_planner_chain, mock_common_chain
+    mock_models,
+    mock_memory,
+    mock_graph,
+    mock_planner_chain,
+    mock_common_chain,
+    mock_gatekeeper_chain,
 ):
     with (
         patch.object(
             CompanionGraph, "_create_common_chain", return_value=mock_common_chain
+        ),
+        patch.object(
+            CompanionGraph,
+            "_create_gatekeeper_chain",
+            return_value=mock_gatekeeper_chain,
         ),
         patch.object(CompanionGraph, "_build_graph", return_value=mock_graph),
         patch("agents.graph.KymaAgent", return_value=Mock()),
     ):
         graph = CompanionGraph(mock_models, mock_memory)
         graph._invoke_common_node = AsyncMock()
+        graph._invoke_gatekeeper_node = AsyncMock()
         return graph
 
 
@@ -227,7 +245,6 @@ class TestCompanionGraph:
         chain_response,
         expected_output,
         expected_error,
-        mock_common_chain,
     ):
         state = CompanionState(subtasks=subtasks, messages=messages)
 
@@ -255,6 +272,97 @@ class TestCompanionGraph:
         else:
             # if all subtasks are completed, no need call LLM
             assert subtasks[0].status == "completed"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "description, messages, chain_response, expected_output, expected_error",
+        [
+            (
+                "Direct response, mark next == __end__",
+                [HumanMessage(content="What are Java and Python?")],
+                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false}',
+                {
+                    "messages": [
+                        AIMessage(
+                            content="Python is a high-level programming language. "
+                            "Java is a general-purpose programming language.",
+                            name=GATEKEEPER,
+                        )
+                    ],
+                    "subtasks": [],
+                    "next": "__end__",
+                },
+                None,
+            ),
+            (
+                "No direct response, Forward query to supervisor",
+                [HumanMessage(content="What is Kyma?")],
+                '{"direct_response" :"", "forward_query" : true}',
+                {
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            name=GATEKEEPER,
+                        )
+                    ],
+                    "subtasks": [],
+                    "next": SUPERVISOR,
+                },
+                None,
+            ),
+            (
+                "Handles exception during gatekeeper execution",
+                [HumanMessage(content="What is Java?")],
+                None,
+                {
+                    "messages": [
+                        AIMessage(
+                            content="Sorry, I am unable to process the request.",
+                            name=GATEKEEPER,
+                        )
+                    ],
+                    "subtasks": [],
+                    "next": "__end__",
+                },
+                "Error in common node: Test error",
+            ),
+        ],
+    )
+    async def test_gatekeeper_node(
+        self,
+        companion_graph,
+        description,
+        messages,
+        chain_response,
+        expected_output,
+        expected_error,
+    ):
+        state = CompanionState(subtasks=[], messages=messages)
+        user_query = next(
+            (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)),
+        )
+
+        if expected_error:
+            companion_graph._invoke_gatekeeper_node.side_effect = Exception(
+                expected_error
+            )
+        else:
+            companion_graph._invoke_gatekeeper_node.return_value = (
+                GatekeeperResponse.parse_raw(chain_response)
+            )
+
+        result = await companion_graph._gatekeeper_node(state)
+        assert result == expected_output
+
+        if chain_response:
+            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
+                state, user_query
+            )
+        elif expected_error:
+            # if error occurs, return message with error
+            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
+                state, user_query
+            )
 
     @pytest.fixture
     def mock_companion_graph(self):

@@ -61,9 +61,11 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
     # assign NEXT
+    # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
     if agent == SUPERVISOR or agent == GATEKEEPER:
         answer[NEXT] = agent_data.get(NEXT)
     else:
+        # for all other agent, decide next based on pending task
         if agent_data.get("subtasks"):
             # get pending subtasks
             pending_subtask = [
@@ -75,6 +77,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             if pending_subtask:
                 answer[NEXT] = pending_subtask[0]
             else:
+                # if no pending task
                 answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer, "error": agent_error}

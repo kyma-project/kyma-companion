@@ -76,6 +76,7 @@ class ResponseConverter:
         Returns:
             Parsed YAML object or None if parsing fails
         """
+        logger.debug("Response conversion node - Parsing YAML")
         try:
             # First check: if yaml markers available
             if yaml_config[:7] == "```yaml":
@@ -106,6 +107,7 @@ class ResponseConverter:
             Generated resource link or None if required metadata is missing
         """
         # Extract required metadata for link generation
+        logger.debug("Response conversion node - Generating resource link")
         try:
             namespace = yaml_config["metadata"]["namespace"]
             deployment_name = yaml_config["metadata"]["name"]
@@ -138,6 +140,7 @@ class ResponseConverter:
         Returns:
             Formatted HTML string containing YAML and link
         """
+        logger.debug("Response conversion node - creating HTML structure")
         html_content = f"""
         <div class="yaml-block>
             <div class="yaml">
@@ -168,6 +171,7 @@ class ResponseConverter:
         Returns:
             Modified response with YAML blocks replaced by HTML
         """
+        logger.debug("Response conversion node - replacing YAML blocks with HTML")
 
         def replace_func(match: Any) -> Any:
             # Replace each match with the next HTML block from the list
@@ -200,6 +204,7 @@ class ResponseConverter:
         Returns:
             List of HTML replacements for YAML blocks
         """
+        logger.debug("Response conversion node - Creating HTML replacements")
         replacement_list = []
 
         for yaml_config_string in yaml_list:

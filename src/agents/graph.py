@@ -287,6 +287,7 @@ class CompanionGraph:
             response = await self._invoke_gatekeeper_node(state, last_human_message)
 
             if response.forward_query:
+                logger.debug("Gatekeeper node forwarding the query")
                 return {
                     NEXT: SUPERVISOR,
                     MESSAGES: [
@@ -297,6 +298,7 @@ class CompanionGraph:
                     ],
                     SUBTASKS: [],
                 }
+            logger.debug("Gatekeeper node responding directly")
             return {
                 NEXT: END,
                 MESSAGES: [

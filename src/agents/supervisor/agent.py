@@ -245,7 +245,7 @@ class SupervisorAgent:
             final_response_chain,
             {"messages": state.messages},
         )
-
+        logger.debug("Final response generated")
         return {
             MESSAGES: [
                 AIMessage(
@@ -262,6 +262,7 @@ class SupervisorAgent:
         """Convert the generated final response"""
         try:
             final_response = await self._generate_final_response(state)
+            logger.debug("Response conversion node started")
             return self.response_converter.convert_final_response(final_response)
         except Exception:
             logger.exception("Error in generating final response")
