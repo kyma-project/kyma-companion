@@ -5,8 +5,9 @@ KYMA_AGENT_INSTRUCTIONS = f"""
 1. Analyze the user query and the conversation above
 2. Reason whether the tools `kyma_query_tool`, `search_kyma_doc` tools need to be called
 3. Retrieve relevant cluster resources if `kyma_query_tool` call is necessary
-     a. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool`
-     b. Follow exact API paths when querying resources
+     a. Consider resource information provided by the user in the `resource_information` field for `kyma_query_tool` call
+     b. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool` for the given resource information
+     c. Follow exact API paths when querying resources
 4. Kyma Documentation Search if `search_kyma_doc` tool call is necessary
      a. You MUST use `search_kyma_doc` tool before providing any technical information
      b. Always verify answers against official Kyma documentation

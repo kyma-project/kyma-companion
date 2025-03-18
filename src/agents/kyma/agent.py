@@ -34,6 +34,7 @@ class KymaAgent(BaseAgent):
             [
                 ("system", KYMA_AGENT_PROMPT),
                 MessagesPlaceholder(variable_name=AGENT_MESSAGES),
+                ("human", "{resource_information}"),
                 ("human", "{query}"),
                 ("system", KYMA_AGENT_INSTRUCTIONS),
             ]

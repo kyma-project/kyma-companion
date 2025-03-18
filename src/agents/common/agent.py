@@ -17,6 +17,7 @@ from agents.common.constants import (
     ERROR,
     IS_LAST_STEP,
     MESSAGES,
+    RESOURCE_INFORMATION,
     MY_TASK,
     SUBTASKS,
     SUMMARIZATION,
@@ -140,6 +141,7 @@ class BaseAgent:
             self.chain,
             {
                 AGENT_MESSAGES: filter_valid_messages(input_messages),
+                RESOURCE_INFORMATION: state.resource_information.model_dump_json(),
                 "query": state.my_task.description,
             },
             config=config,
