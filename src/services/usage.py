@@ -8,6 +8,7 @@ from langchain.schema import LLMResult
 from pydantic import BaseModel
 
 from agents.memory.async_redis_checkpointer import IUsageMemory
+from services.metrics import CustomMetrics, LangGraphErrorType
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
 
@@ -48,12 +49,62 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Overridden callback method to track the token usage."""
-        usage = _parse_usage(response)
-        if usage is None:
-            raise ValueError("Usage information not found in the LLM response.")
-        # parse the usage as Pydantic model to verify the structure.
-        usage = UsageModel(**usage)
-        await self.memory.awrite_llm_usage(self.cluster_id, usage.__dict__, self.ttl)
+        try:
+            usage = _parse_usage(response)
+            if usage is None:
+                raise ValueError("Usage information not found in the LLM response.")
+            # parse the usage as Pydantic model to verify the structure.
+            usage_model = UsageModel(**usage)
+            await self.memory.awrite_llm_usage(
+                self.cluster_id, usage_model.__dict__, self.ttl
+            )
+        except Exception as e:
+            await CustomMetrics().record_token_usage_tracker_publish_failure()
+            raise e
+
+    async def on_llm_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Overridden callback method to record the LLM error."""
+        await CustomMetrics().record_langgraph_error(LangGraphErrorType.LLM_ERROR)
+
+    async def on_retriever_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Overridden callback method to record the retriever error."""
+        await CustomMetrics().record_langgraph_error(LangGraphErrorType.RETRIEVER_ERROR)
+
+    async def on_chain_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Overridden callback method to record the chain error."""
+        await CustomMetrics().record_langgraph_error(LangGraphErrorType.CHAIN_ERROR)
+
+    async def on_tool_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Overridden callback method to record the tool error."""
+        await CustomMetrics().record_langgraph_error(LangGraphErrorType.TOOL_ERROR)
 
 
 class IUsageTracker(Protocol):
