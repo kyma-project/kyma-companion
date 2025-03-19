@@ -1,3 +1,4 @@
+import time
 from typing import Protocol
 
 from hdbcli import dbapi
@@ -6,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import run_in_executor
 
+from services.metrics import CustomMetrics
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -36,13 +38,25 @@ class HanaVectorDB(HanaDB):
         Returns:
             List of Documents most similar to the query
         """
-        return await run_in_executor(
-            None,
-            self.similarity_search,
-            query,
-            k=k,
-            filter=filter,
-        )
+        start_time = time.perf_counter()
+        try:
+            result = await run_in_executor(
+                None,
+                self.similarity_search,
+                query,
+                k=k,
+                filter=filter,
+            )
+            # record latency.
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, True
+            )
+            return result
+        except Exception as e:
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, False
+            )
+            raise e
 
 
 class IRetriever(Protocol):
