@@ -8,6 +8,7 @@ from langchain.schema import LLMResult
 from pydantic import BaseModel
 
 from agents.memory.async_redis_checkpointer import IUsageMemory
+from blackbox.src.common.logger import get_logger
 from services.metrics import CustomMetrics, LangGraphErrorType
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
@@ -39,6 +40,19 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         self.cluster_id = cluster_id
         self.memory = memory
         self.ttl = TOKEN_USAGE_RESET_INTERVAL
+        self.llm_start_times: dict = {}
+        self.logger = get_logger(__name__)
+
+    async def on_llm_start(
+        self,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        *,
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        """Overridden callback method to record the LLM start time."""
+        self.llm_start_times[run_id] = time.perf_counter()
 
     async def on_llm_end(
         self,
@@ -50,6 +64,19 @@ class UsageTrackerCallback(AsyncCallbackHandler):
     ) -> Any:
         """Overridden callback method to track the token usage."""
         try:
+            # first save llm response time.
+            # note that the start time would be zero if the start time was not recorded.
+            if run_id not in self.llm_start_times:
+                self.logger.error(
+                    "UsageTrackerCallback:on_llm_end: LLM start time not found for run_id: %s. "
+                    "The LLM latency metric would be effected",
+                    run_id,
+                )
+            await CustomMetrics().record_llm_latency(
+                time.perf_counter() - self.llm_start_times.pop(run_id, 0.0)
+            )
+
+            # publish token usage info to the memory.
             usage = _parse_usage(response)
             if usage is None:
                 raise ValueError("Usage information not found in the LLM response.")
