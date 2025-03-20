@@ -3,19 +3,25 @@ from enum import Enum
 from http import HTTPStatus
 from typing import Any
 
-from fastapi import Request
-from prometheus_client import Counter, Histogram
+from fastapi import Request, Response
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Histogram,
+    generate_latest,
+)
 from starlette.routing import Match
 
 from utils.singleton_meta import SingletonMeta
 
 METRICS_KEY_PREFIX = "kyma_companion"
-REQUEST_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_http_request_duration_seconds"
+REQUEST_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_http_request_latency_seconds"
 USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY = (
     f"{METRICS_KEY_PREFIX}_usage_tracker_publish_failure_count"
 )
 LANGGRAPH_ERROR_METRIC_KEY = f"{METRICS_KEY_PREFIX}_langgraph_error_count"
-HANADB_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_hanadb_latency_seconds"
+HANADB_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_tcp_hanadb_latency_seconds"
 
 
 class LangGraphErrorType(Enum):
@@ -31,21 +37,36 @@ class CustomMetrics(metaclass=SingletonMeta):
     """A class to handle custom metrics."""
 
     def __init__(self):
+        # create new registry for collecting metrics.
+        self.registry = CollectorRegistry()
+        # define the metrics.
         self.request_latency = Histogram(
             REQUEST_LATENCY_METRIC_KEY,
             "HTTP Request Duration",
             ["method", "status", "path"],
+            registry=self.registry,
         )
         self.usage_tracker_publish_failure_count = Counter(
             USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY,
             "Token Usage Tracker Publish Count",
+            registry=self.registry,
         )
         self.langgraph_error_count = Counter(
-            LANGGRAPH_ERROR_METRIC_KEY, "LangGraph Error Count", ["error_type"]
+            LANGGRAPH_ERROR_METRIC_KEY,
+            "LangGraph Error Count",
+            ["error_type"],
+            registry=self.registry,
         )
         self.hanadb_latency_seconds = Histogram(
-            HANADB_LATENCY_METRIC_KEY, "HanaDB Query Latency", ["is_success"]
+            HANADB_LATENCY_METRIC_KEY,
+            "HanaDB Query Latency",
+            ["is_success"],
+            registry=self.registry,
         )
+
+    def generate_http_response(self) -> Response:
+        """Generate the HTTP response for the metrics."""
+        return Response(generate_latest(self.registry), media_type=CONTENT_TYPE_LATEST)
 
     async def record_token_usage_tracker_publish_failure(self) -> None:
         """Record the token usage tracker publish failure count."""

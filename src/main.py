@@ -2,7 +2,6 @@ from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
-from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 
 from routers import conversations
 from services.metrics import CustomMetrics
@@ -42,7 +41,7 @@ async def healthz() -> dict:
 @app.get("/metrics")
 async def metrics() -> Response:
     """The endpoint to expose the metrics."""
-    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
+    return CustomMetrics().generate_http_response()
 
 
 if __name__ == "__main__":

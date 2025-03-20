@@ -38,7 +38,7 @@ class HanaVectorDB(HanaDB):
         Returns:
             List of Documents most similar to the query
         """
-        start_time = time.perf_counter()
+
         try:
             result = await run_in_executor(
                 None,
@@ -47,15 +47,8 @@ class HanaVectorDB(HanaDB):
                 k=k,
                 filter=filter,
             )
-            # record latency.
-            await CustomMetrics().record_hanadb_latency(
-                time.perf_counter() - start_time, True
-            )
             return result
         except Exception as e:
-            await CustomMetrics().record_hanadb_latency(
-                time.perf_counter() - start_time, False
-            )
             raise e
 
 
@@ -81,9 +74,17 @@ class HanaDBRetriever:
 
     async def aretrieve(self, query: str, top_k: int = 5) -> list[Document]:
         """Retrieve relevant documents based on the query."""
+        start_time = time.perf_counter()
         try:
             docs = await self.db.asimilarity_search(query, k=top_k)
+            # record latency.
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, True
+            )
         except Exception as e:
             logger.exception(f"Error retrieving documents for query: {query}")
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, False
+            )
             raise e
         return docs

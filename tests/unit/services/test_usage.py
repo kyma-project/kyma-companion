@@ -5,6 +5,12 @@ from uuid import uuid4
 import pytest
 from langchain_core.outputs import ChatGeneration, LLMResult
 
+from services.metrics import (
+    LANGGRAPH_ERROR_METRIC_KEY,
+    USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY,
+    CustomMetrics,
+    LangGraphErrorType,
+)
 from services.usage import (
     UsageExceedReport,
     UsageTracker,
@@ -56,6 +62,8 @@ class TestUsageTrackerCallback:
         response = Mock()
         response.llm_output = llm_output
         response.generations = []
+        metric_name = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
 
         # When / Then
         if expected_exception:
@@ -64,6 +72,10 @@ class TestUsageTrackerCallback:
                 match="Usage information not found in the LLM response.",
             ):
                 await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
+
+            # the metric should be increased.
+            after_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
+            assert after_metric_value > before_metric_value
         else:
             await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
             call_args = mock_memory.awrite_llm_usage.call_args[0][1]
@@ -72,6 +84,113 @@ class TestUsageTrackerCallback:
             mock_memory.awrite_llm_usage.assert_called_once_with(
                 "test_cluster", expected_call_args, usage_tracker_callback.ttl
             )
+            # the metric should not be increased.
+            after_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
+            assert after_metric_value == before_metric_value
+
+    @pytest.mark.asyncio
+    async def test_on_llm_error(
+        self,
+    ):
+        # given
+        usage_tracker_callback = UsageTrackerCallback(
+            cluster_id="test_cluster", memory=Mock()
+        )
+        metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
+        labels = {"error_type": LangGraphErrorType.LLM_ERROR.value}
+        before_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        if before_metric_value is None:
+            before_metric_value = 0
+
+        # when
+        await usage_tracker_callback.on_llm_error(None, run_id=uuid4())
+
+        # then
+        # the metric should be increased.
+        after_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        assert after_metric_value > before_metric_value
+
+    @pytest.mark.asyncio
+    async def test_on_retriever_error(
+        self,
+    ):
+        # given
+        usage_tracker_callback = UsageTrackerCallback(
+            cluster_id="test_cluster", memory=Mock()
+        )
+        metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
+        labels = {"error_type": LangGraphErrorType.RETRIEVER_ERROR.value}
+        before_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        if before_metric_value is None:
+            before_metric_value = 0
+
+        # when
+        await usage_tracker_callback.on_retriever_error(None, run_id=uuid4())
+
+        # then
+        # the metric should be increased.
+        after_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        assert after_metric_value > before_metric_value
+
+    @pytest.mark.asyncio
+    async def test_on_chain_error(
+        self,
+    ):
+        # given
+        usage_tracker_callback = UsageTrackerCallback(
+            cluster_id="test_cluster", memory=Mock()
+        )
+        metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
+        labels = {"error_type": LangGraphErrorType.CHAIN_ERROR.value}
+        before_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        if before_metric_value is None:
+            before_metric_value = 0
+
+        # when
+        await usage_tracker_callback.on_chain_error(None, run_id=uuid4())
+
+        # then
+        # the metric should be increased.
+        after_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        assert after_metric_value > before_metric_value
+
+    @pytest.mark.asyncio
+    async def test_on_tool_error(
+        self,
+    ):
+        # given
+        usage_tracker_callback = UsageTrackerCallback(
+            cluster_id="test_cluster", memory=Mock()
+        )
+        metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
+        labels = {"error_type": LangGraphErrorType.TOOL_ERROR.value}
+        before_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        if before_metric_value is None:
+            before_metric_value = 0
+
+        # when
+        await usage_tracker_callback.on_tool_error(None, run_id=uuid4())
+
+        # then
+        # the metric should be increased.
+        after_metric_value = CustomMetrics().registry.get_sample_value(
+            metric_name, labels
+        )
+        assert after_metric_value > before_metric_value
 
 
 class TestUsageTracker:
