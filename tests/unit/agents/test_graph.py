@@ -356,12 +356,12 @@ class TestCompanionGraph:
 
         if chain_response:
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
-                state, user_query
+                state, user_query.content
             )
         elif expected_error:
             # if error occurs, return message with error
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
-                state, user_query
+                state, user_query.content
             )
 
     @pytest.fixture
