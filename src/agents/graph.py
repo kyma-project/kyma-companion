@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncIterator, Hashable
-from typing import Any, Literal, Protocol, cast
+from typing import Any, Protocol, cast
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
