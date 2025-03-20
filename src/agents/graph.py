@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncIterator, Hashable
-from typing import Any, Protocol, cast, Literal
+from typing import Any, Literal, Protocol, cast
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
@@ -23,21 +23,21 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     CONTINUE,
-    MESSAGES,
-    MESSAGES_SUMMARY,
-    SUBTASKS,
-    SUMMARIZATION,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
+    MESSAGES,
+    MESSAGES_SUMMARY,
     NEXT,
+    SUBTASKS,
+    SUMMARIZATION,
 )
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
+    GatekeeperResponse,
     Plan,
     SubTask,
     UserInput,
-    GatekeeperResponse,
 )
 from agents.common.utils import should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
@@ -261,8 +261,8 @@ class CompanionGraph:
         return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
 
     async def _invoke_gatekeeper_node(
-        self, state: CompanionState, user_query: str
-    ) -> GatekeeperResponse:
+        self, state: CompanionState, user_query: str | Any
+    ) -> GatekeeperResponse | Any:
         """Invoke the Gatekeeper node."""
         response = await ainvoke_chain(
             self._gatekeeper_chain,
@@ -284,7 +284,9 @@ class CompanionGraph:
                     if isinstance(msg, HumanMessage)
                 ),
             )
-            response = await self._invoke_gatekeeper_node(state, last_human_message)
+            response = await self._invoke_gatekeeper_node(
+                state, last_human_message.content
+            )
 
             if response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")

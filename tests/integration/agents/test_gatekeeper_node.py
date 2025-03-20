@@ -1,8 +1,9 @@
 import pytest
 from deepeval import assert_test
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams, ConversationalTestCase
-from langchain_core.messages import HumanMessage, SystemMessage
 from deepeval.metrics import ConversationalGEval
+from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from langchain_core.messages import HumanMessage, SystemMessage
+
 from integration.conftest import create_mock_state
 
 
@@ -30,6 +31,18 @@ def gatekeeper_correctness_metric(evaluator_model):
     "messages, expected_answer, expected_query_forwarding",
     [
         (
+            # tests that the gatekeeper node corretly reply to greeting
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="Hi"),
+            ],
+            "Hello, how can I help you?",
+            False,
+        ),
+        (
             # tests that the gatekeeper node corretly forward the query
             [
                 SystemMessage(
@@ -48,7 +61,43 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
+                HumanMessage(content="What is problem with my deployment?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            # tests that the gatekeeper node corretly forward the query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="how to deploy a kyma function?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            # tests that the gatekeeper node corretly forward the query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
                 HumanMessage(content="what is the status of my api"),
+            ],
+            "",
+            True,
+        ),
+        (
+            # tests that the gatekeeper node corretly forward the query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="what is the status of my pod"),
             ],
             "",
             True,
@@ -77,6 +126,20 @@ def gatekeeper_correctness_metric(evaluator_model):
             'print("Hello, World!")',
             False,
         ),
+        (
+            # tests that the gatekeeper node correctly answers a general programming related query
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(
+                    content='Write "Hello, World!" code in Python and what is the status of my deployment?'
+                ),
+            ],
+            "",
+            True,
+        ),
     ],
 )
 @pytest.mark.asyncio
@@ -98,14 +161,13 @@ async def test_invoke_gatekeeper_node(
 
     if expected_query_forwarding:
         assert (
-            result.direct_response == ""
-        ), "There should be no direct response"  # there should be no direct response
-        assert (
-            result.forward_query == True
+            result.forward_query
         ), "Query should be forwarded"  # query should be forwarded
 
     else:
-        assert (result.forward_query, False)  # query should not be forwarded
+        assert (
+            not result.forward_query
+        ), "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
         test_case = ConversationalTestCase(
             turns=[

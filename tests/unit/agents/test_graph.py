@@ -9,7 +9,7 @@ from langgraph.types import StateSnapshot
 
 from agents.common.constants import COMMON, GATEKEEPER
 from agents.common.data import Message
-from agents.common.state import CompanionState, SubTask, GatekeeperResponse
+from agents.common.state import CompanionState, GatekeeperResponse, SubTask
 from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient

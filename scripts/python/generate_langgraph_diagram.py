@@ -37,7 +37,7 @@ from agents.kyma.agent import KymaAgent
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory, ModelType  # noqa: E402
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
+from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 
 if not os.getenv("CONFIG_PATH"):
     os.environ["CONFIG_PATH"] = "config/config.json"

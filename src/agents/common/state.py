@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from langchain_core.messages import (
     BaseMessage,
@@ -26,10 +26,10 @@ class SubTaskStatus(str, Enum):
 class GatekeeperResponse(BaseModel):
     """Gatekeeper response data model."""
 
-    direct_response: str = Field(description="")
+    direct_response: str = Field(description="For direct response.")
     forward_query: bool = Field(
         default=False,
-        description="Forward query true when you cannot answer directly",
+        description="For forwarding query",
     )
 
 
@@ -62,7 +62,7 @@ class SubTask(BaseModel):
         """Check if the task is error status."""
         return self.status == SubTaskStatus.ERROR
 
-    def is_common_subtask(self) -> bool:
+    def is_common_subtask(self) -> Any:
         """Check if the task is assigned to common agent."""
         return self.assigned_to == COMMON
 

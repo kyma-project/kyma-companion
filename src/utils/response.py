@@ -5,9 +5,11 @@ from langgraph.constants import END
 
 from agents.common.constants import (
     FINALIZER,
+    GATEKEEPER,
+    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
-    SUMMARIZATION, COMMON, INITIAL_SUMMARIZATION, GATEKEEPER,
+    SUMMARIZATION,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -38,7 +40,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
-        if agent == SUMMARIZATION or agent == INITIAL_SUMMARIZATION:
+        if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
             # we don't show summarization node, but only error
             return {
                 "agent": None,
@@ -47,13 +49,12 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             }
 
     # skip summarization node
-    if agent == SUMMARIZATION or agent == INITIAL_SUMMARIZATION:
+    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
         return None
 
     # skip gatekeeper node, if request was forwarded to supervisor
     if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
         return None
-
 
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:
@@ -62,7 +63,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
 
     # assign NEXT
     # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
-    if agent == SUPERVISOR or agent == GATEKEEPER:
+    if agent in (SUPERVISOR, GATEKEEPER):
         answer[NEXT] = agent_data.get(NEXT)
     else:
         # for all other agent, decide next based on pending task
