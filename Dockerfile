@@ -17,16 +17,20 @@ RUN pip install --no-cache-dir poetry>=2.1  \
   && pip uninstall -y poetry
 
 # Start a new stage for a smaller final image
-FROM python:3.12-slim-bullseye
+FROM python:3.12-alpine
 
 WORKDIR /app
 
+# Copy Python environment and app files from builder
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 
-RUN apt update && apt dist-upgrade -y
+# Install necessary runtime dependencies
+RUN apk update && apk upgrade && \
+  apk add --no-cache libstdc++
 
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+# Create a non-root user
+RUN adduser -u 5678 -D appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000
