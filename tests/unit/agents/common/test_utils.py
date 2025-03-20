@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from langchain_core.messages import (
@@ -9,16 +9,13 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.prompts import MessagesPlaceholder
 
-from agents.common.agent import agent_edge, subtask_selector_edge
+from agents.common.agent import AGENT_STEPS_NUMBER, agent_edge, subtask_selector_edge
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
-    agent_node,
     compute_messages_token_count,
     compute_string_token_count,
-    create_agent,
     filter_messages,
 )
 from agents.k8s.agent import K8S_AGENT
@@ -41,39 +38,6 @@ def mock_tools():
     return [Mock(), Mock()]
 
 
-@pytest.mark.parametrize(
-    "system_prompt",
-    [
-        "You are a helpful assistant",
-        "You are an AI language model",
-        "",
-    ],
-)
-@patch("agents.common.utils.get_logger", Mock())
-def test_create_agent(mock_llm, mock_tools, system_prompt):
-    with (
-        patch(
-            "agents.common.utils.OpenAIFunctionsAgent.from_llm_and_tools"
-        ) as mock_from_llm_and_tools,
-        patch("agents.common.utils.AgentExecutor") as mock_agent_executor,
-    ):
-        mock_agent = Mock()
-        mock_from_llm_and_tools.return_value = mock_agent
-
-        result = create_agent(mock_llm, mock_tools, system_prompt)
-
-        mock_from_llm_and_tools.assert_called_once_with(
-            mock_llm,
-            mock_tools,
-            extra_prompt_messages=[
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ],
-            system_message=SystemMessage(content=system_prompt),
-        )
-        mock_agent_executor.assert_called_once_with(agent=mock_agent, tools=mock_tools)
-        assert result == mock_agent_executor.return_value
-
-
 @pytest.fixture
 def mock_agent_executor():
     return Mock()
@@ -82,174 +46,6 @@ def mock_agent_executor():
 @pytest.fixture
 def mock_state():
     return Mock(spec=CompanionState, messages=[HumanMessage(content="Hello Test")])
-
-
-@pytest.mark.parametrize(
-    "name, subtasks, agent_output, expected_result, should_complete",
-    [
-        # Successful execution
-        (
-            "agent1",
-            [
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent1",
-                    description="Test task",
-                    status=SubTaskStatus.PENDING,
-                )
-            ],
-            {"output": "Task completed successfully"},
-            {
-                "messages": [
-                    AIMessage(
-                        content="Task completed successfully",
-                        name="agent1",
-                    )
-                ]
-            },
-            True,
-        ),
-        # Execution error
-        (
-            "agent2",
-            [
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent2",
-                    description="Error task",
-                    status=SubTaskStatus.PENDING,
-                )
-            ],
-            Exception("Test error"),
-            {
-                "error": "Test error",
-                "next": "Exit",
-            },
-            False,
-        ),
-        # No matching subtask
-        (
-            "agent3",
-            [
-                Mock(
-                    spec=SubTask,
-                    assigned_to="other_agent",
-                    description="Other task",
-                    status=SubTaskStatus.PENDING,
-                )
-            ],
-            None,
-            {
-                "messages": [
-                    AIMessage(
-                        content="All my subtasks are already completed.", name="agent3"
-                    )
-                ]
-            },
-            False,
-        ),
-        # Multiple subtasks (only first one should be executed)
-        (
-            "agent4",
-            [
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent4",
-                    description="Task 1",
-                    status=SubTaskStatus.COMPLETED,
-                ),
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent4",
-                    description="Task 2",
-                    status=SubTaskStatus.PENDING,
-                ),
-            ],
-            {"output": "Task 2 completed"},
-            {
-                "messages": [
-                    AIMessage(
-                        content="Task 2 completed",
-                        name="agent4",
-                    )
-                ]
-            },
-            True,
-        ),
-        (
-            "agent5",
-            [
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent4",
-                    description="Task 1",
-                    status=SubTaskStatus.COMPLETED,
-                ),
-                Mock(
-                    spec=SubTask,
-                    assigned_to="agent4",
-                    description="Task 2",
-                    status=SubTaskStatus.COMPLETED,
-                ),
-            ],
-            {"output": "Task 1 completed"},
-            {
-                "messages": [
-                    AIMessage(
-                        content="All my subtasks are already completed.", name="agent5"
-                    )
-                ]
-            },
-            False,
-        ),
-    ],
-)
-@patch("agents.common.utils.get_logger", Mock())
-def test_agent_node(
-    mock_agent_executor,
-    mock_state,
-    name,
-    subtasks,
-    agent_output,
-    expected_result,
-    should_complete,
-):
-    # Setup
-    mock_state.subtasks = subtasks
-    if isinstance(agent_output, Exception):
-        mock_agent_executor.invoke.side_effect = agent_output
-    else:
-        mock_agent_executor.invoke.return_value = agent_output
-
-    # Execute
-    result = agent_node(mock_state, mock_agent_executor, name)
-
-    # Assert
-    assert result == expected_result
-
-    not_completed_subtasks = [
-        subtask for subtask in subtasks if subtask.status != SubTaskStatus.COMPLETED
-    ]
-    for not_completed_subtask in not_completed_subtasks:
-        if subtasks and not_completed_subtask.assigned_to == name:
-            mock_agent_executor.invoke.assert_called_once_with(
-                {
-                    "messages": mock_state.messages,
-                    "input": not_completed_subtask.description,
-                }
-            )
-            if should_complete:
-                not_completed_subtask.complete.assert_called_once()
-            else:
-                not_completed_subtask.complete.assert_not_called()
-        else:
-            mock_agent_executor.invoke.assert_not_called()
-
-    completed_subtasks = [
-        subtask for subtask in subtasks if subtask.status == SubTaskStatus.COMPLETED
-    ]
-    for completed_subtask in completed_subtasks:
-        completed_subtask.complete.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -383,40 +179,114 @@ def test_subtask_selector_edge(
         agent_messages=[],
         subtasks=[],
         k8s_client=k8s_client,
+        remaining_steps=25,
     )
     assert subtask_selector_edge(state) == expected_output
 
 
 @pytest.mark.parametrize(
-    "last_message, expected_output",
+    "last_message, remaining_steps, has_task, expected_output",
     [
+        # Case 1: Tool message with sufficient remaining steps -> tools
         (
             ToolMessage(
                 content="test",
                 tool_call_id="call_MEOW",
                 tool_calls={"call_MEOW": "test"},
             ),
+            9,
+            False,
             "tools",
         ),
+        # Case 2: AI message without tool calls -> finalizer
         (
             AIMessage(content="test"),
+            9,
+            False,
+            "finalizer",
+        ),
+        # Case 3: AI message with tool calls -> tools
+        (
+            AIMessage(
+                content="test",
+                tool_calls=[{"name": "some_tool", "id": "call_123", "args": {}}],
+            ),
+            9,
+            False,
+            "tools",
+        ),
+        # Case 4: Insufficient remaining steps without task -> finalizer
+        (
+            AIMessage(content="test"),
+            0,
+            False,
+            "finalizer",
+        ),
+        # Case 5: Insufficient remaining steps with task -> finalizer (and task status updated)
+        (
+            AIMessage(content="test"),
+            0,
+            True,
+            "finalizer",
+        ),
+        # Case 6: Empty message list edge case
+        (
+            AIMessage(content=""),
+            9,
+            False,
+            "finalizer",
+        ),
+        # Case 7: AI message with empty tool_calls list
+        (
+            AIMessage(content="test", tool_calls=[]),
+            9,
+            False,
+            "finalizer",
+        ),
+        # Case 8: Tool message with insufficient remaining steps -> finalizer
+        (
+            ToolMessage(
+                content="test",
+                tool_call_id="call_MEOW",
+                tool_calls={"call_MEOW": "test"},
+            ),
+            0,
+            False,
             "finalizer",
         ),
     ],
 )
-def test_agent_edge(last_message: BaseMessage, expected_output: str):
+def test_agent_edge(
+    last_message: BaseMessage,
+    remaining_steps: int,
+    has_task: bool,
+    expected_output: str,
+):
     k8s_client = MagicMock()
     k8s_client.mock_add_spec(IK8sClient)
 
+    # Create a task if needed for the test case
+    my_task = None
+    if has_task:
+        my_task = MagicMock(spec=SubTask)
+        my_task.status = SubTaskStatus.PENDING
+
     state = KubernetesAgentState(
-        my_task=None,
+        my_task=my_task,
         is_last_step=False,
         messages=[],
         agent_messages=[last_message],
         subtasks=[],
         k8s_client=k8s_client,
+        remaining_steps=remaining_steps,
     )
-    assert agent_edge(state) == expected_output
+
+    result = agent_edge(state)
+    assert result == expected_output
+
+    # Verify task status is updated when remaining steps is insufficient
+    if has_task and remaining_steps <= AGENT_STEPS_NUMBER:
+        assert my_task.status == SubTaskStatus.ERROR
 
 
 @pytest.mark.parametrize(

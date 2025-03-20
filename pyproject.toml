@@ -1,79 +1,73 @@
-[tool.poetry]
+[project]
 name = "kyma-companion"
 version = "0.1.0"
 description = "Kyma Companion is AI Kyma assistant that helps you to manage your Kyma runtime"
-authors = [
-    "Muhammad Faizan m.faizan@sap.com",
-    "Aleksei Chernyshov aleksei.chernyshov@sap.com",
-    "Carina Kothe carina.kothe@sap.com",
-    "Friedrich Wilken jens.wilken@sap.com",
-    "Tibor Kiss tibor.kiss01@sap.com",
-    "Marco Bebway marco.bebway@sap.com",
-    "Piotr Bochynski piotr.bochynski@sap.com",
-    "Mansur Uralov m.uralov@sap.com",
-]
 readme = "README.md"
-packages = [{ include = "src" }]
 license = "Apache-2.0"
+authors = [
+  { name = "Muhammad Faizan", email = "m.faizan@sap.com" },
+  { name = "Aleksei Chernyshov", email = "aleksei.chernyshov@sap.com" },
+  { name = "Carina Kothe", email = "carina.kothe@sap.com" },
+  { name = "Friedrich Wilken", email = "jens.wilken@sap.com" },
+  { name = "Tibor Kiss", email = "tibor.kiss01@sap.com" },
+  { name = "Marco Bebway", email = "marco.bebway@sap.com" },
+  { name = "Piotr Bochynski", email = "piotr.bochynski@sap.com" },
+  { name = "Mansur Uralov", email = "m.uralov@sap.com" },
+]
+requires-python = "==3.12.*"
+dependencies = [
+  "ai-core-sdk (>=2.4.2,<2.5.0)",
+  "cryptography (>=44.0.2,<45.0.0)",
+  "fastapi[standard] (>=0.115.11,<0.116.0)",
+  "generative-ai-hub-sdk[all] (>=4.1.1,<4.2.0)",
+  "hdbcli (>=2.23.27,<3.0.0)",
+  "kubernetes (>=30.0.0,<33.0.0)",
+  "langfuse (>=2.59.7,<3.0.0)",
+  "langgraph (>=0.2.5,<0.3.0)",
+  "pyjwt (>=2.10.1,<3.0.0)",
+  "python-decouple (>=3.8,<4.0)",
+  "redis (>=5.2.1,<6.0.0)",
+  "requests (>=2.32.3,<3.0.0)",
+  "scrubadub (>=2.0.1,<3.0.0)",
+  "tenacity (>=9.0.0,<10.0.0)",
+  "tiktoken (>=0.9.0,<0.10.0)",
+  "uvicorn (>=0.34.0,<0.35.0)",
+]
+[tool.poetry]
+packages = [{ include = "src" }]
 package-mode = false
 
-[tool.poetry.dependencies]
-python = "~3.12"
-ai-core-sdk = "^2.3.11"
-black = "^24.8.0"
-cryptography = "^44.0.2"
-fastapi = "^0.111.0"
-generative-ai-hub-sdk = {extras = ["all"], version = "^4.1.1"}
-hdbcli = "^2.22.32"
-kubernetes = "^30.1.0"
-langfuse = "^2.57.5"
-langgraph = "^0.2.5"
-poetry-plugin-sort = "^0.2.1"
-pyjwt = "^2.10.1"
-pytest = "^8.2.2"
-pytest-rerunfailures = "^15.0"
-python-decouple = "^3.8"
-redis = "^5.0.8"
-requests = "^2.32.3"
-scrubadub = {extras = ["all"], version = "^2.0.1"}
-tenacity = "^9.0.0"
-tiktoken = "^0.7.0"
-
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.3.2"
-fakeredis = "^2.23.3"
-prettytable = "^3.10.2"
-pytest = "^8.2.2"
-pytest-asyncio = "^0.23.7"
+deepeval = "^2.5.3"
+fakeredis = "^2.27.0"
+prettytable = "^3.15.1"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.25.3"
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.14.0"
 pytest-rerunfailures = "^15.0"
-pyyaml = "^6.0.1"
-termcolor = "^2.4.0"
-types-pyyaml = "^6.0.12.20240311"
+pyyaml = "^6.0.2"
+termcolor = "^2.5.0"
+types-pyyaml = "^6.0.12.20241230"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-flake8 = "^7.1.0"
-flake8-bugbear = "^24.4.26"
-ipython = "^8.26.0"
-mypy = "^1.10.1"
-poethepoet = "^0.27.0"
-ruff = "v0.4.10"
-types-requests = "^2.32.0.20240712"
+black = "^25.1.0"
+cryptography = "^44.0.2"
+flake8 = "^7.1.2"
+flake8-bugbear = "^24.12.12"
+ipython = "^9.0.2"
+mypy = "^1.15.0"
+poethepoet = "^0.33.0"
+poetry-plugin-sort = "^0.3.0"
+ruff = "^0.9.10"
+types-requests = "^2.32.0.20250306"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra"
-pythonpath = [
-    "src"
-]
-testpaths = [
-    "tests",
-]
-env_files = [
-    ".env.test"
-]
+pythonpath = ["src"]
+testpaths = ["tests"]
+env_files = [".env.test"]
 
 [tool.poe.tasks]
 lint = "ruff check ."
