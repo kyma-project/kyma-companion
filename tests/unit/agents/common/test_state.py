@@ -102,63 +102,6 @@ class TestCompanionState:
 
 
 class TestAgentState:
-    # Test data for AgentState
-    @pytest.mark.parametrize(
-        "messages, next, subtasks, final_response, expected",
-        [
-            (
-                [],
-                None,
-                [
-                    SubTask(
-                        description="Task 1",
-                        task_title="Task 1",
-                        assigned_to="KymaAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                    SubTask(
-                        description="Task 2",
-                        task_title="Task 2",
-                        assigned_to="KubernetesAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                ],
-                "",
-                True,
-            ),
-            (
-                [],
-                None,
-                [
-                    SubTask(
-                        description="Task 1",
-                        task_title="Task 1",
-                        assigned_to="KymaAgent",
-                        status=SubTaskStatus.COMPLETED,
-                    ),
-                    SubTask(
-                        description="Task 2",
-                        task_title="Task 2",
-                        assigned_to="KubernetesAgent",
-                        status=SubTaskStatus.PENDING,
-                    ),
-                ],
-                "",
-                False,
-            ),
-        ],
-    )
-    def test_all_tasks_completed(
-        self, messages, next, subtasks, final_response, expected
-    ):
-        state = CompanionState(
-            messages=messages,
-            next=next,
-            subtasks=subtasks,
-            final_response=final_response,
-        )
-        assert state.all_tasks_completed() == expected
-
     @pytest.mark.parametrize(
         "messages, messages_summary, expected",
         [
@@ -202,6 +145,7 @@ class TestAgentState:
             subtasks=[],
             my_task=None,
             is_last_step=False,
+            remaining_steps=25,
         )
 
         # when

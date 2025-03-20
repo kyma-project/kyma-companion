@@ -17,6 +17,7 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
+from langgraph.managed import RemainingSteps
 
 from agents.common.agent import BaseAgent
 from agents.common.constants import AGENT_MESSAGES, ERROR
@@ -39,6 +40,8 @@ class TestAgentState(BaseAgentState):
     """Test agent state class."""
 
     k8s_client: IK8sClient | None = None  # Make k8s_client optional with default None
+
+    remaining_steps: RemainingSteps = 25
 
 
 class TestAgent(BaseAgent):
