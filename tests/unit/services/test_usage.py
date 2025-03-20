@@ -7,6 +7,7 @@ from langchain_core.outputs import ChatGeneration, LLMResult
 
 from services.metrics import (
     LANGGRAPH_ERROR_METRIC_KEY,
+    LLM_LATENCY_METRIC_KEY,
     USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY,
     CustomMetrics,
     LangGraphErrorType,
@@ -21,6 +22,26 @@ from services.usage import (
 
 
 class TestUsageTrackerCallback:
+    @pytest.mark.asyncio
+    async def test_on_llm_start(
+        self,
+    ):
+        # Given
+        usage_tracker_callback = UsageTrackerCallback(
+            cluster_id="test_cluster", memory=Mock
+        )
+        run_id = uuid4()
+        assert usage_tracker_callback.llm_start_times == {}
+
+        # When
+        await usage_tracker_callback.on_llm_start(
+            serialized={}, prompts=[], run_id=run_id
+        )
+
+        # Then
+        assert run_id in usage_tracker_callback.llm_start_times
+        assert usage_tracker_callback.llm_start_times.pop(run_id) > 0
+
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, llm_output, expected_exception, expected_call_args",
@@ -62,8 +83,14 @@ class TestUsageTrackerCallback:
         response = Mock()
         response.llm_output = llm_output
         response.generations = []
-        metric_name = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
-        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
+        failure_metric_name = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
+        before_failure_metric_value = CustomMetrics().registry.get_sample_value(
+            failure_metric_name
+        )
+        llm_latency_metric_name = f"{LLM_LATENCY_METRIC_KEY}_count"
+        before_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(
+            llm_latency_metric_name
+        )
 
         # When / Then
         if expected_exception:
@@ -74,8 +101,10 @@ class TestUsageTrackerCallback:
                 await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
 
             # the metric should be increased.
-            after_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
-            assert after_metric_value > before_metric_value
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
+                failure_metric_name
+            )
+            assert after_failure_metric_value > before_failure_metric_value
         else:
             await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
             call_args = mock_memory.awrite_llm_usage.call_args[0][1]
@@ -85,8 +114,16 @@ class TestUsageTrackerCallback:
                 "test_cluster", expected_call_args, usage_tracker_callback.ttl
             )
             # the metric should not be increased.
-            after_metric_value = CustomMetrics().registry.get_sample_value(metric_name)
-            assert after_metric_value == before_metric_value
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
+                failure_metric_name
+            )
+            assert after_failure_metric_value == before_failure_metric_value
+
+        # the LLM latency metric should be increased.
+        after_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(
+            llm_latency_metric_name
+        )
+        assert after_llm_latency_metric_value > before_llm_latency_metric_value
 
     @pytest.mark.asyncio
     async def test_on_llm_error(

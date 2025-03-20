@@ -22,6 +22,7 @@ USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY = (
 )
 LANGGRAPH_ERROR_METRIC_KEY = f"{METRICS_KEY_PREFIX}_langgraph_error_count"
 HANADB_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_tcp_hanadb_latency_seconds"
+LLM_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_llm_latency_seconds"
 
 
 class LangGraphErrorType(Enum):
@@ -44,6 +45,11 @@ class CustomMetrics(metaclass=SingletonMeta):
             REQUEST_LATENCY_METRIC_KEY,
             "HTTP Request Duration",
             ["method", "status", "path"],
+            registry=self.registry,
+        )
+        self.llm_latency = Histogram(
+            LLM_LATENCY_METRIC_KEY,
+            "LLM Request Duration",
             registry=self.registry,
         )
         self.usage_tracker_publish_failure_count = Counter(
@@ -79,6 +85,10 @@ class CustomMetrics(metaclass=SingletonMeta):
     async def record_hanadb_latency(self, duration: float, is_success: bool) -> None:
         """Record the HanaDB latency."""
         self.hanadb_latency_seconds.labels(is_success=str(is_success)).observe(duration)
+
+    async def record_llm_latency(self, duration: float) -> None:
+        """Record the LLM latency."""
+        self.llm_latency.observe(duration)
 
     async def monitor_http_requests(self, req: Request, call_next: Any) -> Any:
         """A middleware to monitor HTTP requests."""
