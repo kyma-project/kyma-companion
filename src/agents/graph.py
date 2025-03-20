@@ -62,38 +62,6 @@ from utils.settings import (
 logger = get_logger(__name__)
 
 
-def common_node_route_or_exit(state: CompanionState) -> Literal[SUMMARIZATION, END]:  # type: ignore
-    """Return the next node whether to continue or exit with a direct response."""
-    # if only one common agent task -> then END
-    # no need to invoke finalizer
-    if (
-        state.subtasks
-        and len(state.subtasks) == 1
-        and state.subtasks[0].is_common_subtask()
-        and state.subtasks[0].completed()
-    ):
-        logger.debug("Only one common subtask found. No need to route further")
-        return END
-    # else continue the graph
-    return SUMMARIZATION
-
-
-def gatekeeper_route_or_exit(state: CompanionState) -> Literal[SUMMARIZATION, END]:  # type: ignore
-    """Return the next node whether to continue or exit with a direct response."""
-    # if only one common agent task -> then END
-    # no need to invoke finalizer
-    if (
-        state.subtasks
-        and len(state.subtasks) == 1
-        and state.subtasks[0].is_common_subtask()
-        and state.subtasks[0].completed()
-    ):
-        logger.debug("Only one common subtask found. No need to route further")
-        return END
-    # else continue the graph
-    return SUMMARIZATION
-
-
 class CustomJSONEncoder(json.JSONEncoder):
     """
     Custom JSON encoder for AIMessage, HumanMessage, and SubTask.
