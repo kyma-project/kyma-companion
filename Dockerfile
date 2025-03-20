@@ -10,23 +10,13 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN apt update && apt dist-upgrade -y && apt install -y build-essential gcc clang python3-pip python3.12-venv
+RUN apt update && apt dist-upgrade -y && apt install -y adduser build-essential gcc clang python3-pip python3.12-venv
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir poetry>=2.1  \
   && poetry config virtualenvs.create true \
   && poetry install --without dev,test --no-interaction --no-ansi \
   && pip uninstall -y poetry
-
-# Start a new stage for a smaller final image
-FROM ubuntu:noble
-
-WORKDIR /app
-
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /app /app
-
-RUN apt update && apt dist-upgrade -y && apt install adduser
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
