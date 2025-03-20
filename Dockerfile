@@ -1,44 +1,39 @@
-# Use Ubuntu Noble as the base image
-FROM ubuntu:noble
+FROM python:3.12-slim-bullseye AS builder
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-  POETRY_VERSION=2.1.0 \
-  POETRY_HOME="/opt/poetry" \
-  POETRY_VENV="/opt/poetry-venv" \
-  POETRY_CACHE_DIR="/opt/.cache"
-
-# Install system dependencies
-RUN apt-get update && apt dist-upgrade -y && apt-get install -y --no-install-recommends \
-  python3 \
-  python3-pip \
-  python3-venv \
-  curl \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry 2.1
-RUN python3 -m venv $POETRY_VENV \
-  && $POETRY_VENV/bin/pip install -U pip setuptools wheel \
-  && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
-
-# Add Poetry to PATH
-ENV PATH="${PATH}:${POETRY_VENV}/bin"
-
-# Set the working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy Poetry configuration files
-COPY pyproject.toml poetry.lock* ./
+# Copy only necessary files
+COPY pyproject.toml poetry.lock ./
+COPY src ./src
+COPY data ./data
+COPY config ./config
 
-# Install dependencies using Poetry
-RUN poetry config virtualenvs.create false \
-  && poetry install --no-interaction --no-ansi --without dev,test
+# Install Poetry and dependencies in one layer
+RUN apt update && apt dist-upgrade -y && apt install -y build-essential gcc clang 
+RUN pip install --no-cache-dir poetry>=2.1  \
+  && poetry config virtualenvs.create false \
+  && poetry install --without dev,test --no-interaction --no-ansi \
+  && pip uninstall -y poetry
 
-# Copy the rest of the application code
-COPY . .
+# Start a new stage for a smaller final image
+FROM python:3.12-alpine
 
-# Expose the default FastAPI port
+WORKDIR /app
+
+# Copy Python environment and app files from builder
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+
+# Install necessary runtime dependencies
+RUN apk update && apk upgrade && \
+  apk add --no-cache libstdc++
+
+# Create a non-root user
+RUN adduser -u 5678 -D appuser && chown -R appuser /app
+USER appuser
+
 EXPOSE 8000
 
-# Command to run the FastAPI application with Uvicorn
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the command to start Uvicorn
+CMD ["fastapi", "run", "src/main.py", "--host", "0.0.0.0", "--port", "8000"]
