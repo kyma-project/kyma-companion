@@ -33,7 +33,12 @@ from agents.common.constants import (
     SUMMARIZATION,
 )
 from agents.common.data import Message
-from agents.common.state import CompanionState, Plan, SubTask, UserInput
+from agents.common.state import (
+    CompanionState,
+    Plan,
+    SubTask,
+    ResourceInformation,
+)
 from agents.common.utils import should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
@@ -69,7 +74,8 @@ class CustomJSONEncoder(json.JSONEncoder):
             | HumanMessage
             | SystemMessage
             | ToolMessage
-            | SubTask,
+            | SubTask
+            | ResourceInformation,
         ):
             return o.__dict__
         elif isinstance(o, IK8sClient):
@@ -247,21 +253,18 @@ class CompanionGraph:
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
-        user_input = UserInput(**message.__dict__)
         messages = [
-            SystemMessage(
-                content=f"The user query is related to: {user_input.get_resource_information()}"
-            ),
             HumanMessage(content=message.query),
         ]
 
         x_cluster_url = k8s_client.get_api_server()
         cluster_id = x_cluster_url.split(".")[1]
 
+        resource_information = ResourceInformation.from_message(message)
         async for chunk in self.graph.astream(
             input={
                 "messages": messages,
-                "input": user_input,
+                "resource_information": resource_information,
                 "k8s_client": k8s_client,
                 "subtasks": [],
                 "error": None,
