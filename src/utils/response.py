@@ -5,6 +5,8 @@ from langgraph.constants import END
 
 from agents.common.constants import (
     FINALIZER,
+    GATEKEEPER,
+    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -38,7 +40,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
-        if agent == SUMMARIZATION:
+        if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
             # we don't show summarization node, but only error
             return {
                 "agent": None,
@@ -47,27 +49,36 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             }
 
     # skip summarization node
-    if agent == SUMMARIZATION:
+    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
+        return None
+
+    # skip gatekeeper node, if request was forwarded to supervisor
+    if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
         return None
 
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
-
     answer["tasks"] = reformat_subtasks(agent_data.get("subtasks"))
 
-    if agent == SUPERVISOR:
+    # assign NEXT
+    # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
+    if agent in (SUPERVISOR, GATEKEEPER):
         answer[NEXT] = agent_data.get(NEXT)
     else:
+        # for all other agent, decide next based on pending task
         if agent_data.get("subtasks"):
+            # get pending subtasks
             pending_subtask = [
                 subtask["assigned_to"]
                 for subtask in agent_data.get("subtasks")
                 if subtask["status"] == SubTaskStatus.PENDING
             ]
+            # if subtask pending, assign Next to first pending task
             if pending_subtask:
                 answer[NEXT] = pending_subtask[0]
             else:
+                # if no pending task
                 answer[NEXT] = FINALIZER
 
     return {"agent": agent, "answer": answer, "error": agent_error}

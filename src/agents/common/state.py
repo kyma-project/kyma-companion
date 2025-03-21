@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from langchain_core.messages import (
     BaseMessage,
@@ -21,6 +21,16 @@ class SubTaskStatus(str, Enum):
     PENDING = "pending"
     COMPLETED = "completed"
     ERROR = "error"
+
+
+class GatekeeperResponse(BaseModel):
+    """Gatekeeper response data model."""
+
+    direct_response: str = Field(description="For direct response.")
+    forward_query: bool = Field(
+        default=False,
+        description="For forwarding query",
+    )
 
 
 class SubTask(BaseModel):
@@ -51,6 +61,10 @@ class SubTask(BaseModel):
     def is_error(self) -> bool:
         """Check if the task is error status."""
         return self.status == SubTaskStatus.ERROR
+
+    def is_common_subtask(self) -> Any:
+        """Check if the task is assigned to common agent."""
+        return self.assigned_to == COMMON
 
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
@@ -83,11 +97,6 @@ class Plan(BaseModel):
 
     subtasks: list[SubTask] | None = Field(
         description="different subtasks for user query, should be in sorted order"
-    )
-
-    response: str | None = Field(
-        description="direct response to the user query if the query is either irrelevant to Kyma and Kubernetes or "
-        "if the answer is already in the conversation history"
     )
 
 

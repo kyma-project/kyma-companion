@@ -288,7 +288,7 @@ class TestSupervisorAgent:
             (
                 "Plans multiple subtasks successfully",
                 "How do I deploy a Kyma function?",
-                '{"response":null, "subtasks": [{"description": "Explain Kyma function deployment", "task_title": "Explain Kyma function deployment", "assigned_to": "KymaAgent" ,"status" : "pending"},'
+                '{ "subtasks": [{"description": "Explain Kyma function deployment", "task_title": "Explain Kyma function deployment", "assigned_to": "KymaAgent" ,"status" : "pending"},'
                 '{"description": "Explain K8s deployment", "task_title": "Explain K8s deployment", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
@@ -312,7 +312,7 @@ class TestSupervisorAgent:
             (
                 "Plans a single subtask successfully",
                 "What is a Kubernetes pod?",
-                '{"response":null, "subtasks": [{"description": "Explain Kubernetes pod concept","task_title": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
+                '{ "subtasks": [{"description": "Explain Kubernetes pod concept","task_title": "Explain Kubernetes pod concept", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     "subtasks": [
                         SubTask(
@@ -330,7 +330,7 @@ class TestSupervisorAgent:
             (
                 "Exits with error if no subtasks are returned",
                 "What is a Kubernetes pod?",
-                '{"response":null, "subtasks": null}',
+                '{ "subtasks": null}',
                 {
                     ERROR: "Unexpected error while processing the request. Please try again later.",
                     "messages": [
@@ -345,26 +345,9 @@ class TestSupervisorAgent:
                 None,
             ),
             (
-                "Exits immediately by answering for the general query",
-                "Write a hello world python code?",
-                '{"response": "Here is the hellow world python code: print(\'Hello, World!\')" ,"subtasks": null}',
-                {
-                    "error": None,
-                    "messages": [
-                        AIMessage(
-                            content="Here is the hellow world python code: print('Hello, World!')",
-                            name=PLANNER,
-                        )
-                    ],
-                    "next": END,
-                    "subtasks": [],
-                },
-                None,
-            ),
-            (
                 "Exits of error occurs in planning",
                 "What is a Kubernetes service?",
-                '{"response":null,"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
+                '{"subtasks": [{"description": "Explain Kubernetes service", "assigned_to": "KubernetesAgent","status" : "pending"}]}',
                 {
                     ERROR: "Unexpected error while processing the request. Please try again later.",
                     "messages": [
