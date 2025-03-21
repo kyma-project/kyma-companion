@@ -5,18 +5,44 @@ from agents.common.constants import FINALIZER, MESSAGES, NEW_YAML, UPDATE_YAML
 from agents.common.response_converter import ResponseConverter
 
 
-@pytest.fixture
-def response_converter():
-    return ResponseConverter()
+yaml_new_sample_with_link_1 = """```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+     namespace: default
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```"""
 
+yaml_new_sample_without_link = """```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```"""
 
-@pytest.mark.parametrize(
-    "description,yaml_content,expected_results",
-    [
-        (
-            "Response with new and update yaml configs",
-            """<YAML-NEW>
-```yaml
+yaml_new_sample_with_link_2 = """```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,44 +50,9 @@ metadata:
   namespace: default
 spec:
   replicas: 3
-```
-</YAML-NEW>
+```"""
 
-some text 
-some text
-
-<YAML-UPDATE>
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: default
-spec:
-  replicas: 5
-```
-</YAML-UPDATE>""",
-            (
-                [
-                    "```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx-deployment\n  namespace: default\nspec:\n  replicas: 3\n```"
-                ],
-                [
-                    "```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx-deployment\n  namespace: default\nspec:\n  replicas: 5\n```"
-                ],
-            ),
-        ),
-        ("Response with no yaml configs", "No YAML content", ([], [])),
-        (
-            "Response with invalid yaml configs",
-            "<YAML-NEW>\ninvalid yaml\n</YAML-NEW>",
-            (["invalid yaml"], []),
-        ),
-        (
-            "Response with two yaml",
-            """To create an Nginx deployment with 3 replicas, you can use the following YAML configuration:
-
-<YAML-NEW>
-```yaml
+yaml_new_sample_with_link_3 = """```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -82,7 +73,107 @@ spec:
         image: nginx:latest
         ports:
         - containerPort: 80
-```
+```"""
+
+yaml_update_sample_with_link_1 = """```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+spec:
+  replicas: 5
+```"""
+
+yaml_update_sample_without_link_1 = """```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+spec:
+  replicas: 5
+```"""
+
+yaml_update_sample_with_link_2 = """```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: nginx-oom
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21.0 # Updated image version
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_ENV
+          value: "production" # New environment variable
+```"""
+
+
+@pytest.fixture
+def response_converter():
+    return ResponseConverter()
+
+
+@pytest.mark.parametrize(
+    "description,yaml_content,expected_results",
+    [
+        (
+            "Response with new and update yaml configs",
+            f"""Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+
+<YAML-NEW>
+{yaml_update_sample_with_link_1}
+</YAML-NEW>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            (
+                [yaml_update_sample_with_link_1],
+                [],
+            ),
+        ),
+        (
+            "Response with new and update yaml configs",
+            f"""<YAML-NEW>
+{yaml_new_sample_with_link_2}
+</YAML-NEW>
+
+some text 
+some text
+
+<YAML-UPDATE>
+{yaml_update_sample_with_link_2}
+</YAML-UPDATE>""",
+            (
+                [yaml_new_sample_with_link_2],
+                [yaml_update_sample_with_link_2],
+            ),
+        ),
+        ("Response with no yaml configs", "No YAML content", ([], [])),
+        (
+            "Response with invalid yaml configs",
+            "<YAML-NEW>\ninvalid yaml\n</YAML-NEW>",
+            (["invalid yaml"], []),
+        ),
+        (
+            "Response with two yaml",
+            f"""To create an Nginx deployment with 3 replicas, you can use the following YAML configuration:
+
+<YAML-NEW>
+{yaml_new_sample_with_link_2}
 </YAML-NEW>
 
 To apply this configuration, save it to a file (e.g., `nginx-deployment.yaml`) and run the following command:
@@ -94,31 +185,7 @@ kubectl apply -f nginx-deployment.yaml
 If you need to update the configuration of the existing Nginx deployment, for example, to change the image version or add environment variables, you can use the following YAML:
 
 <YAML-UPDATE>
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: nginx-oom
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.21.0 # Updated image version
-        ports:
-        - containerPort: 80
-        env:
-        - name: NGINX_ENV
-          value: "production" # New environment variable
-```
+{yaml_update_sample_with_link_2}
 </YAML-UPDATE>
 
 To apply this update, save the YAML to a file (e.g., `nginx-deployment-update.yaml`) and run:
@@ -129,57 +196,8 @@ kubectl apply -f nginx-deployment-update.yaml
 
 This will update the existing deployment with the new configuration.""",
             (
-                [
-                    """```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: nginx-oom
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:latest
-        ports:
-        - containerPort: 80
-```"""
-                ],
-                [
-                    """```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: nginx-oom
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.21.0 # Updated image version
-        ports:
-        - containerPort: 80
-        env:
-        - name: NGINX_ENV
-          value: "production" # New environment variable
-```"""
-                ],
+                [yaml_new_sample_with_link_2],
+                [yaml_update_sample_with_link_2],
             ),
         ),
     ],
@@ -195,12 +213,12 @@ def test_extract_yaml(response_converter, description, yaml_content, expected_re
         (
             "yaml with yaml marker",
             """```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test
-  namespace: default
-```""",
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: test
+      namespace: default
+    ```""",
             {
                 "apiVersion": "apps/v1",
                 "kind": "Deployment",
@@ -210,10 +228,10 @@ metadata:
         (
             "yaml without yaml marker",
             """apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test
-  namespace: default""",
+    kind: Deployment
+    metadata:
+      name: test
+      namespace: default""",
             {
                 "apiVersion": "apps/v1",
                 "kind": "Deployment",
@@ -304,32 +322,32 @@ def test_create_html_nested_yaml(
     [
         (
             """Some text before
-<YAML-NEW>
-            metadata:
-              name: test
-</YAML-NEW>
-            Some text after""",
+    <YAML-NEW>
+                metadata:
+                  name: test
+    </YAML-NEW>
+                Some text after""",
             ["<div>HTML Replace 1</div>"],
             NEW_YAML,
             """Some text before
-            <div>HTML Replace 1</div>
-            Some text after""",
+                <div>HTML Replace 1</div>
+                Some text after""",
         ),
         (
             """First block
-<YAML-UPDATE>
-            block1
-</YAML-UPDATE>
-            Second block
-<YAML-UPDATE>
-            block2
-</YAML-UPDATE>""",
+    <YAML-UPDATE>
+                block1
+    </YAML-UPDATE>
+                Second block
+    <YAML-UPDATE>
+                block2
+    </YAML-UPDATE>""",
             ["<div>Replace 1</div>", "<div>Replace 2</div>"],
             UPDATE_YAML,
             """First block
-            <div>Replace 1</div>
-            Second block
-            <div>Replace 2</div>""",
+                <div>Replace 1</div>
+                Second block
+                <div>Replace 2</div>""",
         ),
         (
             """No YAML blocks here""",
@@ -367,11 +385,11 @@ def test_replace_yaml_with_html(
         (
             [
                 """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: nginx-oom"""
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+      namespace: nginx-oom"""
             ],
             NEW_YAML,
             [
@@ -384,7 +402,7 @@ metadata:
   name: nginx-deployment
   namespace: nginx-oom
                 </div>
-    
+
                 <div class="link" link-type="{NEW_YAML}">
                     [Apply](/namespaces/nginx-oom/Deployment)
                 </div>
@@ -396,11 +414,11 @@ metadata:
             [
                 """invalid: :""",
                 """
-apiVersion: apps/v1
-kind: Service
-metadata:
-  name: test-svc
-  namespace: test-ns""",
+    apiVersion: apps/v1
+    kind: Service
+    metadata:
+      name: test-svc
+      namespace: test-ns""",
             ],
             UPDATE_YAML,
             [
@@ -414,7 +432,7 @@ metadata:
   name: test-svc
   namespace: test-ns
                 </div>
-    
+
                 <div class="link" link-type="{UPDATE_YAML}">
                     [Apply](/namespaces/test-ns/Service/test-svc)
                 </div>
@@ -441,25 +459,14 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
     "state_content,expected_content",
     [
         (
-            """<YAML-NEW>
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test
-  namespace: default
-```
+            # single yaml with valid link, <YAML-NEW> block should be converted to HTML block
+            f"""<YAML-NEW>
+{yaml_new_sample_with_link_2}
 </YAML-NEW>""",
-            """
+            f"""
         <div class="yaml-block>
             <div class="yaml">
-            ```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test
-  namespace: default
-```
+            {yaml_new_sample_with_link_2}
             </div>
             <div class="link" link-type="New">
                 [Apply](/namespaces/default/Deployment)
@@ -467,10 +474,76 @@ metadata:
         </div>
         """,
         ),
+        (  # single yaml with yaml block no space in beginning, <YAML-NEW> block should be converted to HTML block
+            f"""Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:<YAML-NEW>
+{yaml_new_sample_with_link_1}
+</YAML-NEW>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            f"""Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+        <div class="yaml-block>
+            <div class="yaml">
+            {yaml_new_sample_with_link_1}
+            </div>
+            <div class="link" link-type="New">
+                [Apply](/namespaces/default/Pod)
+            </div>
+        </div>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.
+        """,
+        ),
+        (  # single yaml without link, with yaml block no space in beginning and in end,  <YAML-NEW> block should be removed
+            f"""Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:<YAML-NEW>{yaml_new_sample_without_link}
+</YAML-NEW>- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            f"""Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:{yaml_new_sample_without_link}- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.
+        """,
+        ),
+        (
+            # update yaml without link ,<YAML-UPDATE> block should be removed
+            f"""4. **(Optional) Modify the Function's Source Code**:
+   - If you want to change the Function's code to return "Hello Serverless!", you can edit it with:
+     ```bash
+     kubectl edit function hello-world
+     ```
+   - Modify the `source` section in the YAML as follows:
+     <YAML-UPDATE>
+     {yaml_update_sample_without_link_1}
+     </YAML-UPDATE>
+
+5. **Synchronize Local Workspace with Cluster Changes**:
+   - Fetch the content of the resource to synchronize your local workspace sources with the cluster changes:
+     ```bash
+     kyma sync function hello-world
+     ```
+""",
+            f"""4. **(Optional) Modify the Function's Source Code**:
+   - If you want to change the Function's code to return "Hello Serverless!", you can edit it with:
+     ```bash
+     kubectl edit function hello-world
+     ```
+   - Modify the `source` section in the YAML as follows:
+     {yaml_update_sample_without_link_1}
+
+
+5. **Synchronize Local Workspace with Cluster Changes**:
+   - Fetch the content of the resource to synchronize your local workspace sources with the cluster changes:
+     ```bash
+     kyma sync function hello-world
+     ```
+""",
+        ),
         ("No YAML content", "No YAML content"),
         ("", ""),
     ],
-    ids=["single_valid_yaml", "No YAML in Content", "Empty Response"],
 )
 def test_convert_final_response(response_converter, state_content, expected_content):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
