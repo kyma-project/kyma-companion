@@ -4,7 +4,6 @@ from langchain_core.messages import AIMessage
 from agents.common.constants import FINALIZER, MESSAGES, NEW_YAML, UPDATE_YAML
 from agents.common.response_converter import ResponseConverter
 
-
 yaml_new_sample_with_link_1 = """```yaml
    apiVersion: v1
    kind: Pod
@@ -213,12 +212,12 @@ def test_extract_yaml(response_converter, description, yaml_content, expected_re
         (
             "yaml with yaml marker",
             """```yaml
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: test
-      namespace: default
-    ```""",
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  namespace: default
+```""",
             {
                 "apiVersion": "apps/v1",
                 "kind": "Deployment",
@@ -228,10 +227,10 @@ def test_extract_yaml(response_converter, description, yaml_content, expected_re
         (
             "yaml without yaml marker",
             """apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: test
-      namespace: default""",
+kind: Deployment
+metadata:
+  name: test
+  namespace: default""",
             {
                 "apiVersion": "apps/v1",
                 "kind": "Deployment",
