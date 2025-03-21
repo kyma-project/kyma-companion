@@ -15,6 +15,56 @@ def response_converter():
     [
         (
             "Response with new and update yaml configs",
+            """Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+
+<YAML-NEW>
+```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```
+</YAML-NEW>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            (
+                [
+                    """```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```"""
+                ],
+                [],
+            ),
+        ),
+        (
+            "Response with new and update yaml configs",
             """<YAML-NEW>
 ```yaml
 apiVersion: apps/v1
@@ -467,10 +517,172 @@ metadata:
         </div>
         """,
         ),
+        (
+            """Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+
+<YAML-NEW>
+```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+     namespace: default
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```
+</YAML-NEW>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            """Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+        <div class="yaml-block>
+            <div class="yaml">
+            ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+     namespace: default
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```
+            </div>
+            <div class="link" link-type="New">
+                [Apply](/namespaces/default/Pod)
+            </div>
+        </div>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.
+        """,
+        ),
+        (
+            """Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+
+<YAML-NEW>
+```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```
+</YAML-NEW>
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
+            """Resource Management:
+- Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
+        ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: example-pod
+   spec:
+     containers:
+     - name: example-container
+       image: example-image
+       resources:
+         requests:
+           memory: "64Mi"
+           cpu: "250m"
+         limits:
+           memory: "128Mi"
+           cpu: "500m"
+```
+
+- Use Horizontal Pod Autoscaler to automatically scale your applications based on demand.
+- Implement Pod Disruption Budgets to maintain application availability during maintenance.
+        """,
+        ),
+        (
+            """4. **(Optional) Modify the Function's Source Code**:
+   - If you want to change the Function's code to return "Hello Serverless!", you can edit it with:
+     ```bash
+     kubectl edit function hello-world
+     ```
+   - Modify the `source` section in the YAML as follows:
+     <YAML-UPDATE>
+     ```yaml
+     spec:
+       runtime: python312
+       source: |-
+         def main(event, context):
+           return "Hello Serverless!"
+     ```
+     </YAML-UPDATE>
+
+5. **Synchronize Local Workspace with Cluster Changes**:
+   - Fetch the content of the resource to synchronize your local workspace sources with the cluster changes:
+     ```bash
+     kyma sync function hello-world
+     ```
+""",
+            """4. **(Optional) Modify the Function's Source Code**:
+   - If you want to change the Function's code to return "Hello Serverless!", you can edit it with:
+     ```bash
+     kubectl edit function hello-world
+     ```
+   - Modify the `source` section in the YAML as follows:
+     
+     ```yaml
+     spec:
+       runtime: python312
+       source: |-
+         def main(event, context):
+           return "Hello Serverless!"
+     ```
+     
+
+5. **Synchronize Local Workspace with Cluster Changes**:
+   - Fetch the content of the resource to synchronize your local workspace sources with the cluster changes:
+     ```bash
+     kyma sync function hello-world
+     ```
+""",
+        ),
         ("No YAML content", "No YAML content"),
         ("", ""),
     ],
-    ids=["single_valid_yaml", "No YAML in Content", "Empty Response"],
+    ids=[
+        "single_valid_yaml",
+        "single_valid_yaml",
+        "invalid_yaml_link",
+        "invalid_yaml_link",
+        "No YAML in Content",
+        "Empty Response",
+    ],
 )
 def test_convert_final_response(response_converter, state_content, expected_content):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}

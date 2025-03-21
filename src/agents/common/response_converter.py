@@ -36,8 +36,8 @@ class ResponseConverter:
 
     def __init__(self):
         # Regular expression patterns to extract YAML blocks
-        self.new_yaml_pattern = r"<YAML-NEW>\n(.*?)\n</YAML-NEW>"
-        self.update_yaml_pattern = r"<YAML-UPDATE>\n(.*?)\n</YAML-UPDATE>"
+        self.new_yaml_pattern = r"<YAML-NEW>\s*([\s\S]*?)\s*</YAML-NEW>"
+        self.update_yaml_pattern = r"<YAML-UPDATE>\s*([\s\S]*?)\s*</YAML-UPDATE>"
 
     def _extract_yaml(self, finalizer_response: str) -> tuple[list[str], list[str]]:
         """
