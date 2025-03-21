@@ -1,3 +1,4 @@
+import time
 from typing import Protocol
 
 from hdbcli import dbapi
@@ -6,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import run_in_executor
 
+from services.metrics import CustomMetrics
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -36,13 +38,18 @@ class HanaVectorDB(HanaDB):
         Returns:
             List of Documents most similar to the query
         """
-        return await run_in_executor(
-            None,
-            self.similarity_search,
-            query,
-            k=k,
-            filter=filter,
-        )
+
+        try:
+            result = await run_in_executor(
+                None,
+                self.similarity_search,
+                query,
+                k=k,
+                filter=filter,
+            )
+            return result
+        except Exception as e:
+            raise e
 
 
 class IRetriever(Protocol):
@@ -67,9 +74,17 @@ class HanaDBRetriever:
 
     async def aretrieve(self, query: str, top_k: int = 5) -> list[Document]:
         """Retrieve relevant documents based on the query."""
+        start_time = time.perf_counter()
         try:
             docs = await self.db.asimilarity_search(query, k=top_k)
+            # record latency.
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, True
+            )
         except Exception as e:
             logger.exception(f"Error retrieving documents for query: {query}")
+            await CustomMetrics().record_hanadb_latency(
+                time.perf_counter() - start_time, False
+            )
             raise e
         return docs

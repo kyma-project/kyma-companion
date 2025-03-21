@@ -6,6 +6,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
 from rag.retriever import HanaDBRetriever
+from services.metrics import HANADB_LATENCY_METRIC_KEY, CustomMetrics
 
 
 @pytest.fixture
@@ -109,7 +110,14 @@ class TestHanaDBRetriever:
             table_name="test_table",
         )
 
+        metric_name = f"{HANADB_LATENCY_METRIC_KEY}_count"
+
         if expected_error:
+            before_failure_metric_value = CustomMetrics().registry.get_sample_value(
+                metric_name, {"is_success": "False"}
+            )
+            if before_failure_metric_value is None:
+                before_failure_metric_value = 0
             # Setup mock to raise exception
             mock_hanavectordb.return_value.asimilarity_search.side_effect = (
                 expected_error
@@ -121,7 +129,17 @@ class TestHanaDBRetriever:
             mock_logger.exception.assert_called_once_with(
                 f"Error retrieving documents for query: {query}"
             )
+            # check metric.
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
+                metric_name, {"is_success": "False"}
+            )
+            assert after_failure_metric_value > before_failure_metric_value
         else:
+            before_success_metric_value = CustomMetrics().registry.get_sample_value(
+                metric_name, {"is_success": "True"}
+            )
+            if before_success_metric_value is None:
+                before_success_metric_value = 0
             # Setup mock to return expected documents
             mock_hanavectordb.return_value.asimilarity_search.return_value = (
                 expected_docs
@@ -133,3 +151,8 @@ class TestHanaDBRetriever:
             mock_hanavectordb.return_value.asimilarity_search.assert_called_once_with(
                 query, k=top_k
             )
+            # check metric.
+            after_success_metric_value = CustomMetrics().registry.get_sample_value(
+                metric_name, {"is_success": "True"}
+            )
+            assert after_success_metric_value > before_success_metric_value

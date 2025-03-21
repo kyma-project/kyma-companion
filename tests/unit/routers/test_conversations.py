@@ -18,6 +18,7 @@ from routers.conversations import (
 )
 from services.conversation import IService
 from services.k8s import IK8sClient, K8sAuthHeaders
+from services.metrics import REQUEST_LATENCY_METRIC_KEY, CustomMetrics
 from services.usage import UsageExceedReport
 
 SAMPLE_JWT_TOKEN = jwt.encode({"sub": "user123"}, "secret", algorithm="HS256")
@@ -284,6 +285,20 @@ def test_messages_endpoint(
     # Create a new client with the expected error
     test_client = client_factory()
 
+    # save metrics before request.
+    metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+    metric_labels = {
+        "method": "POST",
+        "status": str(expected_output["status_code"]),
+        "path": "/api/conversations/{conversation_id}/messages",
+    }
+    before_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    if before_metric_value is None:
+        before_metric_value = 0.0
+
+    # when
     response = test_client.post(
         f"/api/conversations/{conversation_id}/messages",
         json=input_message,
@@ -292,6 +307,11 @@ def test_messages_endpoint(
 
     assert response.status_code == expected_output["status_code"]
     assert response.headers["content-type"] == expected_output["content-type"]
+
+    after_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    assert after_metric_value > before_metric_value
 
     if expected_output["status_code"] == HTTPStatus.UNPROCESSABLE_ENTITY:
         # return if test case is to check for missing headers.
@@ -491,6 +511,20 @@ def test_init_conversation(
     # Create a new client with the expected error
     test_client = client_factory(given_error)
 
+    # save metrics before request.
+    metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+    metric_labels = {
+        "method": "POST",
+        "status": str(expected_output["status_code"]),
+        "path": "/api/conversations/",
+    }
+    before_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    if before_metric_value is None:
+        before_metric_value = 0.0
+
+    # when
     response = test_client.post(
         "/api/conversations",
         json=request_body,
@@ -501,6 +535,11 @@ def test_init_conversation(
     assert response.headers["content-type"] == expected_output["content-type"]
 
     response_body = json.loads(response.content)
+
+    after_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    assert after_metric_value > before_metric_value
 
     if expected_output["status_code"] == HTTPStatus.OK:
         assert (
@@ -687,6 +726,19 @@ def test_followup_questions(
     # Create a new client with the expected error
     test_client = client_factory(given_error)
 
+    # save metrics before request.
+    metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+    metric_labels = {
+        "method": "GET",
+        "status": str(expected_output["status_code"]),
+        "path": "/api/conversations/{conversation_id}/questions",
+    }
+    before_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    if before_metric_value is None:
+        before_metric_value = 0.0
+
     # when
     response = test_client.get(
         f"/api/conversations/{conversation_id}/questions",
@@ -696,6 +748,11 @@ def test_followup_questions(
     # then
     assert response.status_code == expected_output["status_code"]
     assert response.headers["content-type"] == expected_output["content-type"]
+
+    after_metric_value = CustomMetrics().registry.get_sample_value(
+        metric_name, metric_labels
+    )
+    assert after_metric_value > before_metric_value
 
     response_body = json.loads(response.content)
     if expected_output["status_code"] == HTTPStatus.OK:
