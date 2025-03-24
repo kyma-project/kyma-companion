@@ -5781,6 +5781,22 @@ tornado = ["tornado (>=6)"]
 unleash = ["UnleashClient (>=6.0.1)"]
 
 [[package]]
+name = "setuptools"
+version = "58.0.0"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "setuptools-58.0.0-py3-none-any.whl", hash = "sha256:fa14855ea8332dc12cae21b8e18cf55573eeaabad9fe3b8b787e6a74e01885d3"},
+    {file = "setuptools-58.0.0.tar.gz", hash = "sha256:ee45f4d69c4bbd21a27b60a7f1f32cbdcd34755cb613e5c4edcb58145394a0a3"},
+]
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=8.2)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx", "sphinx-inline-tabs", "sphinxcontrib-towncrier"]
+testing = ["flake8-2020", "jaraco.envs", "jaraco.path (>=3.2.0)", "mock", "paver", "pip (>=19.1)", "pytest (>=4.6)", "pytest-black (>=0.3.7) ; platform_python_implementation != \"PyPy\"", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-flake8", "pytest-mypy ; platform_python_implementation != \"PyPy\"", "pytest-virtualenv (>=1.2.7)", "pytest-xdist", "sphinx", "virtualenv (>=13.0.0)", "wheel"]
+
+[[package]]
 name = "shapely"
 version = "2.0.7"
 description = "Manipulation and analysis of geometric objects"
@@ -7183,4 +7199,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "74c2e9360d09d31c91311ffd7922a8050c539362b4bc87bdd2b0298cfe0d0a38"
+content-hash = "cc0b1c4bedc9eb7836e8d08af0e5caef00078909b9055671fe11c16e484b1dad"
