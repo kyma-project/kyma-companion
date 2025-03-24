@@ -44,7 +44,7 @@ jobs:
         run: pip install setuptools wheel
 
       - name: Install docx2txt
-        run: pip install --no-use-pep517 docx2txt==0.8
+        run: pip install --no-deps docx2txt==0.8
 
       - name: Install dependencies
         run: poetry install --with dev
