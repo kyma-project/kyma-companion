@@ -41,7 +41,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install docx2txt
-        run: pip install docx2txt==0.8
+        run: pip install docx2txt
 
       - name: Install dependencies
         run: poetry install --with dev
