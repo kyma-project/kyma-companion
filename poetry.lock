@@ -1009,7 +1009,7 @@ version = "0.8"
 description = "A pure python-based utility to extract text and images from docx files."
 optional = false
 python-versions = "*"
-groups = ["main", "test"]
+groups = ["test"]
 files = [
     {file = "docx2txt-0.8.tar.gz", hash = "sha256:2c06d98d7cfe2d3947e5760a57d924e3ff07745b379c8737723922e7009236e5"},
 ]
@@ -7183,4 +7183,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "8ba8bfc641e4e9fbf39445a69e98365001a7682586943829d14f7e9849cd4776"
+content-hash = "f41cf25f6c6225e839df20a0d728bd9e4f70d4821c82ea5d05321e025aae5b65"
