@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bullseye AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1592.6 AS builder
 
 # Set the working directory in the container
 WORKDIR /app
@@ -10,21 +10,12 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN apt update && apt dist-upgrade -y && apt install -y build-essential gcc clang 
-RUN pip install --no-cache-dir poetry>=2.1  \
-  && poetry config virtualenvs.create false \
-  && poetry install --without dev,test --no-interaction --no-ansi \
-  && pip uninstall -y poetry
-
-# Start a new stage for a smaller final image
-FROM python:3.12-slim-bullseye
-
-WORKDIR /app
-
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /app /app
-
-RUN apt update && apt dist-upgrade -y
+RUN apt update && apt install -y build-essential gcc python3.12 python3.12-venv python3.12-dev adduser
+RUN python3.12 -m venv ./venv
+RUN ./venv/bin/pip install --no-cache-dir poetry>=2.1
+RUN ./venv/bin/poetry config virtualenvs.create false
+RUN ./venv/bin/poetry install --without dev,test --no-interaction --no-ansi
+RUN ./venv/bin/pip uninstall -y poetry
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
