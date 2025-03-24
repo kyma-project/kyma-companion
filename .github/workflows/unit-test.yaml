@@ -40,11 +40,8 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install setuptools
-        run: pip install setuptools==58.2.0
-
       - name: Install docx2txt
-        run: pip install --no-binary docx2txt docx2txt==0.8
+        run: pip install git+https://github.com/tanweersalah/python-docx2txt.git
 
       - name: Install dependencies
         run: poetry install --with dev
