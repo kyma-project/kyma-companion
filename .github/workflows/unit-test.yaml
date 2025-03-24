@@ -41,10 +41,10 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install setuptools
-        run: pip install setuptools==57.0.0
+        run: pip install setuptools wheel
 
       - name: Install docx2txt
-        run: pip install docx2txt==0.8
+        run: pip install --no-use-pep517 docx2txt==0.8
 
       - name: Install dependencies
         run: poetry install --with dev
