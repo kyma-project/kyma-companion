@@ -32,14 +32,14 @@ dependencies = [
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.9.0,<0.10.0)",
-  "uvicorn (>=0.34.0,<0.35.0)"
+  "uvicorn (>=0.34.0,<0.35.0)",
 ]
 [tool.poetry]
 packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.5.3"
+deepeval = "^2.5.5"
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
