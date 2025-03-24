@@ -44,7 +44,7 @@ jobs:
         run: pip install setuptools==58.2.0
 
       - name: Install docx2txt
-        run: pip install docx2txt
+        run: pip install --no-binary docx2txt
 
       - name: Install dependencies
         run: poetry install --with dev
