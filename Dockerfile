@@ -15,6 +15,7 @@ RUN apt update &&  apt dist-upgrade&& apt install -y build-essential gcc python3
   && ./venv/bin/poetry install --without dev,test --no-interaction --no-ansi \
   && ./venv/bin/pip uninstall -y poetry
 
+RUN apt remove build-essential gcc -y && apt clean -y && apt autoremove -y && apt autoclean -y && rm -rf /var/lib/apt/lists/* 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
