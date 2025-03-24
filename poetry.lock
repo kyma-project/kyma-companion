@@ -1010,9 +1010,14 @@ description = "A pure python-based utility to extract text and images from docx 
 optional = false
 python-versions = "*"
 groups = ["test"]
-files = [
-    {file = "docx2txt-0.8.tar.gz", hash = "sha256:2c06d98d7cfe2d3947e5760a57d924e3ff07745b379c8737723922e7009236e5"},
-]
+files = []
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/tanweersalah/python-docx2txt.git"
+reference = "master"
+resolved_reference = "36c65ed363407fb2b257c28dfd5064e5f344df0f"
 
 [[package]]
 name = "dulwich"
@@ -7183,4 +7188,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "f41cf25f6c6225e839df20a0d728bd9e4f70d4821c82ea5d05321e025aae5b65"
+content-hash = "4f65fe0222f98d36a6ce449636a7e1e401ed0042ee06a50cdbc73ca3ed7f6af4"

@@ -40,6 +40,7 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
+docx2txt = { git = "https://github.com/tanweersalah/python-docx2txt.git", rev = "master" }
 deepeval = "^2.5.3"
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
