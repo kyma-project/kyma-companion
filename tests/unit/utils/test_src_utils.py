@@ -98,7 +98,7 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
             parse_k8s_token(token)
     else:
         decoded_token = parse_k8s_token(token)
-        assert decoded_token == expected_result
+        assert decoded_token == expected_result, test_description
 
 
 @pytest.mark.parametrize(
@@ -147,7 +147,7 @@ def test_get_user_identifier_from_token(
             get_user_identifier_from_token(token)
     else:
         user_identifier = get_user_identifier_from_token(token)
-        assert user_identifier == expected_result
+        assert user_identifier == expected_result, test_description
 
 
 # Sample PEM certificates for testing
