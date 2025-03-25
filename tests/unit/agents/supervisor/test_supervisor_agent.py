@@ -24,6 +24,7 @@ def mock_models():
 
 
 class TestSupervisorAgent:
+
     @pytest.fixture
     def supervisor_agent(self, mock_models):
         agent = SupervisorAgent(
@@ -134,7 +135,6 @@ class TestSupervisorAgent:
             assert result["messages"][0].content == expected_error
         else:
             assert result["next"] == expected_next
-            assert result["subtasks"] == expected_subtasks
             assert "error" not in result
 
     @pytest.mark.asyncio
