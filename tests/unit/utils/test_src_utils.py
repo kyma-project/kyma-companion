@@ -178,8 +178,10 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
         .issuer_name(issuer)
         .public_key(private_key.public_key())
         .serial_number(int(serial_number))
-        .not_valid_before(datetime.datetime.utcnow())
-        .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=365))
+        .not_valid_before(datetime.datetime.now(datetime.UTC))
+        .not_valid_after(
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365)
+        )
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256(), default_backend())
     )
