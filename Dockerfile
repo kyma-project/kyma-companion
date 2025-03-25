@@ -1,6 +1,4 @@
-FROM python:3.12-slim-bullseye AS builder
-
-# Set the working directory in the container
+FROM ghcr.io/gardenlinux/gardenlinux:1592.6 AS builder
 WORKDIR /app
 
 # Copy only necessary files
@@ -10,26 +8,16 @@ COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN apt update && apt dist-upgrade -y && apt install -y build-essential gcc clang 
-RUN pip install --no-cache-dir poetry>=2.1  \
-  && poetry config virtualenvs.create false \
-  && poetry install --without dev,test --no-interaction --no-ansi \
-  && pip uninstall -y poetry
+RUN apt update &&  apt dist-upgrade&& apt install -y build-essential gcc python3.12 python3.12-venv python3.12-dev adduser \
+  && python3.12 -m venv ./venv \
+  && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
+  && ./venv/bin/poetry config virtualenvs.create false \
+  && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
+  && ./venv/bin/pip uninstall -y poetry
 
-# Start a new stage for a smaller final image
-FROM python:3.12-slim-bullseye
-
-WORKDIR /app
-
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /app /app
-
-RUN apt update && apt dist-upgrade -y
-
+RUN apt remove build-essential gcc -y && apt clean -y && apt autoremove -y && apt autoclean -y && rm -rf /var/lib/apt/lists/* 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000
-
-# Run the command to start Uvicorn
 CMD ["fastapi", "run", "src/main.py", "--host", "0.0.0.0", "--port", "8000"]
