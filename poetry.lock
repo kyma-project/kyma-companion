@@ -1722,6 +1722,7 @@ files = [
     {file = "google_crc32c-1.7.0-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:6a40522958040051c755a173eb98c05ad4d64a6dd898888c3e5ccca2d1cbdcdc"},
     {file = "google_crc32c-1.7.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f714fe5cdf5007d7064c57cf7471a99e0cbafda24ddfa829117fc3baafa424f7"},
     {file = "google_crc32c-1.7.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f04e58dbe1bf0c9398e603a9be5aaa09e0ba7eb022a3293195d8749459a01069"},
+    {file = "google_crc32c-1.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:e545b51ddf97f604d30114f7c23eecaf4c06cd6c023ff1ae0b80dcd99af32833"},
     {file = "google_crc32c-1.7.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:364067b063664dd8d1fec75a3fe85edf05c46f688365269beccaf42ef5dfe889"},
     {file = "google_crc32c-1.7.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e1b0d6044799f6ac51d1cc2decb997280a83c448b3bef517a54b57a3b71921c0"},
     {file = "google_crc32c-1.7.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:02bc3295d26cd7666521fd6d5b7b93923ae1eb4417ddd3bc57185a5881ad7b96"},
@@ -2788,14 +2789,14 @@ ormsgpack = ">=1.8.0,<2.0.0"
 
 [[package]]
 name = "langgraph-prebuilt"
-version = "0.1.6"
+version = "0.1.7"
 description = "Library with high-level APIs for creating and executing LangGraph agents and tools."
 optional = false
 python-versions = "<4.0.0,>=3.9.0"
 groups = ["main"]
 files = [
-    {file = "langgraph_prebuilt-0.1.6-py3-none-any.whl", hash = "sha256:247c5819abf997b9070f5832d46a171c23d98684760652e3358403612ad91e03"},
-    {file = "langgraph_prebuilt-0.1.6.tar.gz", hash = "sha256:07f69e088705cd4c9b81e9725b67c10060871b392e500961e605d4cc605a1e13"},
+    {file = "langgraph_prebuilt-0.1.7-py3-none-any.whl", hash = "sha256:35eff90fb86edd0b026a6744942bc59bad4a2d82a482aa860ff8d081af423956"},
+    {file = "langgraph_prebuilt-0.1.7.tar.gz", hash = "sha256:5b086fad2ebfabe743bfbfa1e0248ce0d7d10eb0cc939b8bc7a9b41360b9d518"},
 ]
 
 [package.dependencies]
@@ -7250,4 +7251,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "19c002981cf0a36a14c9619f9d5df8c545ecf7634195d6c5ea08463f1dddfaac"
+content-hash = "522d334785f5d812dddf8628a7d54e2c96d4269f18eb1edfafa9209350c5f3a3"
