@@ -4,6 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
+from agents.common.utils import filter_pod_data
 from services.k8s import IK8sClient
 
 
@@ -27,6 +28,15 @@ def k8s_query_tool(
     For example, it will always remove the `data` field of a `Secret` object."""
     try:
         result = k8s_client.execute_get_api_request(uri)
+
+        if result.get("items"):
+            # Filter out undesired fields from each pod
+            result["items"] = [
+                filtered
+                for pod_data in result.get("items", [])
+                if (filtered := filter_pod_data(pod_data)) is not None
+            ]
+
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing k8s_query_tool with URI: {uri}."

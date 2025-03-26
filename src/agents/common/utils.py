@@ -1,3 +1,4 @@
+import json
 from collections.abc import Sequence
 from typing import Any
 
@@ -87,3 +88,23 @@ def should_continue(state: BaseModel) -> str:
     if hasattr(state, "error") and state.error:
         return END
     return CONTINUE
+
+
+def filter_pod_data(pod_data):
+    """
+    Filter Kubernetes pod data by removing managedFields and filtering out running pods.
+    """
+
+    # Create a deep copy to avoid modifying the original data
+    filtered_data = pod_data.copy()
+
+    # Remove managedFields from metadata
+    if "metadata" in filtered_data:
+        filtered_data["metadata"].pop("managedFields", None)
+
+    # Check if the pod is not in 'Running' phase
+    if filtered_data.get("status", {}).get("phase", "").lower() != "running":
+        return filtered_data
+
+    # Return None if the pod is in 'Running' phase
+    return None
