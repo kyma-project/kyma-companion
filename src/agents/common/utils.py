@@ -1,4 +1,3 @@
-import json
 from collections.abc import Sequence
 from typing import Any
 
@@ -90,18 +89,19 @@ def should_continue(state: BaseModel) -> str:
     return CONTINUE
 
 
-def filter_k8s_data(pod_data):
+def filter_k8s_data(k8s_data: dict) -> dict[str, Any] | None:
     """
     Filter Kubernetes data by removing managedFields and filtering out based on status.
     """
 
     # Create a deep copy to avoid modifying the original data
-    filtered_data = pod_data.copy()
+    filtered_data = k8s_data.copy()
 
     # Remove managedFields from metadata
     if "metadata" in filtered_data:
         filtered_data["metadata"].pop("managedFields", None)
 
+    # Resource Type - Pods
     # Check if the pod is not in 'Running' phase
     if filtered_data.get("status", {}).get("phase", "").lower() != "running":
         return filtered_data
@@ -113,7 +113,7 @@ def filter_k8s_data(pod_data):
     return None
 
 
-def filter_kyma_data(kyma_data):
+def filter_kyma_data(kyma_data: dict) -> dict[str, Any] | None:
     """
     Filter Kyma data by removing managedFields and filtering out based on status.
     """
@@ -125,6 +125,7 @@ def filter_kyma_data(kyma_data):
     if "metadata" in filtered_data:
         filtered_data["metadata"].pop("managedFields", None)
 
+    # Resource Type - APIStatusRule
     # Check if the APIRuleStatus is not in 'OK' status
     if (
         filtered_data.get("status", {}).get("APIRuleStatus", {}).get("code", "").lower()

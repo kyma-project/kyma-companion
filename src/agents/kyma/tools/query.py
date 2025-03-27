@@ -31,7 +31,7 @@ def kyma_query_tool(
     try:
         result = k8s_client.execute_get_api_request(uri)
 
-        if result.get("items"):
+        if isinstance(result, dict) and result.get("items"):
             # Filter out undesired fields from result
             result["items"] = [
                 filtered

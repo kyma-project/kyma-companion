@@ -16,9 +16,9 @@ from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
     compute_messages_token_count,
     compute_string_token_count,
-    filter_messages,
     filter_k8s_data,
     filter_kyma_data,
+    filter_messages,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
