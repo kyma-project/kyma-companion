@@ -79,17 +79,17 @@ class SubTask(BaseModel):
 class ResourceInformation(BaseModel):
     """K8s/Kyma resource information."""
 
-    resource_kind: str | None = None
-    resource_api_version: str | None = None
-    resource_name: str | None = None
+    kind: str | None = None
+    api_version: str | None = None
+    name: str | None = None
     namespace: str | None = None
 
     @classmethod
     def from_message(cls, message: Message) -> "ResourceInformation":
         return cls(
-            resource_kind=message.resource_kind,
-            resource_api_version=message.resource_api_version,
-            resource_name=message.resource_name,
+            kind=message.resource_kind,
+            api_version=message.resource_api_version,
+            name=message.resource_name,
             namespace=message.namespace,
         )
 

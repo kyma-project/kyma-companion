@@ -6,10 +6,11 @@ from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
 )
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams, ToolCall
+from deepeval.metrics import ToolCorrectnessMetric
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from agents.common.state import SubTask
+from agents.common.state import SubTask, ResourceInformation
 from agents.kyma.agent import KymaAgent
 from agents.kyma.state import KymaAgentState
 from integration.agents.fixtures.api_rule import (
@@ -78,6 +79,49 @@ def kyma_agent(app_models):
 @pytest.mark.parametrize(
     "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
+        # How to create an application with Kyma
+        # - Verifies agent correctly identifies tool calls
+        # # - Validates response is correct for the given user query
+        (
+            "Should return use search_kyma_doc tool for Kyma question",
+            KymaAgentState(
+                resource_information=ResourceInformation(
+                    namespace="kyma-app-serverless-syntax-err",
+                ),
+                agent_messages=[],
+                messages=[
+                    HumanMessage(
+                        content="how to create an application with Kyma and register external service"
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "how to create an application with Kyma",
+                        "task_title": "Fetching info on creating application",
+                        "assigned_to": "KymaAgent",
+                        "status": "pending",
+                    },
+                    {
+                        "description": "register external service",
+                        "task_title": "Fetching info on registering external service",
+                        "assigned_to": "KymaAgent",
+                        "status": "pending",
+                    },
+                ],
+                my_task=SubTask(
+                    description="how to create an application with Kyma",
+                    task_title="Fetching info on creating application",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),  # context
+            None,  # retrieval_context
+            "",  # expected_result
+            "search_kyma_doc",  # expected_tool_call
+            False,  # should_raise
+        ),
         # Test case for API Rule with wrong access strategy
         # - Verifies agent correctly identifies and explains API Rule validation error
         # - Checks agent uses both kyma_query_tool and search_kyma_doc
@@ -85,11 +129,14 @@ def kyma_agent(app_models):
         (
             "Should return right solution for API Rule with wrong access strategy",
             KymaAgentState(
+                resource_information=ResourceInformation(
+                    kind="APIRule",
+                    api_version="gateway.kyma-project.io/v1beta1",
+                    name="",
+                    namespace="kyma-app-apirule-broken",
+                ),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
@@ -152,11 +199,14 @@ def kyma_agent(app_models):
         (
             "Should return Kyma resource query tool call for the first user query call",
             KymaAgentState(
+                resource_information=ResourceInformation(
+                    kind="APIRule",
+                    api_version="gateway.kyma-project.io/v1beta1",
+                    name="",
+                    namespace="kyma-app-apirule-broken",
+                ),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
                 subtasks=[
@@ -186,11 +236,14 @@ def kyma_agent(app_models):
         (
             "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
             KymaAgentState(
+                resource_information=ResourceInformation(
+                    kind="APIRule",
+                    api_version="gateway.kyma-project.io/v1beta1",
+                    name="",
+                    namespace="kyma-app-apirule-broken",
+                ),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
                         content="",
@@ -238,11 +291,14 @@ def kyma_agent(app_models):
         (
             "Should return right solution for Serverless Function with syntax error",
             KymaAgentState(
+                resource_information=ResourceInformation(
+                    kind="Function",
+                    api_version="serverless.kyma-project.io/v1alpha2",
+                    name="func1",
+                    namespace="kyma-app-serverless-syntax-err",
+                ),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
                         content="",
@@ -306,11 +362,11 @@ def kyma_agent(app_models):
         (
             "Should return right solution for Serverless Function with no replicas",
             KymaAgentState(
+                resource_information=ResourceInformation(
+                    namespace="kyma-serverless-function-no-replicas",
+                ),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
-                    ),
                     HumanMessage(
                         content="Why is the pod of the serverless Function not ready?"
                     ),
@@ -372,9 +428,9 @@ def kyma_agent(app_models):
         (
             "Should return right solution for general Kyma question - only need Kyma Doc Search",
             KymaAgentState(
+                resource_information=ResourceInformation(),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",
@@ -419,9 +475,9 @@ def kyma_agent(app_models):
         (
             "Should make kyma doc tool search once when no relevant documentation is found",
             KymaAgentState(
+                resource_information=ResourceInformation(),
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",

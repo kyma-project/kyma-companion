@@ -13,7 +13,7 @@ from langchain_core.messages import (
     SystemMessage,
 )
 
-from agents.common.state import CompanionState, UserInput
+from agents.common.state import CompanionState, ResourceInformation
 from agents.graph import CompanionGraph
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
@@ -143,16 +143,15 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> Compani
     """Create a mock langgraph state for tests."""
     if subtasks is None:
         subtasks = []
-    user_input = UserInput(
-        query=messages[-1].content,
-        resource_kind=None,
-        resource_api_version=None,
-        resource_name=None,
+    resource_info = ResourceInformation(
+        kind=None,
+        api_version=None,
+        name=None,
         namespace=None,
     )
 
     return CompanionState(
-        input=user_input,
+        resource_information=resource_info,
         messages=messages,
         next="",
         subtasks=subtasks,
