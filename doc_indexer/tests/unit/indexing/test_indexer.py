@@ -73,7 +73,7 @@ def sample_documents() -> list[Document]:
             [("#", "Header 1")],
             [
                 "# Header\nContent 0".strip(),
-                "# Header 1\n" "Content 1\n" "## Header 2\n" "Content 2",
+                "# Header 1\nContent 1\n## Header 2\nContent 2",
                 "# Header one\nContent 3",
                 "# Another Header\nSome content\n## Subheader\nMore content",
                 "No headers here, just plain content.",
@@ -246,7 +246,6 @@ def test_index(
         patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
         patch("time.sleep") as mock_sleep,
     ):  # Add mock for sleep
-
         indexer.headers_to_split_on = headers_to_split_on
 
         if expected_exception:
