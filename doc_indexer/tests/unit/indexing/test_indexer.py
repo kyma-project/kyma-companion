@@ -279,6 +279,10 @@ def test_index(
                 mock_sleep.assert_has_calls([call(3)] * (len(expected_batches) - 1))
 
     if delete_error:
-        assert str(delete_error) in str(indexer.db.delete.side_effect), f"in test case '{test_case}'"
+        assert str(delete_error) in str(
+            indexer.db.delete.side_effect
+        ), f"in test case '{test_case}'"
     if add_error:
-        assert str(add_error) in str(indexer.db.add_documents.side_effect), f"in test case '{test_case}'"
+        assert str(add_error) in str(
+            indexer.db.add_documents.side_effect
+        ), f"in test case '{test_case}'"
