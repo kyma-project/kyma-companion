@@ -4,6 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
+from agents.common.utils import filter_kyma_data
 from services.k8s import IK8sClient
 
 
@@ -29,6 +30,15 @@ def kyma_query_tool(
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
         result = k8s_client.execute_get_api_request(uri)
+
+        if result.get("items"):
+            # Filter out undesired fields from result
+            result["items"] = [
+                filtered
+                for kyma_data in result.get("items", [])
+                if (filtered := filter_kyma_data(kyma_data)) is not None
+            ]
+
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing kyma_query_tool with URI: {uri}."

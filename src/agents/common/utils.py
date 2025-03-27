@@ -90,9 +90,9 @@ def should_continue(state: BaseModel) -> str:
     return CONTINUE
 
 
-def filter_pod_data(pod_data):
+def filter_k8s_data(pod_data):
     """
-    Filter Kubernetes pod data by removing managedFields and filtering out running pods.
+    Filter Kubernetes data by removing managedFields and filtering out based on status.
     """
 
     # Create a deep copy to avoid modifying the original data
@@ -106,5 +106,34 @@ def filter_pod_data(pod_data):
     if filtered_data.get("status", {}).get("phase", "").lower() != "running":
         return filtered_data
 
+    # TODO
+    # We need to implement different scenario for each resource type
+
     # Return None if the pod is in 'Running' phase
+    return None
+
+
+def filter_kyma_data(kyma_data):
+    """
+    Filter Kyma data by removing managedFields and filtering out based on status.
+    """
+
+    # Create a deep copy to avoid modifying the original data
+    filtered_data = kyma_data.copy()
+
+    # Remove managedFields from metadata
+    if "metadata" in filtered_data:
+        filtered_data["metadata"].pop("managedFields", None)
+
+    # Check if the APIRuleStatus is not in 'OK' status
+    if (
+        filtered_data.get("status", {}).get("APIRuleStatus", {}).get("code", "").lower()
+        != "ok"
+    ):
+        return filtered_data
+
+    # TODO
+    # We need to implement different scenario for each resource type
+
+    # Return None if in 'OK' status
     return None

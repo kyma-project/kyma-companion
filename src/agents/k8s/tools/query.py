@@ -4,7 +4,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 
-from agents.common.utils import filter_pod_data
+from agents.common.utils import filter_k8s_data
 from services.k8s import IK8sClient
 
 
@@ -30,11 +30,11 @@ def k8s_query_tool(
         result = k8s_client.execute_get_api_request(uri)
 
         if result.get("items"):
-            # Filter out undesired fields from each pod
+            # Filter out undesired fields from result
             result["items"] = [
                 filtered
-                for pod_data in result.get("items", [])
-                if (filtered := filter_pod_data(pod_data)) is not None
+                for k8s_data in result.get("items", [])
+                if (filtered := filter_k8s_data(k8s_data)) is not None
             ]
 
         if not isinstance(result, list) and not isinstance(result, dict):

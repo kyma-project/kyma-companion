@@ -17,6 +17,8 @@ from agents.common.utils import (
     compute_messages_token_count,
     compute_string_token_count,
     filter_messages,
+    filter_k8s_data,
+    filter_kyma_data,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
@@ -332,3 +334,141 @@ def test_compute_string_token_count(text, model_type, expected_token_count):
 )
 def test_compute_messages_token_count(msgs, model_type, expected_token_count):
     assert compute_messages_token_count(msgs, model_type) == expected_token_count
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_output",
+    [
+        # Pod in Running phase should return None
+        (
+            {
+                "metadata": {"name": "pod1", "managedFields": [{"key": "value"}]},
+                "status": {"phase": "Running"},
+            },
+            None,
+        ),
+        # Pod not in Running phase should return data without managedFields
+        (
+            {
+                "metadata": {"name": "pod2", "managedFields": [{"key": "value"}]},
+                "status": {"phase": "Pending"},
+            },
+            {"metadata": {"name": "pod2"}, "status": {"phase": "Pending"}},
+        ),
+        # Pod with no phase should return data without managedFields
+        (
+            {
+                "metadata": {"name": "pod3", "managedFields": [{"key": "value"}]},
+                "status": {},
+            },
+            {"metadata": {"name": "pod3"}, "status": {}},
+        ),
+        # Pod with no status should return data without managedFields
+        (
+            {"metadata": {"name": "pod4", "managedFields": [{"key": "value"}]}},
+            {"metadata": {"name": "pod4"}},
+        ),
+        # Pod with no managedFields should work normally
+        (
+            {"metadata": {"name": "pod5"}, "status": {"phase": "Failed"}},
+            {"metadata": {"name": "pod5"}, "status": {"phase": "Failed"}},
+        ),
+        # Case-insensitive check for Running phase
+        (
+            {"metadata": {"name": "pod6"}, "status": {"phase": "running"}},  # lowercase
+            None,
+        ),
+        # Empty input should return empty output
+        ({}, {}),
+    ],
+)
+def test_filter_k8s_data(input_data, expected_output):
+
+    result = filter_k8s_data(input_data)
+
+    if expected_output is None:
+        assert result is None
+    else:
+        assert result == expected_output
+        # Verify managedFields is always removed when metadata exists
+        if "metadata" in input_data and "managedFields" in input_data["metadata"]:
+            assert "managedFields" not in result["metadata"]
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_output",
+    [
+        # APIRuleStatus is 'OK' (case-insensitive) should return None
+        (
+            {
+                "metadata": {"name": "kyma1", "managedFields": [{"key": "value"}]},
+                "status": {"APIRuleStatus": {"code": "OK"}},
+            },
+            None,
+        ),
+        # APIRuleStatus is not 'OK' should return data without managedFields
+        (
+            {
+                "metadata": {"name": "kyma2", "managedFields": [{"key": "value"}]},
+                "status": {"APIRuleStatus": {"code": "Error"}},
+            },
+            {
+                "metadata": {"name": "kyma2"},
+                "status": {"APIRuleStatus": {"code": "Error"}},
+            },
+        ),
+        # No APIRuleStatus code should return data without managedFields
+        (
+            {
+                "metadata": {"name": "kyma3", "managedFields": [{"key": "value"}]},
+                "status": {"APIRuleStatus": {}},
+            },
+            {"metadata": {"name": "kyma3"}, "status": {"APIRuleStatus": {}}},
+        ),
+        # No APIRuleStatus should return data without managedFields
+        (
+            {
+                "metadata": {"name": "kyma4", "managedFields": [{"key": "value"}]},
+                "status": {},
+            },
+            {"metadata": {"name": "kyma4"}, "status": {}},
+        ),
+        # No status should return data without managedFields
+        (
+            {"metadata": {"name": "kyma5", "managedFields": [{"key": "value"}]}},
+            {"metadata": {"name": "kyma5"}},
+        ),
+        # No managedFields should work normally
+        (
+            {
+                "metadata": {"name": "kyma6"},
+                "status": {"APIRuleStatus": {"code": "Error"}},
+            },
+            {
+                "metadata": {"name": "kyma6"},
+                "status": {"APIRuleStatus": {"code": "Error"}},
+            },
+        ),
+        # Different case for 'OK' should still return None
+        (
+            {
+                "metadata": {"name": "kyma7"},
+                "status": {"APIRuleStatus": {"code": "ok"}},  # lowercase
+            },
+            None,
+        ),
+        # Empty input should return empty output
+        ({}, {}),
+    ],
+)
+def test_filter_kyma_data(input_data, expected_output):
+
+    result = filter_kyma_data(input_data)
+
+    if expected_output is None:
+        assert result is None
+    else:
+        assert result == expected_output
+        # Verify managedFields is always removed when metadata exists
+        if "metadata" in input_data and "managedFields" in input_data["metadata"]:
+            assert "managedFields" not in result.get("metadata", {})
