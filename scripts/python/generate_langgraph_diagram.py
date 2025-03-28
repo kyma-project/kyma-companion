@@ -37,7 +37,7 @@ from agents.kyma.agent import KymaAgent
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory, ModelType  # noqa: E402
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PORT
+from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
 if not os.getenv("CONFIG_PATH"):
     os.environ["CONFIG_PATH"] = "config/config.json"
@@ -46,7 +46,7 @@ model_factory = ModelFactory(config=config)
 models = model_factory.create_models()
 
 memory = AsyncRedisSaver.from_conn_info(
-    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER
+    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER, password=REDIS_PASSWORD
 )
 graph = CompanionGraph(models, memory)
 
