@@ -1,8 +1,11 @@
 PLANNER = "Planner"
 
 SUMMARIZATION = "Summarization"
+INITIAL_SUMMARIZATION = "InitialSummarization"
 
 FINALIZER = "Finalizer"
+
+GATEKEEPER = "Gatekeeper"
 
 EXIT = "Exit"
 

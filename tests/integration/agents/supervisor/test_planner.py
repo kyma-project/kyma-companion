@@ -2,11 +2,9 @@ import pytest
 from deepeval import evaluate
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
-    conversation_sample_2,
-    conversation_sample_5,
     conversation_sample_6,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
@@ -38,18 +36,6 @@ def planner_correctness_metric(evaluator_model):
     "messages, expected_answer, general_query",
     [
         (
-            [
-                # tests if a general query is immediately answered by the planner
-                SystemMessage(
-                    content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(content="What is the capital of Germany?"),
-            ],
-            '{"subtasks":null,"response":"The capital of Germany is Berlin."}',
-            True,
-        ),
-        (
             # tests if a Kyma related query is assigned to the Kyma agent
             [
                 SystemMessage(
@@ -58,7 +44,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kyma?"),
             ],
-            '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent" , "status" : "pending"}] , "response": null }',
+            '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent" , "status" : "pending"}] }',
             False,
         ),
         (
@@ -70,25 +56,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kyma API Rule?"),
             ],
-            '{"subtasks": [{ "description": "What is Kyma API Rule?", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
-            False,
-        ),
-        (
-            # tests if a Kubernetes related query is assigned to the Kubernetes agent
-            [
-                AIMessage(
-                    content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
-                    "`CrashLoopBackOff` state. The last termination reason was `StartError`"
-                    " with the message indicating a failure to create the containerd task "
-                    "due to a context cancellation."
-                ),
-                SystemMessage(
-                    content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(content="why is the pod failing?"),
-            ],
-            "{'subtasks': None , 'response': 'pods is failing due to a context cancellation.'}",
+            '{"subtasks": [{ "description": "What is Kyma API Rule?", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
         ),
         (
@@ -100,7 +68,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
-            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"}] , "response": null}',
+            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"}] }',
             False,
         ),
         (
@@ -113,7 +81,7 @@ def planner_correctness_metric(evaluator_model):
                 HumanMessage(content="What is Kubernetes and Explain Kyma function"),
             ],
             '{"subtasks": [{ "description": "What is Kubernetes",  "assigned_to": "KubernetesAgent","status" : "pending"},'
-            '{"description": "Explain Kyma function",  "assigned_to": "KymaAgent","status" : "pending"}] , "response": null}',
+            '{"description": "Explain Kyma function",  "assigned_to": "KymaAgent","status" : "pending"}] }',
             False,
         ),
         (
@@ -128,7 +96,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
             ],
             '{ "subtasks": [{"description": "Create a hello world app", "assigned_to": "Common", "status" : "pending"},'
-            '{"description": "deploy the app with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
+            '{"description": "deploy the app with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
         ),
         (
@@ -143,7 +111,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
             ],
             '{ "subtasks": [{ "description": "Create a hello world app with python", "assigned_to": "Common", "status" : "pending"},'
-            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] , "response": null}',
+            '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
         ),
         (
@@ -158,7 +126,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
             ],
             '{ "subtasks": [{"description": "How to enable eventing module?", "assigned_to": "KymaAgent", "status" : "pending"},'
-            '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent", "status" :"pending"}] , "response": null}',
+            '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent", "status" :"pending"}]}',
             False,
         ),
         (
@@ -174,7 +142,7 @@ def planner_correctness_metric(evaluator_model):
             ],
             '{ "subtasks": [{"description": "How to create a Python app that performs Discounted Cash Flow (DCF) calculations?", "assigned_to": "Common", "status" : "pending"},'
             '{"description": "How to create a Kyma function?", "assigned_to": "KymaAgent", "status" :"pending"},'
-            '{"description": "How to create a k8s service for this function?", "assigned_to": "KubernetesAgent", "status" :"pending"}] , "response": null}',
+            '{"description": "How to create a k8s service for this function?", "assigned_to": "KubernetesAgent", "status" :"pending"}] }',
             False,
         ),
     ],
@@ -259,23 +227,6 @@ def planner_conversation_history_metric(evaluator_model):
     "messages, query, expected_answer, subtasks",
     [
         (
-            # answer the question based on the conversation history
-            conversation_sample_2,
-            "what was the issue?",
-            "The serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` is configured "
-            "with `replicas: 0`, which means it is not set to run any pods. This is why the pod is not ready, "
-            "as there are no replicas specified to be running.",
-            None,
-        ),
-        (
-            # answer the question based on the conversation history
-            conversation_sample_5,
-            "what was the cause?",
-            "The Pod `pod-check` in the `bitnami-role-missing` namespace is in an error state because "
-            "the container `kubectl-container` within this Pod terminated with an exit code of 1. ",
-            None,
-        ),
-        (
             # given the conversation, the planner knows that the user wants to expose the function
             # and assigns the task to the Kyma agent
             conversation_sample_6,
@@ -326,59 +277,26 @@ async def test_planner_with_conversation_history(
     result = await companion_graph.supervisor_agent._invoke_planner(state)
 
     # Then: We evaluate the response using deepeval metrics
-    if subtasks is None:
-        # Verify planner provided a direct response without subtasks
-        assert (
-            result.response is not None
-        ), "Expected planner to provide a direct response"
-        assert (
-            not result.subtasks
-        ), "Expected no subtasks since the answer is from the conversation history"
+    assert (
+        result.subtasks is not None
+    ), "Expected subtasks to be the same as the expected subtasks"
 
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=str(all_messages),
-                    actual_output=result.response,
-                    expected_output=expected_answer,
-                )
-            ]
-        )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[planner_conversation_history_metric],
-            run_async=False,
-        )
-        # assert that all metrics passed
-
-        assert all(
-            result.success for result in results.test_results
-        ), "Not all metrics passed"
-    else:
-        # verify that the planner did not provide a direct response
-        assert (
-            result.response is None
-        ), "Expected planner should not provide a direct response"
-        assert (
-            result.subtasks is not None
-        ), "Expected subtasks to be the same as the expected subtasks"
-
-        # verify that the subtasks are the same as the expected subtasks
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=str(all_messages),
-                    actual_output=str(result.subtasks),
-                    expected_output=str(subtasks),
-                )
-            ]
-        )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[planner_conversation_history_metric],
-            run_async=False,
-        )
-        # assert that all metrics passed
-        assert all(
-            result.success for result in results.test_results
-        ), "Not all metrics passed"
+    # verify that the subtasks are the same as the expected subtasks
+    test_case = ConversationalTestCase(
+        turns=[
+            LLMTestCase(
+                input=str(all_messages),
+                actual_output=str(result.subtasks),
+                expected_output=str(subtasks),
+            )
+        ]
+    )
+    results = evaluate(
+        test_cases=[test_case],
+        metrics=[planner_conversation_history_metric],
+        run_async=False,
+    )
+    # assert that all metrics passed
+    assert all(
+        result.success for result in results.test_results
+    ), "Not all metrics passed"
