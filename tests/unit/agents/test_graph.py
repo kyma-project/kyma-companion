@@ -299,12 +299,6 @@ class TestCompanionGraph:
                 [HumanMessage(content="What is Kyma?")],
                 '{"direct_response" :"", "forward_query" : true}',
                 {
-                    "messages": [
-                        AIMessage(
-                            content="",
-                            name=GATEKEEPER,
-                        )
-                    ],
                     "subtasks": [],
                     "next": SUPERVISOR,
                 },
