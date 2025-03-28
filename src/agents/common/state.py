@@ -62,10 +62,6 @@ class SubTask(BaseModel):
         """Check if the task is error status."""
         return self.status == SubTaskStatus.ERROR
 
-    def is_common_subtask(self) -> Any:
-        """Check if the task is assigned to common agent."""
-        return self.assigned_to == COMMON
-
 
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
 # Currently, we are using pydantic v1.

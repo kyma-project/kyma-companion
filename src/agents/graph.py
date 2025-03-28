@@ -260,12 +260,6 @@ class CompanionGraph:
                 logger.debug("Gatekeeper node forwarding the query")
                 return {
                     NEXT: SUPERVISOR,
-                    MESSAGES: [
-                        AIMessage(
-                            content="",
-                            name=GATEKEEPER,
-                        )
-                    ],
                     SUBTASKS: [],
                 }
             logger.debug("Gatekeeper node responding directly")

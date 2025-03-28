@@ -16,13 +16,14 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
 @pytest.fixture
 def gatekeeper_correctness_metric(evaluator_model):
     return ConversationalGEval(
-        name="Correctness",
+        name="Semantic Similarity",
         evaluation_steps=[
-            "Determine whether the actual output is similar to expected output.",
-            "Irrespective of the input",
+            """
+            Evaluate whether two answers are semantically similar or convey the same meaning.
+            Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
+            """,
         ],
         evaluation_params=[
-            LLMTestCaseParams.INPUT,
             LLMTestCaseParams.EXPECTED_OUTPUT,
             LLMTestCaseParams.ACTUAL_OUTPUT,
         ],
