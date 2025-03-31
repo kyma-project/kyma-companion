@@ -70,5 +70,6 @@ def k8s_query_tool_with_filter(
         return result
     except Exception as e:
         raise Exception(
-            f"failed executing k8s_query_tool with" f"raised the following error: {e}"
+            f"failed executing k8s_query_tool_with_filter with"
+            f"raised the following error: {e}"
         ) from e
