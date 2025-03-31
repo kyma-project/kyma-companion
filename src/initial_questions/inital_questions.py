@@ -2,7 +2,6 @@ import typing
 from typing import Protocol
 
 import tiktoken
-import yaml
 from langchain_core.prompts import PromptTemplate
 
 from agents.common.data import Message
@@ -12,7 +11,6 @@ from initial_questions.prompts import INITIAL_QUESTIONS_PROMPT
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.models.factory import IModel
-from utils.utils import is_empty_str, is_non_empty_str
 
 logger = get_logger(__name__)
 

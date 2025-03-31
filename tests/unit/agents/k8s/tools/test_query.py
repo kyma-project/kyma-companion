@@ -6,8 +6,7 @@ from langchain_core.messages import AIMessage
 from langgraph.prebuilt import ToolNode
 
 from agents.common.data import Message
-from agents.common.utils import get_relevant_context_from_k8s_cluster
-from agents.k8s.tools.query import k8s_query_tool, k8s_overview_query_tool
+from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
 from services.k8s import IK8sClient
 
 
@@ -173,7 +172,7 @@ def sample_namespace_overview():
     ],
 )
 @patch("agents.k8s.tools.query.get_relevant_context_from_k8s_cluster")
-def test_k8s_query_tool_with_filter(
+def test_k8s_overview_query_tool(
     mock_get_context,
     given_namespace,
     given_resource_kind,
@@ -201,7 +200,7 @@ def test_k8s_query_tool_with_filter(
                     content="",
                     tool_calls=[
                         {
-                            "name": "k8s_query_tool_with_filter",
+                            "name": "k8s_overview_query_tool",
                             "args": {
                                 "namespace": given_namespace,
                                 "resource_kind": given_resource_kind,
