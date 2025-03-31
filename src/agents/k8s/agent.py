@@ -9,7 +9,7 @@ from agents.common.constants import (
 from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
-from agents.k8s.tools.query import k8s_query_tool, k8s_query_tool_with_filter
+from agents.k8s.tools.query import k8s_query_tool, k8s_overview_query_tool
 from utils.models.factory import IModel
 
 
@@ -17,7 +17,7 @@ class KubernetesAgent(BaseAgent):
     """Kubernetes agent class."""
 
     def __init__(self, model: IModel):
-        tools = [k8s_query_tool, fetch_pod_logs_tool, k8s_query_tool_with_filter]
+        tools = [k8s_query_tool, fetch_pod_logs_tool, k8s_overview_query_tool]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", K8S_AGENT_PROMPT),

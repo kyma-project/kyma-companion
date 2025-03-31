@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode
 
 from agents.common.data import Message
 from agents.common.utils import get_relevant_context_from_k8s_cluster
-from agents.k8s.tools.query import k8s_query_tool, k8s_query_tool_with_filter
+from agents.k8s.tools.query import k8s_query_tool, k8s_overview_query_tool
 from services.k8s import IK8sClient
 
 
@@ -183,7 +183,7 @@ def test_k8s_query_tool_with_filter(
     expected_error,
 ):
     # Given
-    tool_node = ToolNode([k8s_query_tool_with_filter])
+    tool_node = ToolNode([k8s_overview_query_tool])
     k8s_client = Mock(spec=IK8sClient)
 
     # Configure the mock

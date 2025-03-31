@@ -48,7 +48,7 @@ def k8s_query_tool(
 
 
 @tool()
-def k8s_query_tool_with_filter(
+def k8s_overview_query_tool(
     namespace: str,
     resource_kind: str,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
