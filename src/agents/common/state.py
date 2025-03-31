@@ -23,6 +23,16 @@ class SubTaskStatus(str, Enum):
     ERROR = "error"
 
 
+class GatekeeperResponse(BaseModel):
+    """Gatekeeper response data model."""
+
+    direct_response: str = Field(description="For direct response.")
+    forward_query: bool = Field(
+        default=False,
+        description="For forwarding query",
+    )
+
+
 class SubTask(BaseModel):
     """Sub-task data model."""
 
@@ -83,11 +93,6 @@ class Plan(BaseModel):
 
     subtasks: list[SubTask] | None = Field(
         description="different subtasks for user query, should be in sorted order"
-    )
-
-    response: str | None = Field(
-        description="direct response to the user query if the query is either irrelevant to Kyma and Kubernetes or "
-        "if the answer is already in the conversation history"
     )
 
 
