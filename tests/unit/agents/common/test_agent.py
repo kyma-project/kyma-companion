@@ -184,7 +184,13 @@ class TestBaseAgent:
             ),
         ],
     )
-    async def test_invoke_chain(self, test_case: str, mock_models, given_state: TestAgentState, expected_inputs: dict):
+    async def test_invoke_chain(
+        self,
+        test_case: str,
+        mock_models,
+        given_state: TestAgentState,
+        expected_inputs: dict,
+    ):
         # Given
         agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = Mock()
@@ -335,7 +341,9 @@ class TestBaseAgent:
             ),
         ],
     )
-    def test_subtask_selector_node(self, mock_models, given_state: TestAgentState, expected_output: dict):
+    def test_subtask_selector_node(
+        self, mock_models, given_state: TestAgentState, expected_output: dict
+    ):
         agent = TestAgent(mock_models[ModelType.GPT4O])
         assert agent._subtask_selector_node(given_state) == expected_output
 
@@ -491,7 +499,9 @@ class TestBaseAgent:
                             additional_kwargs={"owner": "KubernetesAgent"},
                             tool_calls=[
                                 {
-                                    "args": {"uri": "/api/v1/namespaces/default/secrets/test-user1-admin"},
+                                    "args": {
+                                        "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
+                                    },
                                     "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
                                     "name": "k8s_query_tool",
                                     "type": "tool_call",
