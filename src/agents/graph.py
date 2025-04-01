@@ -59,6 +59,7 @@ from utils.settings import (
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
+from langchain.prompts import PromptTemplate
 
 logger = get_logger(__name__)
 

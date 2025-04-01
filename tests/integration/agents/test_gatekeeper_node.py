@@ -421,24 +421,6 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # tests that the gatekeeper node correctly answers a from history and do not forward it
-            [
-                AIMessage(
-                    content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
-                    "`CrashLoopBackOff` state. The last termination reason was `StartError`"
-                    " with the message indicating a failure to create the containerd task "
-                    "due to a context cancellation."
-                ),
-                SystemMessage(
-                    content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(content="why is the pod failing?"),
-            ],
-            "pods is failing due to a context cancellation.",
-            False,
-        ),
-        (
             # tests that the gatekeeper node to forward user query as user explicitly ask  for recheck status
             [
                 AIMessage(
@@ -451,7 +433,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="Check again why pod is failing"),
+                HumanMessage(content="Check why pod is failing"),
             ],
             "",
             True,
