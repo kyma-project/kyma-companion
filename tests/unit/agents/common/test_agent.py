@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
@@ -53,20 +52,6 @@ def test_agent() -> BaseAgent:
         agent_prompt=mock_agent_prompt,
         state_class=TestAgentState,
     )
-
-
-@pytest.fixture
-def mock_models():
-    gpt40 = MagicMock(spec=IModel)
-    gpt40.name = ModelType.GPT4O
-
-    text_embedding_3_large = MagicMock(spec=Embeddings)
-    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
-
-    return {
-        ModelType.GPT4O: gpt40,
-        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
-    }
 
 
 @pytest.fixture
