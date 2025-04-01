@@ -40,7 +40,6 @@ class TestAgentState(BaseAgentState):
     """Test agent state class."""
 
     k8s_client: IK8sClient | None = None  # Make k8s_client optional with default None
-
     remaining_steps: RemainingSteps = 25
 
 
@@ -73,11 +72,6 @@ def mock_models():
 
 @pytest.fixture
 def mock_graph():
-    return Mock()
-
-
-@pytest.fixture
-def mock_config():
     return Mock()
 
 
@@ -138,10 +132,10 @@ class TestBaseAgent:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "given_state, expected_inputs",
+        "test_case, given_state, expected_inputs",
         [
-            # Test case when agent_messages is empty, should use from messages field.
             (
+                "Test case when agent_messages is empty, should use from messages field.",
                 TestAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
@@ -163,8 +157,8 @@ class TestBaseAgent:
                     "query": "test 1",
                 },
             ),
-            # Test case when agent_messages is non-empty, should use get_agent_messages_including_summary
             (
+                "Test case when agent_messages is non-empty, should use get_agent_messages_including_summary.",
                 TestAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
@@ -191,18 +185,23 @@ class TestBaseAgent:
         ],
     )
     async def test_invoke_chain(
-        self, mock_models, given_state: TestAgentState, expected_inputs: dict
+        self,
+        test_case: str,
+        mock_models,
+        given_state: TestAgentState,
+        expected_inputs: dict,
     ):
         # Given
         agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = Mock()
         agent.chain.ainvoke = AsyncMock()
 
+        # When
         await agent._invoke_chain(given_state, {})
 
         # Then
         # Get the actual call arguments
-        assert agent.chain.ainvoke.call_count == 1
+        assert agent.chain.ainvoke.call_count == 1, test_case
         actual_call = agent.chain.ainvoke.call_args
         actual_input = actual_call.kwargs["input"]
 
@@ -211,7 +210,7 @@ class TestBaseAgent:
         expected_messages = expected_inputs.get("agent_messages", [])
         for msg in actual_messages + expected_messages:
             msg.id = None
-        assert actual_input == expected_inputs
+        assert actual_input == expected_inputs, test_case
 
     def test_build_graph(self, mock_models):
         # Given
@@ -221,7 +220,7 @@ class TestBaseAgent:
         graph = agent._build_graph(TestAgentState)
 
         # Then
-        # check nodes.
+        # Check nodes.
         node_number = 6
         assert len(graph.nodes) == node_number
         assert graph.nodes.keys() == {
@@ -232,7 +231,7 @@ class TestBaseAgent:
             "finalizer",
             "Summarization",
         }
-        # check edges.
+        # Check edges.
         edge_number = 3
         assert len(graph.builder.edges) == edge_number
         assert graph.builder.edges == {
@@ -240,7 +239,7 @@ class TestBaseAgent:
             ("finalizer", "__end__"),
             ("tools", "Summarization"),
         }
-        # check conditional edges.
+        # Check conditional edges.
         branch_number = 3
         assert len(graph.builder.branches) == branch_number
 
@@ -452,8 +451,8 @@ class TestBaseAgent:
         self,
         mock_models,
         mock_config,
-        given_invoke_response: BaseMessage,
-        given_invoke_error: Exception,
+        given_invoke_response: BaseMessage | None,
+        given_invoke_error: Exception | None,
         given_state: TestAgentState,
         expected_output: dict,
         expected_invoke_inputs: dict,
@@ -462,9 +461,9 @@ class TestBaseAgent:
         agent = TestAgent(mock_models[ModelType.GPT4O])
         agent.chain = AsyncMock()
         agent._invoke_chain = AsyncMock()
-        if given_invoke_response is not None:
+        if given_invoke_response:
             agent._invoke_chain.return_value = given_invoke_response
-        elif given_invoke_error is not None:
+        elif given_invoke_error:
             agent._invoke_chain.side_effect = given_invoke_error
 
         # When
@@ -472,7 +471,7 @@ class TestBaseAgent:
         assert result == expected_output
 
         # Test if status is updated to ERROR when there is an exception
-        if given_invoke_error is not None:
+        if given_invoke_error and given_state.my_task and given_state.my_task.status:
             assert given_state.my_task.status == SubTaskStatus.ERROR
 
         # Then
@@ -539,5 +538,9 @@ class TestBaseAgent:
         agent.chain = MagicMock()
 
         # When
-        assert agent._finalizer_node(given_state, mock_config) == expected_output
-        assert given_state.my_task.status == SubTaskStatus.COMPLETED
+        actual_output = agent._finalizer_node(state=given_state, config=Mock())
+
+        # Then
+        assert actual_output == expected_output
+        if given_state.my_task and given_state.my_task.status:
+            assert given_state.my_task.status == SubTaskStatus.COMPLETED
