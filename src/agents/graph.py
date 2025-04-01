@@ -46,6 +46,7 @@ from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
     GATEKEEPER_PROMPT,
+    GATEKEEPER_INSTRUCTIONS,
 )
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
@@ -224,6 +225,7 @@ class CompanionGraph:
                 ("system", GATEKEEPER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
                 ("human", "query: {query}"),
+                ("system", GATEKEEPER_INSTRUCTIONS),
             ]
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
