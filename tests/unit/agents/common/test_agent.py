@@ -42,7 +42,7 @@ class TestAgentState(BaseAgentState):
     remaining_steps: RemainingSteps = 25
 
 
-def test_agent() -> BaseAgent:
+def mock_agent() -> BaseAgent:
     mock_model = MagicMock(spec=IModel)
     mock_model.name = ModelType.GPT4O
     return BaseAgent(
@@ -69,7 +69,7 @@ class TestBaseAgent:
 
     def test_agent_init(self):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
 
         # Then
         assert agent.name == "KubernetesAgent"
@@ -79,7 +79,7 @@ class TestBaseAgent:
 
     def test_agent_node(self):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
 
         # When
         result = agent.agent_node()
@@ -90,7 +90,7 @@ class TestBaseAgent:
 
     def test_create_chain(self):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
         excepted_amount_steps = 2
         expected_amount_messages = 3
 
@@ -176,7 +176,7 @@ class TestBaseAgent:
         expected_inputs: dict,
     ):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
         agent.chain = Mock()
         agent.chain.ainvoke = AsyncMock()
 
@@ -198,7 +198,7 @@ class TestBaseAgent:
 
     def test_build_graph(self):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
 
         # When
         graph = agent._build_graph(TestAgentState)
@@ -329,7 +329,7 @@ class TestBaseAgent:
         self, given_state: TestAgentState, expected_output: dict
     ):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
 
         # Then
         assert agent._subtask_selector_node(given_state) == expected_output
@@ -444,7 +444,7 @@ class TestBaseAgent:
         expected_invoke_inputs: dict,
     ):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
         agent.chain = AsyncMock()
         agent._invoke_chain = AsyncMock()
         if given_invoke_response:
@@ -519,7 +519,7 @@ class TestBaseAgent:
         expected_output: dict,
     ):
         # Given
-        agent = test_agent()
+        agent = mock_agent()
         agent.chain = MagicMock()
 
         # When
