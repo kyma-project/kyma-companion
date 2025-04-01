@@ -142,7 +142,7 @@ class BaseAgentState(BaseModel):
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
-    k8s_client: IK8sClient
+    k8s_client: IK8sClient | None = None
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]

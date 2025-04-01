@@ -16,7 +16,6 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
-from langgraph.managed import RemainingSteps
 
 from agents.common.agent import BaseAgent
 from agents.common.constants import AGENT_MESSAGES, ERROR
@@ -35,13 +34,6 @@ mock_agent_prompt = ChatPromptTemplate.from_messages(
 )
 
 
-class TestAgentState(BaseAgentState):
-    """Test agent state class."""
-
-    k8s_client: IK8sClient | None = None  # Make k8s_client optional with default None
-    remaining_steps: RemainingSteps = 25
-
-
 def mock_agent() -> BaseAgent:
     mock_model = MagicMock(spec=IModel)
     mock_model.name = ModelType.GPT4O
@@ -50,7 +42,7 @@ def mock_agent() -> BaseAgent:
         model=mock_model,
         tools=[k8s_query_tool, fetch_pod_logs_tool],
         agent_prompt=mock_agent_prompt,
-        state_class=TestAgentState,
+        state_class=BaseAgentState,
     )
 
 
@@ -121,7 +113,7 @@ class TestBaseAgent:
         [
             (
                 "Test case when agent_messages is empty, should use from messages field.",
-                TestAgentState(
+                BaseAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
                     agent_messages=[],
@@ -132,6 +124,7 @@ class TestBaseAgent:
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
+                    remaining_steps=25,
                 ),
                 {
                     "agent_messages": [
@@ -144,7 +137,7 @@ class TestBaseAgent:
             ),
             (
                 "Test case when agent_messages is non-empty, should use get_agent_messages_including_summary.",
-                TestAgentState(
+                BaseAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
                     agent_messages=[HumanMessage(content="What is deployment?")],
@@ -156,6 +149,7 @@ class TestBaseAgent:
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
+                    remaining_steps=25,
                 ),
                 {
                     "agent_messages": [
@@ -172,7 +166,7 @@ class TestBaseAgent:
     async def test_invoke_chain(
         self,
         test_case: str,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_inputs: dict,
     ):
         # Given
@@ -201,7 +195,7 @@ class TestBaseAgent:
         agent = mock_agent()
 
         # When
-        graph = agent._build_graph(TestAgentState)
+        graph = agent._build_graph(BaseAgentState)
 
         # Then
         # Check nodes.
@@ -232,7 +226,8 @@ class TestBaseAgent:
         [
             # Test case when there is a subtask assigned to the agent.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -261,7 +256,8 @@ class TestBaseAgent:
             ),
             # Test case when there is no subtask assigned to the agent.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -287,7 +283,8 @@ class TestBaseAgent:
             ),
             # Test case when there all subtasks assigned to the agent are completed.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -326,7 +323,7 @@ class TestBaseAgent:
         ],
     )
     def test_subtask_selector_node(
-        self, given_state: TestAgentState, expected_output: dict
+        self, given_state: BaseAgentState, expected_output: dict
     ):
         # Given
         agent = mock_agent()
@@ -342,7 +339,8 @@ class TestBaseAgent:
             (
                 AIMessage(content="This is a dummy response from model."),
                 None,
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -370,7 +368,8 @@ class TestBaseAgent:
             (
                 None,
                 ValueError("This is a dummy exception from model."),
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -408,7 +407,8 @@ class TestBaseAgent:
                     ],
                 ),
                 None,
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -439,7 +439,7 @@ class TestBaseAgent:
         mock_config,
         given_invoke_response: BaseMessage | None,
         given_invoke_error: Exception | None,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_output: dict,
         expected_invoke_inputs: dict,
     ):
@@ -469,7 +469,8 @@ class TestBaseAgent:
         [
             # Test case when the subtask is completed. Should return last message from agent_messages.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -515,7 +516,7 @@ class TestBaseAgent:
     )
     def test_finalizer_node(
         self,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_output: dict,
     ):
         # Given
