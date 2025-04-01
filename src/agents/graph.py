@@ -45,8 +45,8 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
-    GATEKEEPER_PROMPT,
     GATEKEEPER_INSTRUCTIONS,
+    GATEKEEPER_PROMPT,
 )
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
@@ -59,7 +59,6 @@ from utils.settings import (
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
-from langchain.prompts import PromptTemplate
 
 logger = get_logger(__name__)
 

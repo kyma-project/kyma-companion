@@ -8,7 +8,6 @@ GATEKEEPER_INSTRUCTIONS = '''
 def handle_query(user_query, conversation_history):
     """
     Processes user query related to Kyma and Kubernetes.
-    Analyzes conversation history to determine response flow.
     """
 
     # Step 1: Check if the answer can be derived from conversation history
