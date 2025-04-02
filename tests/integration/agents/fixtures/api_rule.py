@@ -237,7 +237,7 @@ EXPECTED_API_RULE_TOOL_CALL_RESPONSE = """
                 "id": "call_tbAMSFELnLfbU3VPvBT64Ona",
                 "type": "function",
                 "function": {
-                    "name": "k8s_query_tool",
+                    "name": "kyma_query_tool",
                     "arguments": {
                         "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
                     }

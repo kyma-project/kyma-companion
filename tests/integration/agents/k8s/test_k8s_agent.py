@@ -11,30 +11,12 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
+from integration.agents.kyma.test_kyma_agent import correctness_metric
 from services.k8s import IK8sClient
 from utils.models.factory import ModelType
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 
 AGENT_STEPS_NUMBER = 25
-
-
-@pytest.fixture
-def correctness_metric(evaluator_model):
-    return GEval(
-        name="Correctness",
-        evaluation_params=[
-            LLMTestCaseParams.ACTUAL_OUTPUT,
-            LLMTestCaseParams.EXPECTED_OUTPUT,
-        ],
-        evaluation_steps=[
-            "Evaluate whether two answers are semantically similar or convey the same meaning."
-            "Check whether the facts in 'actual output' contradict any facts in 'expected output'",
-            "Lightly penalize omissions of detail, focusing on the main idea",
-            "Vague language are permissible",
-        ],
-        model=evaluator_model,
-        threshold=0.7,
-    )
 
 
 @pytest.fixture
@@ -60,34 +42,6 @@ def k8s_agent(app_models):
 @pytest.mark.parametrize(
     "state,expected_tool_call",
     [
-        # - Verifies agent makes correct k8s_query_tool call
-        (
-            KubernetesAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
-                    HumanMessage(content="What is wrong with api rule?"),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with ApiRule?",
-                        "task_title": "What is wrong with ApiRule?",
-                        "assigned_to": "KubernetesAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with api rule?",
-                    task_title="What is wrong with api rule?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "k8s_query_tool",
-        ),
         # - Verifies agent makes correct k8s_overview_query_tool call
         (
             KubernetesAgentState(
@@ -97,18 +51,18 @@ def k8s_agent(app_models):
                         content="The user query is related to: {'resource_api_version': '', 'resource_namespace': ''}"
                     ),
                     HumanMessage(
-                        content="What is causing the ImagePullBackOff status for multiple pods?"
+                        content="What is causing the ImagePullBackOff status for many pods?"
                     ),
                 ],
                 subtasks=[
                     {
-                        "description": "What is causing the ImagePullBackOff status for multiple pods?",
+                        "description": "What is causing the ImagePullBackOff status for many pods?",
                         "task_title": "Checking ImagePullBackOff status?",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is causing the ImagePullBackOff status for multiple pods?",
+                    description="What is causing the ImagePullBackOff status for many pods?",
                     task_title="Checking ImagePullBackOff status?",
                     assigned_to="KubernetesAgent",
                 ),
@@ -118,7 +72,7 @@ def k8s_agent(app_models):
             ),
             "k8s_overview_query_tool",
         ),
-        # Test case for pod logs query
+        # Test case for pod query
         (
             KubernetesAgentState(
                 agent_messages=[],
@@ -223,6 +177,34 @@ def k8s_agent(app_models):
                 ],
                 my_task=SubTask(
                     description="Show me the details of my-app deployment",
+                    task_title="Deployment details",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_query_tool",
+        ),
+        # Test case for specific resource query with full details
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                    ),
+                    HumanMessage(content="Show me the details of resource"),
+                ],
+                subtasks=[
+                    {
+                        "description": "Show me the details of resource",
+                        "task_title": "Deployment details",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="Show me the details of resource",
                     task_title="Deployment details",
                     assigned_to="KubernetesAgent",
                 ),
