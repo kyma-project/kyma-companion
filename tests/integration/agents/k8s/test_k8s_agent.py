@@ -3,15 +3,12 @@ from unittest.mock import Mock
 import pytest
 from deepeval.metrics import (
     FaithfulnessMetric,
-    GEval,
 )
-from deepeval.test_case import LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
-from integration.agents.kyma.test_kyma_agent import correctness_metric
 from services.k8s import IK8sClient
 from utils.models.factory import ModelType
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
