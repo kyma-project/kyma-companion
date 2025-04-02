@@ -23,7 +23,10 @@ from langgraph.checkpoint.base import (
 from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
-from utils.settings import REDIS_TTL
+from utils.logging import get_logger
+from utils.settings import REDIS_SSL_ENABLED, REDIS_TTL
+
+logger = get_logger(__name__)
 
 REDIS_KEY_SEPARATOR = "$"
 
@@ -250,8 +253,17 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         This is a synchronous method that will fail fast if Redis connection cannot be established.
         """
         conn = AsyncRedis(
-            host=host, port=port, db=db, password=password if password != "" else None
+            host=host,
+            port=port,
+            db=db,
+            password=password if password != "" else None,
+            ssl=REDIS_SSL_ENABLED,
+            ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
         )
+        if REDIS_SSL_ENABLED:
+            logger.info("Redis connection established with SSL.")
+        else:
+            logger.info("Redis connection established.")
         return cls(conn)
 
     async def _redis_call(self, awaitable: Awaitable[T] | T) -> T:
