@@ -274,7 +274,6 @@ def k8s_agent(app_models):
 @pytest.mark.asyncio
 async def test_tool_calls(
     k8s_agent,
-    correctness_metric,
     faithfulness_metric,
     state,
     expected_tool_call,
