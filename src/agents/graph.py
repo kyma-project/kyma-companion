@@ -45,6 +45,7 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
+    GATEKEEPER_INSTRUCTIONS,
     GATEKEEPER_PROMPT,
 )
 from agents.summarization.summarization import MessageSummarizer
@@ -224,6 +225,7 @@ class CompanionGraph:
                 ("system", GATEKEEPER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
                 ("human", "query: {query}"),
+                ("system", GATEKEEPER_INSTRUCTIONS),
             ]
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
