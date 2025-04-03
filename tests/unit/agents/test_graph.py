@@ -94,7 +94,6 @@ def create_messages_json(content, role, node) -> str:
 
 
 class TestCompanionGraph:
-
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, subtasks, messages, chain_response, expected_output, expected_error",
@@ -275,7 +274,7 @@ class TestCompanionGraph:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "description, messages, chain_response, expected_output, expected_error",
+        "test_case, messages, chain_response, expected_output, expected_error",
         [
             (
                 "Direct response, mark next == __end__",
@@ -325,12 +324,13 @@ class TestCompanionGraph:
     async def test_gatekeeper_node(
         self,
         companion_graph,
-        description,
+        test_case,
         messages,
         chain_response,
         expected_output,
         expected_error,
     ):
+        # Given
         state = CompanionState(subtasks=[], messages=messages)
         user_query = next(
             (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)),
@@ -342,12 +342,14 @@ class TestCompanionGraph:
             )
         else:
             companion_graph._invoke_gatekeeper_node.return_value = (
-                GatekeeperResponse.parse_raw(chain_response)
+                GatekeeperResponse.model_validate_json(chain_response)
             )
 
+        # When
         result = await companion_graph._gatekeeper_node(state)
-        assert result == expected_output
+        assert result == expected_output, test_case
 
+        # Then
         if chain_response:
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
                 state, user_query.content
@@ -403,19 +405,18 @@ class TestCompanionGraph:
                     {"Exit": AIMessage(content="final response")},
                 ],
                 [
-                    f'{{"Planner": {create_messages_json("Query is decomposed into subtasks",
-                                                             "ai", "Planner")}}}',
-                    f'{{"Supervisor": {create_messages_json("next is KymaAgent",
-                                                                "ai", "Supervisor")}}}',
-                    f'{{"KymaAgent": {create_messages_json(
-                            "You can deploy a Kyma function by following these steps",
-                            "ai", "KymaAgent")}}}',
-                    f'{{"Supervisor": {create_messages_json("next is KubernetesAgent",
-                                                                "ai", "Supervisor")}}}',
-                    f'{{"KubernetesAgent": {create_messages_json("You can deploy a k8s app by following these steps",
-                                                                     "ai", "Supervisor")}}}',
-                    f'{{"Exit": {create_messages_json("final response",
-                                                          "ai", "Exit")}}}',
+                    f'{{"Planner": {create_messages_json("Query is decomposed into subtasks", "ai", "Planner")}}}',
+                    f'{{"Supervisor": {create_messages_json("next is KymaAgent", "ai", "Supervisor")}}}',
+                    f'{{"KymaAgent": {
+                        create_messages_json(
+                            "You can deploy a Kyma function by following these steps", "ai", "KymaAgent"
+                        )
+                    }}}',
+                    f'{{"Supervisor": {create_messages_json("next is KubernetesAgent", "ai", "Supervisor")}}}',
+                    f'{{"KubernetesAgent": {
+                        create_messages_json("You can deploy a k8s app by following these steps", "ai", "Supervisor")
+                    }}}',
+                    f'{{"Exit": {create_messages_json("final response", "ai", "Exit")}}}',
                 ],
                 None,
             ),

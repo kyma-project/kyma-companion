@@ -283,7 +283,7 @@ class TestSupervisorAgent:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "description, input_query, mock_plan_content, expected_output, expected_error",
+        "test_case, input_query, mock_plan_content, expected_output, expected_error",
         [
             (
                 "Plans multiple subtasks successfully",
@@ -366,7 +366,7 @@ class TestSupervisorAgent:
     async def test_agent_plan(
         self,
         supervisor_agent,
-        description,
+        test_case,
         input_query,
         mock_plan_content,
         expected_output,
@@ -379,10 +379,12 @@ class TestSupervisorAgent:
             if expected_error:
                 mock_invoke_planner.side_effect = Exception(expected_error)
             else:
-                mock_invoke_planner.return_value = Plan.parse_raw(mock_plan_content)
+                mock_invoke_planner.return_value = Plan.model_validate_json(
+                    mock_plan_content
+                )
 
             state = SupervisorState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)
 
-            assert result == expected_output
+            assert result == expected_output, test_case
             mock_invoke_planner.assert_called_once_with(state)

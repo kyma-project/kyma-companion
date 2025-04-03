@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
@@ -17,7 +16,6 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
-from langgraph.managed import RemainingSteps
 
 from agents.common.agent import BaseAgent
 from agents.common.constants import AGENT_MESSAGES, ERROR
@@ -36,38 +34,16 @@ mock_agent_prompt = ChatPromptTemplate.from_messages(
 )
 
 
-class TestAgentState(BaseAgentState):
-    """Test agent state class."""
-
-    k8s_client: IK8sClient | None = None  # Make k8s_client optional with default None
-    remaining_steps: RemainingSteps = 25
-
-
-class TestAgent(BaseAgent):
-    """Concrete implementation of BaseAgent for testing."""
-
-    def __init__(self, model: IModel):
-        super().__init__(
-            name="KubernetesAgent",
-            model=model,
-            tools=[k8s_query_tool, fetch_pod_logs_tool],
-            agent_prompt=mock_agent_prompt,
-            state_class=TestAgentState,
-        )
-
-
-@pytest.fixture
-def mock_models():
-    gpt40 = MagicMock(spec=IModel)
-    gpt40.name = ModelType.GPT4O
-
-    text_embedding_3_large = MagicMock(spec=Embeddings)
-    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
-
-    return {
-        ModelType.GPT4O: gpt40,
-        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
-    }
+def mock_agent() -> BaseAgent:
+    mock_model = MagicMock(spec=IModel)
+    mock_model.name = ModelType.GPT4O
+    return BaseAgent(
+        name="KubernetesAgent",
+        model=mock_model,
+        tools=[k8s_query_tool, fetch_pod_logs_tool],
+        agent_prompt=mock_agent_prompt,
+        state_class=BaseAgentState,
+    )
 
 
 @pytest.fixture
@@ -83,20 +59,19 @@ def mock_k8s_client():
 class TestBaseAgent:
     """Test base agent class."""
 
-    def test_name(self, mock_models):
-        agent = TestAgent(mock_models[ModelType.GPT4O])
-        assert agent.name == "KubernetesAgent"
+    def test_agent_init(self):
+        # Given
+        agent = mock_agent()
 
-    def test_agent_init(self, mock_models):
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        # Then
+        assert agent.name == "KubernetesAgent"
         assert agent.tools == [k8s_query_tool, fetch_pod_logs_tool]
-        assert agent.model == mock_models[ModelType.GPT4O]
         assert agent.graph is not None
         assert agent.chain is not None
 
-    def test_agent_node(self, mock_models):
+    def test_agent_node(self):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
 
         # When
         result = agent.agent_node()
@@ -105,20 +80,22 @@ class TestBaseAgent:
         assert result is not None
         assert isinstance(result, CompiledGraph)
 
-    def test_create_chain(self, mock_models):
+    def test_create_chain(self):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
+        excepted_amount_steps = 2
+        expected_amount_messages = 3
 
         # When
         chain = agent._create_chain(mock_agent_prompt)
 
         # Then
         assert chain is not None
-        assert len(chain.steps) == 2  # noqa
+        assert len(chain.steps) == excepted_amount_steps
 
         # check step 1: chat prompt
-        assert isinstance(chain.steps[0], ChatPromptTemplate) == True  # noqa
-        assert len(chain.steps[0].messages) == 3  # noqa
+        assert isinstance(chain.steps[0], ChatPromptTemplate)
+        assert len(chain.steps[0].messages) == expected_amount_messages
         # check step 1 > message 1
         assert isinstance(chain.steps[0].messages[0], SystemMessagePromptTemplate)
         assert chain.steps[0].messages[0].prompt.template == "You are a test agent"
@@ -136,7 +113,7 @@ class TestBaseAgent:
         [
             (
                 "Test case when agent_messages is empty, should use from messages field.",
-                TestAgentState(
+                BaseAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
                     agent_messages=[],
@@ -147,6 +124,7 @@ class TestBaseAgent:
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
+                    remaining_steps=25,
                 ),
                 {
                     "agent_messages": [
@@ -159,7 +137,7 @@ class TestBaseAgent:
             ),
             (
                 "Test case when agent_messages is non-empty, should use get_agent_messages_including_summary.",
-                TestAgentState(
+                BaseAgentState(
                     is_last_step=False,
                     messages=[HumanMessage(content="What is K8s?")],
                     agent_messages=[HumanMessage(content="What is deployment?")],
@@ -171,6 +149,7 @@ class TestBaseAgent:
                         task_title="test",
                         assigned_to="KubernetesAgent",
                     ),
+                    remaining_steps=25,
                 ),
                 {
                     "agent_messages": [
@@ -187,12 +166,11 @@ class TestBaseAgent:
     async def test_invoke_chain(
         self,
         test_case: str,
-        mock_models,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_inputs: dict,
     ):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
         agent.chain = Mock()
         agent.chain.ainvoke = AsyncMock()
 
@@ -212,12 +190,12 @@ class TestBaseAgent:
             msg.id = None
         assert actual_input == expected_inputs, test_case
 
-    def test_build_graph(self, mock_models):
+    def test_build_graph(self):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
 
         # When
-        graph = agent._build_graph(TestAgentState)
+        graph = agent._build_graph(BaseAgentState)
 
         # Then
         # Check nodes.
@@ -248,7 +226,8 @@ class TestBaseAgent:
         [
             # Test case when there is a subtask assigned to the agent.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -277,7 +256,8 @@ class TestBaseAgent:
             ),
             # Test case when there is no subtask assigned to the agent.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -303,7 +283,8 @@ class TestBaseAgent:
             ),
             # Test case when there all subtasks assigned to the agent are completed.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=None,
                     is_last_step=False,
                     messages=[],
@@ -342,9 +323,12 @@ class TestBaseAgent:
         ],
     )
     def test_subtask_selector_node(
-        self, mock_models, given_state: TestAgentState, expected_output: dict
+        self, given_state: BaseAgentState, expected_output: dict
     ):
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        # Given
+        agent = mock_agent()
+
+        # Then
         assert agent._subtask_selector_node(given_state) == expected_output
 
     @pytest.mark.asyncio
@@ -355,7 +339,8 @@ class TestBaseAgent:
             (
                 AIMessage(content="This is a dummy response from model."),
                 None,
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -383,7 +368,8 @@ class TestBaseAgent:
             (
                 None,
                 ValueError("This is a dummy exception from model."),
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -421,7 +407,8 @@ class TestBaseAgent:
                     ],
                 ),
                 None,
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -449,16 +436,15 @@ class TestBaseAgent:
     )
     async def test_model_node(
         self,
-        mock_models,
         mock_config,
         given_invoke_response: BaseMessage | None,
         given_invoke_error: Exception | None,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_output: dict,
         expected_invoke_inputs: dict,
     ):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
         agent.chain = AsyncMock()
         agent._invoke_chain = AsyncMock()
         if given_invoke_response:
@@ -483,7 +469,8 @@ class TestBaseAgent:
         [
             # Test case when the subtask is completed. Should return last message from agent_messages.
             (
-                TestAgentState(
+                BaseAgentState(
+                    remaining_steps=25,
                     my_task=SubTask(
                         description="test task 1",
                         task_title="test task 1",
@@ -529,12 +516,11 @@ class TestBaseAgent:
     )
     def test_finalizer_node(
         self,
-        mock_models,
-        given_state: TestAgentState,
+        given_state: BaseAgentState,
         expected_output: dict,
     ):
         # Given
-        agent = TestAgent(mock_models[ModelType.GPT4O])
+        agent = mock_agent()
         agent.chain = MagicMock()
 
         # When

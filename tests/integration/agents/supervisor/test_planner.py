@@ -224,14 +224,13 @@ def planner_conversation_history_metric(evaluator_model):
 
 
 @pytest.mark.parametrize(
-    "messages, query, expected_answer, subtasks",
+    "messages, query, subtasks",
     [
         (
             # given the conversation, the planner knows that the user wants to expose the function
             # and assigns the task to the Kyma agent
             conversation_sample_6,
             "how to expose it?",
-            None,
             [
                 {
                     "description": "how to expose it?",
@@ -246,7 +245,6 @@ def planner_conversation_history_metric(evaluator_model):
             # and assigns the task to the Kyma agent
             conversation_sample_6,
             "convert it to javascript",
-            None,
             [
                 {
                     "description": "convert the Kyma function that prints 'Hello World' from Python to JavaScript",
@@ -262,7 +260,6 @@ def planner_conversation_history_metric(evaluator_model):
 async def test_planner_with_conversation_history(
     messages,
     query,
-    expected_answer,
     subtasks,
     companion_graph,
     planner_conversation_history_metric,
