@@ -3,6 +3,7 @@ from typing import Annotated
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
+from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
 
@@ -13,8 +14,8 @@ class KymaQueryToolArgs(BaseModel):
     uri: str
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 
-    class Config:
-        arbitrary_types_allowed = True
+    # Model configuration for Pydantic.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 @tool(infer_schema=False, args_schema=KymaQueryToolArgs)
@@ -38,6 +39,5 @@ def kyma_query_tool(
         return result
     except Exception as e:
         raise Exception(
-            f"failed executing kyma_query_tool with URI: {uri},"
-            f"raised the following error: {e}"
+            f"failed executing kyma_query_tool with URI: {uri},raised the following error: {e}"
         ) from e

@@ -3,6 +3,7 @@ from typing import Annotated
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
+from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
 
@@ -18,8 +19,8 @@ class FetchPodLogsArgs(BaseModel):
     is_terminated: bool
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 
-    class Config:
-        arbitrary_types_allowed = True
+    # Model configuration for Pydantic.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 @tool(infer_schema=False, args_schema=FetchPodLogsArgs)
