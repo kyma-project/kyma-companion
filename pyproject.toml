@@ -69,6 +69,7 @@ addopts = "-ra"
 pythonpath = ["src"]
 testpaths = ["tests"]
 env_files = [".env.test"]
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.poe.tasks]
 lint = "ruff check ."
