@@ -10,8 +10,9 @@ from langchain_core.messages import (
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
+from pydantic.config import ConfigDict
 
-from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
+from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
 from services.k8s import IK8sClient
 
 
@@ -26,23 +27,30 @@ class SubTaskStatus(str, Enum):
 class GatekeeperResponse(BaseModel):
     """Gatekeeper response data model."""
 
-    direct_response: str = Field(description="For direct response.")
-    forward_query: bool = Field(
-        default=False,
-        description="For forwarding query",
-    )
+    direct_response: Annotated[str, Field(description="For direct response.")]
+    forward_query: Annotated[
+        bool,
+        Field(
+            default=False,
+            description="For forwarding query",
+        ),
+    ]
 
 
 class SubTask(BaseModel):
     """Sub-task data model."""
 
-    description: str = Field(
-        description="user query with original wording for the assigned agent"
-    )
-    task_title: str = Field(
-        description="""Generate a title of 4 to 5 words, only use these:
+    description: Annotated[
+        str,
+        Field(description="user query with original wording for the assigned agent"),
+    ]
+    task_title: Annotated[
+        str,
+        Field(
+            description="""Generate a title of 4 to 5 words, only use these:
           'Retrieving', 'Fetching', 'Extracting' or 'Checking'. Never use 'Creating'."""
-    )
+        ),
+    ]
     assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]  # type: ignore
     status: str = Field(default=SubTaskStatus.PENDING)
 
@@ -109,17 +117,23 @@ class CompanionState(BaseModel):
 
     """
 
-    input: UserInput | None = Field(
-        description="user input with user query and resource(s) contextual information",
-        default=None,
-    )
+    input: Annotated[
+        UserInput | None,
+        Field(
+            description="user input with user query and resource(s) contextual information",
+            default=None,
+        ),
+    ]
     thread_owner: str = ""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     messages_summary: str = ""
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None
-    k8s_client: IK8sClient | None = None
+    k8s_client: Annotated[IK8sClient | None, Field(default=None, exclude=True)]
+
+    # Model config for pydantic.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def get_messages_including_summary(self) -> list[MessageLikeRepresentation]:
         """Get messages including the summary message."""
@@ -132,17 +146,14 @@ class CompanionState(BaseModel):
             )
         return list(self.messages)
 
-    class Config:
-        arbitrary_types_allowed = True
-        fields = {"k8s_client": {"exclude": True}}
-
 
 class BaseAgentState(BaseModel):
     """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
-    k8s_client: IK8sClient | None = None
+    k8s_client: Annotated[IK8sClient | None, Field(default=None, exclude=True)]
+
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -150,8 +161,10 @@ class BaseAgentState(BaseModel):
     my_task: SubTask | None = None
     is_last_step: IsLastStep
     error: str | None = None
-
     remaining_steps: RemainingSteps
+
+    # Model config for pydantic.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def get_agent_messages_including_summary(self) -> list[MessageLikeRepresentation]:
         """Get messages including the summary message."""
@@ -163,7 +176,3 @@ class BaseAgentState(BaseModel):
                 )
             )
         return list(self.agent_messages)
-
-    class Config:
-        arbitrary_types_allowed = True
-        fields = {K8S_CLIENT: {"exclude": True}}
