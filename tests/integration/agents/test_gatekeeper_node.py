@@ -229,18 +229,6 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),  # TECHNICAL QUERIES THAT SHOULD BE FORWARDED
         (
-            # Kyma configuration issue
-            [
-                SystemMessage(
-                    content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
-                HumanMessage(content="How do I configure custom domains in Kyma?"),
-            ],
-            "",
-            True,
-        ),
-        (
             # Resource status check
             [
                 SystemMessage(
@@ -418,6 +406,23 @@ def gatekeeper_correctness_metric(evaluator_model):
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
             'print("Hello, World!")',
+            False,
+        ),
+        (
+            # Query about self capabilities.
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                ),
+                HumanMessage(
+                    content="can you provide some example showcasing your problem solving capabilities"
+                ),
+            ],
+            "I can help with various queries related to Kyma and Kubernetes, such as troubleshooting issues, "
+            "understanding concepts, or deployment processes. For example, if you encounter an error while deploying "
+            "a service in Kyma, I can guide you through the troubleshooting steps. If you have a specific problem or "
+            "scenario in mind, feel free to share it, and I'll do my best to assist you!",
             False,
         ),
         (

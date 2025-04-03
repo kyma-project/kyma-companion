@@ -32,10 +32,10 @@ def handle_query(user_query, conversation_history):
             "forward_query": True
         }}
 
-    # Step 4: Handling other technical queries
-    if category == "Programming":
+    # Step 4: Handling queries
+    if category in ["Programming" , "About You"]:
         return {{
-            "direct_response": generate_technical_response(user_query),
+            "direct_response": generate_response(user_query),
             "forward_query": False
         }}
 
@@ -69,8 +69,8 @@ def classify_query(user_query):
     """Classifies query into relevant categories."""
     pass
 
-def generate_technical_response(user_query):
-    """Generates responses for programming-related questions."""
+def generate_response(user_query):
+    """Generates responses based on the user query."""
     pass
 '''
 
