@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 
 from decouple import config
@@ -8,7 +9,15 @@ from decouple import config
 
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
-    default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
+    # if running tests with pytest, use config_test.json
+    if "pytest" in sys.modules:
+        default_config_path = (
+            Path(__file__).parent.parent.parent / "config" / "config.test.json"
+        )
+    else:
+        default_config_path = (
+            Path(__file__).parent.parent.parent / "config" / "config.json"
+        )
 
     config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
