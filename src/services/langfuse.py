@@ -19,6 +19,7 @@ from utils.utils import string_to_bool
 class ILangfuseService(Protocol):
     """Service interface"""
 
+    @property
     def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         ...
