@@ -11,9 +11,18 @@ def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     # if running tests with pytest, use config_test.json
     if "pytest" in sys.modules:
-        default_config_path = (
+        test_config_path = (
             Path(__file__).parent.parent.parent / "config" / "config.test.json"
         )
+        if test_config_path.exists():
+            default_config_path = test_config_path
+        else:
+            default_config_path = (
+                Path(__file__).parent.parent.parent / "config" / "config.json"
+            )
+            logging.warning(
+                f"Test config file {test_config_path} not found. Using default config file {default_config_path}"
+            )
     else:
         default_config_path = (
             Path(__file__).parent.parent.parent / "config" / "config.json"
