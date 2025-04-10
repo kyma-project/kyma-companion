@@ -1,5 +1,5 @@
 import pytest
-from deepeval import assert_test
+from deepeval import evaluate
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -34,14 +34,62 @@ def gatekeeper_correctness_metric(evaluator_model):
 
 
 @pytest.mark.parametrize(
-    "messages, expected_answer, expected_query_forwarding",
+    "test_description, messages, expected_answer, expected_query_forwarding",
     [  # Implicit Kubernetes/Kyma queries that should be forwarded
         (
-            # Pod-related issue without mentioning K8s
+            "cluster-scoped kyma api rules query should be forwarded",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="is something wrong with api rules?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            "cluster-scoped kyma serverless query should be forwarded",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="is there any error in serverless?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            "cluster-scoped kyma subscription query should be forwarded",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="is there any error in subscription?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            "cluster-scoped kyma function query should be forwarded",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="is there any error in function?"),
+            ],
+            "",
+            True,
+        ),
+        (
+            "pod-related issue without mentioning K8s",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="My pod keeps restarting with status code 137"),
             ],
@@ -49,11 +97,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Service connectivity issue
+            "service connectivity issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'app-namespace'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I can't access my service on port 8080 even though it's running"
@@ -63,11 +111,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Ingress/API Gateway issue (Kyma related)
+            "ingress/api gateway issue (kyma related)",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'istio-system'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My API Gateway returns 503 errors when I try to access my microservice"
@@ -77,11 +125,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Volume mount issue
+            "volume mount issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'data-services'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My container can't write to the mounted volume at /data"
@@ -91,11 +139,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Resource limits issue
+            "resource limits issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I'm getting OOMKilled even though I set memory limits to 512Mi"
@@ -105,11 +153,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # ConfigMap/Secret issue
+            "configmap/secret issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My application can't see the environment variables I defined in my config"
@@ -119,11 +167,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Serverless function issue (Kyma related)
+            "serverless function issue (kyma related)",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'serverless'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My function throws a 500 error when triggered by an event"
@@ -133,11 +181,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Networking policy issue
+            "networking policy issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'app-ns'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="Service A can't communicate with Service B even though they're in the same namespace"
@@ -147,25 +195,23 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Kubernetes query
+            "kubernetes query for persistent volumes",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'app-ns'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
-                HumanMessage(
-                    content="What is the role of PersistentVolumes in Kubernetes?"
-                ),
+                HumanMessage(content="What is the role of PersistentVolumes?"),
             ],
             "",
             True,
         ),
         (
-            # Kubernetes query
+            "kubernetes query for image pull backoff",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'app-ns'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="What is causing the 'ImagePullBackOff' error?"),
             ],
@@ -173,11 +219,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # CRD/operator issue
+            "crd/operator issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'operators'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="The status condition of my custom resource stays in 'Pending' state"
@@ -187,11 +233,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # API rule issue (Kyma specific)
+            "api rule issue (kyma specific)",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-integration'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My API rule isn't exposing my service even though it's been created"
@@ -201,11 +247,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Certificate/TLS issue
+            "certificate/tls issue",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'istio-system'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I'm getting certificate validation errors when accessing my service via HTTPS"
@@ -215,11 +261,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Event mesh issue (Kyma specific)
+            "eventing issue (kyma specific)",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'eventing'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My subscription isn't receiving events from the application"
@@ -229,11 +275,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),  # TECHNICAL QUERIES THAT SHOULD BE FORWARDED
         (
-            # Resource status check
+            "Kyma resource status check",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="Can you check the status of my Kyma services?"),
             ],
@@ -241,11 +287,11 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # Installation query
+            "Kyma installation query",
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="What's the best way to install Kyma on an existing cluster?"
@@ -256,7 +302,7 @@ def gatekeeper_correctness_metric(evaluator_model):
         ),
         # CONVERSATION HISTORY SCENARIOS
         (
-            # Query needing additional info despite history
+            "Query needing additional info despite history",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -274,7 +320,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # User asking to retrieve information
+            "User asking to retrieve information for logs",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -287,7 +333,7 @@ def gatekeeper_correctness_metric(evaluator_model):
         ),
         # NON-TECHNICAL QUERIES
         (
-            # Out of domain query
+            "Out of domain query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -299,7 +345,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # Personal question
+            "Personal question",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -311,7 +357,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # Mixed query (part technical, part non-technical)
+            "Mixed query (part technical, part non-technical)",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -325,7 +371,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # tests that the gatekeeper node correctly reply to greeting
+            "tests that the gatekeeper node correctly reply to greeting",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -337,7 +383,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # tests that the gatekeeper node correctly forward the query
+            "tests that the gatekeeper node correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -349,7 +395,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # tests that the gatekeeper node correctly forward the query
+            "tests that the gatekeeper node correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -361,7 +407,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # tests that the gatekeeper node correctly forward the query
+            "tests that the gatekeeper node correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -373,7 +419,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # tests that the gatekeeper node correctly forward the query
+            "tests that the gatekeeper node correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -385,7 +431,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            # tests that the gatekeeper node decline a general non-technical query
+            "tests that the gatekeeper node decline a general non-technical query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -397,7 +443,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # tests that the gatekeeper node correctly answers a general programming related query
+            "tests that the gatekeeper node correctly answers a general programming related query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -409,7 +455,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # Query about self capabilities.
+            "Query about self capabilities.",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -426,7 +472,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            # tests that the gatekeeper node to forward user query as user explicitly ask  for recheck status
+            "tests that the gatekeeper node to forward user query as user explicitly ask  for recheck status",
             [
                 AIMessage(
                     content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
@@ -447,6 +493,7 @@ def gatekeeper_correctness_metric(evaluator_model):
 )
 @pytest.mark.asyncio
 async def test_invoke_gatekeeper_node(
+    test_description,
     messages,
     expected_answer,
     expected_query_forwarding,
@@ -457,39 +504,44 @@ async def test_invoke_gatekeeper_node(
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """
     # Given: a conversation state with messages
-    user_query = messages.pop()
+    user_query = messages[-1].content
     state = create_mock_state(messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    result = await companion_graph._invoke_gatekeeper_node(state, user_query)
+    actual_response = await companion_graph._invoke_gatekeeper_node(state, user_query)
 
     if expected_query_forwarding:
-        assert (
-            result.forward_query
-        ), "Query should be forwarded"  # query should be forwarded
+        assert actual_response.forward_query, "Query should be forwarded"
 
     else:
         assert (
-            not result.forward_query
+            not actual_response.forward_query
         ), "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
         test_case = ConversationalTestCase(
             turns=[
                 LLMTestCase(
                     input=messages[-1].content,
-                    actual_output=result.direct_response,
+                    actual_output=actual_response.direct_response,
                     expected_output=expected_answer,
                 )
             ]
         )
-        assert_test(test_case, [gatekeeper_correctness_metric])
+        results = evaluate(
+            test_cases=[test_case],
+            metrics=[gatekeeper_correctness_metric],
+        )
+        # Assert all metrics pass
+        assert all(
+            result.success for result in results.test_results
+        ), f"Failed test case: {test_description}"
 
 
 @pytest.mark.parametrize(
-    "conversation_history, user_query, expected_answer, expected_query_forwarding",
+    "test_description, conversation_history, user_query, expected_answer, expected_query_forwarding",
     [
         (
-            # answer the question based on the conversation history
+            "answer the question based on the conversation history",
             conversation_sample_2,
             "what was the issue?",
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
@@ -499,7 +551,7 @@ async def test_invoke_gatekeeper_node(
             False,
         ),
         (
-            # answer the question based on the conversation history
+            "answer the question based on the conversation history",
             conversation_sample_5,
             "what was the cause?",
             "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
@@ -510,7 +562,7 @@ async def test_invoke_gatekeeper_node(
             False,
         ),
         (
-            # forward query as insufficient information in conversation history
+            "forward query as insufficient information in conversation history",
             conversation_sample_6,
             "how to expose it?",
             "",
@@ -520,6 +572,7 @@ async def test_invoke_gatekeeper_node(
 )
 @pytest.mark.asyncio
 async def test_gatekeeper_with_conversation_history(
+    test_description,
     conversation_history,
     user_query,
     expected_answer,
@@ -557,4 +610,11 @@ async def test_gatekeeper_with_conversation_history(
                 )
             ]
         )
-        assert_test(test_case, [gatekeeper_correctness_metric])
+        results = evaluate(
+            test_cases=[test_case],
+            metrics=[gatekeeper_correctness_metric],
+        )
+        # Assert all metrics pass
+        assert all(
+            result.success for result in results.test_results
+        ), f"Failed test case: {test_description}"
