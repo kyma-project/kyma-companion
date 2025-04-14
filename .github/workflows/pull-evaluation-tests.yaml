@@ -139,13 +139,42 @@ jobs:
 
       - name: Companion Deploy - Wait for deployment
         run: |
-          echo "Waiting for companion deployment to be ready..."
-          kubectl wait --for=condition=Available deployment companion -n ai-system --timeout=300s
-          sleep 30
+          kubectl rollout status deployment/companion -n ai-system --timeout=300s
 
       - name: Companion Deploy - Test reachability through NodePort
         run: |
-          curl http://localhost:32000/readyz
+          URL_BASE="http://localhost:"   # Change this to your service's address
+          NODE_PORT="32000"
+          READYZ_ENDPOINT="$URL_BASE:$NODE_PORT/readyz"
+          HEALTHZ_ENDPOINT="$URL_BASE:$NODE_PORT/healthz"
+          TIMEOUT=300    # seconds
+          INTERVAL=5     # seconds
+
+          echo "Checking readiness and health endpoints for up to $TIMEOUT seconds..."
+
+          START_TIME=$(date +%s)
+
+          while true; do
+            READYZ_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$READYZ_ENDPOINT")
+            HEALTHZ_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTHZ_ENDPOINT")
+
+            if [[ "$READYZ_STATUS" == "200" && "$HEALTHZ_STATUS" == "200" ]]; then
+              echo "Both /readyz and /healthz are ready!"
+              exit 0
+            else
+              echo "Status: /readyz=$READYZ_STATUS, /healthz=$HEALTHZ_STATUS (waiting...)"
+            fi
+
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - START_TIME))
+
+            if (( ELAPSED >= TIMEOUT )); then
+              echo "Timeout after $TIMEOUT seconds: endpoints not ready."
+              exit 1
+            fi
+
+            sleep $INTERVAL
+          done
 
       - name: Companion Deploy - Debug information
         if: failure()
