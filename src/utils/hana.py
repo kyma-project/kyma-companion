@@ -15,8 +15,8 @@ def create_hana_connection(
             password=password,
         )
         return connection
-    except dbapi.Error:
-        logging.exception("Connection to Hana Cloud failed.")
-    except Exception:
-        logging.exception("Unknown error occurred.")
+    except dbapi.Error as e:
+        logging.exception(f"Connection to Hana Cloud failed: {e}")
+    except Exception as e:
+        logging.exception(f"Unknown error occurred: {e}")
     return None
