@@ -74,6 +74,7 @@ class LangfuseService(metaclass=SingletonMeta):
             host=self.base_url,
             enabled=string_to_bool(str(LANGFUSE_ENABLED)),
             mask=self.masking_production_data,
+            debug=True,
         )
         self.debug_enabled = string_to_bool(str(LANGFUSE_DEBUG_MODE))
 
