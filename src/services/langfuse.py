@@ -68,6 +68,7 @@ class LangfuseService(metaclass=SingletonMeta):
         self.public_key = str(LANGFUSE_PUBLIC_KEY)
         self.secret_key = str(LANGFUSE_SECRET_KEY)
         self.auth = BasicAuth(self.public_key, self.secret_key)
+        print(f"LANGFUSE_HOST333: {self.base_url}")
         self._handler = CallbackHandler(
             secret_key=self.secret_key,
             public_key=self.public_key,
