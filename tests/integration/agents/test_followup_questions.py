@@ -25,6 +25,7 @@ def followup_correctness_metric(evaluator_model):
         evaluation_steps=[
             "Check whether each line is a valid question",
             "Check if each questions is related to either Kubernetes or SAP Kyma runtime",
+            "Check if each question is not a question to user",
         ],
         evaluation_params=[
             LLMTestCaseParams.ACTUAL_OUTPUT,
