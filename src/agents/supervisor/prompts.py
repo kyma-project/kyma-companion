@@ -1,20 +1,4 @@
-KYMA_DOMAIN_KNOWLEDGE = """
-Kyma Components:
-- Runtime: Serverless, Service Mesh, API Gateway
-- Integration: Application Connector, Service Catalog
-- Observability: Telemetry, Tracing, Logging
-- Security: OIDC, Service Mesh policies
-- Modules: Serverless, Eventing, API Gateway, Service Management
-- Resources: Function, APIRule, Application, ServiceInstance, LogPipeline
-
-Kubernetes Resources:
-- Workloads: Pod, Deployment, StatefulSet, DaemonSet, Job, CronJob
-- Services: Service, Ingress, NetworkPolicy
-- Config: ConfigMap, Secret
-- Storage: PV, PVC
-- RBAC: ServiceAccount, Role, RoleBinding, ClusterRole
-- Architecture: Node, Kubelet, Control Plane, Container Runtime
-"""
+from agents.common.prompts import KYMA_DOMAIN_KNOWLEDGE
 
 PLANNER_STEP_INSTRUCTIONS = """
 # STEPS:
