@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
+from langchain_core.messages import BaseMessage, HumanMessage
 
 from utils import utils
 from utils.utils import (
@@ -18,7 +19,7 @@ from utils.utils import (
     create_session_id,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
-    parse_k8s_token,
+    parse_k8s_token, to_sequence_messages,
 )
 
 UUID4_LENGTH = 32
@@ -226,3 +227,59 @@ def test_get_user_identifier_from_client_certificate(
             get_user_identifier_from_client_certificate(client_certificate_data)
             == expected_user_identifier
         )
+
+
+@pytest.mark.parametrize(
+    "test_description, input_data, expected_output, expected_exception",
+    [
+        # Test case 1: Single BaseMessage
+        (
+            "Single BaseMessage",
+            HumanMessage("test message"),
+            [HumanMessage("test message")],
+            None,
+        ),
+        # Test case 2: List of BaseMessage
+        (
+            "List of BaseMessage",
+            [HumanMessage("message 1"), HumanMessage("message 2")],
+            [HumanMessage("message 1"), HumanMessage("message 2")],
+            None,
+        ),
+        # Test case 3: Mixed list with invalid types
+        (
+            "Mixed list with invalid types",
+            [HumanMessage("valid message"), "invalid message"],
+            None,
+            ValueError,
+        ),
+        # Test case 4: Empty list
+        (
+            "Empty list",
+            [],
+            [],
+            None,
+        ),
+        # Test case 5: Invalid type (e.g., string)
+        (
+            "Invalid type (string)",
+            "invalid message",
+            None,
+            ValueError,
+        ),
+        # Test case 6: List of strings
+        (
+            "List of strings",
+            ["string1", "string2"],
+            None,
+            ValueError,
+        ),
+    ],
+)
+def test_to_sequence_messages(test_description, input_data, expected_output, expected_exception):
+    if expected_exception:
+        with pytest.raises(expected_exception, match="Unsupported message type"):
+            to_sequence_messages(input_data)
+    else:
+        result = to_sequence_messages(input_data)
+        assert result == expected_output, test_description
