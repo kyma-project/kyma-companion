@@ -3,7 +3,11 @@ from typing import Any
 
 import tiktoken
 import yaml
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    ToolMessage,
+)
 from langgraph.constants import END
 from langgraph.graph.message import Messages
 from pydantic import BaseModel
@@ -44,6 +48,44 @@ def filter_messages(
     for i, message in enumerate(filtered):
         if not isinstance(message, ToolMessage):
             return filtered[i:]
+    return filtered
+
+
+def filter_valid_messages(
+    messages: Sequence[BaseMessage] | list[BaseMessage],
+) -> Sequence[BaseMessage]:
+    """
+    Filters the invalid sequence of messages.
+    For example:
+    - An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
+    - A tool message must be preceded by an assistant message with 'tool_calls'.
+    This method should be used when the LLMs are being invoked with messages.
+    """
+
+    filtered: list[BaseMessage] = []
+    for i, message in enumerate(messages):
+        if isinstance(message, ToolMessage):
+            # ToolMessage should not be added directly
+            continue
+        elif isinstance(message, AIMessage) and message.tool_calls:
+            # check if the next messages are tool calls as requested by AIMessage.
+            is_valid_sequence = True
+            for j, _ in enumerate(message.tool_calls):
+                next_message_index = i + j + 1  # +1 because the index starts from zero.
+                if next_message_index >= len(messages) or not isinstance(
+                    messages[next_message_index], ToolMessage
+                ):
+                    is_valid_sequence = False
+                    break
+            # if the sequence of AIMessage and ToolMessage(s) is completed, then append the completed sequence.
+            if is_valid_sequence:
+                # append the AIMessage and its corresponding ToolMessages.
+                filtered.append(message)
+                for j, _ in enumerate(message.tool_calls):
+                    filtered.append(messages[i + j + 1])
+        else:
+            # append other valid messages.
+            filtered.append(message)
     return filtered
 
 
