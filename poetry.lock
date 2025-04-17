@@ -1722,7 +1722,6 @@ files = [
     {file = "google_crc32c-1.7.0-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:6a40522958040051c755a173eb98c05ad4d64a6dd898888c3e5ccca2d1cbdcdc"},
     {file = "google_crc32c-1.7.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f714fe5cdf5007d7064c57cf7471a99e0cbafda24ddfa829117fc3baafa424f7"},
     {file = "google_crc32c-1.7.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f04e58dbe1bf0c9398e603a9be5aaa09e0ba7eb022a3293195d8749459a01069"},
-    {file = "google_crc32c-1.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:e545b51ddf97f604d30114f7c23eecaf4c06cd6c023ff1ae0b80dcd99af32833"},
     {file = "google_crc32c-1.7.0-cp313-cp313t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:364067b063664dd8d1fec75a3fe85edf05c46f688365269beccaf42ef5dfe889"},
     {file = "google_crc32c-1.7.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e1b0d6044799f6ac51d1cc2decb997280a83c448b3bef517a54b57a3b71921c0"},
     {file = "google_crc32c-1.7.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:02bc3295d26cd7666521fd6d5b7b93923ae1eb4417ddd3bc57185a5881ad7b96"},
@@ -1979,19 +1978,19 @@ files = [
 
 [[package]]
 name = "hdbcli"
-version = "2.24.21"
+version = "2.24.24"
 description = "SAP HANA Python Client"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "hdbcli-2.24.21-cp34-abi3-macosx_10_11_x86_64.whl", hash = "sha256:5af28153b2262466d99408977e706eb13edaf0b3a75692c5205c6a3e595e4103"},
-    {file = "hdbcli-2.24.21-cp34-abi3-manylinux1_x86_64.whl", hash = "sha256:e716e8cedd6456604c33ef5a91722a3f63fe1af1d706b6552f32f890465b374a"},
-    {file = "hdbcli-2.24.21-cp34-abi3-manylinux2014_ppc64le.whl", hash = "sha256:6c280a548a3fa4a76eb0fbfe9188429276f80f301f98f6e5297e3561017120d6"},
-    {file = "hdbcli-2.24.21-cp36-abi3-manylinux2014_aarch64.whl", hash = "sha256:9c7e7d6cfb12e1441b7fd1e866668334755faffed3902bcbbb7a4fe9a4fd7188"},
-    {file = "hdbcli-2.24.21-cp36-abi3-win32.whl", hash = "sha256:105a8435fb3492f33a1492079d6846a13d8b273e4de37c6a298a01d82ffe0ab3"},
-    {file = "hdbcli-2.24.21-cp36-abi3-win_amd64.whl", hash = "sha256:d59c2a8ea59d63aa5128e8bcbb96f568e238fb37e93c655790efa0f1c0756b2b"},
-    {file = "hdbcli-2.24.21-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:f6ceaf45d9c5a9c2f47794e1ff19bc22eee8d3e018465c2c665853879e525029"},
+    {file = "hdbcli-2.24.24-cp34-abi3-macosx_10_11_x86_64.whl", hash = "sha256:67408d7a6225e8e61ed8cf892296ae4af7e10f30a36d6ccc674854c6b369cc13"},
+    {file = "hdbcli-2.24.24-cp34-abi3-manylinux1_x86_64.whl", hash = "sha256:7cc4c2148bd3460d31ef5fc0fb90507858b42dce1ed939661f20ea2784708dc2"},
+    {file = "hdbcli-2.24.24-cp34-abi3-manylinux2014_ppc64le.whl", hash = "sha256:c30b8486c4391ea865d1ae1ab5b827a5dfb634dbd72235ad681988ade967b8c6"},
+    {file = "hdbcli-2.24.24-cp36-abi3-manylinux2014_aarch64.whl", hash = "sha256:561c4edb88da04cbd8631644b5adde82cc3469cb0eaba4a111fd79345986a600"},
+    {file = "hdbcli-2.24.24-cp36-abi3-win32.whl", hash = "sha256:74962038b28428ae2054833c2f44a4d6dd965931737bcf1cd4b7d8be4c83a5fe"},
+    {file = "hdbcli-2.24.24-cp36-abi3-win_amd64.whl", hash = "sha256:7edd1a95f64c3b1d7b75dc6517ccda4cc3af97161118444c434c4b1460d69e83"},
+    {file = "hdbcli-2.24.24-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:49df32e35752abf457c4471d3f53f2d679703774b718fa1f34e3bb3f6ad58c3e"},
 ]
 
 [[package]]
