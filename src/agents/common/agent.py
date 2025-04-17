@@ -22,7 +22,7 @@ from agents.common.constants import (
     SUMMARIZATION,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import filter_messages, should_continue
+from agents.common.utils import filter_messages, filter_valid_messages, should_continue
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -141,16 +141,17 @@ class BaseAgent:
         }
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
-        inputs = {
-            AGENT_MESSAGES: state.get_agent_messages_including_summary(),
-            "query": state.my_task.description,
-        }
+        input_messages = state.get_agent_messages_including_summary()
         if len(state.agent_messages) == 0:
-            inputs[AGENT_MESSAGES] = filter_messages(state.messages)
+            input_messages = filter_messages(state.messages)
 
+        # invoke the chain.
         response = await ainvoke_chain(
             self.chain,
-            inputs,
+            {
+                AGENT_MESSAGES: filter_valid_messages(input_messages),
+                "query": state.my_task.description,
+            },
             config=config,
         )
         return response

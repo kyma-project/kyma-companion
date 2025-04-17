@@ -3,7 +3,7 @@ from typing import Any
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
-    MessageLikeRepresentation,
+    BaseMessage,
     RemoveMessage,
     SystemMessage,
     ToolMessage,
@@ -14,7 +14,11 @@ from langgraph.graph.message import Messages
 from pydantic import BaseModel
 
 from agents.common.constants import ERROR, NEXT
-from agents.common.utils import compute_messages_token_count, compute_string_token_count
+from agents.common.utils import (
+    compute_messages_token_count,
+    compute_string_token_count,
+    filter_valid_messages,
+)
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
 from agents.supervisor.agent import SUPERVISOR
 from utils import logging
@@ -66,10 +70,10 @@ class MessageSummarizer:
         return compute_messages_token_count(messages, self._tokenizer_model_type)
 
     def filter_messages_by_token_limit(
-        self, messages: list[MessageLikeRepresentation]
-    ) -> list[MessageLikeRepresentation]:
+        self, messages: list[BaseMessage]
+    ) -> list[BaseMessage]:
         """Returns the messages that can be kept within the token limit."""
-        filtered_messages: list[MessageLikeRepresentation] = []
+        filtered_messages: list[BaseMessage] = []
         # iterate the messages in reverse order and keep message if token limit is not exceeded.
         tokens = 0
         for msg in reversed(messages):
@@ -88,7 +92,7 @@ class MessageSummarizer:
         return filtered_messages
 
     async def get_summary(
-        self, messages: list[MessageLikeRepresentation], config: RunnableConfig
+        self, messages: list[BaseMessage], config: RunnableConfig
     ) -> str:
         """Returns the summary of the messages."""
 
@@ -97,7 +101,7 @@ class MessageSummarizer:
 
         res = await ainvoke_chain(
             self._chain,
-            {"messages": messages},
+            {"messages": filter_valid_messages(messages)},
             config=config,
         )
         logger.debug("Messages summary completed")

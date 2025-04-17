@@ -1,10 +1,12 @@
 import json
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 import jwt
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from langchain_core.messages import BaseMessage
 
 JWT_TOKEN_SUB = "sub"
 JWT_TOKEN_EMAIL = "email"
@@ -50,6 +52,34 @@ def string_to_bool(value: str) -> bool:
     if value.lower() in ["false", "0", "f", "n", "no"]:
         return False
     raise ValueError(f"{value} is not a valid boolean value.")
+
+
+def to_sequence_messages(
+    messages: (
+        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]]
+        | BaseMessage
+        | list[str]
+        | tuple[str, str]
+        | str
+        | dict[str, Any]
+    ),
+) -> Sequence[BaseMessage]:
+    """
+    Convert messages to a sequence of BaseMessage.
+    """
+
+    if isinstance(messages, BaseMessage):
+        return [messages]
+
+    result = []
+    for _, message in enumerate(messages):
+        if isinstance(message, BaseMessage):
+            result.append(message)
+        else:
+            raise ValueError(
+                f"Unsupported message type: {type(message)} in to_sequence_messages"
+            )
+    return result
 
 
 def parse_k8s_token(token: str) -> Any:
