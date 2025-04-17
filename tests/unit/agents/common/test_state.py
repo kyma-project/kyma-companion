@@ -195,6 +195,18 @@ class TestUserInput:
             (
                 UserInput(
                     query="non-empty",
+                    resource_kind="Cluster",
+                    resource_api_version="",
+                    resource_name="",
+                    namespace="",
+                ),
+                {
+                    "resource_kind": "Cluster",
+                },
+            ),
+            (
+                UserInput(
+                    query="non-empty",
                     resource_kind="Pod",
                 ),
                 {

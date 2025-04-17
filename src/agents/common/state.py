@@ -85,7 +85,7 @@ class UserInput(BaseModel):
     def get_resource_information(self) -> dict[str, str]:
         """Get resource information."""
         result = {}
-        if self.resource_kind is not None and self.resource_name != "":
+        if self.resource_kind is not None and self.resource_kind != "":
             result["resource_kind"] = self.resource_kind
         if self.resource_api_version is not None and self.resource_api_version != "":
             result["resource_api_version"] = self.resource_api_version

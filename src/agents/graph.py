@@ -348,12 +348,15 @@ class CompanionGraph:
     ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
-        messages = [
-            SystemMessage(
-                content=f"The user query is related to: {user_input.get_resource_information()}"
-            ),
-            HumanMessage(content=message.query),
-        ]
+        messages: list[BaseMessage] = [HumanMessage(content=message.query)]
+        resource_context = user_input.get_resource_information()
+        if resource_context and len(resource_context) > 0:
+            messages.insert(
+                0,
+                SystemMessage(
+                    content=f"The user query is related to: {resource_context}"
+                ),
+            )
 
         x_cluster_url = k8s_client.get_api_server()
         cluster_id = x_cluster_url.split(".")[1]
