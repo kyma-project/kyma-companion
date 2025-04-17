@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import HumanMessage
 
 from utils import utils
 from utils.utils import (
@@ -19,7 +19,8 @@ from utils.utils import (
     create_session_id,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
-    parse_k8s_token, to_sequence_messages,
+    parse_k8s_token,
+    to_sequence_messages,
 )
 
 UUID4_LENGTH = 32
@@ -276,7 +277,9 @@ def test_get_user_identifier_from_client_certificate(
         ),
     ],
 )
-def test_to_sequence_messages(test_description, input_data, expected_output, expected_exception):
+def test_to_sequence_messages(
+    test_description, input_data, expected_output, expected_exception
+):
     if expected_exception:
         with pytest.raises(expected_exception, match="Unsupported message type"):
             to_sequence_messages(input_data)
