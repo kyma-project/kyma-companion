@@ -72,6 +72,7 @@ class ConversationService(metaclass=SingletonMeta):
     _kyma_graph: IGraph
     _model_factory: IModelFactory
     _usage_limiter: IUsageTracker
+    _mini_model: IModel
 
     def __init__(
         self,
