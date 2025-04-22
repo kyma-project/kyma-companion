@@ -1,9 +1,8 @@
-import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
@@ -466,6 +465,42 @@ class TestCompanionGraph:
                 None,
                 "Graph execution failed",
             ),
+            (
+                "Should include resource info when non-empty",
+                "conv_456",
+                Message(
+                    query="What is Kubernetes?",
+                    resource_kind="Cluster",
+                    resource_api_version="",
+                    resource_name="",
+                    namespace="",
+                ),
+                [
+                    {"Exit": AIMessage(content="final response")},
+                ],
+                [
+                    f'{{"Exit": {create_messages_json("final response", "ai", "Exit")}}}',
+                ],
+                None,
+            ),
+            (
+                "Should not include resource info when empty",
+                "conv_456",
+                Message(
+                    query="What is Kubernetes?",
+                    resource_kind="",
+                    resource_api_version="",
+                    resource_name="",
+                    namespace="",
+                ),
+                [
+                    {"Exit": AIMessage(content="final response")},
+                ],
+                [
+                    f'{{"Exit": {create_messages_json("final response", "ai", "Exit")}}}',
+                ],
+                None,
+            ),
         ],
     )
     async def test_astream(
@@ -484,6 +519,22 @@ class TestCompanionGraph:
 
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):
+            first_message = kwargs["input"]["messages"][0]
+            if (
+                message.namespace == ""
+                and message.resource_kind == ""
+                and message.resource_name == ""
+                and message.resource_api_version == ""
+            ):
+                if not isinstance(first_message, HumanMessage):
+                    raise Exception(
+                        "The first message should be a HumanMessage when resource info is empty."
+                    )
+            else:
+                if not isinstance(first_message, SystemMessage):
+                    raise Exception(
+                        "The first message should be a SystemMessage when resource_name info is non-empty."
+                    )
             if isinstance(mock_chunks, Exception):
                 raise mock_chunks
             for chunk in mock_chunks:
@@ -505,11 +556,6 @@ class TestCompanionGraph:
                 conversation_id, message, mock_k8s_client
             ):
                 result.append(chunk)
-
-            def compare_json(json_str1, json_str2):
-                obj1 = json.loads(json_str1)
-                obj2 = json.loads(json_str2)
-                return obj1 == obj2
 
             assert result == expected_output
 
