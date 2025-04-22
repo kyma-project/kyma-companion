@@ -64,27 +64,22 @@ def filter_valid_messages(
 
     filtered: list[BaseMessage] = []
     for i, message in enumerate(messages):
-        if isinstance(message, ToolMessage):
-            # ToolMessage should not be added directly
-            continue
-        elif isinstance(message, AIMessage) and message.tool_calls:
+        if isinstance(message, AIMessage) and message.tool_calls:
             # check if the next messages are tool calls as requested by AIMessage.
-            is_valid_sequence = True
-            for j, _ in enumerate(message.tool_calls):
-                next_message_index = i + j + 1  # +1 because the index starts from zero.
-                if next_message_index >= len(messages) or not isinstance(
-                    messages[next_message_index], ToolMessage
-                ):
-                    is_valid_sequence = False
-                    break
-            # if the sequence of AIMessage and ToolMessage(s) is completed, then append the completed sequence.
-            if is_valid_sequence:
-                # append the AIMessage and its corresponding ToolMessages.
+            tool_call_count = len(message.tool_calls)
+            next_messages = messages[
+                i + 1 : i + 1 + tool_call_count
+            ]  # +1 because the index starts from zero.
+            if len(next_messages) == tool_call_count and all(
+                isinstance(msg, ToolMessage) for msg in next_messages
+            ):
+                # Append the AIMessage and its corresponding ToolMessages.
                 filtered.append(message)
-                for j, _ in enumerate(message.tool_calls):
-                    filtered.append(messages[i + j + 1])
-        else:
+                filtered.extend(next_messages)
+        elif not isinstance(message, ToolMessage):
             # append other valid messages.
+            # ToolMessage should not be added directly.
+            # It should be preceded by an AIMessage with tool_calls.
             filtered.append(message)
     return filtered
 

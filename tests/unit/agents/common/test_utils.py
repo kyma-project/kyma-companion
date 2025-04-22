@@ -505,6 +505,39 @@ def test_compute_messages_token_count(msgs, model_type, expected_token_count):
             [],
             [],
         ),
+        (
+            "Should not raise an error when next_messages index is out of range",
+            [
+                HumanMessage(content="Human message"),
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_3",
+                            "name": "call_3",
+                            "id": "call_3",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+            ],
+            [
+                HumanMessage(content="Human message"),
+            ],
+        ),
     ],
 )
 def test_filter_valid_messages(test_description, input_messages, expected_output):
