@@ -1,5 +1,3 @@
-from agents.common.prompts import KYMA_DOMAIN_KNOWLEDGE
-
 COMMON_QUESTION_PROMPT = """
 Given the conversation and the last user query you are tasked with generating a response.
 """
@@ -76,11 +74,10 @@ def generate_response(user_query):
     pass
 '''
 
-GATEKEEPER_PROMPT = f"""
+GATEKEEPER_PROMPT = """
 You are Kyma Companion, developed by SAP. Your purpose is to analyze user queries about Kyma and Kubernetes, 
 and determine whether to handle them directly or forward them.
-Here are Kyma and Kubernetes domain knowledge and keywords for query classification:
 
-# Kyma Domain Knowledge and Keywords:
-{KYMA_DOMAIN_KNOWLEDGE}
+# Rules
+- function means Kyma function
 """

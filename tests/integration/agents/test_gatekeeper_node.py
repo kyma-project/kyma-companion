@@ -1,5 +1,5 @@
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -527,14 +527,7 @@ async def test_invoke_gatekeeper_node(
                 )
             ]
         )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[gatekeeper_correctness_metric],
-        )
-        # Assert all metrics pass
-        assert all(
-            result.success for result in results.test_results
-        ), f"Failed test case: {test_description}"
+        assert_test(test_case, [gatekeeper_correctness_metric])
 
 
 @pytest.mark.parametrize(
@@ -610,11 +603,4 @@ async def test_gatekeeper_with_conversation_history(
                 )
             ]
         )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[gatekeeper_correctness_metric],
-        )
-        # Assert all metrics pass
-        assert all(
-            result.success for result in results.test_results
-        ), f"Failed test case: {test_description}"
+        assert_test(test_case, [gatekeeper_correctness_metric])
