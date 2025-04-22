@@ -22,7 +22,11 @@ from agents.common.constants import (
 from agents.common.exceptions import SubtasksMissingError
 from agents.common.response_converter import IResponseConverter, ResponseConverter
 from agents.common.state import Plan
-from agents.common.utils import create_node_output, filter_messages
+from agents.common.utils import (
+    create_node_output,
+    filter_messages,
+    filter_valid_messages,
+)
 from agents.supervisor.prompts import (
     FINALIZER_PROMPT,
     FINALIZER_PROMPT_FOLLOW_UP,
@@ -168,7 +172,7 @@ class SupervisorAgent:
         plan: Plan = await ainvoke_chain(
             self._planner_chain,
             {
-                "messages": reduces_messages,
+                "messages": filter_valid_messages(reduces_messages),
             },
         )
         return plan
@@ -243,7 +247,7 @@ class SupervisorAgent:
 
         final_response = await ainvoke_chain(
             final_response_chain,
-            {"messages": state.messages},
+            {"messages": filter_valid_messages(state.messages)},
         )
         logger.debug("Final response generated")
         return {

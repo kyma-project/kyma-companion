@@ -3,7 +3,11 @@ from typing import Any
 
 import tiktoken
 import yaml
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    ToolMessage,
+)
 from langgraph.constants import END
 from langgraph.graph.message import Messages
 from pydantic import BaseModel
@@ -44,6 +48,39 @@ def filter_messages(
     for i, message in enumerate(filtered):
         if not isinstance(message, ToolMessage):
             return filtered[i:]
+    return filtered
+
+
+def filter_valid_messages(
+    messages: Sequence[BaseMessage] | list[BaseMessage],
+) -> Sequence[BaseMessage]:
+    """
+    Filters the invalid sequence of messages.
+    For example:
+    - An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
+    - A tool message must be preceded by an assistant message with 'tool_calls'.
+    This method should be used when the LLMs are being invoked with messages.
+    """
+
+    filtered: list[BaseMessage] = []
+    for i, message in enumerate(messages):
+        if isinstance(message, AIMessage) and message.tool_calls:
+            # check if the next messages are tool calls as requested by AIMessage.
+            tool_call_count = len(message.tool_calls)
+            next_messages = messages[
+                i + 1 : i + 1 + tool_call_count
+            ]  # +1 because the index starts from zero.
+            if len(next_messages) == tool_call_count and all(
+                isinstance(msg, ToolMessage) for msg in next_messages
+            ):
+                # Append the AIMessage and its corresponding ToolMessages.
+                filtered.append(message)
+                filtered.extend(next_messages)
+        elif not isinstance(message, ToolMessage):
+            # append other valid messages.
+            # ToolMessage should not be added directly.
+            # It should be preceded by an AIMessage with tool_calls.
+            filtered.append(message)
     return filtered
 
 

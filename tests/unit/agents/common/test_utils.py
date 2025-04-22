@@ -17,6 +17,7 @@ from agents.common.utils import (
     compute_messages_token_count,
     compute_string_token_count,
     filter_messages,
+    filter_valid_messages,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
@@ -332,3 +333,213 @@ def test_compute_string_token_count(text, model_type, expected_token_count):
 )
 def test_compute_messages_token_count(msgs, model_type, expected_token_count):
     assert compute_messages_token_count(msgs, model_type) == expected_token_count
+
+
+@pytest.mark.parametrize(
+    "test_description, input_messages, expected_output",
+    [
+        (
+            "Valid sequence with AIMessage and ToolMessages",
+            [
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+                ToolMessage(content="Tool message 2", tool_call_id="call_2"),
+            ],
+            [
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+                ToolMessage(content="Tool message 2", tool_call_id="call_2"),
+            ],
+        ),
+        (
+            "Invalid sequence with AIMessage missing one ToolMessage out of two.",
+            [
+                HumanMessage(content="Human message"),
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+            ],
+            [
+                HumanMessage(content="Human message"),
+            ],
+        ),
+        (
+            "Invalid sequence with AIMessage missing ToolMessages",
+            [
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                HumanMessage(content="Human message"),
+            ],
+            [
+                HumanMessage(content="Human message"),
+            ],
+        ),
+        (
+            "ToolMessage without preceding AIMessage",
+            [
+                ToolMessage(content="Tool message", tool_call_id="call_1"),
+                HumanMessage(content="Human message"),
+                ToolMessage(content="Tool message", tool_call_id="call_2"),
+            ],
+            [
+                HumanMessage(content="Human message"),
+            ],
+        ),
+        (
+            "AIMessage without tool_calls",
+            [
+                AIMessage(content="AI message 1"),
+                HumanMessage(content="Human message"),
+                AIMessage(content="AI message 2"),
+                ToolMessage(content="Tool message", tool_call_id="call_2"),
+            ],
+            [
+                AIMessage(content="AI message 1"),
+                HumanMessage(content="Human message"),
+                AIMessage(content="AI message 2"),
+            ],
+        ),
+        (
+            "Mixed valid and invalid sequences",
+            [
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+                HumanMessage(content="Human message"),
+                ToolMessage(content="Tool message 2", tool_call_id="call_2"),
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+            ],
+            [
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+                HumanMessage(content="Human message"),
+            ],
+        ),
+        (
+            "Empty input",
+            [],
+            [],
+        ),
+        (
+            "Should not raise an error when next_messages index is out of range",
+            [
+                HumanMessage(content="Human message"),
+                AIMessage(
+                    content="AI message",
+                    tool_calls=[
+                        {
+                            "type": "call_1",
+                            "name": "call_1",
+                            "id": "call_1",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_2",
+                            "name": "call_2",
+                            "id": "call_2",
+                            "args": {"a": 1},
+                        },
+                        {
+                            "type": "call_3",
+                            "name": "call_3",
+                            "id": "call_3",
+                            "args": {"a": 1},
+                        },
+                    ],
+                ),
+                ToolMessage(content="Tool message 1", tool_call_id="call_1"),
+            ],
+            [
+                HumanMessage(content="Human message"),
+            ],
+        ),
+    ],
+)
+def test_filter_valid_messages(test_description, input_messages, expected_output):
+    result = filter_valid_messages(input_messages)
+    assert result == expected_output, test_description

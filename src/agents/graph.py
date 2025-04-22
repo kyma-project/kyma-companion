@@ -39,7 +39,7 @@ from agents.common.state import (
     SubTask,
     UserInput,
 )
-from agents.common.utils import should_continue
+from agents.common.utils import filter_valid_messages, should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
@@ -169,7 +169,9 @@ class CompanionGraph:
         response = await ainvoke_chain(
             self._common_chain,
             {
-                "messages": state.get_messages_including_summary(),
+                "messages": filter_valid_messages(
+                    state.get_messages_including_summary()
+                ),
                 "query": subtask,
             },
         )
@@ -237,7 +239,9 @@ class CompanionGraph:
         response = await ainvoke_chain(
             self._gatekeeper_chain,
             {
-                "messages": state.get_messages_including_summary(),
+                "messages": filter_valid_messages(
+                    state.get_messages_including_summary()
+                ),
                 "query": user_query,
             },
         )

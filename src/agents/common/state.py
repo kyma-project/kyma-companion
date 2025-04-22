@@ -1,10 +1,9 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, cast
 
 from langchain_core.messages import (
     BaseMessage,
-    MessageLikeRepresentation,
     SystemMessage,
 )
 from langgraph.graph import add_messages
@@ -14,6 +13,7 @@ from pydantic.config import ConfigDict
 
 from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
 from services.k8s import IK8sClient
+from utils.utils import to_sequence_messages
 
 
 class SubTaskStatus(str, Enum):
@@ -135,16 +135,25 @@ class CompanionState(BaseModel):
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def get_messages_including_summary(self) -> list[MessageLikeRepresentation]:
+    def get_messages_including_summary(self) -> Sequence[BaseMessage]:
         """Get messages including the summary message."""
         if self.messages_summary:
-            return list(
+            return to_sequence_messages(
                 add_messages(
                     SystemMessage(content=self.messages_summary),
-                    list[MessageLikeRepresentation](self.messages),
+                    cast(
+                        list[
+                            BaseMessage
+                            | list[str]
+                            | tuple[str, str]
+                            | str
+                            | dict[str, Any]
+                        ],
+                        self.messages,
+                    ),
                 )
             )
-        return list(self.messages)
+        return self.messages
 
 
 class BaseAgentState(BaseModel):
@@ -165,13 +174,22 @@ class BaseAgentState(BaseModel):
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def get_agent_messages_including_summary(self) -> list[MessageLikeRepresentation]:
+    def get_agent_messages_including_summary(self) -> Sequence[BaseMessage]:
         """Get messages including the summary message."""
         if self.agent_messages_summary:
-            return list(
+            return to_sequence_messages(
                 add_messages(
                     SystemMessage(content=self.agent_messages_summary),
-                    list[MessageLikeRepresentation](self.agent_messages),
+                    cast(
+                        list[
+                            BaseMessage
+                            | list[str]
+                            | tuple[str, str]
+                            | str
+                            | dict[str, Any]
+                        ],
+                        self.agent_messages,
+                    ),
                 )
             )
-        return list(self.agent_messages)
+        return self.agent_messages
