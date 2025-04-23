@@ -1,6 +1,6 @@
 from enum import Enum
 from functools import lru_cache
-from typing import Protocol, cast
+from typing import Protocol, cast, runtime_checkable
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
@@ -39,6 +39,7 @@ class ModelType(str, Enum):
     TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
+@runtime_checkable
 class IModel(Protocol):
     """Model Interface."""
 
@@ -95,35 +96,40 @@ class ModelFactory:
         """
         Create a model for the given name.
         """
-        # TODO: Maybe use deployment ID as a key in addition to the model name.
-        model: IModel | Embeddings | None = self._models.get(name)
-        if model:
-            return model
+        # Check cache.
+        if name in self._models:
+            return self._models[name]
 
-        model_config = next(
-            (model for model in self._config.models if model.name == name), None
-        )
+        # Build a lookup table for model configurations.
+        model_config_map = {model.name: model for model in self._config.models}
+        model_config = model_config_map.get(name)
+
         if model_config is None:
-            raise ModelNotFoundError(f"Model {name} not found in the configuration.")
+            raise ModelNotFoundError(f"Model '{name}' not found in the configuration.")
 
-        if name.startswith(ModelPrefix.GPT):
-            model = OpenAIModel(model_config, self._proxy_client)
-        elif name.startswith(ModelPrefix.GEMINI):
-            model = GeminiModel(model_config, self._proxy_client)
-        elif name.startswith(ModelPrefix.TEXT_EMBEDDING):
-            model = cast(
+        # Dispatch mechanism for model creation.
+        model_prefix_dispatch = {
+            ModelPrefix.GPT: lambda: OpenAIModel(model_config, self._proxy_client),
+            ModelPrefix.GEMINI: lambda: GeminiModel(model_config, self._proxy_client),
+            ModelPrefix.TEXT_EMBEDDING: lambda: cast(
                 Embeddings,
                 OpenAIEmbeddings(
                     model=name,
                     deployment_id=model_config.deployment_id,
                     proxy_client=self._proxy_client,
                 ),
-            )
-        else:
-            raise UnsupportedModelError(f"Model {name} not supported.")
-        # add to cache
-        self._models[name] = model
-        return model
+            ),
+        }
+
+        # Check if the model name starts with any of the prefixes.
+        for prefix, create_fn in model_prefix_dispatch.items():
+            if name.startswith(prefix):
+                model = create_fn()
+                # Cache the model.
+                self._models[name] = cast(IModel | Embeddings, model)
+                return cast(IModel | Embeddings, model)
+
+        raise UnsupportedModelError(f"Model '{name}' is not supported.")
 
     def create_models(self) -> dict[str, IModel | Embeddings]:
         """Create all models defined in the configuration."""
