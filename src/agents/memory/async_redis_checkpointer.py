@@ -41,14 +41,17 @@ class IUsageMemory(Protocol):
 
     async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> str:
         """Write LLM usage data to Redis. Return the key."""
+        ...
 
     async def adelete_expired_llm_usage_records(
         self, cluster_id: str, ttl: int
     ) -> None:
         """Delete expired LLM usage records."""
+        ...
 
     async def alist_llm_usage_records(self, cluster_id: str, ttl: int) -> list[dict]:
         """List non-expired LLM usage records."""
+        ...
 
 
 # Utilities shared by both RedisSaver and AsyncRedisSaver
