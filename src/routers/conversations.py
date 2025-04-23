@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 
 def get_langfuse_service() -> ILangfuseService:
-    """Dependency to get the langfuse service instance"""
+    """Dependency to get the langfuse service instance."""
     return LangfuseService()
 
 
