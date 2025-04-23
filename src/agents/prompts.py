@@ -66,7 +66,7 @@ def get_answer_from_history(user_query, conversation_history):
     pass
 
 def classify_query(user_query):
-    """Classifies query into relevant categories."""
+    """Classifies query into relevant categories. Uses the given Kyma and Kubernetes domain knowledge for classification too."""
     pass
 
 def generate_response(user_query):
@@ -77,4 +77,7 @@ def generate_response(user_query):
 GATEKEEPER_PROMPT = """
 You are Kyma Companion, developed by SAP. Your purpose is to analyze user queries about Kyma and Kubernetes, 
 and determine whether to handle them directly or forward them.
+
+# Rules
+- function means Kyma function
 """
