@@ -1,10 +1,38 @@
+from dataclasses import field
+from typing import Annotated, Protocol
+
+from hdbcli import dbapi
+
 from routers.common import ReadynessModel
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+# Interfaces:
+
+
+class IHanaConnection(Protocol):
+    """Protocol for the Hana database connection."""
+
+    def isconnected(self) -> bool:
+        """Veryfies if a connection to a Hana database is operational."""
+        ...
+
+
+# Classes:
 
 
 class Readyness:
     """
     A class to check the readiness of various system components.
     """
+
+    _hana_connection: IHanaConnection | None = None
+
+    def __init__(
+        self, hana_connection: Annotated[IHanaConnection | None, field(default=None)]
+    ) -> None:
+        self._hana_connection = hana_connection
 
     def is_hana_ready(self) -> bool:
         """
@@ -13,7 +41,19 @@ class Readyness:
         Returns:
             bool: True if HANA is ready, False otherwise.
         """
-        return True
+        if not self._hana_connection:
+            logger.warning("HANA DB connection is not initialized.")
+            return False
+
+        try:
+            if self._hana_connection.isconnected():
+                logger.info("HANA DB connection is ready.")
+                return True
+            logger.info("HANA DB connection is not ready.")
+        except dbapi.Error as e:
+            logger.error(f"Error while connecting to HANA DB: {e}")
+
+        return False
 
     def is_redis_ready(self) -> bool:
         """
