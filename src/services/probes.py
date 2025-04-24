@@ -54,7 +54,11 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
                 continue
 
             try:
-                response = model.invoke("Test.") if isinstance(model, IModel) else model.embed_query("Test.")
+                response = (
+                    model.invoke("Test.")
+                    if isinstance(model, IModel)
+                    else model.embed_query("Test.")
+                )
                 self._model_states[name] = bool(response)
                 if response:
                     logger.info(f"{name} connection is ready.")
@@ -80,7 +84,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         return self._model_states or {}
 
 
-def get_llm_readieness_probe() -> Generator[LLMReadinessProbe, None, None]:
+def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     """
     Create and yield an LLMReadinessProbe instance.
 

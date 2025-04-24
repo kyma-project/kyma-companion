@@ -9,7 +9,7 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import LivenessModel, ReadinessModel
 from services.hana import get_hana_connection
-from services.probes import get_llm_readieness_probe
+from services.probes import get_llm_readiness_probe
 from services.redis import get_redis_connection
 from utils.config import get_config
 from utils.logging import get_logger
@@ -62,7 +62,7 @@ models = ModelFactory(get_config()).create_models()
 async def readyz(
     hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
-    llm_probe: ILLMReadinessProbe = Depends(get_llm_readieness_probe),  # noqa: B008
+    llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Readiness Probe."""
 
@@ -74,7 +74,9 @@ async def readyz(
 
     return JSONResponse(
         content=jsonable_encoder(response),
-        status_code=(HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE),
+        status_code=(
+            HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE
+        ),
     )
 
 
@@ -102,9 +104,17 @@ def all_ready(response: ReadinessModel | LivenessModel) -> bool:
     Check if all components are ready.
     """
     if isinstance(response, ReadinessModel):
-        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
+        return (
+            response.is_redis_ready
+            and response.is_hana_ready
+            and all(response.llms.values())
+        )
     if isinstance(response, LivenessModel):
-        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
+        return (
+            response.is_redis_ready
+            and response.is_hana_ready
+            and all(response.llms.values())
+        )
 
 
 def is_hana_ready(connection: IHanaConnection) -> bool:
