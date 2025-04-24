@@ -26,3 +26,19 @@ class FollowUpQuestionsResponse(BaseModel):
     """Response body for follow-up questions endpoint"""
 
     questions: list[str] = []
+
+
+class LivenessModel(BaseModel):
+    """Response body representing the state of the Liveness Probe"""
+
+    is_redis_ready: bool
+    is_hana_ready: bool
+    llms: dict[str, bool]
+
+
+class ReadynessModel(BaseModel):
+    """Response body representing the state of the Readyness Probe"""
+
+    is_redis_ready: bool
+    is_hana_ready: bool
+    llms: dict[str, bool]
