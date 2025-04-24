@@ -4,7 +4,7 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import LivenessModel, ReadienessModel
-from services.probes import create_readieness_probe
+from services.probes import IReadienessProbe, Readieness
 from utils.config import get_config
 from utils.hana import create_hana_connection
 from utils.models.factory import ModelFactory
@@ -23,27 +23,36 @@ from utils.settings import (
 router = APIRouter(
     tags=["probes"],
 )
-readyness_probe = create_readieness_probe(
-    hana_connection=create_hana_connection(
-        url=str(DATABASE_URL),
-        port=DATABASE_PORT,
-        user=str(DATABASE_USER),
-        password=str(DATABASE_PASSWORD),
-    ),
-    redis_connection=create_redis_connection(
-        host=str(REDIS_HOST),
-        port=REDIS_PORT,
-        db=REDIS_DB_NUMBER,
-        password=str(REDIS_PASSWORD),
-    ),
-    models=ModelFactory(get_config()).create_models(),
-)
+
+
+def create_readieness_probe() -> IReadienessProbe:
+    """Create a Readiness Probe instance."""
+    config = get_config()
+
+    return Readieness(
+        hana_connection=create_hana_connection(
+            url=str(DATABASE_URL),
+            port=DATABASE_PORT,
+            user=str(DATABASE_USER),
+            password=str(DATABASE_PASSWORD),
+        ),
+        redis_connection=create_redis_connection(
+            host=str(REDIS_HOST),
+            port=REDIS_PORT,
+            db=REDIS_DB_NUMBER,
+            password=str(REDIS_PASSWORD),
+        ),
+        models=ModelFactory(config).create_models() if config else None,
+    )
+
+
+readieness_probe = create_readieness_probe()
 
 
 @router.get("/readyz")
 async def readyz() -> JSONResponse:
     """The endpoint for the Readiness Probe."""
-    response = readyness_probe.get_dto()
+    response = readieness_probe.get_dto()
     status = HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
