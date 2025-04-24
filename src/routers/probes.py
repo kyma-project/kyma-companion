@@ -3,8 +3,8 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from routers.common import LivenessModel, ReadynessModel
-from services.probes import create_readyness_probe
+from routers.common import LivenessModel, ReadienessModel
+from services.probes import create_readieness_probe
 from utils.config import get_config
 from utils.hana import create_hana_connection
 from utils.models.factory import ModelFactory
@@ -23,7 +23,7 @@ from utils.settings import (
 router = APIRouter(
     tags=["probes"],
 )
-readyness_probe = create_readyness_probe(
+readyness_probe = create_readieness_probe(
     hana_connection=create_hana_connection(
         url=str(DATABASE_URL),
         port=DATABASE_PORT,
@@ -67,11 +67,11 @@ async def healthz() -> JSONResponse:
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
 
-def all_ready(response: ReadynessModel | LivenessModel) -> bool:
+def all_ready(response: ReadienessModel | LivenessModel) -> bool:
     """
     Check if all components are ready.
     """
-    if isinstance(response, ReadynessModel):
+    if isinstance(response, ReadienessModel):
         return (
             response.is_redis_ready
             and response.is_hana_ready

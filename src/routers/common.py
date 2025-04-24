@@ -36,8 +36,8 @@ class LivenessModel(BaseModel):
     llms: dict[str, bool]
 
 
-class ReadynessModel(BaseModel):
-    """Response body representing the state of the Readyness Probe"""
+class ReadienessModel(BaseModel):
+    """Response body representing the state of the Readieness Probe"""
 
     is_redis_ready: bool
     is_hana_ready: bool

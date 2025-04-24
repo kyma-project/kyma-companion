@@ -5,7 +5,7 @@ from hdbcli import dbapi
 from langchain_core.embeddings import Embeddings
 from redis.typing import ResponseT
 
-from routers.common import ReadynessModel
+from routers.common import ReadienessModel
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -32,9 +32,9 @@ class IRedisConnection(Protocol):
         ...
 
 
-class IReadynessProbe(Protocol):
+class IReadienessProbe(Protocol):
     """
-    Protocol to ensure the Readyness probe has a `get_dto` method.
+    Protocol to ensure the readiness probe has a `get_dto` method.
     """
 
     def is_hana_ready(self) -> bool:
@@ -53,7 +53,7 @@ class IReadynessProbe(Protocol):
         """Get the readiness states of all LLMs."""
         ...
 
-    def get_dto(self) -> ReadynessModel:
+    def get_dto(self) -> ReadienessModel:
         """Get a DTO (Data Transfer Object) representing the readiness states of all components."""
         ...
 
@@ -61,7 +61,7 @@ class IReadynessProbe(Protocol):
 # Classes:
 
 
-class Readyness:
+class Readieness:
     """
     A class to check the readiness of various system components.
     """
@@ -176,33 +176,33 @@ class Readyness:
             self.are_llms_ready()
         return self._model_states or {}
 
-    def get_dto(self) -> ReadynessModel:
+    def get_dto(self) -> ReadienessModel:
         """
         Get a DTO (Data Transfer Object) representing the readiness states of all components.
 
         Returns:
-            ReadynessModel: An object containing the readiness states of Redis, HANA, and LLMs.
+            ReadienessModel: An object containing the readiness states of Redis, HANA, and LLMs.
         """
-        return ReadynessModel(
+        return ReadienessModel(
             is_redis_ready=self.is_redis_ready(),
             is_hana_ready=self.is_hana_ready(),
             llms=self.get_llms_states(),
         )
 
 
-def create_readyness_probe(
+def create_readieness_probe(
     hana_connection: IHanaConnection | None,
     redis_connection: IRedisConnection | None,
     models: dict[str, IModel | Embeddings] | None,
-) -> IReadynessProbe:
+) -> IReadienessProbe:
     """
-    Factory function to create a Readyness probe.
+    Factory function to create a Readieness probe.
 
     Args:
         hana_connection (IHanaConnection | None): The HANA database connection.
         redis_connection (IRedisConnection | None): The Redis connection.
 
     Returns:
-        IReadyness_Probe: An instance of the Readyness class.
+        IReadieness_Probe: An instance of the Readieness class.
     """
-    return Readyness(hana_connection, redis_connection, models)
+    return Readieness(hana_connection, redis_connection, models)
