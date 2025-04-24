@@ -1,6 +1,5 @@
 from dataclasses import field
-from types import CoroutineType
-from typing import Annotated, Any, Protocol
+from typing import Annotated, Protocol
 
 from hdbcli import dbapi
 from redis.typing import ResponseT

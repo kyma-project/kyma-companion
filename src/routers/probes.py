@@ -69,6 +69,14 @@ def all_ready(response: ReadynessModel | LivenessModel) -> bool:
     Check if all components are ready.
     """
     if isinstance(response, ReadynessModel):
-        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
+        return (
+            response.is_redis_ready
+            and response.is_hana_ready
+            and all(response.llms.values())
+        )
     if isinstance(response, LivenessModel):
-        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
+        return (
+            response.is_redis_ready
+            and response.is_hana_ready
+            and all(response.llms.values())
+        )
