@@ -52,6 +52,15 @@ class ILLMReadinessProbe(Protocol):
         """
         ...
 
+    def has_models(self) -> bool:
+        """
+        Check if there are any models available.
+
+        Returns:
+            bool: True if models are available, False otherwise.
+        """
+        ...
+
 
 @router.get("/readyz")
 async def readyz(
@@ -76,17 +85,17 @@ async def readyz(
 
 
 @router.get("/healthz")
-async def healthz() -> JSONResponse:
+async def healthz(
+    hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
+    redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
+    llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
+) -> JSONResponse:
     """The endpoint for the Health Probe."""
     response = LivenessModel(
-        is_redis_ready=True,
-        is_hana_ready=True,
-        llms={
-            "llm1": True,
-            "llm2": True,
-        },
+        is_hana_initialized=bool(hana_conn),
+        is_redis_initialized=bool(redis_conn),
+        are_models_initialized=llm_probe.has_models(),
     )
-
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
@@ -106,9 +115,9 @@ def all_ready(response: ReadinessModel | LivenessModel) -> bool:
         )
     if isinstance(response, LivenessModel):
         return (
-            response.is_redis_ready
-            and response.is_hana_ready
-            and all(response.llms.values())
+            response.is_redis_initialized
+            and response.is_hana_initialized
+            and response.are_models_initialized
         )
 
 

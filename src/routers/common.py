@@ -31,9 +31,9 @@ class FollowUpQuestionsResponse(BaseModel):
 class LivenessModel(BaseModel):
     """Response body representing the state of the Liveness Probe"""
 
-    is_redis_ready: bool
-    is_hana_ready: bool
-    llms: dict[str, bool]
+    is_redis_initialized: bool
+    is_hana_initialized: bool
+    are_models_initialized: bool
 
 
 class ReadinessModel(BaseModel):

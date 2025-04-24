@@ -23,6 +23,6 @@ def get_redis_connection() -> Generator[Redis, None, None]:
         yield conn
     except Exception as e:
         logging.exception(f"Error with Redis connection: {e}")
-        raise
+        return None
     finally:
         conn.close()

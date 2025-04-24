@@ -34,10 +34,18 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         self._models = models or ModelFactory(config=get_config()).create_models()
         self._model_states = {name: False for name in self._models}
 
+    def has_models(self) -> bool:
+        """
+        Check if there are any models available.
+
+        Returns:
+            bool: True if models are available, False otherwise.
+        """
+        return bool(self._models) and len(self._models) > 0
+
     def are_llms_ready(self) -> bool:
         """
         Check if all LLMs (Large Language Models) are ready.
-
         Once a model is successfully checked, it will not be checked again
         to avoid excessive token usage.
 
@@ -80,8 +88,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
             dict[str, bool]: A dictionary where keys are LLM names and values
             are their readiness states.
         """
-        if self._model_states and not all(self._model_states.values()):
-            self.are_llms_ready()
+        self.are_llms_ready()
         return self._model_states or {}
 
 
