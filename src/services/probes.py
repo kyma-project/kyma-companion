@@ -41,7 +41,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         Returns:
             bool: True if models are available, False otherwise.
         """
-        return bool(self._models) and len(self._models) > 0
+        return bool(self._models) and len(self._models or {}) > 0
 
     def are_llms_ready(self) -> bool:
         """
