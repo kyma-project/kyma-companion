@@ -21,16 +21,17 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
     _models: dict[str, IModel | Embeddings] | None = None
     _model_states: dict[str, bool] | None = None
 
-    def __init__(self, models: dict[str, IModel | Embeddings] | None) -> None:
+    def __init__(self, models: dict[str, IModel | Embeddings] | None = None) -> None:
         """
         Initialize the LLMReadinessProbe.
 
         Args:
             models (dict[str, IModel | Embeddings] | None): A dictionary of model names
-                and their corresponding model instances.
+                and their corresponding model instances. If None, models will be
+                created using the ModelFactory.
         """
         logger.info("Creating new LLM readiness probe")
-        self._models = models or {}
+        self._models = models or ModelFactory(config=get_config()).create_models()
         self._model_states = {name: False for name in self._models}
 
     def are_llms_ready(self) -> bool:
@@ -93,7 +94,7 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     handling in case of initialization failure.
     """
     try:
-        yield LLMReadinessProbe(ModelFactory(config=get_config()).create_models())
+        yield LLMReadinessProbe(models=None)
     except Exception as e:
         logger.exception(f"Failed to initialize LLMReadinessProbe: {e}")
         raise
