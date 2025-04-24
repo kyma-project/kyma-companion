@@ -40,6 +40,16 @@ KYMA_AGENT_INSTRUCTIONS = """
      * Reference documentation findings
 
    * **ALWAYS** explain the reasoning behind your recommendations and explain which tools you used.
+
+# ** Available Tools**
+- `kyma_query_tool`: Query Kyma resources if query relates to resource
+- `search_kyma_doc`: Search Kyma documentation
+
+# ** Critical Rules **
+- if the provided namespace is Cluster or empty namespace, then search cluster-wide resources
+- Use MUST ALWAYS use `kyma_query_tool` to Kyma related things
+- Avoid using `kyma_query_tool` if the user query is irrelevant to resource
+
 """
 
 
