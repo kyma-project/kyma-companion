@@ -4,8 +4,10 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import LivenessModel, ReadynessModel
-from services.probes import Readyness
+from services.probes import create_readyness_probe
+from utils.config import get_config
 from utils.hana import create_hana_connection
+from utils.models.factory import ModelFactory
 from utils.redis import create_redis_connection
 from utils.settings import (
     DATABASE_PASSWORD,
@@ -21,7 +23,7 @@ from utils.settings import (
 router = APIRouter(
     tags=["probes"],
 )
-readyness_probe = Readyness(
+readyness_probe = create_readyness_probe(
     hana_connection=create_hana_connection(
         url=str(DATABASE_URL),
         port=DATABASE_PORT,
@@ -34,6 +36,7 @@ readyness_probe = Readyness(
         db=REDIS_DB_NUMBER,
         password=str(REDIS_PASSWORD),
     ),
+    models=ModelFactory(get_config()).create_models(),
 )
 
 

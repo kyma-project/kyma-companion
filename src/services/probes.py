@@ -2,10 +2,12 @@ from dataclasses import field
 from typing import Annotated, Protocol
 
 from hdbcli import dbapi
+from langchain_core.embeddings import Embeddings
 from redis.typing import ResponseT
 
 from routers.common import ReadynessModel
 from utils.logging import get_logger
+from utils.models.factory import IModel
 
 logger = get_logger(__name__)
 
@@ -30,6 +32,32 @@ class IRedisConnection(Protocol):
         ...
 
 
+class IReadynessProbe(Protocol):
+    """
+    Protocol to ensure the Readyness probe has a `get_dto` method.
+    """
+
+    def is_hana_ready(self) -> bool:
+        """Check if the HANA database is ready."""
+        ...
+
+    def is_redis_ready(self) -> bool:
+        """Check if the Redis service is ready."""
+        ...
+
+    def are_llms_ready(self) -> bool:
+        """Check if all LLMs (Large Language Models) are ready."""
+        ...
+
+    def get_llms_states(self) -> dict[str, bool]:
+        """Get the readiness states of all LLMs."""
+        ...
+
+    def get_dto(self) -> ReadynessModel:
+        """Get a DTO (Data Transfer Object) representing the readiness states of all components."""
+        ...
+
+
 # Classes:
 
 
@@ -40,14 +68,25 @@ class Readyness:
 
     _hana_conn: IHanaConnection | None = None
     _redis_conn: IRedisConnection | None = None
+    _models: dict[str, (IModel | Embeddings)] | None = None
+    _model_states: dict[str, bool] | None = None
 
     def __init__(
         self,
         hana_connection: Annotated[IHanaConnection | None, field(default=None)],
         redis_connection: Annotated[IRedisConnection | None, field(default=None)],
+        models: dict[str, IModel | Embeddings] | None,
     ) -> None:
+        # TODO: Meove logger:
+        logger.info("Creating new readiness probe")
         self._hana_conn = hana_connection
         self._redis_conn = redis_connection
+        self._models = {}
+        self._model_states = {}
+        if models:
+            for name, model in models.items():
+                self._models[name] = model
+                self._model_states[name] = False
 
     def is_hana_ready(self) -> bool:
         """
@@ -92,11 +131,52 @@ class Readyness:
     def are_llms_ready(self) -> bool:
         """
         Check if all LLMs (Large Language Models) are ready.
+        Once a model was successfully cheched,
+        it will not be checked again to avoid excessive token usage.
 
         Returns:
             bool: True if all LLMs are ready, False otherwise.
         """
-        return True
+
+        # Check if models or model states are unavailable and log a warning if so.
+        if not self._models or not self._model_states:
+            logger.warning("No models available for readiness check.")
+            return False
+
+        all_ready = True
+        # Iterate through all models to check their readiness.
+        for name, model in self._models.items():
+            # Retrieve the current state of the model.
+            model_state = self._model_states.get(name, False)
+            if model_state:
+                # Log if the model is already marked as ready.
+                logger.info(f"{name} connection is okay.")
+                continue
+
+            try:
+                response = None
+                # Invoke the appropriate method based on the model type.
+                if isinstance(model, IModel):
+                    response = model.invoke("Test.")
+                elif isinstance(model, Embeddings):
+                    response = model.embed_query("Test.")
+
+                if response:
+                    # Update the model state and log readiness.
+                    self._model_states[name] = True
+                    logger.info(f"{name} connection is okay.")
+                else:
+                    # Log a warning if the model is not okay.
+                    logger.warning(f"{name} connection is not working.")
+                    all_ready = False
+
+            except Exception as e:
+                # Log an error if an exception occurs during readiness check.
+                logger.error(f"{name} connection has an error: {e}")
+                all_ready = False
+
+        # Return the overall readiness status.
+        return all_ready
 
     def get_llms_states(self) -> dict[str, bool]:
         """
@@ -105,7 +185,8 @@ class Readyness:
         Returns:
             dict[str, bool]: A dictionary where keys are LLM names and values are their readiness states.
         """
-        return {"llm1": True, "llm2": True}
+        self.are_llms_ready()  # Ensure LLM states are updated before returning.
+        return self._model_states or {}
 
     def get_dto(self) -> ReadynessModel:
         """
@@ -119,3 +200,21 @@ class Readyness:
             is_hana_ready=self.is_hana_ready(),
             llms=self.get_llms_states(),
         )
+
+
+def create_readyness_probe(
+    hana_connection: IHanaConnection | None,
+    redis_connection: IRedisConnection | None,
+    models: dict[str, IModel | Embeddings] | None,
+) -> IReadynessProbe:
+    """
+    Factory function to create a Readyness probe.
+
+    Args:
+        hana_connection (IHanaConnection | None): The HANA database connection.
+        redis_connection (IRedisConnection | None): The Redis connection.
+
+    Returns:
+        IReadyness_Probe: An instance of the Readyness class.
+    """
+    return Readyness(hana_connection, redis_connection, models)
