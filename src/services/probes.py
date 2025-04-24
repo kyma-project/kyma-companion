@@ -77,16 +77,11 @@ class Readyness:
         redis_connection: Annotated[IRedisConnection | None, field(default=None)],
         models: dict[str, IModel | Embeddings] | None,
     ) -> None:
-        # TODO: Meove logger:
         logger.info("Creating new readiness probe")
         self._hana_conn = hana_connection
         self._redis_conn = redis_connection
-        self._models = {}
-        self._model_states = {}
-        if models:
-            for name, model in models.items():
-                self._models[name] = model
-                self._model_states[name] = False
+        self._models = models or {}
+        self._model_states = {name: False for name in self._models}
 
     def is_hana_ready(self) -> bool:
         """
@@ -122,7 +117,7 @@ class Readyness:
 
         try:
             if self._redis_conn.ping():
-                logger.info("Redis connection is okay.")
+                logger.info("Redis connection is ready.")
                 return True
         except Exception as e:
             logger.error(f"Redis connection failed: {e}")
@@ -138,40 +133,32 @@ class Readyness:
             bool: True if all LLMs are ready, False otherwise.
         """
 
-        # Check if models or model states are unavailable and log a warning if so.
         if not self._models or not self._model_states:
             logger.warning("No models available for readiness check.")
             return False
 
         all_ready = True
-        # Iterate through all models to check their readiness.
         for name, model in self._models.items():
-            # Retrieve the current state of the model.
             model_state = self._model_states.get(name, False)
             if model_state:
-                # Log if the model is already marked as ready.
-                logger.info(f"{name} connection is okay.")
+                logger.info(f"{name} connection is ready.")
                 continue
 
             try:
-                response = None
-                # Invoke the appropriate method based on the model type.
-                if isinstance(model, IModel):
-                    response = model.invoke("Test.")
-                elif isinstance(model, Embeddings):
-                    response = model.embed_query("Test.")
+                response = (
+                    model.invoke("Test.")
+                    if isinstance(model, IModel)
+                    else model.embed_query("Test.")
+                )
 
                 if response:
-                    # Update the model state and log readiness.
                     self._model_states[name] = True
-                    logger.info(f"{name} connection is okay.")
+                    logger.info(f"{name} connection is ready.")
                 else:
-                    # Log a warning if the model is not okay.
                     logger.warning(f"{name} connection is not working.")
                     all_ready = False
 
             except Exception as e:
-                # Log an error if an exception occurs during readiness check.
                 logger.error(f"{name} connection has an error: {e}")
                 all_ready = False
 
@@ -185,7 +172,8 @@ class Readyness:
         Returns:
             dict[str, bool]: A dictionary where keys are LLM names and values are their readiness states.
         """
-        self.are_llms_ready()  # Ensure LLM states are updated before returning.
+        if self._model_states and not all(self._model_states.values()):
+            self.are_llms_ready()
         return self._model_states or {}
 
     def get_dto(self) -> ReadynessModel:
