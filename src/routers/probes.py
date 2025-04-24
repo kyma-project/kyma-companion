@@ -1,60 +1,81 @@
-from fastapi import APIRouter
+from typing import Protocol
+
+from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
+from hdbcli import dbapi
+from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from routers.common import LivenessModel, ReadienessModel
-from services.probes import IReadienessProbe, Readieness
+from routers.common import LivenessModel, ReadinessModel
+from services.hana import get_hana_connection
+from services.probes import get_llm_readieness_probe
+from services.redis import get_redis_connection
 from utils.config import get_config
-from utils.hana import create_hana_connection
+from utils.logging import get_logger
 from utils.models.factory import ModelFactory
-from utils.redis import create_redis_connection
-from utils.settings import (
-    DATABASE_PASSWORD,
-    DATABASE_PORT,
-    DATABASE_URL,
-    DATABASE_USER,
-    REDIS_DB_NUMBER,
-    REDIS_HOST,
-    REDIS_PASSWORD,
-    REDIS_PORT,
-)
 
+logger = get_logger(__name__)
 router = APIRouter(
     tags=["probes"],
 )
 
 
-def create_readieness_probe() -> IReadienessProbe:
-    """Create a Readiness Probe instance."""
-    config = get_config()
+class IHanaConnection(Protocol):
+    """Protocol for the Hana database connection."""
 
-    return Readieness(
-        hana_connection=create_hana_connection(
-            url=str(DATABASE_URL),
-            port=DATABASE_PORT,
-            user=str(DATABASE_USER),
-            password=str(DATABASE_PASSWORD),
-        ),
-        redis_connection=create_redis_connection(
-            host=str(REDIS_HOST),
-            port=REDIS_PORT,
-            db=REDIS_DB_NUMBER,
-            password=str(REDIS_PASSWORD),
-        ),
-        models=ModelFactory(config).create_models() if config else None,
-    )
+    def isconnected(self) -> bool:
+        """Verifies if a connection to a Hana database is ready."""
+        ...
 
 
-readieness_probe = create_readieness_probe()
+class IRedisConnection(Protocol):
+    """
+    Protocol to ensure the Redis connection has a `ping` method.
+    """
+
+    def ping(self, **kwargs) -> ResponseT:  # noqa
+        """Ping the Redis server."""
+        ...
+
+
+class ILLMReadinessProbe(Protocol):
+    """
+    Protocol for probing the readiness of LLMs (Large Language Models).
+    """
+
+    def get_llms_states(self) -> dict[str, bool]:
+        """
+        Retrieve the readiness states of all LLMs.
+
+        Returns:
+            A dictionary where the keys are LLM names and the values are booleans
+            indicating whether each LLM is ready.
+        """
+        ...
+
+
+models = ModelFactory(get_config()).create_models()
 
 
 @router.get("/readyz")
-async def readyz() -> JSONResponse:
+async def readyz(
+    hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
+    redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
+    llm_probe: ILLMReadinessProbe = Depends(get_llm_readieness_probe),  # noqa: B008
+) -> JSONResponse:
     """The endpoint for the Readiness Probe."""
-    response = readieness_probe.get_dto()
-    status = HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE
-    return JSONResponse(content=jsonable_encoder(response), status_code=status)
+
+    response = ReadinessModel(
+        is_hana_ready=is_hana_ready(hana_conn),
+        is_redis_ready=is_redis_ready(redis_conn),
+        llms=llm_probe.get_llms_states(),
+    )
+
+    return JSONResponse(
+        content=jsonable_encoder(response),
+        status_code=(HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE),
+    )
 
 
 @router.get("/healthz")
@@ -76,19 +97,53 @@ async def healthz() -> JSONResponse:
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
 
-def all_ready(response: ReadienessModel | LivenessModel) -> bool:
+def all_ready(response: ReadinessModel | LivenessModel) -> bool:
     """
     Check if all components are ready.
     """
-    if isinstance(response, ReadienessModel):
-        return (
-            response.is_redis_ready
-            and response.is_hana_ready
-            and all(response.llms.values())
-        )
+    if isinstance(response, ReadinessModel):
+        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
     if isinstance(response, LivenessModel):
-        return (
-            response.is_redis_ready
-            and response.is_hana_ready
-            and all(response.llms.values())
-        )
+        return response.is_redis_ready and response.is_hana_ready and all(response.llms.values())
+
+
+def is_hana_ready(connection: IHanaConnection) -> bool:
+    """
+    Check if the HANA database is ready.
+
+    Returns:
+        bool: True if HANA is ready, False otherwise.
+    """
+    if not connection:
+        logger.warning("HANA DB connection is not initialized.")
+        return False
+
+    try:
+        if connection.isconnected():
+            logger.info("HANA DB connection is ready.")
+            return True
+        logger.info("HANA DB connection is not ready.")
+    except dbapi.Error as e:
+        logger.error(f"Error while connecting to HANA DB: {e}")
+
+    return False
+
+
+def is_redis_ready(connection: IRedisConnection) -> bool:
+    """
+    Check if the Redis service is ready.
+
+    Returns:
+        bool: True if Redis is ready, False otherwise.
+    """
+    if not connection:
+        logger.error("Redis connection is not initialized.")
+        return False
+
+    try:
+        if connection.ping():
+            logger.info("Redis connection is ready.")
+            return True
+    except Exception as e:
+        logger.error(f"Redis connection failed: {e}")
+    return False
