@@ -11,9 +11,7 @@ from routers.common import LivenessModel, ReadinessModel
 from services.hana import get_hana_connection
 from services.probes import get_llm_readiness_probe
 from services.redis import get_redis_connection
-from utils.config import get_config
 from utils.logging import get_logger
-from utils.models.factory import ModelFactory
 
 logger = get_logger(__name__)
 router = APIRouter(
@@ -53,9 +51,6 @@ class ILLMReadinessProbe(Protocol):
             indicating whether each LLM is ready.
         """
         ...
-
-
-models = ModelFactory(get_config()).create_models()
 
 
 @router.get("/readyz")
