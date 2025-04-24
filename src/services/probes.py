@@ -1,7 +1,9 @@
 from dataclasses import field
-from typing import Annotated, Protocol
+from types import CoroutineType
+from typing import Annotated, Any, Protocol
 
 from hdbcli import dbapi
+from redis.typing import ResponseT
 
 from routers.common import ReadynessModel
 from utils.logging import get_logger
@@ -15,7 +17,17 @@ class IHanaConnection(Protocol):
     """Protocol for the Hana database connection."""
 
     def isconnected(self) -> bool:
-        """Veryfies if a connection to a Hana database is operational."""
+        """Veryfies if a connection to a Hana database is ready."""
+        ...
+
+
+class IRedisConnection(Protocol):
+    """
+    Protocol to ensure the Redis connection has a `ping` method.
+    """
+
+    def ping(self, **kwargs) -> ResponseT:  # noqa
+        """Ping the Redis server."""
         ...
 
 
@@ -27,12 +39,16 @@ class Readyness:
     A class to check the readiness of various system components.
     """
 
-    _hana_connection: IHanaConnection | None = None
+    _hana_conn: IHanaConnection | None = None
+    _redis_conn: IRedisConnection | None = None
 
     def __init__(
-        self, hana_connection: Annotated[IHanaConnection | None, field(default=None)]
+        self,
+        hana_connection: Annotated[IHanaConnection | None, field(default=None)],
+        redis_connection: Annotated[IRedisConnection | None, field(default=None)],
     ) -> None:
-        self._hana_connection = hana_connection
+        self._hana_conn = hana_connection
+        self._redis_conn = redis_connection
 
     def is_hana_ready(self) -> bool:
         """
@@ -41,12 +57,12 @@ class Readyness:
         Returns:
             bool: True if HANA is ready, False otherwise.
         """
-        if not self._hana_connection:
+        if not self._hana_conn:
             logger.warning("HANA DB connection is not initialized.")
             return False
 
         try:
-            if self._hana_connection.isconnected():
+            if self._hana_conn.isconnected():
                 logger.info("HANA DB connection is ready.")
                 return True
             logger.info("HANA DB connection is not ready.")
@@ -62,7 +78,17 @@ class Readyness:
         Returns:
             bool: True if Redis is ready, False otherwise.
         """
-        return True
+        if not self._redis_conn:
+            logger.error("Redis connection is not initialized.")
+            return False
+
+        try:
+            if self._redis_conn.ping():
+                logger.info("Redis connection is okay.")
+                return True
+        except Exception as e:
+            logger.error(f"Redis connection failed: {e}")
+        return False
 
     def are_llms_ready(self) -> bool:
         """
