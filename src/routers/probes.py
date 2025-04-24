@@ -30,7 +30,7 @@ async def healthz() -> JSONResponse:
         is_redis_ready=True,
         is_hana_ready=True,
         llms={
-            "llm1": False,
+            "llm1": True,
             "llm2": True,
         },
     )
