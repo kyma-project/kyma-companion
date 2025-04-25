@@ -1,11 +1,11 @@
-id: test-deployment-5
+id: test-deployment-5 # format: test-<resource_kind>-<test_id>
 description: The Pod is in an error state because the liveness and readiness probes are incorrectly configured.
 user_query: Why is the deployment not getting ready?
 resource:
   kind: Deployment
   api_version: apps/v1
   name: nginx-deployment
-  namespace: test-deployment-5
+  namespace: test-deployment-5 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: deployment_error
     statement: points out that the Deployment is in an error state

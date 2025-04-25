@@ -1,11 +1,11 @@
-id: test-subscription-14
+id: test-subscription-14 # format: test-<resource_kind>-<test_id>
 description: The Subscription is set-up with an old event type "increase.counter.v0" instead of "increase.counter.v1".
 user_query: Why the events for the Subscription are not being received?
 resource:
   kind: Subscription
   api_version: eventing.kyma-project.io/v1alpha2
   name: sub1
-  namespace: test-subscription-14
+  namespace: test-subscription-14 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: subscription_config_error
     statement: points out that the Subscription is configured with the old event type

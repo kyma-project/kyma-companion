@@ -1,11 +1,11 @@
-id: test-deployment-16
+id: test-deployment-16 # format: test-<resource_kind>-<test_id>
 description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.
 user_query: What is causing the Deployment to not have minimum availability?
 resource:
   kind: Deployment
   api_version: apps/v1
   name: nginx
-  namespace: test-deployment-16
+  namespace: test-deployment-16 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: step_by_step_guide
     statement: contains a step-by-step guide

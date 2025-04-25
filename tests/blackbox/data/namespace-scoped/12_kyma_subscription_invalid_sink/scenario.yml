@@ -1,11 +1,11 @@
-id: test-subscription-12
+id: test-subscription-12 # format: test-<resource_kind>-<test_id>
 description: The Subscription is configured with an invalid sink URL
 user_query: How to fix my subscription?
 resource:
   kind: Subscription
   api_version: eventing.kyma-project.io/v1alpha2
   name: my-sub
-  namespace: test-subscription-12
+  namespace: test-subscription-12 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: subscription_config_error
     statement: points out that the Subscription is configured with an invalid sink URL because it does not end with the required suffix svc.cluster.local

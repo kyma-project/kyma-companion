@@ -1,11 +1,11 @@
-id: test-function-8
+id: test-function-8 # format: test-<resource_kind>-<test_id>
 description: The Serverless Function has a syntax error; it calls Dates() instead of Date().
 user_query: What is wrong with the Function's source code?
 resource:
   kind: Function
   api_version: "serverless.kyma-project.io/v1alpha2"
   name: func1
-  namespace: test-function-8
+  namespace: test-function-8 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: step_by_step_guide
     statement: contains step-by-step guidance

@@ -1,11 +1,11 @@
-id: test-pod-2
+id: test-pod-2 # format: test-<resource_kind>-<test_id>
 description: The Pod tries to list Pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.
 user_query: Why is the Pod in error state?
 resource:
   kind: Pod
   api_version: v1
   name: pod-check
-  namespace: test-pod-2
+  namespace: test-pod-2 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: pod_error
     statement: points out that the Pod is in an error state

@@ -1,11 +1,11 @@
-id: test-deployment-15
+id: test-deployment-15 # format: test-<resource_kind>-<test_id>
 description: The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory.
 user_query: Why is the Deployment not available?
 resource:
   kind: Deployment
   api_version: apps/v1
   name: nginx
-  namespace: test-deployment-15
+  namespace: test-deployment-15 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: step_by_step_guide
     statement: contains a step-by-step guide

@@ -1,11 +1,11 @@
-id: test-subscription-9
+id: test-subscription-9 # format: test-<resource_kind>-<test_id>
 description: The Subscription is set-up with the wrong event type "kyma.custom.commerce.order.created.v1" instead of "sap.kyma.custom.commerce.order.created.v1".
 user_query: Why is the Subscription not working?
 resource:
   kind: Subscription
   api_version: eventing.kyma-project.io/v1alpha2
   name: test-v1alpha2-exact1
-  namespace: test-subscription-9
+  namespace: test-subscription-9 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: subscription_config_error
     statement: points out that the Subscription is configured with the wrong event type

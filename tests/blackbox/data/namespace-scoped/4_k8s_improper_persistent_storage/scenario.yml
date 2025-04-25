@@ -1,11 +1,11 @@
-id: k8s-test-deployment-4
+id: k8s-test-deployment-4 # format: test-<resource_kind>-<test_id>
 description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to remain unbound, leading to issues with the deployment.
 user_query: Why is the deployment not getting ready?
 resource:
   kind: Deployment
   api_version: apps/v1
   name: nginx-deployment
-  namespace: test-deployment-4
+  namespace: test-deployment-4 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: deployment_error
     statement: points out that the Deployment is in an error state

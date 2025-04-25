@@ -1,11 +1,11 @@
-id: test-function-11
+id: test-function-11 # format: test-<resource_kind>-<test_id>
 description: The Pod of the Serverless Function is not ready because the function is configured with 0 replicas.
 user_query: Why is the pod of the serverless Function not ready?
 resource:
   kind: Function
   api_version: serverless.kyma-project.io/v1alpha2
   name: func1
-  namespace: test-function-11
+  namespace: test-function-11 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: function_error
     statement: points out that the Pod is not ready

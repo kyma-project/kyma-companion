@@ -1,11 +1,11 @@
-id: test-horizontalpodautoscaler-17
+id: test-horizontalpodautoscaler-17 # format: test-<resource_kind>-<test_id>
 description: The HorizontalPodAutoscaler is configured with too high min and max replicas.
 user_query: What is causing ScalingLimited status?
 resource:
   kind: HorizontalPodAutoscaler
   api_version: autoscaling/v2
   name: whoami
-  namespace: test-horizontalpodautoscaler-17
+  namespace: test-horizontalpodautoscaler-17 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: hpa_error
     statement: points out that the HorizontalPodAutoscaler has warning events

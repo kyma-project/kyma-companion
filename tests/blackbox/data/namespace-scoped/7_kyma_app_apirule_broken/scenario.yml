@@ -1,11 +1,11 @@
-id: test-apirule-7
+id: test-apirule-7 # format: test-<resource_kind>-<test_id>
 description: The application uses an APIRule that has two accessStrategies handler, which will lead to an error instead.
 user_query: Why is the APIRule status showing ERROR?
 resource:
   kind: APIRule
   api_version: gateway.kyma-project.io/v1beta1
   name: restapi
-  namespace: test-apirule-7
+  namespace: test-apirule-7 # format: test-<resource_kind>-<test_id>
 expectations:
   - name: apirule_error
     statement: points out that the APIRule is in an error state
