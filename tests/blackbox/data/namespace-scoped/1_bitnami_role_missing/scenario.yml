@@ -24,6 +24,7 @@ expectations:
     categories:
       - kubernetes
       - solution_finding
+    complexity: 2
   - name: permission_role_missing
     statement: points out that the role 'pod-reader' is missing or do not exist
     categories:
