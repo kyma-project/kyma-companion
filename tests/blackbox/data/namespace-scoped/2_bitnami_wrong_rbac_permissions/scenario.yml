@@ -1,0 +1,68 @@
+id: test-pod-2
+description: The Pod tries to list Pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.
+user_query: Why is the Pod in error state?
+resource:
+  kind: Pod
+  api_version: v1
+  name: pod-check
+  namespace: test-pod-2
+expectations:
+  - name: pod_error
+    statement: points out that the Pod is in an error state
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: pod_wrong_permissions
+    statement: points out that the Pod has the wrong permissions
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: permission_should_be_watch
+    statement: points out that the Role gives permission to watch Pods but the Pod tries to list them
+    categories:
+      - kubernetes
+      - solution_finding
+    complexity: 2
+  - name: RBAC_permissions_explanation
+    statement: explains the connection between Role, RoleBinding, and ServiceAccount
+    categories:
+      - kubernetes
+      - definition/explanation
+    complexity: 1
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 2
+  - name: some_yaml
+    statement: provides some yaml formatted code
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml for the Role that grants permission to list Pods
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml for the Role that grants permission to list Pods
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Role, with the namespace set to 'test-pod-2' and the verb set to 'list'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 3

@@ -1,0 +1,62 @@
+id: test-deployment-5
+description: The Pod is in an error state because the liveness and readiness probes are incorrectly configured.
+user_query: Why is the deployment not getting ready?
+resource:
+  kind: Deployment
+  api_version: apps/v1
+  name: nginx-deployment
+  namespace: test-deployment-5
+expectations:
+  - name: deployment_error
+    statement: points out that the Deployment is in an error state
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 1
+  - name: pod_wrong_liveness
+    statement: points out that the Pod has not started because the liveness and readiness probes are incorrectly configured
+    categories:
+      - kubernetes
+      - problem_finding
+    complexity: 2
+  - name: pod_provide_right_liveness
+    statement: provides the correct liveness and readiness probes to use with the Pod
+    categories:
+      - kubernetes
+      - solution_finding
+    complexity: 2
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 2
+  - name: some_yaml
+    statement: provides some yaml formatted code
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml with the correct liveness and readiness port '80'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml for the Deployment with the correct liveness and readiness port '80'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Deployment, with the liveness and readiness port set to '80'
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 3

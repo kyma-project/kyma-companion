@@ -1,0 +1,67 @@
+id: test-function-11
+description: The Pod of the Serverless Function is not ready because the function is configured with 0 replicas.
+user_query: Why is the pod of the serverless Function not ready?
+resource:
+  kind: Function
+  api_version: serverless.kyma-project.io/v1alpha2
+  name: func1
+  namespace: test-function-11
+expectations:
+  - name: function_error
+    statement: points out that the Pod is not ready
+    categories:
+      - kyma
+      - problem_finding
+    complexity: 2
+  - name: function_no_replicas
+    statement: points out that the Function is configured with 0 replicas
+    categories:
+      - kyma
+      - problem_finding
+    complexity: 1
+  - name: function_correct_replicas
+    statement: provides the correct amount of replicas, which would be 1
+    categories:
+      - kyma
+      - solution_finding
+    complexity: 2
+  - name: function_explanation
+    statement: explains the use of Functions
+    categories:
+      - kyma
+      - definition/explanation
+    complexity: 1
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 2
+  - name: some_yaml
+    statement: provides some yaml formatted code
+    categories:
+      - yaml
+      - solution_finding
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml with the correct amount of replicas, which would be 1
+    categories:
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml with the correct amount of replicas, which would be 1
+    categories:
+      - kyma
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Function, with the namespace set to 'test-function-11' and the replicas set to 1
+    categories:
+      - kyma
+      - yaml
+      - solution_finding
+      - completeness
+    complexity: 3

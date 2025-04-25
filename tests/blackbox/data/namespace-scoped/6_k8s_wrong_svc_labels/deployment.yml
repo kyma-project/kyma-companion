@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-service-6
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-service-6
+  namespace: test-service-6
+  labels:
+    app: test-service-6
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: test-service-6
+  template:
+    metadata:
+      labels:
+        app: test-service-6
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service-6
+  namespace: test-service-6
+  labels:
+    app: my-k8s-test-svc
+spec:
+  selector:
+    app: my-k8s-test-svc
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
