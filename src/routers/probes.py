@@ -69,18 +69,22 @@ async def readyz(
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Readiness Probe."""
-
+    logger.info("Ready probe called.")
     response = ReadinessModel(
         is_hana_ready=is_hana_ready(hana_conn),
         is_redis_ready=is_redis_ready(redis_conn),
         llms=llm_probe.get_llms_states(),
     )
 
+    status = HTTP_503_SERVICE_UNAVAILABLE
+    if all_ready(response):
+        status = HTTP_200_OK
+    logger.info(f"Health probe returning status: {status}")
+    logger.info(f"Health probe returning body: {response}")
+
     return JSONResponse(
         content=jsonable_encoder(response),
-        status_code=(
-            HTTP_200_OK if all_ready(response) else HTTP_503_SERVICE_UNAVAILABLE
-        ),
+        status_code=(status),
     )
 
 
@@ -91,6 +95,7 @@ async def healthz(
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
+    logger.info("Health probe called.")
     response = LivenessModel(
         is_hana_initialized=bool(hana_conn),
         is_redis_initialized=bool(redis_conn),
@@ -99,7 +104,8 @@ async def healthz(
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
-
+    logger.info(f"Health probe returning status: {status}")
+    logger.info(f"Health probe returning body: {response}")
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
 
