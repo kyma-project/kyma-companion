@@ -1,0 +1,47 @@
+id: test-subscription-13 # format: test-<resource_kind>-<test_id>
+description: The Subscription is configured with an invalid source configuration.
+user_query: How exactly to fix my subscription?
+resource:
+  kind: Subscription
+  api_version: eventing.kyma-project.io/v1alpha2
+  name: my-sub
+  namespace: test-subscription-13 # format: test-<resource_kind>-<test_id>
+expectations:
+  - name: subscription_config_error
+    statement: points out that the Subscription is configured with an invalid source configuration
+    categories:
+      - kyma
+      - problem_finding
+    complexity: 1
+  - name: subscription_correct_source
+    statement: provides an example of how the source should be configured
+    categories:
+      - kyma
+      - solution_finding
+    complexity: 1
+  - name: step_by_step_guide
+    statement: contains a step-by-step guide on how to fix the issue
+    categories:
+      - solution_finding
+      - step-by-step_guidance
+    complexity: 1
+  - name: partial_yaml
+    statement: provides a partial yaml for the Subscription with an example of a valid source configuration
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 2
+  - name: complete_yaml
+    statement: provides a complete yaml for the Subscription with the correct source configuration
+    categories:
+      - kubernetes
+      - yaml
+      - solution_finding
+    complexity: 3
+  - name: verification
+    statement: provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix
+    categories:
+      - kubernetes
+      - other
+    complexity: 2

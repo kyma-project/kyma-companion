@@ -117,7 +117,7 @@ class IK8sClient(Protocol):
         ...
 
     def list_nodes_metrics(self) -> list[dict]:
-        """List all nodes metrics."""
+        """List all node metrics."""
         ...
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
