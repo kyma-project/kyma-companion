@@ -5,6 +5,12 @@ from fastapi import FastAPI, Request, Response
 
 from routers import conversations
 from services.metrics import CustomMetrics
+from utils.logging import get_logger
+from utils.settings import APP_ENV
+
+APP_ENV_PRODUCTION = "production"
+
+logger = get_logger("main")
 
 app = FastAPI(
     title="Kyma Companion",
@@ -45,4 +51,8 @@ async def metrics() -> Response:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    if APP_ENV == APP_ENV_PRODUCTION:
+        logger.info("Starting Kyma Companion in production mode using fastapi CLI...")
+    else:
+        logger.info("Starting Kyma Companion in development mode using uvicorn...")
+        uvicorn.run(app, host="0.0.0.0", port=8000)

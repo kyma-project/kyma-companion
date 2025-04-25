@@ -58,6 +58,7 @@ load_env_from_json()
 
 # Read the configs.
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+APP_ENV = config("APP_ENV", default="development")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
