@@ -1,3 +1,4 @@
+import asyncio
 from typing import Protocol
 
 from fastapi import APIRouter, Depends
@@ -42,7 +43,7 @@ class ILLMReadinessProbe(Protocol):
     Protocol for probing the readiness of LLMs (Large Language Models).
     """
 
-    def get_llms_states(self) -> dict[str, bool]:
+    async def get_llms_states(self) -> dict[str, bool]:
         """
         Retrieve the readiness states of all LLMs.
 
@@ -52,7 +53,7 @@ class ILLMReadinessProbe(Protocol):
         """
         ...
 
-    def has_models(self) -> bool:
+    async def has_models(self) -> bool:
         """
         Check if there are any models available.
 
@@ -70,15 +71,29 @@ async def readyz(
 ) -> JSONResponse:
     """The endpoint for the Readiness Probe."""
     logger.info("Ready probe called.")
-    response = ReadinessModel(
-        is_hana_ready=is_hana_ready(hana_conn),
-        is_redis_ready=is_redis_ready(redis_conn),
-        llms=llm_probe.get_llms_states(),
+
+    # Create tasks.
+    hana_task = is_hana_ready(hana_conn)
+    redis_task = is_redis_ready(redis_conn)
+    llms_task = llm_probe.get_llms_states()
+
+    # Run tasks.
+    hana_result, redis_result, llms_result = await asyncio.gather(
+        hana_task, redis_task, llms_task
     )
 
+    # Collect results.
+    response = ReadinessModel(
+        is_hana_ready=hana_result,
+        is_redis_ready=redis_result,
+        llms=llms_result,
+    )
+
+    # Set the status code.
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
+
     logger.info(f"Health probe returning status: {status}")
     logger.info(f"Health probe returning body: {response}")
 
@@ -99,7 +114,7 @@ async def healthz(
     response = LivenessModel(
         is_hana_initialized=bool(hana_conn),
         is_redis_initialized=bool(redis_conn),
-        are_models_initialized=llm_probe.has_models(),
+        are_models_initialized=await llm_probe.has_models(),
     )
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
@@ -127,7 +142,7 @@ def all_ready(response: ReadinessModel | LivenessModel) -> bool:
         )
 
 
-def is_hana_ready(connection: IHanaConnection) -> bool:
+async def is_hana_ready(connection: IHanaConnection) -> bool:
     """
     Check if the HANA database is ready.
 
@@ -139,7 +154,8 @@ def is_hana_ready(connection: IHanaConnection) -> bool:
         return False
 
     try:
-        if connection.isconnected():
+        is_connected = await asyncio.to_thread(connection.isconnected)
+        if is_connected:
             logger.info("HANA DB connection is ready.")
             return True
         logger.info("HANA DB connection is not ready.")
@@ -149,7 +165,7 @@ def is_hana_ready(connection: IHanaConnection) -> bool:
     return False
 
 
-def is_redis_ready(connection: IRedisConnection) -> bool:
+async def is_redis_ready(connection: IRedisConnection) -> bool:
     """
     Check if the Redis service is ready.
 
@@ -161,7 +177,8 @@ def is_redis_ready(connection: IRedisConnection) -> bool:
         return False
 
     try:
-        if connection.ping():
+        is_ready = await asyncio.to_thread(connection.ping)
+        if is_ready:
             logger.info("Redis connection is ready.")
             return True
     except Exception as e:
