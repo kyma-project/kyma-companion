@@ -48,16 +48,6 @@ def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"
 
 def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
-
-    # End if the agent remaining steps is less than the allowed agent steps number
-    if state.remaining_steps <= AGENT_STEPS_NUMBER:
-        if state.my_task:
-            state.my_task.status = SubTaskStatus.ERROR
-        logger.error(
-            f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
-        )
-        return "finalizer"
-
     last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"

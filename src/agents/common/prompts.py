@@ -64,3 +64,15 @@ K8S_DOMAIN_KNOWLEDGE = """
 ### Policy
   *Resources*: LimitRange (also under Config), ResourceQuota (also under Config), NetworkPolicy (also under Networking/Security), PodDisruptionBudget (PDB)
 """
+
+
+TOOL_CALLING_ERROR_HANDLING = """
+# ** Error Handling**
+## Check conversation history : 
+- If a tool call fails analyze the error and attempt to fix the issue:
+- Check for missing or malformed parameters.
+- Verify if the correct tool is assigned with correct name.
+- If three consecutive tool calls request fail, do not attempt further tool calls. Instead, respond to the user with:
+- A clear acknowledgment of the issue (e.g., "I encountered an error while retrieving the information.").
+- A concise explanation (if helpful) without technical details.
+"""
