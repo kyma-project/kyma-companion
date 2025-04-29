@@ -160,7 +160,23 @@ class BaseAgent:
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
-            response = await self._invoke_chain(state, config)
+            if state.remaining_steps > AGENT_STEPS_NUMBER:
+                response = await self._invoke_chain(state, config)
+            else:
+                if state.my_task:
+                    state.my_task.status = SubTaskStatus.ERROR
+
+                logger.error(
+                    f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
+                )
+                return {
+                    AGENT_MESSAGES: [
+                        AIMessage(
+                            content="Agent reached the recursive limit, not able to call Tools again",
+                            name=self.name,
+                        )
+                    ],
+                }
         except Exception as e:
             error_message = "An error occurred while processing the request"
             error_message_with_trace = error_message + f": {e}"
@@ -194,18 +210,30 @@ class BaseAgent:
                         content="Sorry, I need more steps to process the request.",
                         name=self.name,
                     )
-                ]
+                ],
             }
 
         response.additional_kwargs["owner"] = self.name
-        return {AGENT_MESSAGES: [response]}
+        return {
+            AGENT_MESSAGES: [response],
+        }
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
             state.my_task.complete()
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
-        return {MESSAGES: [state.agent_messages[-1]], SUBTASKS: state.subtasks}
+        agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
+        state.agent_messages[-1].content = (
+            agent_pre_message + state.agent_messages[-1].content
+        )
+
+        return {
+            MESSAGES: [
+                AIMessage(content=state.agent_messages[-1].content, name=self.name)
+            ],
+            SUBTASKS: state.subtasks,
+        }
 
     def _build_graph(self, state_class: type) -> Any:
         # Define a new graph
