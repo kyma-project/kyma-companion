@@ -1,14 +1,18 @@
-from typing import Protocol
-
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
-from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import LivenessModel, ReadinessModel
 from services.hana import get_hana_connection
-from services.probes import get_llm_readiness_probe
+from services.probes import (
+    IHanaConnection,
+    ILLMReadinessProbe,
+    IRedisConnection,
+    get_llm_readiness_probe,
+    is_hana_ready,
+    is_redis_ready,
+)
 from services.redis import get_redis_connection
 from utils.logging import get_logger
 
@@ -18,51 +22,8 @@ router = APIRouter(
 )
 
 
-class IHanaConnection(Protocol):
-    """Protocol for the Hana database connection."""
-
-    def isconnected(self) -> bool:
-        """Verifies if a connection to a Hana database is ready."""
-        ...
-
-
-class IRedisConnection(Protocol):
-    """
-    Protocol to ensure the Redis connection has a `ping` method.
-    """
-
-    def ping(self, **kwargs) -> ResponseT:  # noqa
-        """Ping the Redis server."""
-        ...
-
-
-class ILLMReadinessProbe(Protocol):
-    """
-    Protocol for probing the readiness of LLMs (Large Language Models).
-    """
-
-    def get_llms_states(self) -> dict[str, bool]:
-        """
-        Retrieve the readiness states of all LLMs.
-
-        Returns:
-            A dictionary where the keys are LLM names and the values are booleans
-            indicating whether each LLM is ready.
-        """
-        ...
-
-    def has_models(self) -> bool:
-        """
-        Check if there are any models available.
-
-        Returns:
-            bool: True if models are available, False otherwise.
-        """
-        ...
-
-
-@router.get("/readyz")
-async def readyz(
+@router.get("/healthz")
+async def healthz(
     hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
@@ -88,8 +49,8 @@ async def readyz(
     )
 
 
-@router.get("/healthz")
-async def healthz(
+@router.get("/readyz")
+async def readyz(
     hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
@@ -125,47 +86,3 @@ def all_ready(response: ReadinessModel | LivenessModel) -> bool:
             and response.is_hana_initialized
             and response.are_models_initialized
         )
-
-
-def is_hana_ready(connection: IHanaConnection | None) -> bool:
-    """
-    Check if the HANA database is ready.
-
-    Returns:
-        bool: True if HANA is ready, False otherwise.
-    """
-    if not connection:
-        logger.warning("HANA DB connection is not initialized.")
-        return False
-
-    try:
-        if connection.isconnected():
-            logger.info("HANA DB connection is ready.")
-            return True
-    except Exception as e:
-        logger.error(f"Error while connecting to HANA DB: {e}")
-        return False
-    logger.info("HANA DB connection is not ready.")
-    return False
-
-
-def is_redis_ready(connection: IRedisConnection | None) -> bool:
-    """
-    Check if the Redis service is ready.
-
-    Returns:
-        bool: True if Redis is ready, False otherwise.
-    """
-    if not connection:
-        logger.error("Redis connection is not initialized.")
-        return False
-
-    try:
-        if connection.ping():
-            logger.info("Redis connection is ready.")
-            return True
-    except Exception as e:
-        logger.error(f"Redis connection failed: {e}")
-        return False
-    logger.info("Redis connection is not ready.")
-    return False

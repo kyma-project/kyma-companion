@@ -1,6 +1,8 @@
 from collections.abc import Generator
+from typing import Protocol
 
 from langchain_core.embeddings import Embeddings
+from redis.typing import ResponseT
 
 from utils.config import get_config
 from utils.logging import get_logger
@@ -8,6 +10,49 @@ from utils.models.factory import IModel, ModelFactory
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
+
+
+class IHanaConnection(Protocol):
+    """Protocol for the Hana database connection."""
+
+    def isconnected(self) -> bool:
+        """Verifies if a connection to a Hana database is ready."""
+        ...
+
+
+class IRedisConnection(Protocol):
+    """
+    Protocol to ensure the Redis connection has a `ping` method.
+    """
+
+    def ping(self, **kwargs) -> ResponseT:  # noqa
+        """Ping the Redis server."""
+        ...
+
+
+class ILLMReadinessProbe(Protocol):
+    """
+    Protocol for probing the readiness of LLMs (Large Language Models).
+    """
+
+    def get_llms_states(self) -> dict[str, bool]:
+        """
+        Retrieve the readiness states of all LLMs.
+
+        Returns:
+            A dictionary where the keys are LLM names and the values are booleans
+            indicating whether each LLM is ready.
+        """
+        ...
+
+    def has_models(self) -> bool:
+        """
+        Check if there are any models available.
+
+        Returns:
+            bool: True if models are available, False otherwise.
+        """
+        ...
 
 
 class LLMReadinessProbe(metaclass=SingletonMeta):
@@ -33,6 +78,17 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         logger.info("Creating new LLM readiness probe")
 
         self._models = models or {}
+        self._model_states = {name: False for name in self._models}
+
+    def set_models(self, models: dict[str, IModel | Embeddings]) -> None:
+        """
+        Set the models and initialize their states.
+
+        Args:
+            models (dict[str, IModel | Embeddings]): A dictionary of model names
+                and their corresponding model instances.
+        """
+        self._models = models
         self._model_states = {name: False for name in self._models}
 
     def has_models(self) -> bool:
@@ -102,11 +158,56 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     handling in case of initialization failure.
     """
     try:
+        # If the there already exists an singleton instance we do not need
+        # to create and add models, again.
         probe = LLMReadinessProbe()
         if not probe.has_models():
-            probe._models = ModelFactory(get_config()).create_models()
-            probe._model_states = {name: False for name in probe._models}
+            probe.set_models(ModelFactory(get_config()).create_models())
         yield probe
     except Exception as e:
         logger.exception(f"Failed to initialize LLMReadinessProbe: {e}")
         raise
+
+
+def is_hana_ready(connection: IHanaConnection | None) -> bool:
+    """
+    Check if the HANA database is ready.
+
+    Returns:
+        bool: True if HANA is ready, False otherwise.
+    """
+    if not connection:
+        logger.warning("HANA DB connection is not initialized.")
+        return False
+
+    try:
+        if connection.isconnected():
+            logger.info("HANA DB connection is ready.")
+            return True
+    except Exception as e:
+        logger.error(f"Error while connecting to HANA DB: {e}")
+        return False
+    logger.info("HANA DB connection is not ready.")
+    return False
+
+
+def is_redis_ready(connection: IRedisConnection | None) -> bool:
+    """
+    Check if the Redis service is ready.
+
+    Returns:
+        bool: True if Redis is ready, False otherwise.
+    """
+    if not connection:
+        logger.error("Redis connection is not initialized.")
+        return False
+
+    try:
+        if connection.ping():
+            logger.info("Redis connection is ready.")
+            return True
+    except Exception as e:
+        logger.error(f"Redis connection failed: {e}")
+        return False
+    logger.info("Redis connection is not ready.")
+    return False
