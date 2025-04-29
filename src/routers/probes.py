@@ -2,7 +2,6 @@ from typing import Protocol
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
-from hdbcli import dbapi
 from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
@@ -69,6 +68,7 @@ async def readyz(
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Readiness Probe."""
+
     logger.info("Ready probe called.")
     response = ReadinessModel(
         is_hana_ready=is_hana_ready(hana_conn),
@@ -127,7 +127,7 @@ def all_ready(response: ReadinessModel | LivenessModel) -> bool:
         )
 
 
-def is_hana_ready(connection: IHanaConnection) -> bool:
+def is_hana_ready(connection: IHanaConnection | None) -> bool:
     """
     Check if the HANA database is ready.
 
@@ -142,14 +142,14 @@ def is_hana_ready(connection: IHanaConnection) -> bool:
         if connection.isconnected():
             logger.info("HANA DB connection is ready.")
             return True
-        logger.info("HANA DB connection is not ready.")
-    except dbapi.Error as e:
+    except Exception as e:
         logger.error(f"Error while connecting to HANA DB: {e}")
-
+        return False
+    logger.info("HANA DB connection is not ready.")
     return False
 
 
-def is_redis_ready(connection: IRedisConnection) -> bool:
+def is_redis_ready(connection: IRedisConnection | None) -> bool:
     """
     Check if the Redis service is ready.
 
@@ -166,4 +166,6 @@ def is_redis_ready(connection: IRedisConnection) -> bool:
             return True
     except Exception as e:
         logger.error(f"Redis connection failed: {e}")
+        return False
+    logger.info("Redis connection is not ready.")
     return False

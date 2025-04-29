@@ -31,7 +31,8 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
                 created using the ModelFactory.
         """
         logger.info("Creating new LLM readiness probe")
-        self._models = models or ModelFactory(config=get_config()).create_models()
+
+        self._models = models or {}
         self._model_states = {name: False for name in self._models}
 
     def has_models(self) -> bool:
@@ -101,7 +102,11 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     handling in case of initialization failure.
     """
     try:
-        yield LLMReadinessProbe(models=None)
+        probe = LLMReadinessProbe()
+        if not probe.has_models():
+            probe._models = ModelFactory(get_config()).create_models()
+            probe._model_states = {name: False for name in probe._models}
+        yield probe
     except Exception as e:
         logger.exception(f"Failed to initialize LLMReadinessProbe: {e}")
         raise
