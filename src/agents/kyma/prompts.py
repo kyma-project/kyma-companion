@@ -17,6 +17,15 @@ KYMA_AGENT_INSTRUCTIONS = """
      b. Decide if further tool calls are needed
      c. If no tool call is needed, generate your final response and solutions with complete resource definitions
 6. Wherever possible provide user with a YAML config.
+
+# ** Error Handling**
+## Check conversation history : 
+- If a tool call fails analyze the error and attempt to fix the issue:
+- Check for missing or malformed parameters.
+- Verify if the correct tool is assigned with correct name.
+- If three consecutive tool calls request fail, do not attempt further tool calls. Instead, respond to the user with:
+- A clear acknowledgment of the issue (e.g., "I encountered an error while retrieving the information.").
+- A concise explanation (if helpful) without technical details.
 """
 
 
