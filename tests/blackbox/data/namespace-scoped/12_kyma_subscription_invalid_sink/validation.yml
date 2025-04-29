@@ -1,0 +1,27 @@
+- description: This mock response explains that the Subscription sink URL is invalid because it does not end with the required suffix svc.cluster.local.
+  scenario_id: test-subscription-12
+  mock_response_content: |-
+    "The issue with your subscription is that the `sink` parameter is invalid.
+     The `sink` URL you provided (`http://localhost:8080`) does not have the required suffix `svc.cluster.local`.
+     In Kyma, the `sink` must be a valid Kubernetes Service URL that ends with `svc.cluster.local` to ensure it points to a valid service within the cluster.
+
+     To resolve this issue, you should:
+      
+     1. Verify the Subscription status to check if it is `Ready`.
+     2. If not `Ready`, check the exact reason for the error in the status of the Subscription.
+     3. Ensure that the `sink` is a valid HTTP endpoint, such as `test.test.svc.cluster.local`.
+     4. Additionally, ensure that the event type defined in the Subscription is correctly formatted.
+      
+     By updating the `sink` to a valid service URL in your Kubernetes cluster, you should be able to resolve the issue with your subscription.
+    "
+  expected_evaluations:
+    - scenario_expectation_name: subscription_config_error
+      expected_evaluation: true
+    - scenario_expectation_name: subscription_correct_sink
+      expected_evaluation: true
+    - scenario_expectation_name: step_by_step_guide
+      expected_evaluation: true
+    - scenario_expectation_name: partial_yaml
+      expected_evaluation: false
+    - scenario_expectation_name: complete_yaml
+      expected_evaluation: false

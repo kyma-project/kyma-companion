@@ -69,7 +69,7 @@ class TestK8sClient:
             (
                 "v1",
                 "Pod",
-                "nginx-wrong-image",
+                "test-deployment-16",
             ),
             # Test case: should be able to list ReplicaSets in a specific namespace.
             (
@@ -160,7 +160,7 @@ class TestK8sClient:
             (
                 "serverless.kyma-project.io/v1alpha2",
                 "Function",
-                "kyma-app-serverless-syntax-err",
+                "test-function-8",
                 "func1",
             ),
         ],
@@ -194,7 +194,7 @@ class TestK8sClient:
             (
                 "apps/v1",
                 "Deployment",
-                "nginx-wrong-image",
+                "test-deployment-16",
                 "nginx",
             ),
             # Test case: should be able to describe Secret.
@@ -222,7 +222,7 @@ class TestK8sClient:
             (
                 "serverless.kyma-project.io/v1alpha2",
                 "Function",
-                "kyma-app-serverless-syntax-err",
+                "test-function-8",
                 "func1",
             ),
         ],
@@ -258,7 +258,7 @@ class TestK8sClient:
         "given_namespace",
         [
             # Test case: should be able to get list of not running pods.
-            "nginx-wrong-image",
+            "test-deployment-16",
             # Test case: should be able to get list of not running pods in all namespaces.
             "",
         ],
@@ -305,7 +305,7 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "whoami-too-many-replicas",
+            "test-horizontalpodautoscaler-17",
         ],
     )
     def test_list_k8s_events(self, k8s_client, given_namespace):
@@ -325,7 +325,7 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "whoami-too-many-replicas",
+            "test-horizontalpodautoscaler-17",
         ],
     )
     def test_list_k8s_warning_events(self, k8s_client, given_namespace):
@@ -344,7 +344,7 @@ class TestK8sClient:
         "given_kind,given_namespace,given_name",
         [
             # Test case: should be able to get events for specific resource.
-            ("ReplicaSet", "whoami-too-many-replicas", "whoami-6c78674dc7"),
+            ("ReplicaSet", "test-horizontalpodautoscaler-17", "whoami-6c78674dc7"),
         ],
     )
     def test_list_k8s_events_for_resource(
