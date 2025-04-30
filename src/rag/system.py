@@ -50,6 +50,9 @@ class RAGSystem:
             cast(IModel, cast(IModel, models[ModelType.GPT4O_MINI]))
         )
         hana_conn = next(get_hana_connection()).connection
+        if hana_conn is None:
+            raise ValueError("Failed to establish a HANA connection.")
+
         # setup retriever
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE]),
