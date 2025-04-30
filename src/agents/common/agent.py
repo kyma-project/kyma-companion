@@ -212,15 +212,29 @@ class BaseAgent:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
             state.my_task.complete()
-        # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
-        agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
-        state.agent_messages[-1].content = (
-            agent_pre_message + state.agent_messages[-1].content
-        )
 
+        agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
+        # Check if agent_messages exists and has at least one element
+        if (
+            hasattr(state, "agent_messages")
+            and state.agent_messages
+            and isinstance(state.agent_messages, list)
+            and len(state.agent_messages) > 0
+            and state.agent_messages[-1]
+            and hasattr(state.agent_messages[-1], "content")
+        ):
+
+            current_content = state.agent_messages[-1].content or ""
+            state.agent_messages[-1].content = agent_pre_message + current_content
+
+        # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
         return {
             MESSAGES: [
-                AIMessage(content=state.agent_messages[-1].content, name=self.name)
+                AIMessage(
+                    content=state.agent_messages[-1].content,
+                    name=self.name,
+                    id=state.agent_messages[-1].id,
+                )
             ],
             SUBTASKS: state.subtasks,
         }
