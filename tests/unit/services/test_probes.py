@@ -3,7 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.embeddings import Embeddings
 
-from services.probes import LLMReadinessProbe, is_hana_ready, is_redis_ready
+from services.metrics import CustomMetrics
+from services.probes import (
+    LLMReadinessProbe,
+    is_hana_ready,
+    is_redis_ready,
+    is_usage_tracker_ready,
+)
 from utils.models.factory import IModel
 
 
@@ -129,3 +135,34 @@ def test_is_redis_ready(test_case, connection, expected):
     """
     result = is_redis_ready(connection)
     assert result == expected, f"Failed test case: {test_case}"
+
+
+@pytest.fixture(autouse=True)
+def reset_custom_metrics_singleton():
+    CustomMetrics._instance = None
+    yield
+    CustomMetrics._instance = None
+
+
+@pytest.mark.parametrize(
+    "test_case, failure_count, expected",
+    [
+        ("No metric value set yet", None, True),
+        ("Metric is zero", 0.0, True),
+        ("# Metric is nonzero", 1.0, False),
+    ],
+)
+def test_is_usage_tracker_ready_with_real_custom_metrics(
+    test_case, failure_count, expected
+):
+    # Given:
+    metrics = CustomMetrics()
+    if failure_count is not None:
+        for _ in range(int(failure_count)):
+            metrics.usage_tracker_publish_failure_count.inc()
+
+    # When:
+    result = is_usage_tracker_ready(metrics)
+
+    # Then:
+    assert result == expected, test_case

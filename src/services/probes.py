@@ -4,10 +4,14 @@ from typing import Protocol
 from langchain_core.embeddings import Embeddings
 from redis.typing import ResponseT
 
+from services.metrics import USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY, CustomMetrics
 from utils.config import get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
 from utils.singleton_meta import SingletonMeta
+
+FAILURE_METRIC_KEY = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
+
 
 logger = get_logger(__name__)
 
@@ -209,3 +213,23 @@ def is_redis_ready(connection: IRedisConnection | None) -> bool:
         return False
     logger.info("Redis connection is not ready.")
     return False
+
+
+def is_usage_tracker_ready(custom_metrics: CustomMetrics | None) -> bool:
+    """
+    Check if the collection of usage metrics is working without failures.
+
+    Returns:
+        bool: True if Redis is ready, False otherwise.
+    """
+    # If there is no custom metrics, we cannot detect problems so we are
+    # already in a failed state:
+    if not custom_metrics:
+        return False
+
+    # If the metric is None, we are fine.
+    failure_metric_value = custom_metrics.registry.get_sample_value(FAILURE_METRIC_KEY)
+    if not failure_metric_value:
+        return True
+
+    return failure_metric_value == 0.0

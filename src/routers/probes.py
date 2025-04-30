@@ -5,6 +5,7 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana_connection
+from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
     IHanaConnection,
     ILLMReadinessProbe,
@@ -12,6 +13,7 @@ from services.probes import (
     get_llm_readiness_probe,
     is_hana_ready,
     is_redis_ready,
+    is_usage_tracker_ready,
 )
 from services.redis import get_redis_connection
 from utils.logging import get_logger
@@ -26,6 +28,7 @@ router = APIRouter(
 async def healthz(
     hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
+    metrics: CustomMetrics = Depends(get_custom_metrics),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
@@ -34,6 +37,7 @@ async def healthz(
     response = HealthModel(
         is_hana_ready=is_hana_ready(hana_conn),
         is_redis_ready=is_redis_ready(redis_conn),
+        is_usage_tracker_ready=is_usage_tracker_ready(metrics),
         llms=llm_probe.get_llms_states(),
     )
 
@@ -79,6 +83,7 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
         return (
             response.is_redis_ready
             and response.is_hana_ready
+            and response.is_usage_tracker_ready
             and bool(response.llms)
             and all(response.llms.values())
         )

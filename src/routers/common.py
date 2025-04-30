@@ -41,4 +41,5 @@ class HealthModel(BaseModel):
 
     is_redis_ready: bool
     is_hana_ready: bool
+    is_usage_tracker_ready: bool
     llms: dict[str, bool]

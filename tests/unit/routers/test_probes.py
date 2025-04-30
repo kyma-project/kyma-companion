@@ -6,18 +6,20 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
 from services.hana import get_hana_connection
+from services.metrics import get_custom_metrics
 from services.probes import get_llm_readiness_probe
 from services.redis import get_redis_connection
 
 
 @pytest.mark.parametrize(
-    "test_case, hana_ready, redis_ready, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, metrics_failure_count, llm_states, expected_status",
     [
-        ("all ready", True, True, {"model1": True, "model2": True}, HTTP_200_OK),
+        ("all ready", True, True, 0, {"model1": True, "model2": True}, HTTP_200_OK),
         (
             "Hana not ready",
             False,
             True,
+            0,
             {"model1": True, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
@@ -25,6 +27,7 @@ from services.redis import get_redis_connection
             "Redis not ready",
             True,
             False,
+            0,
             {"model1": True, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
@@ -32,14 +35,28 @@ from services.redis import get_redis_connection
             "one model not ready",
             True,
             True,
+            0,
             {"model1": False, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
-        ("no models", True, True, {}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, 0, {}, HTTP_503_SERVICE_UNAVAILABLE),
+        (
+            "custom_metrics with failures",
+            True,
+            True,
+            1,
+            {"model1": True, "model2": True},
+            HTTP_503_SERVICE_UNAVAILABLE,
+        ),
     ],
 )
 def test_healthz_probe_table(
-    test_case, hana_ready, redis_ready, llm_states, expected_status
+    test_case,
+    hana_ready,
+    redis_ready,
+    metrics_failure_count,
+    llm_states,
+    expected_status,
 ):
     """
     Test the health probe endpoint. This test ensures that the endpoint returns the correct status code.
@@ -52,6 +69,10 @@ def test_healthz_probe_table(
     mock_redis_conn = MagicMock()
     mock_redis_conn.ping.return_value = redis_ready
     app.dependency_overrides[get_redis_connection] = lambda: mock_redis_conn
+
+    mock_custom_metrics = MagicMock()
+    mock_custom_metrics.registry.get_sample_value.return_value = metrics_failure_count
+    app.dependency_overrides[get_custom_metrics] = lambda: mock_custom_metrics
 
     mock_llm_probe = MagicMock()
     mock_llm_probe.get_llms_states.return_value = llm_states
