@@ -9,12 +9,22 @@ from utils.settings import (
     DATABASE_URL,
     DATABASE_USER,
 )
+from utils.singleton_meta import SingletonMeta
 
 
-def get_hana_connection() -> Generator[dbapi.Connection, None, None]:
-    """Create a connection to the Hana Cloud DB."""
+class HanaConnection(dbapi.Connection, metaclass=SingletonMeta):
+    """
+    Manages a singleton connection to the Hana database.
 
-    conn = dbapi.connect(
+    This class establishes a connection to the Hana database using the provided
+    credentials and configuration. It ensures that only one instance of the connection
+    exists at any time by utilizing the SingletonMeta metaclass.
+    """
+
+
+def get_hana_connection() -> Generator[HanaConnection, None, None]:
+    """Create a connection to the Hana database."""
+    conn = HanaConnection(
         address=str(DATABASE_URL),
         port=DATABASE_PORT,
         user=str(DATABASE_USER),
