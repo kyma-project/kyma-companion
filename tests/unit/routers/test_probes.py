@@ -67,7 +67,7 @@ def test_healthz_probe_table(
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
     mock_redis_conn = MagicMock()
-    mock_redis_conn.ping.return_value = redis_ready
+    mock_redis_conn.connection.ping.return_value = redis_ready
     app.dependency_overrides[get_redis_connection] = lambda: mock_redis_conn
 
     mock_custom_metrics = MagicMock()
@@ -110,7 +110,8 @@ def test_ready_probe_table(
     mock_hana_conn.connection = MagicMock() if hana_ready else None
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
-    mock_redis_conn = MagicMock() if redis_ready else None
+    mock_redis_conn = MagicMock()
+    mock_redis_conn.connection = MagicMock() if redis_ready else None
     app.dependency_overrides[get_redis_connection] = lambda: mock_redis_conn
 
     mock_llm_probe = MagicMock()

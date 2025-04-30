@@ -29,7 +29,7 @@ class IHana(Protocol):
     Protocol for defining an IHana service.
 
     Attributes:
-        connection (IHanaConnection): Represents the connection to the IHana database.
+        connection (IHanaConnection): Represents the connection to the Hana database.
     """
 
     connection: IHanaConnection
@@ -43,6 +43,17 @@ class IRedisConnection(Protocol):
     def ping(self, **kwargs) -> ResponseT:  # noqa
         """Ping the Redis server."""
         ...
+
+
+class IRedis(Protocol):
+    """
+    Protocol for defining an IRedis service.
+
+    Attributes:
+        connection (IRedisConnection): Represents the connection to the Redis database.
+    """
+
+    connection: IRedisConnection
 
 
 class ILLMReadinessProbe(Protocol):
