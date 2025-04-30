@@ -23,6 +23,7 @@ from langgraph.checkpoint.base import (
 from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
+from services.redis import get_redis_connection
 from utils.logging import get_logger
 from utils.settings import REDIS_SSL_ENABLED, REDIS_TTL
 
@@ -528,3 +529,9 @@ class AsyncRedisSaver(BaseCheckpointSaver):
                 latest_keys.append(key)
         records = await self.conn.mget(latest_keys)
         return [json.loads(record) for record in records if record]
+
+
+def get_async_redis_saver() -> AsyncRedisSaver:
+    """Retrieve an instance of AsyncRedisSaver using the next available Redis connection."""
+    conn = get_redis_connection().__next__().connection
+    return AsyncRedisSaver(conn)

@@ -15,10 +15,12 @@ from langchain_core.messages import (
 
 from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
-from agents.memory.async_redis_checkpointer import AsyncRedisSaver
+from agents.memory.async_redis_checkpointer import (
+    get_async_redis_saver,
+)
 from utils.config import get_config
 from utils.models.factory import ModelFactory, ModelType
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from utils.settings import REDIS_HOST, REDIS_PORT
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -82,9 +84,7 @@ def start_fake_redis():
 
 @pytest.fixture(scope="session")
 def companion_graph(app_models, start_fake_redis):
-    memory = AsyncRedisSaver.from_conn_info(
-        host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER, password=REDIS_PASSWORD
-    )
+    memory = get_async_redis_saver()
     graph = CompanionGraph(app_models, memory)
     return graph
 
