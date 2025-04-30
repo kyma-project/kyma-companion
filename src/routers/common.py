@@ -28,7 +28,7 @@ class FollowUpQuestionsResponse(BaseModel):
     questions: list[str] = []
 
 
-class LivenessModel(BaseModel):
+class ReadinessModel(BaseModel):
     """Response body representing the state of the Liveness Probe"""
 
     is_redis_initialized: bool
@@ -36,7 +36,7 @@ class LivenessModel(BaseModel):
     are_models_initialized: bool
 
 
-class ReadinessModel(BaseModel):
+class HealthModel(BaseModel):
     """Response body representing the state of the Readiness Probe"""
 
     is_redis_ready: bool

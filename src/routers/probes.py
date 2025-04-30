@@ -3,7 +3,7 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from routers.common import LivenessModel, ReadinessModel
+from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana_connection
 from services.probes import (
     IHanaConnection,
@@ -31,7 +31,7 @@ async def healthz(
     """The endpoint for the Readiness Probe."""
 
     logger.info("Ready probe called.")
-    response = ReadinessModel(
+    response = HealthModel(
         is_hana_ready=is_hana_ready(hana_conn),
         is_redis_ready=is_redis_ready(redis_conn),
         llms=llm_probe.get_llms_states(),
@@ -57,7 +57,7 @@ async def readyz(
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
     logger.info("Health probe called.")
-    response = LivenessModel(
+    response = ReadinessModel(
         is_hana_initialized=bool(hana_conn),
         is_redis_initialized=bool(redis_conn),
         are_models_initialized=llm_probe.has_models(),
@@ -70,19 +70,16 @@ async def readyz(
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
 
-def all_ready(response: ReadinessModel | LivenessModel) -> bool:
+def all_ready(response: HealthModel | ReadinessModel) -> bool:
     """
     Check if all components are ready.
     """
-    if isinstance(response, ReadinessModel):
+    if isinstance(response, HealthModel):
         return (
             response.is_redis_ready
             and response.is_hana_ready
+            and bool(response.llms)  # Ensures llms is not None or empty
             and all(response.llms.values())
         )
-    if isinstance(response, LivenessModel):
-        return (
-            response.is_redis_initialized
-            and response.is_hana_initialized
-            and response.are_models_initialized
-        )
+    if isinstance(response, ReadinessModel):
+        return response.is_redis_initialized and response.is_hana_initialized and response.are_models_initialized
