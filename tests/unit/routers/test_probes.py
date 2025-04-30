@@ -11,16 +11,17 @@ from services.redis import get_redis_connection
 
 
 @pytest.mark.parametrize(
-    "hana_ready, redis_ready, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, llm_states, expected_status",
     [
-        (True, True, {"model1": True, "model2": True}, HTTP_200_OK),
-        (False, True, {"model1": True, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
-        (True, False, {"model1": True, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
-        (True, True, {"model1": False, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
-        (True, True, {}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("all ready", True, True, {"model1": True, "model2": True}, HTTP_200_OK),
+        ("Hana not ready", False, True, {"model1": True, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("Redis not ready", True, False, {"model1": True, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("one model not ready", True, True, {"model1": False, "model2": True}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, {}, HTTP_503_SERVICE_UNAVAILABLE),
     ],
 )
-def test_healthz_probe_table(hana_ready, redis_ready, llm_states, expected_status):
+def test_healthz_probe_table(test_case, hana_ready, redis_ready, llm_states, expected_status):
+    # Given:
     mock_hana_conn = MagicMock()
     mock_hana_conn.isconnected.return_value = hana_ready
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
@@ -35,20 +36,27 @@ def test_healthz_probe_table(hana_ready, redis_ready, llm_states, expected_statu
 
     client = TestClient(app)
 
+    # When:
     response = client.get("/healthz")
-    assert response.status_code == expected_status
+
+    # Then:
+    assert response.status_code == expected_status, test_case
+
+    # Clean up.
+    app.dependency_overrides = {}
 
 
 @pytest.mark.parametrize(
-    "hana_ready, redis_ready, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, llm_states, expected_status",
     [
-        (True, True, True, HTTP_200_OK),
-        (False, True, True, HTTP_503_SERVICE_UNAVAILABLE),
-        (True, False, True, HTTP_503_SERVICE_UNAVAILABLE),
-        (True, True, False, HTTP_503_SERVICE_UNAVAILABLE),
+        ("all ready", True, True, True, HTTP_200_OK),
+        ("no Hana connection", False, True, True, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no Redis connection", True, False, True, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, False, HTTP_503_SERVICE_UNAVAILABLE),
     ],
 )
-def test_ready_probe_table(hana_ready, redis_ready, llm_states, expected_status):
+def test_ready_probe_table(test_case, hana_ready, redis_ready, llm_states, expected_status):
+    # Given:
     mock_hana_conn = MagicMock() if hana_ready else None
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
@@ -61,5 +69,11 @@ def test_ready_probe_table(hana_ready, redis_ready, llm_states, expected_status)
 
     client = TestClient(app)
 
+    # When:
     response = client.get("/readyz")
-    assert response.status_code == expected_status
+
+    # Then:
+    assert response.status_code == expected_status, test_case
+
+    # Clean up.
+    app.dependency_overrides = {}
