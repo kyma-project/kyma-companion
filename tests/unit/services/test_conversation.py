@@ -57,8 +57,8 @@ class TestConversation:
 
     @pytest.fixture
     def mock_redis_saver(self):
-        with patch("services.conversation.get_async_redis_saver") as mock:
-            mock.return_value = Mock()
+        with patch("services.conversation.AsyncRedisSaver") as mock:
+            mock.from_conn_info.return_value = Mock()
             yield mock
 
     @pytest.fixture
