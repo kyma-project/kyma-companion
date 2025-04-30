@@ -63,7 +63,7 @@ def test_healthz_probe_table(
     """
     # Given:
     mock_hana_conn = MagicMock()
-    mock_hana_conn.isconnected.return_value = hana_ready
+    mock_hana_conn.connection.isconnected.return_value = hana_ready
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
     mock_redis_conn = MagicMock()
@@ -106,7 +106,8 @@ def test_ready_probe_table(
     Test the readiness probe endpoint. This test ensures that the endpoint returns the correct status code.
     """
     # Given:
-    mock_hana_conn = MagicMock() if hana_ready else None
+    mock_hana_conn = MagicMock()
+    mock_hana_conn.connection = MagicMock() if hana_ready else None
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
     mock_redis_conn = MagicMock() if redis_ready else None

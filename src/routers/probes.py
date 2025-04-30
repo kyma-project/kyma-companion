@@ -7,7 +7,7 @@ from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana_connection
 from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
-    IHanaConnection,
+    IHana,
     ILLMReadinessProbe,
     IRedisConnection,
     get_llm_readiness_probe,
@@ -26,7 +26,7 @@ router = APIRouter(
 
 @router.get("/healthz")
 async def healthz(
-    hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
+    hana: IHana = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     metrics: CustomMetrics = Depends(get_custom_metrics),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
@@ -35,7 +35,7 @@ async def healthz(
 
     logger.info("Ready probe called.")
     response = HealthModel(
-        is_hana_ready=is_hana_ready(hana_conn),
+        is_hana_ready=is_hana_ready(hana.connection),
         is_redis_ready=is_redis_ready(redis_conn),
         is_usage_tracker_ready=is_usage_tracker_ready(metrics),
         llms=llm_probe.get_llms_states(),
@@ -55,7 +55,7 @@ async def healthz(
 
 @router.get("/readyz")
 async def readyz(
-    hana_conn: IHanaConnection = Depends(get_hana_connection),  # noqa: B008
+    hana: IHana = Depends(get_hana_connection),  # noqa: B008
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
@@ -63,7 +63,7 @@ async def readyz(
 
     logger.info("Health probe called.")
     response = ReadinessModel(
-        is_hana_initialized=bool(hana_conn),
+        is_hana_initialized=bool(hana.connection),
         is_redis_initialized=bool(redis_conn),
         are_models_initialized=llm_probe.has_models(),
     )

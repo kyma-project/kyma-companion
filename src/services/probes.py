@@ -24,6 +24,17 @@ class IHanaConnection(Protocol):
         ...
 
 
+class IHana(Protocol):
+    """
+    Protocol for defining an IHana service.
+
+    Attributes:
+        connection (IHanaConnection): Represents the connection to the IHana database.
+    """
+
+    connection: IHanaConnection
+
+
 class IRedisConnection(Protocol):
     """
     Protocol to ensure the Redis connection has a `ping` method.

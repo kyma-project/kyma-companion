@@ -12,7 +12,7 @@ from utils.settings import (
 from utils.singleton_meta import SingletonMeta
 
 
-class HanaConnection(dbapi.Connection, metaclass=SingletonMeta):
+class Hana(metaclass=SingletonMeta):
     """
     Manages a singleton connection to the Hana database.
 
@@ -21,23 +21,35 @@ class HanaConnection(dbapi.Connection, metaclass=SingletonMeta):
     exists at any time by utilizing the SingletonMeta metaclass.
     """
 
+    connection: dbapi.Connection | None = None
 
-def get_hana_connection() -> Generator[HanaConnection, None, None]:
+    def set_connection(self, connection: dbapi.Connection) -> None:
+        """
+        sets the database connection for the service.
+
+        args:
+            connection (dbapi.connection): the database connection object.
+        """
+        self.connection = connection
+
+
+def get_hana_connection() -> Generator[Hana, None, None]:
     """Create a connection to the Hana database."""
-    conn = HanaConnection(
-        address=str(DATABASE_URL),
-        port=DATABASE_PORT,
-        user=str(DATABASE_USER),
-        password=str(DATABASE_PASSWORD),
-    )
-
     try:
-        yield conn
+        hana = Hana()
+        if not hana.connection:
+            hana.set_connection(
+                dbapi.Connection(
+                    address=str(DATABASE_URL),
+                    port=DATABASE_PORT,
+                    user=str(DATABASE_USER),
+                    password=str(DATABASE_PASSWORD),
+                )
+            )
+        yield hana
     except dbapi.Error as e:
         logging.exception(f"Connection to Hana Cloud failed: {e}")
         return None
     except Exception as e:
         logging.exception(f"Unknown error occurred: {e}")
         return None
-    finally:
-        conn.close()
