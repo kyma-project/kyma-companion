@@ -28,7 +28,7 @@ async def healthz(
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
-    """The endpoint for the Readiness Probe."""
+    """The endpoint for the Health Probe."""
 
     logger.info("Ready probe called.")
     response = HealthModel(
@@ -55,7 +55,8 @@ async def readyz(
     redis_conn: IRedisConnection = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
-    """The endpoint for the Health Probe."""
+    """The endpoint for the Ready Probe."""
+
     logger.info("Health probe called.")
     response = ReadinessModel(
         is_hana_initialized=bool(hana_conn),
@@ -78,8 +79,12 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
         return (
             response.is_redis_ready
             and response.is_hana_ready
-            and bool(response.llms)  # Ensures llms is not None or empty
+            and bool(response.llms)
             and all(response.llms.values())
         )
     if isinstance(response, ReadinessModel):
-        return response.is_redis_initialized and response.is_hana_initialized and response.are_models_initialized
+        return (
+            response.is_redis_initialized
+            and response.is_hana_initialized
+            and response.are_models_initialized
+        )

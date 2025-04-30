@@ -158,8 +158,6 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     handling in case of initialization failure.
     """
     try:
-        # If the there already exists an singleton instance we do not need
-        # to create and add models, again.
         probe = LLMReadinessProbe()
         if not probe.has_models():
             probe.set_models(ModelFactory(get_config()).create_models())
