@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Generator
 
 from redis.asyncio import Redis as AsyncRedis
 
@@ -24,32 +23,21 @@ class Redis(metaclass=SingletonMeta):
 
     connection: AsyncRedis | None = None
 
-    def set_connection(self, connection: AsyncRedis) -> None:
-        """
-        sets the database connection for the service.
-
-        args:
-            connection (AsyncRedis): the database connection object.
-        """
-        self.connection = connection
-
-
-def get_redis_connection() -> Generator[Redis, None, None]:
-    """Create a connection to the Redis database."""
-    try:
-        redis = Redis()
-        if not redis.connection:
-            redis.set_connection(
-                AsyncRedis(
-                    host=str(REDIS_HOST),
-                    port=REDIS_PORT,
-                    db=REDIS_DB_NUMBER,
-                    password=str(REDIS_PASSWORD),
-                    ssl=REDIS_SSL_ENABLED,
-                    ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
-                )
+    def __init__(self) -> None:
+        try:
+            self.connection = AsyncRedis(
+                host=str(REDIS_HOST),
+                port=REDIS_PORT,
+                db=REDIS_DB_NUMBER,
+                password=str(REDIS_PASSWORD),
+                ssl=REDIS_SSL_ENABLED,
+                ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
             )
-        yield redis
-    except Exception as e:
-        logging.exception(f"Error with Redis connection: {e}")
-        return None
+        except Exception as e:
+            logging.exception(f"Error with Redis connection: {e}")
+            self.connection = None
+
+
+def get_redis_connection() -> Redis:
+    """Create a connection to the Redis database."""
+    return Redis()

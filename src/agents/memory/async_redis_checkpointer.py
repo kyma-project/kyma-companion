@@ -535,7 +535,7 @@ def get_async_redis_saver() -> AsyncRedisSaver:
     """
     Returns an instance of AsyncRedisSaver with a async redis connection as defined in the config files.
     """
-    connection = get_redis_connection().__next__().connection
+    connection = get_redis_connection().connection
     if connection is None:
         raise ValueError("Failed to retrieve a valid Redis connection.")
     return AsyncRedisSaver(connection)

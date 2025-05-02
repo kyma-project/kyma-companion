@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Generator
 
 from hdbcli import dbapi
 
@@ -23,33 +22,22 @@ class Hana(metaclass=SingletonMeta):
 
     connection: dbapi.Connection | None = None
 
-    def set_connection(self, connection: dbapi.Connection) -> None:
-        """
-        sets the database connection for the service.
-
-        args:
-            connection (dbapi.connection): the database connection object.
-        """
-        self.connection = connection
-
-
-def get_hana_connection() -> Generator[Hana, None, None]:
-    """Create a connection to the Hana database."""
-    try:
-        hana = Hana()
-        if not hana.connection:
-            hana.set_connection(
-                dbapi.Connection(
-                    address=str(DATABASE_URL),
-                    port=DATABASE_PORT,
-                    user=str(DATABASE_USER),
-                    password=str(DATABASE_PASSWORD),
-                )
+    def __init__(self) -> None:
+        try:
+            self.connection = dbapi.Connection(
+                address=str(DATABASE_URL),
+                port=DATABASE_PORT,
+                user=str(DATABASE_USER),
+                password=str(DATABASE_PASSWORD),
             )
-        yield hana
-    except dbapi.Error as e:
-        logging.exception(f"Connection to Hana Cloud failed: {e}")
-        return None
-    except Exception as e:
-        logging.exception(f"Unknown error occurred: {e}")
-        return None
+        except dbapi.Error as e:
+            logging.exception(f"Connection to Hana Cloud failed: {e}")
+            self.connection = None
+        except Exception as e:
+            logging.exception(f"Unknown error occurred: {e}")
+            self.connection = None
+
+
+def get_hana_connection() -> Hana:
+    """Create a connection to the Hana database."""
+    return Hana()

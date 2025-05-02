@@ -9,7 +9,7 @@ from rag.generator import Generator
 from rag.query_generator import QueryGenerator
 from rag.reranker.reranker import LLMReranker
 from rag.retriever import HanaDBRetriever
-from services.hana import get_hana_connection
+from services.hana import Hana
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 from utils.settings import (
@@ -49,10 +49,7 @@ class RAGSystem:
         self.query_generator = QueryGenerator(
             cast(IModel, cast(IModel, models[ModelType.GPT4O_MINI]))
         )
-        hana_conn = next(get_hana_connection()).connection
-        if hana_conn is None:
-            raise ValueError("Failed to establish a HANA connection.")
-
+        hana_conn = Hana().connection
         # setup retriever
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE]),
