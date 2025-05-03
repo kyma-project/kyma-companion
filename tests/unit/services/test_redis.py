@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -16,20 +16,21 @@ class TestRedis:
         "test_case, connection, expected",
         [
             ("No connection", None, False),
-            ("Connection ready", MagicMock(ping=MagicMock(return_value=True)), True),
+            ("Connection ready", MagicMock(ping=AsyncMock(return_value=True)), True),
             (
                 "Connection not ready",
-                MagicMock(ping=MagicMock(return_value=False)),
+                MagicMock(ping=AsyncMock(return_value=False)),
                 False,
             ),
             (
                 "Connection fails with exception",
-                MagicMock(ping=MagicMock(side_effect=Exception("Connection error"))),
+                MagicMock(ping=AsyncMock(side_effect=Exception("Connection error"))),
                 False,
             ),
         ],
     )
-    def test_is_connection_operational(self, test_case, connection, expected):
+    @pytest.mark.asyncio
+    async def test_is_connection_operational(self, test_case, connection, expected):
         """
         Test the `is_connection_operational` method with various scenarios.
 
@@ -45,7 +46,7 @@ class TestRedis:
         redis.connection = connection
 
         # When:
-        result = redis.is_connection_operational()
+        result = await redis.is_connection_operational()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
@@ -101,4 +102,3 @@ class TestRedis:
 
         # Then:
         assert redis != redis2
-

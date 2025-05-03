@@ -45,7 +45,7 @@ class IRedis(Protocol):
 
     connection: IRedisConnection
 
-    def is_connection_operational(self) -> bool:
+    async def is_connection_operational(self) -> bool:
         """
         Check if the Redis service is operational.
         """
@@ -68,7 +68,7 @@ async def healthz(
     logger.info("Ready probe called.")
     response = HealthModel(
         is_hana_ready=is_hana_ready(hana.connection),
-        is_redis_ready=redis.is_connection_operational(),
+        is_redis_ready=await redis.is_connection_operational(),
         is_usage_tracker_ready=is_usage_tracker_ready(metrics),
         llms=llm_probe.get_llms_states(),
     )

@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -68,7 +68,7 @@ def test_healthz_probe(
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
     mock_redis = MagicMock(spec=IRedis)
-    mock_redis.is_connection_operational.return_value = redis_ready
+    mock_redis.is_connection_operational = AsyncMock(return_value=redis_ready)
     app.dependency_overrides[get_redis_connection] = lambda: mock_redis
 
     mock_custom_metrics = MagicMock()

@@ -38,16 +38,16 @@ class Redis(metaclass=SingletonMeta):
             logger.error(f"Error with Redis connection: {e}")
             self.connection = None
 
-    def is_connection_operational(self) -> bool:
+    async def is_connection_operational(self) -> bool:
         """
-        Check if the Redis service is operational.
+        Check if the Redis service is is_connection_operational.
         """
         if not self.connection:
             logger.error("Redis connection is not initialized.")
             return False
 
         try:
-            if self.connection.ping():
+            if await self.connection.ping():
                 logger.info("Redis connection is ready.")
                 return True
         except Exception as e:
