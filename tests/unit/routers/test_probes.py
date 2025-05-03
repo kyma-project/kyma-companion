@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IRedis
+from routers.probes import IHana, IRedis
 from services.hana import get_hana_connection
 from services.metrics import get_custom_metrics
 from services.probes import get_llm_readiness_probe
@@ -63,8 +63,8 @@ def test_healthz_probe(
     Test the health probe endpoint. This test ensures that the endpoint returns the correct status code.
     """
     # Given:
-    mock_hana_conn = MagicMock()
-    mock_hana_conn.connection.isconnected.return_value = hana_ready
+    mock_hana_conn = MagicMock(spec=IHana)
+    mock_hana_conn.is_connection_operational = MagicMock(return_value=hana_ready)
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
     mock_redis = MagicMock(spec=IRedis)
@@ -105,9 +105,9 @@ def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_st
     Test the readiness probe endpoint. This test ensures that the endpoint returns the correct status code.
     """
     # Given:
-    mock_hana_conn = MagicMock()
-    mock_hana_conn.connection = MagicMock() if hana_ready else None
-    app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
+    mock_hana = MagicMock(spec=IHana)
+    mock_hana.has_connection.return_value = hana_ready
+    app.dependency_overrides[get_hana_connection] = lambda: mock_hana
 
     mock_redis = MagicMock(spec=IRedis)
     mock_redis.has_connection.return_value = redis_ready

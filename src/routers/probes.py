@@ -10,10 +10,7 @@ from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana_connection
 from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
-    IHana,
-    ILLMReadinessProbe,
     get_llm_readiness_probe,
-    is_hana_ready,
     is_usage_tracker_ready,
 )
 from services.redis import get_redis_connection
@@ -23,6 +20,35 @@ logger = get_logger(__name__)
 router = APIRouter(
     tags=["probes"],
 )
+
+
+class IHanaConnection(Protocol):
+    """Protocol for the Hana database connection."""
+
+    def isconnected(self) -> bool:
+        """Verifies if a connection to a Hana database is ready."""
+        ...
+
+
+class IHana(Protocol):
+    """
+    Protocol for defining an IHana service.
+
+    Attributes:
+        connection (IHanaConnection): Represents the connection to the Hana database.
+    """
+
+    connection: IHanaConnection
+
+    def is_connection_operational(self) -> bool:
+        """
+        Check if the Hana service is operational.
+        """
+        ...
+
+    def has_connection(self) -> bool:
+        """Check if a connection exists."""
+        ...
 
 
 class IRedisConnection(Protocol):
@@ -56,6 +82,31 @@ class IRedis(Protocol):
         ...
 
 
+class ILLMReadinessProbe(Protocol):
+    """
+    Protocol for probing the readiness of LLMs (Large Language Models).
+    """
+
+    def get_llms_states(self) -> dict[str, bool]:
+        """
+        Retrieve the readiness states of all LLMs.
+
+        Returns:
+            A dictionary where the keys are LLM names and the values are booleans
+            indicating whether each LLM is ready.
+        """
+        ...
+
+    def has_models(self) -> bool:
+        """
+        Check if there are any models available.
+
+        Returns:
+            bool: True if models are available, False otherwise.
+        """
+        ...
+
+
 @router.get("/healthz")
 async def healthz(
     hana: IHana = Depends(get_hana_connection),  # noqa: B008
@@ -67,7 +118,7 @@ async def healthz(
 
     logger.info("Ready probe called.")
     response = HealthModel(
-        is_hana_ready=is_hana_ready(hana.connection),
+        is_hana_ready=hana.is_connection_operational(),
         is_redis_ready=await redis.is_connection_operational(),
         is_usage_tracker_ready=is_usage_tracker_ready(metrics),
         llms=llm_probe.get_llms_states(),
@@ -88,15 +139,15 @@ async def healthz(
 @router.get("/readyz")
 async def readyz(
     hana: IHana = Depends(get_hana_connection),  # noqa: B008
-    redis_conn: IRedis = Depends(get_redis_connection),  # noqa: B008
+    redis: IRedis = Depends(get_redis_connection),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""
 
     logger.info("Health probe called.")
     response = ReadinessModel(
-        is_hana_initialized=bool(hana.connection),
-        is_redis_initialized=redis_conn.has_connection(),
+        is_hana_initialized=hana.has_connection(),
+        is_redis_initialized=redis.has_connection(),
         are_models_initialized=llm_probe.has_models(),
     )
     status = HTTP_503_SERVICE_UNAVAILABLE

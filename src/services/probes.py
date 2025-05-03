@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import Protocol
 
 from langchain_core.embeddings import Embeddings
 
@@ -13,50 +12,6 @@ FAILURE_METRIC_KEY = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
 
 
 logger = get_logger(__name__)
-
-
-class IHanaConnection(Protocol):
-    """Protocol for the Hana database connection."""
-
-    def isconnected(self) -> bool:
-        """Verifies if a connection to a Hana database is ready."""
-        ...
-
-
-class IHana(Protocol):
-    """
-    Protocol for defining an IHana service.
-
-    Attributes:
-        connection (IHanaConnection): Represents the connection to the Hana database.
-    """
-
-    connection: IHanaConnection
-
-
-class ILLMReadinessProbe(Protocol):
-    """
-    Protocol for probing the readiness of LLMs (Large Language Models).
-    """
-
-    def get_llms_states(self) -> dict[str, bool]:
-        """
-        Retrieve the readiness states of all LLMs.
-
-        Returns:
-            A dictionary where the keys are LLM names and the values are booleans
-            indicating whether each LLM is ready.
-        """
-        ...
-
-    def has_models(self) -> bool:
-        """
-        Check if there are any models available.
-
-        Returns:
-            bool: True if models are available, False otherwise.
-        """
-        ...
 
 
 class LLMReadinessProbe(metaclass=SingletonMeta):
@@ -169,28 +124,6 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     except Exception as e:
         logger.exception(f"Failed to initialize LLMReadinessProbe: {e}")
         raise
-
-
-def is_hana_ready(connection: IHanaConnection | None) -> bool:
-    """
-    Check if the HANA database is ready.
-
-    Returns:
-        bool: True if HANA is ready, False otherwise.
-    """
-    if not connection:
-        logger.warning("HANA DB connection is not initialized.")
-        return False
-
-    try:
-        if connection.isconnected():
-            logger.info("HANA DB connection is ready.")
-            return True
-    except Exception as e:
-        logger.error(f"Error while connecting to HANA DB: {e}")
-        return False
-    logger.info("HANA DB connection is not ready.")
-    return False
 
 
 def is_usage_tracker_ready(custom_metrics: CustomMetrics | None) -> bool:

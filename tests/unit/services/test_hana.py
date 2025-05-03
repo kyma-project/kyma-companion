@@ -1,14 +1,14 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.redis import get_redis_connection
+from services.hana import get_hana_connection
 
 
-class TestRedis:
+class TestHana:
     @pytest.fixture(autouse=True)
     def mock_connection(self):
-        with patch("services.redis.AsyncRedis") as mock:
+        with patch("services.hana.dbapi.Connection") as mock:
             mock = MagicMock()
             yield mock
 
@@ -16,42 +16,42 @@ class TestRedis:
         "test_case, connection, expected",
         [
             ("No connection", None, False),
-            ("Connection ready", MagicMock(ping=AsyncMock(return_value=True)), True),
+            (
+                "Connection ready",
+                MagicMock(isconnected=MagicMock(return_value=True)),
+                True,
+            ),
             (
                 "Connection not ready",
-                MagicMock(ping=AsyncMock(return_value=False)),
+                MagicMock(isconnected=MagicMock(return_value=False)),
                 False,
             ),
             (
                 "Connection fails with exception",
-                MagicMock(ping=AsyncMock(side_effect=Exception("Connection error"))),
+                MagicMock(
+                    isconnected=MagicMock(side_effect=Exception("Connection error"))
+                ),
                 False,
             ),
         ],
     )
-    @pytest.mark.asyncio
-    async def test_is_connection_operational(self, test_case, connection, expected):
+    def test_is_hana_ready(self, test_case, connection, expected):
         """
         Test the `is_connection_operational` method with various scenarios.
 
-        This test verifies that the method correctly determines Redis readiness
-        based on the connection state, `ping` result, and exceptions.
+        This test verifies that the method correctly determines Hana readiness
+        based on the connection state, `isconnected` result, and exceptions.
         """
-
         # Given:
-        # Create a new redis instance.
-        redis = get_redis_connection()
-        # Replace the connection with prepared fixtures.
-        redis.connection = connection
+        # Create a new hana instance.
+        hana = get_hana_connection()
+        hana.connection = connection
+        result = hana.is_connection_operational()
 
-        # When:
-        result = await redis.is_connection_operational()
-
-        # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        redis.reset()
+        hana.reset()
 
     @pytest.mark.parametrize(
         "test_case, connection, expected",
@@ -69,34 +69,34 @@ class TestRedis:
 
         # Given:
         # Create a new redis instance.
-        redis = get_redis_connection()
+        hana = get_hana_connection()
         # Replace the connection with prepared fixtures.
-        redis.connection = connection
+        hana.connection = connection
 
         # When:
-        result = redis.has_connection()
+        result = hana.has_connection()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        redis.reset()
+        hana.reset()
 
     def test_reset(self):
         """
-        Test the `reset` method of the Redis class.
+        Test the `reset` method of the Hana class.
 
         This test verifies that the reset method clears the singleton instance
         and any associated resources.
         """
 
         # Given:
-        # Create a new redis instance.
-        redis = get_redis_connection()
+        # Create a new Hana instance.
+        hana1 = get_hana_connection()
 
         # When:
-        redis.reset()
-        redis2 = get_redis_connection()
+        hana1.reset()
+        hana2 = get_hana_connection()
 
         # Then:
-        assert redis != redis2
+        assert hana1 != hana2
