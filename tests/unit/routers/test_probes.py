@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
+from routers.probes import IRedis
 from services.hana import get_hana_connection
 from services.metrics import get_custom_metrics
 from services.probes import get_llm_readiness_probe
@@ -50,7 +51,7 @@ from services.redis import get_redis_connection
         ),
     ],
 )
-def test_healthz_probe_table(
+def test_healthz_probe(
     test_case,
     hana_ready,
     redis_ready,
@@ -66,9 +67,9 @@ def test_healthz_probe_table(
     mock_hana_conn.connection.isconnected.return_value = hana_ready
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
-    mock_redis_conn = MagicMock()
-    mock_redis_conn.connection.ping.return_value = redis_ready
-    app.dependency_overrides[get_redis_connection] = lambda: mock_redis_conn
+    mock_redis = MagicMock(spec=IRedis)
+    mock_redis.is_connection_operational.return_value = redis_ready
+    app.dependency_overrides[get_redis_connection] = lambda: mock_redis
 
     mock_custom_metrics = MagicMock()
     mock_custom_metrics.registry.get_sample_value.return_value = metrics_failure_count
@@ -99,9 +100,7 @@ def test_healthz_probe_table(
         ("no models", True, True, False, HTTP_503_SERVICE_UNAVAILABLE),
     ],
 )
-def test_ready_probe_table(
-    test_case, hana_ready, redis_ready, llm_states, expected_status
-):
+def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_status):
     """
     Test the readiness probe endpoint. This test ensures that the endpoint returns the correct status code.
     """
@@ -110,9 +109,9 @@ def test_ready_probe_table(
     mock_hana_conn.connection = MagicMock() if hana_ready else None
     app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
 
-    mock_redis_conn = MagicMock()
-    mock_redis_conn.connection = MagicMock() if redis_ready else None
-    app.dependency_overrides[get_redis_connection] = lambda: mock_redis_conn
+    mock_redis = MagicMock(spec=IRedis)
+    mock_redis.has_connection.return_value = redis_ready
+    app.dependency_overrides[get_redis_connection] = lambda: mock_redis
 
     mock_llm_probe = MagicMock()
     mock_llm_probe.has_models.return_value = llm_states

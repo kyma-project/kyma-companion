@@ -1,5 +1,8 @@
+from typing import Protocol
+
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
+from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
@@ -9,10 +12,8 @@ from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
     IHana,
     ILLMReadinessProbe,
-    IRedis,
     get_llm_readiness_probe,
     is_hana_ready,
-    is_redis_ready,
     is_usage_tracker_ready,
 )
 from services.redis import get_redis_connection
@@ -22,6 +23,37 @@ logger = get_logger(__name__)
 router = APIRouter(
     tags=["probes"],
 )
+
+
+class IRedisConnection(Protocol):
+    """
+    Protocol to ensure the Redis connection has a `ping` method.
+    """
+
+    def ping(self, **kwargs) -> ResponseT:  # noqa
+        """Ping the Redis server."""
+        ...
+
+
+class IRedis(Protocol):
+    """
+    Protocol for defining an IRedis service.
+
+    Attributes:
+        connection (IRedisConnection): Represents the connection to the Redis database.
+    """
+
+    connection: IRedisConnection
+
+    def is_connection_operational(self) -> bool:
+        """
+        Check if the Redis service is operational.
+        """
+        ...
+
+    def has_connection(self) -> bool:
+        """Check if a connection exists."""
+        ...
 
 
 @router.get("/healthz")
@@ -36,7 +68,7 @@ async def healthz(
     logger.info("Ready probe called.")
     response = HealthModel(
         is_hana_ready=is_hana_ready(hana.connection),
-        is_redis_ready=is_redis_ready(redis.connection),
+        is_redis_ready=redis.is_connection_operational(),
         is_usage_tracker_ready=is_usage_tracker_ready(metrics),
         llms=llm_probe.get_llms_states(),
     )
@@ -64,7 +96,7 @@ async def readyz(
     logger.info("Health probe called.")
     response = ReadinessModel(
         is_hana_initialized=bool(hana.connection),
-        is_redis_initialized=bool(redis_conn.connection),
+        is_redis_initialized=redis_conn.has_connection(),
         are_models_initialized=llm_probe.has_models(),
     )
     status = HTTP_503_SERVICE_UNAVAILABLE

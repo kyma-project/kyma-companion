@@ -2,7 +2,6 @@ from collections.abc import Generator
 from typing import Protocol
 
 from langchain_core.embeddings import Embeddings
-from redis.typing import ResponseT
 
 from services.metrics import USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY, CustomMetrics
 from utils.config import get_config
@@ -33,27 +32,6 @@ class IHana(Protocol):
     """
 
     connection: IHanaConnection
-
-
-class IRedisConnection(Protocol):
-    """
-    Protocol to ensure the Redis connection has a `ping` method.
-    """
-
-    def ping(self, **kwargs) -> ResponseT:  # noqa
-        """Ping the Redis server."""
-        ...
-
-
-class IRedis(Protocol):
-    """
-    Protocol for defining an IRedis service.
-
-    Attributes:
-        connection (IRedisConnection): Represents the connection to the Redis database.
-    """
-
-    connection: IRedisConnection
 
 
 class ILLMReadinessProbe(Protocol):
@@ -212,28 +190,6 @@ def is_hana_ready(connection: IHanaConnection | None) -> bool:
         logger.error(f"Error while connecting to HANA DB: {e}")
         return False
     logger.info("HANA DB connection is not ready.")
-    return False
-
-
-def is_redis_ready(connection: IRedisConnection | None) -> bool:
-    """
-    Check if the Redis service is ready.
-
-    Returns:
-        bool: True if Redis is ready, False otherwise.
-    """
-    if not connection:
-        logger.error("Redis connection is not initialized.")
-        return False
-
-    try:
-        if connection.ping():
-            logger.info("Redis connection is ready.")
-            return True
-    except Exception as e:
-        logger.error(f"Redis connection failed: {e}")
-        return False
-    logger.info("Redis connection is not ready.")
     return False
 
 
