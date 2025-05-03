@@ -1,5 +1,3 @@
-from collections.abc import Generator
-
 from langchain_core.embeddings import Embeddings
 
 from services.metrics import USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY, CustomMetrics
@@ -22,10 +20,10 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
     they are operational before being used.
     """
 
-    _models: dict[str, IModel | Embeddings] | None = None
-    _model_states: dict[str, bool] | None = None
+    _models: dict[str, IModel | Embeddings]
+    _model_states: dict[str, bool]
 
-    def __init__(self, models: dict[str, IModel | Embeddings] | None = None) -> None:
+    def __init__(self) -> None:
         """
         Initialize the LLMReadinessProbe.
 
@@ -36,6 +34,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         """
         logger.info("Creating new LLM readiness probe")
 
+        models = ModelFactory(get_config()).create_models()
         self._models = models or {}
         self._model_states = {name: False for name in self._models}
 
@@ -108,7 +107,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         return self._model_states or {}
 
 
-def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
+def get_llm_readiness_probe() -> LLMReadinessProbe:
     """
     Create and yield an LLMReadinessProbe instance.
 
@@ -116,14 +115,7 @@ def get_llm_readiness_probe() -> Generator[LLMReadinessProbe, None, None]:
     and yields an LLMReadinessProbe instance. It ensures proper error
     handling in case of initialization failure.
     """
-    try:
-        probe = LLMReadinessProbe()
-        if not probe.has_models():
-            probe.set_models(ModelFactory(get_config()).create_models())
-        yield probe
-    except Exception as e:
-        logger.exception(f"Failed to initialize LLMReadinessProbe: {e}")
-        raise
+    return LLMReadinessProbe()
 
 
 def is_usage_tracker_ready(custom_metrics: CustomMetrics | None) -> bool:

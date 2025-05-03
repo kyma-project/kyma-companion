@@ -1,5 +1,4 @@
 import time
-from collections.abc import Generator
 from enum import Enum
 from http import HTTPStatus
 from typing import Any
@@ -124,15 +123,8 @@ class CustomMetrics(metaclass=SingletonMeta):
         return response
 
 
-def get_custom_metrics() -> Generator[CustomMetrics, None, None]:
+def get_custom_metrics() -> CustomMetrics:
     """
-    Create and yield a CustomMetrics instance.
-
-    This function initializes the required metrics and yields a CustomMetrics
-    instance. It ensures proper error handling in case of initialization failure.
+    Create and return a CustomMetrics instance.
     """
-    try:
-        metrics = CustomMetrics()
-        yield metrics
-    except Exception as e:
-        raise RuntimeError(f"Failed to initialize CustomMetrics: {e}") from e
+    return CustomMetrics()
