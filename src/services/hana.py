@@ -66,17 +66,19 @@ class Hana(metaclass=SingletonMeta):
         return bool(self.connection)
 
     @classmethod
-    def reset(cls) -> None:
+    def _reset_for_tests(cls) -> None:
         """
         Reset the singleton instance and any associated resources.
 
         This method clears the stored instance and any related attributes,
         allowing the singleton to be reinitialized.
+
+        Only use for testing purpose.
         """
         SingletonMeta.reset_instance(cls)
         cls.connection = None
 
 
-def get_hana_connection() -> Hana:
+def get_hana() -> Hana:
     """Create a connection to the Hana database."""
     return Hana()

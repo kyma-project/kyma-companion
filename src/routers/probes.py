@@ -7,13 +7,13 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import HealthModel, ReadinessModel
-from services.hana import get_hana_connection
+from services.hana import get_hana
 from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
     get_llm_readiness_probe,
     is_usage_tracker_ready,
 )
-from services.redis import get_redis_connection
+from services.redis import get_redis
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -109,8 +109,8 @@ class ILLMReadinessProbe(Protocol):
 
 @router.get("/healthz")
 async def healthz(
-    hana: IHana = Depends(get_hana_connection),  # noqa: B008
-    redis: IRedis = Depends(get_redis_connection),  # noqa: B008
+    hana: IHana = Depends(get_hana),  # noqa: B008
+    redis: IRedis = Depends(get_redis),  # noqa: B008
     metrics: CustomMetrics = Depends(get_custom_metrics),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
@@ -138,8 +138,8 @@ async def healthz(
 
 @router.get("/readyz")
 async def readyz(
-    hana: IHana = Depends(get_hana_connection),  # noqa: B008
-    redis: IRedis = Depends(get_redis_connection),  # noqa: B008
+    hana: IHana = Depends(get_hana),  # noqa: B008
+    redis: IRedis = Depends(get_redis),  # noqa: B008
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""

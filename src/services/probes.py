@@ -23,7 +23,7 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
     _models: dict[str, IModel | Embeddings]
     _model_states: dict[str, bool]
 
-    def __init__(self) -> None:
+    def __init__(self, models: dict[str, IModel | Embeddings] | None = None) -> None:
         """
         Initialize the LLMReadinessProbe.
 
@@ -34,19 +34,9 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         """
         logger.info("Creating new LLM readiness probe")
 
-        models = ModelFactory(get_config()).create_models()
-        self._models = models or {}
-        self._model_states = {name: False for name in self._models}
-
-    def set_models(self, models: dict[str, IModel | Embeddings]) -> None:
-        """
-        Set the models and initialize their states.
-
-        Args:
-            models (dict[str, IModel | Embeddings]): A dictionary of model names
-                and their corresponding model instances.
-        """
-        self._models = models
+        self._models = (
+            ModelFactory(get_config()).create_models() if models is None else models
+        )
         self._model_states = {name: False for name in self._models}
 
     def has_models(self) -> bool:
@@ -106,14 +96,15 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         self.are_llms_ready()
         return self._model_states or {}
 
+    @classmethod
+    def _reset_for_tests(cls) -> None:
+        """Reset the singleton instance. Only use for testing purpose."""
+        SingletonMeta.reset_instance(cls)
+
 
 def get_llm_readiness_probe() -> LLMReadinessProbe:
     """
-    Create and yield an LLMReadinessProbe instance.
-
-    This function initializes the required models using the ModelFactory
-    and yields an LLMReadinessProbe instance. It ensures proper error
-    handling in case of initialization failure.
+    Returns a LLMReadinessProbe instance.
     """
     return LLMReadinessProbe()
 
@@ -121,9 +112,6 @@ def get_llm_readiness_probe() -> LLMReadinessProbe:
 def is_usage_tracker_ready(custom_metrics: CustomMetrics | None) -> bool:
     """
     Check if the collection of usage metrics is working without failures.
-
-    Returns:
-        bool: True if Redis is ready, False otherwise.
     """
     # If there is no custom metrics, we cannot detect problems so we are
     # already in a failed state:

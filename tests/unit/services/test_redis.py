@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from services.redis import get_redis_connection
+from services.redis import get_redis
 
 
 class TestRedis:
@@ -40,7 +40,7 @@ class TestRedis:
 
         # Given:
         # Create a new redis instance.
-        redis = get_redis_connection()
+        redis = get_redis()
         # Replace the connection with prepared fixtures.
         redis.connection = connection
 
@@ -51,7 +51,7 @@ class TestRedis:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        redis.reset()
+        redis._reset_for_tests()
 
     @pytest.mark.parametrize(
         "test_case, connection, expected",
@@ -69,7 +69,7 @@ class TestRedis:
 
         # Given:
         # Create a new redis instance.
-        redis = get_redis_connection()
+        redis = get_redis()
         # Replace the connection with prepared fixtures.
         redis.connection = connection
 
@@ -80,7 +80,7 @@ class TestRedis:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        redis.reset()
+        redis._reset_for_tests()
 
     def test_reset(self):
         """
@@ -92,11 +92,11 @@ class TestRedis:
 
         # Given:
         # Create a new redis instance.
-        redis = get_redis_connection()
+        redis = get_redis()
 
         # When:
-        redis.reset()
-        redis2 = get_redis_connection()
+        redis._reset_for_tests()
+        redis2 = get_redis()
 
         # Then:
         assert redis != redis2

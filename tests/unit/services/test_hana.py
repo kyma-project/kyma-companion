@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.hana import get_hana_connection
+from services.hana import get_hana
 
 
 class TestHana:
@@ -44,14 +44,14 @@ class TestHana:
         """
         # Given:
         # Create a new hana instance.
-        hana = get_hana_connection()
+        hana = get_hana()
         hana.connection = connection
         result = hana.is_connection_operational()
 
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        hana.reset()
+        hana._reset_for_tests()
 
     @pytest.mark.parametrize(
         "test_case, connection, expected",
@@ -69,7 +69,7 @@ class TestHana:
 
         # Given:
         # Create a new redis instance.
-        hana = get_hana_connection()
+        hana = get_hana()
         # Replace the connection with prepared fixtures.
         hana.connection = connection
 
@@ -80,7 +80,7 @@ class TestHana:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the Redis instance.
-        hana.reset()
+        hana._reset_for_tests()
 
     def test_reset(self):
         """
@@ -92,11 +92,11 @@ class TestHana:
 
         # Given:
         # Create a new Hana instance.
-        hana1 = get_hana_connection()
+        hana1 = get_hana()
 
         # When:
-        hana1.reset()
-        hana2 = get_hana_connection()
+        hana1._reset_for_tests()
+        hana2 = get_hana()
 
         # Then:
         assert hana1 != hana2

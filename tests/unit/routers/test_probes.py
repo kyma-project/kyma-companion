@@ -5,11 +5,11 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IHana, IRedis
-from services.hana import get_hana_connection
+from routers.probes import IHana, ILLMReadinessProbe, IRedis
+from services.hana import get_hana
 from services.metrics import get_custom_metrics
 from services.probes import get_llm_readiness_probe
-from services.redis import get_redis_connection
+from services.redis import get_redis
 
 
 @pytest.mark.parametrize(
@@ -65,17 +65,17 @@ def test_healthz_probe(
     # Given:
     mock_hana_conn = MagicMock(spec=IHana)
     mock_hana_conn.is_connection_operational = MagicMock(return_value=hana_ready)
-    app.dependency_overrides[get_hana_connection] = lambda: mock_hana_conn
+    app.dependency_overrides[get_hana] = lambda: mock_hana_conn
 
     mock_redis = MagicMock(spec=IRedis)
     mock_redis.is_connection_operational = AsyncMock(return_value=redis_ready)
-    app.dependency_overrides[get_redis_connection] = lambda: mock_redis
+    app.dependency_overrides[get_redis] = lambda: mock_redis
 
     mock_custom_metrics = MagicMock()
     mock_custom_metrics.registry.get_sample_value.return_value = metrics_failure_count
     app.dependency_overrides[get_custom_metrics] = lambda: mock_custom_metrics
 
-    mock_llm_probe = MagicMock()
+    mock_llm_probe = MagicMock(spec=ILLMReadinessProbe)
     mock_llm_probe.get_llms_states.return_value = llm_states
     app.dependency_overrides[get_llm_readiness_probe] = lambda: mock_llm_probe
 
@@ -107,13 +107,13 @@ def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_st
     # Given:
     mock_hana = MagicMock(spec=IHana)
     mock_hana.has_connection.return_value = hana_ready
-    app.dependency_overrides[get_hana_connection] = lambda: mock_hana
+    app.dependency_overrides[get_hana] = lambda: mock_hana
 
     mock_redis = MagicMock(spec=IRedis)
     mock_redis.has_connection.return_value = redis_ready
-    app.dependency_overrides[get_redis_connection] = lambda: mock_redis
+    app.dependency_overrides[get_redis] = lambda: mock_redis
 
-    mock_llm_probe = MagicMock()
+    mock_llm_probe = MagicMock(spec=ILLMReadinessProbe)
     mock_llm_probe.has_models.return_value = llm_states
     app.dependency_overrides[get_llm_readiness_probe] = lambda: mock_llm_probe
 
