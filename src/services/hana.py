@@ -77,6 +77,18 @@ class Hana(metaclass=SingletonMeta):
         SingletonMeta.reset_instance(cls)
         cls.connection = None
 
+    def get_connction(self) -> dbapi.Connection:
+        """
+        Get the current connection.
+
+        Returns:
+            dbapi.Connection: The current HANA database connection.
+        """
+        if not self.connection:
+            logger.warning("HANA DB connection is not initialized.")
+            raise ValueError("HANA DB connection is not initialized.")
+        return self.connection
+
 
 def _get_hana_connection() -> dbapi.Connection:
     """Do not use this function directly to create connections. Use the Hana() or get_hana() instead."""

@@ -72,6 +72,13 @@ class Redis(metaclass=SingletonMeta):
         SingletonMeta.reset_instance(cls)
         cls.connection = None
 
+    def get_connection(self) -> AsyncRedis:
+        """Get the current Redis connection."""
+        if self.connection is None:
+            logger.error("Redis connection is not initialized.")
+            raise ValueError("Redis connection is not initialized.")
+        return self.connection
+
 
 def _get_redis_connection() -> AsyncRedis:
     return AsyncRedis(

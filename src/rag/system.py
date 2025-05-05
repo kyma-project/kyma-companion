@@ -49,11 +49,10 @@ class RAGSystem:
         self.query_generator = QueryGenerator(
             cast(IModel, cast(IModel, models[ModelType.GPT4O_MINI]))
         )
-        hana_conn = Hana().connection
         # setup retriever
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE]),
-            connection=hana_conn,
+            connection=Hana().get_connction(),
             table_name=DOCS_TABLE_NAME,
         )
         # setup generator

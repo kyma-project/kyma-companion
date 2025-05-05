@@ -23,7 +23,7 @@ from langgraph.checkpoint.base import (
 from langgraph.checkpoint.serde.base import SerializerProtocol
 from redis.asyncio import Redis as AsyncRedis
 
-from services.redis import get_redis
+from services.redis import Redis
 from utils.logging import get_logger
 from utils.settings import REDIS_SSL_ENABLED, REDIS_TTL
 
@@ -535,7 +535,5 @@ def get_async_redis_saver() -> AsyncRedisSaver:
     """
     Returns an instance of AsyncRedisSaver with a async redis connection as defined in the config files.
     """
-    connection = get_redis().connection
-    if connection is None:
-        raise ValueError("Failed to retrieve a valid Redis connection.")
+    connection = Redis().get_connection()
     return AsyncRedisSaver(connection)
