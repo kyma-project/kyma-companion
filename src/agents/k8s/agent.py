@@ -22,7 +22,10 @@ class KubernetesAgent(BaseAgent):
             [
                 ("system", K8S_AGENT_PROMPT),
                 MessagesPlaceholder(variable_name=AGENT_MESSAGES),
-                ("human", "{query}"),
+                (
+                    "human",
+                    "Resource information:\n{resource_information}\n\nUser query:\n{query}",
+                ),
             ]
         )
         super().__init__(

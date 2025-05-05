@@ -17,6 +17,7 @@ from agents.common.constants import (
     ERROR,
     IS_LAST_STEP,
     MESSAGES,
+    RESOURCE_INFORMATION,
     MY_TASK,
     SUBTASKS,
     SUMMARIZATION,
@@ -150,6 +151,7 @@ class BaseAgent:
             self.chain,
             {
                 AGENT_MESSAGES: filter_valid_messages(input_messages),
+                RESOURCE_INFORMATION: state.resource_information.model_dump_json(),
                 "query": state.my_task.description,
             },
             config=config,
@@ -194,11 +196,13 @@ class BaseAgent:
                         content="Sorry, I need more steps to process the request.",
                         name=self.name,
                     )
-                ]
+                ],
             }
 
         response.additional_kwargs["owner"] = self.name
-        return {AGENT_MESSAGES: [response]}
+        return {
+            AGENT_MESSAGES: [response],
+        }
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
