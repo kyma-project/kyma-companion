@@ -10,7 +10,7 @@ from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
 from services.probes import (
     get_llm_probe,
-    get_usage_tracke_probe,
+    get_usage_tracker_probe,
 )
 from services.redis import get_redis
 from utils.logging import get_logger
@@ -127,7 +127,7 @@ async def healthz(
     hana: IHana = Depends(get_hana),  # noqa: B008
     redis: IRedis = Depends(get_redis),  # noqa: B008
     usage_tracker_probe: IUsageTrackerProbe = Depends(  # noqa: B008
-        get_usage_tracke_probe
+        get_usage_tracker_probe
     ),
     llm_probe: ILLMProbe = Depends(get_llm_probe),  # noqa: B008
 ) -> JSONResponse:

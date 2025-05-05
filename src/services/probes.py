@@ -68,22 +68,28 @@ class LLMProbe(metaclass=SingletonMeta):
 
         all_ready = True
         for name, model in self._models.items():
+            # If the current model already is ready, we will not check the state again.
             if self._model_states.get(name, False):
                 logger.info(f"{name} connection is ready.")
                 continue
 
             try:
+                # Check if the model is an implemantation of IModel or an embedding and test accordingly,
+                # if they are are operational.
                 response = (
                     model.invoke("Test.")
                     if isinstance(model, IModel)
                     else model.embed_query("Test.")
                 )
+                # If we got a response, we will store the state of the corresponding model.
                 self._model_states[name] = bool(response)
                 if response:
                     logger.info(f"{name} connection is ready.")
                 else:
                     logger.warning(f"{name} connection is not working.")
+                    # If any model is not ready, we will return `False`, eventually.
                     all_ready = False
+
             except Exception as e:
                 logger.error(f"{name} connection has an error: {e}")
                 all_ready = False
@@ -155,6 +161,6 @@ class UsageTrackerProbe(metaclass=SingletonMeta):
         SingletonMeta.reset_instance(cls)
 
 
-def get_usage_tracke_probe() -> UsageTrackerProbe:
+def get_usage_tracker_probe() -> UsageTrackerProbe:
     """Retrieve an instance of UsageTrackerProbe."""
     return UsageTrackerProbe()

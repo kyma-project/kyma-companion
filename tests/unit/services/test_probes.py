@@ -7,7 +7,7 @@ from services.probes import (
     LLMProbe,
     UsageTrackerProbe,
     get_llm_probe,
-    get_usage_tracke_probe,
+    get_usage_tracker_probe,
 )
 from utils.models.factory import IModel
 
@@ -117,7 +117,7 @@ class TestUsageTrackerProbe:
         """
         # Given:
         expected_count = 1
-        probe = get_usage_tracke_probe()
+        probe = get_usage_tracker_probe()
 
         # When:
         probe.increase_failure_count()

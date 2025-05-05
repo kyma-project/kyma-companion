@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from routers.probes import IUsageTrackerProbe
 from services.metrics import CustomMetrics, LangGraphErrorType
-from services.probes import get_usage_tracke_probe
+from services.probes import get_usage_tracker_probe
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
 
@@ -47,7 +47,7 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         self.memory = memory
         self.ttl = TOKEN_USAGE_RESET_INTERVAL
         self.llm_start_times: dict = {}
-        self._probe = probe or get_usage_tracke_probe()
+        self._probe = probe or get_usage_tracker_probe()
 
     async def on_llm_start(
         self,
