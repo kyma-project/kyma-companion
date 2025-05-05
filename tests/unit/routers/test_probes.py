@@ -5,9 +5,9 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IHana, ILLMReadinessProbe, IRedis, IUsageTrackerProbe
+from routers.probes import IHana, ILLMProbe, IRedis, IUsageTrackerProbe
 from services.hana import get_hana
-from services.probes import get_llm_readiness_probe, get_usage_tracke_probe
+from services.probes import get_llm_probe, get_usage_tracke_probe
 from services.redis import get_redis
 
 
@@ -74,9 +74,9 @@ def test_healthz_probe(
     usage_tracker_probe.is_healthy = MagicMock(return_value=usage_tracker_ready)
     app.dependency_overrides[get_usage_tracke_probe] = lambda: usage_tracker_probe
 
-    mock_llm_probe = MagicMock(spec=ILLMReadinessProbe)
+    mock_llm_probe = MagicMock(spec=ILLMProbe)
     mock_llm_probe.get_llms_states.return_value = llm_states
-    app.dependency_overrides[get_llm_readiness_probe] = lambda: mock_llm_probe
+    app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
     client = TestClient(app)
 
@@ -112,9 +112,9 @@ def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_st
     mock_redis.has_connection.return_value = redis_ready
     app.dependency_overrides[get_redis] = lambda: mock_redis
 
-    mock_llm_probe = MagicMock(spec=ILLMReadinessProbe)
+    mock_llm_probe = MagicMock(spec=ILLMProbe)
     mock_llm_probe.has_models.return_value = llm_states
-    app.dependency_overrides[get_llm_readiness_probe] = lambda: mock_llm_probe
+    app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
     client = TestClient(app)
 

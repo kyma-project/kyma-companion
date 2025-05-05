@@ -4,9 +4,9 @@ import pytest
 from langchain_core.embeddings import Embeddings
 
 from services.probes import (
-    LLMReadinessProbe,
+    LLMProbe,
     UsageTrackerProbe,
-    get_llm_readiness_probe,
+    get_llm_probe,
     get_usage_tracke_probe,
 )
 from utils.models.factory import IModel
@@ -90,10 +90,10 @@ class TestLLMReadinessProbe:
         - The `are_llms_ready` method correctly determines the readiness of all models.
         - The `get_llms_states` method returns the correct readiness states for all models.
         """
-        LLMReadinessProbe()._reset_for_tests()
+        LLMProbe()._reset_for_tests()
 
         # When:
-        probe = LLMReadinessProbe(model_factory)
+        probe = LLMProbe(model_factory)
 
         # Then:
         assert probe.has_models() == expected_has_models, test_case
@@ -101,12 +101,12 @@ class TestLLMReadinessProbe:
         assert probe.get_llms_states() == expected_states, test_case
 
         # Clean up by resetting the instance:
-        LLMReadinessProbe()._reset_for_tests()
+        LLMProbe()._reset_for_tests()
 
     def test_reset_for_tests(self):
-        probe1 = get_llm_readiness_probe()
+        probe1 = get_llm_probe()
         probe1._reset_for_tests()
-        probe2 = get_llm_readiness_probe()
+        probe2 = get_llm_probe()
         assert probe1 != probe2
 
 

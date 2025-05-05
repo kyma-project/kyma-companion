@@ -9,7 +9,7 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
 from services.probes import (
-    get_llm_readiness_probe,
+    get_llm_probe,
     get_usage_tracke_probe,
 )
 from services.redis import get_redis
@@ -97,7 +97,7 @@ class IRedis(Protocol):
         ...
 
 
-class ILLMReadinessProbe(Protocol):
+class ILLMProbe(Protocol):
     """
     Protocol for probing the readiness of LLMs (Large Language Models).
     """
@@ -129,7 +129,7 @@ async def healthz(
     usage_tracker_probe: IUsageTrackerProbe = Depends(  # noqa: B008
         get_usage_tracke_probe
     ),
-    llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
+    llm_probe: ILLMProbe = Depends(get_llm_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
 
@@ -157,7 +157,7 @@ async def healthz(
 async def readyz(
     hana: IHana = Depends(get_hana),  # noqa: B008
     redis: IRedis = Depends(get_redis),  # noqa: B008
-    llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
+    llm_probe: ILLMProbe = Depends(get_llm_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""
 

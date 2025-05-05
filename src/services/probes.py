@@ -12,7 +12,7 @@ USAGE_TRACKER_FAILURE_THRESHOLD = 3
 logger = get_logger(__name__)
 
 
-class LLMReadinessProbe(metaclass=SingletonMeta):
+class LLMProbe(metaclass=SingletonMeta):
     """
     A probe to check the readiness of Large Language Models (LLMs).
 
@@ -112,11 +112,11 @@ def _get_models() -> dict[str, IModel | Embeddings]:
     return ModelFactory(get_config()).create_models()
 
 
-def get_llm_readiness_probe() -> LLMReadinessProbe:
+def get_llm_probe() -> LLMProbe:
     """
     Returns a LLMReadinessProbe instance.
     """
-    return LLMReadinessProbe()
+    return LLMProbe()
 
 
 class UsageTrackerProbe(metaclass=SingletonMeta):
