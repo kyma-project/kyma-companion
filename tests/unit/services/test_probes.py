@@ -25,7 +25,13 @@ class TestLLMReadinessProbe:
             ),
             (
                 "Single ready IModel",
-                MagicMock(return_value={"model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True))}),
+                MagicMock(
+                    return_value={
+                        "model1": MagicMock(
+                            spec=IModel, invoke=MagicMock(return_value=True)
+                        )
+                    }
+                ),
                 True,
                 True,
                 {"model1": True},
@@ -33,7 +39,11 @@ class TestLLMReadinessProbe:
             (
                 "Single not ready IEmbeddings",
                 MagicMock(
-                    return_value={"embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None))}
+                    return_value={
+                        "embedding1": MagicMock(
+                            spec=Embeddings, embed_query=MagicMock(return_value=None)
+                        )
+                    }
                 ),
                 True,
                 False,
@@ -43,8 +53,12 @@ class TestLLMReadinessProbe:
                 "Mixed readiness models",
                 MagicMock(
                     return_value={
-                        "model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True)),
-                        "embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None)),
+                        "model1": MagicMock(
+                            spec=IModel, invoke=MagicMock(return_value=True)
+                        ),
+                        "embedding1": MagicMock(
+                            spec=Embeddings, embed_query=MagicMock(return_value=None)
+                        ),
                     }
                 ),
                 True,
@@ -104,7 +118,9 @@ class TestLLMReadinessProbe:
         ("Metric is nonzero", 1.0, False),
     ],
 )
-def test_is_usage_tracker_ready_with_real_custom_metrics(test_case, failure_count, expected):
+def test_is_usage_tracker_ready_with_real_custom_metrics(
+    test_case, failure_count, expected
+):
     # Given:
     metrics = CustomMetrics()
     if failure_count is not None:
