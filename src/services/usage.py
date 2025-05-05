@@ -8,7 +8,9 @@ from langchain.schema import LLMResult
 from pydantic import BaseModel
 
 from agents.memory.async_redis_checkpointer import IUsageMemory
+from routers.probes import IUsageTrackerProbe
 from services.metrics import CustomMetrics, LangGraphErrorType
+from services.probes import get_usage_tracke_probe
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
 
@@ -35,11 +37,17 @@ class UsageTrackerCallback(AsyncCallbackHandler):
     Reference: https://python.langchain.com/docs/concepts/callbacks/
     """
 
-    def __init__(self, cluster_id: str, memory: IUsageMemory):
+    def __init__(
+        self,
+        cluster_id: str,
+        memory: IUsageMemory,
+        probe: IUsageTrackerProbe | None = None,
+    ):
         self.cluster_id = cluster_id
         self.memory = memory
         self.ttl = TOKEN_USAGE_RESET_INTERVAL
         self.llm_start_times: dict = {}
+        self._probe = probe or get_usage_tracke_probe()
 
     async def on_llm_start(
         self,
@@ -64,9 +72,7 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         try:
             # first save llm response time.
             # note that the start time would be zero if the start time was not recorded.
-            await CustomMetrics().record_llm_latency(
-                time.perf_counter() - self.llm_start_times.pop(run_id, 0.0)
-            )
+            await CustomMetrics().record_llm_latency(time.perf_counter() - self.llm_start_times.pop(run_id, 0.0))
 
             # publish token usage info to the memory.
             usage = _parse_usage(response)
@@ -74,10 +80,13 @@ class UsageTrackerCallback(AsyncCallbackHandler):
                 raise ValueError("Usage information not found in the LLM response.")
             # parse the usage as Pydantic model to verify the structure.
             usage_model = UsageModel(**usage)
-            await self.memory.awrite_llm_usage(
-                self.cluster_id, usage_model.__dict__, self.ttl
-            )
+            await self.memory.awrite_llm_usage(self.cluster_id, usage_model.__dict__, self.ttl)
+
+            # reset the failure count we track in the probe.
+            self._probe.reset_failure_count()
         except Exception as e:
+            # track the failure in the probe.
+            self._probe.increase_failure_count()
             await CustomMetrics().record_token_usage_tracker_publish_failure()
             raise e
 
@@ -132,9 +141,7 @@ class IUsageTracker(Protocol):
     async def adelete_expired_records(self, cluster_id: str) -> None:
         """Delete the expired records for the given cluster_id."""
 
-    async def ais_usage_limit_exceeded(
-        self, cluster_id: str
-    ) -> UsageExceedReport | None:
+    async def ais_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token limit is exceeded for the given cluster_id."""
 
 
@@ -148,19 +155,13 @@ class UsageTracker(IUsageTracker):
 
     async def adelete_expired_records(self, cluster_id: str) -> None:
         """Delete the expired records for the given cluster_id."""
-        await self.memory.adelete_expired_llm_usage_records(
-            cluster_id, self.reset_interval_sec
-        )
+        await self.memory.adelete_expired_llm_usage_records(cluster_id, self.reset_interval_sec)
 
-    async def ais_usage_limit_exceeded(
-        self, cluster_id: str
-    ) -> UsageExceedReport | None:
+    async def ais_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token limit is exceeded for the given cluster_id."""
         if self.token_limit == -1:
             return None
-        records = await self.memory.alist_llm_usage_records(
-            cluster_id, self.reset_interval_sec
-        )
+        records = await self.memory.alist_llm_usage_records(cluster_id, self.reset_interval_sec)
         # parse the records as Pydantic model to verify the structure.
         records = [UsageModel(**record) for record in records]
         total_usage = sum(record.total for record in records)
@@ -171,9 +172,7 @@ class UsageTracker(IUsageTracker):
 
         # find the latest record to calculate the reset_seconds_left
         latest_record = max(records, key=lambda record: record.epoch)
-        reset_seconds_left = int(
-            float(self.reset_interval_sec) - (time.time() - latest_record.epoch)
-        )
+        reset_seconds_left = int(float(self.reset_interval_sec) - (time.time() - latest_record.epoch))
 
         return UsageExceedReport(
             cluster_id=cluster_id,
@@ -203,12 +202,8 @@ def _parse_usage(response: LLMResult) -> dict[str, Any] | None:
     if hasattr(response, "generations"):
         for generation in response.generations:
             for generation_chunk in generation:
-                if generation_chunk.generation_info and (
-                    "usage_metadata" in generation_chunk.generation_info
-                ):
-                    llm_usage = _parse_usage_model(
-                        generation_chunk.generation_info["usage_metadata"]
-                    )
+                if generation_chunk.generation_info and ("usage_metadata" in generation_chunk.generation_info):
+                    llm_usage = _parse_usage_model(generation_chunk.generation_info["usage_metadata"])
                     break
 
                 message_chunk = getattr(generation_chunk, "message", {})
@@ -221,9 +216,7 @@ def _parse_usage(response: LLMResult) -> dict[str, Any] | None:
                         else None
                     )
                     or (
-                        response_metadata.get(
-                            "amazon-bedrock-invocationMetrics", None
-                        )  # for Bedrock-Titan
+                        response_metadata.get("amazon-bedrock-invocationMetrics", None)  # for Bedrock-Titan
                         if isinstance(response_metadata, dict)
                         else None
                     )
@@ -276,9 +269,7 @@ def _parse_usage_model(usage: pydantic.BaseModel | dict) -> dict[str, Any] | Non
         if model_key in usage_model:
             captured_count = usage_model.pop(model_key)
             final_count = (
-                sum(captured_count)
-                if isinstance(captured_count, list)
-                else captured_count
+                sum(captured_count) if isinstance(captured_count, list) else captured_count
             )  # For Bedrock, the token count is a list when streamed
 
             usage_model[langfuse_key] = final_count  # type: ignore

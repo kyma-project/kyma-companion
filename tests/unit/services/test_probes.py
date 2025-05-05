@@ -3,11 +3,11 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.embeddings import Embeddings
 
-from services.metrics import CustomMetrics
 from services.probes import (
     LLMReadinessProbe,
+    UsageTrackerProbe,
     get_llm_readiness_probe,
-    is_usage_tracker_ready,
+    get_usage_tracke_probe,
 )
 from utils.models.factory import IModel
 
@@ -110,28 +110,70 @@ class TestLLMReadinessProbe:
         assert probe1 != probe2
 
 
-@pytest.mark.parametrize(
-    "test_case, failure_count, expected",
-    [
-        ("No metric value set yet", None, True),
-        ("Metric is zero", 0.0, True),
-        ("Metric is nonzero", 1.0, False),
-    ],
-)
-def test_is_usage_tracker_ready_with_real_custom_metrics(
-    test_case, failure_count, expected
-):
-    # Given:
-    metrics = CustomMetrics()
-    if failure_count is not None:
-        for _ in range(int(failure_count)):
-            metrics.usage_tracker_publish_failure_count.inc()
+class TestUsageTrackerProbe:
+    def test_increase_failure_count(self):
+        """
+        Test that the `increase_failure_count` method increments the failure count by 1.
+        """
+        # Given:
+        expected_count = 1
+        probe = get_usage_tracke_probe()
 
-    # When:
-    result = is_usage_tracker_ready(metrics)
+        # When:
+        probe.increase_failure_count()
 
-    # Then:
-    assert result == expected, test_case
+        # Then:
+        assert probe.get_failure_count() == expected_count
 
-    # Clean up:
-    metrics._reset_for_tests()
+        # Clean up by resetting the instance:
+        probe._reset_for_tests()
+
+    def test_reset_failure_count(self):
+        """
+        Test that the `reset_failure_count` method resets the failure count to 0.
+        """
+        # Given:
+        expected_count = 0
+        probe = UsageTrackerProbe(100, 100)
+
+        # When:
+        probe.reset_failure_count()
+
+        # Then:
+        assert probe.get_failure_count() == expected_count
+
+        # Clean up by resetting the instance:
+        probe._reset_for_tests()
+
+    @pytest.mark.parametrize(
+        "test_case, threshold, count, expected_healthiness",
+        [
+            ("count higher than threshold", 1, 2, False),
+            ("count lower than threshold", 2, 1, True),
+            ("count equal threshold", 1, 1, False),
+        ],
+    )
+    def test_is_healthy(
+        self,
+        test_case,
+        threshold,
+        count,
+        expected_healthiness,
+    ):
+        """
+        Test the `is_healthy` method with various threshold and count values.
+
+        Verifies that the method correctly determines healthiness based on the
+        failure count and threshold.
+        """
+        # Given:
+        probe = UsageTrackerProbe(threshold, count)
+
+        # When:
+        actual_healthiness = probe.is_healthy()
+
+        # Then:
+        assert actual_healthiness == expected_healthiness, test_case
+
+        # Clean up by resetting the instance:
+        probe._reset_for_tests()

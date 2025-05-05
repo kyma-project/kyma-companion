@@ -5,22 +5,21 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IHana, ILLMReadinessProbe, IRedis
+from routers.probes import IHana, ILLMReadinessProbe, IRedis, IUsageTrackerProbe
 from services.hana import get_hana
-from services.metrics import get_custom_metrics
-from services.probes import get_llm_readiness_probe
+from services.probes import get_llm_readiness_probe, get_usage_tracke_probe
 from services.redis import get_redis
 
 
 @pytest.mark.parametrize(
-    "test_case, hana_ready, redis_ready, metrics_failure_count, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, usage_tracker_ready, llm_states, expected_status",
     [
-        ("all ready", True, True, 0, {"model1": True, "model2": True}, HTTP_200_OK),
+        ("all ready", True, True, True, {"model1": True, "model2": True}, HTTP_200_OK),
         (
             "Hana not ready",
             False,
             True,
-            0,
+            True,
             {"model1": True, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
@@ -28,7 +27,7 @@ from services.redis import get_redis
             "Redis not ready",
             True,
             False,
-            0,
+            True,
             {"model1": True, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
@@ -36,16 +35,16 @@ from services.redis import get_redis
             "one model not ready",
             True,
             True,
-            0,
+            True,
             {"model1": False, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
-        ("no models", True, True, 0, {}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, True, {}, HTTP_503_SERVICE_UNAVAILABLE),
         (
-            "custom_metrics with failures",
+            "usage_tracker not ready",
             True,
             True,
-            1,
+            False,
             {"model1": True, "model2": True},
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
@@ -55,7 +54,7 @@ def test_healthz_probe(
     test_case,
     hana_ready,
     redis_ready,
-    metrics_failure_count,
+    usage_tracker_ready,
     llm_states,
     expected_status,
 ):
@@ -71,9 +70,9 @@ def test_healthz_probe(
     mock_redis.is_connection_operational = AsyncMock(return_value=redis_ready)
     app.dependency_overrides[get_redis] = lambda: mock_redis
 
-    mock_custom_metrics = MagicMock()
-    mock_custom_metrics.registry.get_sample_value.return_value = metrics_failure_count
-    app.dependency_overrides[get_custom_metrics] = lambda: mock_custom_metrics
+    usage_tracker_probe = MagicMock(spec=IUsageTrackerProbe)
+    usage_tracker_probe.is_healthy = MagicMock(return_value=usage_tracker_ready)
+    app.dependency_overrides[get_usage_tracke_probe] = lambda: usage_tracker_probe
 
     mock_llm_probe = MagicMock(spec=ILLMReadinessProbe)
     mock_llm_probe.get_llms_states.return_value = llm_states

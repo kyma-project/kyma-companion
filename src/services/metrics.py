@@ -126,10 +126,3 @@ class CustomMetrics(metaclass=SingletonMeta):
     def _reset_for_tests(cls) -> None:
         """Reset the singleton instance. Only use this for testing purpose."""
         SingletonMeta.reset_instance(cls)
-
-
-def get_custom_metrics() -> CustomMetrics:
-    """
-    Create and return a CustomMetrics instance.
-    """
-    return CustomMetrics()

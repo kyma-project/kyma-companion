@@ -2,14 +2,12 @@ from collections.abc import Callable
 
 from langchain_core.embeddings import Embeddings
 
-from services.metrics import USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY, CustomMetrics
 from utils.config import get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
 from utils.singleton_meta import SingletonMeta
 
-FAILURE_METRIC_KEY = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
-
+USAGE_TRACLER_THRESHOLD = 3
 
 logger = get_logger(__name__)
 
@@ -121,18 +119,42 @@ def get_llm_readiness_probe() -> LLMReadinessProbe:
     return LLMReadinessProbe()
 
 
-def is_usage_tracker_ready(custom_metrics: CustomMetrics | None) -> bool:
-    """
-    Check if the collection of usage metrics is working without failures.
-    """
-    # If there is no custom metrics, we cannot detect problems so we are
-    # already in a failed state:
-    if not custom_metrics:
-        return False
+class UsageTrackerProbe(metaclass=SingletonMeta):
+    """Probe that checks if the UsageTracker is health."""
 
-    # If the metric is None, we are fine.
-    failure_metric_value = custom_metrics.registry.get_sample_value(FAILURE_METRIC_KEY)
-    if not failure_metric_value:
-        return True
+    _failure_threshold: int
+    _failure_count: int
 
-    return failure_metric_value == 0.0
+    def __init__(self, failure_threshold: int = 3, failure_count: int = 0) -> None:
+        self._failure_threshold = failure_threshold
+        self._failure_count = failure_count
+
+    def reset_failure_count(self) -> None:
+        """Sets the failure count back to 0."""
+        logger.info("resetting the failure counter of the Usage Tracker Probe")
+        self._failure_count = 0
+
+    def increase_failure_count(self) -> None:
+        """Increases the failure count by 1."""
+        self._failure_count += 1
+        logger.warning(
+            f"failure counter for Usage Tracker Probe increased to {self._failure_count}"
+        )
+
+    def is_healthy(self) -> bool:
+        """Checks if the failure count is snaller than the threshold."""
+        return self._failure_count < self._failure_threshold
+
+    def get_failure_count(self) -> int:
+        """Returns the current value of the failure count."""
+        return self._failure_count
+
+    @classmethod
+    def _reset_for_tests(cls) -> None:
+        """Reset the singleton instance. Only use for testing purpose."""
+        SingletonMeta.reset_instance(cls)
+
+
+def get_usage_tracke_probe() -> UsageTrackerProbe:
+    """Retrieve an instance of UsageTrackerProbe."""
+    return UsageTrackerProbe()

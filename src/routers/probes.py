@@ -8,10 +8,9 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
-from services.metrics import CustomMetrics, get_custom_metrics
 from services.probes import (
     get_llm_readiness_probe,
-    is_usage_tracker_ready,
+    get_usage_tracke_probe,
 )
 from services.redis import get_redis
 from utils.logging import get_logger
@@ -20,6 +19,22 @@ logger = get_logger(__name__)
 router = APIRouter(
     tags=["probes"],
 )
+
+
+class IUsageTrackerProbe(Protocol):
+    """Protocol defining the interface for UsageTrackerProbe."""
+
+    def reset_failure_count(self) -> None:
+        """Sets the failure count back to 0."""
+        ...
+
+    def increase_failure_count(self) -> None:
+        """Increases the failure count by 1."""
+        ...
+
+    def is_healthy(self) -> bool:
+        """Checks if the failure count is equal or greater than the threshold."""
+        ...
 
 
 class IHanaConnection(Protocol):
@@ -111,16 +126,18 @@ class ILLMReadinessProbe(Protocol):
 async def healthz(
     hana: IHana = Depends(get_hana),  # noqa: B008
     redis: IRedis = Depends(get_redis),  # noqa: B008
-    metrics: CustomMetrics = Depends(get_custom_metrics),  # noqa: B008
+    usage_tracker_probe: IUsageTrackerProbe = Depends(  # noqa: B008
+        get_usage_tracke_probe
+    ),
     llm_probe: ILLMReadinessProbe = Depends(get_llm_readiness_probe),  # noqa: B008
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
 
     logger.info("Ready probe called.")
     response = HealthModel(
-        is_hana_ready=hana.is_connection_operational(),
-        is_redis_ready=await redis.is_connection_operational(),
-        is_usage_tracker_ready=is_usage_tracker_ready(metrics),
+        is_hana_healthy=hana.is_connection_operational(),
+        is_redis_healthy=await redis.is_connection_operational(),
+        is_usage_tracker_healthy=usage_tracker_probe.is_healthy(),
         llms=llm_probe.get_llms_states(),
     )
 
@@ -164,9 +181,9 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
     """
     if isinstance(response, HealthModel):
         return (
-            response.is_redis_ready
-            and response.is_hana_ready
-            and response.is_usage_tracker_ready
+            response.is_redis_healthy
+            and response.is_hana_healthy
+            and response.is_usage_tracker_healthy
             and bool(response.llms)
             and all(response.llms.values())
         )

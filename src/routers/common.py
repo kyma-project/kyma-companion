@@ -39,7 +39,7 @@ class ReadinessModel(BaseModel):
 class HealthModel(BaseModel):
     """Response body representing the state of the Readiness Probe"""
 
-    is_redis_ready: bool
-    is_hana_ready: bool
-    is_usage_tracker_ready: bool
+    is_redis_healthy: bool
+    is_hana_healthy: bool
+    is_usage_tracker_healthy: bool
     llms: dict[str, bool]
