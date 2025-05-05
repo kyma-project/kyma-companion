@@ -1,4 +1,3 @@
-import logging
 from collections.abc import Callable
 
 from hdbcli import dbapi
@@ -34,10 +33,10 @@ class Hana(metaclass=SingletonMeta):
                 connection_factory() if connection_factory else _get_hana_connection()
             )
         except dbapi.Error as e:
-            logging.exception(f"Connection to Hana Cloud failed: {e}")
+            logger.error(f"Connection to Hana Cloud failed: {e}")
             self.connection = None
         except Exception as e:
-            logging.exception(f"Unknown error occurred: {e}")
+            logger.error(f"Unknown error occurred: {e}")
             self.connection = None
 
     def is_connection_operational(self) -> bool:

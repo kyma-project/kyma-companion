@@ -14,53 +14,56 @@ from utils.models.factory import IModel
 
 class TestLLMReadinessProbe:
     @pytest.mark.parametrize(
-        "test_case, models, expected_has_models, expected_are_llms_ready, expected_states",
+        "test_case, model_factory, expected_has_models, expected_are_llms_ready, expected_states",
         [
             (
                 "No models",
-                {},
+                MagicMock(return_value={}),
                 False,
                 False,
                 {},
             ),
             (
                 "Single ready IModel",
-                {"model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True))},
+                MagicMock(return_value={"model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True))}),
                 True,
                 True,
                 {"model1": True},
             ),
             (
                 "Single not ready IEmbeddings",
-                {
-                    "embedding1": MagicMock(
-                        spec=Embeddings, embed_query=MagicMock(return_value=None)
-                    )
-                },
+                MagicMock(
+                    return_value={"embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None))}
+                ),
                 True,
                 False,
                 {"embedding1": False},
             ),
             (
                 "Mixed readiness models",
-                {
-                    "model1": MagicMock(
-                        spec=IModel, invoke=MagicMock(return_value=True)
-                    ),
-                    "embedding1": MagicMock(
-                        spec=Embeddings, embed_query=MagicMock(return_value=None)
-                    ),
-                },
+                MagicMock(
+                    return_value={
+                        "model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True)),
+                        "embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None)),
+                    }
+                ),
                 True,
                 False,
                 {"model1": True, "embedding1": False},
+            ),
+            (
+                "Factory with exception",
+                MagicMock(side_effect=Exception("Some error")),
+                False,
+                False,
+                {},
             ),
         ],
     )
     def test_llm_readiness_probe(
         self,
         test_case,
-        models,
+        model_factory,
         expected_has_models,
         expected_are_llms_ready,
         expected_states,
@@ -76,12 +79,15 @@ class TestLLMReadinessProbe:
         LLMReadinessProbe()._reset_for_tests()
 
         # When:
-        probe = LLMReadinessProbe(models)
+        probe = LLMReadinessProbe(model_factory)
 
         # Then:
         assert probe.has_models() == expected_has_models, test_case
         assert probe.are_llms_ready() == expected_are_llms_ready, test_case
         assert probe.get_llms_states() == expected_states, test_case
+
+        # Clean up by resetting the instance:
+        LLMReadinessProbe()._reset_for_tests()
 
     def test_reset_for_tests(self):
         probe1 = get_llm_readiness_probe()
@@ -98,9 +104,7 @@ class TestLLMReadinessProbe:
         ("Metric is nonzero", 1.0, False),
     ],
 )
-def test_is_usage_tracker_ready_with_real_custom_metrics(
-    test_case, failure_count, expected
-):
+def test_is_usage_tracker_ready_with_real_custom_metrics(test_case, failure_count, expected):
     # Given:
     metrics = CustomMetrics()
     if failure_count is not None:

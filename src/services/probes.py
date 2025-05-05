@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from langchain_core.embeddings import Embeddings
 
 from services.metrics import USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY, CustomMetrics
@@ -23,7 +25,9 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
     _models: dict[str, IModel | Embeddings]
     _model_states: dict[str, bool]
 
-    def __init__(self, models: dict[str, IModel | Embeddings] | None = None) -> None:
+    def __init__(
+        self, model_factory: Callable[[], dict[str, IModel | Embeddings]] | None = None
+    ) -> None:
         """
         Initialize the LLMReadinessProbe.
 
@@ -34,9 +38,12 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
         """
         logger.info("Creating new LLM readiness probe")
 
-        self._models = (
-            ModelFactory(get_config()).create_models() if models is None else models
-        )
+        try:
+            self._models = model_factory() if model_factory else _get_models()
+        except Exception as e:
+            logger.exception(f"Unknown error occurred: {e}")
+            self._models = {}
+
         self._model_states = {name: False for name in self._models}
 
     def has_models(self) -> bool:
@@ -100,6 +107,11 @@ class LLMReadinessProbe(metaclass=SingletonMeta):
     def _reset_for_tests(cls) -> None:
         """Reset the singleton instance. Only use for testing purpose."""
         SingletonMeta.reset_instance(cls)
+
+
+def _get_models() -> dict[str, IModel | Embeddings]:
+    """Do not use this function directly to create Models. Use the ModelFactory instead."""
+    return ModelFactory(get_config()).create_models()
 
 
 def get_llm_readiness_probe() -> LLMReadinessProbe:
