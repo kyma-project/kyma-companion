@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from services.redis import get_redis
+from services.redis import Redis, get_redis
 
 
 class TestRedis:
@@ -13,44 +13,53 @@ class TestRedis:
             yield mock
 
     @pytest.mark.parametrize(
-        "test_case, connection, expected",
+        "test_case, connection_factory, expected",
         [
             ("No connection", None, False),
-            ("Connection ready", MagicMock(ping=AsyncMock(return_value=True)), True),
+            (
+                "Connection ready",
+                MagicMock(return_value=MagicMock(ping=AsyncMock(return_value=True))),
+                True,
+            ),
             (
                 "Connection not ready",
-                MagicMock(ping=AsyncMock(return_value=False)),
+                MagicMock(return_value=MagicMock(ping=AsyncMock(return_value=False))),
                 False,
             ),
             (
                 "Connection fails with exception",
-                MagicMock(ping=AsyncMock(side_effect=Exception("Connection error"))),
+                MagicMock(
+                    return_value=MagicMock(
+                        ping=AsyncMock(side_effect=Exception("Connection error"))
+                    )
+                ),
+                False,
+            ),
+            (
+                "Connection Factory fails with exception",
+                MagicMock(side_effect=Exception("Connection error")),
                 False,
             ),
         ],
     )
     @pytest.mark.asyncio
-    async def test_is_connection_operational(self, test_case, connection, expected):
+    async def test_is_connection_operational(
+        self, test_case, connection_factory, expected
+    ):
         """
         Test the `is_connection_operational` method with various scenarios.
 
         This test verifies that the method correctly determines Redis readiness
         based on the connection state, `ping` result, and exceptions.
         """
-
-        # Given:
-        # Create a new redis instance.
-        redis = get_redis()
-        # Replace the connection with prepared fixtures.
-        redis.connection = connection
-
         # When:
+        redis = Redis(connection_factory)
         result = await redis.is_connection_operational()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
-        # Clean up by resetting the Redis instance.
+        # Clean up by resetting the instance.
         redis._reset_for_tests()
 
     @pytest.mark.parametrize(
@@ -68,18 +77,16 @@ class TestRedis:
         """
 
         # Given:
-        # Create a new redis instance.
-        redis = get_redis()
-        # Replace the connection with prepared fixtures.
-        redis.connection = connection
+        connection_factory = MagicMock(return_value=connection)
 
         # When:
+        redis = Redis(connection_factory)
         result = redis.has_connection()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
-        # Clean up by resetting the Redis instance.
+        # Clean up by resetting the instance.
         redis._reset_for_tests()
 
     def test_reset(self):
@@ -91,12 +98,15 @@ class TestRedis:
         """
 
         # Given:
-        # Create a new redis instance.
-        redis = get_redis()
+        # Create a new instance.
+        redis1 = get_redis()
 
         # When:
-        redis._reset_for_tests()
+        redis1._reset_for_tests()
         redis2 = get_redis()
 
         # Then:
-        assert redis != redis2
+        assert redis1 != redis2
+
+        # Clean up by resetting the instance.
+        redis2._reset_for_tests()

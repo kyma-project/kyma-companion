@@ -1,63 +1,75 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from services.hana import get_hana
+from routers.probes import IHanaConnection
+from services.hana import Hana, get_hana
 
 
 class TestHana:
-    @pytest.fixture(autouse=True)
-    def mock_connection(self):
-        with patch("services.hana.dbapi.Connection") as mock:
-            mock = MagicMock()
-            yield mock
-
     @pytest.mark.parametrize(
-        "test_case, connection, expected",
+        "test_case, connection_factory, expected",
         [
-            ("No connection", None, False),
             (
                 "Connection ready",
-                MagicMock(isconnected=MagicMock(return_value=True)),
+                MagicMock(
+                    return_value=MagicMock(
+                        spec=IHanaConnection, isconnected=MagicMock(return_value=True)
+                    )
+                ),
                 True,
             ),
             (
                 "Connection not ready",
-                MagicMock(isconnected=MagicMock(return_value=False)),
+                MagicMock(
+                    return_value=MagicMock(
+                        spec=IHanaConnection, isconnected=MagicMock(return_value=False)
+                    )
+                ),
                 False,
             ),
             (
                 "Connection fails with exception",
                 MagicMock(
-                    isconnected=MagicMock(side_effect=Exception("Connection error"))
+                    return_value=MagicMock(
+                        spec=IHanaConnection,
+                        isconnected=MagicMock(
+                            side_effect=Exception("Connection error")
+                        ),
+                    )
                 ),
                 False,
             ),
+            (
+                "Factory fails with exception",
+                MagicMock(side_effect=Exception("Connection error")),
+                False,
+            ),
+            ("No connection", MagicMock(return_value=None), False),
         ],
     )
-    def test_is_hana_ready(self, test_case, connection, expected):
+    def test_is_hana_ready(self, test_case, connection_factory, expected):
         """
         Test the `is_connection_operational` method with various scenarios.
 
         This test verifies that the method correctly determines Hana readiness
         based on the connection state, `isconnected` result, and exceptions.
         """
-        # Given:
-        # Create a new hana instance.
-        hana = get_hana()
-        hana.connection = connection
+        # When:
+        hana = Hana(connection_factory)
         result = hana.is_connection_operational()
 
+        # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
-        # Clean up by resetting the Redis instance.
+        # Clean up by resetting the instance.
         hana._reset_for_tests()
 
     @pytest.mark.parametrize(
         "test_case, connection, expected",
         [
             ("No connection", None, False),
-            ("Connection exists", MagicMock(), True),
+            ("Connection exists", MagicMock(spec=IHanaConnection), True),
         ],
     )
     def test_has_connection(self, test_case, connection, expected):
@@ -68,18 +80,16 @@ class TestHana:
         """
 
         # Given:
-        # Create a new redis instance.
-        hana = get_hana()
-        # Replace the connection with prepared fixtures.
-        hana.connection = connection
+        connection_factory = MagicMock(return_value=connection)
 
         # When:
+        hana = Hana(connection_factory)
         result = hana.has_connection()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
 
-        # Clean up by resetting the Redis instance.
+        # Clean up by resetting the instance.
         hana._reset_for_tests()
 
     def test_reset(self):
@@ -100,3 +110,5 @@ class TestHana:
 
         # Then:
         assert hana1 != hana2
+
+        hana2._reset_for_tests()

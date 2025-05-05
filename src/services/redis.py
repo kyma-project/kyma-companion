@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from redis.asyncio import Redis as AsyncRedis
 
 from utils.logging import get_logger
@@ -24,15 +26,12 @@ class Redis(metaclass=SingletonMeta):
 
     connection: AsyncRedis | None = None
 
-    def __init__(self) -> None:
+    def __init__(
+        self, connection_factory: Callable[[], AsyncRedis] | None = None
+    ) -> None:
         try:
-            self.connection = AsyncRedis(
-                host=str(REDIS_HOST),
-                port=REDIS_PORT,
-                db=REDIS_DB_NUMBER,
-                password=str(REDIS_PASSWORD),
-                ssl=REDIS_SSL_ENABLED,
-                ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
+            self.connection = (
+                connection_factory() if connection_factory else _get_redis_connection()
             )
         except Exception as e:
             logger.error(f"Error with Redis connection: {e}")
@@ -72,6 +71,17 @@ class Redis(metaclass=SingletonMeta):
         """
         SingletonMeta.reset_instance(cls)
         cls.connection = None
+
+
+def _get_redis_connection() -> AsyncRedis:
+    return AsyncRedis(
+        host=str(REDIS_HOST),
+        port=REDIS_PORT,
+        db=REDIS_DB_NUMBER,
+        password=str(REDIS_PASSWORD),
+        ssl=REDIS_SSL_ENABLED,
+        ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
+    )
 
 
 def get_redis() -> Redis:

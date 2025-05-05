@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 
 from hdbcli import dbapi
 
@@ -25,13 +26,12 @@ class Hana(metaclass=SingletonMeta):
 
     connection: dbapi.Connection | None = None
 
-    def __init__(self) -> None:
+    def __init__(
+        self, connection_factory: Callable[[], dbapi.Connection] | None = None
+    ) -> None:
         try:
-            self.connection = dbapi.Connection(
-                address=str(DATABASE_URL),
-                port=DATABASE_PORT,
-                user=str(DATABASE_USER),
-                password=str(DATABASE_PASSWORD),
+            self.connection = (
+                connection_factory() if connection_factory else _get_hana_connection()
             )
         except dbapi.Error as e:
             logging.exception(f"Connection to Hana Cloud failed: {e}")
@@ -77,6 +77,16 @@ class Hana(metaclass=SingletonMeta):
         """
         SingletonMeta.reset_instance(cls)
         cls.connection = None
+
+
+def _get_hana_connection() -> dbapi.Connection:
+    """Do not use this function directly to create connections. Use the Hana() or get_hana() instead."""
+    return dbapi.Connection(
+        address=str(DATABASE_URL),
+        port=DATABASE_PORT,
+        user=str(DATABASE_USER),
+        password=str(DATABASE_PASSWORD),
+    )
 
 
 def get_hana() -> Hana:
