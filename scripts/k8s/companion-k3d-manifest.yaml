@@ -56,18 +56,16 @@ spec:
           httpGet:
             path: /healthz
             port: 8000
-          initialDelaySeconds: 30
+          initialDelaySeconds: 45
           periodSeconds: 10
           timeoutSeconds: 10
-          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /readyz
             port: 8000
-          initialDelaySeconds: 45
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 10
-          failureThreshold: 3
         resources:
           requests:
             memory: "256Mi" # Minimum amount of memory guaranteed
