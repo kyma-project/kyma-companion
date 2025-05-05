@@ -1,5 +1,17 @@
 [
   {
+    "name": "btp-cloud-platform",
+    "source_type": "Github",
+    "url": "https://github.com/SAP-docs/btp-cloud-platform.git",
+    "include_files": [
+      "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md",
+      "*/_*.md"
+    ]
+  },
+  {
     "name": "eventing-manager",
     "source_type": "Github",
     "url": "https://github.com/kyma-project/eventing-manager.git",
@@ -140,6 +152,18 @@
     "include_files": [
       "README.md",
       "docs/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "busola",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/busola.git",
+    "include_files": [
+      "docs/resource-validation/*",
+      "docs/extensibility/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
