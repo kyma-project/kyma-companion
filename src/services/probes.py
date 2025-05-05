@@ -7,7 +7,7 @@ from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
 from utils.singleton_meta import SingletonMeta
 
-USAGE_TRACLER_THRESHOLD = 3
+USAGE_TRACKER_FAILURE_THRESHOLD = 3
 
 logger = get_logger(__name__)
 
