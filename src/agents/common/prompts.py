@@ -76,3 +76,11 @@ TOOL_CALLING_ERROR_HANDLING = """
 - A clear acknowledgment of the issue (e.g., "I encountered an error while retrieving the information.").
 - A concise explanation (if helpful) without technical details.
 """
+
+
+CHUNK_SUMMARIZER_PROMPT = """
+            "Focusing on the query: '{query}'\n\n"
+            "Summarize this text chunk, extracting key points relevant to the query:\n"
+            "{text}\n\n"
+            "Summary (keep it concise, no preamble):"
+        """
