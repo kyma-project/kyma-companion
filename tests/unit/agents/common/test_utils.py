@@ -10,7 +10,7 @@ from langchain_core.messages import (
     ToolMessage,
 )
 
-from agents.common.agent import AGENT_STEPS_NUMBER, agent_edge, subtask_selector_edge
+from agents.common.agent import agent_edge, subtask_selector_edge
 from agents.common.state import CompanionState, SubTask, SubTaskStatus
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
@@ -186,7 +186,7 @@ def test_subtask_selector_edge(
 
 
 @pytest.mark.parametrize(
-    "last_message, remaining_steps, has_task, expected_output",
+    "last_message, has_task, expected_output",
     [
         # Case 1: Tool message with sufficient remaining steps -> tools
         (
@@ -195,14 +195,12 @@ def test_subtask_selector_edge(
                 tool_call_id="call_MEOW",
                 tool_calls={"call_MEOW": "test"},
             ),
-            9,
             False,
             "tools",
         ),
         # Case 2: AI message without tool calls -> finalizer
         (
             AIMessage(content="test"),
-            9,
             False,
             "finalizer",
         ),
@@ -212,46 +210,30 @@ def test_subtask_selector_edge(
                 content="test",
                 tool_calls=[{"name": "some_tool", "id": "call_123", "args": {}}],
             ),
-            9,
             False,
             "tools",
         ),
         # Case 4: Insufficient remaining steps without task -> finalizer
         (
             AIMessage(content="test"),
-            0,
             False,
             "finalizer",
         ),
         # Case 5: Insufficient remaining steps with task -> finalizer (and task status updated)
         (
             AIMessage(content="test"),
-            0,
             True,
             "finalizer",
         ),
         # Case 6: Empty message list edge case
         (
             AIMessage(content=""),
-            9,
             False,
             "finalizer",
         ),
         # Case 7: AI message with empty tool_calls list
         (
             AIMessage(content="test", tool_calls=[]),
-            9,
-            False,
-            "finalizer",
-        ),
-        # Case 8: Tool message with insufficient remaining steps -> finalizer
-        (
-            ToolMessage(
-                content="test",
-                tool_call_id="call_MEOW",
-                tool_calls={"call_MEOW": "test"},
-            ),
-            0,
             False,
             "finalizer",
         ),
@@ -259,7 +241,6 @@ def test_subtask_selector_edge(
 )
 def test_agent_edge(
     last_message: BaseMessage,
-    remaining_steps: int,
     has_task: bool,
     expected_output: str,
 ):
@@ -279,15 +260,11 @@ def test_agent_edge(
         agent_messages=[last_message],
         subtasks=[],
         k8s_client=k8s_client,
-        remaining_steps=remaining_steps,
+        remaining_steps=10,
     )
 
     result = agent_edge(state)
     assert result == expected_output
-
-    # Verify task status is updated when remaining steps is insufficient
-    if has_task and remaining_steps <= AGENT_STEPS_NUMBER:
-        assert my_task.status == SubTaskStatus.ERROR
 
 
 @pytest.mark.parametrize(

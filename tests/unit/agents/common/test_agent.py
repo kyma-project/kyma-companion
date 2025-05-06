@@ -17,7 +17,7 @@ from langchain_core.prompts import (
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph.graph import CompiledGraph
 
-from agents.common.agent import BaseAgent
+from agents.common.agent import AGENT_STEPS_NUMBER, BaseAgent
 from agents.common.constants import AGENT_MESSAGES, ERROR
 from agents.common.state import BaseAgentState, SubTask, SubTaskStatus
 from agents.k8s.tools.logs import fetch_pod_logs_tool
@@ -432,6 +432,41 @@ class TestBaseAgent:
                     "query": "test task 1",
                 },
             ),
+            # Test case when the recursive limit is reached.
+            (
+                AIMessage(
+                    content="This is a dummy response from model.",
+                    tool_calls=[
+                        {
+                            "name": "test_tool",
+                            "args": {"arg1": "value1"},
+                            "id": "test_id",
+                        }
+                    ],
+                ),
+                "Some Error",
+                BaseAgentState(
+                    remaining_steps=2,
+                    my_task=SubTask(
+                        description="test task 1",
+                        task_title="test task 1",
+                        assigned_to="KubernetesAgent",
+                    ),
+                    is_last_step=True,
+                    messages=[AIMessage(content="dummy message 1")],
+                    agent_messages=[AIMessage(content="dummy message 1")],
+                    k8s_client=Mock(spec=IK8sClient),
+                ),
+                {
+                    AGENT_MESSAGES: [
+                        AIMessage(
+                            content="Agent reached the recursive limit, not able to call Tools again",
+                            name="KubernetesAgent",
+                        )
+                    ]
+                },
+                {},
+            ),
         ],
     )
     async def test_model_node(
@@ -463,6 +498,10 @@ class TestBaseAgent:
         # Then
         if expected_invoke_inputs != {}:
             agent._invoke_chain.assert_called_once_with(given_state, mock_config)
+
+        # Verify task status is updated when remaining steps is insufficient
+        if given_state.remaining_steps <= AGENT_STEPS_NUMBER:
+            assert given_state.my_task.status == SubTaskStatus.ERROR
 
     @pytest.mark.parametrize(
         "given_state, expected_output",
@@ -507,7 +546,11 @@ class TestBaseAgent:
                 ),
                 {
                     "messages": [
-                        AIMessage(id="3", content="final answer"),
+                        AIMessage(
+                            id="3",
+                            content="'test task 1' , Agent Response - final answer",
+                            name="KubernetesAgent",
+                        ),
                     ],
                     "subtasks": [],
                 },

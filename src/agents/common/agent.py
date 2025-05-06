@@ -48,16 +48,6 @@ def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"
 
 def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
-
-    # End if the agent remaining steps is less than the allowed agent steps number
-    if state.remaining_steps <= AGENT_STEPS_NUMBER:
-        if state.my_task:
-            state.my_task.status = SubTaskStatus.ERROR
-        logger.error(
-            f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
-        )
-        return "finalizer"
-
     last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"
@@ -160,7 +150,23 @@ class BaseAgent:
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
-            response = await self._invoke_chain(state, config)
+            if state.remaining_steps > AGENT_STEPS_NUMBER:
+                response = await self._invoke_chain(state, config)
+            else:
+                if state.my_task:
+                    state.my_task.status = SubTaskStatus.ERROR
+
+                logger.error(
+                    f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
+                )
+                return {
+                    AGENT_MESSAGES: [
+                        AIMessage(
+                            content="Agent reached the recursive limit, not able to call Tools again",
+                            name=self.name,
+                        )
+                    ],
+                }
         except Exception as e:
             error_message = "An error occurred while processing the request"
             error_message_with_trace = error_message + f": {e}"
@@ -194,18 +200,44 @@ class BaseAgent:
                         content="Sorry, I need more steps to process the request.",
                         name=self.name,
                     )
-                ]
+                ],
             }
 
         response.additional_kwargs["owner"] = self.name
-        return {AGENT_MESSAGES: [response]}
+        return {
+            AGENT_MESSAGES: [response],
+        }
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
             state.my_task.complete()
+
+        agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
+        # Check if agent_messages exists and has at least one element
+        if (
+            hasattr(state, "agent_messages")
+            and state.agent_messages
+            and isinstance(state.agent_messages, list)
+            and len(state.agent_messages) > 0
+            and state.agent_messages[-1]
+            and hasattr(state.agent_messages[-1], "content")
+        ):
+
+            current_content = state.agent_messages[-1].content or ""
+            state.agent_messages[-1].content = agent_pre_message + current_content
+
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
-        return {MESSAGES: [state.agent_messages[-1]], SUBTASKS: state.subtasks}
+        return {
+            MESSAGES: [
+                AIMessage(
+                    content=state.agent_messages[-1].content,
+                    name=self.name,
+                    id=state.agent_messages[-1].id,
+                )
+            ],
+            SUBTASKS: state.subtasks,
+        }
 
     def _build_graph(self, state_class: type) -> Any:
         # Define a new graph

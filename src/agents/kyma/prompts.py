@@ -1,4 +1,6 @@
-KYMA_AGENT_INSTRUCTIONS = """
+from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
+
+KYMA_AGENT_INSTRUCTIONS = f"""
 # STEPS
 1. Analyze the user query and the conversation above
 2. Reason whether the tools `kyma_query_tool`, `search_kyma_doc` tools need to be called
@@ -17,6 +19,8 @@ KYMA_AGENT_INSTRUCTIONS = """
      b. Decide if further tool calls are needed
      c. If no tool call is needed, generate your final response and solutions with complete resource definitions
 6. Wherever possible provide user with a YAML config.
+
+{TOOL_CALLING_ERROR_HANDLING}
 """
 
 
