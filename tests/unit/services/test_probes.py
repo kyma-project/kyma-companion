@@ -103,6 +103,48 @@ class TestLLMReadinessProbe:
         # Clean up by resetting the instance:
         LLMProbe()._reset_for_tests()
 
+    def test_llm_readiness_probe_model_tested_once(self):
+        LLMProbe()._reset_for_tests()
+
+        # Given:
+
+        # We need to bouild our own mock model that we can assert and we need a mock model factory to return it, as an arg for LLMProbe().
+        model_name = "foo"
+        model_state = True
+        model = MagicMock(spec=IModel, invoke=MagicMock(return_value=model_state))
+
+        def mock_model_factory() -> dict[str, IModel | Embeddings]:
+            return {model_name: model}
+
+        probe = LLMProbe(mock_model_factory)
+
+        # When:
+        overall_state = probe.are_llms_ready()
+        # The only model we pass always reports, that it is ready, so the overall state should be ready.
+        assert overall_state == model_state
+        # Check if the model we handed over to the probe has a state.
+        assert model_name in probe._model_states, "the model should have a state"
+        # Check that the state is "True".
+        assert (
+            probe._model_states.get(model_name) == model_state
+        ), "the model state should be 'True'"
+
+        overall_state = probe.are_llms_ready()
+        # The overall state should still be True.
+        assert overall_state == model_state
+        # The state of the specific model should still be there.
+        assert model_name in probe._model_states, "the model should have a state"
+        # The state of the specific model should still be True.
+        assert (
+            probe._model_states.get(model_name) == model_state
+        ), "the model state should be 'True'"
+        # Because the model state should have been set to True in the first call of
+        # are_llms_ready, the second call should not have triggered a second call of
+        # the models invoke method.
+        model.invoke.assert_called_once()
+
+        LLMProbe()._reset_for_tests()
+
     def test_reset_for_tests(self):
         probe1 = get_llm_probe()
         probe1._reset_for_tests()
