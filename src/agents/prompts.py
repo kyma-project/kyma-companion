@@ -9,16 +9,19 @@ def handle_query(user_query, conversation_history):
     """
     Processes user query related to Kyma and Kubernetes.
     """
+    # Step 0: Identify user intent and detect query tense
+    user_intent = identify_user_intent(user_query)
+    is_past_tense = detect_past_tense(user_query)
 
     # Step 1: Check if the answer can be derived from conversation history
-    if answer_in_history(user_query, conversation_history) and is_complete_answer(user_query, conversation_history):
+    if is_past_tense and answer_in_history(user_intent, conversation_history) and is_complete_answer(user_intent, conversation_history):
         return {{
-            "direct_response": get_answer_from_history(user_query, conversation_history),
-            "forward_query": False
+            "direct_response": get_answer_from_history(user_intent, conversation_history),
+            "forward_query": False,
         }}
     
     # Step 2: Classify the user query into categories
-    category = classify_query(user_query)
+    category = classify_user_intent(user_intent)
 
     # Step 3: Handling Kyma, Kubernetes, and technical troubleshooting queries
     if category in [
@@ -29,48 +32,74 @@ def handle_query(user_query, conversation_history):
     ]:
         return {{
             "direct_response": "",
-            "forward_query": True
+            "forward_query": True,
         }}
 
     # Step 4: Handling queries
     if category in ["Programming" , "About You"]:
         return {{
-            "direct_response": generate_response(user_query),
-            "forward_query": False
+            "direct_response": generate_response(user_intent),
+            "forward_query": False,
         }}
 
     # Step 5: Handling non-technical queries
     if category == "Greeting":
         return {{
             "direct_response": "Hello! How can I assist you with Kyma or Kubernetes today?",
-            "forward_query": False
+            "forward_query": False,
         }}
 
-    # Step 6: Decline non-relevant queries politely
+    # Step 6: Decline non-technical general knowledge queries
     return {{
         "direct_response": "This question appears to be outside my domain of expertise. If you have any technical or Kyma-related questions, I'd be happy to help.",
-        "forward_query": False
+        "forward_query": False,
     }}
 
 # Helper functions 
-def answer_in_history(user_query, conversation_history):
+def answer_in_history(user_intent, conversation_history):
     """Checks if an answer exists in conversation history."""
     pass
 
-def is_complete_answer(user_query, conversation_history):
+def is_complete_answer(user_intent, conversation_history):
     """Determines if the conversation history contains a complete answer without generating new content."""
     pass
 
-def get_answer_from_history(user_query, conversation_history):
+def get_answer_from_history(user_intent, conversation_history):
     """Retrieves relevant answer from conversation history."""
     pass
 
-def classify_query(user_query):
-    """Classifies query into relevant categories. Uses the given Kyma and Kubernetes domain knowledge for classification too."""
+def classify_user_intent(user_intent):
+    """Classifies user intent into relevant categories. Uses the given Kyma and Kubernetes domain knowledge for classification too."""
     pass
 
-def generate_response(user_query):
-    """Generates responses based on the user query."""
+def generate_response(user_intent):
+    """Generates responses based on the user intent."""
+    pass
+
+def identify_user_intent(user_query):
+    """Identifies and extracts the user's intent from their query."""
+    pass
+
+def detect_past_tense(user_query):
+    """
+    Determines if the query is in past tense, which indicates we should check conversation history.
+    Examples of past tense phrases:
+    - "what was", "what happened", "what went wrong", "what did you find"
+    - "what were", "what caused", "what led to", "how did"
+    - "why was", "why did", "why were", "previously"
+    - "what issue/problem/error/bug was", "what was the diagnosis" 
+    """
+    pass
+
+def is_resource_status_query(user_intent):
+    """
+    Determines if the query is asking about current status, issues, or configuration of resources.
+    Examples:
+    - "what is the issue with function?"
+    - "are there any errors with the pod?"
+    - "is something wrong with api rules?"
+    - "what is the current state of"
+    """
     pass
 '''
 
@@ -79,5 +108,11 @@ You are Kyma Companion, developed by SAP. Your purpose is to analyze user querie
 and determine whether to handle them directly or forward them.
 
 # Rules
-- function means Kyma function
+- interpret "function" as Kyma function
+- IMPORTANT: properly detect query tense
+  - for past tense queries like "what was the issue?" or "what caused the error?": CHECK conversation history for answers
+  - for present tense queries like "what is the issue?" or "is there an error?": IGNORE conversation history for current issues, status, or configuration of resources
+- decline general knowledge queries that are non-technical
+- greeting is not a general knowledge query
+- asking about you and your capabilities is not a general knowledge query
 """
