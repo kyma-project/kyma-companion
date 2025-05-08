@@ -8,6 +8,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_2,
     conversation_sample_5,
     conversation_sample_6,
+    conversation_sample_7,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
 
@@ -504,11 +505,10 @@ async def test_invoke_gatekeeper_node(
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """
     # Given: a conversation state with messages
-    user_query = messages[-1].content
     state = create_mock_state(messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    actual_response = await companion_graph._invoke_gatekeeper_node(state, user_query)
+    actual_response = await companion_graph._invoke_gatekeeper_node(state)
 
     if expected_query_forwarding:
         assert actual_response.forward_query, "Query should be forwarded"
@@ -545,6 +545,26 @@ async def test_invoke_gatekeeper_node(
         ),
         (
             "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what was wrong?",
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
+            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
+            "which may fail to run correctly in certain environments.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what was the problem?",
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
+            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
+            "which may fail to run correctly in certain environments.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
             conversation_sample_5,
             "what was the cause?",
             "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
@@ -553,6 +573,75 @@ async def test_invoke_gatekeeper_node(
             "list pods, it will result in an error, causing the container to terminate with an exit code of 1. "
             "You should verify the role and role binding for the service account to ensure it has the required permissions.",
             False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_5,
+            "what was the reason?",
+            "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
+            "for the service account `pod-reader-sa`. The container `kubectl-container` is trying to execute the "
+            "command `kubectl get pods`, and if the service account does not have the necessary role bindings to "
+            "list pods, it will result in an error, causing the container to terminate with an exit code of 1. "
+            "You should verify the role and role binding for the service account to ensure it has the required permissions.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "what was the issue?",
+            "The issue with the function in the `test-function-8` namespace was a syntax error in the JavaScript code.\n"
+            "The line `const now = new Dates();` was incorrect and should have been `const now = new Date();`.\n"
+            "This typo would cause the function to fail when executed, as `Dates` is not a valid JavaScript object. The correct object is `Date`.\n",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "what is the issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "any problem with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "find issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "any error in tracing pipeline?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "anything wrong with api rules?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what is the issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what is the issue?",
+            "",
+            True,
         ),
         (
             "forward query as insufficient information in conversation history",
@@ -578,11 +667,11 @@ async def test_gatekeeper_with_conversation_history(
     """
     # Given: a conversation state with messages
     all_messages = convert_dict_to_messages(conversation_history)
-    # all_messages.append(HumanMessage(content=user_query))
+    all_messages.append(HumanMessage(content=user_query))
     state = create_mock_state(all_messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    result = await companion_graph._invoke_gatekeeper_node(state, user_query)
+    result = await companion_graph._invoke_gatekeeper_node(state)
 
     if expected_query_forwarding:
         assert (

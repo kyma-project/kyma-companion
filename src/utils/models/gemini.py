@@ -17,7 +17,6 @@ class GeminiModel:
             proxy_client=proxy_client,
             model_name=config.name,
             deployment_id=config.deployment_id,
-            temperature=config.temperature,
         )
 
     def invoke(self, content: str):  # noqa

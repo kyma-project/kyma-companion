@@ -27,12 +27,22 @@ class SubTaskStatus(str, Enum):
 class GatekeeperResponse(BaseModel):
     """Gatekeeper response data model."""
 
-    direct_response: Annotated[str, Field(description="For direct response.")]
+    direct_response: Annotated[
+        str,
+        Field(
+            description="""
+            Contains any of the following:
+            - Direct response from conversation history
+            - Direct response to user queries irreleant to Kyma or Kubernetes.
+            - Empty string if query should be forwarded.
+            """,
+        ),
+    ]
     forward_query: Annotated[
         bool,
         Field(
             default=False,
-            description="For forwarding query",
+            description="Flag to indicate to forward queries related to Kyma or Kubernetes.",
         ),
     ]
 
