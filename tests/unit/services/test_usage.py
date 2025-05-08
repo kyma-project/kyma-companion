@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from langchain_core.outputs import ChatGeneration, LLMResult
 
+from routers.probes import IUsageTrackerProbe
 from services.metrics import (
     LANGGRAPH_ERROR_METRIC_KEY,
     LLM_LATENCY_METRIC_KEY,
@@ -75,10 +76,11 @@ class TestUsageTrackerCallback:
         self, test_description, llm_output, expected_exception, expected_call_args
     ):
         # Given
+        mock_probe = Mock(spec=IUsageTrackerProbe)
         mock_memory = Mock()
         mock_memory.awrite_llm_usage = AsyncMock()
         usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=mock_memory
+            cluster_id="test_cluster", memory=mock_memory, probe=mock_probe
         )
         response = Mock()
         response.llm_output = llm_output
@@ -105,6 +107,8 @@ class TestUsageTrackerCallback:
                 failure_metric_name
             )
             assert after_failure_metric_value > before_failure_metric_value
+            # The probe's failure count should have been increased.
+            mock_probe.increase_failure_count.assert_called_once()
         else:
             await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
             call_args = mock_memory.awrite_llm_usage.call_args[0][1]
@@ -118,6 +122,8 @@ class TestUsageTrackerCallback:
                 failure_metric_name
             )
             assert after_failure_metric_value == before_failure_metric_value
+            # The probe's failure count should have been resetted.
+            mock_probe.reset_failure_count.assert_called_once()
 
         # the LLM latency metric should be increased.
         after_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(

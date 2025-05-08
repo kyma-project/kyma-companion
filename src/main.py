@@ -3,7 +3,8 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request, Response
 
-from routers import conversations
+from routers.conversations import router as conversations_router
+from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 
 app = FastAPI(
@@ -17,25 +18,14 @@ async def monitor_http_requests(req: Request, call_next: Any) -> Any:
     return await CustomMetrics().monitor_http_requests(req, call_next)
 
 
-app.include_router(conversations.router)
+app.include_router(conversations_router)
+app.include_router(probes_router)
 
 
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
     return {"message": "Kyma Companion!"}
-
-
-@app.get("/readyz")
-async def readyz() -> dict:
-    """The endpoint for the Readiness Probe."""
-    return {"ready": "true"}
-
-
-@app.get("/healthz")
-async def healthz() -> dict:
-    """The endpoint for the Health Probe."""
-    return {"healthy": "true"}
 
 
 @app.get("/metrics")

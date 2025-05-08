@@ -121,3 +121,8 @@ class CustomMetrics(metaclass=SingletonMeta):
 
         # continue request handling.
         return response
+
+    @classmethod
+    def _reset_for_tests(cls) -> None:
+        """Reset the singleton instance. Only use this for testing purpose."""
+        SingletonMeta.reset_instance(cls)

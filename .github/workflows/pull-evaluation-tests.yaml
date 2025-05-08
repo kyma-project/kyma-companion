@@ -161,10 +161,10 @@ jobs:
       - name: Companion Deploy - Debug information
         if: failure()
         run: |
-          kubectl get deploy -n ai-system
-          kubectl get pod -n ai-system
-          kubectl logs -n ai-system -l app.kubernetes.io/name=companion
-          kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion
+          kubectl get deploy -n ai-system || true
+          kubectl get pod -n ai-system || true
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
+          kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
 
       - name: Evaluation Tests Setup - Extract project Python version
         working-directory: tests/blackbox
@@ -203,7 +203,7 @@ jobs:
       - name: Evaluation Tests - Debug information
         if: failure()
         run: |
-          kubectl get deploy -n ai-system
-          kubectl get pod -n ai-system
-          kubectl logs -n ai-system -l app.kubernetes.io/name=companion
-          kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion
+          kubectl get deploy -n ai-system || true
+          kubectl get pod -n ai-system || true
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
+          kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
