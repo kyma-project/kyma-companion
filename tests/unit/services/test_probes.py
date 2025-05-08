@@ -104,11 +104,17 @@ class TestLLMReadinessProbe:
         LLMProbe()._reset_for_tests()
 
     def test_llm_readiness_probe_model_tested_once(self):
+        """
+        Test the readiness probe for LLMs ensures that models are tested only once, if they return readiness.
+
+        This test verifies that the `are_llms_ready` method of `LLMProbe` correctly evaluates
+        the readiness of models and caches their states. It ensures that the model's `invoke`
+        method is called only once, even if `are_llms_ready` is called multiple times.
+        """
         LLMProbe()._reset_for_tests()
 
         # Given:
-
-        # We need to bouild our own mock model that we can assert and we need a mock model factory to return it, as an arg for LLMProbe().
+        # Create a mock model with a predefined state and a mock model factory to return it.
         model_name = "foo"
         model_state = True
         model = MagicMock(spec=IModel, invoke=MagicMock(return_value=model_state))
@@ -119,28 +125,33 @@ class TestLLMReadinessProbe:
         probe = LLMProbe(mock_model_factory)
 
         # When:
+        # Call `are_llms_ready` to evaluate the readiness of the models.
         overall_state = probe.are_llms_ready()
-        # The only model we pass always reports, that it is ready, so the overall state should be ready.
-        assert overall_state == model_state
-        # Check if the model we handed over to the probe has a state.
-        assert model_name in probe._model_states, "the model should have a state"
-        # Check that the state is "True".
-        assert (
-            probe._model_states.get(model_name) == model_state
-        ), "the model state should be 'True'"
 
-        overall_state = probe.are_llms_ready()
-        # The overall state should still be True.
+        # Then:
+        # The overall state should match the model's state.
         assert overall_state == model_state
-        # The state of the specific model should still be there.
-        assert model_name in probe._model_states, "the model should have a state"
-        # The state of the specific model should still be True.
+        # The model should have a state recorded in the probe.
+        assert model_name in probe._model_states, "The model should have a state"
+        # The recorded state should match the model's state.
         assert (
             probe._model_states.get(model_name) == model_state
-        ), "the model state should be 'True'"
-        # Because the model state should have been set to True in the first call of
-        # are_llms_ready, the second call should not have triggered a second call of
-        # the models invoke method.
+        ), "The model state should be 'True'"
+
+        # When:
+        # Call `are_llms_ready` again.
+        overall_state = probe.are_llms_ready()
+
+        # Then:
+        # The overall state should still match the model's state.
+        assert overall_state == model_state
+        # The model's state should still be recorded in the probe.
+        assert model_name in probe._model_states, "The model should have a state"
+        # The recorded state should still match the model's state.
+        assert (
+            probe._model_states.get(model_name) == model_state
+        ), "The model state should be 'True'"
+        # The model's `invoke` method should have been called only once.
         model.invoke.assert_called_once()
 
         LLMProbe()._reset_for_tests()

@@ -76,6 +76,7 @@ class LLMProbe(metaclass=SingletonMeta):
             try:
                 # Check if the model is an implemantation of IModel or an embedding and test accordingly,
                 # if they are are operational.
+
                 response = (
                     model.invoke("Test.")
                     if isinstance(model, IModel)
