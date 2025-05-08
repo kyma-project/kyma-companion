@@ -91,16 +91,13 @@ def detect_past_tense(user_query):
     """
     pass
 
-def is_resource_status_query(user_intent):
-    """
-    Determines if the query is asking about current status, issues, or configuration of resources.
-    Examples:
+# Additional information
+  Resource status queries are queries that are asking about current status, issues, or configuration of resources.
+  Examples:
     - "what is the issue with function?"
     - "are there any errors with the pod?"
     - "is something wrong with api rules?"
     - "what is the current state of"
-    """
-    pass
 '''
 
 GATEKEEPER_PROMPT = """
