@@ -46,12 +46,12 @@ def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"
     return "agent"
 
 
-def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
+def agent_edge(state: BaseAgentState) -> Literal[ SUMMARIZATION, "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
     last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"
-    return "tools"
+    return SUMMARIZATION # from SUMMARIZATION --> tools
 
 
 class IAgent(Protocol):
@@ -258,17 +258,18 @@ class BaseAgent:
         # Define the edge: subtask_selector --> (agent | end)
         workflow.add_conditional_edges("subtask_selector", subtask_selector_edge)
 
-        # Define the edge: agent --> (tool | finalizer)
+        # Define the edge: agent --> (summarization | finalizer)
         workflow.add_conditional_edges("agent", agent_edge)
 
-        # Define the edge: tool --> summarization
-        workflow.add_edge("tools", SUMMARIZATION)
+        # Define the edge: tool --> tool
+        workflow.add_edge("tools", "agent")
+
         # Define the edge: summarization --> agent | error_handler
         workflow.add_conditional_edges(
             SUMMARIZATION,
             should_continue,
             {
-                CONTINUE: "agent",
+                CONTINUE: "tools",
                 END: END,
             },
         )
