@@ -3,6 +3,7 @@ import os
 from logging import Logger
 
 import yaml
+from deepeval.evaluate import EvaluationResult
 from pydantic import BaseModel
 
 from evaluation.scenario.enums import (
@@ -35,63 +36,7 @@ class Expectation(BaseModel):
     statement: str
     categories: list[Category]
     complexity: Complexity
-    results: list[bool] = []
-
-    def add_result(self, result: bool) -> None:
-        """Add a new expectation result to the list."""
-        self.results.append(result)
-
-    def get_success_count(self) -> int:
-        """Get the number of successful results."""
-        total_success: int = 0
-        for result in self.results:
-            total_success += int(result)
-        return total_success
-
-    def get_results_count(self) -> int:
-        """Get the number of results."""
-        return len(self.results)
-
-    def get_success_rate(self) -> float:
-        """Get the success rate (%) of the expectation results."""
-        if self.get_results_count() == 0:
-            return 0.0
-        score = (self.get_success_count() / self.get_results_count()) * 100
-        return round(score, 2)
-
-
-class Evaluation(BaseModel):
-    """Evaluation is a class that contains the information of a scenario evaluation results."""
-
-    status: TestStatus = TestStatus.PENDING
-    status_reason: str = ""
-    actual_responses: list[str] = []
-
-    def add_actual_response(self, response: str) -> None:
-        """Add a new expectation result to the list."""
-        self.actual_responses.append(response)
-
-    def get_scenario_score(self, expectations: list[Expectation]) -> float:
-        """Get the scenario score considering the complexity of expectations."""
-
-        # calculate the weighted mean of the scenario from all expectation considering the complexity.
-        actual_sum: int = 0
-        ideal_sum: int = 0
-        count: int = 0
-        for expectation in expectations:
-            actual_sum += expectation.get_success_count() * expectation.complexity
-            # ideal sum is the sum when all the results would be successful.
-            ideal_sum += expectation.get_results_count() * expectation.complexity
-            count += expectation.get_results_count()
-
-        if count == 0:
-            return 0.0
-
-        mean_weighted_performance: float = float(actual_sum / count)
-        # ideal_weighted_performance sum is the performance when all the results would be successful.
-        ideal_weighted_performance: float = float(ideal_sum / count)
-        score = (mean_weighted_performance / ideal_weighted_performance) * 100
-        return round(score, 2)
+    threshold: float = 0.5
 
 
 class Scenario(BaseModel):
@@ -102,7 +47,14 @@ class Scenario(BaseModel):
     user_query: str
     resource: Resource
     expectations: list[Expectation]
-    evaluation: Evaluation = Evaluation()
+    # actual responses
+    initial_questions: list[str] = []
+    response_chunks: list[str] = []
+    actual_response: str = ""
+    # evaluation
+    test_status: TestStatus = TestStatus.PENDING
+    test_status_reason: str = ""
+    evaluation_result: EvaluationResult = None
 
     def get_scenario_score(self) -> float:
         return self.evaluation.get_scenario_score(self.expectations)
@@ -116,6 +68,28 @@ class Scenario(BaseModel):
         # if the scenario score is 100, the scenario is passed.
         if self.get_scenario_score() == PASSING_SCORE:
             self.evaluation.status = TestStatus.PASSED
+
+    #     def get_scenario_score(self, expectations: list[Expectation]) -> float:
+    #         """Get the scenario score considering the complexity of expectations."""
+    #
+    #         # calculate the weighted mean of the scenario from all expectation considering the complexity.
+    #         actual_sum: int = 0
+    #         ideal_sum: int = 0
+    #         count: int = 0
+    #         for expectation in expectations:
+    #             actual_sum += expectation.get_success_count() * expectation.complexity
+    #             # ideal sum is the sum when all the results would be successful.
+    #             ideal_sum += expectation.get_results_count() * expectation.complexity
+    #             count += expectation.get_results_count()
+    #
+    #         if count == 0:
+    #             return 0.0
+    #
+    #         mean_weighted_performance: float = float(actual_sum / count)
+    #         # ideal_weighted_performance sum is the performance when all the results would be successful.
+    #         ideal_weighted_performance: float = float(ideal_sum / count)
+    #         score = (mean_weighted_performance / ideal_weighted_performance) * 100
+    #         return round(score, 2)
 
 
 class ScenarioList(BaseModel):

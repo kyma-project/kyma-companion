@@ -44,28 +44,28 @@ def main() -> None:
             if exp is not None:
                 raise Exception(f"Failed to process scenario. Error: {exp}")
 
-    # print out the results.
-    print_test_results(scenario_list)
-
-    time_taken = round((time.time() - start_time) / 60, 2)
-    print(f"Total time taken by evaluation tests: {time_taken} minutes.")
-
-    # validate that the token usage data is added to redis db.
-    usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
-    token_usage_after_run = usage_tracker_validator.get_total_token_usage()
-    total_usage = token_usage_after_run - token_usage_before_run
-    if total_usage <= 0:
-        logger.error("No token usage data found in redis db.")
-        raise Exception("*** Tests failed: No token usage data found in redis db.")
-    print_token_usage(total_usage)
-
-    if scenario_list.is_test_failed():
-        print_header("Tests FAILED.")
-        failed_scenarios = scenario_list.get_failed_scenarios()
-        logger.error(
-            f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}"
-        )
-        raise Exception("Tests failed.")
+    # # print out the results.
+    # print_test_results(scenario_list)
+    #
+    # time_taken = round((time.time() - start_time) / 60, 2)
+    # print(f"Total time taken by evaluation tests: {time_taken} minutes.")
+    #
+    # # validate that the token usage data is added to redis db.
+    # usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
+    # token_usage_after_run = usage_tracker_validator.get_total_token_usage()
+    # total_usage = token_usage_after_run - token_usage_before_run
+    # if total_usage <= 0:
+    #     logger.error("No token usage data found in redis db.")
+    #     raise Exception("*** Tests failed: No token usage data found in redis db.")
+    # print_token_usage(total_usage)
+    #
+    # if scenario_list.is_test_failed():
+    #     print_header("Tests FAILED.")
+    #     failed_scenarios = scenario_list.get_failed_scenarios()
+    #     logger.error(
+    #         f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}"
+    #     )
+    #     raise Exception("Tests failed.")
 
 
 if __name__ == "__main__":

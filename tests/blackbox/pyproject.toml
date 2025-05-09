@@ -1,25 +1,73 @@
-[tool.poetry]
-name = "Kyma Companion Blackbox Tests"
+[project]
+name = "Kyma-Companion-Blackbox-Tests"
 version = "0.1.0"
-description = "Evaluation and Validation Framework for Kyma Companion"
-authors = []
+description = "Kyma Companion Blackbox Tests"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+  { name = "Muhammad Faizan", email = "m.faizan@sap.com" },
+  { name = "Friedrich Wilken", email = "jens.wilken@sap.com" },
+  { name = "Mansur Uralov", email = "m.uralov@sap.com" },
+  { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
+]
+requires-python = "==3.12.*"
+dependencies = [
+  "ai-core-sdk (>=2.4.2,<2.5.0)",
+  "cryptography (>=44.0.2,<45.0.0)",
+  "fastapi[standard] (>=0.115.11,<0.116.0)",
+  "generative-ai-hub-sdk[all] (>=4.1.1,<4.2.0)",
+  "hdbcli (>=2.23.27,<3.0.0)",
+  "kubernetes (>=30.0.0,<33.0.0)",
+  "langfuse (>=2.59.7,<3.0.0)",
+  "langgraph (>=0.2.5,<0.3.0)",
+  "prometheus-client (>=0.21.1,<0.22.0)",
+  "pyjwt (>=2.10.1,<3.0.0)",
+  "python-decouple (>=3.8,<4.0)",
+  "redis (>=5.2.1,<6.0.0)",
+  "requests (>=2.32.3,<3.0.0)",
+  "scrubadub (>=2.0.1,<3.0.0)",
+  "tenacity (>=9.0.0,<10.0.0)",
+  "tiktoken (>=0.9.0,<0.10.0)",
+  "uvicorn (>=0.34.0,<0.35.0)"
+]
+[tool.poetry]
+packages = [{ include = "src" }]
 package-mode = false
 
-[tool.poetry.dependencies]
-python = "~3.12"
-ai-core-sdk = "^2.3.11"
-generative-ai-hub-sdk = "^3.1.0"
-langchain-aws = "^0.1.17"
-langchain-community = "^0.2.6"
-langchain-experimental = "^0.0.64"
-langchain-google-genai = "^1.0.7"
-langchain-google-vertexai = "^1.0.10"
-langchain-openai = "^0.1.14"
-poetry-plugin-sort = "^0.2.1"
-prettytable = "^3.10.2"
-pydantic = "^2.8.2"
-python-decouple = "^3.8"
-python-dotenv = "^1.0.1"
-termcolor = "^2.4.0"
-wcwidth = "^0.2.13"
-redis = "^5.2.1"
+[tool.poetry.group.test.dependencies]
+deepeval = "^2.5.3"
+fakeredis = "^2.27.0"
+prettytable = "^3.15.1"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.25.3"
+pytest-dotenv = "^0.5.2"
+pytest-mock = "^3.14.0"
+pytest-rerunfailures = "^15.0"
+pyyaml = "^6.0.2"
+termcolor = "^2.5.0"
+types-pyyaml = "^6.0.12.20241230"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+cryptography = "^44.0.2"
+flake8 = "^7.1.2"
+flake8-bugbear = "^24.12.12"
+ipython = "^9.0.2"
+mypy = "^1.15.0"
+poethepoet = "^0.33.0"
+poetry-plugin-sort = "^0.3.0"
+ruff = "^0.9.10"
+types-requests = "^2.32.0.20250306"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra"
+pythonpath = ["src"]
+testpaths = ["tests"]
+env_files = [".env.test"]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.poe.tasks]
+run-evaluation = "python src/run_evaluation.py"
+sort = "poetry sort"
+

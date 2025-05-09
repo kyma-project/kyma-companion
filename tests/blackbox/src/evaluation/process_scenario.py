@@ -74,8 +74,12 @@ def initialize_conversation(
             init_questions_response = companion_client.fetch_initial_questions(
                 payload, logger
             )
-            conversation_id = json.loads(init_questions_response.content)[
+            parsed_response = json.loads(init_questions_response.content)
+            conversation_id = parsed_response[
                 "conversation_id"
+            ]
+            scenario.initial_questions = parsed_response[
+                "initial_questions"
             ]
             return str(conversation_id)
 
@@ -92,8 +96,8 @@ def initialize_conversation(
 
     # If we run out of retries, we set the scenario status to failed.
     else:
-        scenario.evaluation.status = TestStatus.FAILED
-        scenario.evaluation.status_reason = (
+        scenario.test_status = TestStatus.FAILED
+        scenario.test_status_reason = (
             "failed to call initialize conversation endpoint after multiple retries. "
             f"{companion_error}"
         )
@@ -112,93 +116,82 @@ def get_companion_responses(
     # If this is successful we will return True, otherwise False.
 
     payload.query = scenario.user_query
-    # We get the response multiple times to check if the response is consistent.
-    # This is the so called idempotency check.
-    for _ in range(config.iterations):
-        logger.debug(f"Getting response from companion for scenario: {scenario.id}")
+    logger.debug(f"Getting response from companion for scenario: {scenario.id}")
 
-        # We retry the to querry multiple times to handle transient errors.
-        retry_wait_time = config.retry_wait_time
-        companion_error = None
-        while retry_wait_time <= config.retry_max_wait_time:
-            try:
-                response = companion_client.get_companion_response(
-                    conversation_id, payload, logger
-                )
-                # We store the response in the scenario evaluation,
-                # so we can compare it with the expectations, later.
-                scenario.evaluation.add_actual_response(response)
-                break
-
-            # If we get an exception, we log the error and retry after an increasing time
-            # until we reach the maximum retry time.
-            except Exception as e:
-                companion_error = e
-                logger.warning(
-                    f"failed to get response from the companion API. "
-                    f"Retrying in {retry_wait_time} seconds. Error: {companion_error}"
-                )
-                time.sleep(retry_wait_time)
-                retry_wait_time += config.retry_wait_time
-
-        # If we run out of retries, we set the scenario status to failed.
-        else:
-            scenario.evaluation.status = TestStatus.FAILED
-            scenario.evaluation.status_reason = (
-                f"failed to get response from the companion API. {companion_error}"
+    # We retry multiple times to handle transient errors.
+    retry_wait_time = config.retry_wait_time
+    companion_error = None
+    while retry_wait_time <= config.retry_max_wait_time:
+        try:
+            scenario.actual_response = companion_client.get_companion_response(
+                conversation_id, payload, logger
             )
-            logger.error(
-                f"skipping scenario {scenario.id} because failed to get response from the "
-                f"companion API for scenario: {scenario.id}. Error: {companion_error}"
+            break
+
+        # If we get an exception, we log the error and retry after an increasing time
+        # until we reach the maximum retry time.
+        except Exception as e:
+            companion_error = e
+            logger.warning(
+                f"failed to get response from the companion API. "
+                f"Retrying in {retry_wait_time} seconds. Error: {companion_error}"
             )
-            # We return False to indicate that the scenario failed.
-            return False
+            time.sleep(retry_wait_time)
+            retry_wait_time += config.retry_wait_time
+
+    # If we run out of retries, we set the scenario status to failed.
+    else:
+        scenario.test_status = TestStatus.FAILED
+        scenario.test_status_reason = (
+            f"failed to get response from the companion API. {companion_error}"
+        )
+        logger.error(
+            f"skipping scenario {scenario.id} because failed to get response from the "
+            f"companion API for scenario: {scenario.id}. Error: {companion_error}"
+        )
+        # We return False to indicate that the scenario failed.
+        return False
+
     # We return True to indicate that the scenario passed.
     return True
 
 
-def evaluate_scenario(validator, config, logger, scenario) -> bool:
+def evaluate_scenario(validator, config, logger, scenario: Scenario) -> bool:
     # We evaluate the scenario by validating the expectations.
     # If this is successful we will return True, otherwise False.
 
-    for expectation in scenario.expectations:
-        # We retry the validation multiple times to handle transient errors.
-        retry_wait_time = config.retry_wait_time
-        validation_error = None
-        while retry_wait_time <= config.retry_max_wait_time:
-            try:
-                # For each response, validate the expectation.
-                for response in scenario.evaluation.actual_responses:
-                    result = validator.is_response_as_expected(
-                        expectation.statement, response
-                    )
-                    expectation.add_result(result)
-                break
+    # We retry the validation multiple times to handle transient errors.
+    retry_wait_time = config.retry_wait_time
+    validation_error = None
+    while retry_wait_time <= config.retry_max_wait_time:
+        try:
+            logger.debug(f"validating expectations for scenario: {scenario.id}")
+            scenario.evaluation_result = validator.get_deepeval_evaluate(scenario)
+            break
 
-            # If we get an exception, we log the error and retry after an increasing time
-            # until we reach the maximum retry time.
-            except Exception as e:
-                validation_error = e
-                logger.warning(
-                    f"failed to validate expectation: {expectation.name} "
-                    f"for scenario: {scenario.id}. Retrying in {retry_wait_time} "
-                    f"seconds. Error: {validation_error}"
-                )
-                time.sleep(retry_wait_time)
-                retry_wait_time += config.retry_wait_time
+        # If we get an exception, we log the error and retry after an increasing time
+        # until we reach the maximum retry time.
+        except Exception as e:
+            validation_error = e
+            logger.warning(
+                f"failed to validate expectations "
+                f"for scenario: {scenario.id}. Retrying in {retry_wait_time} "
+                f"seconds. Error: {validation_error}"
+            )
+            time.sleep(retry_wait_time)
+            retry_wait_time += config.retry_wait_time
 
-        # If we run out of retries, we set the scenario status to failed.
-        else:
-            logger.error(
-                f"failed to validate expectation: {expectation.name} "
-                f"for scenario: {scenario.id} after multiple retries. Error: {validation_error}"
-            )
-            scenario.evaluation.status = TestStatus.FAILED
-            scenario.evaluation.status_reason += (
-                f"failed to validate expectation {expectation.name} after multiple retries, "
-                f"{validation_error}."
-            )
-            # We return False to indicate that the scenario failed.
-            return False
+    # If we run out of retries, we set the scenario status to failed.
+    else:
+        scenario.test_status = TestStatus.FAILED
+        error_msg = (
+            f"failed to validate expectations "
+            f"for scenario: {scenario.id} after multiple retries. Error: {validation_error}"
+        )
+        logger.error(error_msg)
+        scenario.test_status_reason += (error_msg)
+        # We return False to indicate that the scenario failed.
+        return False
+
     # We return True to indicate that the scenario passed.
     return True
