@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 PLANNER = "Planner"
 
 SUMMARIZATION = "Summarization"
@@ -66,3 +68,15 @@ ERROR_RATE_LIMIT_CODE = 429
 K8S_API_PAGINATION_LIMIT = 100
 
 K8S_API_PAGINATION_MAX_PAGE = 5
+
+TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
+    lambda: 16000,  # Default token limit if model not found
+    {
+        "gpt-4o": 100000,  # GPT-4o supports 128K context
+        "gpt-4o-mini": 100000,  # GPT-4o Mini supports 128K context
+        "gpt-3.5": 12000,  # GPT-3.5 Turbo supports ~16K tokens
+        "gemini-1.0-pro": 28000,  # Gemini 1.0 Pro supports 32K tokens
+    },
+)
+
+TOTAL_CHUNKS_LIMIT = 5

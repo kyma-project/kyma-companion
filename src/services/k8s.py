@@ -10,7 +10,10 @@ import requests
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
-from agents.common.constants import K8S_API_PAGINATION_LIMIT, K8S_API_PAGINATION_MAX_PAGE
+from agents.common.constants import (
+    K8S_API_PAGINATION_LIMIT,
+    K8S_API_PAGINATION_MAX_PAGE,
+)
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
 
@@ -277,7 +280,9 @@ class K8sClient:
                 )
 
             # Add continue token to URL if it exists
-            query_params = f"?limit={K8S_API_PAGINATION_LIMIT}" + (f"&continue={continue_token}" if continue_token else "")
+            query_params = f"?limit={K8S_API_PAGINATION_LIMIT}" + (
+                f"&continue={continue_token}" if continue_token else ""
+            )
             current_url = base_url + query_params
 
             response = requests.get(
