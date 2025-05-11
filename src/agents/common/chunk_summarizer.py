@@ -28,7 +28,7 @@ class ToolResponseSummarizer:
     ) -> int:
         """calculate chunk size based on tool response"""
         total_chars = len(tool_response)
-        return max(1, total_chars // (target_num_chunks + 1))
+        return max(1, total_chars // target_num_chunks)
 
     def _create_chunks(
         self, tool_response: str, nums_of_chunks: int

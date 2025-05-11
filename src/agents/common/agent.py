@@ -168,11 +168,11 @@ class BaseAgent:
 
         # if token limit exceeds
         if token_count > TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]:
-
+            logger.info(f"Tool Response Token count: {token_count}")
             nums_of_chunks = (
                 token_count // TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
-            )
-
+            ) + 1
+            logger.info(f"Number of Chunks for summarization : {nums_of_chunks}")
             if nums_of_chunks > TOTAL_CHUNKS_LIMIT:
                 raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
 
@@ -183,8 +183,15 @@ class BaseAgent:
                 config=config,
                 nums_of_chunks=nums_of_chunks,
             )
-            # update tool response content
-            state.agent_messages[-1].content = response
+
+            # remove all tool message which is already summarized and
+            # add new tool response with summarized content
+            for message in reversed(state.agent_messages):
+                if isinstance(message, ToolMessage):
+                    state.agent_messages.pop()
+                else:
+                    state.agent_messages.append(AIMessage(content=response))
+                    break
 
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
