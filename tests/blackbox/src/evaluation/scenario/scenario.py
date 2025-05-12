@@ -49,8 +49,8 @@ class Query(BaseModel):
 
     def complete(self) -> None:
         # map the evaluation result to the individual expectations.
-        if self.test_status != TestStatus.PENDING and self.evaluation_result is not None:
-            self.evaluation.status = TestStatus.COMPLETED
+        if self.test_status != TestStatus.FAILED and self.evaluation_result is not None:
+            self.test_status = TestStatus.COMPLETED
             for test_result in self.evaluation_result.test_results:
                 if not test_result.success:
                     self.test_status = TestStatus.FAILED

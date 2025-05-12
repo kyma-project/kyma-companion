@@ -97,7 +97,7 @@ def print_failed_queries(scenario_list: ScenarioList) -> None:
 
     print_header("List of failed test case:")
     for query in failed_queries:
-        print(colored(f"\t- {query}", "red"))
+        print(colored(f"- {query}", "red"))
     return None
 
 
