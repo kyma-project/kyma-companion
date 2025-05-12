@@ -3,6 +3,7 @@ import json
 import github_action_utils as gha_utils
 from deepeval.evaluate import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
+from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import ScenarioList
 from prettytable import PrettyTable
@@ -50,12 +51,12 @@ def print_initial_questions(questions: list[str]) -> None:
         print(f"\t{i + 1}: {q}")
 
 
-def print_response_chunks(chunks: list) -> None:
+def print_response_chunks(chunks: list[ConversationResponseChunk]) -> None:
     """Prints the response chunks."""
     print(colored("==> Response chunks:", "yellow"))
     if len(chunks) == 0:
         return None
-    print(json.dumps(chunks, indent=4))
+    print(json.dumps([chunk.model_dump() for chunk in chunks], indent=4))
     return None
 
 

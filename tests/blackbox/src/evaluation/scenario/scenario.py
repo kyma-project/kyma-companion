@@ -6,6 +6,7 @@ import yaml
 from deepeval.evaluate import EvaluationResult, TestResult
 from pydantic import BaseModel
 
+from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import (
     TestStatus,
 )
@@ -48,7 +49,7 @@ class Query(BaseModel):
     resource: Resource
     expectations: list[Expectation]
     # actual responses
-    response_chunks: list = []
+    response_chunks: list[ConversationResponseChunk] = []
     actual_response: str = ""
     # evaluation
     test_status: TestStatus = TestStatus.PENDING

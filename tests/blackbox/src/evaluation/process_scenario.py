@@ -1,4 +1,3 @@
-import json
 import time
 from logging import Logger
 
@@ -9,6 +8,10 @@ from common.output import print_header
 from evaluation.companion.companion import (
     CompanionClient,
     ConversationPayload,
+)
+from evaluation.companion.response_models import (
+    ConversationResponse,
+    InitialQuestionsResponse,
 )
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Query, Scenario
@@ -81,15 +84,12 @@ def initialize_conversation(
     companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            logger.debug("getting response from the initial conversations endpoint.")
-            init_questions_response = companion_client.fetch_initial_questions(
-                payload, logger
+            logger.debug("getting response from the initial conversations endpoint...")
+            init_questions_response: InitialQuestionsResponse = (
+                companion_client.fetch_initial_questions(payload, logger)
             )
-            parsed_response = json.loads(init_questions_response.content)
-            conversation_id = parsed_response["conversation_id"]
-            # same the initial questions in the scenario.
-            scenario.initial_questions = parsed_response["initial_questions"]
-            return str(conversation_id)
+            scenario.initial_questions = init_questions_response.initial_questions
+            return init_questions_response.conversation_id
 
         # If we get an exception, we log the error and retry after an increasing time
         # until we reach the maximum retry time.
@@ -145,11 +145,13 @@ def get_companion_responses(
     companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            query.actual_response, query.response_chunks = (
+            conversation_response: ConversationResponse = (
                 companion_client.get_companion_response(
                     conversation_id, payload, logger
                 )
             )
+            query.actual_response = conversation_response.answer
+            query.response_chunks = conversation_response.chunks
             break
 
         # If we get an exception, we log the error and retry after an increasing time

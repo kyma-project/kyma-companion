@@ -9,6 +9,11 @@ from common.config import Config
 from common.metrics import Metrics
 from pydantic import BaseModel
 
+from evaluation.companion.response_models import (
+    ConversationResponse,
+    InitialQuestionsResponse,
+)
+
 
 class ConversationPayload(BaseModel):
     """Payload for the Companion API conversation."""
@@ -40,7 +45,7 @@ class CompanionClient:
 
     def fetch_initial_questions(
         self, payload: ConversationPayload, logger: Logger
-    ) -> Any:
+    ) -> InitialQuestionsResponse:
         """Calls the Companion API to get the initial questions."""
         logger.debug(
             f"querying Companion: {self.config.companion_api_url} for initial questions..."
@@ -64,11 +69,12 @@ class CompanionClient:
             time.time() - start_time
         )
 
-        return response
+        # Check if the response structure is valid, and then return the response.
+        return InitialQuestionsResponse.model_validate_json(response.content)
 
     def get_companion_response(
         self, conversation_id: str, payload: ConversationPayload, logger: Logger
-    ) -> tuple[str, list]:
+    ) -> ConversationResponse:
         """Returns the response and the chunks from the Companion API"""
         headers = self.__get_headers()
         headers["session-id"] = conversation_id
@@ -92,7 +98,14 @@ class CompanionClient:
             time.time() - start_time
         )
 
-        return answer, chunks
+        return ConversationResponse.model_validate_json(
+            json.dumps(
+                {
+                    "answer": answer,
+                    "chunks": chunks,
+                }
+            )
+        )
 
     def __extract_final_response(self, response: Any) -> tuple[str, list]:
         """Read the stream response and extract the final response from it."""
