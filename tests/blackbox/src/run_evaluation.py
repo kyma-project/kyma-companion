@@ -51,17 +51,20 @@ def main() -> None:
 
     print_header("Starting evaluation tests...")
     # process all scenarios.
-    with gha_utils.group("Processing all scenarios"), ThreadPoolExecutor(max_workers=config.max_workers) as executor:
-            futures = [
-                executor.submit(process_scenario, scenario, config, validator)
-                for scenario in scenario_list.items
-            ]
+    with (
+        gha_utils.group("Processing all scenarios"),
+        ThreadPoolExecutor(max_workers=config.max_workers) as executor,
+    ):
+        futures = [
+            executor.submit(process_scenario, scenario, config, validator)
+            for scenario in scenario_list.items
+        ]
 
-            # wait for all the threads to complete.
-            for f in as_completed(futures):
-                exp = f.exception()
-                if exp is not None:
-                    raise Exception(f"Failed to process scenario. Error: {exp}")
+        # wait for all the threads to complete.
+        for f in as_completed(futures):
+            exp = f.exception()
+            if exp is not None:
+                raise Exception(f"Failed to process scenario. Error: {exp}")
 
     # flush all the logs.
     flush_logs(logger)
