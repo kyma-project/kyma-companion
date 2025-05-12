@@ -62,6 +62,8 @@ def main() -> None:
     # print out the results.
     print_test_results(scenario_list, total_usage, time_taken)
 
+    print_header("END")
+
     # return the exit code based on the test results.
     if not scenario_list.is_test_passed():
         raise Exception("Tests failed.")

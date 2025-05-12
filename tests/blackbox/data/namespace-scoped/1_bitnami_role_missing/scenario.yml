@@ -28,7 +28,8 @@ queries:
         statement: provides a complete yaml for the Role that grants permission to list Pods
       - name: deployable_yaml
         statement: provides a complete yaml for the Role, with the namespace set to 'test-pod-1' and the verb set to 'watch'
-
+      - name: test_break
+        statement: provides a complete definition of kubernetes
 
   - user_query: What is kyma?
     resource:

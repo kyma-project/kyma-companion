@@ -49,7 +49,11 @@ class Query(BaseModel):
 
     def complete(self) -> None:
         # map the evaluation result to the individual expectations.
-        if self.test_status != TestStatus.FAILED and self.evaluation_result is not None:
+        if self.test_status != TestStatus.FAILED:
+            if self.evaluation_result is None:
+                self.test_status = TestStatus.FAILED
+                self.test_status_reason = "Evaluation result is None"
+                return
             self.test_status = TestStatus.COMPLETED
             for test_result in self.evaluation_result.test_results:
                 if not test_result.success:
@@ -76,7 +80,7 @@ class Scenario(BaseModel):
                 query.complete()
                 if query.test_status == TestStatus.FAILED:
                     self.test_status = TestStatus.FAILED
-                    break
+                    # we do not break here because we want to update the status of all queries.
 
 
 class ScenarioList(BaseModel):
