@@ -17,8 +17,8 @@ from agents.common.constants import (
     ERROR,
     IS_LAST_STEP,
     MESSAGES,
-    RESOURCE_INFORMATION,
     MY_TASK,
+    RESOURCE_INFORMATION,
     SUBTASKS,
     SUMMARIZATION,
 )

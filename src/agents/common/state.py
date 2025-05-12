@@ -11,10 +11,8 @@ from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
-from agents.common.constants import COMMON, K8S_AGENT, K8S_CLIENT, KYMA_AGENT
-from agents.common.data import Message
-
 from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
+from agents.common.data import Message
 from services.k8s import IK8sClient
 from utils.utils import to_sequence_messages
 
@@ -86,6 +84,7 @@ class ResourceInformation(BaseModel):
 
     @classmethod
     def from_message(cls, message: Message) -> "ResourceInformation":
+        """Create ResourceInformation from Message."""
         return cls(
             kind=message.resource_kind,
             api_version=message.resource_api_version,
