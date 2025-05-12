@@ -21,10 +21,3 @@ can be more or less complex, this boolean value is multiplied by a complexity fa
 evaluated multiple times so the idempotency performance of Kyma Companion can be calculated.
 
 Refer to the [Evaluation](./evaluation.md) documentation for more details.
-
-
-## Validation
-
-An LLM assesses the test scenarios' actual value against the expected value. To find the best model to judge, we need to validate several LLMs with mock data.
-
-Refer to the [Validation](./validation.md) documentation for more details.

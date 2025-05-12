@@ -1,6 +1,7 @@
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from logging import Logger
 
 import github_action_utils as gha_utils
 from common.config import Config
@@ -15,8 +16,10 @@ from evaluation.validator.validator import IValidator
 SLEEP_INTERVAL = 2  # 2 seconds
 
 
-def flush_logs() -> None:
+def flush_logs(logger: Logger) -> None:
     """Flush all logs before printing test results."""
+    for handler in logger.handlers:
+        handler.flush()
     sys.stdout.flush()
     time.sleep(SLEEP_INTERVAL)
 
@@ -43,28 +46,26 @@ def main() -> None:
     token_usage_before_run = usage_tracker_validator.get_total_token_usage()
     usage_tracker_validator.disconnect()
 
-    # flush all logs before printing test results.
-    flush_logs()
+    # flush all the logs.
+    flush_logs(logger)
 
     print_header("Starting evaluation tests...")
     # process all scenarios.
-    with (
-        gha_utils.group("Processing all scenarios")
-        and ThreadPoolExecutor(max_workers=config.max_workers) as executor
-    ):
-        futures = [
-            executor.submit(process_scenario, scenario, config, validator)
-            for scenario in scenario_list.items
-        ]
+    with gha_utils.group("Processing all scenarios"):
+        with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
+            futures = [
+                executor.submit(process_scenario, scenario, config, validator)
+                for scenario in scenario_list.items
+            ]
 
-        # wait for all the threads to complete.
-        for f in as_completed(futures):
-            exp = f.exception()
-            if exp is not None:
-                raise Exception(f"Failed to process scenario. Error: {exp}")
+            # wait for all the threads to complete.
+            for f in as_completed(futures):
+                exp = f.exception()
+                if exp is not None:
+                    raise Exception(f"Failed to process scenario. Error: {exp}")
 
-    # flush all logs before printing test results.
-    flush_logs()
+    # flush all the logs.
+    flush_logs(logger)
 
     # validate that the token usage data is added to redis db.
     usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
@@ -83,6 +84,9 @@ def main() -> None:
     print_header(
         "NOTE: The evaluation tests will only be marked as failed if any of the critical expectations fail."
     )
+
+    # flush all the logs.
+    flush_logs(logger)
 
     # return the exit code based on the test results.
     if not scenario_list.is_test_passed():
