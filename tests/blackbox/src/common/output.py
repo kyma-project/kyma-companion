@@ -44,7 +44,7 @@ def print_initial_questions(questions: list[str]) -> None:
 
 
 def print_response_chunks(chunks: list) -> None:
-    colored("==> Response chunks:", "yellow")
+    print(colored("==> Response chunks:", "yellow"))
     if len(chunks) == 0:
         return None
     print(json.dumps(chunks, indent=4))
@@ -54,7 +54,7 @@ def print_response_chunks(chunks: list) -> None:
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
     for scenario in scenario_list.items:
         with gha_utils.group(f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"):
-            colored(f"Description: {scenario.description}", "green")
+            print(colored(f"Description: {scenario.description}", "green"))
 
             # print initial questions.
             print_header(f"* Scenario ID: {scenario.id}, Initial Questions:")
@@ -97,7 +97,7 @@ def print_failed_queries(scenario_list: ScenarioList) -> None:
 
     print_header("List of failed test case:")
     for query in failed_queries:
-        colored(f"\t- {query}", "red")
+        print(colored(f"\t- {query}", "red"))
     return None
 
 

@@ -38,4 +38,4 @@ queries:
       namespace: test-pod-1 # format: test-<resource_kind>-<test_id>
     expectations:
       - name: pod_error
-        statement: points out the definition of kyma
+        statement: The response should contain the definition of kubernetes.
