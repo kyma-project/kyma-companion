@@ -4,26 +4,25 @@ from logging import Logger
 
 from common.config import Config
 from common.logger import get_logger
+from common.output import print_header
 
 from evaluation.companion.companion import (
     CompanionClient,
     ConversationPayload,
 )
 from evaluation.scenario.enums import TestStatus
-from evaluation.scenario.scenario import Scenario, Query
+from evaluation.scenario.scenario import Query, Scenario
 from evaluation.validator.validator import IValidator
-
-from common.output import print_header
 
 
 def process_scenario(scenario: Scenario, config: Config, validator: IValidator) -> None:
+    """Process a scenario by getting the responses from the Companion API and validating the expectations."""
     logger = get_logger(scenario.id)
     print_header(f"Started processing of scenario: {scenario.id}")
 
     if len(scenario.queries) == 0:
         logger.info(f"skipping scenario {scenario.id} because no queries are defined.")
         return
-
 
     companion_client = CompanionClient(config)
 
@@ -36,9 +35,8 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
         # the scenario is marked as failed and we can return.
         return
 
-
     # For each query in the scenario, we need to get the response from the Companion API.
-    for i, query in enumerate(scenario.queries):
+    for query in scenario.queries:
         # Get Companion responses for the user query of the scenario.
         if not get_companion_responses(
             companion_client, config, logger, query, scenario, conversation_id
@@ -60,12 +58,15 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
 
 
 def initialize_conversation(
-    companion_client, config, logger, scenario
+    companion_client: CompanionClient,
+    config: Config,
+    logger: Logger,
+    scenario: Scenario,
 ) -> str | None:
-    # Before we can have further interactions with the Companion,
-    # we need to initialize the conversation with the Companion API.
-    # If this is successful we will return the received conversation_id which we can use
-    # for further interactions.
+    """Before we can have further interactions with the Companion,
+    we need to initialize the conversation with the Companion API.
+    If this is successful we will return the received conversation_id which we can use
+    for further interactions."""
 
     # Define payload for the Companion API.
     payload = ConversationPayload(
@@ -85,13 +86,9 @@ def initialize_conversation(
                 payload, logger
             )
             parsed_response = json.loads(init_questions_response.content)
-            conversation_id = parsed_response[
-                "conversation_id"
-            ]
+            conversation_id = parsed_response["conversation_id"]
             # same the initial questions in the scenario.
-            scenario.initial_questions = parsed_response[
-                "initial_questions"
-            ]
+            scenario.initial_questions = parsed_response["initial_questions"]
             return str(conversation_id)
 
         # If we get an exception, we log the error and retry after an increasing time
@@ -121,10 +118,15 @@ def initialize_conversation(
 
 
 def get_companion_responses(
-    companion_client: CompanionClient, config: Config, logger: Logger, query: Query, scenario: Scenario, conversation_id: str
+    companion_client: CompanionClient,
+    config: Config,
+    logger: Logger,
+    query: Query,
+    scenario: Scenario,
+    conversation_id: str,
 ) -> bool:
-    # After initializing the conversation, we get the responses from the Companion API for the user query.
-    # If this is successful we will return True, otherwise False.
+    """After initializing the conversation, we get the responses from the Companion API for the user query.
+    If this is successful we will return True, otherwise False."""
 
     payload = ConversationPayload(
         resource_kind=query.resource.kind,
@@ -134,15 +136,19 @@ def get_companion_responses(
         query=query.user_query,
     )
 
-    logger.debug(f"Getting response from companion for scenario: {scenario.id}, query: {query.user_query}")
+    logger.debug(
+        f"Getting response from companion for scenario: {scenario.id}, query: {query.user_query}"
+    )
 
     # We retry multiple times to handle transient errors.
     retry_wait_time = config.retry_wait_time
     companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            query.actual_response, query.response_chunks = companion_client.get_companion_response(
-                conversation_id, payload, logger
+            query.actual_response, query.response_chunks = (
+                companion_client.get_companion_response(
+                    conversation_id, payload, logger
+                )
             )
             break
 
@@ -174,16 +180,24 @@ def get_companion_responses(
     return True
 
 
-def evaluate_query(validator: IValidator, config: Config, logger: Logger, query: Query, scenario: Scenario) -> bool:
-    # We evaluate the scenario's query by validating the expectations.
-    # If this is successful we will return True, otherwise False.
+def evaluate_query(
+    validator: IValidator,
+    config: Config,
+    logger: Logger,
+    query: Query,
+    scenario: Scenario,
+) -> bool:
+    """We evaluate the scenario's query by validating the expectations.
+    If this is successful we will return True, otherwise False."""
 
     # We retry the validation multiple times to handle transient errors.
     retry_wait_time = config.retry_wait_time
     validation_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            logger.debug(f"validating expectations for scenario: {scenario.id}, query: {query.user_query}")
+            logger.debug(
+                f"validating expectations for scenario: {scenario.id}, query: {query.user_query}"
+            )
             query.evaluation_result = validator.get_deepeval_evaluate(query)
             break
 
@@ -203,11 +217,11 @@ def evaluate_query(validator: IValidator, config: Config, logger: Logger, query:
     else:
         query.test_status = TestStatus.FAILED
         error_msg = (
-            f"failed to validate expectations "
-            f"for scenario: {scenario.id} after multiple retries, query: {query.user_query}.\n Error: {validation_error}"
+            f"failed to validate expectations for "
+            f"scenario: {scenario.id} after multiple retries, query: {query.user_query}.\n Error: {validation_error}"
         )
         logger.error(error_msg)
-        query.test_status_reason += (error_msg)
+        query.test_status_reason += error_msg
         # We return False to indicate that the scenario failed.
         return False
 

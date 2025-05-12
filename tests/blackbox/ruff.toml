@@ -1,0 +1,14 @@
+extend = "../../ruff.toml"
+[lint.per-file-ignores]
+"*.ipynb" = ["ALL"]
+"tests/*" = [
+    "D", # Ignore all docstring rules for files in the "tests" directory
+    "ANN001", # Missing type annotation for function argument
+    "ANN002", # Missing type annotation for *args
+    "ANN003", # Missing type annotation for **kwargs
+    "ANN201", # Missing return type annotation for public function
+    "ANN202", # Missing return type annotation for private function
+    "ANN204", # Missing return type annotation for special method
+    "ANN205", # Missing return type annotation for staticmethod
+    "ANN206", # Missing return type annotation for classmethod
+]

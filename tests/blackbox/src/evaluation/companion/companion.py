@@ -2,15 +2,17 @@ import json
 import time
 from http import HTTPStatus
 from logging import Logger
+from typing import Any
 
 import requests
 from common.config import Config
 from common.metrics import Metrics
-from decorator import append
 from pydantic import BaseModel
 
 
 class ConversationPayload(BaseModel):
+    """Payload for the Companion API conversation."""
+
     query: str = ""
     resource_kind: str
     resource_api_version: str
@@ -19,12 +21,15 @@ class ConversationPayload(BaseModel):
 
 
 class CompanionClient:
+    """Client for the Companion API."""
+
     config: Config
 
     def __init__(self, config: Config):
         self.config = config
 
     def __get_headers(self) -> dict:
+        """Returns the headers for the Companion API requests."""
         return {
             "Authorization": f"Bearer {self.config.companion_token}",
             "X-Cluster-Certificate-Authority-Data": self.config.test_cluster_ca_data,
@@ -35,7 +40,8 @@ class CompanionClient:
 
     def fetch_initial_questions(
         self, payload: ConversationPayload, logger: Logger
-    ) -> str:
+    ) -> Any:
+        """Calls the Companion API to get the initial questions."""
         logger.debug(
             f"querying Companion: {self.config.companion_api_url} for initial questions..."
         )
@@ -62,7 +68,8 @@ class CompanionClient:
 
     def get_companion_response(
         self, conversation_id: str, payload: ConversationPayload, logger: Logger
-    ) -> (str, list):
+    ) -> tuple[str, list]:
+        """Returns the response and the chunks from the Companion API"""
         headers = self.__get_headers()
         headers["session-id"] = conversation_id
 
@@ -87,7 +94,7 @@ class CompanionClient:
 
         return answer, chunks
 
-    def __extract_final_response(self, response) -> (str, list):
+    def __extract_final_response(self, response: Any) -> tuple[str, list]:
         """Read the stream response and extract the final response from it."""
         obj = None
         chunks = []

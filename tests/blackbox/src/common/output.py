@@ -1,6 +1,7 @@
 import json
 
-from deepeval.evaluate import print_test_result, aggregate_metric_pass_rates
+import github_action_utils as gha_utils
+from deepeval.evaluate import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import ScenarioList
@@ -8,16 +9,17 @@ from prettytable import PrettyTable
 from termcolor import colored
 
 from common.metrics import Metrics
-import github_action_utils as gha_utils
 
 
 def print_header(name: str) -> None:
+    """Prints a header with a name."""
     print("\n************************************************************************")
     print(f"*** {name}")
     print("************************************************************************\n")
 
 
 def colored_status(status: TestStatus) -> str:
+    """Returns the colored status of the test."""
     if status == TestStatus.PASSED:
         return colored(status.upper(), "green")
     elif status == TestStatus.FAILED:
@@ -29,21 +31,27 @@ def colored_status(status: TestStatus) -> str:
     return colored(status.upper(), "red")
 
 
-def print_test_results(scenario_list: ScenarioList, total_usage, time_taken) -> None:
+def print_test_results(
+    scenario_list: ScenarioList, total_usage: int, time_taken: float
+) -> None:
+    """Prints the test results."""
     print_header("Test Results:")
     print_results_per_scenario(scenario_list)
     print_response_times_summary()
     print_token_usage(total_usage)
     print_header(f"Total time taken by evaluation tests: {time_taken} minutes.")
+    print_overall_results(scenario_list)
     print_failed_queries(scenario_list)
 
 
 def print_initial_questions(questions: list[str]) -> None:
+    """Prints the initial questions."""
     for i, q in enumerate(questions):
         print(f"\t{i + 1}: {q}")
 
 
 def print_response_chunks(chunks: list) -> None:
+    """Prints the response chunks."""
     print(colored("==> Response chunks:", "yellow"))
     if len(chunks) == 0:
         return None
@@ -52,8 +60,11 @@ def print_response_chunks(chunks: list) -> None:
 
 
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
+    """Prints the results per scenario."""
     for scenario in scenario_list.items:
-        with gha_utils.group(f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"):
+        with gha_utils.group(
+            f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"
+        ):
             print(colored(f"Description: {scenario.description}", "green"))
 
             # print initial questions.
@@ -62,7 +73,9 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
 
             # for each query print the evaluation results.
             for query in scenario.queries:
-                print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
+                print_header(
+                    f"** Scenario ID: {scenario.id}, Query: {query.user_query}"
+                )
 
                 # print the response chunks.
                 print_response_chunks(query.response_chunks)
@@ -86,22 +99,33 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
 
 
 def print_failed_queries(scenario_list: ScenarioList) -> None:
+    """Prints the failed queries."""
     failed_queries = []
     for scenario in scenario_list.items:
         for query in scenario.queries:
             if query.test_status == TestStatus.FAILED:
-                failed_queries.append(f"Scenario ID: {scenario.id}, Query: {query.user_query}")
+                failed_queries.append(
+                    f"Scenario ID: {scenario.id}, Query: {query.user_query}"
+                )
 
     if len(failed_queries) == 0:
         return None
 
     print_header("List of failed test case:")
-    for query in failed_queries:
-        print(colored(f"- {query}", "red"))
+    for failed_query in failed_queries:
+        print(colored(f"- {failed_query}", "red"))
     return None
 
 
+def print_overall_results(scenario_list: ScenarioList) -> None:
+    """Prints the overall results."""
+    print_header(
+        f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%"
+    )
+
+
 def print_response_times_summary() -> None:
+    """Prints the response times summary."""
     table = PrettyTable()
     table.field_names = [
         "API Endpoint",
@@ -126,4 +150,5 @@ def print_response_times_summary() -> None:
 
 
 def print_token_usage(token_used: int) -> None:
+    """Prints the token usage summary."""
     print_header(f"Total token used by evaluation tests: {token_used}")

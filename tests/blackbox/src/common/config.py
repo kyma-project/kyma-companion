@@ -39,7 +39,7 @@ class Config:
 
         # read configs.
         self.test_data_path = config("TEST_DATA_PATH", default="./data")
-        self.namespace_scoped_test_data_path = f"{self.test_data_path}/namespace-scoped"
+        self.namespace_scoped_test_data_path = f"{self.test_data_path}/test-cases"
 
         self.companion_api_url = config(
             "COMPANION_API_URL", default="http://localhost:8000"
@@ -99,11 +99,13 @@ class Config:
             raise
 
     def get_model_config(self, model_name: str) -> dict:
+        """Return the specified model configuration."""
         for model in self.models:
             if model["name"] == model_name:
                 return model
 
         raise ValueError(f"Model {model_name} not found in the configuration.")
 
-    def get_models(self) -> dict:
+    def get_models(self) -> list[dict]:
+        """Return all models."""
         return self.models

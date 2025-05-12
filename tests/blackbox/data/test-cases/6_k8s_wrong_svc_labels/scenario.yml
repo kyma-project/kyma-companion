@@ -1,0 +1,38 @@
+id: test-service-6 # format: test-<resource_kind>-<test_id>
+description: The selector labels of the Service do not match the labels of the Deployment. Therefore, the Service is not routing traffic to the Pods.
+queries:
+  - user_query: Why is my application not reachable?
+    resource:
+      kind: Service
+      api_version: v1
+      name: test-service-6
+      namespace: test-service-6 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: svc_wrong_label
+        statement: points out that the labels used in the Service selector and the labels on the Pods do not match
+        threshold: 0.5
+        critical: true
+      - name: svc_provide_explanation
+        statement: provides a detailed explanation of why the Service is not routing traffic to the Pods
+        threshold: 0.5
+        critical: true
+      - name: step_by_step_guide
+        statement: provides a step-by-step guide on how to fix the issue
+        threshold: 0.5
+        critical: true
+      - name: some_yaml
+        statement: provides some yaml formatted code
+        threshold: 0.5
+        critical: true
+      - name: partial_yaml
+        statement: provides a partial yaml with the correct labels for the Service
+        threshold: 0.5
+        critical: true
+      - name: complete_yaml
+        statement: provides a complete yaml for the Service with the correct labels
+        threshold: 0.5
+        critical: true
+      - name: deployable_yaml
+        statement: provides a complete yaml for the Service, with the correct labels
+        threshold: 0.5
+        critical: true

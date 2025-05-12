@@ -1,0 +1,38 @@
+id: test-function-8 # format: test-<resource_kind>-<test_id>
+description: The Serverless Function has a syntax error; it calls Dates() instead of Date().
+queries:
+  - user_query: What is wrong with the Function's source code?
+    resource:
+      kind: Function
+      api_version: "serverless.kyma-project.io/v1alpha2"
+      name: func1
+      namespace: test-function-8 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: step_by_step_guide
+        statement: contains step-by-step guidance
+        threshold: 0.5
+        critical: true
+      - name: syntax_error
+        statement: points out that the serverless Function 'func1' calls Dates()
+        threshold: 0.5
+        critical: true
+      - name: syntax_fix
+        statement: points out that the serverless Function 'func1' should call Date() instead of Dates()
+        threshold: 0.5
+        critical: true
+      - name: some_yaml
+        statement: provides some yaml formatted code
+        threshold: 0.5
+        critical: true
+      - name: yaml_with_serverless_function
+        statement: provides some yaml formatted manifest for a serverless Function
+        threshold: 0.5
+        critical: true
+      - name: yaml_with_complete_serverless_function
+        statement: provides a complete yaml formatted manifest for a serverless Function with all required fields
+        threshold: 0.5
+        critical: true
+      - name: deployable_yaml_with_complete_serverless_function
+        statement: provides a complete yaml formatted manifest for a serverless Function with all required fields, name set to 'func1', namespace set to 'test-function-8' and  that calls 'Date()'
+        threshold: 0.5
+        critical: true

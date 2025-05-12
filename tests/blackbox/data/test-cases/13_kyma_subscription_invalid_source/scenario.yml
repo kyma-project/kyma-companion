@@ -1,0 +1,34 @@
+id: test-subscription-13 # format: test-<resource_kind>-<test_id>
+description: The Subscription is configured with an invalid source configuration.
+queries:
+  - user_query: How exactly to fix my subscription?
+    resource:
+      kind: Subscription
+      api_version: eventing.kyma-project.io/v1alpha2
+      name: my-sub
+      namespace: test-subscription-13 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: subscription_config_error
+        statement: points out that the Subscription is configured with an invalid source configuration
+        threshold: 0.5
+        critical: true
+      - name: subscription_correct_source
+        statement: provides an example of how the source should be configured
+        threshold: 0.5
+        critical: true
+      - name: step_by_step_guide
+        statement: contains a step-by-step guide on how to fix the issue
+        threshold: 0.5
+        critical: true
+      - name: partial_yaml
+        statement: provides a partial yaml for the Subscription with an example of a valid source configuration
+        threshold: 0.5
+        critical: true
+      - name: complete_yaml
+        statement: provides a complete yaml for the Subscription with the correct source configuration
+        threshold: 0.5
+        critical: true
+      - name: verification
+        statement: provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix
+        threshold: 0.5
+        critical: true

@@ -3,14 +3,14 @@ import os
 from logging import Logger
 
 import yaml
-from deepeval.evaluate import EvaluationResult
+from deepeval.evaluate import EvaluationResult, TestResult
 from pydantic import BaseModel
 
 from evaluation.scenario.enums import (
     TestStatus,
 )
 
-PASSING_SCORE = 100
+CRITICAL_METRIC_PREFIX = "critical"
 
 
 class Resource(BaseModel):
@@ -32,10 +32,18 @@ class Expectation(BaseModel):
     name: str
     statement: str
     threshold: float = 0.5
+    critical: bool = True
+
+    def get_deepeval_metric_name(self) -> str:
+        """
+        Get the deepeval metric name for the expectation.
+        """
+        return f"{CRITICAL_METRIC_PREFIX}_{self.name}" if self.critical else self.name
 
 
 class Query(BaseModel):
     """Query represents a single test scenario with an id, description"""
+
     user_query: str
     resource: Resource
     expectations: list[Expectation]
@@ -48,17 +56,32 @@ class Query(BaseModel):
     evaluation_result: EvaluationResult | None = None
 
     def complete(self) -> None:
-        # map the evaluation result to the individual expectations.
+        """Update the test status based on the evaluation result."""
         if self.test_status != TestStatus.FAILED:
             if self.evaluation_result is None:
                 self.test_status = TestStatus.FAILED
                 self.test_status_reason = "Evaluation result is None"
                 return
+            # if any of the critical expectations are not met, we fail the test.
             self.test_status = TestStatus.COMPLETED
             for test_result in self.evaluation_result.test_results:
-                if not test_result.success:
+                if not self.__is_test_successful(test_result):
                     self.test_status = TestStatus.FAILED
                     break
+
+    def __is_test_successful(self, result: TestResult) -> bool:
+        """
+        It will only fail the test if the critical expectations are not met.
+        """
+        if result.metrics_data is None:
+            return False
+        for test_metric in result.metrics_data:
+            if (
+                test_metric.name.startswith(CRITICAL_METRIC_PREFIX)
+                and not test_metric.success
+            ):
+                return False
+        return True
 
 
 class Scenario(BaseModel):
@@ -74,6 +97,7 @@ class Scenario(BaseModel):
     test_status_reason: str = ""
 
     def complete(self) -> None:
+        """Update the test status based on the evaluation result."""
         if self.test_status != TestStatus.FAILED:
             self.test_status = TestStatus.COMPLETED
             for query in self.queries:
@@ -89,8 +113,8 @@ class ScenarioList(BaseModel):
     items: list[Scenario] = []
 
     def add(self, item: Scenario) -> None:
+        """Add a scenario to the list."""
         self.items.append(item)
-
 
     def load_all_namespace_scope_scenarios(self, path: str, logger: Logger) -> None:
         """Load all the scenarios from the namespace scoped test data path."""
@@ -126,9 +150,23 @@ class ScenarioList(BaseModel):
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
 
+    def get_overall_success_rate(self) -> float:
+        """Get the overall success rate (%) across all expectations."""
+        score: float = 0.0
+        total: float = 0.0
+
+        for item in self.items:
+            for query in item.queries:
+                total += len(query.expectations)
+                if query.evaluation_result is not None:
+                    for test_result in query.evaluation_result.test_results:
+                        for test_metric in test_result.metrics_data:
+                            score += test_metric.score
+
+        if total == 0:
+            return 0.0
+        return round(float((score / total) * 100), 2)
+
     def is_test_passed(self) -> bool:
         """Get the overall success across all scenarios."""
-        for scenario in self.items:
-            if scenario.test_status == TestStatus.FAILED:
-                return False
-        return True
+        return all(scenario.test_status != TestStatus.FAILED for scenario in self.items)

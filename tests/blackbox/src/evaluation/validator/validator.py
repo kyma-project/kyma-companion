@@ -1,49 +1,53 @@
-from typing import Protocol
+from typing import Any, Protocol
 
-from deepeval.models import DeepEvalBaseLLM
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from deepeval import evaluate
 from deepeval.evaluate import EvaluationResult
 from deepeval.metrics import GEval
-from deepeval.test_case import LLMTestCaseParams, LLMTestCase
-from deepeval import evaluate
-from evaluation.scenario.scenario import Scenario, Query
+from deepeval.models import DeepEvalBaseLLM
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 
-TEMPLATE = PromptTemplate(
-    template="""Please only answer with one word, YES or NO:
-    Does the following statement apply for the following text? 
-    The fact: 'The text {expectation}'. 
-    The text: '{response}'""",
-    input_variables=["expectation", "response"],
-)
+from evaluation.scenario.scenario import Query
 
 
 class IValidator(Protocol):
-    def get_deepeval_evaluate(self, query: Query) -> EvaluationResult: ...
+    """Interface for the validator."""
+
+    def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
+        """Evaluate the query using the model and expectations."""
+        ...
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
-    def __init__(self, model):
+    """Inherited from DeepEvalBaseLLM to use LangChain OpenAI model."""
+
+    def __init__(self, model: Any) -> None:
         self.model = model
 
-    def load_model(self):
+    def load_model(self) -> Any:
+        """Loads the model."""
         return self.model
 
     def generate(self, prompt: str) -> str:
+        """Generates a response from the model."""
         chat_model = self.load_model()
         res = chat_model.invoke(prompt).content
-        return res
+        return str(res)
 
     async def a_generate(self, prompt: str) -> str:
+        """Asynchronously generates a response from the model."""
         chat_model = self.load_model()
         res = await chat_model.ainvoke(prompt)
-        return res.content
+        return str(res.content)
 
-    def get_model_name(self):
+    def get_model_name(self) -> str:
+        """Returns the model name."""
         return "Custom Azure OpenAI Model"
 
 
 class ChatOpenAIValidator:
+    """Validator for ChatOpenAI model."""
+
     model: LangChainOpenAI
 
     def __init__(self, name: str, temperature: str, deployment_id: str) -> None:
@@ -54,17 +58,20 @@ class ChatOpenAIValidator:
         )
         self.model = LangChainOpenAI(model=model)
 
-
     def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
+        """Evaluate the query using the model and expectations."""
         evaluation_metrics = []
-        for i, expectation in enumerate(query.expectations):
+        for expectation in query.expectations:
             # create a new metric for each expectation.
             new_metric = GEval(
-                name=expectation.name,
+                name=expectation.get_deepeval_metric_name(),
                 model=self.model,
                 threshold=expectation.threshold,
                 evaluation_steps=[expectation.statement],
-                evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+                evaluation_params=[
+                    LLMTestCaseParams.INPUT,
+                    LLMTestCaseParams.ACTUAL_OUTPUT,
+                ],
                 async_mode=False,
                 verbose_mode=False,
             )
@@ -77,7 +84,7 @@ class ChatOpenAIValidator:
             actual_output=query.actual_response,
         )
 
-        result =  evaluate(
+        result = evaluate(
             test_cases=[test_case],
             metrics=evaluation_metrics,
             run_async=False,

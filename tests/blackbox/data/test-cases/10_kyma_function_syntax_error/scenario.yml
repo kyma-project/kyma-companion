@@ -1,0 +1,34 @@
+id: test-function-10 # format: test-<resource_kind>-<test_id>
+description: The Function has a syntax error in its JavaScript source code.
+queries:
+  - user_query: Why is my Kyma Function not working?
+    resource:
+      kind: Function
+      api_version: serverless.kyma-project.io/v1alpha2
+      name: my-function-0
+      namespace: test-function-10 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: function_syntax_error
+        statement: points out that the Function has a syntax error in its source code and provides a description of the error.
+        threshold: 0.5
+        critical: true
+      - name: function_correct_syntax
+        statement: provides an example of how to fix the Function JavaScript source code.
+        threshold: 0.5
+        critical: true
+      - name: step_by_step_guide
+        statement: contains a step-by-step guide on how to fix the issue.
+        threshold: 0.5
+        critical: true
+      - name: partial_fix
+        statement: provides a partial JavaScript code for the Function with the correct syntax.
+        threshold: 0.5
+        critical: true
+      - name: partial_yaml
+        statement: provides a partial yaml for the Function with the correct syntax for its JavaScript source code.
+        threshold: 0.5
+        critical: true
+      - name: complete_yaml
+        statement: provides a complete yaml for the Function with the correct syntax for its JavaScript source code.
+        threshold: 0.5
+        critical: true
