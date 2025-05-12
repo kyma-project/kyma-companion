@@ -51,8 +51,7 @@ def main() -> None:
 
     print_header("Starting evaluation tests...")
     # process all scenarios.
-    with gha_utils.group("Processing all scenarios"):
-        with ThreadPoolExecutor(max_workers=config.max_workers) as executor:
+    with gha_utils.group("Processing all scenarios"), ThreadPoolExecutor(max_workers=config.max_workers) as executor:
             futures = [
                 executor.submit(process_scenario, scenario, config, validator)
                 for scenario in scenario_list.items
