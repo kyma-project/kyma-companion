@@ -28,33 +28,26 @@ class Resource(BaseModel):
 
 class Expectation(BaseModel):
     """
-    Expectation represents a single expectation with a statement, a list of categories,
-    a description, and a complexity.
+    Expectation represents a single expectation with a statement and an optional expected response.
     """
 
     name: str
     statement: str
-    categories: list[Category]
-    complexity: Complexity
     threshold: float = 0.5
 
 
-class Scenario(BaseModel):
-    """Scenario is a class that contains the information of a Kyma companion test scenario."""
-
-    id: str
-    description: str
+class Query(BaseModel):
+    """Query represents a single test scenario with an id, description"""
     user_query: str
     resource: Resource
     expectations: list[Expectation]
     # actual responses
-    initial_questions: list[str] = []
     response_chunks: list[str] = []
     actual_response: str = ""
     # evaluation
     test_status: TestStatus = TestStatus.PENDING
     test_status_reason: str = ""
-    evaluation_result: EvaluationResult = None
+    evaluation_result: EvaluationResult | None = None
 
     def get_scenario_score(self) -> float:
         return self.evaluation.get_scenario_score(self.expectations)
@@ -69,27 +62,19 @@ class Scenario(BaseModel):
         if self.get_scenario_score() == PASSING_SCORE:
             self.evaluation.status = TestStatus.PASSED
 
-    #     def get_scenario_score(self, expectations: list[Expectation]) -> float:
-    #         """Get the scenario score considering the complexity of expectations."""
-    #
-    #         # calculate the weighted mean of the scenario from all expectation considering the complexity.
-    #         actual_sum: int = 0
-    #         ideal_sum: int = 0
-    #         count: int = 0
-    #         for expectation in expectations:
-    #             actual_sum += expectation.get_success_count() * expectation.complexity
-    #             # ideal sum is the sum when all the results would be successful.
-    #             ideal_sum += expectation.get_results_count() * expectation.complexity
-    #             count += expectation.get_results_count()
-    #
-    #         if count == 0:
-    #             return 0.0
-    #
-    #         mean_weighted_performance: float = float(actual_sum / count)
-    #         # ideal_weighted_performance sum is the performance when all the results would be successful.
-    #         ideal_weighted_performance: float = float(ideal_sum / count)
-    #         score = (mean_weighted_performance / ideal_weighted_performance) * 100
-    #         return round(score, 2)
+
+
+class Scenario(BaseModel):
+    """Scenario is a class that contains the information of a Kyma companion test scenario."""
+
+    id: str
+    description: str
+    queries: list[Query] = []
+    # actual responses
+    initial_questions: list[str] = []
+    # evaluation
+    test_status: TestStatus = TestStatus.PENDING
+    test_status_reason: str = ""
 
 
 class ScenarioList(BaseModel):
@@ -99,35 +84,6 @@ class ScenarioList(BaseModel):
 
     def add(self, item: Scenario) -> None:
         self.items.append(item)
-
-    def get_success_rate_per_category(self) -> dict[Category, float]:
-        """Get the success rate (%) per category across all expectations."""
-        success_count: dict[Category, int] = {}
-        total_count: dict[Category, int] = {}
-
-        for item in self.items:
-            for expectation in item.expectations:
-                for category in expectation.categories:
-                    if category not in success_count:
-                        success_count[category] = expectation.get_success_count()
-                    else:
-                        success_count[category] += expectation.get_success_count()
-
-                    if category not in total_count:
-                        total_count[category] = expectation.get_results_count()
-                    else:
-                        total_count[category] += expectation.get_results_count()
-
-        success_rate: dict[Category, float] = {}
-        for category in success_count:
-            if total_count[category] == 0:
-                success_rate[category] = 0.0
-            else:
-                success_rate[category] = round(
-                    float((success_count[category] / total_count[category]) * 100), 2
-                )
-
-        return success_rate
 
     def get_overall_success_rate(self) -> float:
         """Get the overall success rate (%) across all expectations."""

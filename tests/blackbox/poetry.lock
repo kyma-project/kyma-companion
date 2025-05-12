@@ -1555,6 +1555,18 @@ google = ["google-cloud-aiplatform (==1.61.0)"]
 langchain = ["langchain (>=0.3.0,<0.4.0)", "langchain-aws (==0.2.1)", "langchain-community (>=0.3.0,<0.4.0)", "langchain-google-vertexai (==2.0.1)", "langchain-openai (==0.2.9)"]
 
 [[package]]
+name = "github-action-utils"
+version = "1.1.0"
+description = "Collection of python functions that can be used to run GitHub Action Workflow Commands"
+optional = false
+python-versions = ">=3.6.0"
+groups = ["main"]
+files = [
+    {file = "github-action-utils-1.1.0.tar.gz", hash = "sha256:8aa40d90b89d814004160bb7e90b42cc07b55f41f66e4a4a32766d26c9ca3d61"},
+    {file = "github_action_utils-1.1.0-py2.py3-none-any.whl", hash = "sha256:bc84bac22e8a25ebe86370b08ff2c174960e468e899ffd313cb09d19629acefb"},
+]
+
+[[package]]
 name = "google-api-core"
 version = "2.24.2"
 description = "Google API client core library"
@@ -7175,4 +7187,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "74c2e9360d09d31c91311ffd7922a8050c539362b4bc87bdd2b0298cfe0d0a38"
+content-hash = "5a3f0c64de1e2647d3ee636092c1d33ec252b2c655fb0969450c772db29aae33"

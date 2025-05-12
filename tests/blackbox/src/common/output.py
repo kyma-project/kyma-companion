@@ -1,9 +1,14 @@
+import json
+
+from deepeval.evaluate import print_test_result, aggregate_metric_pass_rates
+from deepeval.test_run.test_run import TestRunResultDisplay
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import ScenarioList
 from prettytable import PrettyTable
 from termcolor import colored
 
 from common.metrics import Metrics
+import github_action_utils as gha_utils
 
 
 def print_header(name: str) -> None:
@@ -24,54 +29,40 @@ def colored_status(status: TestStatus) -> str:
     return colored(status.upper(), "red")
 
 
-def print_test_results(scenario_list: ScenarioList) -> None:
+def print_test_results(scenario_list: ScenarioList, total_usage, time_taken) -> None:
+    print_header("Test Results:")
     print_results_per_scenario(scenario_list)
-    print_results_per_category(scenario_list)
-    print_overall_results(scenario_list)
     print_response_times_summary()
+    print_token_usage(total_usage)
+    print_header(f"Total time taken by evaluation tests: {time_taken} minutes.")
 
-
-def print_results_per_category(scenario_list: ScenarioList) -> None:
-    table = PrettyTable()
-    table.field_names = [
-        "Category Name",
-        "Score (%)",
-    ]
-
-    print_header("Test Results per Category:")
-    success_rate_per_category = scenario_list.get_success_rate_per_category()
-    for category, score in success_rate_per_category.items():
-        table.add_row(
-            [
-                category,
-                score,
-            ]
-        )
-
-    print(table)
+def print_initial_questions(questions: list[str]) -> None:
+    for i, q in enumerate(questions):
+        print(f"\t{i + 1}: {q}")
 
 
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
-    print_header("Test Scenarios:")
     for scenario in scenario_list.items:
-        print(f"* Scenario ID: {scenario.id}, Description: {scenario.description}")
-        print(f"\t Status: {colored_status(scenario.evaluation.status)}")
-        if scenario.evaluation.status_reason != "":
-            print(f"\t Status reason: {scenario.evaluation.status_reason}")
+        with gha_utils.group(f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"):
+            # print initial questions.
+            print_header(f"* Scenario ID: {scenario.id}, Initial Questions:")
+            print_initial_questions(scenario.initial_questions)
 
-        print("\t Expectations:")
-        for expectation in scenario.expectations:
-            print(
-                f"\t\t - [SUCCESS RATE: {expectation.get_success_rate()}%] Expectation: {expectation.name}"
-            )
-        print(f"\t Scenario score: {scenario.get_scenario_score()}%")
-        print("\n")
-
-
-def print_overall_results(scenario_list: ScenarioList) -> None:
-    print_header(
-        f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%"
-    )
+            # for each query print the evaluation results.
+            for query in scenario.queries:
+                print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
+                if query.evaluation_result is not None:
+                    for test_result in query.evaluation_result.test_results:
+                        print_test_result(test_result, TestRunResultDisplay.ALL)
+                if query.test_status_reason != "":
+                    print(
+                        f"*** Query Status Reason: {colored(query.test_status_reason, 'red')}"
+                    )
+            # print overall status and failure reason.
+            if scenario.test_status_reason != "":
+                print(
+                    f"*** Scenario Status Reason: {colored(scenario.test_status_reason, 'red')}"
+                )
 
 
 def print_response_times_summary() -> None:

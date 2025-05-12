@@ -7,7 +7,7 @@ from deepeval.evaluate import EvaluationResult
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCaseParams, LLMTestCase
 from deepeval import evaluate
-from evaluation.scenario.scenario import Scenario
+from evaluation.scenario.scenario import Scenario, Query
 
 TEMPLATE = PromptTemplate(
     template="""Please only answer with one word, YES or NO:
@@ -19,7 +19,7 @@ TEMPLATE = PromptTemplate(
 
 
 class IValidator(Protocol):
-    def get_deepeval_evaluate(self, scenario: Scenario) -> EvaluationResult: ...
+    def get_deepeval_evaluate(self, query: Query) -> EvaluationResult: ...
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -55,16 +55,14 @@ class ChatOpenAIValidator:
         self.model = LangChainOpenAI(model=model)
 
 
-    def get_deepeval_evaluate(self, scenario: Scenario) -> EvaluationResult:
+    def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
         evaluation_metrics = []
-        for i, expectation in enumerate(scenario.expectations):
+        for i, expectation in enumerate(query.expectations):
+            # create a new metric for each expectation.
             new_metric = GEval(
                 name=expectation.name,
                 model=self.model,
                 threshold=expectation.threshold,
-                # criteria=expectation,
-                # NOTE: you can only provide either criteria or evaluation_steps, and not both
-                # TODO: Decide whether to use criteria or evaluation_steps.
                 evaluation_steps=[expectation.statement],
                 evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
                 async_mode=False,
@@ -73,19 +71,20 @@ class ChatOpenAIValidator:
             # add the new metric to the list.
             evaluation_metrics.append(new_metric)
 
+        # define the test case.
         test_case = LLMTestCase(
-            input=scenario.user_query,
-            actual_output=scenario.actual_response,
+            input=query.user_query,
+            actual_output=query.actual_response,
         )
 
         result =  evaluate(
             test_cases=[test_case],
             metrics=evaluation_metrics,
             run_async=False,
-            # verbose_mode=False,
-            # show_indicator=False,
-            # print_results=False,
-            # write_cache=False,
+            verbose_mode=False,
+            show_indicator=False,
+            print_results=False,
+            write_cache=False,
         )
         if len(result.test_results) == 0:
             raise ValueError("No test results found.")
