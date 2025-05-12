@@ -7,8 +7,6 @@ from deepeval.evaluate import EvaluationResult
 from pydantic import BaseModel
 
 from evaluation.scenario.enums import (
-    Category,
-    Complexity,
     TestStatus,
 )
 
@@ -42,7 +40,7 @@ class Query(BaseModel):
     resource: Resource
     expectations: list[Expectation]
     # actual responses
-    response_chunks: list[str] = []
+    response_chunks: list = []
     actual_response: str = ""
     # evaluation
     test_status: TestStatus = TestStatus.PENDING

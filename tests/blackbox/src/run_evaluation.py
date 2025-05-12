@@ -32,6 +32,7 @@ def main() -> None:
     token_usage_before_run = usage_tracker_validator.get_total_token_usage()
     usage_tracker_validator.disconnect()
 
+    print_header("Starting evaluation tests...")
     # process all scenarios.
     with gha_utils.group("Processing all scenarios"):
         # add each scenario to the executor.

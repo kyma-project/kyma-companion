@@ -141,7 +141,7 @@ def get_companion_responses(
     companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            query.actual_response = companion_client.get_companion_response(
+            query.actual_response, query.response_chunks = companion_client.get_companion_response(
                 conversation_id, payload, logger
             )
             break

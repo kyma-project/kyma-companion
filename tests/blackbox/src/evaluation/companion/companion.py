@@ -6,6 +6,7 @@ from logging import Logger
 import requests
 from common.config import Config
 from common.metrics import Metrics
+from decorator import append
 from pydantic import BaseModel
 
 
@@ -61,7 +62,7 @@ class CompanionClient:
 
     def get_companion_response(
         self, conversation_id: str, payload: ConversationPayload, logger: Logger
-    ) -> str:
+    ) -> (str, list):
         headers = self.__get_headers()
         headers["session-id"] = conversation_id
 
@@ -77,18 +78,19 @@ class CompanionClient:
                 f"Response: {response.text}"
             )
 
-        answer = self.__extract_final_response(response)
+        answer, chunks = self.__extract_final_response(response)
 
         # record the response time.
         Metrics.get_instance().record_conversation_response_time(
             time.time() - start_time
         )
 
-        return answer
+        return answer, chunks
 
-    def __extract_final_response(self, response) -> str:
+    def __extract_final_response(self, response) -> (str, list):
         """Read the stream response and extract the final response from it."""
         obj = None
+        chunks = []
         start_time = time.time()
         for chunk in response.iter_lines():
             # Check for timeout
@@ -102,6 +104,9 @@ class CompanionClient:
                 obj = json.loads(lines[-1])
             except json.JSONDecodeError as e:
                 raise Exception(f"returned chunk is not valid json: {chunk}") from e
+
+            # append the obj to the chunks list.
+            chunks.append(obj)
 
             if "event" not in obj:
                 raise Exception(f"'event' key not found in the response: {obj}")
@@ -118,4 +123,4 @@ class CompanionClient:
         if not obj["data"]["answer"] or not obj["data"]["answer"]["content"]:
             raise Exception("No response found in the stream")
 
-        return obj["data"]["answer"]["content"]
+        return obj["data"]["answer"]["content"], chunks
