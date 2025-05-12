@@ -35,13 +35,16 @@ def print_test_results(scenario_list: ScenarioList, total_usage, time_taken) -> 
     print_response_times_summary()
     print_token_usage(total_usage)
     print_header(f"Total time taken by evaluation tests: {time_taken} minutes.")
-    # TODO: print list of failed queries.
+    print_failed_queries(scenario_list)
+
 
 def print_initial_questions(questions: list[str]) -> None:
     for i, q in enumerate(questions):
         print(f"\t{i + 1}: {q}")
 
+
 def print_response_chunks(chunks: list) -> None:
+    colored("==> Response chunks:", "yellow")
     if len(chunks) == 0:
         return None
     print(json.dumps(chunks, indent=4))
@@ -51,6 +54,8 @@ def print_response_chunks(chunks: list) -> None:
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
     for scenario in scenario_list.items:
         with gha_utils.group(f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"):
+            colored(f"Description: {scenario.description}", "green")
+
             # print initial questions.
             print_header(f"* Scenario ID: {scenario.id}, Initial Questions:")
             print_initial_questions(scenario.initial_questions)
@@ -58,23 +63,42 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
             # for each query print the evaluation results.
             for query in scenario.queries:
                 print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
+
                 # print the response chunks.
-                with gha_utils.group(f"Response chunks"):
-                    print_response_chunks(query.response_chunks)
+                print_response_chunks(query.response_chunks)
+
                 # print the evaluation results.
                 if query.evaluation_result is not None:
                     for test_result in query.evaluation_result.test_results:
                         print_test_result(test_result, TestRunResultDisplay.ALL)
-                # print the failure reason.
+
+                # print the failure reason for the query.
                 if query.test_status_reason != "":
                     print(
                         f"*** Query Status Reason: {colored(query.test_status_reason, 'red')}"
                     )
-            # print failure reason.
+
+            # print failure reason for the scenario.
             if scenario.test_status_reason != "":
                 print(
                     f"*** Scenario Status Reason: {colored(scenario.test_status_reason, 'red')}"
                 )
+
+
+def print_failed_queries(scenario_list: ScenarioList) -> None:
+    failed_queries = []
+    for scenario in scenario_list.items:
+        for query in scenario.queries:
+            if query.test_status == TestStatus.FAILED:
+                failed_queries.append(f"Scenario ID: {scenario.id}, Query: {query.user_query}")
+
+    if len(failed_queries) == 0:
+        return None
+
+    print_header("List of failed test case:")
+    for query in failed_queries:
+        colored(f"\t- {query}", "red")
+    return None
 
 
 def print_response_times_summary() -> None:

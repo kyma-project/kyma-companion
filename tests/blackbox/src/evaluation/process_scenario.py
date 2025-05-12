@@ -54,7 +54,7 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
             return
 
     # Set the status to complete, if we made it through the whole test without issues.
-    # scenario.complete()
+    scenario.complete()
 
     logger.info("finished processing of scenario.")
 

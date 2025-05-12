@@ -47,19 +47,14 @@ class Query(BaseModel):
     test_status_reason: str = ""
     evaluation_result: EvaluationResult | None = None
 
-    def get_scenario_score(self) -> float:
-        return self.evaluation.get_scenario_score(self.expectations)
-
     def complete(self) -> None:
-        if self.evaluation.status == TestStatus.FAILED:
-            return
-
-        # COMPLETED means that the test is completed but with score < 100%.
-        self.evaluation.status = TestStatus.COMPLETED
-        # if the scenario score is 100, the scenario is passed.
-        if self.get_scenario_score() == PASSING_SCORE:
-            self.evaluation.status = TestStatus.PASSED
-
+        # map the evaluation result to the individual expectations.
+        if self.test_status != TestStatus.PENDING and self.evaluation_result is not None:
+            self.evaluation.status = TestStatus.COMPLETED
+            for test_result in self.evaluation_result.test_results:
+                if not test_result.success:
+                    self.test_status = TestStatus.FAILED
+                    break
 
 
 class Scenario(BaseModel):
@@ -74,6 +69,15 @@ class Scenario(BaseModel):
     test_status: TestStatus = TestStatus.PENDING
     test_status_reason: str = ""
 
+    def complete(self) -> None:
+        if self.test_status != TestStatus.FAILED:
+            self.test_status = TestStatus.COMPLETED
+            for query in self.queries:
+                query.complete()
+                if query.test_status == TestStatus.FAILED:
+                    self.test_status = TestStatus.FAILED
+                    break
+
 
 class ScenarioList(BaseModel):
     """ScenarioDict is a list that contains scenarios."""
@@ -83,27 +87,6 @@ class ScenarioList(BaseModel):
     def add(self, item: Scenario) -> None:
         self.items.append(item)
 
-    def get_overall_success_rate(self) -> float:
-        """Get the overall success rate (%) across all expectations."""
-        success_count: int = 0
-        count: int = 0
-
-        for item in self.items:
-            for expectation in item.expectations:
-                success_count += expectation.get_success_count()
-                count += expectation.get_results_count()
-
-        if count == 0:
-            return 0.0
-        return round(float((success_count / count) * 100), 2)
-
-    def get_failed_scenarios(self) -> list[Scenario]:
-        """Get the list of failed scenarios."""
-        failed_scenarios: list[Scenario] = []
-        for item in self.items:
-            if item.evaluation.status == TestStatus.FAILED:
-                failed_scenarios.append(item)
-        return failed_scenarios
 
     def load_all_namespace_scope_scenarios(self, path: str, logger: Logger) -> None:
         """Load all the scenarios from the namespace scoped test data path."""
@@ -139,15 +122,9 @@ class ScenarioList(BaseModel):
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
 
-    def is_test_passed(self) -> tuple[bool, str]:
+    def is_test_passed(self) -> bool:
         """Get the overall success across all scenarios."""
-        # if the overall success rate is 0.0, return False.
-        if self.get_overall_success_rate() == 0.0:
-            return False, "The overall success rate is 0.0"
-
-        return True, "All tests passed successfully"
-
-    def is_test_failed(self) -> bool:
-        """Check if any of the scenarios failed."""
-        failed_scenarios = self.get_failed_scenarios()
-        return len(failed_scenarios) > 0
+        for scenario in self.items:
+            if scenario.test_status == TestStatus.FAILED:
+                return False
+        return True

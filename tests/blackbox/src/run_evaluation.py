@@ -62,14 +62,9 @@ def main() -> None:
     # print out the results.
     print_test_results(scenario_list, total_usage, time_taken)
 
-
-    # if scenario_list.is_test_failed():
-    #     print_header("Tests FAILED.")
-    #     failed_scenarios = scenario_list.get_failed_scenarios()
-    #     logger.error(
-    #         f"Check the logs for tests with status: FAILED. Number of failed tests: {len(failed_scenarios)}"
-    #     )
-    #     raise Exception("Tests failed.")
+    # return the exit code based on the test results.
+    if not scenario_list.is_test_passed():
+        raise Exception("Tests failed.")
 
 
 if __name__ == "__main__":
