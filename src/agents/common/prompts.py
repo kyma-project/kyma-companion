@@ -67,8 +67,8 @@ K8S_DOMAIN_KNOWLEDGE = """
 
 
 TOOL_CALLING_ERROR_HANDLING = """
-# ** Error Handling**
-## Check conversation history : 
+## Error Handling
+Check conversation history: 
 - If a tool call fails analyze the error and attempt to fix the issue:
 - Check for missing or malformed parameters.
 - Verify if the correct tool is assigned with correct name.

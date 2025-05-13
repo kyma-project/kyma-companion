@@ -4,9 +4,9 @@ import pytest
 from deepeval.metrics import (
     FaithfulnessMetric,
 )
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
-from agents.common.state import SubTask
+from agents.common.state import ResourceInformation, SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
@@ -43,10 +43,11 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="",
+                    namespace="",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': '', 'resource_namespace': ''}"
-                    ),
                     HumanMessage(
                         content="What is causing the ImagePullBackOff status for many pods?"
                     ),
@@ -73,10 +74,12 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="v1",
+                    namespace="default",
+                    kind="Pod",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'default', 'resource_kind': 'Pod'}"
-                    ),
                     HumanMessage(
                         content="What deployments exist in the 'kube-system' namespace?"
                     ),
@@ -103,10 +106,10 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    namespace="production",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'production'}"
-                    ),
                     HumanMessage(content="Is there any issue with my namespace"),
                 ],
                 subtasks=[
@@ -131,10 +134,10 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    namespace="production",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'production'}"
-                    ),
                     HumanMessage(content="Show me cluster-level resource usage"),
                 ],
                 subtasks=[
@@ -159,10 +162,12 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="apps/v1",
+                    namespace="default",
+                    kind="Deployment",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
-                    ),
                     HumanMessage(content="Show me the details of my-app deployment"),
                 ],
                 subtasks=[
@@ -183,26 +188,58 @@ def k8s_agent(app_models):
             ),
             "k8s_query_tool",
         ),
-        # Test case for specific resource query with full details
+        # Test case for cluster-wide issue
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="apps/v1",
+                    namespace="default",
+                    kind="Deployment",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
-                    ),
-                    HumanMessage(content="Show me the details of resource"),
+                    HumanMessage(content="give me cluster overview"),
                 ],
                 subtasks=[
                     {
-                        "description": "Show me the details of resource",
-                        "task_title": "Deployment details",
+                        "description": "give me cluster overview",
+                        "task_title": "Cluster overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Show me the details of resource",
-                    task_title="Deployment details",
+                    description="give me cluster overview",
+                    task_title="Cluster overview",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_overview_query_tool",
+        ),
+        # Test case for specific resource query with full details
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                resource_information=ResourceInformation(
+                    namespace="test-ns",
+                    kind="Deployment",
+                    api_version="apps/v1",
+                ),
+                messages=[
+                    HumanMessage(content="check the resource"),
+                ],
+                subtasks=[
+                    {
+                        "description": "check the resource",
+                        "task_title": "check the resource",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="check the resource",
+                    task_title="check the resource",
                     assigned_to="KubernetesAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
@@ -215,10 +252,12 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="v1",
+                    namespace="monitoring",
+                    kind="Pod",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'monitoring', 'resource_kind': 'Pod'}"
-                    ),
                     HumanMessage(
                         content="Why is my prometheus pod in CrashLoopBackOff?"
                     ),
@@ -245,10 +284,11 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    api_version="",
+                    namespace="",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': '', 'resource_namespace': ''}"
-                    ),
                     HumanMessage(content="Are there any nodes with disk pressure?"),
                 ],
                 subtasks=[
