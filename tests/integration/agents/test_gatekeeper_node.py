@@ -8,6 +8,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_2,
     conversation_sample_5,
     conversation_sample_6,
+    conversation_sample_7,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
 
@@ -504,11 +505,10 @@ async def test_invoke_gatekeeper_node(
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """
     # Given: a conversation state with messages
-    user_query = messages[-1].content
     state = create_mock_state(messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    actual_response = await companion_graph._invoke_gatekeeper_node(state, user_query)
+    actual_response = await companion_graph._invoke_gatekeeper_node(state)
 
     if expected_query_forwarding:
         assert actual_response.forward_query, "Query should be forwarded"
@@ -545,6 +545,26 @@ async def test_invoke_gatekeeper_node(
         ),
         (
             "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what was wrong?",
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
+            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
+            "which may fail to run correctly in certain environments.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what was the problem?",
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
+            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
+            "which may fail to run correctly in certain environments.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
             conversation_sample_5,
             "what was the cause?",
             "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
@@ -555,9 +575,175 @@ async def test_invoke_gatekeeper_node(
             False,
         ),
         (
+            "answer the question based on the conversation history",
+            conversation_sample_5,
+            "what was the reason?",
+            "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
+            "for the service account `pod-reader-sa`. The container `kubectl-container` is trying to execute the "
+            "command `kubectl get pods`, and if the service account does not have the necessary role bindings to "
+            "list pods, it will result in an error, causing the container to terminate with an exit code of 1. "
+            "You should verify the role and role binding for the service account to ensure it has the required permissions.",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "what was the issue?",
+            "The issue with the function in the `test-function-8` namespace was a syntax error in the JavaScript code.\n"
+            "The line `const now = new Dates();` was incorrect and should have been `const now = new Date();`.\n"
+            "This typo would cause the function to fail when executed, as `Dates` is not a valid JavaScript object. The correct object is `Date`.\n",
+            False,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "what is the issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "any problem with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "find issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "any error in tracing pipeline?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_7,
+            "anything wrong with api rules?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what is the issue with function?",
+            "",
+            True,
+        ),
+        (
+            "answer the question based on the conversation history",
+            conversation_sample_2,
+            "what is the issue?",
+            "",
+            True,
+        ),
+        (
             "forward query as insufficient information in conversation history",
             conversation_sample_6,
             "how to expose it?",
+            "",
+            True,
+        ),
+        (
+            "conversation history with multiple follow-up questions",
+            [
+                {"type": "human", "content": "What is Kyma?"},
+                {
+                    "type": "ai",
+                    "content": "Kyma is an open-source project designed to extend Kubernetes with application connectivity and serverless computing capabilities. It provides a platform for building and managing microservices-based applications that can integrate with various systems.",
+                },
+                {"type": "human", "content": "What are its main components?"},
+                {
+                    "type": "ai",
+                    "content": "Kyma consists of several main components:\n\n1. Service Catalog - for registering and managing services\n2. Application Connector - for integrating external systems\n3. Serverless - for deploying and managing functions\n4. API Gateway - for securing and exposing services\n5. Eventing - for event-based communication\n6. Monitoring - for observability\n7. Tracing - for distributed tracing\n8. Service Mesh - for managing service-to-service communication",
+                },
+            ],
+            "How do I deploy a function in Kyma?",
+            "",
+            True,
+        ),
+        (
+            "conversation about Kyma with context switching to general programming",
+            [
+                {"type": "human", "content": "How do I create a Kyma function?"},
+                {
+                    "type": "ai",
+                    "content": "To create a Kyma function, you can use the Kyma CLI or create it through the dashboard. Here's how to do it with the CLI:\n\n1. Install the Kyma CLI\n2. Run `kyma init function my-function`\n3. Navigate to the function directory\n4. Modify the source code and dependencies as needed\n5. Deploy with `kyma apply function`",
+                },
+            ],
+            "What's the difference between async/await and Promises in JavaScript?",
+            "Promises and async/await are JavaScript features for handling asynchronous operations:\n\n- **Promises** provide a way to handle asynchronous results with `.then()`, `.catch()`, and `.finally()` methods. They can be chained and represent a value that may be available now, later, or never.\n\n- **Async/await** is syntactic sugar built on top of Promises, making asynchronous code look and behave more like synchronous code. The `async` keyword declares that a function returns a Promise, and the `await` keyword pauses execution until that Promise resolves.\n\nWhile Promises often require callback chains, async/await provides a cleaner, more readable syntax for the same operations, especially when dealing with multiple sequential asynchronous tasks.",
+            False,
+        ),
+        (
+            "conversation with error troubleshooting follow-up",
+            [
+                {
+                    "type": "human",
+                    "content": "My Kyma function keeps failing with an OOM error.",
+                },
+                {
+                    "type": "ai",
+                    "content": "Out of Memory (OOM) errors occur when your function attempts to use more memory than allocated. Here are some ways to address this:\n\n1. Increase the memory limit in your function configuration\n2. Optimize your code to use less memory\n3. Check for memory leaks\n4. Consider splitting the function into smaller functions if it's doing too much",
+                },
+            ],
+            "How do I check the current memory limit?",
+            "",
+            True,
+        ),
+        (
+            "conversation history with ambiguous follow-up that should be forwarded",
+            [
+                {
+                    "type": "human",
+                    "content": "I'm having issues with my Kyma function.",
+                },
+                {
+                    "type": "ai",
+                    "content": "I'm sorry to hear that. Could you please provide more details about what issues you're experiencing with your Kyma function? Information such as error messages, what the function is supposed to do, and any recent changes would help me assist you better.",
+                },
+            ],
+            "It's giving me an error code 137.",
+            "",
+            True,
+        ),
+        (
+            "conversation with technical answer needed based on previous context",
+            [
+                {"type": "human", "content": "What's an APIRule in Kyma?"},
+                {
+                    "type": "ai",
+                    "content": "In Kyma, an APIRule is a custom resource that allows you to expose and secure your microservices. It combines the functionality of Istio VirtualService and Oathkeeper AccessRule to:\n\n1. Expose your service at a specified URL path\n2. Define which HTTP methods are allowed\n3. Specify authentication methods (like JWT, OAuth2)\n4. Set up authorization rules\n\nAPIRules make it easier to manage API exposure without having to deal with the complexities of Istio and Oathkeeper directly.",
+                },
+            ],
+            "Can you show me an example of it?",
+            'Here\'s an example of a basic APIRule YAML in Kyma:\n\n```yaml\napiVersion: gateway.kyma-project.io/v1alpha1\nkind: APIRule\nmetadata:\n  name: my-service-api\n  namespace: my-namespace\nspec:\n  gateway: kyma-gateway.kyma-system.svc.cluster.local\n  host: my-service.example.com\n  service:\n    name: my-service\n    port: 8080\n  rules:\n    - path: /.*\n      methods: ["GET", "POST"]\n      accessStrategies:\n        - handler: jwt\n          config:\n            jwksUrls: ["https://oauth2.example.com/.well-known/jwks.json"]\n            trustedIssuers: ["https://oauth2.example.com"]\n```\n\nThis APIRule:\n1. Exposes a service called `my-service` (running on port 8080)\n2. Makes it accessible at the URL `https://my-service.example.com`\n3. Allows GET and POST methods on all paths (indicated by `/.*` regex)\n4. Secures it with JWT authentication\n\nYou can adjust the paths, methods, and authentication strategies according to your needs.',
+            True,
+        ),
+        (
+            "multi-turn conversation with technical context that requires forwarding",
+            [
+                {"type": "human", "content": "How do I check my pod status in Kyma?"},
+                {
+                    "type": "ai",
+                    "content": "To check pod status in a Kyma cluster, you can use the standard Kubernetes command:\n\n```bash\nkubectl get pods -n your-namespace\n```\n\nFor more detailed information about a specific pod:\n\n```bash\nkubectl describe pod pod-name -n your-namespace\n```\n\nTo see logs from a pod:\n\n```bash\nkubectl logs pod-name -n your-namespace\n```\n\nYou can also use the Kyma dashboard to view pod status through the graphical interface if you prefer.",
+                },
+                {
+                    "type": "human",
+                    "content": "I see a pod in CrashLoopBackOff state. What does that mean?",
+                },
+                {
+                    "type": "ai",
+                    "content": "A pod in CrashLoopBackOff state means that one or more containers in the pod are repeatedly crashing shortly after starting. Kubernetes is trying to restart them, but they continue to fail.\n\nCommon causes include:\n\n1. Application errors in your code\n2. Insufficient resources (CPU/memory)\n3. Misconfigured container command or arguments\n4. Missing dependencies or environment variables\n5. Failed health checks (liveness/readiness probes)\n\nTo investigate, check the pod logs with:\n```bash\nkubectl logs pod-name -n your-namespace\n```\n\nIf the container crashes too quickly to get logs, use:\n```bash\nkubectl logs pod-name -n your-namespace --previous\n```\n\nAlso check the details with:\n```bash\nkubectl describe pod pod-name -n your-namespace\n```\nLook for the 'Events' section and 'Last State' information which often provides clues about why the container is failing.",
+                },
+            ],
+            "Can you check why my api-gateway pod is failing?",
             "",
             True,
         ),
@@ -578,11 +764,42 @@ async def test_gatekeeper_with_conversation_history(
     """
     # Given: a conversation state with messages
     all_messages = convert_dict_to_messages(conversation_history)
-    # all_messages.append(HumanMessage(content=user_query))
+    all_messages.append(HumanMessage(content=user_query))
     state = create_mock_state(all_messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    result = await companion_graph._invoke_gatekeeper_node(state, user_query)
+    result = await companion_graph._invoke_gatekeeper_node(state)
+
+    if expected_query_forwarding:
+        assert (
+            result.forward_query
+        ), "Query should be forwarded"  # query should be forwarded
+
+    else:
+        assert (
+            not result.forward_query
+        ), "Query should not be forwarded"  # query should not be forwarded
+        # Then: we evaluate the direct response using deepeval metrics
+        test_case = ConversationalTestCase(
+            turns=[
+                LLMTestCase(
+                    input=user_query,
+                    actual_output=result.direct_response,
+                    expected_output=expected_answer,
+                )
+            ]
+        )
+        assert_test(test_case, [gatekeeper_correctness_metric])
+    """
+    Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
+    """
+    # Given: a conversation state with messages
+    all_messages = convert_dict_to_messages(conversation_history)
+    all_messages.append(HumanMessage(content=user_query))
+    state = create_mock_state(all_messages)
+
+    # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
+    result = await companion_graph._invoke_gatekeeper_node(state)
 
     if expected_query_forwarding:
         assert (
