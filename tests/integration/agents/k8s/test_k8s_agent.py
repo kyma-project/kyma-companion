@@ -43,6 +43,7 @@ def k8s_agent(app_models):
         (
             KubernetesAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(),
                 messages=[
                     HumanMessage(
                         content="What is causing the ImagePullBackOff status for many pods?"

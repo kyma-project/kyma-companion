@@ -7,7 +7,7 @@ from deepeval.metrics import (
     GEval,
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from agents.common.state import ResourceInformation, SubTask
 from agents.kyma.agent import KymaAgent
@@ -590,10 +590,13 @@ async def test_invoke_chain(
             "Should retry tool calling",
             KymaAgentState(
                 agent_messages=[],
+                resource_information=ResourceInformation(
+                    kind="Function",
+                    api_version="serverless.kyma-project.io/v1alpha2",
+                    name="func1",
+                    namespace="kyma-app-serverless-syntax-err",
+                ),
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
                         content="",
@@ -658,10 +661,14 @@ async def test_invoke_chain(
         (
             "Should not retry tool calling as already failed multiple  times",
             KymaAgentState(
-                agent_messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
+                resource_information=ResourceInformation(
+                    kind="Function",
+                    api_version="serverless.kyma-project.io/v1alpha2",
+                    name="func1",
+                    namespace="kyma-app-serverless-syntax-err",
+                ),
+                agent_messages=[],
+                messages=[
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
                         content="",
@@ -717,40 +724,7 @@ async def test_invoke_chain(
                         name="kyma_query_tool",
                         tool_call_id="tool_call_id_1",
                     ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Kyma Function troubleshooting"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing search_kyma_doc",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Kyma Function troubleshooting"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing search_kyma_doc",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
                 ],
-                messages=[],
                 subtasks=[
                     {
                         "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
