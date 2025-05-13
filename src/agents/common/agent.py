@@ -132,21 +132,34 @@ class BaseAgent:
         }
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
+        """
+        Invoke the agent's chain with appropriate input messages.
+
+        Args:
+            state: Current agent state
+            config: Runnable configuration
+
+        Returns:
+            Chain response
+        """
+        # Get messages with summary if available, otherwise use filtered messages
         input_messages = state.get_agent_messages_including_summary()
         if len(state.agent_messages) == 0:
             input_messages = filter_messages(state.messages)
 
-        # invoke the chain.
-        response = await ainvoke_chain(
-            self.chain,
-            {
-                AGENT_MESSAGES: filter_valid_messages(input_messages),
-                RESOURCE_INFORMATION: state.resource_information.model_dump_json(),
-                "query": state.my_task.description,
-            },
-            config=config,
-        )
-        return response
+        # Prepare input for the chain with the appropriate messages and query
+        chain_input = {
+            AGENT_MESSAGES: filter_valid_messages(input_messages),
+            "query": state.my_task.description if state.my_task else "",
+        }
+
+        # Add resource information if available
+        if state.resource_information is not None:
+            chain_input[RESOURCE_INFORMATION] = (
+                state.resource_information.model_dump_json()
+            )
+
+        return await ainvoke_chain(self.chain, chain_input, config=config)
 
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig

@@ -106,8 +106,8 @@ class BaseState(BaseModel):
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     resource_information: Annotated[
-        ResourceInformation, lambda old, new: new or old or None
-    ]
+        ResourceInformation | None, lambda old, new: new or old or None
+    ] = None
 
 
 class CompanionState(BaseState):

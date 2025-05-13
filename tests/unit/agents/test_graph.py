@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
@@ -520,21 +520,10 @@ class TestCompanionGraph:
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):
             first_message = kwargs["input"]["messages"][0]
-            if (
-                message.namespace == ""
-                and message.resource_kind == ""
-                and message.resource_name == ""
-                and message.resource_api_version == ""
-            ):
-                if not isinstance(first_message, HumanMessage):
-                    raise Exception(
-                        "The first message should be a HumanMessage when resource info is empty."
-                    )
-            else:
-                if not isinstance(first_message, SystemMessage):
-                    raise Exception(
-                        "The first message should be a SystemMessage when resource_name info is non-empty."
-                    )
+            if not isinstance(first_message, HumanMessage):
+                raise Exception(
+                    "The first message should be a HumanMessage when resource info is empty."
+                )
             if isinstance(mock_chunks, Exception):
                 raise mock_chunks
             for chunk in mock_chunks:
