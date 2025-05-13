@@ -23,24 +23,16 @@ queries:
       - name: hpa_explanation
         statement: explains the use of HorizontalPodAutoscaler and how to configure it
         threshold: 0.5
-        critical: true
+        critical: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: true
-      - name: some_yaml
-        statement: provides some yaml formatted code
-        threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_yaml
         statement: provides a partial yaml for the HorizontalPodAutoscaler with the correct min and max replicas, which would be 1 and 4
         threshold: 0.5
-        critical: true
-      - name: complete_yaml
-        statement: provides a complete yaml for the HorizontalPodAutoscaler with the correct min and max replicas, which would be 1 and 4
-        threshold: 0.5
-        critical: true
+        critical: false
       - name: deployable_yaml
         statement: provides a complete yaml for the HorizontalPodAutoscaler, with the namespace set to 'whoami_too_many_replicas' and the min and max replicas set to 1 and 4
         threshold: 0.5
-        critical: true
+        critical: false

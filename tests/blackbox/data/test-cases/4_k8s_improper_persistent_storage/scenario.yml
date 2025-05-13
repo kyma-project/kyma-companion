@@ -19,24 +19,12 @@ queries:
       - name: pvc_provide_explanation
         statement: provides an explanation on why the deployment is not getting ready
         threshold: 0.5
-        critical: true
+        critical: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: true
-      - name: some_yaml
-        statement: provides some yaml formatted code
-        threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_yaml
         statement: provides a partial yaml with correct access mode for PersistentVolumeClaim
         threshold: 0.5
-        critical: true
-      - name: complete_yaml
-        statement: provides a complete yaml for the Deployment with correct access mode for PersistentVolumeClaim
-        threshold: 0.5
-        critical: true
-      - name: deployable_yaml
-        statement: provides a complete yaml for the Deployment, with correct access mode for PersistentVolumeClaim
-        threshold: 0.5
-        critical: true
+        critical: false

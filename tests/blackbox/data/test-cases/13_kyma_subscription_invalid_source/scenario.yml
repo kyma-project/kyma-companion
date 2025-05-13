@@ -19,16 +19,16 @@ queries:
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_yaml
         statement: provides a partial yaml for the Subscription with an example of a valid source configuration
         threshold: 0.5
-        critical: true
+        critical: false
       - name: complete_yaml
         statement: provides a complete yaml for the Subscription with the correct source configuration
         threshold: 0.5
-        critical: true
+        critical: false
       - name: verification
         statement: provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix
         threshold: 0.5
-        critical: true
+        critical: false

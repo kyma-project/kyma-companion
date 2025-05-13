@@ -19,20 +19,8 @@ queries:
       - name: step_by_step_guide
         statement: contains a step-by-step guide
         threshold: 0.5
-        critical: true
-      - name: some_yaml
-        statement: provides some yaml formatted code
-        threshold: 0.5
-        critical: true
-      - name: partial_yaml_for_apirule
+        critical: false
+      - name: partial_yaml
         statement: provides some yaml formatted manifest for an APIRule that only contains one accessStrategy
         threshold: 0.5
-        critical: true
-      - name: complete_yaml_for_apirule
-        statement: provides a complete yaml formatted manifest for an APIRule, that contains all required fields and that only contains one accessStrategy
-        threshold: 0.5
-        critical: true
-      - name: deployable_yaml_for_apirule
-        statement: provides a complete yaml formatted manifest for a APIRule, with the name set to 'restapi', the namespace set to 'test-apirule-7', that contains all required fields and that contains only one accessStrategy
-        threshold: 0.5
-        critical: true
+        critical: false

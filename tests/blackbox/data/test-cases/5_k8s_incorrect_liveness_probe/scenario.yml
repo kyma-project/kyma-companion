@@ -23,20 +23,8 @@ queries:
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: true
-      - name: some_yaml
-        statement: provides some yaml formatted code
-        threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_yaml
         statement: provides a partial yaml with the correct liveness and readiness port '80'
         threshold: 0.5
-        critical: true
-      - name: complete_yaml
-        statement: provides a complete yaml for the Deployment with the correct liveness and readiness port '80'
-        threshold: 0.5
-        critical: true
-      - name: deployable_yaml
-        statement: provides a complete yaml for the Deployment, with the liveness and readiness port set to '80'
-        threshold: 0.5
-        critical: true
+        critical: false

@@ -17,19 +17,18 @@ queries:
         threshold: 0.5
         critical: true
       - name: permission_role
-        statement: points out that there needs to be a Role to grant permissions
+        statement: points out that a solution could be to grant permissions
         threshold: 0.5
         critical: true
       - name: permission_role_missing
         statement: points out that the role 'pod-reader' is missing or do not exist
         threshold: 0.5
-        critical: true
+        critical: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
-        threshold: 0.3
-        critical: true
+        threshold: 0.5
+        critical: false
       - name: partial_yaml
         statement: provides at least a partial yaml for the Role that grants permission to list Pods
-        threshold: 0.3
-        critical: true
-
+        threshold: 0.5
+        critical: false

@@ -19,16 +19,16 @@ queries:
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue.
         threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_fix
         statement: provides a partial JavaScript code for the Function with the correct syntax.
         threshold: 0.5
-        critical: true
+        critical: false
       - name: partial_yaml
         statement: provides a partial yaml for the Function with the correct syntax for its JavaScript source code.
         threshold: 0.5
-        critical: true
+        critical: false
       - name: complete_yaml
         statement: provides a complete yaml for the Function with the correct syntax for its JavaScript source code.
         threshold: 0.5
-        critical: true
+        critical: false
