@@ -1,15 +1,21 @@
-from typing import List, Any
+from math import ceil
+from typing import Any
+
+from langchain.prompts import PromptTemplate
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
-from langchain.prompts import PromptTemplate
 from langchain_core.runnables.config import RunnableConfig
+
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT
 from utils.chain import ainvoke_chain
+from utils.logging import get_logger
 from utils.models.factory import IModel
 
-
+logger = get_logger(__name__)
 class ToolResponseSummarizer:
+    """Summarize the tool response by chunking"""
+
     def __init__(self, model: IModel | Embeddings):
         self.model = model
 
@@ -30,6 +36,21 @@ class ToolResponseSummarizer:
         total_chars = len(tool_response)
         return max(1, total_chars // target_num_chunks)
 
+    def _create_chunks_from_list(
+        self, tool_response: list[Any], nums_of_chunks: int
+    ) -> list[Document]:
+        """Split a list of K8s items into a specific number of Document chunks"""
+
+        chunk_size = ceil(len(tool_response) / nums_of_chunks)
+        chunks = []
+
+        for i in range(0, len(tool_response), chunk_size):
+            chunk_items = tool_response[i : i + chunk_size]
+            text = "\n\n".join([str(item) for item in chunk_items])
+            chunks.append(Document(page_content=text))
+
+        return chunks
+
     def _create_chunks(
         self, tool_response: str, nums_of_chunks: int
     ) -> list[Document] | None:
@@ -39,7 +60,7 @@ class ToolResponseSummarizer:
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", ".", " "],
+            separators=["\n\n", "\n", "."],
         )
         docs = [Document(page_content=tool_response)]
 
@@ -47,18 +68,19 @@ class ToolResponseSummarizer:
 
     async def summarize_tool_response(
         self,
-        tool_response: str,
+        tool_response: list[Any],
         user_query: str,
         config: RunnableConfig,
         nums_of_chunks: int,
     ) -> str:
         """summarize each chunk and return final summarized response."""
 
-        chunks = self._create_chunks(tool_response, nums_of_chunks)
+        # chunks = self._create_chunks(tool_response, nums_of_chunks)
+        chunks = self._create_chunks_from_list(tool_response, nums_of_chunks)
 
         chunk_summary = []
 
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
             chain = self._create_chain(user_query)
             # invoke the chain.
             response = await ainvoke_chain(
@@ -68,6 +90,8 @@ class ToolResponseSummarizer:
                 },
                 config=config,
             )
+            logger.info(f"Tool Response chunk - {i+1} summarized successfully")
             chunk_summary.append(response)
+            break # this should not be commited , just for testing
 
         return "\n\n".join([item.content for item in chunk_summary])

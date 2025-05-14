@@ -276,7 +276,8 @@ class K8sClient:
             # Check if we've exceeded the maximum number of pages
             if page_count > K8S_API_PAGINATION_MAX_PAGE:
                 raise ValueError(
-                    f"Kubernetes API rate limit exceeded. Please refine your query and provide more specific resource details."
+                    "Kubernetes API rate limit exceeded. Please refine your query and "
+                    "provide more specific resource details."
                 )
 
             # Add continue token to URL if it exists

@@ -1,4 +1,4 @@
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, List
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, ToolMessage
@@ -24,10 +24,10 @@ from agents.common.constants import (
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import (
+    compute_string_token_count,
     filter_messages,
     filter_valid_messages,
-    should_continue,
-    compute_string_token_count,
+    should_continue, convert_string_to_object,
 )
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
@@ -145,7 +145,7 @@ class BaseAgent:
         response = await ainvoke_chain(
             self.chain,
             {
-                AGENT_MESSAGES: filter_valid_messages(input_messages),
+                AGENT_MESSAGES: input_messages,
                 "query": state.my_task.description,
             },
             config=config,
@@ -155,24 +155,30 @@ class BaseAgent:
     async def _summarize_tool_response(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> Any:
-        tool_response = ""
+        tool_response = []
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
-                tool_response += str(message.content)
+                # convert string into object
+                tool_response_object = convert_string_to_object(message.content)
+                if isinstance(tool_response_object, list):
+                    tool_response.extend(tool_response_object)
+                else:
+                    tool_response.append(tool_response_object)
             else:
                 break
 
         token_count = compute_string_token_count(
             str(tool_response), ModelType(self.model.name)
         )
-
+        logger.info(f"Tool Response Token count: {token_count}")
         # if token limit exceeds
         if token_count > TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]:
-            logger.info(f"Tool Response Token count: {token_count}")
+
             nums_of_chunks = (
                 token_count // TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
             ) + 1
             logger.info(f"Number of Chunks for summarization : {nums_of_chunks}")
+
             if nums_of_chunks > TOTAL_CHUNKS_LIMIT:
                 raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
 
@@ -184,8 +190,9 @@ class BaseAgent:
                 nums_of_chunks=nums_of_chunks,
             )
 
+            logger.info(f"Tool Response Summarization completed")
             # remove all tool message which is already summarized and
-            # add new tool response with summarized content
+            # add new AI Message with summarized content
             for message in reversed(state.agent_messages):
                 if isinstance(message, ToolMessage):
                     state.agent_messages.pop()
@@ -210,8 +217,10 @@ class BaseAgent:
                         return {
                             AGENT_MESSAGES: [
                                 AIMessage(
-                                    content="Your request is too broad and requires analyzing more resources than allowed at once. "
-                                    "Please specify a particular resource you'd like to analyze so I can assist you more effectively.",
+                                    content="Your request is too broad and requires analyzing "
+                                    "more resources than allowed at once. "
+                                    "Please specify a particular resource you'd like to analyze so "
+                                    "I can assist you more effectively.",
                                     name=self.name,
                                 )
                             ]
