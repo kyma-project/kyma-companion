@@ -11,7 +11,7 @@ from evaluation.scenario.enums import (
     TestStatus,
 )
 
-CRITICAL_METRIC_PREFIX = "critical"
+REQUIRED_METRIC_PREFIX = "required"
 
 
 class Resource(BaseModel):
@@ -33,13 +33,13 @@ class Expectation(BaseModel):
     name: str
     statement: str
     threshold: float = 0.5
-    critical: bool = True
+    required: bool = True
 
     def get_deepeval_metric_name(self) -> str:
         """
         Get the deepeval metric name for the expectation.
         """
-        return f"{CRITICAL_METRIC_PREFIX}_{self.name}" if self.critical else self.name
+        return f"{REQUIRED_METRIC_PREFIX}_{self.name}" if self.required else self.name
 
 
 class Query(BaseModel):
@@ -78,7 +78,7 @@ class Query(BaseModel):
             return False
         for test_metric in result.metrics_data:
             if (
-                test_metric.name.startswith(CRITICAL_METRIC_PREFIX)
+                test_metric.name.startswith(REQUIRED_METRIC_PREFIX)
                 and not test_metric.success
             ):
                 return False

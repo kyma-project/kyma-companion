@@ -11,20 +11,20 @@ queries:
       - name: deployment_error
         statement: points out that the Deployment is in an error state
         threshold: 0.5
-        critical: true
+        required: true
       - name: wrong_pvc_access_mode
         statement: points out that the access mode configured in PersistentVolumeClaim do not match with access mode supported by PersistentVolume
         threshold: 0.5
-        critical: true
+        required: true
       - name: pvc_provide_explanation
         statement: provides an explanation on why the deployment is not getting ready
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml with correct access mode for PersistentVolumeClaim
         threshold: 0.5
-        critical: false
+        required: false

@@ -11,24 +11,24 @@ queries:
       - name: pod_error
         statement: points out that the Pod is in an error state
         threshold: 0.5
-        critical: true
+        required: true
       - name: pod_wrong_image
         statement: points out that the Pod uses the wrong image
         threshold: 0.5
-        critical: true
+        required: true
       - name: pod_provide_right_image
         statement: provides the correct image to use with kubectl
         threshold: 0.5
-        critical: true
+        required: true
       - name: pod_image_explanation
         statement: explains the connection between an image and included binaries
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml with the correct image 'bitnami/kubectl:latest'
         threshold: 0.5
-        critical: false
+        required: false

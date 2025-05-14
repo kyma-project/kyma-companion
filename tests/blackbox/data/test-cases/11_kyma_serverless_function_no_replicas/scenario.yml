@@ -11,28 +11,28 @@ queries:
       - name: function_error
         statement: points out that the Pod is not ready
         threshold: 0.5
-        critical: true
+        required: true
       - name: function_no_replicas
         statement: points out that the Function is configured with 0 replicas
         threshold: 0.5
-        critical: true
+        required: true
       - name: function_correct_replicas
         statement: provides the correct amount of replicas, which would be 1
         threshold: 0.5
-        critical: false
+        required: false
       - name: function_explanation
         statement: explains the use of Functions
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml with the correct amount of replicas, which would be 1
         threshold: 0.5
-        critical: false
+        required: false
       - name: deployable_yaml
         statement: provides a complete yaml for the Function, with the namespace set to 'test-function-11' and the replicas set to 1
         threshold: 0.5
-        critical: false
+        required: false

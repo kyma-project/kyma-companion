@@ -11,24 +11,24 @@ queries:
       - name: pod_error
         statement: points out that the Pod is in an error state
         threshold: 0.5
-        critical: true
+        required: true
       - name: pod_no_permissions
         statement: points out that the Pod has no permissions
         threshold: 0.5
-        critical: true
+        required: true
       - name: permission_role
         statement: points out that a solution could be to grant permissions
         threshold: 0.5
-        critical: true
+        required: true
       - name: permission_role_missing
         statement: points out that the role 'pod-reader' is missing or do not exist
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides at least a partial yaml for the Role that grants permission to list Pods
         threshold: 0.5
-        critical: false
+        required: false

@@ -11,20 +11,20 @@ queries:
       - name: pod_error
         statement: points out that the Pod is in an error state
         threshold: 0.5
-        critical: true
+        required: true
       - name: pod_wrong_permissions
         statement: points out that the Pod has the wrong permissions
         threshold: 0.5
-        critical: true
+        required: true
       - name: permission_should_be_watch
         statement: points out that the Role gives permission to watch Pods but the Pod tries to list them
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml for the Role that grants permission to list Pods
         threshold: 0.5
-        critical: false
+        required: false

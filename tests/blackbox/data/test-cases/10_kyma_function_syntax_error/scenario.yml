@@ -11,24 +11,24 @@ queries:
       - name: function_syntax_error
         statement: points out that the Function has a syntax error in its source code and provides a description of the error.
         threshold: 0.5
-        critical: true
+        required: true
       - name: function_correct_syntax
         statement: provides an example of how to fix the Function JavaScript source code.
         threshold: 0.5
-        critical: true
+        required: true
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue.
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_fix
         statement: provides a partial JavaScript code for the Function with the correct syntax.
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml for the Function with the correct syntax for its JavaScript source code.
         threshold: 0.5
-        critical: false
+        required: false
       - name: complete_yaml
         statement: provides a complete yaml for the Function with the correct syntax for its JavaScript source code.
         threshold: 0.5
-        critical: false
+        required: false

@@ -11,24 +11,24 @@ queries:
       - name: subscription_config_error
         statement: points out that the Subscription is configured with the old event type
         threshold: 0.5
-        critical: true
+        required: true
       - name: subscription_correct_event_type
         statement: provides the correct event type to use, which would be "increase.counter.v1"
         threshold: 0.5
-        critical: true
+        required: true
       - name: subscription_explanation
         statement: explains the use of Subscriptions and how to configure them
         threshold: 0.5
-        critical: false
+        required: false
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml with the correct event type "increase.counter.v1"
         threshold: 0.5
-        critical: false
+        required: false
       - name: deployable_yaml
         statement: provides a complete yaml for the Subscription, with the namespace set to 'test-subscription-14' and the event type set to "increase.counter.v1"
         threshold: 0.5
-        critical: false
+        required: false

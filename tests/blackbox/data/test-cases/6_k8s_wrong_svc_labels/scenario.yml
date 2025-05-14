@@ -11,16 +11,16 @@ queries:
       - name: svc_wrong_label
         statement: points out that the labels used in the Service selector and the labels on the Pods do not match
         threshold: 0.5
-        critical: true
+        required: true
       - name: svc_provide_explanation
         statement: provides a detailed explanation of why the Service is not routing traffic to the Pods
         threshold: 0.5
-        critical: true
+        required: true
       - name: step_by_step_guide
         statement: provides a step-by-step guide on how to fix the issue
         threshold: 0.5
-        critical: false
+        required: false
       - name: partial_yaml
         statement: provides a partial yaml with the correct labels for the Service
         threshold: 0.5
-        critical: false
+        required: false
