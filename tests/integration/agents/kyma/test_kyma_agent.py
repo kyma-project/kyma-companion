@@ -603,7 +603,8 @@ async def test_invoke_chain(
         (
             "Should not retry tool calling as already failed multiple  times",
             KymaAgentState(
-                agent_messages=[
+                agent_messages=[],
+                messages=[
                     SystemMessage(
                         content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
@@ -662,40 +663,7 @@ async def test_invoke_chain(
                         name="kyma_query_tool",
                         tool_call_id="tool_call_id_1",
                     ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Kyma Function troubleshooting"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing search_kyma_doc",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Kyma Function troubleshooting"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing search_kyma_doc",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
                 ],
-                messages=[],
                 subtasks=[
                     {
                         "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
@@ -729,6 +697,56 @@ To troubleshoot the problem with your Kyma Function, you can consider the follow
 
 If you continue to experience issues, you may want to consult the Kyma documentation or seek support from the Kyma community for more specific guidance.""",  # expected_result
             None,  # expected_tool_call
+            False,  # should_raise
+        ),
+        # Test case for kyma tool when only first tool call failed and should retry tool calling.
+        (
+            "Should retry tool calling after first tool call failed",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                    ),
+                    HumanMessage(content="what is wrong?"),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Error : failed executing kyma_query_tool",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),  # context
+            None,  # retrieval_context
+            "",  # expected_result
+            "kyma_query_tool",  # expected_tool_call
             False,  # should_raise
         ),
     ],
