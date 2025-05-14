@@ -256,3 +256,4 @@ doc_indexer/data/*
 # ignore scripts in the root folder
 /*.sh
 /tests/.deepeval_telemetry.txt
+tests/blackbox/.deepeval_telemetry.txt

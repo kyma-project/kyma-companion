@@ -1,34 +1,27 @@
-name: Lint Python code
+name: pull-lint-tests-blackbox
 
 on:
   pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
     branches:
       - "main"
       - "release-**"
-    paths-ignore:
-      - "docs/**"
-      - "doc_indexer/**"
+    paths:
       - "tests/blackbox/**"
-      - "**.md"
-      - CODEOWNERS
-      - LICENSE
-
 
 jobs:
-  code-linter:
-    name: "Run mypy linting"
+  lint:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: none
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Extract Python version
         id: python-version
-        run: ./scripts/shell/extract-python-version.sh
+        working-directory: ./tests/blackbox
+        run: |
+          ../../scripts/shell/extract-python-version.sh
+          echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -41,13 +34,11 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: poetry install --with dev
+        working-directory: ./tests/blackbox
+        run: poetry install --with test
 
-      - name: Run linting
-        run: poetry run poe lint
-
-      - name: Run type checking
-        run: poetry run poe typecheck
-
-      - name: Run code formatting check
-        run: poetry run poe format
+      - name: Run lint
+        working-directory: ./tests/blackbox
+        run: |
+          ls
+          poetry run poe codecheck
