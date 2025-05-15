@@ -1,0 +1,46 @@
+---
+# Namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-function-18
+  labels:
+    istio-injection: enabled
+---
+# Function
+---
+apiVersion: serverless.kyma-project.io/v1alpha2
+kind: Function
+metadata:
+  labels:
+    app.kubernetes.io/name: test-function-18
+  name: test-function-18
+  namespace: test-function-18
+spec:
+  replicas: 1
+  resourceConfiguration:
+    function:
+      profile: S
+  runtime: nodejs20
+  source:
+    inline:
+      dependencies: "hakuna matata"
+      source: >-
+        module.exports = {
+          main: async function (event, context) {
+            var queryParams = event['extensions']['request']['query'];
+
+            //read query param, for example `?greeting=Hi`
+            var greetingMsg = queryParams['greeting']; 
+            if(!greetingMsg) {
+              greetingMsg = 'Hello world';
+            } 
+            const message = greetingMsg
+              + ` from the Kyma Function ${context['function-name']}`
+              + ` running on ${context.runtime}!`;
+            console.log(message);
+            return message;
+          }
+        }
+---
