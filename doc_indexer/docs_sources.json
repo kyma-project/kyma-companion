@@ -181,5 +181,20 @@
       "*/_sidebar.md",
       "*/_*.md"
     ]
+  },
+  {
+    "name": "kyma-cli",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/cli.git",
+    "include_files": [
+      "docs/user/gen-docs/*",
+      "docs/user/tutorials/*"
+    ],
+    "exclude_files": [
+      "docs/user/tutorials/01-10-add-delete-modules.md",
+      "docs/user/tutorials/README.md",
+      "docs/user/tutorials/01-11-manage-unmanage-modules.md",
+      "docs/user/gen-docs/README.md"
+    ]
   }
 ]
