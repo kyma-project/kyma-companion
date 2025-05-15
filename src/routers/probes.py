@@ -133,7 +133,7 @@ async def healthz(
 ) -> JSONResponse:
     """The endpoint for the Health Probe."""
 
-    logger.info("Ready probe called.")
+    logger.debug("Health probe called.")
     response = HealthModel(
         is_hana_healthy=hana.is_connection_operational(),
         is_redis_healthy=await redis.is_connection_operational(),
@@ -144,8 +144,13 @@ async def healthz(
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
-    logger.info(f"Health probe returning status: {status}")
-    logger.info(f"Health probe returning body: {response}")
+
+    if status != HTTP_200_OK:
+        logger.info(f"Health probe returning status: {status}")
+        logger.info(f"Health probe returning body: {response}")
+    else:
+        logger.debug(f"Health probe returning status: {status}")
+        logger.debug(f"Health probe returning body: {response}")
 
     return JSONResponse(
         content=jsonable_encoder(response),
@@ -161,7 +166,7 @@ async def readyz(
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""
 
-    logger.info("Health probe called.")
+    logger.debug("Readiness probe called.")
     response = ReadinessModel(
         is_hana_initialized=hana.has_connection(),
         is_redis_initialized=redis.has_connection(),
@@ -170,8 +175,14 @@ async def readyz(
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
-    logger.info(f"Health probe returning status: {status}")
-    logger.info(f"Health probe returning body: {response}")
+
+    if status != HTTP_200_OK:
+        logger.info(f"Readiness probe returning status: {status}")
+        logger.info(f"Readiness probe returning body: {response}")
+    else:
+        logger.debug(f"Readiness probe returning status: {status}")
+        logger.debug(f"Readiness probe returning body: {response}")
+
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
 
