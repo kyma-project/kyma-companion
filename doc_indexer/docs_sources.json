@@ -188,7 +188,8 @@
     "url": "https://github.com/kyma-project/cli.git",
     "include_files": [
       "docs/user/gen-docs/*",
-      "docs/user/tutorials/*"
+      "docs/user/tutorials/*",
+      "docs/extensibility/*"
     ],
     "exclude_files": [
       "docs/user/tutorials/01-10-add-delete-modules.md",
