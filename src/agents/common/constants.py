@@ -19,6 +19,8 @@ MESSAGES_SUMMARY = "messages_summary"
 
 AGENT_MESSAGES = "agent_messages"
 
+RESOURCE_INFORMATION = "resource_information"
+
 AGENT_MESSAGES_SUMMARY = "agent_messages_summary"
 
 ERROR = "error"
