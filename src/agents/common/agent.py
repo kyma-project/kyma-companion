@@ -145,7 +145,7 @@ class BaseAgent:
         response = await ainvoke_chain(
             self.chain,
             {
-                AGENT_MESSAGES: input_messages,
+                AGENT_MESSAGES: filter_valid_messages(input_messages),
                 "query": state.my_task.description,
             },
             config=config,
@@ -191,13 +191,13 @@ class BaseAgent:
             )
 
             logger.info(f"Tool Response Summarization completed")
-            # remove all tool message which is already summarized and
+            # update all tool message which is already summarized and
             # add new AI Message with summarized content
             for message in reversed(state.agent_messages):
                 if isinstance(message, ToolMessage):
-                    state.agent_messages.pop()
+                    message.content = "Summarized"
                 else:
-                    state.agent_messages.append(AIMessage(content=response))
+                    state.agent_messages.append(AIMessage(content="Summarized Tool Response - " + response))
                     break
 
     async def _model_node(
@@ -285,6 +285,7 @@ class BaseAgent:
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
+            logger.info(f"Agent task completed")
             state.my_task.complete()
 
         agent_pre_message = f"'{state.my_task.description}' , Agent Response - "

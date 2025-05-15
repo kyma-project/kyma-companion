@@ -92,6 +92,5 @@ class ToolResponseSummarizer:
             )
             logger.info(f"Tool Response chunk - {i+1} summarized successfully")
             chunk_summary.append(response)
-            break # this should not be commited , just for testing
 
         return "\n\n".join([item.content for item in chunk_summary])
