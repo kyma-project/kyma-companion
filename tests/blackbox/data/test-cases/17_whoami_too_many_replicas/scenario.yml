@@ -1,0 +1,38 @@
+id: test-horizontalpodautoscaler-17 # format: test-<resource_kind>-<test_id>
+description: The HorizontalPodAutoscaler is configured with too high min and max replicas.
+queries:
+  - user_query: What is causing ScalingLimited status?
+    resource:
+      kind: HorizontalPodAutoscaler
+      api_version: autoscaling/v2
+      name: whoami
+      namespace: test-horizontalpodautoscaler-17 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: hpa_error
+        statement: points out that the HorizontalPodAutoscaler has warning events
+        threshold: 0.5
+        required: true
+      - name: hpa_too_many_replicas
+        statement: points out that the HorizontalPodAutoscaler is configured with too high min and max replicas
+        threshold: 0.5
+        required: true
+      - name: hpa_correct_replicas
+        statement: provides the correct amount of min and max replicas, which would be 1 and 4
+        threshold: 0.5
+        required: true
+      - name: hpa_explanation
+        statement: explains the use of HorizontalPodAutoscaler and how to configure it
+        threshold: 0.5
+        required: false
+      - name: step_by_step_guide
+        statement: provides a step-by-step guide on how to fix the issue
+        threshold: 0.5
+        required: false
+      - name: partial_yaml
+        statement: provides a partial yaml for the HorizontalPodAutoscaler with the correct min and max replicas, which would be 1 and 4
+        threshold: 0.5
+        required: false
+      - name: deployable_yaml
+        statement: provides a complete yaml for the HorizontalPodAutoscaler, with the namespace set to 'whoami_too_many_replicas' and the min and max replicas set to 1 and 4
+        threshold: 0.5
+        required: false

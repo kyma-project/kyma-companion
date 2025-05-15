@@ -76,7 +76,9 @@ async def init_conversation(
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
-    logger.info("Initializing new conversation.")
+    logger.info(
+        f"Initializing new conversation. Request data: {data.model_dump_json()}"
+    )
 
     # Validate if all the required K8s headers are provided.
     k8s_auth_headers = K8sAuthHeaders(
@@ -129,7 +131,9 @@ async def init_conversation(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(
+            status_code=500, detail=f"{str(e)}, Request data: {data.model_dump_json()}"
+        ) from e
 
 
 @router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
@@ -196,6 +200,10 @@ async def messages(
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
+
+    logger.info(
+        f"Handling conversation: {conversation_id}. Request data: {message.model_dump_json()}"
+    )
 
     # Validate if all the required K8s headers are provided.
     k8s_auth_headers = K8sAuthHeaders(

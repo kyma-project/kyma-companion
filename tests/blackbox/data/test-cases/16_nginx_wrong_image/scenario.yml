@@ -1,0 +1,34 @@
+id: test-deployment-16 # format: test-<resource_kind>-<test_id>
+description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.
+queries:
+  - user_query: What is causing the Deployment to not have minimum availability?
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx
+      namespace: test-deployment-16 # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: image_not_found
+        statement: points out that the image 'ngix' does not exist
+        threshold: 0.5
+        required: true
+      - name: image_typo
+        statement: points out that the image name might have a type
+        threshold: 0.5
+        required: true
+      - name: should_be_nginx
+        statement: points out that the image name should be 'nginx'
+        threshold: 0.5
+        required: true
+      - name: step_by_step_guide
+        statement: contains a step-by-step guide
+        threshold: 0.5
+        required: false
+      - name: partial_yaml
+        statement: contains some yaml formatted Deployment manifest with all the required fields
+        threshold: 0.5
+        required: false
+      - name: complete_yaml
+        statement: contains a yaml formatted Deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'
+        threshold: 0.5
+        required: false

@@ -3,15 +3,15 @@ import os
 from logging import Logger
 
 import yaml
+from deepeval.evaluate import EvaluationResult, TestResult
 from pydantic import BaseModel
 
+from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import (
-    Category,
-    Complexity,
     TestStatus,
 )
 
-PASSING_SCORE = 100
+REQUIRED_METRIC_PREFIX = "required"
 
 
 class Resource(BaseModel):
@@ -27,71 +27,62 @@ class Resource(BaseModel):
 
 class Expectation(BaseModel):
     """
-    Expectation represents a single expectation with a statement, a list of categories,
-    a description, and a complexity.
+    Expectation represents a single expectation with a statement and an optional expected response.
     """
 
     name: str
     statement: str
-    categories: list[Category]
-    complexity: Complexity
-    results: list[bool] = []
+    threshold: float = 0.5
+    required: bool = True
 
-    def add_result(self, result: bool) -> None:
-        """Add a new expectation result to the list."""
-        self.results.append(result)
-
-    def get_success_count(self) -> int:
-        """Get the number of successful results."""
-        total_success: int = 0
-        for result in self.results:
-            total_success += int(result)
-        return total_success
-
-    def get_results_count(self) -> int:
-        """Get the number of results."""
-        return len(self.results)
-
-    def get_success_rate(self) -> float:
-        """Get the success rate (%) of the expectation results."""
-        if self.get_results_count() == 0:
-            return 0.0
-        score = (self.get_success_count() / self.get_results_count()) * 100
-        return round(score, 2)
+    def get_deepeval_metric_name(self) -> str:
+        """
+        Get the deepeval metric name for the expectation.
+        """
+        return f"{REQUIRED_METRIC_PREFIX}_{self.name}" if self.required else self.name
 
 
-class Evaluation(BaseModel):
-    """Evaluation is a class that contains the information of a scenario evaluation results."""
+class Query(BaseModel):
+    """Query represents a single test scenario with an id, description"""
 
-    status: TestStatus = TestStatus.PENDING
-    status_reason: str = ""
-    actual_responses: list[str] = []
+    user_query: str
+    resource: Resource
+    expectations: list[Expectation]
+    # actual responses
+    response_chunks: list[ConversationResponseChunk] = []
+    actual_response: str = ""
+    # evaluation
+    test_status: TestStatus = TestStatus.PENDING
+    test_status_reason: str = ""
+    evaluation_result: EvaluationResult | None = None
 
-    def add_actual_response(self, response: str) -> None:
-        """Add a new expectation result to the list."""
-        self.actual_responses.append(response)
+    def complete(self) -> None:
+        """Update the test status based on the evaluation result."""
+        if self.test_status != TestStatus.FAILED:
+            if self.evaluation_result is None:
+                self.test_status = TestStatus.FAILED
+                self.test_status_reason = "Evaluation result is None"
+                return
+            # if any of the critical expectations are not met, we fail the test.
+            self.test_status = TestStatus.COMPLETED
+            for test_result in self.evaluation_result.test_results:
+                if not self.__is_test_successful(test_result):
+                    self.test_status = TestStatus.FAILED
+                    break
 
-    def get_scenario_score(self, expectations: list[Expectation]) -> float:
-        """Get the scenario score considering the complexity of expectations."""
-
-        # calculate the weighted mean of the scenario from all expectation considering the complexity.
-        actual_sum: int = 0
-        ideal_sum: int = 0
-        count: int = 0
-        for expectation in expectations:
-            actual_sum += expectation.get_success_count() * expectation.complexity
-            # ideal sum is the sum when all the results would be successful.
-            ideal_sum += expectation.get_results_count() * expectation.complexity
-            count += expectation.get_results_count()
-
-        if count == 0:
-            return 0.0
-
-        mean_weighted_performance: float = float(actual_sum / count)
-        # ideal_weighted_performance sum is the performance when all the results would be successful.
-        ideal_weighted_performance: float = float(ideal_sum / count)
-        score = (mean_weighted_performance / ideal_weighted_performance) * 100
-        return round(score, 2)
+    def __is_test_successful(self, result: TestResult) -> bool:
+        """
+        It will only fail the test if the critical expectations are not met.
+        """
+        if result.metrics_data is None:
+            return False
+        for test_metric in result.metrics_data:
+            if (
+                test_metric.name.startswith(REQUIRED_METRIC_PREFIX)
+                and not test_metric.success
+            ):
+                return False
+        return True
 
 
 class Scenario(BaseModel):
@@ -99,23 +90,22 @@ class Scenario(BaseModel):
 
     id: str
     description: str
-    user_query: str
-    resource: Resource
-    expectations: list[Expectation]
-    evaluation: Evaluation = Evaluation()
-
-    def get_scenario_score(self) -> float:
-        return self.evaluation.get_scenario_score(self.expectations)
+    queries: list[Query] = []
+    # actual responses
+    initial_questions: list[str] = []
+    # evaluation
+    test_status: TestStatus = TestStatus.PENDING
+    test_status_reason: str = ""
 
     def complete(self) -> None:
-        if self.evaluation.status == TestStatus.FAILED:
-            return
-
-        # COMPLETED means that the test is completed but with score < 100%.
-        self.evaluation.status = TestStatus.COMPLETED
-        # if the scenario score is 100, the scenario is passed.
-        if self.get_scenario_score() == PASSING_SCORE:
-            self.evaluation.status = TestStatus.PASSED
+        """Update the test status based on the evaluation result."""
+        if self.test_status != TestStatus.FAILED:
+            self.test_status = TestStatus.COMPLETED
+            for query in self.queries:
+                query.complete()
+                if query.test_status == TestStatus.FAILED:
+                    self.test_status = TestStatus.FAILED
+                    # we do not break here because we want to update the status of all queries.
 
 
 class ScenarioList(BaseModel):
@@ -124,58 +114,8 @@ class ScenarioList(BaseModel):
     items: list[Scenario] = []
 
     def add(self, item: Scenario) -> None:
+        """Add a scenario to the list."""
         self.items.append(item)
-
-    def get_success_rate_per_category(self) -> dict[Category, float]:
-        """Get the success rate (%) per category across all expectations."""
-        success_count: dict[Category, int] = {}
-        total_count: dict[Category, int] = {}
-
-        for item in self.items:
-            for expectation in item.expectations:
-                for category in expectation.categories:
-                    if category not in success_count:
-                        success_count[category] = expectation.get_success_count()
-                    else:
-                        success_count[category] += expectation.get_success_count()
-
-                    if category not in total_count:
-                        total_count[category] = expectation.get_results_count()
-                    else:
-                        total_count[category] += expectation.get_results_count()
-
-        success_rate: dict[Category, float] = {}
-        for category in success_count:
-            if total_count[category] == 0:
-                success_rate[category] = 0.0
-            else:
-                success_rate[category] = round(
-                    float((success_count[category] / total_count[category]) * 100), 2
-                )
-
-        return success_rate
-
-    def get_overall_success_rate(self) -> float:
-        """Get the overall success rate (%) across all expectations."""
-        success_count: int = 0
-        count: int = 0
-
-        for item in self.items:
-            for expectation in item.expectations:
-                success_count += expectation.get_success_count()
-                count += expectation.get_results_count()
-
-        if count == 0:
-            return 0.0
-        return round(float((success_count / count) * 100), 2)
-
-    def get_failed_scenarios(self) -> list[Scenario]:
-        """Get the list of failed scenarios."""
-        failed_scenarios: list[Scenario] = []
-        for item in self.items:
-            if item.evaluation.status == TestStatus.FAILED:
-                failed_scenarios.append(item)
-        return failed_scenarios
 
     def load_all_namespace_scope_scenarios(self, path: str, logger: Logger) -> None:
         """Load all the scenarios from the namespace scoped test data path."""
@@ -211,15 +151,23 @@ class ScenarioList(BaseModel):
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
 
-    def is_test_passed(self) -> tuple[bool, str]:
+    def get_overall_success_rate(self) -> float:
+        """Get the overall success rate (%) across all expectations."""
+        score: float = 0.0
+        total: float = 0.0
+
+        for item in self.items:
+            for query in item.queries:
+                total += len(query.expectations)
+                if query.evaluation_result is not None:
+                    for test_result in query.evaluation_result.test_results:
+                        for test_metric in test_result.metrics_data:
+                            score += test_metric.score
+
+        if total == 0:
+            return 0.0
+        return round(float((score / total) * 100), 2)
+
+    def is_test_passed(self) -> bool:
         """Get the overall success across all scenarios."""
-        # if the overall success rate is 0.0, return False.
-        if self.get_overall_success_rate() == 0.0:
-            return False, "The overall success rate is 0.0"
-
-        return True, "All tests passed successfully"
-
-    def is_test_failed(self) -> bool:
-        """Check if any of the scenarios failed."""
-        failed_scenarios = self.get_failed_scenarios()
-        return len(failed_scenarios) > 0
+        return all(scenario.test_status != TestStatus.FAILED for scenario in self.items)

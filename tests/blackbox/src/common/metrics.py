@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class Metrics:
     """Singleton class to store metrics."""
 
@@ -6,7 +9,7 @@ class Metrics:
     conversation_response_times_sec: list[float] = []
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> Any:
         """Static access method."""
         if Metrics.__instance is None:
             Metrics()
@@ -19,11 +22,11 @@ class Metrics:
         else:
             Metrics.__instance = self
 
-    def record_init_conversation_response_time(self, time_sec: float):
+    def record_init_conversation_response_time(self, time_sec: float) -> None:
         """Record the response time of the init conversation endpoint."""
         self.init_conversation_response_times_sec.append(time_sec)
 
-    def record_conversation_response_time(self, time_sec: float):
+    def record_conversation_response_time(self, time_sec: float) -> None:
         """Record the response time of the conversation endpoint."""
         self.conversation_response_times_sec.append(time_sec)
 

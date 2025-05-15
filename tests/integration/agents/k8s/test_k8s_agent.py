@@ -269,6 +269,117 @@ def k8s_agent(app_models):
             ),
             "k8s_overview_query_tool",
         ),
+        # Test case for cluster overview query
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                    ),
+                    HumanMessage(content="give me cluster overview"),
+                ],
+                subtasks=[
+                    {
+                        "description": "give me cluster overview",
+                        "task_title": "Cluster overview",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="give me cluster overview",
+                    task_title="Cluster overview",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_overview_query_tool",
+        ),
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                    ),
+                    HumanMessage(content="check all resources in cluster"),
+                ],
+                subtasks=[
+                    {
+                        "description": "check all resources in cluster",
+                        "task_title": "Cluster overview",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="check all resources in cluster",
+                    task_title="Cluster overview",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_overview_query_tool",
+        ),
+        # Test case for namespace overview query
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                    ),
+                    HumanMessage(content="give me namespace overview"),
+                ],
+                subtasks=[
+                    {
+                        "description": "give me namespace overview",
+                        "task_title": "Namespace overview",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="give me namespace overview",
+                    task_title="Namespace overview",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_overview_query_tool",
+        ),
+        # Test case for namespace overview query
+        (
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                    ),
+                    HumanMessage(content="check all resources in namespace"),
+                ],
+                subtasks=[
+                    {
+                        "description": "check all resources in namespace",
+                        "task_title": "Namespace overview",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="check all resources in namespace",
+                    task_title="Namespace overview",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "k8s_overview_query_tool",
+        ),
     ],
 )
 @pytest.mark.asyncio

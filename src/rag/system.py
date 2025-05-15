@@ -9,14 +9,10 @@ from rag.generator import Generator
 from rag.query_generator import QueryGenerator
 from rag.reranker.reranker import LLMReranker
 from rag.retriever import HanaDBRetriever
-from utils.hana import create_hana_connection
+from services.hana import Hana
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelType
 from utils.settings import (
-    DATABASE_PASSWORD,
-    DATABASE_PORT,
-    DATABASE_URL,
-    DATABASE_USER,
     DOCS_TABLE_NAME,
 )
 
@@ -54,12 +50,9 @@ class RAGSystem:
             cast(IModel, cast(IModel, models[ModelType.GPT4O_MINI]))
         )
         # setup retriever
-        hana_conn = create_hana_connection(
-            DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
-        )
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[ModelType.TEXT_EMBEDDING_3_LARGE]),
-            connection=hana_conn,
+            connection=Hana().get_connction(),
             table_name=DOCS_TABLE_NAME,
         )
         # setup generator

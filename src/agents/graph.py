@@ -146,9 +146,7 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
-        self._gatekeeper_chain = self._create_gatekeeper_chain(
-            cast(IModel, gpt_4o_mini)
-        )
+        self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, gpt_4o))
         self.graph = self._build_graph()
 
     @staticmethod
@@ -226,14 +224,13 @@ class CompanionGraph:
             [
                 ("system", GATEKEEPER_PROMPT),
                 MessagesPlaceholder(variable_name="messages"),
-                ("human", "query: {query}"),
                 ("system", GATEKEEPER_INSTRUCTIONS),
             ]
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
 
     async def _invoke_gatekeeper_node(
-        self, state: CompanionState, user_query: str | Any
+        self, state: CompanionState
     ) -> GatekeeperResponse | Any:
         """Invoke the Gatekeeper node."""
         response = await ainvoke_chain(
@@ -242,7 +239,6 @@ class CompanionGraph:
                 "messages": filter_valid_messages(
                     state.get_messages_including_summary()
                 ),
-                "query": user_query,
             },
         )
         return response
@@ -251,16 +247,7 @@ class CompanionGraph:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
 
         try:
-            last_human_message = next(
-                (
-                    msg
-                    for msg in reversed(state.messages)
-                    if isinstance(msg, HumanMessage)
-                ),
-            )
-            response = await self._invoke_gatekeeper_node(
-                state, last_human_message.content
-            )
+            response = await self._invoke_gatekeeper_node(state)
 
             if response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")

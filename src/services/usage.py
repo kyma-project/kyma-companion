@@ -8,7 +8,9 @@ from langchain.schema import LLMResult
 from pydantic import BaseModel
 
 from agents.memory.async_redis_checkpointer import IUsageMemory
+from routers.probes import IUsageTrackerProbe
 from services.metrics import CustomMetrics, LangGraphErrorType
+from services.probes import get_usage_tracker_probe
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
 
@@ -35,11 +37,17 @@ class UsageTrackerCallback(AsyncCallbackHandler):
     Reference: https://python.langchain.com/docs/concepts/callbacks/
     """
 
-    def __init__(self, cluster_id: str, memory: IUsageMemory):
+    def __init__(
+        self,
+        cluster_id: str,
+        memory: IUsageMemory,
+        probe: IUsageTrackerProbe | None = None,
+    ):
         self.cluster_id = cluster_id
         self.memory = memory
         self.ttl = TOKEN_USAGE_RESET_INTERVAL
         self.llm_start_times: dict = {}
+        self._probe = probe or get_usage_tracker_probe()
 
     async def on_llm_start(
         self,
@@ -77,7 +85,12 @@ class UsageTrackerCallback(AsyncCallbackHandler):
             await self.memory.awrite_llm_usage(
                 self.cluster_id, usage_model.__dict__, self.ttl
             )
+
+            # reset the failure count we track in the probe.
+            self._probe.reset_failure_count()
         except Exception as e:
+            # track the failure in the probe.
+            self._probe.increase_failure_count()
             await CustomMetrics().record_token_usage_tracker_publish_failure()
             raise e
 

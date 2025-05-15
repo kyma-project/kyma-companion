@@ -5,7 +5,7 @@ from langfuse.callback import CallbackHandler
 
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
-from agents.memory.async_redis_checkpointer import AsyncRedisSaver
+from agents.memory.async_redis_checkpointer import get_async_redis_saver
 from followup_questions.followup_questions import (
     FollowUpQuestionsHandler,
     IFollowUpQuestionsHandler,
@@ -20,10 +20,6 @@ from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
 from utils.settings import (
-    REDIS_DB_NUMBER,
-    REDIS_HOST,
-    REDIS_PASSWORD,
-    REDIS_PORT,
     TOKEN_LIMIT_PER_CLUSTER,
     TOKEN_USAGE_RESET_INTERVAL,
 )
@@ -100,12 +96,7 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Set up the Kyma Graph which allows access to stored conversation histories.
-        checkpointer = AsyncRedisSaver.from_conn_info(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB_NUMBER,
-            password=REDIS_PASSWORD,
-        )
+        checkpointer = get_async_redis_saver()
         self._usage_limiter = UsageTracker(
             checkpointer, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL
         )
@@ -153,8 +144,6 @@ class ConversationService(metaclass=SingletonMeta):
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
-
-        logger.info("Processing request...")
 
         async for chunk in self._companion_graph.astream(
             conversation_id, message, k8s_client

@@ -1,0 +1,44 @@
+name: pull-lint-tests-blackbox
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches:
+      - "main"
+      - "release-**"
+    paths:
+      - "tests/blackbox/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Python version
+        id: python-version
+        working-directory: ./tests/blackbox
+        run: |
+          ../../scripts/shell/extract-python-version.sh
+          echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: ./tests/blackbox
+        run: poetry install --with test
+
+      - name: Run lint
+        working-directory: ./tests/blackbox
+        run: |
+          ls
+          poetry run poe codecheck

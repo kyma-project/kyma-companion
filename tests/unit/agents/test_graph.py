@@ -331,9 +331,6 @@ class TestCompanionGraph:
     ):
         # Given
         state = CompanionState(subtasks=[], messages=messages)
-        user_query = next(
-            (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)),
-        )
 
         if expected_error:
             companion_graph._invoke_gatekeeper_node.side_effect = Exception(
@@ -350,14 +347,10 @@ class TestCompanionGraph:
 
         # Then
         if chain_response:
-            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
-                state, user_query.content
-            )
+            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(state)
         elif expected_error:
             # if error occurs, return message with error
-            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(
-                state, user_query.content
-            )
+            companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(state)
 
     @pytest.fixture
     def mock_companion_graph(self):
