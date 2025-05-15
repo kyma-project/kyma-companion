@@ -1,4 +1,4 @@
-from typing import Any, Literal, Protocol, List
+from typing import Any, Literal, Protocol
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, ToolMessage
@@ -25,9 +25,10 @@ from agents.common.constants import (
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import (
     compute_string_token_count,
+    convert_string_to_object,
     filter_messages,
     filter_valid_messages,
-    should_continue, convert_string_to_object,
+    should_continue,
 )
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
@@ -52,12 +53,12 @@ def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"
     return "agent"
 
 
-def agent_edge(state: BaseAgentState) -> Literal[SUMMARIZATION, "finalizer"]:
+def agent_edge(state: BaseAgentState) -> Literal["Summarization", "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
     last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"
-    return SUMMARIZATION  # from SUMMARIZATION --> tools
+    return "Summarization"  # from SUMMARIZATION --> tools
 
 
 class IAgent(Protocol):
@@ -159,7 +160,7 @@ class BaseAgent:
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
                 # convert string into object
-                tool_response_object = convert_string_to_object(message.content)
+                tool_response_object = convert_string_to_object(str(message.content))
                 if isinstance(tool_response_object, list):
                     tool_response.extend(tool_response_object)
                 else:
@@ -190,14 +191,16 @@ class BaseAgent:
                 nums_of_chunks=nums_of_chunks,
             )
 
-            logger.info(f"Tool Response Summarization completed")
+            logger.info("Tool Response Summarization completed")
             # update all tool message which is already summarized and
             # add new AI Message with summarized content
             for message in reversed(state.agent_messages):
                 if isinstance(message, ToolMessage):
                     message.content = "Summarized"
                 else:
-                    state.agent_messages.append(AIMessage(content="Summarized Tool Response - " + response))
+                    state.agent_messages.append(
+                        AIMessage(content="Summarized Tool Response - " + response)
+                    )
                     break
 
     async def _model_node(
@@ -285,7 +288,7 @@ class BaseAgent:
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
-            logger.info(f"Agent task completed")
+            logger.info("Agent task completed")
             state.my_task.complete()
 
         agent_pre_message = f"'{state.my_task.description}' , Agent Response - "

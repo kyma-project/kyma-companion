@@ -13,6 +13,8 @@ from utils.logging import get_logger
 from utils.models.factory import IModel
 
 logger = get_logger(__name__)
+
+
 class ToolResponseSummarizer:
     """Summarize the tool response by chunking"""
 
