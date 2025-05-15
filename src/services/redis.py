@@ -47,7 +47,7 @@ class Redis(metaclass=SingletonMeta):
 
         try:
             if await self.connection.ping():
-                logger.info("Redis connection is ready.")
+                logger.debug("Redis connection is ready.")
                 return True
         except Exception as e:
             logger.error(f"Redis connection failed: {e}")
