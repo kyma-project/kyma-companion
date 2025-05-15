@@ -20,7 +20,6 @@ from agents.common.constants import (
     SUBTASKS,
     SUMMARIZATION,
     TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
-    TOOLS_NEXT_STEP,
     TOTAL_CHUNKS_LIMIT,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
@@ -138,16 +137,29 @@ class BaseAgent:
             IS_LAST_STEP: True,
         }
 
-    async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
+    async def _invoke_chain(
+        self,
+        state: BaseAgentState,
+        config: RunnableConfig,
+        tool_summarized_response: str = "",
+    ) -> Any:
         input_messages = state.get_agent_messages_including_summary()
         if len(state.agent_messages) == 0:
             input_messages = filter_messages(state.messages)
 
+        # Append the tool summarized tool response
+        filter_valid_messages_with_tool_response = filter_valid_messages(input_messages)
+        if tool_summarized_response:
+            filter_valid_messages_with_tool_response.append(
+                AIMessage(
+                    content="Summarized Tool Response - " + tool_summarized_response
+                )
+            )
         # invoke the chain.
         response = await ainvoke_chain(
             self.chain,
             {
-                AGENT_MESSAGES: filter_valid_messages(input_messages),
+                AGENT_MESSAGES: filter_valid_messages_with_tool_response,
                 "query": state.my_task.description,
             },
             config=config,
@@ -158,6 +170,7 @@ class BaseAgent:
         self, state: BaseAgentState, config: RunnableConfig
     ) -> str:
         tool_response = []
+        summarized_tool_response = ""
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
                 # convert string into object
@@ -168,7 +181,7 @@ class BaseAgent:
                     tool_response.append(tool_response_object)
             else:
                 break
-        response = ""
+
         token_count = compute_string_token_count(
             str(tool_response), ModelType(self.model.name)
         )
@@ -185,65 +198,55 @@ class BaseAgent:
                 raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
 
             # summarize tool content
-            response = await self.tool_response_summarization.summarize_tool_response(
-                tool_response=tool_response,
-                user_query=state.my_task.description,
-                config=config,
-                nums_of_chunks=nums_of_chunks,
+            summarized_tool_response = (
+                await self.tool_response_summarization.summarize_tool_response(
+                    tool_response=tool_response,
+                    user_query=state.my_task.description,
+                    config=config,
+                    nums_of_chunks=nums_of_chunks,
+                )
             )
 
             logger.info("Tool Response Summarization completed")
             # update all tool message which is already summarized and
-            # add new AI Message with summarized content
             for message in reversed(state.agent_messages):
                 if isinstance(message, ToolMessage):
                     message.content = "Summarized"
                 else:
                     break
-
-        return response
-
-    async def _summarize_tool_responses_node(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> dict[str, Any]:
-        response = ""
-        if state.agent_messages and isinstance(state.agent_messages[-1], ToolMessage):
-            try:
-                response = await self._summarize_tool_response(state, config)
-            except Exception as e:
-                logger.error(
-                    f"Error while summarizing the tool response , Error : {e}."
-                )
-                return {
-                    AGENT_MESSAGES: [
-                        AIMessage(
-                            content="Your request is too broad and requires analyzing "
-                            "more resources than allowed at once. "
-                            "Please specify a particular resource you'd like to analyze so "
-                            "I can assist you more effectively.",
-                            name=self.name,
-                        )
-                    ],
-                    TOOLS_NEXT_STEP: "finalizer",
-                }
-        if response:
-            return {
-                AGENT_MESSAGES: [
-                    AIMessage(
-                        content="Summarized Tool Response - " + response,
-                        name=self.name,
-                    )
-                ],
-                TOOLS_NEXT_STEP: "agent",
-            }
-        return {TOOLS_NEXT_STEP: "agent"}
+        return summarized_tool_response
 
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
             if state.remaining_steps > AGENT_STEPS_NUMBER:
-                response = await self._invoke_chain(state, config)
+                summarized_tool_response = ""
+                if state.agent_messages and isinstance(
+                    state.agent_messages[-1], ToolMessage
+                ):
+                    try:
+                        summarized_tool_response = await self._summarize_tool_response(
+                            state, config
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error while summarizing the tool response , Error : {e}."
+                        )
+                        return {
+                            AGENT_MESSAGES: [
+                                AIMessage(
+                                    content="Your request is too broad and requires analyzing "
+                                    "more resources than allowed at once. "
+                                    "Please specify a particular resource you'd like to analyze so "
+                                    "I can assist you more effectively.",
+                                    name=self.name,
+                                )
+                            ]
+                        }
+                response = await self._invoke_chain(
+                    state, config, summarized_tool_response
+                )
             else:
                 if state.my_task:
                     state.my_task.status = SubTaskStatus.ERROR
@@ -340,9 +343,6 @@ class BaseAgent:
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
         workflow.add_node(
-            "tool_response_summarization", self._summarize_tool_responses_node
-        )
-        workflow.add_node(
             "tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES)
         )
         workflow.add_node("finalizer", self._finalizer_node)
@@ -358,13 +358,7 @@ class BaseAgent:
         workflow.add_conditional_edges("agent", agent_edge)
 
         # Define the edge: tool --> tool
-        workflow.add_edge("tools", "tool_response_summarization")
-
-        workflow.add_conditional_edges(
-            "tool_response_summarization",
-            lambda x: x.tools_next_step,
-            {"finalizer": "finalizer", "agent": "agent"},
-        )
+        workflow.add_edge("tools", "agent")
 
         # Define the edge: summarization --> agent | error_handler
         workflow.add_conditional_edges(

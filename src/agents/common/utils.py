@@ -55,7 +55,7 @@ def filter_messages(
 
 def filter_valid_messages(
     messages: Sequence[BaseMessage] | list[BaseMessage],
-) -> Sequence[BaseMessage]:
+) -> list[BaseMessage]:
     """
     Filters the invalid sequence of messages.
     For example:
