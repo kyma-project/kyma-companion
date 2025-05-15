@@ -493,7 +493,9 @@ def test_messages_endpoint(
             {
                 "status_code": 500,
                 "content-type": "application/json",
-                "body": {"detail": "service failed"},
+                "body": {
+                    "detail": 'service failed, Request data: {"resource_kind":"Pod","resource_name":"nginx-123","resource_api_version":"v1","namespace":"default"}'
+                },
             },
         ),
     ],

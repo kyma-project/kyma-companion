@@ -145,8 +145,6 @@ class ConversationService(metaclass=SingletonMeta):
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
 
-        logger.info("Processing request...")
-
         async for chunk in self._companion_graph.astream(
             conversation_id, message, k8s_client
         ):
