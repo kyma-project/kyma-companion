@@ -26,5 +26,5 @@ def test_kubernetes_agent_init(mock_model):
     assert agent.model == mock_model
 
     # Verify the tools are set correctly
-    expected_tools = [k8s_query_tool, fetch_pod_logs_tool, k8s_overview_query_tool]
+    expected_tools = [k8s_query_tool, fetch_pod_logs_tool]
     assert agent.tools == expected_tools

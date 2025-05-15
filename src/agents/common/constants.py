@@ -79,6 +79,4 @@ TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
     },
 )
 
-TOTAL_CHUNKS_LIMIT = 4
-
-TOOLS_NEXT_STEP = "tools_next_step"
+TOTAL_CHUNKS_LIMIT = 4  # Limit the number of allowed chunking of tool response
