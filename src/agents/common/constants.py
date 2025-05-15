@@ -65,9 +65,9 @@ SUCCESS_CODE = 200
 
 ERROR_RATE_LIMIT_CODE = 429
 
-K8S_API_PAGINATION_LIMIT = 20
+K8S_API_PAGINATION_LIMIT = 50
 
-K8S_API_PAGINATION_MAX_PAGE = 5
+K8S_API_PAGINATION_MAX_PAGE = 2
 
 TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
     lambda: 16000,  # Default token limit if model not found
@@ -79,4 +79,4 @@ TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
     },
 )
 
-TOTAL_CHUNKS_LIMIT = 4  # Limit the number of allowed chunking of tool response
+TOTAL_CHUNKS_LIMIT = 3  # Limit the number of allowed chunking of tool response
