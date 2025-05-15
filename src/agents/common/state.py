@@ -170,6 +170,7 @@ class BaseAgentState(BaseModel):
     is_last_step: IsLastStep
     error: str | None = None
     remaining_steps: RemainingSteps
+    tools_next_step: str = ""
 
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)

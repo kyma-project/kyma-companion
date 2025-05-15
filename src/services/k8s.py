@@ -4,7 +4,7 @@ import os
 import tempfile
 from enum import Enum
 from http import HTTPStatus
-from typing import Protocol, cast, runtime_checkable, Any
+from typing import Protocol, cast, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
@@ -264,7 +264,7 @@ class K8sClient:
             cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
 
         # Initialize variables for pagination
-        all_items : list[dict] = []
+        all_items: list[dict] = []
         continue_token = ""
         base_url = f"{self.get_api_server()}/{uri.lstrip('/')}"
         page_count = 0
@@ -315,7 +315,7 @@ class K8sClient:
                 # If this wasn't a list response, just return the result directly
                 if self.data_sanitizer:
                     return self.data_sanitizer.sanitize(result)
-                return result # type: ignore
+                return result  # type: ignore
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
