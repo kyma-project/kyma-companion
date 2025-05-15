@@ -391,7 +391,7 @@ class K8sClient:
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
         result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
-        return list[dict](result)  # type: ignore
+        return list[dict](result)
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
