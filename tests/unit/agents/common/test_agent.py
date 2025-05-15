@@ -497,7 +497,7 @@ class TestBaseAgent:
 
         # Then
         if expected_invoke_inputs != {}:
-            agent._invoke_chain.assert_called_once_with(given_state, mock_config , "")
+            agent._invoke_chain.assert_called_once_with(given_state, mock_config, "")
 
         # Verify task status is updated when remaining steps is insufficient
         if given_state.remaining_steps <= AGENT_STEPS_NUMBER:
