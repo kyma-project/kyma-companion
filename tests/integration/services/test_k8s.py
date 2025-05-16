@@ -53,8 +53,7 @@ class TestK8sClient:
         # then
         # the return type should be a list.
         assert isinstance(result, (dict | list))
-        assert "kind" in result
-        assert result["kind"] == "NodeMetricsList"
+        assert "metadata" in result[0]
 
     @pytest.mark.parametrize(
         "given_api_version, given_kind, given_namespace",
