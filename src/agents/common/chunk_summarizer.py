@@ -46,10 +46,11 @@ class ToolResponseSummarizer:
         chunk_size = ceil(len(tool_response) / nums_of_chunks)
         chunks = []
 
-        for i in range(0, len(tool_response), chunk_size):
-            chunk_items = tool_response[i : i + chunk_size]
-            text = "\n\n".join([str(item) for item in chunk_items])
-            chunks.append(Document(page_content=text))
+        if tool_response:
+            for i in range(0, len(tool_response), chunk_size):
+                chunk_items = tool_response[i : i + chunk_size]
+                text = "\n\n".join([str(item) for item in chunk_items])
+                chunks.append(Document(page_content=text))
 
         return chunks
 
@@ -77,7 +78,6 @@ class ToolResponseSummarizer:
     ) -> str:
         """summarize each chunk and return final summarized response."""
 
-        # chunks = self._create_chunks(tool_response, nums_of_chunks)
         chunks = self._create_chunks_from_list(tool_response, nums_of_chunks)
 
         chunk_summary = []
