@@ -5,53 +5,14 @@ from deepeval import evaluate
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
+from tests.integration.agents.fixtures.k8_query_tool_response import (
+    sample_deployment_tool_response,
+    sample_pods_tool_response,
+    sample_services_tool_response,
+)
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
 from utils.models.factory import ModelType
-
-# Sample test data
-tool_response_sample_1 = [
-    {
-        "content": "The weather in New York is sunny today with temperatures around 75°F."
-    },
-    {"content": "There's a 10% chance of rain in the evening."},
-    {"content": "Tomorrow will be partly cloudy with a high of 78°F."},
-]
-
-tool_response_sample_2 = [
-    {"content": "The stock market closed with NASDAQ up by 2.3% today."},
-    {"content": "S&P 500 gained 1.8% reaching an all-time high."},
-    {"content": "Tech stocks performed particularly well with Apple gaining 3.2%."},
-    {
-        "content": "Financial analysts predict continued growth through the next quarter."
-    },
-]
-
-tool_response_sample_3 = [
-    {"content": "Python 3.11 offers significant performance improvements over 3.10."},
-    {
-        "content": "New features include better error messages and enhanced typing capabilities."
-    },
-    {
-        "content": "The update focuses on speed with some benchmarks showing up to 60% faster execution."
-    },
-    {
-        "content": "Installation is recommended through official Python website or package managers."
-    },
-    {"content": "Most third-party libraries are now compatible with the new version."},
-]
-
-user_query_samples = [
-    "What's the weather like in New York?",
-    "How did the stock market perform today?",
-    "Tell me about the latest Python version",
-]
-
-expected_summaries = [
-    "The weather in New York is currently sunny with temperatures around 75°F. There is a 10% chance of rain in the evening. Tomorrow will be partly cloudy with a high of 78°F.",
-    "The stock market closed positively today with NASDAQ up 2.3% and S&P 500 gaining 1.8%, reaching an all-time high. Tech stocks performed well, with Apple gaining 3.2%. Financial analysts predict continued growth in the next quarter.",
-    "Python 3.11 offers significant performance improvements over version 3.10, with some benchmarks showing up to 60% faster execution. It features better error messages and enhanced typing capabilities. The update is available through the official Python website or package managers, and most third-party libraries are now compatible.",
-]
 
 
 @pytest.fixture
@@ -61,10 +22,9 @@ def tool_response_summarization_metric(evaluator_model):
         model=evaluator_model,
         threshold=0.5,
         evaluation_steps=[
-            "Determine whether the generated summary accurately represents all the information in the expected summary.",
-            "Check if the summary is concise while preserving all important details",
-            "Verify that the summary is relevant to the user's original query.",
-            "Ensure that the summary does not contain any information not present in the expected summary.",
+            "Determine whether the generated summary contains all the information found expected summary. ",
+            "Do not penalize if generated summary contain more information which is not relevant to user query",
+            "Verify that the summary has details relevant to the user query.",
             "Evaluate whether the summary maintains proper flow and readability when joining multiple chunk summaries.",
         ],
         evaluation_params=[
@@ -78,15 +38,94 @@ def tool_response_summarization_metric(evaluator_model):
 
 @pytest.fixture
 def summarization_model(app_models):
-    return app_models[ModelType.GPT4O_MINI]
+    return app_models[ModelType.GPT4O]
 
 
 @pytest.mark.parametrize(
     "tool_response, user_query, nums_of_chunks, expected_summary",
     [
-        (tool_response_sample_1, user_query_samples[0], 2, expected_summaries[0]),
-        (tool_response_sample_2, user_query_samples[1], 2, expected_summaries[1]),
-        (tool_response_sample_3, user_query_samples[2], 3, expected_summaries[2]),
+        (
+            sample_pods_tool_response,
+            "List all pods in the cluster and there status",
+            2,
+            """
+        Found 2 pods in cert-manager namespace:
+- cert-manager-769fdd4544-tjwwk: cert-manager controller pod, Running status, ready with 63 restarts
+- cert-manager-cainjector-56ccdfdd58-rsr4w: cert-manager cainjector pod, Running status, ready with 113 restarts""",
+        ),
+        (
+            sample_pods_tool_response,
+            "What are the IP addresses and networking details of the pods?",
+            2,
+            """
+        Networking configuration:
+- cert-manager-769fdd4544-tjwwk: Pod IP 100.96.1.30, Host IP 10.250.0.143, running on node ip-10-250-0-143.eu-west-1.compute.internal
+- cert-manager-cainjector-56ccdfdd58-rsr4w: Pod IP 100.96.1.32, Host IP 10.250.0.143, running on same node""",
+        ),
+        (
+            sample_pods_tool_response,
+            "Are there any pods with issues or high restart counts?",
+            2,
+            """
+        Both pods show concerning restart counts indicating instability:
+- cert-manager-769fdd4544-tjwwk: 63 restarts, last termination due to Error (exit code 1)
+- cert-manager-cainjector-56ccdfdd58-rsr4w: 113 restarts, last termination due to Error (exit code 1)""",
+        ),
+        (
+            sample_services_tool_response,
+            "Which services can be accessed from outside the cluster?",
+            3,
+            """
+        External access available through:
+- istio-ingressgateway: LoadBalancer service with external 
+hostname a46cfa8ca2ffa4b27b140b1abe1ae362-1188520584.eu-west-1.elb.amazonaws.com, 
+providing HTTP (port 80) and HTTPS (port 443) access to the cluster.""",
+        ),
+        (
+            sample_services_tool_response,
+            "Which services provide monitoring capabilities in the cluster?",
+            5,
+            """
+        Monitoring-related services:
+- cert-manager: Exposes Prometheus metrics on port 9402 (tcp-prometheus-servicemonitor)
+- istiod: Provides HTTP monitoring on port 15014, with Prometheus annotations for scraping on port 15014""",
+        ),
+        (
+            sample_services_tool_response,
+            "Which namespaces have services and what are they?",
+            2,
+            """
+        Services by namespace:
+- default: kubernetes (API server)
+- cert-manager: cert-manager (monitoring), cert-manager-webhook (webhook)
+- istio-system: istio-ingressgateway (ingress gateway), istiod (pilot/control plane)""",
+        ),
+        (
+            sample_deployment_tool_response,
+            "Are all deployments healthy?",
+            2,
+            """
+        Both cert-manager deployments are healthy. cert-manager controller: 1/1 replicas available, status Available=True, 
+        last transition 2025-03-26. cert-manager-cainjector: 1/1 replicas available, status Available=True, 
+        last transition 2025-03-27. All conditions show successful progression and minimum availability.""",
+        ),
+        (
+            sample_deployment_tool_response,
+            "What are the deployment strategies used?",
+            2,
+            """
+        Both deployments use RollingUpdate strategy with maxUnavailable=25% and maxSurge=25%. 
+        They have 10 revision history limit and 600 seconds progress deadline. 
+        Restart policy is Always with 30 seconds termination grace period.""",
+        ),
+        (
+            sample_deployment_tool_response,
+            "What ports are exposed by the deployment?",
+            2,
+            """
+        cert-manager controller exposes port 9402 (http-metrics) with TCP protocol. 
+        It has Prometheus annotations configured: prometheus.io/scrape=true, prometheus.io/port=9402, prometheus.io/path=/metrics.""",
+        ),
     ],
 )
 @pytest.mark.asyncio
