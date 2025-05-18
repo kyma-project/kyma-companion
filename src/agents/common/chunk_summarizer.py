@@ -53,7 +53,6 @@ class ToolResponseSummarizer:
 
         return chunks
 
-
     async def summarize_tool_response(
         self,
         tool_response: list[Any],

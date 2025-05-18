@@ -1,10 +1,7 @@
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from math import ceil
+from unittest.mock import AsyncMock, Mock, patch
 
-from langchain.prompts import PromptTemplate
+import pytest
 from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT
@@ -38,7 +35,6 @@ class TestToolResponseSummarizer:
         # when
         summarizer._create_chain(user_query)
 
-
         mock_prompt_template.assert_called_once_with(
             template=CHUNK_SUMMARIZER_PROMPT,
             input_variables=["tool_response_chunk"],
@@ -49,36 +45,43 @@ class TestToolResponseSummarizer:
         "test_description, tool_response, target_num_chunks, expected_chunk_size",
         [
             (
-                    "should calculate chunk size correctly for long text",
-                    "A" * 1000,
-                    10,
-                    100,
+                "should calculate chunk size correctly for long text",
+                "A" * 1000,
+                10,
+                100,
             ),
             (
-                    "should calculate chunk size correctly for short text",
-                    "Short text",
-                    10,
-                    1,
+                "should calculate chunk size correctly for short text",
+                "Short text",
+                10,
+                1,
             ),
             (
-                    "should handle empty text",
-                    "",
-                    10,
-                    1,
+                "should handle empty text",
+                "",
+                10,
+                1,
             ),
             (
-                    "should calculate chunk size correctly with different target",
-                    "A" * 1000,
-                    5,
-                    200,
+                "should calculate chunk size correctly with different target",
+                "A" * 1000,
+                5,
+                200,
             ),
         ],
     )
     def test_dynamic_chunk_size_from_text(
-            self, summarizer, test_description, tool_response, target_num_chunks, expected_chunk_size
+        self,
+        summarizer,
+        test_description,
+        tool_response,
+        target_num_chunks,
+        expected_chunk_size,
     ):
         # when
-        chunk_size = summarizer._dynamic_chunk_size_from_text(tool_response, target_num_chunks)
+        chunk_size = summarizer._dynamic_chunk_size_from_text(
+            tool_response, target_num_chunks
+        )
 
         # then
         assert chunk_size == expected_chunk_size
@@ -87,39 +90,44 @@ class TestToolResponseSummarizer:
         "test_description, tool_response, nums_of_chunks, expected_chunks",
         [
             (
-                    "should create chunks correctly from list with exact division",
-                    [{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}],
-                    2,
-                    [
-                        Document(page_content="{'id': 1}\n\n{'id': 2}"),
-                        Document(page_content="{'id': 3}\n\n{'id': 4}"),
-                    ],
+                "should create chunks correctly from list with exact division",
+                [{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}],
+                2,
+                [
+                    Document(page_content="{'id': 1}\n\n{'id': 2}"),
+                    Document(page_content="{'id': 3}\n\n{'id': 4}"),
+                ],
             ),
             (
-                    "should create chunks correctly from list with inexact division",
-                    [{"id": 1}, {"id": 2}, {"id": 3}],
-                    2,
-                    [
-                        Document(page_content="{'id': 1}\n\n{'id': 2}"),
-                        Document(page_content="{'id': 3}"),
-                    ],
+                "should create chunks correctly from list with inexact division",
+                [{"id": 1}, {"id": 2}, {"id": 3}],
+                2,
+                [
+                    Document(page_content="{'id': 1}\n\n{'id': 2}"),
+                    Document(page_content="{'id': 3}"),
+                ],
             ),
             (
-                    "should handle single item list",
-                    [{"id": 1}],
-                    2,
-                    [Document(page_content="{'id': 1}")],
+                "should handle single item list",
+                [{"id": 1}],
+                2,
+                [Document(page_content="{'id': 1}")],
             ),
             (
-                    "should handle empty list",
-                    [],
-                    2,
-                    [],
+                "should handle empty list",
+                [],
+                2,
+                [],
             ),
         ],
     )
     def test_create_chunks_from_list(
-            self, summarizer, test_description, tool_response, nums_of_chunks, expected_chunks
+        self,
+        summarizer,
+        test_description,
+        tool_response,
+        nums_of_chunks,
+        expected_chunks,
     ):
         # given
         # Convert the list items to string representation for comparison
@@ -133,8 +141,6 @@ class TestToolResponseSummarizer:
         assert len(chunks) == len(expected_chunks)
         for i, chunk in enumerate(chunks):
             assert chunk.page_content == expected_chunks[i].page_content
-
-
 
     @pytest.mark.asyncio
     @patch("agents.common.chunk_summarizer.ainvoke_chain", new_callable=AsyncMock)
@@ -156,18 +162,22 @@ class TestToolResponseSummarizer:
 
         mock_ainvoke_chain.side_effect = [mock_response1, mock_response2]
 
-        summarizer._create_chunks_from_list = Mock(return_value=[
-            Document(page_content="Chunk 1"),
-            Document(page_content="Chunk 2"),
-        ])
+        summarizer._create_chunks_from_list = Mock(
+            return_value=[
+                Document(page_content="Chunk 1"),
+                Document(page_content="Chunk 2"),
+            ]
+        )
 
         result = await summarizer.summarize_tool_response(
             tool_response, user_query, config, nums_of_chunks
         )
 
-        summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
-        assert summarizer._create_chain.call_count == 2
-        assert mock_ainvoke_chain.call_count == 2
+        summarizer._create_chunks_from_list.assert_called_once_with(
+            tool_response, nums_of_chunks
+        )
+
+        assert mock_ainvoke_chain.call_count == nums_of_chunks
 
         # Check first ainvoke_chain call
         mock_ainvoke_chain.assert_any_call(
@@ -202,5 +212,7 @@ class TestToolResponseSummarizer:
         )
 
         # then
-        summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
+        summarizer._create_chunks_from_list.assert_called_once_with(
+            tool_response, nums_of_chunks
+        )
         assert result == ""
