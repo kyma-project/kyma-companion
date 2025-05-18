@@ -3,7 +3,6 @@ from typing import Any
 
 from langchain.prompts import PromptTemplate
 from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables.config import RunnableConfig
 
@@ -54,20 +53,6 @@ class ToolResponseSummarizer:
 
         return chunks
 
-    def _create_chunks(
-        self, tool_response: str, nums_of_chunks: int
-    ) -> list[Document] | None:
-        """Split text into chunks"""
-        chunk_size = self._dynamic_chunk_size_from_text(tool_response, nums_of_chunks)
-        chunk_overlap = 100
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", "."],
-        )
-        docs = [Document(page_content=tool_response)]
-
-        return text_splitter.split_documents(docs)
 
     async def summarize_tool_response(
         self,

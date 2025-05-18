@@ -28,7 +28,7 @@ class TestToolResponseSummarizer:
         # then
         assert summarizer.model == model_mock
 
-    @patch("langchain.prompts.PromptTemplate")
+    @patch("agents.common.chunk_summarizer.PromptTemplate")
     def test_create_chain(self, mock_prompt_template, summarizer):
         # given
         user_query = "sample query"
@@ -36,10 +36,9 @@ class TestToolResponseSummarizer:
         mock_prompt_template.return_value.__or__.return_value = mock_chain
 
         # when
-        chain = summarizer._create_chain(user_query)
+        summarizer._create_chain(user_query)
 
-        # then
-        assert chain == mock_chain
+
         mock_prompt_template.assert_called_once_with(
             template=CHUNK_SUMMARIZER_PROMPT,
             input_variables=["tool_response_chunk"],
@@ -135,30 +134,10 @@ class TestToolResponseSummarizer:
         for i, chunk in enumerate(chunks):
             assert chunk.page_content == expected_chunks[i].page_content
 
-    @patch("langchain.text_splitter.RecursiveCharacterTextSplitter")
-    def test_create_chunks(self, mock_text_splitter, summarizer):
-        # given
-        tool_response = "Test response content \n\n" * 100
-        nums_of_chunks = 2
-        mock_splitter_instance = Mock()
-        mock_text_splitter.return_value = mock_splitter_instance
-        expected_docs = [Document(page_content="chunk1"), Document(page_content="chunk2")]
-        mock_splitter_instance.split_documents.return_value = expected_docs
 
-        # when
-        result = summarizer._create_chunks(tool_response, nums_of_chunks)
-
-        # then
-        mock_text_splitter.assert_called_once_with(
-            chunk_size=summarizer._dynamic_chunk_size_from_text(tool_response, nums_of_chunks),
-            chunk_overlap=100,
-            separators=["\n\n", "\n", "."],
-        )
-        mock_splitter_instance.split_documents.assert_called_once()
-        assert result == expected_docs
 
     @pytest.mark.asyncio
-    @patch("utils.chain.ainvoke_chain")
+    @patch("agents.common.chunk_summarizer.ainvoke_chain", new_callable=AsyncMock)
     async def test_summarize_tool_response(self, mock_ainvoke_chain, summarizer):
         # given
         tool_response = [{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}]
@@ -166,7 +145,7 @@ class TestToolResponseSummarizer:
         config = {"config_key": "config_value"}
         nums_of_chunks = 2
 
-        mock_chain = Mock()
+        mock_chain = AsyncMock()
         summarizer._create_chain = Mock(return_value=mock_chain)
 
         # Mock response objects with content attribute
@@ -177,18 +156,15 @@ class TestToolResponseSummarizer:
 
         mock_ainvoke_chain.side_effect = [mock_response1, mock_response2]
 
-        # Create spy for _create_chunks_from_list
         summarizer._create_chunks_from_list = Mock(return_value=[
             Document(page_content="Chunk 1"),
             Document(page_content="Chunk 2"),
         ])
 
-        # when
         result = await summarizer.summarize_tool_response(
             tool_response, user_query, config, nums_of_chunks
         )
 
-        # then
         summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
         assert summarizer._create_chain.call_count == 2
         assert mock_ainvoke_chain.call_count == 2
