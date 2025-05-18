@@ -52,7 +52,7 @@ class Hana(metaclass=SingletonMeta):
 
         try:
             if self.connection.isconnected():
-                logger.info("HANA DB connection is ready.")
+                logger.debug("HANA DB connection is ready.")
                 return True
         except Exception as e:
             logger.error(f"Error while connecting to HANA DB: {e}")

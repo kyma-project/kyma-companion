@@ -70,13 +70,18 @@ class LLMProbe(metaclass=SingletonMeta):
         for name, model in self._models.items():
             # If the current model already is ready, we will not check the state again.
             if self._model_states.get(name, False):
-                logger.info(f"{name} connection is ready.")
+                logger.debug(f"{name} connection is ready.")
                 continue
 
             try:
-                # Check if the model is an implemantation of IModel or an embedding and test accordingly,
-                # if they are are operational.
+                # Check if the model is an implementation of IModel or an embedding and test accordingly,
+                # if they are operational.
 
+                logger.info(
+                    f"Invoking the mode: {name} to check its accessibility. "
+                    f"This should only be done once. If you see this log message multiple "
+                    f"times, please open a bug report."
+                )
                 response = (
                     model.invoke("Test.")
                     if isinstance(model, IModel)
