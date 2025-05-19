@@ -97,3 +97,7 @@ TOKEN_USAGE_RESET_INTERVAL = config(
 )  # 24 hours
 
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
+K8S_API_RESOURCES = config(
+    "K8S_API_RESOURCES",
+    default=f"{ Path(__file__).parent.parent.parent }/config/api_resources.json",
+)

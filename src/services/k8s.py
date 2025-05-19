@@ -4,7 +4,7 @@ import os
 import tempfile
 from enum import Enum
 from http import HTTPStatus
-from typing import Protocol, cast, runtime_checkable
+from typing import Any, Protocol, cast, runtime_checkable
 
 import requests
 from kubernetes import client, dynamic
@@ -145,6 +145,10 @@ class IK8sClient(Protocol):
         """Fetch logs of Kubernetes Pod."""
         ...
 
+    def get_group_version(self, group_version: str) -> dict:
+        """Get the group version of the Kubernetes API."""
+        ...
+
 
 class K8sClient:
     """Client to interact with the Kubernetes API."""
@@ -155,6 +159,7 @@ class K8sClient:
     client_key_temp_filename: str = ""
     dynamic_client: dynamic.DynamicClient
     data_sanitizer: IDataSanitizer | None
+    api_client: Any
 
     def __init__(
         self,
@@ -235,7 +240,8 @@ class K8sClient:
         else:
             raise ValueError("Unknown authentication type.")
 
-        return dynamic.DynamicClient(client.api_client.ApiClient(configuration=conf))
+        self.api_client = client.api_client.ApiClient(configuration=conf)
+        return dynamic.DynamicClient(self.api_client)
 
     def _get_auth_headers(self) -> dict:
         """Get the authentication headers for the Kubernetes API request."""
@@ -415,3 +421,13 @@ class K8sClient:
         for line in response.iter_lines():
             logs.append(str(line))
         return logs
+
+    def get_group_version(self, group_version: str) -> dict:
+        """Get the group version of the Kubernetes API."""
+        result = self.execute_get_api_request(f"/apis/{group_version}")
+        if not isinstance(result, dict):
+            raise ValueError(
+                f"Invalid response from Kubernetes API for group version {group_version}. "
+                f"Expected a dictionary, but got {type(result)}."
+            )
+        return result
