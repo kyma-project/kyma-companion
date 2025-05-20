@@ -98,11 +98,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/telemetry-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/resources/*",
+      "docs/user/integration/*"
     ]
   },
   {
