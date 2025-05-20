@@ -144,11 +144,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/keda-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/04-10-footprint.md",
+      "docs/user/04-20-demo-applications.md"
     ]
   },
   {
