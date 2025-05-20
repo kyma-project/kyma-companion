@@ -135,7 +135,7 @@ def get_relevant_context_from_k8s_cluster(
 ) -> str:
     """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
-    logger.info("Fetching relevant data from k8s cluster")
+    logger.debug("Fetching relevant data from k8s cluster")
 
     namespace: str = message.namespace or ""
     kind: str = message.resource_kind or ""
@@ -161,7 +161,7 @@ def get_relevant_context_from_k8s_cluster(
     elif is_non_empty_str(namespace) and kind.lower() == "namespace":
         # Get an overview of the namespace
         # by fetching all K8s events with warning type.
-        logger.info("Fetching all K8s Events with warning type")
+        logger.debug("Fetching all K8s Events with warning type")
         context = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):

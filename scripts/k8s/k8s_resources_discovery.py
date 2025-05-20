@@ -2,31 +2,64 @@ import json
 from pathlib import Path
 
 from kubernetes import client
+from pydantic.json import pydantic_encoder
 
 from services.k8s import K8sAuthHeaders, K8sClient
+from services.k8s_resource_discovery import ApiResourceGroup
 
 
-def save_all_groups_with_resources(k8s_client: K8sClient, file_path: str) -> None:
+def save_all_groups_with_resources(k8s_client: K8sClient, file_path: Path) -> None:
     """
     Save all groups with resources to a json file.
     :param k8s_client:
+    :param file_path: Path to the json file.
     :return:
     """
 
-    # Discover all API groups and versions
+    # Get Core API group.
+    # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreApi.md
+    # fetch the resources for the core API group.
+    res = k8s_client.get_group_version("v1")
+    print(json.dumps(res, indent=4))
+
+    core_api_group = {
+        "api_version": None,
+        "kind": None,
+        "name": "core/v1",
+        "server_address_by_client_cid_rs": None,
+        "preferred_version": {"group_version": "core", "version": "v1"},
+        "versions": [
+            {
+                "group_version": "core/v1",
+                "version": "v1",
+                "resources": res.get("resources", []),
+            }
+        ],
+    }
+
+    # Discover all other API groups and versions
+    # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/ApisApi.md
     discovery = client.ApisApi(k8s_client.api_client)
     api_response = discovery.get_api_versions()
+
     groups = api_response.to_dict()["groups"]
     for group in groups:
         for version in group["versions"]:
-            print(f"Group: {group['name']}, Version: {version['version']}")
+            # print(f"Group: {group['name']}, Version: {version['version']}")
             res = k8s_client.get_group_version(version["group_version"])
-            print("...")
-            print(json.dumps(res, indent=4))
+            # print(json.dumps(res, indent=4))
             version["resources"] = res.get("resources", [])
 
+    # append core_api_group to start of groups list.
+    groups.insert(0, core_api_group)
+
+    # validate the data structure.
+    api_resources: list[ApiResourceGroup] = [
+        ApiResourceGroup.model_validate(g) for g in groups
+    ]
+
     with open(file_path, "w") as f:
-        json.dump(groups, f, indent=4)
+        json.dump(api_resources, f, indent=4, default=pydantic_encoder)
 
 
 if __name__ == "__main__":

@@ -6,15 +6,12 @@ from services.k8s import IK8sClient
 from utils import logging
 from utils.settings import K8S_API_RESOURCES
 
-GROUP_VERSION_SEPARATOR = "/"
-GROUP_VERSION_PARTS_COUNT = 2
-
 
 class ResourceKind(BaseModel):
     """ResourceKind is a class that represents a kind of resource in Kubernetes."""
 
     name: str
-    singular_name: str = Field(alias="singularName")
+    singular_name: str | None = Field(alias="singularName", default=None)
     namespaced: bool
     kind: str
     verbs: list[str]
@@ -44,7 +41,7 @@ class ApiResourceGroup(BaseModel):
     kind: str | None
     name: str
     preferred_version: PreferredVersion
-    server_address_by_client_cid_rs: str | None
+    server_address_by_client_cid_rs: str | list | None
     versions: list[Version]
 
 
@@ -66,25 +63,9 @@ class K8sResourceDiscovery:
             self.logger.info(f"Loading API resources from file: {K8S_API_RESOURCES}")
             with open(K8S_API_RESOURCES) as f:
                 items = json.load(f)
-                K8sResourceDiscovery.api_resources = [ApiResourceGroup.model_validate(i) for i in items]
-
-    def _split_group_version(self, group_version: str) -> tuple[str, str]:
-        """
-        Split the group_version string into group and version.
-        :param group_version: The group/version string in the format <group>/<version>.
-        :return: A tuple of (group, version).
-        """
-        if group_version == "":
-            raise ValueError(
-                "Invalid groupVersion: empty. Expected format: <group>/<version>."
-            )
-        # extract group and version from the group_version string '<group>/<version>'.
-        group_version = group_version.strip().split(GROUP_VERSION_SEPARATOR)
-        if len(group_version) != GROUP_VERSION_PARTS_COUNT:
-            raise ValueError(
-                f"Invalid groupVersion format: {group_version}. Expected format: <group>/<version>"
-            )
-        return group_version[0], group_version[1]
+                K8sResourceDiscovery.api_resources = [
+                    ApiResourceGroup.model_validate(i) for i in items
+                ]
 
     def get_resource_kind_static(self, group_version: str, kind: str) -> ResourceKind:
         """
@@ -93,30 +74,35 @@ class K8sResourceDiscovery:
         :param kind:
         :return:
         """
-        group_name, version_name = self._split_group_version(group_version)
-
-        # Check if the group exist in the API resources
-        group = next(
-            (g for g in K8sResourceDiscovery.api_resources if g.name == group_name),
-            None,
+        group_version_local = (
+            "core/v1" if group_version.lower() == "v1" else group_version.lower()
         )
-        if group is None:
-            raise ValueError(f"Group '{group_name}' not found in API resources.")
+        kind_local = kind.split(".")[0] if "." in kind else kind
 
-        version = next((v for v in group.versions if v.version == version_name), None)
-        if version is None:
-            raise ValueError(
-                f"Invalid groupVersion: {group_version}. "
-                f"Version '{version_name}' not found in group '{group_name}'."
-            )
-
-        resource_kind = next(
-            (r for r in version.resources if r.kind.lower() == kind.lower()), None
+        # Check if the group version exists in the resources.
+        self.logger.debug(
+            f"looking for Kind {kind_local}: {group_version_local} in local api resources list..."
         )
+        resource_kind: ResourceKind | None = None
+        for group in K8sResourceDiscovery.api_resources:
+            for version in group.versions:
+                if version.group_version == group_version_local:
+                    # Check if the kind exists in the resources of the version
+                    resource_kind = next(
+                        (
+                            r
+                            for r in version.resources
+                            if r.kind.lower() == kind_local.lower()
+                        ),
+                        None,
+                    )
+                    if resource_kind is not None:
+                        break
+
         if resource_kind is None:
             raise ValueError(
                 f"Invalid resource kind: {kind}. "
-                f"Kind '{kind}' not found in groupVersion '{group_version}'."
+                f"Kind '{kind}' (Actual search: {kind_local}) not found in groupVersion '{group_version}'."
             )
         return resource_kind
 
@@ -128,18 +114,22 @@ class K8sResourceDiscovery:
         :param kind:
         :return:
         """
-        group_version = self.k8s_client.get_group_version(group_version)
-        if group_version is None:
+        group_version_details = self.k8s_client.get_group_version(group_version)
+        if group_version_details is None:
             raise ValueError(f"Invalid groupVersion: {group_version}. Not found.")
 
-        resources: list[ResourceKind] = group_version.get("resources", [])
+        resources: list[ResourceKind] = [
+            ResourceKind.model_validate(i)
+            for i in group_version_details.get("resources", [])
+        ]
+        kind_local = kind.split(".")[0] if "." in kind else kind
         resource_kind = next(
-            (r for r in resources if r.kind.lower() == kind.lower()), None
+            (r for r in resources if r.kind.lower() == kind_local.lower()), None
         )
         if resource_kind is None:
             raise ValueError(
                 f"Invalid resource kind: {kind}. "
-                f"Kind '{kind}' not found in groupVersion '{group_version}'."
+                f"Kind '{kind}' (Actual search: {kind_local}) not found in groupVersion '{group_version}'."
             )
         return resource_kind
 
