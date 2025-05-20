@@ -153,11 +153,16 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/serverless.git",
     "include_files": [
-      "README.md",
-      "docs/*"
+      "docs/user/resources/*",
+      "docs/user/troubleshooting-guides/*",
+      "docs/user/technical-reference/*",
+      "docs/user/tutorials/*",
+      "docs/user/00-30-development-toolkit.md",
+      "docs/user/08-10-best-practices.md"
     ],
     "exclude_files": [
-      "*/_sidebar.md"
+      "*/README.md",
+      "docs/user/tutorials/01-60-set-external-registry.md"
     ]
   },
   {
