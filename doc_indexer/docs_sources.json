@@ -189,5 +189,17 @@
       "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
       "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md"
     ]
+  },
+  {
+    "name": "btp-dev-guidance",
+    "source_type": "Github",
+    "url": "https://github.com/sap-tutorials/btp-dev-guidance.git",
+    "include_files": [
+      "tutorials/prepare-btp-kyma/prepare-btp-kyma.md",
+      "tutorials/deploy-to-kyma/deploy-to-kyma.md",
+      "tutorials/user-role-assignment/user-role-assignment.md",
+      "tutorials/integrate-with-work-zone-kymaruntime/integrate-with-work-zone-kymaruntime.md",
+      "tutorials/set-up-cicd-kyma/set-up-cicd-kyma.md"
+    ]
   }
 ]
