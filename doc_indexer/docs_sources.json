@@ -41,10 +41,14 @@
     "url": "https://github.com/kyma-project/istio.git",
     "include_files": [
       "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/04-00-istio-custom-resource.md",
+      "docs/user/tutorials/01-10-external-authorization-provider.md",
+      "docs/user/tutorials/01-20-expose-httbin-gateway-api.md",
+      "docs/user/tutorials/01-50-send-requests-using-egress.md",
+      "docs/user/tutorials/01-55-send-requests-using-egress-and-mtls.md",
+      "docs/user/tutorials/01-60-enable-nlb-load-balancer.md",
+      "docs/user/technical-reference/05-00-istio-controller-parameters.md",
+      "docs/user/technical-reference/05-10-istio-controller-rbac.md"
     ]
   },
   {
