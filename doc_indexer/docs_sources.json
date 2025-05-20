@@ -40,7 +40,6 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/istio.git",
     "include_files": [
-      "README.md",
       "docs/user/04-00-istio-custom-resource.md",
       "docs/user/tutorials/01-10-external-authorization-provider.md",
       "docs/user/tutorials/01-20-expose-httbin-gateway-api.md",
@@ -80,7 +79,6 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/api-gateway.git",
     "include_files": [
-      "README.md",
       "docs/user/custom-resources/apigateway/*",
       "docs/user/custom-resources/apirule/04-10-apirule-custom-resource.md",
       "docs/user/custom-resources/apirule/04-15-api-rule-access-strategies.md",
@@ -92,10 +90,6 @@
       "docs/user/tutorials/01-20-set-up-tls-gateway.md",
       "docs/user/tutorials/01-30-set-up-mtls-gateway.md",
       "docs/user/tutorials/01-70-local-rate-limit.md"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md",
-      "docs/contributor/adr/adr-template.md"
     ]
   },
   {
@@ -115,12 +109,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/btp-manager.git",
     "include_files": [
-      "README.md",
       "docs/user/resources/*",
       "docs/user/tutorials/04-40-create-service-in-cluster.md"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
     ]
   },
   {
