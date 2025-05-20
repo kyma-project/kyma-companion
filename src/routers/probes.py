@@ -8,6 +8,7 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
+from services.k8s_resource_discovery import K8sResourceDiscovery
 from services.probes import (
     get_llm_probe,
     get_usage_tracker_probe,
@@ -167,6 +168,11 @@ async def readyz(
     """The endpoint for the Ready Probe."""
 
     logger.debug("Readiness probe called.")
+
+    # Initialize K8sResourceDiscovery.
+    K8sResourceDiscovery.initialize()
+
+    # Check all the required statuses.
     response = ReadinessModel(
         is_hana_initialized=hana.has_connection(),
         is_redis_initialized=redis.has_connection(),

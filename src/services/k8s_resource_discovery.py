@@ -1,10 +1,13 @@
 import json
+import re
 
 from pydantic import BaseModel, Field
 
 from services.k8s import IK8sClient
 from utils import logging
-from utils.settings import K8S_API_RESOURCES
+from utils.settings import K8S_API_RESOURCES_JSON_FILE, K8S_RESOURCE_RELATIONS_JSON_FILE
+
+logger = logging.get_logger(__name__)
 
 
 class ResourceKind(BaseModel):
@@ -12,11 +15,15 @@ class ResourceKind(BaseModel):
 
     name: str
     singular_name: str | None = Field(alias="singularName", default=None)
-    namespaced: bool
+    namespaced: bool  # defines if it is namespaced or cluster scoped resource
     kind: str
     verbs: list[str]
     categories: list[str] | None = None
     storage_version_hash: str | None = Field(alias="storageVersionHash", default=None)
+
+    def get_scope(self) -> str:
+        """Get the scope of the resource kind."""
+        return "cluster" if self.namespaced else "namespaced"
 
 
 class Version(BaseModel):
@@ -45,6 +52,14 @@ class ApiResourceGroup(BaseModel):
     versions: list[Version]
 
 
+class K8sResourceRelation(BaseModel):
+    """K8sResourceRelation is a class that represents the relation of a resource to modules."""
+
+    kind_pattern: str = Field(alias="kindPattern")
+    group_version_pattern: str = Field(alias="groupVersionPattern")
+    related_to: str = Field(alias="relatedTo")
+
+
 class K8sResourceDiscovery:
     """
     K8sResourceDiscovery is a class that provides methods to discover Kubernetes resources.
@@ -52,20 +67,52 @@ class K8sResourceDiscovery:
 
     # Class static variable to store API resources
     api_resources: list[ApiResourceGroup] = []
+    resource_relations: list[K8sResourceRelation] = []
 
     def __init__(self, k8s_client: IK8sClient):
+        K8sResourceDiscovery.initialize()
         self.k8s_client = k8s_client
-        self.logger = logging.get_logger(self.__class__.__name__)
 
-        # read the json file ./config/api_resources.json
-        # and store the data in self.api_resources
+    @staticmethod
+    def initialize() -> None:
+        """Static method to initialize the K8sResourceDiscovery class."""
+        # load the json file ./config/api_resources.json.
         if len(K8sResourceDiscovery.api_resources) == 0:
-            self.logger.info(f"Loading API resources from file: {K8S_API_RESOURCES}")
-            with open(K8S_API_RESOURCES) as f:
+            logger.info(
+                f"Loading API resources from file: {K8S_API_RESOURCES_JSON_FILE}"
+            )
+            with open(K8S_API_RESOURCES_JSON_FILE) as f:
                 items = json.load(f)
                 K8sResourceDiscovery.api_resources = [
                     ApiResourceGroup.model_validate(i) for i in items
                 ]
+
+        # load the json file ./config/kyma_resource_patterns.json.
+        if len(K8sResourceDiscovery.resource_relations) == 0:
+            logger.info(
+                f"Loading resource relations from file: {K8S_RESOURCE_RELATIONS_JSON_FILE}"
+            )
+            with open(K8S_RESOURCE_RELATIONS_JSON_FILE) as f:
+                items = json.load(f)
+                K8sResourceDiscovery.resource_relations = [
+                    K8sResourceRelation.model_validate(i) for i in items
+                ]
+
+    @staticmethod
+    def get_resource_related_to(group_version: str, kind: str) -> str:
+        """
+        Get the related module of a resource based on its group version and kind.
+        :param group_version:
+        :param kind:
+        :return:
+        """
+        K8sResourceDiscovery.initialize()
+        for relation in K8sResourceDiscovery.resource_relations:
+            if re.fullmatch(
+                relation.group_version_pattern, group_version.lower()
+            ) and re.fullmatch(relation.kind_pattern, kind):
+                return relation.related_to
+        return "Kubernetes"  # Default to Kubernetes if no match found
 
     def get_resource_kind_static(self, group_version: str, kind: str) -> ResourceKind:
         """
@@ -80,7 +127,7 @@ class K8sResourceDiscovery:
         kind_local = kind.split(".")[0] if "." in kind else kind
 
         # Check if the group version exists in the resources.
-        self.logger.debug(
+        logger.debug(
             f"looking for Kind {kind_local}: {group_version_local} in local api resources list..."
         )
         resource_kind: ResourceKind | None = None
@@ -144,7 +191,7 @@ class K8sResourceDiscovery:
             # First try static lookup.
             return self.get_resource_kind_static(group_version, kind)
         except ValueError as e:
-            self.logger.warning(
+            logger.warning(
                 f"Error while getting resource statically "
                 f"(group_version: {group_version}, kind: {kind}): {e}\n "
                 f"Looking up dynamically..."
@@ -152,7 +199,7 @@ class K8sResourceDiscovery:
             # If static lookup fails, try dynamic lookup.
             return self.get_resource_kind_dynamic(group_version, kind)
         except Exception as e:
-            self.logger.error(
+            logger.error(
                 f"Error while getting resource (group_version: {group_version}, kind: {kind}): {e}"
             )
             raise

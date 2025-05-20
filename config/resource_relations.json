@@ -1,0 +1,32 @@
+[
+  {
+    "groupVersionPattern": ".*kyma-project\\.io\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
+    "groupVersionPattern": ".*sap\\.com\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
+    "groupVersionPattern": ".*istio\\.io\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
+    "groupVersionPattern": ".*gardener\\.cloud\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
+    "groupVersionPattern": ".*keda\\.sh\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
+    "groupVersionPattern": ".*ory\\.sh\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  }
+]

@@ -242,11 +242,13 @@ async def messages(
         ) from e
 
     # Validate the k8s resource context.
-    if message.resource_kind.lower() != "Cluster":
+    if not message.is_overview_query():
         try:
-            K8sResourceDiscovery(k8s_client).get_resource_kind(
+            resource_kind_details = K8sResourceDiscovery(k8s_client).get_resource_kind(
                 str(message.resource_api_version), str(message.resource_kind)
             )
+            # Add details to the message.
+            message.add_details(resource_kind_details)
         except Exception as e:
             logger.error(e)
             raise HTTPException(
