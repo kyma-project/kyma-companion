@@ -173,18 +173,5 @@
     "exclude_files": [
       "*/_sidebar.md"
     ]
-  },
-  {
-    "name": "kyma",
-    "source_type": "Github",
-    "url": "https://github.com/kyma-project/kyma.git",
-    "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md",
-      "*/_*.md"
-    ]
   }
 ]
