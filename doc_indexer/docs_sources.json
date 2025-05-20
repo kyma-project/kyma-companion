@@ -67,11 +67,12 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/cloud-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
+      "docs/user/resources/*",
+      "docs/user/tutorials/*"
     ],
     "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/resources/README.md",
+      "docs/user/tutorials/README.md"
     ]
   },
   {
