@@ -1,17 +1,32 @@
 from math import ceil
-from typing import Any
+from typing import Any, Protocol
 
 from langchain.prompts import PromptTemplate
 from langchain.schema import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables.config import RunnableConfig
 
+from agents.common.constants import TOTAL_CHUNKS_LIMIT
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
 logger = get_logger(__name__)
+
+
+class IToolResponseSummarizer(Protocol):
+    """Protocol for IResponseConverter."""
+
+    async def summarize_tool_response(
+        self,
+        tool_response: list[Any],
+        user_query: str,
+        config: RunnableConfig,
+        nums_of_chunks: int,
+    ) -> str:
+        """summarize each chunk and return final summarized response."""
+        ...
 
 
 class ToolResponseSummarizer:
@@ -29,13 +44,6 @@ class ToolResponseSummarizer:
         )
 
         return agent_prompt | self.model.llm
-
-    def _dynamic_chunk_size_from_text(
-        self, tool_response: str, target_num_chunks: int = 10
-    ) -> int:
-        """calculate chunk size based on tool response"""
-        total_chars = len(tool_response)
-        return max(1, total_chars // target_num_chunks)
 
     def _create_chunks_from_list(
         self, tool_response: list[Any], nums_of_chunks: int
@@ -58,17 +66,37 @@ class ToolResponseSummarizer:
         tool_response: list[Any],
         user_query: str,
         config: RunnableConfig,
-        nums_of_chunks: int,
+        nums_of_chunks: int = TOTAL_CHUNKS_LIMIT,
     ) -> str:
-        """summarize each chunk and return final summarized response."""
+        """
+        Summarize a list of tool responses by breaking them into chunks and summarizing each chunk.
 
+        This method processes large tool responses by:
+        1. Dividing the responses into manageable chunks
+        2. Summarizing each chunk individually using a LLM
+        3. Combining all chunk summaries into a final response
+
+        Args:
+            tool_response (List[Any]): The raw response data from a tool execution
+            user_query (str): The original user query that prompted the tool execution
+            config (RunnableConfig): Configuration for the chain execution
+            nums_of_chunks (int): Number of chunks to divide the response into, default is max allowed chunks
+
+        Returns:
+            str: A consolidated summary of the tool response
+        """
+        # Divide the response list into chunks of equal size
         chunks = self._create_chunks_from_list(tool_response, nums_of_chunks)
 
+        # Store summaries for each chunk
         chunk_summary = []
 
+        # Process each chunk individually
         for i, chunk in enumerate(chunks):
+            # Create a summarization chain
             chain = self._create_chain(user_query)
-            # invoke the chain.
+
+            # Process the chunk and generate a summary
             response = await ainvoke_chain(
                 chain,
                 {
@@ -76,7 +104,13 @@ class ToolResponseSummarizer:
                 },
                 config=config,
             )
-            logger.info(f"Tool Response chunk - {i+1} summarized successfully")
+
+            logger.info(
+                f"Tool Response chunk {i + 1}/{len(chunks)} summarized successfully"
+            )
             chunk_summary.append(response)
 
-        return "\n\n".join([item.content for item in chunk_summary])
+        # Join all chunk summaries
+        final_summary = "\n\n".join([item.content for item in chunk_summary])
+
+        return final_summary

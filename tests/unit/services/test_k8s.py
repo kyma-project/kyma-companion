@@ -384,7 +384,7 @@ class TestK8sClient:
                 "should sanitize items when sanitizer is set for paginated list response",
                 Mock(
                     sanitize=Mock(
-                        side_effect=[[{"sanitized": "data1"}], [{"sanitized": "data2"}]]
+                        side_effect=[[{"sanitized": "data1"}, {"sanitized": "data2"}]]
                     )
                 ),
                 [
@@ -402,6 +402,69 @@ class TestK8sClient:
                     {"items": [{"raw": "data2"}], "metadata": {}},
                 ],
                 [{"raw": "data1"}, {"raw": "data2"}],
+                "multi-page",
+            ),
+            (
+                "should return raw items when sanitizer is not set for paginated list response",
+                None,
+                [
+                    {"items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
+                    {
+                        "items": [{"raw": "data11"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data12"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data13"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data14"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data15"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data16"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data17"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data18"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data19"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "items": [{"raw": "data10"}],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {"items": [{"raw": "data2"}], "metadata": {}},
+                ],
+                [
+                    {"raw": "data1"},
+                    {"raw": "data11"},
+                    {"raw": "data12"},
+                    {"raw": "data13"},
+                    {"raw": "data14"},
+                    {"raw": "data15"},
+                    {"raw": "data16"},
+                    {"raw": "data17"},
+                    {"raw": "data18"},
+                    {"raw": "data19"},
+                    {"raw": "data10"},
+                    {"raw": "data2"},
+                ],
                 "multi-page",
             ),
             (
@@ -428,6 +491,7 @@ class TestK8sClient:
         raw_data_pages,
         expected_result,
         pagination_flow,
+        monkeypatch,
     ):
         # given
         k8s_client.api_server = "https://api.example.com"
@@ -441,6 +505,10 @@ class TestK8sClient:
         k8s_client.ca_temp_filename = "test-ca-file"
         k8s_client.data_sanitizer = data_sanitizer
 
+        monkeypatch.setattr(
+            "services.k8s.K8S_API_PAGINATION_MAX_PAGE", len(raw_data_pages) + 1
+        )
+
         # Create response mocks based on pagination flow
         response_mocks = [
             Mock(status_code=HTTPStatus.OK, json=Mock(return_value=page))
@@ -453,69 +521,47 @@ class TestK8sClient:
 
         # then
         if data_sanitizer:
-            # Check that sanitize was called for each page's items
-            [Mock().call(page["items"]) for page in raw_data_pages]
-            assert data_sanitizer.sanitize.call_count == len(raw_data_pages)
-            for _i, page in enumerate(raw_data_pages):
-                data_sanitizer.sanitize.assert_any_call(page["items"])
+            assert data_sanitizer.sanitize.call_count == 1
 
         assert result == expected_result
 
     @pytest.mark.parametrize(
-        "test_description, error_status, error_message",
+        "test_description, test_type, error_status, error_message, pages_to_exceed_limit",
         [
+            # HTTP Error test cases
             (
                 "should raise ValueError when API returns non-OK status",
+                "error",
                 HTTPStatus.BAD_REQUEST,
                 "Error message",
+                None,
             ),
             (
                 "should raise ValueError when API returns unauthorized status",
+                "error",
                 HTTPStatus.UNAUTHORIZED,
                 "Unauthorized access",
+                None,
             ),
-        ],
-    )
-    def test_get_api_request_error_handling(
-        self, k8s_client, test_description, error_status, error_message
-    ):
-        # given
-        k8s_client.api_server = "https://api.example.com"
-        k8s_client.k8s_auth_headers = K8sAuthHeaders(
-            x_cluster_url="abc",
-            x_cluster_certificate_authority_data="abc",
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        k8s_client.ca_temp_filename = "test-ca-file"
-        k8s_client.data_sanitizer = None
-
-        response_mock = Mock(status_code=error_status, text=error_message)
-
-        # when/then
-        with (
-            patch("requests.get", return_value=response_mock),
-            pytest.raises(
-                ValueError,
-                match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
-            ),
-        ):
-            k8s_client.execute_get_api_request("/test/uri")
-
-    @pytest.mark.parametrize(
-        "test_description, pages_to_exceed_limit",
-        [
+            # Pagination limit test case
             (
                 "should raise ValueError when pagination exceeds maximum pages",
+                "pagination_limit",
+                None,
+                None,
                 K8S_API_PAGINATION_MAX_PAGE + 1,
             ),
         ],
     )
-    def test_get_api_request_pagination_limit(
-        self, k8s_client, test_description, pages_to_exceed_limit
+    def test_execute_get_api_request(
+        self,
+        k8s_client,
+        test_description,
+        test_type,
+        error_status,
+        error_message,
+        pages_to_exceed_limit,
     ):
-        # given
         k8s_client.api_server = "https://api.example.com"
         k8s_client.k8s_auth_headers = K8sAuthHeaders(
             x_cluster_url="abc",
@@ -526,31 +572,41 @@ class TestK8sClient:
         )
         k8s_client.ca_temp_filename = "test-ca-file"
         k8s_client.data_sanitizer = None
-        # Create responses that all have continue tokens to force pagination
-        response_mocks = []
-        for i in range(pages_to_exceed_limit):
-            mock = Mock(status_code=HTTPStatus.OK)
-            if i < pages_to_exceed_limit - 1:
-                # All but the last response have continue tokens
-                mock.json.return_value = {
-                    "items": [{"data": f"page-{i}"}],
-                    "metadata": {"continue": f"token-{i}"},
-                }
-            else:
-                # Last response would normally not have a continue token
-                # but we don't reach it due to max page limit
-                mock.json.return_value = {
-                    "items": [{"data": f"page-{i}"}],
-                    "metadata": {},
-                }
-            response_mocks.append(mock)
 
-        # when/then
-        with (
-            patch("requests.get", side_effect=response_mocks),
-            pytest.raises(ValueError, match="Kubernetes API rate limit exceeded"),
-        ):
-            k8s_client.execute_get_api_request("/test/uri")
+        if test_type == "error":
+            response_mock = Mock(status_code=error_status, text=error_message)
+
+            with (
+                patch("requests.get", return_value=response_mock),
+                pytest.raises(
+                    ValueError,
+                    match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
+                ),
+            ):
+                k8s_client.execute_get_api_request("/test/uri")
+
+        elif test_type == "pagination_limit":
+
+            response_mocks = []
+            for i in range(pages_to_exceed_limit):
+                mock = Mock(status_code=HTTPStatus.OK)
+                if i < pages_to_exceed_limit - 1:
+                    mock.json.return_value = {
+                        "items": [{"data": f"page-{i}"}],
+                        "metadata": {"continue": f"token-{i}"},
+                    }
+                else:
+                    mock.json.return_value = {
+                        "items": [{"data": f"page-{i}"}],
+                        "metadata": {},
+                    }
+                response_mocks.append(mock)
+
+            with (
+                patch("requests.get", side_effect=response_mocks),
+                pytest.raises(ValueError, match="Kubernetes API rate limit exceeded"),
+            ):
+                k8s_client.execute_get_api_request("/test/uri")
 
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data, expected_result",

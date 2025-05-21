@@ -8,7 +8,10 @@ from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agents.common.chunk_summarizer import ToolResponseSummarizer
+from agents.common.chunk_summarizer import (
+    IToolResponseSummarizer,
+    ToolResponseSummarizer,
+)
 from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
@@ -96,7 +99,9 @@ class BaseAgent:
             messages_key=AGENT_MESSAGES,
             messages_summary_key=AGENT_MESSAGES_SUMMARY,
         )
-        self.tool_response_summarization = ToolResponseSummarizer(model=model)
+        self.tool_response_summarization: IToolResponseSummarizer = (
+            ToolResponseSummarizer(model=model)
+        )
         self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
         self.graph.step_timeout = 60  # Default timeout, can be overridden
@@ -141,16 +146,16 @@ class BaseAgent:
         self,
         state: BaseAgentState,
         config: RunnableConfig,
-        tool_summarized_response: str = "",
+        tool_summarized_response: str | None = "",
     ) -> Any:
         input_messages = state.get_agent_messages_including_summary()
         if len(state.agent_messages) == 0:
             input_messages = filter_messages(state.messages)
 
         # Append the tool summarized tool response
-        filter_valid_messages_with_tool_response = filter_valid_messages(input_messages)
+        filter_valid_messages_list = filter_valid_messages(input_messages)
         if tool_summarized_response:
-            filter_valid_messages_with_tool_response.append(
+            filter_valid_messages_list.append(
                 AIMessage(
                     content="Summarized Tool Response - " + tool_summarized_response
                 )
@@ -159,7 +164,7 @@ class BaseAgent:
         response = await ainvoke_chain(
             self.chain,
             {
-                AGENT_MESSAGES: filter_valid_messages_with_tool_response,
+                AGENT_MESSAGES: filter_valid_messages_list,
                 "query": state.my_task.description,
             },
             config=config,

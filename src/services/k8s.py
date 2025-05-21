@@ -257,18 +257,14 @@ class K8sClient:
             )
         return headers
 
-    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
-        """Execute a GET request to the Kubernetes API with pagination support."""
-        cert = None
-        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
-            cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
-
+    def _paginated_api_request(
+        self, base_url: str, cert: tuple | None = None
+    ) -> dict | list[dict]:
+        """Pagination support for the api request."""
         # Initialize variables for pagination
+        page_count = 0
         all_items: list[dict] = []
         continue_token = ""
-        base_url = f"{self.get_api_server()}/{uri.lstrip('/')}"
-        page_count = 0
-
         # Handle pagination
         while True:
             page_count += 1
@@ -302,20 +298,27 @@ class K8sClient:
 
             # Extract items if this is a list response
             if "items" in result:
-                if self.data_sanitizer:
-                    all_items.extend(self.data_sanitizer.sanitize(result["items"]))
-                else:
-                    all_items.extend(result["items"])
+                all_items.extend(result["items"])
 
                 # Check for continue token
                 continue_token = result.get("metadata", {}).get("continue", "")
                 if not continue_token:
                     return all_items
             else:
-                # If this wasn't a list response, just return the result directly
-                if self.data_sanitizer:
-                    return self.data_sanitizer.sanitize(result)
                 return result  # type: ignore
+
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
+        """Execute a GET request to the Kubernetes API"""
+        cert = None
+        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
+            cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
+        base_url = f"{self.get_api_server()}/{uri.lstrip('/')}"
+
+        result = self._paginated_api_request(base_url, cert)
+
+        if self.data_sanitizer:
+            result = self.data_sanitizer.sanitize(result)
+        return result
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.

@@ -42,51 +42,6 @@ class TestToolResponseSummarizer:
         )
 
     @pytest.mark.parametrize(
-        "test_description, tool_response, target_num_chunks, expected_chunk_size",
-        [
-            (
-                "should calculate chunk size correctly for long text",
-                "A" * 1000,
-                10,
-                100,
-            ),
-            (
-                "should calculate chunk size correctly for short text",
-                "Short text",
-                10,
-                1,
-            ),
-            (
-                "should handle empty text",
-                "",
-                10,
-                1,
-            ),
-            (
-                "should calculate chunk size correctly with different target",
-                "A" * 1000,
-                5,
-                200,
-            ),
-        ],
-    )
-    def test_dynamic_chunk_size_from_text(
-        self,
-        summarizer,
-        test_description,
-        tool_response,
-        target_num_chunks,
-        expected_chunk_size,
-    ):
-        # when
-        chunk_size = summarizer._dynamic_chunk_size_from_text(
-            tool_response, target_num_chunks
-        )
-
-        # then
-        assert chunk_size == expected_chunk_size
-
-    @pytest.mark.parametrize(
         "test_description, tool_response, nums_of_chunks, expected_chunks",
         [
             (
