@@ -67,7 +67,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for pod query
         (
@@ -125,7 +125,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for namespace overview
         (
@@ -153,7 +153,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for specific resource query with full details
         (
@@ -267,7 +267,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for cluster overview query
         (
@@ -295,7 +295,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         (
             KubernetesAgentState(
@@ -322,7 +322,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for namespace overview query
         (
@@ -350,7 +350,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
         # Test case for namespace overview query
         (
@@ -378,7 +378,7 @@ def k8s_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_overview_query_tool",
+            "k8s_query_tool",
         ),
     ],
 )

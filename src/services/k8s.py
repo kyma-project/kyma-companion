@@ -10,6 +10,10 @@ import requests
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
+from agents.common.constants import (
+    K8S_API_PAGINATION_LIMIT,
+    K8S_API_PAGINATION_MAX_PAGE,
+)
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
 
@@ -253,26 +257,68 @@ class K8sClient:
             )
         return headers
 
+    def _paginated_api_request(
+        self, base_url: str, cert: tuple | None = None
+    ) -> dict | list[dict]:
+        """Pagination support for the api request."""
+        # Initialize variables for pagination
+        page_count = 0
+        all_items: list[dict] = []
+        continue_token = ""
+        # Handle pagination
+        while True:
+            page_count += 1
+
+            # Check if we've exceeded the maximum number of pages
+            if page_count > K8S_API_PAGINATION_MAX_PAGE:
+                raise ValueError(
+                    "Kubernetes API rate limit exceeded. Please refine your query and "
+                    "provide more specific resource details."
+                )
+
+            # Add continue token to URL if it exists
+            query_params = f"?limit={K8S_API_PAGINATION_LIMIT}" + (
+                f"&continue={continue_token}" if continue_token else ""
+            )
+            current_url = base_url + query_params
+
+            response = requests.get(
+                url=current_url,
+                headers=self._get_auth_headers(),
+                verify=self.ca_temp_filename,
+                cert=cert,
+            )
+
+            if response.status_code != HTTPStatus.OK:
+                raise ValueError(
+                    f"Failed to execute GET request to the Kubernetes API. Error: {response.text}"
+                )
+
+            result = response.json()
+
+            # Extract items if this is a list response
+            if "items" in result:
+                all_items.extend(result["items"])
+
+                # Check for continue token
+                continue_token = result.get("metadata", {}).get("continue", "")
+                if not continue_token:
+                    return all_items
+            else:
+                return result  # type: ignore
+
     def execute_get_api_request(self, uri: str) -> dict | list[dict]:
-        """Execute a GET request to the Kubernetes API."""
+        """Execute a GET request to the Kubernetes API"""
         cert = None
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
-        response = requests.get(
-            url=f"{self.get_api_server()}/{uri.lstrip('/')}",
-            headers=self._get_auth_headers(),
-            verify=self.ca_temp_filename,
-            cert=cert,
-        )
+        base_url = f"{self.get_api_server()}/{uri.lstrip('/')}"
 
-        if response.status_code != HTTPStatus.OK:
-            raise ValueError(
-                f"Failed to execute GET request to the Kubernetes API. Error: {response.text}"
-            )
+        result = self._paginated_api_request(base_url, cert)
 
         if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(response.json())
-        return response.json()  # type: ignore
+            result = self.data_sanitizer.sanitize(result)
+        return result
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
@@ -348,7 +394,7 @@ class K8sClient:
     def list_nodes_metrics(self) -> list[dict]:
         """List all nodes metrics."""
         result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
-        return list[dict](result["items"])  # type: ignore
+        return list[dict](result)
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""

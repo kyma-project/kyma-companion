@@ -1,15 +1,17 @@
 from typing import Any, Literal, Protocol
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import (
-    AIMessage,
-)
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
+from agents.common.chunk_summarizer import (
+    IToolResponseSummarizer,
+    ToolResponseSummarizer,
+)
 from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
@@ -20,9 +22,17 @@ from agents.common.constants import (
     MY_TASK,
     SUBTASKS,
     SUMMARIZATION,
+    TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
+    TOTAL_CHUNKS_LIMIT,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
-from agents.common.utils import filter_messages, filter_valid_messages, should_continue
+from agents.common.utils import (
+    compute_string_token_count,
+    convert_string_to_object,
+    filter_messages,
+    filter_valid_messages,
+    should_continue,
+)
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -46,12 +56,12 @@ def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"
     return "agent"
 
 
-def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
+def agent_edge(state: BaseAgentState) -> Literal["Summarization", "finalizer"]:
     """Function that determines whether to call tools or finalizer."""
     last_message = state.agent_messages[-1]
     if isinstance(last_message, AIMessage) and not last_message.tool_calls:
         return "finalizer"
-    return "tools"
+    return "Summarization"  # from SUMMARIZATION --> tools
 
 
 class IAgent(Protocol):
@@ -89,7 +99,9 @@ class BaseAgent:
             messages_key=AGENT_MESSAGES,
             messages_summary_key=AGENT_MESSAGES_SUMMARY,
         )
-
+        self.tool_response_summarization: IToolResponseSummarizer = (
+            ToolResponseSummarizer(model=model)
+        )
         self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
         self.graph.step_timeout = 60  # Default timeout, can be overridden
@@ -130,28 +142,116 @@ class BaseAgent:
             IS_LAST_STEP: True,
         }
 
-    async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
+    async def _invoke_chain(
+        self,
+        state: BaseAgentState,
+        config: RunnableConfig,
+        tool_summarized_response: str | None = "",
+    ) -> Any:
         input_messages = state.get_agent_messages_including_summary()
         if len(state.agent_messages) == 0:
             input_messages = filter_messages(state.messages)
 
+        # Append the tool summarized tool response
+        filter_valid_messages_list = filter_valid_messages(input_messages)
+        if tool_summarized_response:
+            filter_valid_messages_list.append(
+                AIMessage(
+                    content="Summarized Tool Response - " + tool_summarized_response
+                )
+            )
         # invoke the chain.
         response = await ainvoke_chain(
             self.chain,
             {
-                AGENT_MESSAGES: filter_valid_messages(input_messages),
+                AGENT_MESSAGES: filter_valid_messages_list,
                 "query": state.my_task.description,
             },
             config=config,
         )
         return response
 
+    async def _summarize_tool_response(
+        self, state: BaseAgentState, config: RunnableConfig
+    ) -> str:
+        tool_response = []
+        summarized_tool_response = ""
+        for message in reversed(state.agent_messages):
+            if isinstance(message, ToolMessage):
+                # convert string into object
+                tool_response_object = convert_string_to_object(str(message.content))
+                if isinstance(tool_response_object, list):
+                    tool_response.extend(tool_response_object)
+                else:
+                    tool_response.append(tool_response_object)
+            else:
+                break
+
+        token_count = compute_string_token_count(
+            str(tool_response), ModelType(self.model.name)
+        )
+        logger.info(f"Tool Response Token count: {token_count}")
+        # if token limit exceeds
+        if token_count > TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]:
+
+            nums_of_chunks = (
+                token_count // TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
+            ) + 1
+            logger.info(f"Number of Chunks for summarization : {nums_of_chunks}")
+
+            if nums_of_chunks > TOTAL_CHUNKS_LIMIT:
+                raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
+
+            # summarize tool content
+            summarized_tool_response = (
+                await self.tool_response_summarization.summarize_tool_response(
+                    tool_response=tool_response,
+                    user_query=state.my_task.description,
+                    config=config,
+                    nums_of_chunks=nums_of_chunks,
+                )
+            )
+
+            logger.info("Tool Response Summarization completed")
+            # update all tool message which is already summarized and
+            for message in reversed(state.agent_messages):
+                if isinstance(message, ToolMessage):
+                    message.content = "Summarized"
+                else:
+                    break
+        return summarized_tool_response
+
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         try:
             if state.remaining_steps > AGENT_STEPS_NUMBER:
-                response = await self._invoke_chain(state, config)
+                summarized_tool_response = ""
+                if state.agent_messages and isinstance(
+                    state.agent_messages[-1], ToolMessage
+                ):
+                    try:
+                        summarized_tool_response = await self._summarize_tool_response(
+                            state, config
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Error while summarizing the tool response , Error : {e}."
+                        )
+                        return {
+                            AGENT_MESSAGES: [
+                                AIMessage(
+                                    content="Your request is too broad and requires analyzing "
+                                    "more resources than allowed at once. "
+                                    "Please specify a particular resource you'd like to analyze so "
+                                    "I can assist you more effectively.",
+                                    name=self.name,
+                                )
+                            ]
+                        }
+                response = await self._invoke_chain(
+                    state, config, summarized_tool_response
+                )
             else:
                 if state.my_task:
                     state.my_task.status = SubTaskStatus.ERROR
@@ -211,6 +311,7 @@ class BaseAgent:
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         """Finalizer node will mark the task as completed."""
         if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
+            logger.info("Agent task completed")
             state.my_task.complete()
 
         agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
@@ -258,17 +359,18 @@ class BaseAgent:
         # Define the edge: subtask_selector --> (agent | end)
         workflow.add_conditional_edges("subtask_selector", subtask_selector_edge)
 
-        # Define the edge: agent --> (tool | finalizer)
+        # Define the edge: agent --> (summarization | finalizer)
         workflow.add_conditional_edges("agent", agent_edge)
 
-        # Define the edge: tool --> summarization
-        workflow.add_edge("tools", SUMMARIZATION)
+        # Define the edge: tool --> tool
+        workflow.add_edge("tools", "agent")
+
         # Define the edge: summarization --> agent | error_handler
         workflow.add_conditional_edges(
             SUMMARIZATION,
             should_continue,
             {
-                CONTINUE: "agent",
+                CONTINUE: "tools",
                 END: END,
             },
         )
