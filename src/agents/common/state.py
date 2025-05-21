@@ -103,7 +103,7 @@ class UserInput(BaseModel):
         # add detail about the resource api version.
         if self.resource_api_version is not None and self.resource_api_version != "":
             result["resource_api_version"] = self.resource_api_version
-        # add detail about the resource scope.
+        # add detail about the resource name.
         if self.resource_name is not None and self.resource_name != "":
             result["resource_name"] = self.resource_name
         # add detail about the namespace.
@@ -111,12 +111,12 @@ class UserInput(BaseModel):
             result["resource_namespace"] = self.namespace
         elif self.namespace == "" and self.resource_scope == "namespaced":
             result["resource_namespace"] = "default"
-        # add detail about the resource scope.
-        if self.resource_scope is not None and self.resource_scope != "":
-            result["resource_scope"] = self.resource_scope
-        # add detail about the resource related to.
-        if self.resource_related_to is not None and self.resource_related_to != "":
-            result["resource_related_to"] = self.resource_related_to
+        # # add detail about the resource scope.
+        # if self.resource_scope is not None and self.resource_scope != "":
+        #     result["resource_scope"] = self.resource_scope
+        # # add detail about the resource related to.
+        # if self.resource_related_to is not None and self.resource_related_to != "":
+        #     result["resource_related_to"] = self.resource_related_to
         return result
 
     def is_overview_query(self) -> bool:
