@@ -144,13 +144,11 @@ async def healthz(
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
-
-    if status != HTTP_200_OK:
-        logger.info(f"Health probe returning status: {status}")
-        logger.info(f"Health probe returning body: {response}")
-    else:
         logger.debug(f"Health probe returning status: {status}")
         logger.debug(f"Health probe returning body: {response}")
+    else:
+        logger.info(f"Health probe returning status: {status}")
+        logger.info(f"Health probe returning body: {response}")
 
     return JSONResponse(
         content=jsonable_encoder(response),
@@ -175,13 +173,11 @@ async def readyz(
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
         status = HTTP_200_OK
-
-    if status != HTTP_200_OK:
-        logger.info(f"Readiness probe returning status: {status}")
-        logger.info(f"Readiness probe returning body: {response}")
-    else:
         logger.debug(f"Readiness probe returning status: {status}")
         logger.debug(f"Readiness probe returning body: {response}")
+    else:
+        logger.info(f"Readiness probe returning status: {status}")
+        logger.info(f"Readiness probe returning body: {response}")
 
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
