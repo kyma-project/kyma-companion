@@ -5,13 +5,13 @@ from deepeval import evaluate
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
+
+from agents.common.chunk_summarizer import ToolResponseSummarizer
 from integration.agents.fixtures.k8_query_tool_response import (
     sample_deployment_tool_response,
     sample_pods_tool_response,
     sample_services_tool_response,
 )
-
-from agents.common.chunk_summarizer import ToolResponseSummarizer
 from utils.models.factory import ModelType
 
 
