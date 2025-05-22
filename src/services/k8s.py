@@ -165,6 +165,16 @@ class K8sClient:
     data_sanitizer: IDataSanitizer | None
     api_client: Any
 
+    @staticmethod
+    def new(
+        k8s_auth_headers: K8sAuthHeaders, data_sanitizer: IDataSanitizer | None = None
+    ) -> IK8sClient:
+        """Create a new instance of the K8sClient class."""
+        return K8sClient(
+            k8s_auth_headers=k8s_auth_headers,
+            data_sanitizer=data_sanitizer,
+        )
+
     def __init__(
         self,
         k8s_auth_headers: K8sAuthHeaders,

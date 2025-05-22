@@ -10,6 +10,11 @@
     "relatedTo": "Kyma"
   },
   {
+    "groupVersionPattern": ".*api\\.sap\\/.*",
+    "kindPattern": ".*",
+    "relatedTo": "Kyma"
+  },
+  {
     "groupVersionPattern": ".*istio\\.io\\/.*",
     "kindPattern": ".*",
     "relatedTo": "Kyma"

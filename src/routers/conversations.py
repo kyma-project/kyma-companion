@@ -230,7 +230,7 @@ async def messages(
 
     # Initialize k8s client for the request.
     try:
-        k8s_client: IK8sClient = K8sClient(
+        k8s_client: IK8sClient = K8sClient.new(
             k8s_auth_headers=k8s_auth_headers,
             data_sanitizer=data_sanitizer,
         )

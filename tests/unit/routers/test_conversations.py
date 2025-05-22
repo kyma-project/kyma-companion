@@ -79,6 +79,70 @@ class MockService(IService):
         )
 
 
+class MockK8sClient:
+    """Mock for the K8sClient class."""
+
+    def get_api_server(self) -> str:
+        return "http://localhost:8080"
+
+    def model_dump(self) -> None:
+        return None
+
+    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
+        return {}
+
+    def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
+        return []
+
+    def get_resource(
+        self,
+        api_version: str,
+        kind: str,
+        name: str,
+        namespace: str,
+    ) -> dict:
+        return {}
+
+    def describe_resource(
+        self,
+        api_version: str,
+        kind: str,
+        name: str,
+        namespace: str,
+    ) -> dict:
+        return {}
+
+    def list_not_running_pods(self, namespace: str) -> list[dict]:
+        return []
+
+    def list_nodes_metrics(self) -> list[dict]:
+        return []
+
+    def list_k8s_events(self, namespace: str) -> list[dict]:
+        return []
+
+    def list_k8s_warning_events(self, namespace: str) -> list[dict]:
+        return []
+
+    def list_k8s_events_for_resource(
+        self, kind: str, name: str, namespace: str
+    ) -> list[dict]:
+        return []
+
+    def fetch_pod_logs(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        return []
+
+    def get_group_version(self, group_version: str) -> dict:
+        return {}
+
+
 @pytest.fixture(scope="function")
 def client_factory():
     def _create_client(expected_error=None):
@@ -98,7 +162,7 @@ def client_factory():
     app.dependency_overrides.clear()
 
 
-@patch("services.k8s.K8sClient.__init__", return_value=None)
+@patch("services.k8s.K8sClient.new", return_value=MockK8sClient())
 @pytest.mark.parametrize(
     "request_headers, conversation_id, input_message, expected_output",
     [
@@ -272,6 +336,27 @@ def client_factory():
             },
             {"status_code": 422, "content-type": "application/json"},
         ),
+        (
+            # should return 400, when resource context is invalid.
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            9,
+            {
+                "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
+                "resource_kind": "PodInvalid",
+                "resource_api_version": "v1Invalid",
+                "resource_name": "my-pod",
+                "namespace": "default",
+            },
+            {
+                "status_code": 400,
+                "content-type": "application/json",
+                "expected_error_msg": "Invalid resource context info",
+            },
+        ),
     ],
 )
 def test_messages_endpoint(
@@ -320,8 +405,17 @@ def test_messages_endpoint(
         expected_output["status_code"] == HTTPStatus.UNAUTHORIZED
         or expected_output["status_code"] == HTTPStatus.FORBIDDEN
         or expected_output["status_code"] == ERROR_RATE_LIMIT_CODE
+        or expected_output["status_code"] == HTTPStatus.BAD_REQUEST
     ):
-        # return if test case is to check for invalid token.
+        # return for failure test cases
+        if (
+            "expected_error_msg" in expected_output
+            and expected_output["expected_error_msg"]
+        ):
+            assert (
+                expected_output["expected_error_msg"].lower() in response.text.lower()
+            )
+
         return
 
     content = response.content
