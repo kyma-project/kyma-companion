@@ -111,7 +111,7 @@ def client_factory():
             1,
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
-                "resource_kind": "",
+                "resource_kind": "Cluster",
                 "resource_api_version": "",
                 "resource_name": "",
                 "namespace": "",
@@ -129,7 +129,7 @@ def client_factory():
             1,
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
-                "resource_kind": "",
+                "resource_kind": "Cluster",
                 "resource_api_version": "",
                 "resource_name": "",
                 "namespace": "",

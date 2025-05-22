@@ -429,6 +429,7 @@ class K8sClient:
     def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
         parts_count = len(group_version.split(GROUP_VERSION_SEPARATOR))
+
         if group_version == "" or parts_count > GROUP_VERSION_PARTS_COUNT:
             raise ValueError(
                 f"Invalid groupVersion: {group_version}. Expected format: v1 or <group>/<version>."

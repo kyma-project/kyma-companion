@@ -111,17 +111,17 @@ class UserInput(BaseModel):
             result["resource_namespace"] = self.namespace
         elif self.namespace == "" and self.resource_scope == "namespaced":
             result["resource_namespace"] = "default"
-        # # add detail about the resource scope.
-        # if self.resource_scope is not None and self.resource_scope != "":
-        #     result["resource_scope"] = self.resource_scope
-        # # add detail about the resource related to.
-        # if self.resource_related_to is not None and self.resource_related_to != "":
-        #     result["resource_related_to"] = self.resource_related_to
+        # add detail about the resource scope.
+        if self.resource_scope is not None and self.resource_scope != "":
+            result["resource_scope"] = self.resource_scope
+        # add detail about the resource related to.
+        if self.resource_related_to is not None and self.resource_related_to != "":
+            result["resource_related_to"] = self.resource_related_to
         return result
 
     def is_overview_query(self) -> bool:
         """Check if the query is an overview query."""
-        return self.resource_kind.lower() != "cluster"
+        return self.resource_kind.lower() == "cluster"
 
 
 class Plan(BaseModel):

@@ -1,25 +1,34 @@
 import json
 import re
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
+from tenacity import retry, stop_after_attempt
 
 from services.k8s import IK8sClient
 from utils import logging
+from utils.logging import after_log
 from utils.settings import K8S_API_RESOURCES_JSON_FILE, K8S_RESOURCE_RELATIONS_JSON_FILE
 
 logger = logging.get_logger(__name__)
+
+RETRY_ATTEMPTS = 3
 
 
 class ResourceKind(BaseModel):
     """ResourceKind is a class that represents a kind of resource in Kubernetes."""
 
     name: str
-    singular_name: str | None = Field(alias="singularName", default=None)
+    singular_name: str | None = Field(
+        validation_alias=AliasChoices("singular_name", "singularName"), default=None
+    )
     namespaced: bool  # defines if it is namespaced or cluster scoped resource
     kind: str
     verbs: list[str]
     categories: list[str] | None = None
-    storage_version_hash: str | None = Field(alias="storageVersionHash", default=None)
+    storage_version_hash: str | None = Field(
+        validation_alias=AliasChoices("storage_version_hash", "storageVersionHash"),
+        default=None,
+    )
 
     def get_scope(self) -> str:
         """Get the scope of the resource kind."""
@@ -29,7 +38,9 @@ class ResourceKind(BaseModel):
 class Version(BaseModel):
     """Version is a class that represents a version of an API resource."""
 
-    group_version: str
+    group_version: str = Field(
+        validation_alias=AliasChoices("group_version", "groupVersion")
+    )
     version: str
     resources: list[ResourceKind]
 
@@ -37,17 +48,23 @@ class Version(BaseModel):
 class PreferredVersion(BaseModel):
     """PreferredVersion is a class that represents the preferred version of an API resource."""
 
-    group_version: str
+    group_version: str = Field(
+        validation_alias=AliasChoices("group_version", "groupVersion")
+    )
     version: str
 
 
 class ApiResourceGroup(BaseModel):
     """ApiResourceGroup is a class that represents a group of API resources in Kubernetes."""
 
-    api_version: str | None
+    api_version: str | None = Field(
+        validation_alias=AliasChoices("api_version", "apiVersion")
+    )
     kind: str | None
     name: str
-    preferred_version: PreferredVersion
+    preferred_version: PreferredVersion = Field(
+        validation_alias=AliasChoices("preferred_version", "preferredVersion")
+    )
     server_address_by_client_cid_rs: str | list | None
     versions: list[Version]
 
@@ -114,6 +131,41 @@ class K8sResourceDiscovery:
                 return relation.related_to
         return "Kubernetes"  # Default to Kubernetes if no match found
 
+    def _find_resource_kind(
+        self, resource_kind: str, resources: list[ResourceKind]
+    ) -> ResourceKind | None:
+        """
+        Find the resource kind in the list of resources.
+        :param resource_kind:
+        :param resources:
+        :return:
+        """
+        # there may be multiple resources with the same kind but different names.
+        filtered = [r for r in resources if r.kind.lower() == resource_kind.lower()]
+        if len(filtered) == 0:
+            return None
+        if len(filtered) == 1:
+            return filtered[0]
+        # if there are multiple resources with the same kind, try to find one with same singular_name and kind.
+        resource = next(
+            (
+                r
+                for r in filtered
+                if r.singular_name and r.singular_name.lower() == r.kind.lower()
+            ),
+            None,
+        )
+        if resource is not None:
+            return resource
+
+        # if there are still multiple resources with the same kind, return the first one.
+        names = [r.name for r in filtered]
+        logger.warning(
+            f"Multiple resources found with kind {resource_kind}: {names}. "
+            f"Returning the first one."
+        )
+        return filtered[0]
+
     def get_resource_kind_static(self, group_version: str, kind: str) -> ResourceKind:
         """
         Get the resource kind from the static API resources list loaded from JSON file.
@@ -135,13 +187,8 @@ class K8sResourceDiscovery:
             for version in group.versions:
                 if version.group_version == group_version_local:
                     # Check if the kind exists in the resources of the version
-                    resource_kind = next(
-                        (
-                            r
-                            for r in version.resources
-                            if r.kind.lower() == kind_local.lower()
-                        ),
-                        None,
+                    resource_kind = self._find_resource_kind(
+                        kind_local, version.resources
                     )
                     if resource_kind is not None:
                         break
@@ -153,6 +200,11 @@ class K8sResourceDiscovery:
             )
         return resource_kind
 
+    @retry(
+        stop=stop_after_attempt(RETRY_ATTEMPTS),
+        after=after_log,
+        reraise=True,
+    )
     def get_resource_kind_dynamic(self, group_version: str, kind: str) -> ResourceKind:
         """
         Get the resource kind from the K8s API resources list.
@@ -170,9 +222,7 @@ class K8sResourceDiscovery:
             for i in group_version_details.get("resources", [])
         ]
         kind_local = kind.split(".")[0] if "." in kind else kind
-        resource_kind = next(
-            (r for r in resources if r.kind.lower() == kind_local.lower()), None
-        )
+        resource_kind = self._find_resource_kind(kind_local, resources)
         if resource_kind is None:
             raise ValueError(
                 f"Invalid resource kind: {kind}. "

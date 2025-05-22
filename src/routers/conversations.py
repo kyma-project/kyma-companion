@@ -249,11 +249,17 @@ async def messages(
             )
             # Add details to the message.
             message.add_details(resource_kind_details)
-        except Exception as e:
+        except ValueError as e:
             logger.error(e)
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"Invalid resource context info: {str(e)}",
+            ) from e
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to validate resource context info: {str(e)}",
             ) from e
 
     return StreamingResponse(
