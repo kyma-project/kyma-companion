@@ -1610,7 +1610,7 @@
                         "categories": [
                             "api-extensions"
                         ],
-                        "storage_version_hash": "P/h9c6yIbaY="
+                        "storage_version_hash": "6OxvlMmQ6is="
                     },
                     {
                         "name": "validatingadmissionpolicies/status",
@@ -1643,7 +1643,7 @@
                         "categories": [
                             "api-extensions"
                         ],
-                        "storage_version_hash": "XYju31JKYek="
+                        "storage_version_hash": "v9715VZqakg="
                     },
                     {
                         "name": "validatingwebhookconfigurations",
@@ -1858,7 +1858,7 @@
                             "watch"
                         ],
                         "categories": null,
-                        "storage_version_hash": "Nx3SIv6I0mE="
+                        "storage_version_hash": "qgS0xkrxYAI="
                     }
                 ]
             }
@@ -1941,160 +1941,6 @@
                         "storage_version_hash": null
                     }
                 ]
-            },
-            {
-                "group_version": "flowcontrol.apiserver.k8s.io/v1beta3",
-                "version": "v1beta3",
-                "resources": [
-                    {
-                        "name": "flowschemas",
-                        "singular_name": "flowschema",
-                        "namespaced": false,
-                        "kind": "FlowSchema",
-                        "verbs": [
-                            "create",
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "GJVAJZSZBIw="
-                    },
-                    {
-                        "name": "flowschemas/status",
-                        "singular_name": "",
-                        "namespaced": false,
-                        "kind": "FlowSchema",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "prioritylevelconfigurations",
-                        "singular_name": "prioritylevelconfiguration",
-                        "namespaced": false,
-                        "kind": "PriorityLevelConfiguration",
-                        "verbs": [
-                            "create",
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "Kir5PVfvNeI="
-                    },
-                    {
-                        "name": "prioritylevelconfigurations/status",
-                        "singular_name": "",
-                        "namespaced": false,
-                        "kind": "PriorityLevelConfiguration",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "api_version": null,
-        "kind": null,
-        "name": "acme.cert-manager.io",
-        "preferred_version": {
-            "group_version": "acme.cert-manager.io/v1",
-            "version": "v1"
-        },
-        "server_address_by_client_cid_rs": null,
-        "versions": [
-            {
-                "group_version": "acme.cert-manager.io/v1",
-                "version": "v1",
-                "resources": [
-                    {
-                        "name": "challenges",
-                        "singular_name": "challenge",
-                        "namespaced": true,
-                        "kind": "Challenge",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "cert-manager",
-                            "cert-manager-acme"
-                        ],
-                        "storage_version_hash": "T6RvmdSxRBY="
-                    },
-                    {
-                        "name": "challenges/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Challenge",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "orders",
-                        "singular_name": "order",
-                        "namespaced": true,
-                        "kind": "Order",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "cert-manager",
-                            "cert-manager-acme"
-                        ],
-                        "storage_version_hash": "FQscJvYs/a4="
-                    },
-                    {
-                        "name": "orders/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Order",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    }
-                ]
             }
         ]
     },
@@ -2111,6 +1957,61 @@
             {
                 "group_version": "autoscaling.k8s.io/v1",
                 "version": "v1",
+                "resources": [
+                    {
+                        "name": "verticalpodautoscalers",
+                        "singular_name": "verticalpodautoscaler",
+                        "namespaced": true,
+                        "kind": "VerticalPodAutoscaler",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "pFpdiB0IjaA="
+                    },
+                    {
+                        "name": "verticalpodautoscalers/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "VerticalPodAutoscaler",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "verticalpodautoscalercheckpoints",
+                        "singular_name": "verticalpodautoscalercheckpoint",
+                        "namespaced": true,
+                        "kind": "VerticalPodAutoscalerCheckpoint",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "nk2xoFyvYcQ="
+                    }
+                ]
+            },
+            {
+                "group_version": "autoscaling.k8s.io/v1beta2",
+                "version": "v1beta2",
                 "resources": [
                     {
                         "name": "verticalpodautoscalercheckpoints",
@@ -2168,22 +2069,22 @@
     {
         "api_version": null,
         "kind": null,
-        "name": "cert-manager.io",
+        "name": "connectivityproxy.sap.com",
         "preferred_version": {
-            "group_version": "cert-manager.io/v1",
+            "group_version": "connectivityproxy.sap.com/v1",
             "version": "v1"
         },
         "server_address_by_client_cid_rs": null,
         "versions": [
             {
-                "group_version": "cert-manager.io/v1",
+                "group_version": "connectivityproxy.sap.com/v1",
                 "version": "v1",
                 "resources": [
                     {
-                        "name": "certificates",
-                        "singular_name": "certificate",
+                        "name": "connectivityproxies",
+                        "singular_name": "connectivityproxy",
                         "namespaced": true,
-                        "kind": "Certificate",
+                        "kind": "ConnectivityProxy",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -2194,16 +2095,14 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "cert-manager"
-                        ],
-                        "storage_version_hash": "QwYBQGuMyKo="
+                        "categories": null,
+                        "storage_version_hash": "335Fni17dxI="
                     },
                     {
-                        "name": "certificates/status",
+                        "name": "connectivityproxies/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "Certificate",
+                        "kind": "ConnectivityProxy",
                         "verbs": [
                             "get",
                             "patch",
@@ -2213,76 +2112,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "certificaterequests",
-                        "singular_name": "certificaterequest",
-                        "namespaced": true,
-                        "kind": "CertificateRequest",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "cert-manager"
-                        ],
-                        "storage_version_hash": "tuxiikMaACg="
-                    },
-                    {
-                        "name": "certificaterequests/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "CertificateRequest",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "issuers",
-                        "singular_name": "issuer",
-                        "namespaced": true,
-                        "kind": "Issuer",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "cert-manager"
-                        ],
-                        "storage_version_hash": "P8OOH0cQiDA="
-                    },
-                    {
-                        "name": "issuers/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Issuer",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "clusterissuers",
-                        "singular_name": "clusterissuer",
+                        "name": "servicemappings",
+                        "singular_name": "servicemapping",
                         "namespaced": false,
-                        "kind": "ClusterIssuer",
+                        "kind": "ServiceMapping",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -2293,16 +2126,14 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "cert-manager"
-                        ],
-                        "storage_version_hash": "IJyJPITm/AY="
+                        "categories": null,
+                        "storage_version_hash": "dV/0RGeASmA="
                     },
                     {
-                        "name": "clusterissuers/status",
+                        "name": "servicemappings/status",
                         "singular_name": "",
                         "namespaced": false,
-                        "kind": "ClusterIssuer",
+                        "kind": "ServiceMapping",
                         "verbs": [
                             "get",
                             "patch",
@@ -2330,78 +2161,6 @@
                 "version": "v1",
                 "resources": [
                     {
-                        "name": "bgpfilters",
-                        "singular_name": "bgpfilter",
-                        "namespaced": false,
-                        "kind": "BGPFilter",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "hisib8hBY7k="
-                    },
-                    {
-                        "name": "tiers",
-                        "singular_name": "tier",
-                        "namespaced": false,
-                        "kind": "Tier",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "AabCHLRn2ec="
-                    },
-                    {
-                        "name": "bgpconfigurations",
-                        "singular_name": "bgpconfiguration",
-                        "namespaced": false,
-                        "kind": "BGPConfiguration",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "APoTH7a/ve0="
-                    },
-                    {
-                        "name": "ippools",
-                        "singular_name": "ippool",
-                        "namespaced": false,
-                        "kind": "IPPool",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "3/m0Z1pQb+k="
-                    },
-                    {
                         "name": "ipamconfigs",
                         "singular_name": "ipamconfig",
                         "namespaced": false,
@@ -2418,24 +2177,6 @@
                         ],
                         "categories": null,
                         "storage_version_hash": "Ey7CGwJ1xJ4="
-                    },
-                    {
-                        "name": "ipamblocks",
-                        "singular_name": "ipamblock",
-                        "namespaced": false,
-                        "kind": "IPAMBlock",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "DC5UT/Mf3xs="
                     },
                     {
                         "name": "kubecontrollersconfigurations",
@@ -2456,10 +2197,10 @@
                         "storage_version_hash": "SNq1jmkokTw="
                     },
                     {
-                        "name": "bgppeers",
-                        "singular_name": "bgppeer",
+                        "name": "tiers",
+                        "singular_name": "tier",
                         "namespaced": false,
-                        "kind": "BGPPeer",
+                        "kind": "Tier",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -2471,151 +2212,7 @@
                             "watch"
                         ],
                         "categories": null,
-                        "storage_version_hash": "LEh3VkcJdMA="
-                    },
-                    {
-                        "name": "caliconodestatuses",
-                        "singular_name": "caliconodestatus",
-                        "namespaced": false,
-                        "kind": "CalicoNodeStatus",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "Sva+TIGMPEk="
-                    },
-                    {
-                        "name": "globalnetworkpolicies",
-                        "singular_name": "globalnetworkpolicy",
-                        "namespaced": false,
-                        "kind": "GlobalNetworkPolicy",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "zve4ObHFE9A="
-                    },
-                    {
-                        "name": "ipamhandles",
-                        "singular_name": "ipamhandle",
-                        "namespaced": false,
-                        "kind": "IPAMHandle",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "1flM+RLQVBQ="
-                    },
-                    {
-                        "name": "hostendpoints",
-                        "singular_name": "hostendpoint",
-                        "namespaced": false,
-                        "kind": "HostEndpoint",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "lcuper2cjNA="
-                    },
-                    {
-                        "name": "networkpolicies",
-                        "singular_name": "networkpolicy",
-                        "namespaced": true,
-                        "kind": "NetworkPolicy",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "vyIiswN6deY="
-                    },
-                    {
-                        "name": "blockaffinities",
-                        "singular_name": "blockaffinity",
-                        "namespaced": false,
-                        "kind": "BlockAffinity",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "qxZn+fNKF0o="
-                    },
-                    {
-                        "name": "felixconfigurations",
-                        "singular_name": "felixconfiguration",
-                        "namespaced": false,
-                        "kind": "FelixConfiguration",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "3qRBCjXVVr0="
-                    },
-                    {
-                        "name": "clusterinformations",
-                        "singular_name": "clusterinformation",
-                        "namespaced": false,
-                        "kind": "ClusterInformation",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "IwzLAc88EAI="
+                        "storage_version_hash": "AabCHLRn2ec="
                     },
                     {
                         "name": "globalnetworksets",
@@ -2636,6 +2233,24 @@
                         "storage_version_hash": "v7TCLk56Q+4="
                     },
                     {
+                        "name": "networkpolicies",
+                        "singular_name": "networkpolicy",
+                        "namespaced": true,
+                        "kind": "NetworkPolicy",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "vyIiswN6deY="
+                    },
+                    {
                         "name": "ipreservations",
                         "singular_name": "ipreservation",
                         "namespaced": false,
@@ -2654,6 +2269,42 @@
                         "storage_version_hash": "XCaaJMEOtSw="
                     },
                     {
+                        "name": "caliconodestatuses",
+                        "singular_name": "caliconodestatus",
+                        "namespaced": false,
+                        "kind": "CalicoNodeStatus",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "Sva+TIGMPEk="
+                    },
+                    {
+                        "name": "clusterinformations",
+                        "singular_name": "clusterinformation",
+                        "namespaced": false,
+                        "kind": "ClusterInformation",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "IwzLAc88EAI="
+                    },
+                    {
                         "name": "networksets",
                         "singular_name": "networkset",
                         "namespaced": true,
@@ -2670,6 +2321,222 @@
                         ],
                         "categories": null,
                         "storage_version_hash": "v3eqVp2rlK0="
+                    },
+                    {
+                        "name": "bgpconfigurations",
+                        "singular_name": "bgpconfiguration",
+                        "namespaced": false,
+                        "kind": "BGPConfiguration",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "APoTH7a/ve0="
+                    },
+                    {
+                        "name": "blockaffinities",
+                        "singular_name": "blockaffinity",
+                        "namespaced": false,
+                        "kind": "BlockAffinity",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "qxZn+fNKF0o="
+                    },
+                    {
+                        "name": "ipamblocks",
+                        "singular_name": "ipamblock",
+                        "namespaced": false,
+                        "kind": "IPAMBlock",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "DC5UT/Mf3xs="
+                    },
+                    {
+                        "name": "globalnetworkpolicies",
+                        "singular_name": "globalnetworkpolicy",
+                        "namespaced": false,
+                        "kind": "GlobalNetworkPolicy",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "zve4ObHFE9A="
+                    },
+                    {
+                        "name": "felixconfigurations",
+                        "singular_name": "felixconfiguration",
+                        "namespaced": false,
+                        "kind": "FelixConfiguration",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "3qRBCjXVVr0="
+                    },
+                    {
+                        "name": "ipamhandles",
+                        "singular_name": "ipamhandle",
+                        "namespaced": false,
+                        "kind": "IPAMHandle",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "1flM+RLQVBQ="
+                    },
+                    {
+                        "name": "ippools",
+                        "singular_name": "ippool",
+                        "namespaced": false,
+                        "kind": "IPPool",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "3/m0Z1pQb+k="
+                    },
+                    {
+                        "name": "bgpfilters",
+                        "singular_name": "bgpfilter",
+                        "namespaced": false,
+                        "kind": "BGPFilter",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "hisib8hBY7k="
+                    },
+                    {
+                        "name": "bgppeers",
+                        "singular_name": "bgppeer",
+                        "namespaced": false,
+                        "kind": "BGPPeer",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "LEh3VkcJdMA="
+                    },
+                    {
+                        "name": "hostendpoints",
+                        "singular_name": "hostendpoint",
+                        "namespaced": false,
+                        "kind": "HostEndpoint",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "lcuper2cjNA="
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "destination.connectivity.api.sap",
+        "preferred_version": {
+            "group_version": "destination.connectivity.api.sap/v1",
+            "version": "v1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "destination.connectivity.api.sap/v1",
+                "version": "v1",
+                "resources": [
+                    {
+                        "name": "destinations",
+                        "singular_name": "destination",
+                        "namespaced": true,
+                        "kind": "Destination",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "23KYet9yvfY="
                     }
                 ]
             }
@@ -2724,10 +2591,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "sidecars",
-                        "singular_name": "sidecar",
+                        "name": "gateways",
+                        "singular_name": "gateway",
                         "namespaced": true,
-                        "kind": "Sidecar",
+                        "kind": "Gateway",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -2742,13 +2609,81 @@
                             "istio-io",
                             "networking-istio-io"
                         ],
-                        "storage_version_hash": "2Ixrjay4Df0="
+                        "storage_version_hash": "DBA/jBzI1KM="
                     },
                     {
-                        "name": "sidecars/status",
+                        "name": "gateways/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "Sidecar",
+                        "kind": "Gateway",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "serviceentries",
+                        "singular_name": "serviceentry",
+                        "namespaced": true,
+                        "kind": "ServiceEntry",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "zoFvVHGpFUk="
+                    },
+                    {
+                        "name": "serviceentries/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ServiceEntry",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "virtualservices",
+                        "singular_name": "virtualservice",
+                        "namespaced": true,
+                        "kind": "VirtualService",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "1CeAnK3Pg5I="
+                    },
+                    {
+                        "name": "virtualservices/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "VirtualService",
                         "verbs": [
                             "get",
                             "patch",
@@ -2826,6 +2761,46 @@
                         "storage_version_hash": null
                     },
                     {
+                        "name": "sidecars",
+                        "singular_name": "sidecar",
+                        "namespaced": true,
+                        "kind": "Sidecar",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "2Ixrjay4Df0="
+                    },
+                    {
+                        "name": "sidecars/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Sidecar",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "networking.istio.io/v1beta1",
+                "version": "v1beta1",
+                "resources": [
+                    {
                         "name": "serviceentries",
                         "singular_name": "serviceentry",
                         "namespaced": true,
@@ -2860,40 +2835,6 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "gateways",
-                        "singular_name": "gateway",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "DBA/jBzI1KM="
-                    },
-                    {
-                        "name": "gateways/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
                         "name": "virtualservices",
                         "singular_name": "virtualservice",
                         "namespaced": true,
@@ -2919,46 +2860,6 @@
                         "singular_name": "",
                         "namespaced": true,
                         "kind": "VirtualService",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    }
-                ]
-            },
-            {
-                "group_version": "networking.istio.io/v1beta1",
-                "version": "v1beta1",
-                "resources": [
-                    {
-                        "name": "destinationrules",
-                        "singular_name": "destinationrule",
-                        "namespaced": true,
-                        "kind": "DestinationRule",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "VSJiu23xJgU="
-                    },
-                    {
-                        "name": "destinationrules/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "DestinationRule",
                         "verbs": [
                             "get",
                             "patch",
@@ -3002,40 +2903,6 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "sidecars",
-                        "singular_name": "sidecar",
-                        "namespaced": true,
-                        "kind": "Sidecar",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "2Ixrjay4Df0="
-                    },
-                    {
-                        "name": "sidecars/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Sidecar",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
                         "name": "workloadentries",
                         "singular_name": "workloadentry",
                         "namespaced": true,
@@ -3104,10 +2971,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "serviceentries",
-                        "singular_name": "serviceentry",
+                        "name": "sidecars",
+                        "singular_name": "sidecar",
                         "namespaced": true,
-                        "kind": "ServiceEntry",
+                        "kind": "Sidecar",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3122,189 +2989,13 @@
                             "istio-io",
                             "networking-istio-io"
                         ],
-                        "storage_version_hash": "zoFvVHGpFUk="
+                        "storage_version_hash": "2Ixrjay4Df0="
                     },
                     {
-                        "name": "serviceentries/status",
+                        "name": "sidecars/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "ServiceEntry",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "gateways",
-                        "singular_name": "gateway",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "DBA/jBzI1KM="
-                    },
-                    {
-                        "name": "gateways/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "virtualservices",
-                        "singular_name": "virtualservice",
-                        "namespaced": true,
-                        "kind": "VirtualService",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "1CeAnK3Pg5I="
-                    },
-                    {
-                        "name": "virtualservices/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "VirtualService",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    }
-                ]
-            },
-            {
-                "group_version": "networking.istio.io/v1alpha3",
-                "version": "v1alpha3",
-                "resources": [
-                    {
-                        "name": "gateways",
-                        "singular_name": "gateway",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "DBA/jBzI1KM="
-                    },
-                    {
-                        "name": "gateways/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Gateway",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "virtualservices",
-                        "singular_name": "virtualservice",
-                        "namespaced": true,
-                        "kind": "VirtualService",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "1CeAnK3Pg5I="
-                    },
-                    {
-                        "name": "virtualservices/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "VirtualService",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
-                        "name": "envoyfilters",
-                        "singular_name": "envoyfilter",
-                        "namespaced": true,
-                        "kind": "EnvoyFilter",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": [
-                            "istio-io",
-                            "networking-istio-io"
-                        ],
-                        "storage_version_hash": "cC04AzOKdkE="
-                    },
-                    {
-                        "name": "envoyfilters/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "EnvoyFilter",
+                        "kind": "Sidecar",
                         "verbs": [
                             "get",
                             "patch",
@@ -3348,10 +3039,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "sidecars",
-                        "singular_name": "sidecar",
+                        "name": "gateways",
+                        "singular_name": "gateway",
                         "namespaced": true,
-                        "kind": "Sidecar",
+                        "kind": "Gateway",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3366,13 +3057,87 @@
                             "istio-io",
                             "networking-istio-io"
                         ],
-                        "storage_version_hash": "2Ixrjay4Df0="
+                        "storage_version_hash": "DBA/jBzI1KM="
                     },
                     {
-                        "name": "sidecars/status",
+                        "name": "gateways/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "Sidecar",
+                        "kind": "Gateway",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "networking.istio.io/v1alpha3",
+                "version": "v1alpha3",
+                "resources": [
+                    {
+                        "name": "serviceentries",
+                        "singular_name": "serviceentry",
+                        "namespaced": true,
+                        "kind": "ServiceEntry",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "zoFvVHGpFUk="
+                    },
+                    {
+                        "name": "serviceentries/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ServiceEntry",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "virtualservices",
+                        "singular_name": "virtualservice",
+                        "namespaced": true,
+                        "kind": "VirtualService",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "1CeAnK3Pg5I="
+                    },
+                    {
+                        "name": "virtualservices/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "VirtualService",
                         "verbs": [
                             "get",
                             "patch",
@@ -3450,10 +3215,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "serviceentries",
-                        "singular_name": "serviceentry",
+                        "name": "sidecars",
+                        "singular_name": "sidecar",
                         "namespaced": true,
-                        "kind": "ServiceEntry",
+                        "kind": "Sidecar",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3468,13 +3233,115 @@
                             "istio-io",
                             "networking-istio-io"
                         ],
-                        "storage_version_hash": "zoFvVHGpFUk="
+                        "storage_version_hash": "2Ixrjay4Df0="
                     },
                     {
-                        "name": "serviceentries/status",
+                        "name": "sidecars/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "ServiceEntry",
+                        "kind": "Sidecar",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "destinationrules",
+                        "singular_name": "destinationrule",
+                        "namespaced": true,
+                        "kind": "DestinationRule",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "VSJiu23xJgU="
+                    },
+                    {
+                        "name": "destinationrules/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "DestinationRule",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "gateways",
+                        "singular_name": "gateway",
+                        "namespaced": true,
+                        "kind": "Gateway",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "DBA/jBzI1KM="
+                    },
+                    {
+                        "name": "gateways/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Gateway",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "envoyfilters",
+                        "singular_name": "envoyfilter",
+                        "namespaced": true,
+                        "kind": "EnvoyFilter",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "networking-istio-io"
+                        ],
+                        "storage_version_hash": "cC04AzOKdkE="
+                    },
+                    {
+                        "name": "envoyfilters/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "EnvoyFilter",
                         "verbs": [
                             "get",
                             "patch",
@@ -3536,6 +3403,40 @@
                         "storage_version_hash": null
                     },
                     {
+                        "name": "requestauthentications",
+                        "singular_name": "requestauthentication",
+                        "namespaced": true,
+                        "kind": "RequestAuthentication",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "security-istio-io"
+                        ],
+                        "storage_version_hash": "mr+dytYVwr8="
+                    },
+                    {
+                        "name": "requestauthentications/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "RequestAuthentication",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
                         "name": "authorizationpolicies",
                         "singular_name": "authorizationpolicy",
                         "namespaced": true,
@@ -3561,6 +3462,80 @@
                         "singular_name": "",
                         "namespaced": true,
                         "kind": "AuthorizationPolicy",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "security.istio.io/v1beta1",
+                "version": "v1beta1",
+                "resources": [
+                    {
+                        "name": "authorizationpolicies",
+                        "singular_name": "authorizationpolicy",
+                        "namespaced": true,
+                        "kind": "AuthorizationPolicy",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "security-istio-io"
+                        ],
+                        "storage_version_hash": "djwd/cy0e/E="
+                    },
+                    {
+                        "name": "authorizationpolicies/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "AuthorizationPolicy",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "peerauthentications",
+                        "singular_name": "peerauthentication",
+                        "namespaced": true,
+                        "kind": "PeerAuthentication",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "istio-io",
+                            "security-istio-io"
+                        ],
+                        "storage_version_hash": "0IW8zQBF4Qc="
+                    },
+                    {
+                        "name": "peerauthentications/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "PeerAuthentication",
                         "verbs": [
                             "get",
                             "patch",
@@ -3604,16 +3579,28 @@
                         "storage_version_hash": null
                     }
                 ]
-            },
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "services.cloud.sap.com",
+        "preferred_version": {
+            "group_version": "services.cloud.sap.com/v1",
+            "version": "v1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
             {
-                "group_version": "security.istio.io/v1beta1",
-                "version": "v1beta1",
+                "group_version": "services.cloud.sap.com/v1",
+                "version": "v1",
                 "resources": [
                     {
-                        "name": "peerauthentications",
-                        "singular_name": "peerauthentication",
+                        "name": "serviceinstances",
+                        "singular_name": "serviceinstance",
                         "namespaced": true,
-                        "kind": "PeerAuthentication",
+                        "kind": "ServiceInstance",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3624,17 +3611,14 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "istio-io",
-                            "security-istio-io"
-                        ],
-                        "storage_version_hash": "0IW8zQBF4Qc="
+                        "categories": null,
+                        "storage_version_hash": "utFTuacFZtw="
                     },
                     {
-                        "name": "peerauthentications/status",
+                        "name": "serviceinstances/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "PeerAuthentication",
+                        "kind": "ServiceInstance",
                         "verbs": [
                             "get",
                             "patch",
@@ -3644,10 +3628,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "authorizationpolicies",
-                        "singular_name": "authorizationpolicy",
+                        "name": "servicebindings",
+                        "singular_name": "servicebinding",
                         "namespaced": true,
-                        "kind": "AuthorizationPolicy",
+                        "kind": "ServiceBinding",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3658,17 +3642,51 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "istio-io",
-                            "security-istio-io"
-                        ],
-                        "storage_version_hash": "djwd/cy0e/E="
+                        "categories": null,
+                        "storage_version_hash": "GLel/9QuI00="
                     },
                     {
-                        "name": "authorizationpolicies/status",
+                        "name": "servicebindings/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "AuthorizationPolicy",
+                        "kind": "ServiceBinding",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "services.cloud.sap.com/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "servicebindings",
+                        "singular_name": "servicebinding",
+                        "namespaced": true,
+                        "kind": "ServiceBinding",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "GLel/9QuI00="
+                    },
+                    {
+                        "name": "servicebindings/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ServiceBinding",
                         "verbs": [
                             "get",
                             "patch",
@@ -3678,10 +3696,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "requestauthentications",
-                        "singular_name": "requestauthentication",
+                        "name": "serviceinstances",
+                        "singular_name": "serviceinstance",
                         "namespaced": true,
-                        "kind": "RequestAuthentication",
+                        "kind": "ServiceInstance",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -3692,17 +3710,14 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "istio-io",
-                            "security-istio-io"
-                        ],
-                        "storage_version_hash": "mr+dytYVwr8="
+                        "categories": null,
+                        "storage_version_hash": "utFTuacFZtw="
                     },
                     {
-                        "name": "requestauthentications/status",
+                        "name": "serviceinstances/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "RequestAuthentication",
+                        "kind": "ServiceInstance",
                         "verbs": [
                             "get",
                             "patch",
@@ -3908,6 +3923,91 @@
     {
         "api_version": null,
         "kind": null,
+        "name": "applicationconnector.kyma-project.io",
+        "preferred_version": {
+            "group_version": "applicationconnector.kyma-project.io/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "applicationconnector.kyma-project.io/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "applications",
+                        "singular_name": "application",
+                        "namespaced": false,
+                        "kind": "Application",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "0Cb9A9OlQ3g="
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "authentication.gardener.cloud",
+        "preferred_version": {
+            "group_version": "authentication.gardener.cloud/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "authentication.gardener.cloud/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "openidconnects",
+                        "singular_name": "openidconnect",
+                        "namespaced": false,
+                        "kind": "OpenIDConnect",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "8HF2O0xBJy4="
+                    },
+                    {
+                        "name": "openidconnects/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "OpenIDConnect",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
         "name": "cert.gardener.cloud",
         "preferred_version": {
             "group_version": "cert.gardener.cloud/v1alpha1",
@@ -3919,6 +4019,37 @@
                 "group_version": "cert.gardener.cloud/v1alpha1",
                 "version": "v1alpha1",
                 "resources": [
+                    {
+                        "name": "issuers",
+                        "singular_name": "issuer",
+                        "namespaced": true,
+                        "kind": "Issuer",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "WPmaNiR6IQ0="
+                    },
+                    {
+                        "name": "issuers/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Issuer",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
                     {
                         "name": "certificaterevocations",
                         "singular_name": "certificaterevocation",
@@ -3988,6 +4119,42 @@
     {
         "api_version": null,
         "kind": null,
+        "name": "compass.kyma-project.io",
+        "preferred_version": {
+            "group_version": "compass.kyma-project.io/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "compass.kyma-project.io/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "compassconnections",
+                        "singular_name": "compassconnection",
+                        "namespaced": false,
+                        "kind": "CompassConnection",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "kVwClmICrYY="
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
         "name": "dns.gardener.cloud",
         "preferred_version": {
             "group_version": "dns.gardener.cloud/v1alpha1",
@@ -3999,6 +4166,37 @@
                 "group_version": "dns.gardener.cloud/v1alpha1",
                 "version": "v1alpha1",
                 "resources": [
+                    {
+                        "name": "dnsproviders",
+                        "singular_name": "dnsprovider",
+                        "namespaced": true,
+                        "kind": "DNSProvider",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "DCMEJkOAIFY="
+                    },
+                    {
+                        "name": "dnsproviders/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "DNSProvider",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
                     {
                         "name": "dnsentries",
                         "singular_name": "dnsentry",
@@ -4068,6 +4266,86 @@
     {
         "api_version": null,
         "kind": null,
+        "name": "eventing.keda.sh",
+        "preferred_version": {
+            "group_version": "eventing.keda.sh/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "eventing.keda.sh/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "clustercloudeventsources",
+                        "singular_name": "clustercloudeventsource",
+                        "namespaced": false,
+                        "kind": "ClusterCloudEventSource",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "ZMTgwxp3GQQ="
+                    },
+                    {
+                        "name": "clustercloudeventsources/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "ClusterCloudEventSource",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "cloudeventsources",
+                        "singular_name": "cloudeventsource",
+                        "namespaced": true,
+                        "kind": "CloudEventSource",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "JJhNHLcFbno="
+                    },
+                    {
+                        "name": "cloudeventsources/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CloudEventSource",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
         "name": "extensions.istio.io",
         "preferred_version": {
             "group_version": "extensions.istio.io/v1alpha1",
@@ -4105,6 +4383,314 @@
                         "singular_name": "",
                         "namespaced": true,
                         "kind": "WasmPlugin",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "gateway.kyma-project.io",
+        "preferred_version": {
+            "group_version": "gateway.kyma-project.io/v2",
+            "version": "v2"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "gateway.kyma-project.io/v2",
+                "version": "v2",
+                "resources": [
+                    {
+                        "name": "apirules",
+                        "singular_name": "apirule",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-api-gateway"
+                        ],
+                        "storage_version_hash": "4AqUXDsfX0M="
+                    },
+                    {
+                        "name": "apirules/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "gateway.kyma-project.io/v1beta1",
+                "version": "v1beta1",
+                "resources": [
+                    {
+                        "name": "apirules",
+                        "singular_name": "apirule",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-api-gateway"
+                        ],
+                        "storage_version_hash": "4AqUXDsfX0M="
+                    },
+                    {
+                        "name": "apirules/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "gateway.kyma-project.io/v2alpha1",
+                "version": "v2alpha1",
+                "resources": [
+                    {
+                        "name": "apirules",
+                        "singular_name": "apirule",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-api-gateway"
+                        ],
+                        "storage_version_hash": "4AqUXDsfX0M="
+                    },
+                    {
+                        "name": "apirules/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "APIRule",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            },
+            {
+                "group_version": "gateway.kyma-project.io/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "ratelimits",
+                        "singular_name": "ratelimit",
+                        "namespaced": true,
+                        "kind": "RateLimit",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "wFaM2vpxvOg="
+                    },
+                    {
+                        "name": "ratelimits/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "RateLimit",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "keda.sh",
+        "preferred_version": {
+            "group_version": "keda.sh/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "keda.sh/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "triggerauthentications",
+                        "singular_name": "triggerauthentication",
+                        "namespaced": true,
+                        "kind": "TriggerAuthentication",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "HeWFMkaJbn0="
+                    },
+                    {
+                        "name": "triggerauthentications/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "TriggerAuthentication",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "clustertriggerauthentications",
+                        "singular_name": "clustertriggerauthentication",
+                        "namespaced": false,
+                        "kind": "ClusterTriggerAuthentication",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "PKiNbUb/LaQ="
+                    },
+                    {
+                        "name": "clustertriggerauthentications/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "ClusterTriggerAuthentication",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "scaledjobs",
+                        "singular_name": "scaledjob",
+                        "namespaced": true,
+                        "kind": "ScaledJob",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "FOxAXHkDUlI="
+                    },
+                    {
+                        "name": "scaledjobs/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ScaledJob",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "scaledobjects",
+                        "singular_name": "scaledobject",
+                        "namespaced": true,
+                        "kind": "ScaledObject",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "GB5mKGeb4xM="
+                    },
+                    {
+                        "name": "scaledobjects/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ScaledObject",
                         "verbs": [
                             "get",
                             "patch",
@@ -4168,55 +4754,6 @@
                 "version": "v1beta2",
                 "resources": [
                     {
-                        "name": "moduletemplates",
-                        "singular_name": "moduletemplate",
-                        "namespaced": true,
-                        "kind": "ModuleTemplate",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "ojaQ+UjWDBc="
-                    },
-                    {
-                        "name": "watchers",
-                        "singular_name": "watcher",
-                        "namespaced": true,
-                        "kind": "Watcher",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "ivEWnshgq5U="
-                    },
-                    {
-                        "name": "watchers/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Watcher",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
-                    },
-                    {
                         "name": "modulereleasemetas",
                         "singular_name": "modulereleasemeta",
                         "namespaced": true,
@@ -4233,37 +4770,6 @@
                         ],
                         "categories": null,
                         "storage_version_hash": "vsuAeSIMFb8="
-                    },
-                    {
-                        "name": "manifests",
-                        "singular_name": "manifest",
-                        "namespaced": true,
-                        "kind": "Manifest",
-                        "verbs": [
-                            "delete",
-                            "deletecollection",
-                            "get",
-                            "list",
-                            "patch",
-                            "create",
-                            "update",
-                            "watch"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": "/dbJfHVmKWc="
-                    },
-                    {
-                        "name": "manifests/status",
-                        "singular_name": "",
-                        "namespaced": true,
-                        "kind": "Manifest",
-                        "verbs": [
-                            "get",
-                            "patch",
-                            "update"
-                        ],
-                        "categories": null,
-                        "storage_version_hash": null
                     },
                     {
                         "name": "kymas",
@@ -4295,6 +4801,24 @@
                         ],
                         "categories": null,
                         "storage_version_hash": null
+                    },
+                    {
+                        "name": "moduletemplates",
+                        "singular_name": "moduletemplate",
+                        "namespaced": true,
+                        "kind": "ModuleTemplate",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "ojaQ+UjWDBc="
                     }
                 ]
             },
@@ -4343,6 +4867,191 @@
                 "version": "v1alpha1",
                 "resources": [
                     {
+                        "name": "serverlesses",
+                        "singular_name": "serverless",
+                        "namespaced": true,
+                        "kind": "Serverless",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-modules",
+                            "kyma-serverless"
+                        ],
+                        "storage_version_hash": "YBOAD7pieRk="
+                    },
+                    {
+                        "name": "serverlesses/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Serverless",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "manageds",
+                        "singular_name": "managed",
+                        "namespaced": true,
+                        "kind": "Managed",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "5oE+lDZhGdM="
+                    },
+                    {
+                        "name": "applicationconnectors",
+                        "singular_name": "applicationconnector",
+                        "namespaced": true,
+                        "kind": "ApplicationConnector",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-modules",
+                            "kyma-application-connector"
+                        ],
+                        "storage_version_hash": "mpLH1ip+m3c="
+                    },
+                    {
+                        "name": "applicationconnectors/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ApplicationConnector",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "samples",
+                        "singular_name": "sample",
+                        "namespaced": true,
+                        "kind": "Sample",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "L6fWOixONHw="
+                    },
+                    {
+                        "name": "samples/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Sample",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "btpoperators",
+                        "singular_name": "btpoperator",
+                        "namespaced": true,
+                        "kind": "BtpOperator",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-modules",
+                            "kyma-btp-operator"
+                        ],
+                        "storage_version_hash": "uXF/OakhQio="
+                    },
+                    {
+                        "name": "btpoperators/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "BtpOperator",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "telemetries",
+                        "singular_name": "telemetry",
+                        "namespaced": true,
+                        "kind": "Telemetry",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-modules",
+                            "kyma-telemetry"
+                        ],
+                        "storage_version_hash": "RVze2i8GIIE="
+                    },
+                    {
+                        "name": "telemetries/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Telemetry",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
                         "name": "nats",
                         "singular_name": "nats",
                         "namespaced": true,
@@ -4374,10 +5083,10 @@
                         "storage_version_hash": null
                     },
                     {
-                        "name": "serverlesses",
-                        "singular_name": "serverless",
-                        "namespaced": true,
-                        "kind": "Serverless",
+                        "name": "apigateways",
+                        "singular_name": "apigateway",
+                        "namespaced": false,
+                        "kind": "APIGateway",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -4390,15 +5099,80 @@
                         ],
                         "categories": [
                             "kyma-modules",
-                            "kyma-serverless"
+                            "kyma-api-gateway"
                         ],
-                        "storage_version_hash": "YBOAD7pieRk="
+                        "storage_version_hash": "kE7CkTK+4ks="
                     },
                     {
-                        "name": "serverlesses/status",
+                        "name": "apigateways/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "APIGateway",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "kedas",
+                        "singular_name": "keda",
+                        "namespaced": true,
+                        "kind": "Keda",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-modules",
+                            "kyma-keda"
+                        ],
+                        "storage_version_hash": "LXZm5lWkhTE="
+                    },
+                    {
+                        "name": "kedas/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "Serverless",
+                        "kind": "Keda",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "transparentproxies",
+                        "singular_name": "transparentproxy",
+                        "namespaced": true,
+                        "kind": "TransparentProxy",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "WlTeNGeH2p8="
+                    },
+                    {
+                        "name": "transparentproxies/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "TransparentProxy",
                         "verbs": [
                             "get",
                             "patch",
@@ -4440,12 +5214,30 @@
                         ],
                         "categories": null,
                         "storage_version_hash": null
-                    },
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "operator.sme.sap.com",
+        "preferred_version": {
+            "group_version": "operator.sme.sap.com/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "operator.sme.sap.com/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
                     {
-                        "name": "apigateways",
-                        "singular_name": "apigateway",
-                        "namespaced": false,
-                        "kind": "APIGateway",
+                        "name": "capoperators",
+                        "singular_name": "capoperator",
+                        "namespaced": true,
+                        "kind": "CAPOperator",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -4456,17 +5248,14 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "kyma-modules",
-                            "kyma-api-gateway"
-                        ],
-                        "storage_version_hash": "kE7CkTK+4ks="
+                        "categories": null,
+                        "storage_version_hash": "RaK40accA9Q="
                     },
                     {
-                        "name": "apigateways/status",
+                        "name": "capoperators/status",
                         "singular_name": "",
-                        "namespaced": false,
-                        "kind": "APIGateway",
+                        "namespaced": true,
+                        "kind": "CAPOperator",
                         "verbs": [
                             "get",
                             "patch",
@@ -4516,6 +5305,379 @@
                         "singular_name": "",
                         "namespaced": false,
                         "kind": "AdminNetworkPolicy",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "sme.sap.com",
+        "preferred_version": {
+            "group_version": "sme.sap.com/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "sme.sap.com/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "captenantoutputs",
+                        "singular_name": "captenantoutput",
+                        "namespaced": true,
+                        "kind": "CAPTenantOutput",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "gTAehD7wa20="
+                    },
+                    {
+                        "name": "clusterdomains",
+                        "singular_name": "clusterdomain",
+                        "namespaced": false,
+                        "kind": "ClusterDomain",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "f6uVlgOtl5Y="
+                    },
+                    {
+                        "name": "clusterdomains/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "ClusterDomain",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "capapplicationversions",
+                        "singular_name": "capapplicationversion",
+                        "namespaced": true,
+                        "kind": "CAPApplicationVersion",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "0JOCuOz0yWc="
+                    },
+                    {
+                        "name": "capapplicationversions/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CAPApplicationVersion",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "domains",
+                        "singular_name": "domain",
+                        "namespaced": true,
+                        "kind": "Domain",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "e2+RIyVqXW4="
+                    },
+                    {
+                        "name": "domains/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "Domain",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "captenants",
+                        "singular_name": "captenant",
+                        "namespaced": true,
+                        "kind": "CAPTenant",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "w7omulXcb3A="
+                    },
+                    {
+                        "name": "captenants/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CAPTenant",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "capapplications",
+                        "singular_name": "capapplication",
+                        "namespaced": true,
+                        "kind": "CAPApplication",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "e1q+Gvni4WQ="
+                    },
+                    {
+                        "name": "capapplications/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CAPApplication",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "captenantoperations",
+                        "singular_name": "captenantoperation",
+                        "namespaced": true,
+                        "kind": "CAPTenantOperation",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "xGIG6+z7Okk="
+                    },
+                    {
+                        "name": "captenantoperations/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CAPTenantOperation",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "telemetry.kyma-project.io",
+        "preferred_version": {
+            "group_version": "telemetry.kyma-project.io/v1alpha1",
+            "version": "v1alpha1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "telemetry.kyma-project.io/v1alpha1",
+                "version": "v1alpha1",
+                "resources": [
+                    {
+                        "name": "logparsers",
+                        "singular_name": "logparser",
+                        "namespaced": false,
+                        "kind": "LogParser",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "e6qvqflJ6kI="
+                    },
+                    {
+                        "name": "logparsers/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "LogParser",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "logpipelines",
+                        "singular_name": "logpipeline",
+                        "namespaced": false,
+                        "kind": "LogPipeline",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-telemetry",
+                            "kyma-telemetry-pipelines"
+                        ],
+                        "storage_version_hash": "4tSyfFGkFA0="
+                    },
+                    {
+                        "name": "logpipelines/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "LogPipeline",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "metricpipelines",
+                        "singular_name": "metricpipeline",
+                        "namespaced": false,
+                        "kind": "MetricPipeline",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-telemetry",
+                            "kyma-telemetry-pipelines"
+                        ],
+                        "storage_version_hash": "Q9ohhrauUlk="
+                    },
+                    {
+                        "name": "metricpipelines/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "MetricPipeline",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "tracepipelines",
+                        "singular_name": "tracepipeline",
+                        "namespaced": false,
+                        "kind": "TracePipeline",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-telemetry",
+                            "kyma-telemetry-pipelines"
+                        ],
+                        "storage_version_hash": "2OQtcIgGgdw="
+                    },
+                    {
+                        "name": "tracepipelines/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "TracePipeline",
                         "verbs": [
                             "get",
                             "patch",
@@ -4646,22 +5808,22 @@
     {
         "api_version": null,
         "kind": null,
-        "name": "gateway.kyma-project.io",
+        "name": "cloud-resources.kyma-project.io",
         "preferred_version": {
-            "group_version": "gateway.kyma-project.io/v1beta1",
+            "group_version": "cloud-resources.kyma-project.io/v1beta1",
             "version": "v1beta1"
         },
         "server_address_by_client_cid_rs": null,
         "versions": [
             {
-                "group_version": "gateway.kyma-project.io/v1beta1",
+                "group_version": "cloud-resources.kyma-project.io/v1beta1",
                 "version": "v1beta1",
                 "resources": [
                     {
-                        "name": "apirules",
-                        "singular_name": "apirule",
+                        "name": "azurerwxvolumerestores",
+                        "singular_name": "azurerwxvolumerestore",
                         "namespaced": true,
-                        "kind": "APIRule",
+                        "kind": "AzureRwxVolumeRestore",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -4673,15 +5835,242 @@
                             "watch"
                         ],
                         "categories": [
-                            "kyma-api-gateway"
+                            "kyma-cloud-manager"
                         ],
-                        "storage_version_hash": "4AqUXDsfX0M="
+                        "storage_version_hash": "TTM6U9EN14M="
                     },
                     {
-                        "name": "apirules/status",
+                        "name": "azurerwxvolumerestores/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "APIRule",
+                        "kind": "AzureRwxVolumeRestore",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "ipranges",
+                        "singular_name": "iprange",
+                        "namespaced": false,
+                        "kind": "IpRange",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-cloud-manager"
+                        ],
+                        "storage_version_hash": "ZSeUAzgpFHE="
+                    },
+                    {
+                        "name": "ipranges/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "IpRange",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "azurevpcpeerings",
+                        "singular_name": "azurevpcpeering",
+                        "namespaced": false,
+                        "kind": "AzureVpcPeering",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-cloud-manager"
+                        ],
+                        "storage_version_hash": "mWR2nQLNa4M="
+                    },
+                    {
+                        "name": "azurevpcpeerings/status",
+                        "singular_name": "",
+                        "namespaced": false,
+                        "kind": "AzureVpcPeering",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "cloudresources",
+                        "singular_name": "cloudresources",
+                        "namespaced": true,
+                        "kind": "CloudResources",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "i54QFFPl7F0="
+                    },
+                    {
+                        "name": "cloudresources/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "CloudResources",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "azureredisinstances",
+                        "singular_name": "azureredisinstance",
+                        "namespaced": true,
+                        "kind": "AzureRedisInstance",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-cloud-manager"
+                        ],
+                        "storage_version_hash": "Tuj3kRUCtV0="
+                    },
+                    {
+                        "name": "azureredisinstances/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "AzureRedisInstance",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "azureredisclusters",
+                        "singular_name": "azurerediscluster",
+                        "namespaced": true,
+                        "kind": "AzureRedisCluster",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-cloud-manager"
+                        ],
+                        "storage_version_hash": "VyczAFOqA+I="
+                    },
+                    {
+                        "name": "azureredisclusters/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "AzureRedisCluster",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "azurerwxbackupschedules",
+                        "singular_name": "azurerwxbackupschedule",
+                        "namespaced": true,
+                        "kind": "AzureRwxBackupSchedule",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": [
+                            "kyma-cloud-manager"
+                        ],
+                        "storage_version_hash": "TxaL6HCOZS0="
+                    },
+                    {
+                        "name": "azurerwxbackupschedules/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "AzureRwxBackupSchedule",
+                        "verbs": [
+                            "get",
+                            "patch",
+                            "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    },
+                    {
+                        "name": "azurerwxvolumebackups",
+                        "singular_name": "azurerwxvolumebackup",
+                        "namespaced": true,
+                        "kind": "AzureRwxVolumeBackup",
+                        "verbs": [
+                            "delete",
+                            "deletecollection",
+                            "get",
+                            "list",
+                            "patch",
+                            "create",
+                            "update",
+                            "watch"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": "ySh9MWyGLJE="
+                    },
+                    {
+                        "name": "azurerwxvolumebackups/status",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "AzureRwxVolumeBackup",
                         "verbs": [
                             "get",
                             "patch",
@@ -4691,16 +6080,28 @@
                         "storage_version_hash": null
                     }
                 ]
-            },
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "core.kyma-project.io",
+        "preferred_version": {
+            "group_version": "core.kyma-project.io/v1beta1",
+            "version": "v1beta1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
             {
-                "group_version": "gateway.kyma-project.io/v2alpha1",
-                "version": "v2alpha1",
+                "group_version": "core.kyma-project.io/v1beta1",
+                "version": "v1beta1",
                 "resources": [
                     {
-                        "name": "apirules",
-                        "singular_name": "apirule",
+                        "name": "customconfigs",
+                        "singular_name": "customconfig",
                         "namespaced": true,
-                        "kind": "APIRule",
+                        "kind": "CustomConfig",
                         "verbs": [
                             "delete",
                             "deletecollection",
@@ -4711,20 +6112,47 @@
                             "update",
                             "watch"
                         ],
-                        "categories": [
-                            "kyma-api-gateway"
-                        ],
-                        "storage_version_hash": "4AqUXDsfX0M="
+                        "categories": null,
+                        "storage_version_hash": "e+w1PjkywfA="
                     },
                     {
-                        "name": "apirules/status",
+                        "name": "customconfigs/status",
                         "singular_name": "",
                         "namespaced": true,
-                        "kind": "APIRule",
+                        "kind": "CustomConfig",
                         "verbs": [
                             "get",
                             "patch",
                             "update"
+                        ],
+                        "categories": null,
+                        "storage_version_hash": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "api_version": null,
+        "kind": null,
+        "name": "external.metrics.k8s.io",
+        "preferred_version": {
+            "group_version": "external.metrics.k8s.io/v1beta1",
+            "version": "v1beta1"
+        },
+        "server_address_by_client_cid_rs": null,
+        "versions": [
+            {
+                "group_version": "external.metrics.k8s.io/v1beta1",
+                "version": "v1beta1",
+                "resources": [
+                    {
+                        "name": "externalmetrics",
+                        "singular_name": "",
+                        "namespaced": true,
+                        "kind": "ExternalMetricValueList",
+                        "verbs": [
+                            "get"
                         ],
                         "categories": null,
                         "storage_version_hash": null
