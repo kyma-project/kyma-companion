@@ -157,13 +157,15 @@ class TestAgentState:
 
 class TestUserInput:
     @pytest.mark.parametrize(
-        "user_input, expected",
+        "description, user_input, expected",
         [
             (
+                "should return empty dict when resource context is empty",
                 UserInput(query="non-empty"),
                 {},
             ),
             (
+                "should include resource context when resource context is not empty",
                 UserInput(
                     query="non-empty",
                     resource_kind="Pod",
@@ -179,6 +181,7 @@ class TestUserInput:
                 },
             ),
             (
+                "should not include namespace when its empty",
                 UserInput(
                     query="non-empty",
                     resource_kind="Pod",
@@ -193,6 +196,7 @@ class TestUserInput:
                 },
             ),
             (
+                "should not include resource_api_version, resource_name and namespace when its empty",
                 UserInput(
                     query="non-empty",
                     resource_kind="Cluster",
@@ -205,6 +209,7 @@ class TestUserInput:
                 },
             ),
             (
+                "should not include resource_api_version, resource_name and namespace when its empty",
                 UserInput(
                     query="non-empty",
                     resource_kind="Pod",
@@ -213,7 +218,70 @@ class TestUserInput:
                     "resource_kind": "Pod",
                 },
             ),
+            (
+                "should include resource_scope and resource_related_to when its non-empty",
+                UserInput(
+                    query="non-empty",
+                    resource_kind="Pod",
+                    resource_api_version="v1",
+                    resource_name="pod-1",
+                    namespace="pod-1",
+                    resource_scope="namespaced",
+                    resource_related_to="Kubernetes",
+                ),
+                {
+                    "resource_api_version": "v1",
+                    "resource_kind": "Pod",
+                    "resource_name": "pod-1",
+                    "resource_namespace": "pod-1",
+                    "resource_scope": "namespaced",
+                    "resource_related_to": "Kubernetes",
+                },
+            ),
+            (
+                "should set namespace to default when resource_scope is namespaced and namespace is empty",
+                UserInput(
+                    query="non-empty",
+                    resource_kind="Pod",
+                    resource_api_version="v1",
+                    resource_name="pod-1",
+                    namespace="",
+                    resource_scope="namespaced",
+                    resource_related_to="Kubernetes",
+                ),
+                {
+                    "resource_api_version": "v1",
+                    "resource_kind": "Pod",
+                    "resource_name": "pod-1",
+                    "resource_namespace": "default",
+                    "resource_scope": "namespaced",
+                    "resource_related_to": "Kubernetes",
+                },
+            ),
         ],
     )
-    def test_get_resource_information(self, user_input, expected):
-        assert user_input.get_resource_information() == expected
+    def test_get_resource_information(self, description, user_input, expected):
+        assert user_input.get_resource_information() == expected, description
+
+    @pytest.mark.parametrize(
+        "description, resource_kind, expected_result",
+        [
+            ("should return true when resource_kind is Cluster", "Cluster", True),
+            (
+                "should return true when resource_kind is cluster (lowercase)",
+                "Cluster",
+                True,
+            ),
+            ("should return false when resource_kind is not Cluster", "Pod", False),
+        ],
+    )
+    def test_is_overview_query(self, description, resource_kind, expected_result):
+        user_input = UserInput(
+            query="non-empty",
+            resource_kind=resource_kind,
+            resource_api_version="v1",
+            resource_name="pod-1",
+            namespace="default",
+        )
+
+        assert user_input.is_overview_query() == expected_result, description

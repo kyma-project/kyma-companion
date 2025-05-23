@@ -1,4 +1,5 @@
 from functools import lru_cache
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -17,6 +18,7 @@ from routers.common import (
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
+from services.k8s_resource_discovery import K8sResourceDiscovery
 from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
@@ -216,7 +218,9 @@ async def messages(
     try:
         k8s_auth_headers.validate_headers()
     except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(e)
+        ) from e
 
     # Authorize the user to access the conversation.
     await authorize_user(conversation_id, k8s_auth_headers, conversation_service)
@@ -226,15 +230,37 @@ async def messages(
 
     # Initialize k8s client for the request.
     try:
-        k8s_client: IK8sClient = K8sClient(
+        k8s_client: IK8sClient = K8sClient.new(
             k8s_auth_headers=k8s_auth_headers,
             data_sanitizer=data_sanitizer,
         )
     except Exception as e:
         logger.error(e)
         raise HTTPException(
-            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"failed to connect to the cluster: {str(e)}",
         ) from e
+
+    # Validate the k8s resource context.
+    if not message.is_overview_query():
+        try:
+            resource_kind_details = K8sResourceDiscovery(k8s_client).get_resource_kind(
+                str(message.resource_api_version), str(message.resource_kind)
+            )
+            # Add details to the message.
+            message.add_details(resource_kind_details)
+        except ValueError as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=f"Invalid resource context info: {str(e)}",
+            ) from e
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to validate resource context info: {str(e)}",
+            ) from e
 
     return StreamingResponse(
         (
