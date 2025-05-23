@@ -52,7 +52,7 @@ class TestMessage:
                     verbs=[],
                 ),
                 "Pod",
-                "cluster",
+                "namespaced",
                 "Kubernetes",
             ),
             (
@@ -74,7 +74,7 @@ class TestMessage:
                     verbs=["get"],
                 ),
                 "Pod",
-                "cluster",
+                "namespaced",
                 None,
             ),
         ],

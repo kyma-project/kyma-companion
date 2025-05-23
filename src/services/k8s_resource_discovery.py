@@ -32,7 +32,7 @@ class ResourceKind(BaseModel):
 
     def get_scope(self) -> str:
         """Get the scope of the resource kind."""
-        return "cluster" if self.namespaced else "namespaced"
+        return "namespaced" if self.namespaced else "cluster"
 
 
 class Version(BaseModel):
