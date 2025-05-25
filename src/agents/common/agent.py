@@ -28,6 +28,9 @@ from agents.common.error_handler import (
     AGENT_STEPS_NUMBER,
     _handle_recursive_limit_error,
     agent_error_handler,
+    summarization_execution_error_handler,
+    token_counting_error_handler,
+    tool_parsing_error_handler,
     tool_summarization_error_handler,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
@@ -172,55 +175,125 @@ class BaseAgent:
         )
         return response
 
+    @tool_parsing_error_handler
+    def _parse_tool_message(self, message_content: str) -> Any:
+        """Parse tool message content into an object."""
+        return convert_string_to_object(message_content)
+
+    @token_counting_error_handler
+    def _compute_token_count(self, content: str) -> int:
+        """Compute token count for the given content."""
+        return compute_string_token_count(content, ModelType(self.model.name))
+
+    @summarization_execution_error_handler
+    async def _execute_summarization(
+        self,
+        tool_responses: list[Any],
+        user_query: str,
+        config: RunnableConfig,
+        num_chunks: int,
+    ) -> str:
+        """Execute the actual summarization process."""
+        return await self.tool_response_summarization.summarize_tool_response(
+            tool_response=tool_responses,
+            user_query=user_query,
+            config=config,
+            nums_of_chunks=num_chunks,
+        )
+
     async def _summarize_tool_response(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> str:
-        tool_response = []
-        summarized_tool_response = ""
+        """
+        Summarize tool responses if they exceed the token limit.
+
+        This method processes tool messages from the agent state, checks if their
+        combined token count exceeds the model's limit, and if so, summarizes them
+        using chunked summarization to reduce token usage.
+        """
+
+        # Extract tool responses from recent messages (in reverse order)
+        tool_responses: list[Any] = []
+        consecutive_tool_messages = 0
+
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
-                # convert string into object
-                tool_response_object = convert_string_to_object(str(message.content))
-                if isinstance(tool_response_object, list):
-                    tool_response.extend(tool_response_object)
-                else:
-                    tool_response.append(tool_response_object)
+                consecutive_tool_messages += 1
+                # Use decorated method for parsing with error handling
+                tool_response_object = self._parse_tool_message(str(message.content))
+                if tool_response_object is not None:  # None indicates parsing failed
+                    if isinstance(tool_response_object, list):
+                        tool_responses.extend(tool_response_object)
+                    else:
+                        tool_responses.append(tool_response_object)
             else:
+                # Stop when we hit a non-tool message
                 break
 
-        token_count = compute_string_token_count(
-            str(tool_response), ModelType(self.model.name)
-        )
+        # Early return if no tool responses found
+        if not tool_responses:
+            return ""
+
+        # Calculate token count for all tool responses using decorated method
+        combined_tool_content = str(tool_responses)
+        token_count = self._compute_token_count(combined_tool_content)
+
+        # If token counting failed, skip summarization
+        if token_count == 0:
+            return ""
+
         logger.info(f"Tool Response Token count: {token_count}")
-        # if token limit exceeds
-        if token_count > TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]:
 
-            nums_of_chunks = (
-                token_count // TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
-            ) + 1
-            logger.info(f"Number of Chunks for summarization : {nums_of_chunks}")
+        # Check if summarization is needed
+        model_token_limit = TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
+        if token_count <= model_token_limit:
+            logger.debug("Tool response within token limit, no summarization needed")
+            return ""
 
-            if nums_of_chunks > TOTAL_CHUNKS_LIMIT:
-                raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
+        # Calculate number of chunks needed
+        num_chunks = (token_count // model_token_limit) + 1
+        logger.info(f"Number of chunks for summarization: {num_chunks}")
 
-            # summarize tool content
-            summarized_tool_response = (
-                await self.tool_response_summarization.summarize_tool_response(
-                    tool_response=tool_response,
-                    user_query=state.my_task.description,
-                    config=config,
-                    nums_of_chunks=nums_of_chunks,
-                )
+        # Validate chunk limit
+        if num_chunks > TOTAL_CHUNKS_LIMIT:
+            error_msg = (
+                f"Tool response requires {num_chunks} chunks, "
+                f"which exceeds the limit of {TOTAL_CHUNKS_LIMIT}"
             )
+            logger.error(error_msg)
+            raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
 
-            logger.info("Tool Response Summarization completed")
-            # update all tool message which is already summarized and
-            for message in reversed(state.agent_messages):
-                if isinstance(message, ToolMessage):
-                    message.content = "Summarized"
-                else:
-                    break
-        return summarized_tool_response
+        # Perform summarization using decorated method
+        summarized_response = await self._execute_summarization(
+            tool_responses=tool_responses,
+            user_query=state.my_task.description,
+            config=config,
+            num_chunks=num_chunks,
+        )
+
+        # Update processed tool messages to indicate they've been summarized
+        self._mark_tool_messages_as_summarized(state, consecutive_tool_messages)
+
+        return summarized_response
+
+    def _mark_tool_messages_as_summarized(
+        self, state: BaseAgentState, num_messages: int
+    ) -> None:
+        """
+        Mark the specified number of recent tool messages as summarized.
+
+        Args:
+            state: The agent state containing messages to update
+            num_messages: Number of recent tool messages to mark as summarized
+        """
+        marked_count = 0
+        for message in reversed(state.agent_messages):
+            if isinstance(message, ToolMessage) and marked_count < num_messages:
+                message.content = "Summarized"
+                marked_count += 1
+            elif not isinstance(message, ToolMessage):
+                # Stop when we hit a non-tool message
+                break
 
     @tool_summarization_error_handler
     async def _handle_tool_summarization(

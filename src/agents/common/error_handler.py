@@ -75,6 +75,65 @@ def tool_summarization_error_handler(func: Callable) -> Callable:
     return wrapper
 
 
+def tool_parsing_error_handler(func: Callable) -> Callable:
+    """
+    Decorator to handle tool message parsing errors gracefully.
+
+    This decorator catches parsing exceptions and logs warnings while allowing
+    the process to continue with other messages.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"Failed to parse tool message content: {e}")
+            return None  # Return None to indicate parsing failed
+
+    return wrapper
+
+
+def token_counting_error_handler(func: Callable) -> Callable:
+    """
+    Decorator to handle token counting errors gracefully.
+
+    This decorator catches token counting exceptions and returns an empty string
+    to indicate that summarization should be skipped.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Failed to compute token count: {e}")
+            return 0  # Return 0 to indicate token counting failed
+
+    return wrapper
+
+
+def summarization_execution_error_handler(func: Callable) -> Callable:
+    """
+    Decorator to handle summarization execution errors.
+
+    This decorator catches exceptions during the actual summarization process
+    and re-raises them with additional logging context.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            result = await func(*args, **kwargs)
+            logger.info("Tool Response Summarization completed successfully")
+            return result
+        except Exception as e:
+            logger.error(f"Tool response summarization failed: {e}")
+            raise
+
+    return wrapper
+
+
 def _handle_recursive_limit_error(
     agent_name: str, state: BaseAgentState
 ) -> dict[str, Any]:
