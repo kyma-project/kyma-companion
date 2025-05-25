@@ -16,7 +16,6 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
     CONTINUE,
-    ERROR,
     IS_LAST_STEP,
     MESSAGES,
     MY_TASK,
@@ -24,6 +23,12 @@ from agents.common.constants import (
     SUMMARIZATION,
     TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
     TOTAL_CHUNKS_LIMIT,
+)
+from agents.common.error_handler import (
+    AGENT_STEPS_NUMBER,
+    _handle_recursive_limit_error,
+    agent_error_handler,
+    tool_summarization_error_handler,
 )
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import (
@@ -43,10 +48,6 @@ from utils.settings import (
 )
 
 logger = get_logger(__name__)
-
-# as default recursive limit is 25 and the graph has 3 nodes
-# the latest call must withing the nodes (steps) number
-AGENT_STEPS_NUMBER = 3
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
@@ -221,71 +222,42 @@ class BaseAgent:
                     break
         return summarized_tool_response
 
+    @tool_summarization_error_handler
+    async def _handle_tool_summarization(
+        self, state: BaseAgentState, config: RunnableConfig
+    ) -> str | None:
+        """Handle tool response summarization with error handling."""
+        return await self._summarize_tool_response(state, config)
+
+    @agent_error_handler
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
-        try:
-            if state.remaining_steps > AGENT_STEPS_NUMBER:
-                summarized_tool_response = ""
-                if state.agent_messages and isinstance(
-                    state.agent_messages[-1], ToolMessage
-                ):
-                    try:
-                        summarized_tool_response = await self._summarize_tool_response(
-                            state, config
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Error while summarizing the tool response , Error : {e}."
-                        )
-                        return {
-                            AGENT_MESSAGES: [
-                                AIMessage(
-                                    content="Your request is too broad and requires analyzing "
-                                    "more resources than allowed at once. "
-                                    "Please specify a particular resource you'd like to analyze so "
-                                    "I can assist you more effectively.",
-                                    name=self.name,
-                                )
-                            ]
-                        }
-                response = await self._invoke_chain(
-                    state, config, summarized_tool_response
-                )
-            else:
-                if state.my_task:
-                    state.my_task.status = SubTaskStatus.ERROR
+        # if the recursive limit is reached, return a message.
+        if state.remaining_steps <= AGENT_STEPS_NUMBER:
+            return _handle_recursive_limit_error(self.name, state)
 
-                logger.error(
-                    f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
-                )
+        # if the last message is a tool message, summarize the tool response if needed.
+        summarized_tool_response = ""
+        if state.agent_messages and isinstance(state.agent_messages[-1], ToolMessage):
+            summarized_tool_response = await self._handle_tool_summarization(
+                state, config
+            )
+            # If summarization failed (returned None), handle the error case
+            if summarized_tool_response is None:
                 return {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Agent reached the recursive limit, not able to call Tools again",
+                            content="Your request is too broad and requires analyzing "
+                            "more resources than allowed at once. "
+                            "Please specify a particular resource you'd like to analyze so "
+                            "I can assist you more effectively.",
                             name=self.name,
                         )
-                    ],
+                    ]
                 }
-        except Exception as e:
-            error_message = "An error occurred while processing the request"
-            error_message_with_trace = error_message + f": {e}"
-            logger.error(error_message_with_trace)
 
-            # Update current subtask status
-            if state.my_task:
-                state.my_task.status = SubTaskStatus.ERROR
-
-            return {
-                AGENT_MESSAGES: [
-                    AIMessage(
-                        content="Sorry, an unexpected error occurred while processing your request."
-                        "Please try again later.",
-                        name=self.name,
-                    )
-                ],
-                ERROR: error_message,  # we dont send trace to frontend
-            }
+        response = await self._invoke_chain(state, config, summarized_tool_response)
 
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.
