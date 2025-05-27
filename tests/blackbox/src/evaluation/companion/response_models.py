@@ -23,6 +23,7 @@ class ChunkDataAnswerTaskStatusEnum(StrEnum):
     COMPLETED = "completed"
     PENDING = "pending"
     FAILED = "failed"
+    ERROR = "error"
 
 
 class ChunkDataAnswerTask(BaseModel):

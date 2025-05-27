@@ -190,6 +190,235 @@ class TestBaseAgent:
             msg.id = None
         assert actual_input == expected_inputs, test_case
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "test_case, given_state, tool_response_objects, token_count, expected_result, expected_message_content",
+        [
+            (
+                "No tool messages in state, should return empty string",
+                BaseAgentState(
+                    is_last_step=False,
+                    messages=[],
+                    remaining_steps=25,
+                    agent_messages=[AIMessage(content="Hello")],
+                    my_task=SubTask(
+                        description="test task",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
+                ),
+                [],
+                0,
+                "",
+                None,
+            ),
+            (
+                "Tool messages under token limit, should return empty string and not summarize",
+                BaseAgentState(
+                    is_last_step=False,
+                    messages=[],
+                    remaining_steps=25,
+                    agent_messages=[
+                        AIMessage(content="Hello"),
+                        ToolMessage(
+                            content='{"data": "small response"}',
+                            name="query_tool",
+                            tool_call_id="tool_call_id_1",
+                        ),
+                    ],
+                    my_task=SubTask(
+                        description="test task",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
+                ),
+                [{"data": "small response"}],
+                50,
+                "",
+                None,
+            ),
+            (
+                "Tool messages exceed token limit, should summarize and update messages",
+                BaseAgentState(
+                    is_last_step=False,
+                    messages=[],
+                    remaining_steps=25,
+                    agent_messages=[
+                        AIMessage(content="Hello"),
+                        ToolMessage(
+                            content='{"data": "large response"}',
+                            name="query_tool",
+                            tool_call_id="tool_call_id_1",
+                        ),
+                    ],
+                    my_task=SubTask(
+                        description="test task",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
+                ),
+                [{"data": "large response"}],
+                5000,
+                "Summarized tool response",
+                "Summarized",
+            ),
+            (
+                "Multiple tool messages, should process all and summarize if needed",
+                BaseAgentState(
+                    is_last_step=False,
+                    messages=[],
+                    remaining_steps=25,
+                    agent_messages=[
+                        AIMessage(content="Hello"),
+                        ToolMessage(
+                            content='{"data": "response 1"}',
+                            name="query_tool",
+                            tool_call_id="tool_call_id_1",
+                        ),
+                        ToolMessage(
+                            content='{"data": "response 2"}',
+                            name="query_tool",
+                            tool_call_id="tool_call_id_2",
+                        ),
+                    ],
+                    my_task=SubTask(
+                        description="test task",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
+                ),
+                [{"data": "response 2"}, {"data": "response 1"}],
+                6000,
+                "Summarized tool response",
+                "Summarized",
+            ),
+            (
+                "Tool message with list content, should handle correctly",
+                BaseAgentState(
+                    is_last_step=False,
+                    messages=[],
+                    remaining_steps=25,
+                    agent_messages=[
+                        AIMessage(content="Hello"),
+                        ToolMessage(
+                            content='[{"item1": "value1"}, {"item2": "value2"}]',
+                            name="query_tool",
+                            tool_call_id="tool_call_id_1",
+                        ),
+                    ],
+                    my_task=SubTask(
+                        description="test task",
+                        task_title="test",
+                        assigned_to="KubernetesAgent",
+                    ),
+                ),
+                [{"item1": "value1"}, {"item2": "value2"}],
+                7000,
+                "Summarized tool response",
+                "Summarized",
+            ),
+        ],
+    )
+    async def test_summarize_tool_response(
+        self,
+        test_case: str,
+        given_state: BaseAgentState,
+        tool_response_objects: list,
+        token_count: int,
+        expected_result: str,
+        expected_message_content: str,
+        monkeypatch,
+    ):
+        agent = mock_agent()
+        agent.tool_response_summarization = Mock()
+        agent.tool_response_summarization.summarize_tool_response = AsyncMock(
+            return_value="Summarized tool response"
+        )
+
+        monkeypatch.setattr(
+            "agents.common.agent.compute_string_token_count",
+            lambda content, model_type: token_count,
+        )
+
+        token_limit = 1000
+        monkeypatch.setattr(
+            "agents.common.agent.TOOL_RESPONSE_TOKEN_COUNT_LIMIT",
+            {agent.model.name: token_limit},
+        )
+        monkeypatch.setattr("agents.common.agent.TOTAL_CHUNKS_LIMIT", 10)
+
+        result = await agent._summarize_tool_response(given_state, {})
+
+        if token_count <= token_limit:
+            # Should not call summarize_tool_response if under token limit
+            agent.tool_response_summarization.summarize_tool_response.assert_not_called()
+            assert result == "", f"Failed: {test_case}"
+        else:
+            # Should call summarize_tool_response with correct parameters
+            expected_chunks = (token_count // token_limit) + 1
+            agent.tool_response_summarization.summarize_tool_response.assert_called_once_with(
+                tool_response=tool_response_objects,
+                user_query=given_state.my_task.description,
+                config={},
+                nums_of_chunks=expected_chunks,
+            )
+            assert result == expected_result, f"Failed: {test_case}"
+
+        # Check if messages were updated correctly
+        if expected_message_content is not None:
+            for message in given_state.agent_messages:
+                if isinstance(message, ToolMessage):
+                    assert (
+                        message.content == expected_message_content
+                    ), f"Failed message content check: {test_case}"
+
+    # Test case for when number of chunks exceeds the limit
+    @pytest.mark.asyncio
+    async def test_summarize_tool_response_exceeds_chunks_limit(self, monkeypatch):
+        agent = mock_agent()
+        given_state = BaseAgentState(
+            is_last_step=False,
+            messages=[],
+            remaining_steps=25,
+            agent_messages=[
+                AIMessage(content="Hello"),
+                ToolMessage(
+                    content='{"data": "very large response"}',
+                    name="query_tool",
+                    tool_call_id="tool_call_id_1",
+                ),
+            ],
+            my_task=SubTask(
+                description="test task",
+                task_title="test",
+                assigned_to="KubernetesAgent",
+            ),
+        )
+
+        # Mock excessive token count that would result in too many chunks
+        token_count = 100000
+        token_limit = 1000
+        chunks_limit = 5
+
+        monkeypatch.setattr(
+            "agents.common.agent.convert_string_to_object",
+            lambda content_str: {"data": "very large response"},
+        )
+        monkeypatch.setattr(
+            "agents.common.agent.compute_string_token_count",
+            lambda content, model_type: token_count,
+        )
+        monkeypatch.setattr(
+            "agents.common.agent.TOOL_RESPONSE_TOKEN_COUNT_LIMIT",
+            {agent.model.name: token_limit},
+        )
+        monkeypatch.setattr("agents.common.agent.TOTAL_CHUNKS_LIMIT", chunks_limit)
+
+        with pytest.raises(
+            Exception, match="Total number of chunks exceeds TOTAL_CHUNKS_LIMIT"
+        ):
+            await agent._summarize_tool_response(given_state, {})
+
     def test_build_graph(self):
         # Given
         agent = mock_agent()
@@ -215,7 +444,7 @@ class TestBaseAgent:
         assert graph.builder.edges == {
             ("__start__", "subtask_selector"),
             ("finalizer", "__end__"),
-            ("tools", "Summarization"),
+            ("tools", "agent"),
         }
         # Check conditional edges.
         branch_number = 3
@@ -383,7 +612,7 @@ class TestBaseAgent:
                 {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Sorry, an unexpected error occurred while processing your request.Please try again later.",
+                            content="Sorry, an unexpected error occurred while processing your request. Please try again later.",
                             name="KubernetesAgent",
                         )
                     ],
@@ -497,7 +726,7 @@ class TestBaseAgent:
 
         # Then
         if expected_invoke_inputs != {}:
-            agent._invoke_chain.assert_called_once_with(given_state, mock_config)
+            agent._invoke_chain.assert_called_once_with(given_state, mock_config, "")
 
         # Verify task status is updated when remaining steps is insufficient
         if given_state.remaining_steps <= AGENT_STEPS_NUMBER:

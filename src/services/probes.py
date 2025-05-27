@@ -143,7 +143,7 @@ class UsageTrackerProbe(metaclass=SingletonMeta):
 
     def reset_failure_count(self) -> None:
         """Sets the failure count back to 0."""
-        logger.info("resetting the failure counter of the Usage Tracker Probe")
+        logger.debug("resetting the failure counter of the Usage Tracker Probe")
         self._failure_count = 0
 
     def increase_failure_count(self) -> None:

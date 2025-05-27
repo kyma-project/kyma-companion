@@ -80,3 +80,11 @@ TOOL_CALLING_ERROR_HANDLING = """
   -- A clear acknowledgment of the issue.
   -- A concise explanation (if helpful) without technical details.
 """
+
+
+CHUNK_SUMMARIZER_PROMPT = """
+            "Focusing on the query: '{query}'\n\n"
+            "Summarize this text, extracting key points relevant to the query:\n"
+            "{tool_response_chunk}\n\n"
+            "Summary (keep it concise, no preamble):"
+        """
