@@ -111,12 +111,11 @@ class TestK8sResourceDiscovery:
         assert len(K8sResourceDiscovery.api_resources) > 0
 
     @pytest.mark.parametrize(
-        "resource_kind, resources, expected_name",
+        "description, resource_kind, resources, expected_name",
         [
-            # No match
-            ("Pod", [], None),
-            # Single match
+            ("No match", "Pod", [], None),
             (
+                "Single match",
                 "Pod",
                 [
                     ResourceKind(
@@ -129,8 +128,8 @@ class TestK8sResourceDiscovery:
                 ],
                 "pods",
             ),
-            # Multiple matches, one with matching singular_name
             (
+                "Multiple matches, one with matching singular_name",
                 "Pod",
                 [
                     ResourceKind(
@@ -150,8 +149,8 @@ class TestK8sResourceDiscovery:
                 ],
                 "pods",
             ),
-            # Multiple matches, none with matching singular_name, should return first
             (
+                "Multiple matches, none with matching singular_name, should return first",
                 "Pod",
                 [
                     ResourceKind(
@@ -173,55 +172,57 @@ class TestK8sResourceDiscovery:
             ),
         ],
     )
-    def test_find_resource_kind(self, resource_kind, resources, expected_name):
+    def test_find_resource_kind(
+        self, description, resource_kind, resources, expected_name
+    ):
         k8s_client = Mock(spec=IK8sClient)
         discovery = K8sResourceDiscovery(k8s_client)
         result = discovery._find_resource_kind(resource_kind, resources)
         if expected_name is None:
-            assert result is None
+            assert result is None, description
         else:
-            assert result.name == expected_name
+            assert result.name == expected_name, description
 
     @pytest.mark.parametrize(
-        "group_version, kind, expected_name, expect_error",
+        "description, group_version, kind, expected_name, expect_error",
         [
-            # Exact match in core/v1
             (
+                "Exact match in core/v1",
                 "v1",
                 "Pod",
                 "pods",
                 False,
             ),
-            # Match with group version
             (
+                "Match with group version",
                 "apps/v1",
                 "Deployment",
                 "deployments",
                 False,
             ),
-            # No match, should raise ValueError
             (
+                "No match, should raise ValueError",
                 "v1",
                 "NonExistentKind",
                 None,
                 True,
             ),
-            # Kind with dot, should match base kind
             (
+                "Kind with dot, should match base kind",
                 "v1",
                 "Pod.status",
                 "pods",
                 False,
             ),
-            # Match a Kyma resource
             (
+                "Match a Kyma resource",
                 "eventing.kyma-project.io/v1alpha2",
                 "Subscription",
                 "subscriptions",
                 False,
             ),
-            # Match a Kyma resource
             (
+                "Match a Kyma resource - Function",
                 "serverless.kyma-project.io/v1alpha2",
                 "Function",
                 "functions",
@@ -230,7 +231,7 @@ class TestK8sResourceDiscovery:
         ],
     )
     def test_get_resource_kind_static(
-        self, group_version, kind, expected_name, expect_error
+        self, description, group_version, kind, expected_name, expect_error
     ):
         # given
         k8s_client = Mock(spec=IK8sClient)
@@ -242,13 +243,13 @@ class TestK8sResourceDiscovery:
                 discovery.get_resource_kind_static(group_version, kind)
         else:
             result = discovery.get_resource_kind_static(group_version, kind)
-            assert result.name == expected_name
+            assert result.name == expected_name, description
 
     @pytest.mark.parametrize(
-        "group_version, kind, api_response, expected_name, expect_error",
+        "description, group_version, kind, api_response, expected_name, expect_error",
         [
-            # Successful lookup
             (
+                "Lookup for Pod should succeed",
                 "v1",
                 "Pod",
                 {
@@ -265,8 +266,8 @@ class TestK8sResourceDiscovery:
                 "pods",
                 False,
             ),
-            # Kind with dot, should match base kind
             (
+                "Kind with dot should match base kind",
                 "v1",
                 "Pod.status",
                 {
@@ -283,8 +284,8 @@ class TestK8sResourceDiscovery:
                 "pods",
                 False,
             ),
-            # No matching kind, should raise ValueError
             (
+                "No matching kind should raise ValueError",
                 "v1",
                 "NonExistentKind",
                 {
@@ -301,8 +302,8 @@ class TestK8sResourceDiscovery:
                 None,
                 True,
             ),
-            # No group version found, should raise ValueError
             (
+                "No group version found should raise ValueError",
                 "apps/v1",
                 "Deployment",
                 None,
@@ -312,25 +313,32 @@ class TestK8sResourceDiscovery:
         ],
     )
     def test_get_resource_kind_dynamic(
-        self, group_version, kind, api_response, expected_name, expect_error
+        self,
+        description,
+        group_version,
+        kind,
+        api_response,
+        expected_name,
+        expect_error,
     ):
         k8s_client = Mock()
         k8s_client.get_group_version = Mock()
         k8s_client.get_group_version.return_value = api_response
         discovery = K8sResourceDiscovery(k8s_client)
 
+        # when / then
         if expect_error:
             with pytest.raises(ValueError):
                 discovery.get_resource_kind_dynamic(group_version, kind)
         else:
             result = discovery.get_resource_kind_dynamic(group_version, kind)
-            assert result.name == expected_name
+            assert result.name == expected_name, description
 
     @pytest.mark.parametrize(
-        "group_version, kind, static_result, dynamic_result, expect_error, expected_name",
+        "description, group_version, kind, static_result, dynamic_result, expect_error, expected_name",
         [
-            # Static lookup succeeds
             (
+                "Static lookup should succeed",
                 "v1",
                 "Pod",
                 ResourceKind(
@@ -344,8 +352,8 @@ class TestK8sResourceDiscovery:
                 False,
                 "pods",
             ),
-            # Static fails, dynamic succeeds
             (
+                "Static lookup should fail, but dynamic lookup should succeed",
                 "apps/v1",
                 "Deployment",
                 None,
@@ -359,12 +367,20 @@ class TestK8sResourceDiscovery:
                 False,
                 "deployments",
             ),
-            # Both static and dynamic fail
-            ("v1", "NonExistentKind", None, None, True, None),
+            (
+                "Both static and dynamic lookup should fail",
+                "v1",
+                "NonExistentKind",
+                None,
+                None,
+                True,
+                None,
+            ),
         ],
     )
     def test_get_resource_kind(
         self,
+        description,
         group_version,
         kind,
         static_result,
@@ -389,9 +405,10 @@ class TestK8sResourceDiscovery:
             else:
                 mock_dynamic.side_effect = ValueError("Not found")
 
+            # when / then
             if expect_error:
                 with pytest.raises(ValueError):
                     discovery.get_resource_kind(group_version, kind)
             else:
                 result = discovery.get_resource_kind(group_version, kind)
-                assert result.name == expected_name
+                assert result.name == expected_name, description

@@ -13,6 +13,7 @@ from langgraph.graph.message import Messages
 from pydantic import BaseModel
 
 from agents.common.constants import (
+    CLUSTER,
     CONTINUE,
     ERROR,
     MESSAGES,
@@ -145,7 +146,7 @@ def get_relevant_context_from_k8s_cluster(
     # Query the Kubernetes API to get the context.
     context = ""
 
-    if is_empty_str(namespace) and kind.lower() == "cluster":
+    if is_empty_str(namespace) and kind.lower() == CLUSTER:
         # Get an overview of the cluster
         # by fetching all not running pods, all K8s Nodes metrics,
         # and all K8s events with warning type.

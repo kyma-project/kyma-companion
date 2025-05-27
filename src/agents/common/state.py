@@ -11,7 +11,7 @@ from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
-from agents.common.constants import COMMON, K8S_AGENT, KYMA_AGENT
+from agents.common.constants import CLUSTER, COMMON, K8S_AGENT, KYMA_AGENT
 from services.k8s import IK8sClient
 from utils.utils import to_sequence_messages
 
@@ -98,35 +98,35 @@ class UserInput(BaseModel):
         """Get resource information."""
         result = {}
         # add detail about the resource kind.
-        if self.resource_kind is not None and self.resource_kind != "":
+        if self.resource_kind:
             result["resource_kind"] = self.resource_kind
 
         # add detail about the resource api version.
-        if self.resource_api_version is not None and self.resource_api_version != "":
+        if self.resource_api_version:
             result["resource_api_version"] = self.resource_api_version
 
         # add detail about the resource name.
-        if self.resource_name is not None and self.resource_name != "":
+        if self.resource_name:
             result["resource_name"] = self.resource_name
 
         # add detail about the namespace.
-        if self.namespace is not None and self.namespace != "":
+        if self.namespace:
             result["resource_namespace"] = self.namespace
         elif self.namespace == "" and self.resource_scope == "namespaced":
             result["resource_namespace"] = "default"
 
         # add detail about the resource scope.
-        if self.resource_scope is not None and self.resource_scope != "":
+        if self.resource_scope:
             result["resource_scope"] = self.resource_scope
 
         # add detail about the resource related to.
-        if self.resource_related_to is not None and self.resource_related_to != "":
+        if self.resource_related_to:
             result["resource_related_to"] = self.resource_related_to
         return result
 
     def is_overview_query(self) -> bool:
         """Check if the query is an overview query."""
-        return self.resource_kind.lower() == "cluster"
+        return self.resource_kind.lower() == CLUSTER
 
 
 class Plan(BaseModel):

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from agents.common.constants import CLUSTER
 from services.k8s_resource_discovery import K8sResourceDiscovery, ResourceKind
 
 
@@ -19,7 +20,7 @@ class Message(BaseModel):
 
     def is_overview_query(self) -> bool:
         """Check if the query is an overview query."""
-        return self.resource_kind.lower() == "cluster"
+        return self.resource_kind.lower() == CLUSTER
 
     def add_details(self, resource_kind_details: ResourceKind) -> None:
         """Add details to the message."""

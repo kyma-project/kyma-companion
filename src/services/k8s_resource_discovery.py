@@ -4,6 +4,7 @@ import re
 from pydantic import AliasChoices, BaseModel, Field
 from tenacity import retry, stop_after_attempt
 
+from agents.common.constants import CLUSTER, NAMESPACED
 from services.k8s import IK8sClient
 from utils import logging
 from utils.logging import after_log
@@ -32,7 +33,7 @@ class ResourceKind(BaseModel):
 
     def get_scope(self) -> str:
         """Get the scope of the resource kind."""
-        return "namespaced" if self.namespaced else "cluster"
+        return NAMESPACED if self.namespaced else CLUSTER
 
 
 class Version(BaseModel):
