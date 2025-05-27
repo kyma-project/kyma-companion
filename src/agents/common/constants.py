@@ -5,6 +5,10 @@ PLANNER = "Planner"
 SUMMARIZATION = "Summarization"
 INITIAL_SUMMARIZATION = "InitialSummarization"
 
+CLUSTER = "cluster"
+
+NAMESPACED = "namespaced"
+
 FINALIZER = "Finalizer"
 
 GATEKEEPER = "Gatekeeper"

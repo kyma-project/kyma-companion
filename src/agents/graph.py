@@ -341,7 +341,11 @@ class CompanionGraph:
         user_input = UserInput(**message.__dict__)
         messages: list[BaseMessage] = [HumanMessage(content=message.query)]
         resource_context = user_input.get_resource_information()
-        if resource_context and len(resource_context) > 0:
+        if (
+            resource_context
+            and len(resource_context) > 0
+            and not user_input.is_overview_query()
+        ):
             messages.insert(
                 0,
                 SystemMessage(
