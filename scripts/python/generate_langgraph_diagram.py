@@ -54,7 +54,7 @@ print("Generating graph diagram for the companion graph...")
 try:
     png_bytes = Image(
         graph.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
         )
     )
     # store the image in a file
@@ -69,7 +69,7 @@ kyma_agent = KymaAgent(models)
 try:
     png_bytes = Image(
         kyma_agent.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
         )
     )
     # store the image in a file
@@ -85,7 +85,7 @@ k8s_agent = KubernetesAgent(models[ModelType.GPT4O])
 try:
     png_bytes = Image(
         k8s_agent.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
         )
     )
     # store the image in a file

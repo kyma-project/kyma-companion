@@ -1,3 +1,5 @@
+import ast
+import json
 from collections.abc import Sequence
 from typing import Any
 
@@ -53,7 +55,7 @@ def filter_messages(
 
 def filter_valid_messages(
     messages: Sequence[BaseMessage] | list[BaseMessage],
-) -> Sequence[BaseMessage]:
+) -> list[BaseMessage]:
     """
     Filters the invalid sequence of messages.
     For example:
@@ -192,3 +194,17 @@ def get_relevant_context_from_k8s_cluster(
         raise Exception("Invalid message provided.")
 
     return context
+
+
+def convert_string_to_object(input_string: str) -> Any:
+    """Try to convert string to object."""
+    # First, try using json.loads (works for proper JSON strings)
+    try:
+        return json.loads(input_string)
+    except Exception:
+        # If JSON parsing fails
+        try:
+            return ast.literal_eval(input_string)
+        except (SyntaxError, ValueError):
+            # If it's not valid JSON or a Python literal, return the string itself
+            return input_string
