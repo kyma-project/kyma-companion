@@ -19,7 +19,6 @@ async def monitor_http_requests(req: Request, call_next: Any) -> Any:
 
 
 app.include_router(conversations_router)
-# The endpoints for the probes as used Kubernetes.
 app.include_router(probes_router)
 
 
