@@ -612,7 +612,7 @@ class TestBaseAgent:
                 {
                     AGENT_MESSAGES: [
                         AIMessage(
-                            content="Sorry, an unexpected error occurred while processing your request.Please try again later.",
+                            content="Sorry, an unexpected error occurred while processing your request. Please try again later.",
                             name="KubernetesAgent",
                         )
                     ],

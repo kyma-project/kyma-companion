@@ -25,9 +25,7 @@ def agent_error_handler(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    async def wrapper(
-        self: Any, state: BaseAgentState, config: RunnableConfig
-    ) -> dict[str, Any]:
+    async def wrapper(self: Any, state: BaseAgentState, config: RunnableConfig) -> Any:
 
         try:
             return await func(self, state, config)
@@ -63,9 +61,7 @@ def tool_summarization_error_handler(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    async def wrapper(
-        self: Any, state: BaseAgentState, config: RunnableConfig
-    ) -> str | None:
+    async def wrapper(self: Any, state: BaseAgentState, config: RunnableConfig) -> Any:
         try:
             return await func(self, state, config)
         except Exception:
@@ -84,7 +80,7 @@ def tool_parsing_error_handler(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -103,7 +99,7 @@ def token_counting_error_handler(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -122,7 +118,7 @@ def summarization_execution_error_handler(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             result = await func(*args, **kwargs)
             logger.info("Tool Response Summarization completed successfully")

@@ -214,11 +214,9 @@ class BaseAgent:
 
         # Extract tool responses from recent messages (in reverse order)
         tool_responses: list[Any] = []
-        consecutive_tool_messages = 0
 
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
-                consecutive_tool_messages += 1
                 # Use decorated method for parsing with error handling
                 tool_response_object = self._parse_tool_message(str(message.content))
                 if tool_response_object is not None:  # None indicates parsing failed
@@ -272,25 +270,20 @@ class BaseAgent:
         )
 
         # Update processed tool messages to indicate they've been summarized
-        self._mark_tool_messages_as_summarized(state, consecutive_tool_messages)
+        self._mark_tool_messages_as_summarized(state)
 
-        return summarized_response
+        return str(summarized_response)
 
-    def _mark_tool_messages_as_summarized(
-        self, state: BaseAgentState, num_messages: int
-    ) -> None:
+    def _mark_tool_messages_as_summarized(self, state: BaseAgentState) -> None:
         """
         Mark the specified number of recent tool messages as summarized.
 
         Args:
             state: The agent state containing messages to update
-            num_messages: Number of recent tool messages to mark as summarized
         """
-        marked_count = 0
         for message in reversed(state.agent_messages):
-            if isinstance(message, ToolMessage) and marked_count < num_messages:
+            if isinstance(message, ToolMessage):
                 message.content = "Summarized"
-                marked_count += 1
             elif not isinstance(message, ToolMessage):
                 # Stop when we hit a non-tool message
                 break
