@@ -67,12 +67,16 @@ K8S_DOMAIN_KNOWLEDGE = """
 
 
 TOOL_CALLING_ERROR_HANDLING = """
-## Error Handling 
+## Error Handling for Tool Calling
+
+# For search_kyma_doc tool, 
+- if tool responds about no documentation found respond user with clear acknowledgment of the issue.
+
 - Check conversation history for any previous tool calls and their results.
 - If a tool call fails analyze the error and attempt to fix the issue:
   -- Check for missing or malformed parameters.
   -- Verify if the correct tool is assigned with correct name.
-- If three consecutive tool calls request fail, do not attempt further tool calls. Instead, respond to the user with:
-  -- A clear acknowledgment of the issue (e.g., "I encountered an error while retrieving the information.").
+- If three consecutive tool calls request fail, respond to the user with:
+  -- A clear acknowledgment of the issue.
   -- A concise explanation (if helpful) without technical details.
 """
