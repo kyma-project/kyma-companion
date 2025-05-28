@@ -53,7 +53,7 @@ class QueryGenerator:
 
     def _create_chain(self) -> Any:
         """Create a chain with langchain."""
-        return self.prompt | self.model.llm.with_structured_output(Queries)
+        return self.prompt | self.model.llm.with_structured_output(Queries, method="function_calling")  # type: ignore
 
     async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""

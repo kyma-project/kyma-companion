@@ -229,7 +229,7 @@ class CompanionGraph:
                 ("system", GATEKEEPER_INSTRUCTIONS),
             ]
         )
-        return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
+        return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
     async def _invoke_gatekeeper_node(
         self, state: CompanionState

@@ -153,7 +153,7 @@ class SupervisorAgent:
         ).partial(
             kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
         )
-        return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
+        return self.planner_prompt | model.llm.with_structured_output(Plan, method="function_calling")  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
         """Invoke the planner with retry logic using tenacity."""
