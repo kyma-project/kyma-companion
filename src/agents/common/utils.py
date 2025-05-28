@@ -27,7 +27,6 @@ from agents.common.data import Message
 from agents.common.state import SubTask
 from services.k8s import IK8sClient
 from utils.logging import get_logger
-from utils.models.factory import ModelType
 from utils.utils import is_empty_str, is_non_empty_str
 
 logger = get_logger(__name__)
@@ -111,12 +110,20 @@ def create_node_output(
     }
 
 
-def compute_string_token_count(text: str, model_type: ModelType) -> int:
+def compute_string_token_count(text: str, model_type: str) -> int:
     """Returns the token count of the string."""
-    return len(tiktoken.encoding_for_model(model_type).encode(text=text))
+    try:
+        encoding = tiktoken.encoding_for_model(model_type)
+    except KeyError:
+        # Fallback to a compatible encoding for unrecognized model names
+        logger.warning(
+            f"Model '{model_type}' not recognized by tiktoken, using cl100k_base encoding"
+        )
+        encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(text=text))
 
 
-def compute_messages_token_count(msgs: Messages, model_type: ModelType) -> int:
+def compute_messages_token_count(msgs: Messages, model_type: str) -> int:
     """Returns the token count of the messages."""
     tokens_per_msg = (
         compute_string_token_count(str(msg.content), model_type) for msg in msgs

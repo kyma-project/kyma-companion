@@ -23,7 +23,7 @@ from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
 from agents.supervisor.agent import SUPERVISOR
 from utils import logging
 from utils.chain import ainvoke_chain
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
 
 logger = logging.get_logger(__name__)
 
@@ -34,7 +34,7 @@ class MessageSummarizer:
     def __init__(
         self,
         model: IModel | Embeddings,
-        tokenizer_model_type: ModelType,
+        tokenizer_model_type: str,
         token_lower_limit: int,
         token_upper_limit: int,
         messages_key: str = "messages",

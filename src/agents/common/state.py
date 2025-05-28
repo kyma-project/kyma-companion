@@ -200,9 +200,9 @@ class BaseAgentState(BaseModel):
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
     agent_messages_summary: str = ""
     my_task: SubTask | None = None
-    is_last_step: IsLastStep
+    is_last_step: IsLastStep = Field(default=False)
     error: str | None = None
-    remaining_steps: RemainingSteps
+    remaining_steps: RemainingSteps = Field(default=RemainingSteps(25))
 
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
