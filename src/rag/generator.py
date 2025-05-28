@@ -34,12 +34,7 @@ class Generator:
         # Convert Document objects to a list of their page_content
         docs_content = "\n\n".join(doc.page_content for doc in relevant_docs)
         if not docs_content.strip():
-            return """I'm sorry, but I couldn't find any relevant documents in the knowledge base 
-            that match your query at this time. 
-            It's possible that the specific information you're looking 
-            for isn't currently indexed or available in the system. 
-            You might consider rephrasing your query with different 
-            keywords or providing more context so I can try again."""
+            return "No relevant documentation found."
         try:
             response = await ainvoke_chain(
                 self.rag_chain,

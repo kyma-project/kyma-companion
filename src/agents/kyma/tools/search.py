@@ -53,6 +53,6 @@ class SearchKymaDocTool(BaseTool):
         """Async implementation of the search through Kyma documentation."""
         # For now, just call the sync version
         query_obj = Query(text=query)
-        relevant_docs = []#await self.rag_system.aretrieve(query_obj)
+        relevant_docs = await self.rag_system.aretrieve(query_obj)
         rag_response = await self.rag_system.agenerate(query_obj, relevant_docs)
         return rag_response

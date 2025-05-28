@@ -67,18 +67,22 @@ K8S_DOMAIN_KNOWLEDGE = """
 
 
 TOOL_CALLING_ERROR_HANDLING = """
-## Error Handling for Tool Calling
+## Failure Response Strategy
 
-# For search_kyma_doc tool, 
-- if tool responds about no documentation found respond user with clear acknowledgment of the issue.
+When a tool call fails, follow this protocol:
 
-- Check conversation history for any previous tool calls and their results.
-- If a tool call fails analyze the error and attempt to fix the issue:
-  -- Check for missing or malformed parameters.
-  -- Verify if the correct tool is assigned with correct name.
-- If three consecutive tool calls request fail, respond to the user with:
-  -- A clear acknowledgment of the issue.
-  -- A concise explanation (if helpful) without technical details.
+- STOP RECURSIVE ATTEMPTS : Do not immediately retry the same tool call
+- ANALYZE THE FAILURE : Determine the type and likely cause of failure
+- EVALUATE ALTERNATIVES : Consider if a different tool or approach might work , Check for missing or malformed parameters.
+- INFORM THE USER : Acknowledge the user about the failure.
+
+## Retry Logic :
+Only retry if:
+
+- The failure was clearly temporary (network timeout, etc.)
+- You can modify the approach meaningfully (different parameters)
+- You haven't already attempted this tool for the same request
+- Maximum of THREE retry attempt per tool
 """
 
 
