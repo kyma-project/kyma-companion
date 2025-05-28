@@ -36,8 +36,14 @@ from agents.k8s.agent import KubernetesAgent
 from agents.kyma.agent import KymaAgent
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
-from utils.models.factory import ModelFactory, ModelType  # noqa: E402
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from utils.models.factory import ModelFactory  # noqa: E402
+from utils.settings import (
+    MAIN_MODEL,
+    REDIS_DB_NUMBER,
+    REDIS_HOST,
+    REDIS_PASSWORD,
+    REDIS_PORT,
+)
 
 if not os.getenv("CONFIG_PATH"):
     os.environ["CONFIG_PATH"] = "config/config.json"
@@ -81,7 +87,7 @@ except Exception:
 print("kyma_agent.png generated")
 
 print("Generating graph diagram for the k8s agent...")
-k8s_agent = KubernetesAgent(models[ModelType.GPT4O])
+k8s_agent = KubernetesAgent(models[MAIN_MODEL])
 try:
     png_bytes = Image(
         k8s_agent.graph.get_graph().draw_mermaid_png(

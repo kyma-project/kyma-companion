@@ -16,6 +16,7 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
     CONTINUE,
+    ERROR,
     IS_LAST_STEP,
     MESSAGES,
     MY_TASK,
@@ -27,7 +28,6 @@ from agents.common.constants import (
 from agents.common.error_handler import (
     AGENT_STEPS_NUMBER,
     _handle_recursive_limit_error,
-    agent_error_handler,
     summarization_execution_error_handler,
     token_counting_error_handler,
     tool_parsing_error_handler,
@@ -44,7 +44,7 @@ from agents.common.utils import (
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
 from utils.settings import (
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
@@ -97,7 +97,7 @@ class BaseAgent:
         self.tools = tools
         self.summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType(model.name),
+            tokenizer_model_type=model.name,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=AGENT_MESSAGES,
@@ -183,7 +183,7 @@ class BaseAgent:
     @token_counting_error_handler
     def _compute_token_count(self, content: str) -> int:
         """Compute token count for the given content."""
-        return compute_string_token_count(content, ModelType(self.model.name))
+        return compute_string_token_count(content, self.model.name)
 
     @summarization_execution_error_handler
     async def _execute_summarization(
@@ -295,7 +295,6 @@ class BaseAgent:
         """Handle tool response summarization with error handling."""
         return await self._summarize_tool_response(state, config)
 
-    @agent_error_handler
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
@@ -323,7 +322,27 @@ class BaseAgent:
                     ]
                 }
 
-        response = await self._invoke_chain(state, config, summarized_tool_response)
+        try:
+            response = await self._invoke_chain(state, config)
+        except Exception as e:
+            error_message = "An error occurred while processing the request"
+            error_message_with_trace = error_message + f": {e}"
+            logger.error(error_message_with_trace)
+
+            # Update current subtask status
+            if state.my_task:
+                state.my_task.status = SubTaskStatus.ERROR
+
+            return {
+                AGENT_MESSAGES: [
+                    AIMessage(
+                        content="Sorry, an unexpected error occurred while processing your request."
+                        "Please try again later.",
+                        name=self.name,
+                    )
+                ],
+                ERROR: error_message,  # we dont send trace to frontend
+            }
 
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.
