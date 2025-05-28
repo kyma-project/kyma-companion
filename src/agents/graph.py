@@ -148,7 +148,9 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
-        self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
+        self._gatekeeper_chain = self._create_gatekeeper_chain(
+            cast(IModel, main_model_mini)
+        )
         self.graph = self._build_graph()
 
     @staticmethod

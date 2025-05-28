@@ -11,15 +11,16 @@ from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
+from utils.settings import MAIN_EMBEDDING_MODEL, MAIN_MODEL, MAIN_MODEL_MINI
 
 
 @pytest.fixture
 def mock_models():
     return {
-        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
-        ModelType.GPT4O: MagicMock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
+        MAIN_MODEL_MINI: MagicMock(spec=IModel),
+        MAIN_MODEL: MagicMock(spec=IModel),
+        MAIN_EMBEDDING_MODEL: MagicMock(spec=Embeddings),
     }
 
 
