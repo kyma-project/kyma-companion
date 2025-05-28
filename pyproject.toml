@@ -41,14 +41,14 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^2.5.3"
+deepeval = {extras = ["all"], version = "^3.0.1"}
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
 pytest-asyncio = "^0.25.3"
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.14.0"
-pytest-rerunfailures = "^15.0"
+pytest-rerunfailures = "^12.0"
 pyyaml = "^6.0.2"
 ragas = "^0.2.15"
 termcolor = "^2.5.0"

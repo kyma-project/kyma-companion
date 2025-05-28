@@ -12,7 +12,7 @@ from integration.agents.fixtures.k8_query_tool_response import (
     sample_pods_tool_response,
     sample_services_tool_response,
 )
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def tool_response_summarization_metric(evaluator_model):
 
 @pytest.fixture
 def summarization_model(app_models):
-    return app_models[ModelType.GPT4O]
+    return app_models[MAIN_MODEL]
 
 
 @pytest.mark.parametrize(

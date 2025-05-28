@@ -14,7 +14,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_3,
     conversation_sample_4,
 )
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL, MAIN_MODEL_MINI
 
 
 @pytest.fixture
@@ -40,13 +40,13 @@ def summarization_metric(evaluator_model):
 
 @pytest.fixture
 def summarization_model(app_models):
-    return app_models[ModelType.GPT4O_MINI]
+    return app_models[MAIN_MODEL_MINI]
 
 
 @pytest.fixture
 def tokenizer_info():
     return {
-        "model_type": ModelType.GPT4O,
+        "model_type": MAIN_MODEL,
         "token_lower_limit": 2000,
         "token_upper_limit": 3000,
     }

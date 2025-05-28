@@ -4,9 +4,7 @@ import pytest
 
 from utils.models.exceptions import ModelNotFoundError, UnsupportedModelError
 from utils.models.factory import (
-    GeminiModel,
     ModelFactory,
-    ModelType,
     OpenAIModel,
 )
 
@@ -34,20 +32,14 @@ class TestModelFactory:
         [
             (
                 "should return OpenAIModel when gpt4o is requested",
-                ModelType.GPT4O,
+                "gpt-4.1",
                 OpenAIModel,
                 None,
             ),
             (
-                "should return OpenAIModel when gpt35 is requested",
-                ModelType.GPT35,
+                "should return OpenAIModel when gpt-4.1-mini is requested",
+                "gpt-4.1-mini",
                 OpenAIModel,
-                None,
-            ),
-            (
-                "should return GeminiModel when gemini_10_pro is requested",
-                ModelType.GEMINI_10_PRO,
-                GeminiModel,
                 None,
             ),
             (

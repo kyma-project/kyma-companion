@@ -11,7 +11,7 @@ from langgraph.types import StateSnapshot
 
 from followup_questions.followup_questions import FollowUpQuestionsHandler
 from services.conversation import ConversationService
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL_MINI
 
 FOLLOW_UP_QUESTIONS_COUNT = 5
 
@@ -39,7 +39,7 @@ def followup_correctness_metric(evaluator_model):
 @pytest.fixture(scope="session")
 def conversation_service(app_models, companion_graph):
     with patch("services.conversation.ConversationService.__init__") as mock_cs:
-        model_mini = app_models[ModelType.GPT4O_MINI]
+        model_mini = app_models[MAIN_MODEL_MINI]
         mock_cs.return_value = None
         conversation_service = ConversationService()
         conversation_service._companion_graph = companion_graph

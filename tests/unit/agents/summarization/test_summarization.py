@@ -13,14 +13,15 @@ from pydantic import BaseModel
 
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
+from utils.settings import MAIN_MODEL
 
 
 class TestSummarization:
     @pytest.mark.parametrize(
         "tokenizer_model_type, token_lower_limit, token_upper_limit, messages_key, messages_summary_key",
         [
-            (ModelType.GPT4O, 100, 200, "messages", "messages_summary"),
+            (MAIN_MODEL, 100, 200, "messages", "messages_summary"),
         ],
     )
     def test_init(
@@ -63,7 +64,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType.GPT4O,
+            tokenizer_model_type=MAIN_MODEL,
             token_lower_limit=100,
             token_upper_limit=token_upper_limit,
         )
@@ -82,7 +83,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType.GPT4O,
+            tokenizer_model_type=MAIN_MODEL,
             token_lower_limit=token_lower_limit,
             token_upper_limit=100,
         )
@@ -93,7 +94,7 @@ class TestSummarization:
         [
             (
                 [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
-                ModelType.GPT4O,
+                MAIN_MODEL,
                 3,  # Example token count
             ),
             (
@@ -101,13 +102,13 @@ class TestSummarization:
                     HumanMessage(content="This is a test."),
                     AIMessage(content="Another test."),
                 ],
-                ModelType.GPT4O,
+                MAIN_MODEL,
                 8,  # Example token count
             ),
-            ([], ModelType.GPT4O, 0),  # No messages
+            ([], MAIN_MODEL, 0),  # No messages
             (
                 [HumanMessage(content="A longer text input to test the token count.")],
-                ModelType.GPT4O,
+                MAIN_MODEL,
                 10,  # Example token count
             ),
         ],
@@ -171,7 +172,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType.GPT4O,
+            tokenizer_model_type=MAIN_MODEL,
             token_lower_limit=token_lower_limit,
             token_upper_limit=100,
         )
@@ -223,7 +224,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType.GPT4O,
+            tokenizer_model_type=MAIN_MODEL,
             token_lower_limit=100,
             token_upper_limit=200,
         )
@@ -333,7 +334,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType.GPT4O,
+            tokenizer_model_type=MAIN_MODEL,
             token_lower_limit=token_lower_limit,
             token_upper_limit=token_upper_limit,
         )

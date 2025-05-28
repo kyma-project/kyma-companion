@@ -115,10 +115,10 @@ def compute_string_token_count(text: str, model_type: str) -> int:
     try:
         encoding = tiktoken.encoding_for_model(model_type)
     except KeyError:
-        # Fallback to a compatible encoding for unrecognized model names
         logger.warning(
             f"Model '{model_type}' not recognized by tiktoken, using cl100k_base encoding"
         )
+        # "cl100k_base" is used by the tiktoken library for many OpenAI models.
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(text=text))
 

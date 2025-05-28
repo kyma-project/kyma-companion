@@ -5,13 +5,13 @@ import pytest
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
 
 
 @pytest.fixture
 def mock_model():
     gpt40 = MagicMock(spec=IModel)
-    gpt40.name = ModelType.GPT4O
+    gpt40.name = "gpt-4o"
     return gpt40
 
 
