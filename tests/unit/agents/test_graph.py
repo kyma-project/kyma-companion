@@ -566,7 +566,7 @@ class TestCompanionGraph:
             mock_kyma_cls.assert_called_once_with(mock_models)
 
             # Verify KubernetesAgent was constructed with GPT4O model
-            mock_k8s_cls.assert_called_once_with(mock_models[MAIN_MODEL_MINI])
+            mock_k8s_cls.assert_called_once_with(mock_models[MAIN_MODEL])
 
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(
@@ -626,6 +626,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(return_value=given_latest_state)
 
@@ -675,6 +676,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(return_value=state_snapshot)
 
@@ -726,6 +728,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(
             return_value=initial_state_snapshot

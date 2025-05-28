@@ -304,7 +304,7 @@ class TestSupervisorAgent:
                             assigned_to=K8S_AGENT,
                         ),
                     ],
-                    "messages": [AIMessage(content="", name="Planner")],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -322,7 +322,7 @@ class TestSupervisorAgent:
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [AIMessage(content="", name="Planner")],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
