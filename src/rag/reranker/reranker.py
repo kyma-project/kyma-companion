@@ -46,7 +46,9 @@ class LLMReranker(IReranker):
     def __init__(self, model: IModel):
         """Initialize the reranker."""
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        self.chain = prompt | model.llm.with_structured_output(RerankedDocs, method="function_calling")  # type: ignore
+        self.chain = prompt | model.llm.with_structured_output(
+            RerankedDocs, method="function_calling"
+        )
         logger.info("Reranker initialized")
 
     async def arerank(

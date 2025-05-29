@@ -1,5 +1,5 @@
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -174,15 +174,8 @@ async def test_invoke_planner(
                 )
             ]
         )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[planner_correctness_metric],
-            run_async=False,
-        )
-        # assert that all metrics passed
-        assert all(
-            result.success for result in results.test_results
-        ), "Not all metrics passed"
+
+        assert_test(test_case, [planner_correctness_metric])
     else:
         # For general queries, check answer relevancy where planner directly answers
         # Then: We evaluate the response using deepeval metrics
@@ -193,15 +186,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        eval_results = evaluate(
-            test_cases=[test_case],
-            metrics=[
-                answer_relevancy_metric,
-            ],
-        )
-        assert all(
-            result.success for result in eval_results.test_results
-        ), "Not all metrics passed"
+        assert_test(test_case, [answer_relevancy_metric])
 
 
 @pytest.fixture
@@ -288,12 +273,5 @@ async def test_planner_with_conversation_history(
             )
         ]
     )
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=[planner_conversation_history_metric],
-        run_async=False,
-    )
-    # assert that all metrics passed
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+
+    assert_test(test_case, [planner_conversation_history_metric])

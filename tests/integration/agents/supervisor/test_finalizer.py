@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -513,13 +513,4 @@ async def test_generate_final_response(
         expected_output=expected_answer,
     )
 
-    # Then: We evaluate the response using deepeval metrics
-    eval_results = evaluate(
-        test_cases=[test_case],
-        metrics=[
-            semantic_similarity_metric,
-        ],
-    )
-    assert all(
-        result.success for result in eval_results.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, [semantic_similarity_metric])
