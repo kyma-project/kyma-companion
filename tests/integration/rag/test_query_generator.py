@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
@@ -95,14 +95,4 @@ async def test_generate_queries(
         expected_output=expected_json,
     )
 
-    eval_result = evaluate(
-        test_cases=[test_case],
-        metrics=[
-            correctness_metric,
-        ],
-        run_async=False,
-    )
-
-    assert all(
-        result.success for result in eval_result.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, [correctness_metric], run_async=False)

@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
@@ -513,18 +513,7 @@ async def test_invoke_chain(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])
 
 
 @pytest.mark.parametrize(
@@ -903,15 +892,4 @@ async def test_tool_calling(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])
