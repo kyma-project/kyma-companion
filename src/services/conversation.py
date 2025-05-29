@@ -18,8 +18,9 @@ from services.k8s import IK8sClient
 from services.usage import IUsageTracker, UsageExceedReport, UsageTracker
 from utils.config import Config
 from utils.logging import get_logger
-from utils.models.factory import IModel, IModelFactory, ModelFactory, ModelType
+from utils.models.factory import IModel, IModelFactory, ModelFactory
 from utils.settings import (
+    MAIN_MODEL_MINI,
     TOKEN_LIMIT_PER_CLUSTER,
     TOKEN_USAGE_RESET_INTERVAL,
 )
@@ -84,7 +85,7 @@ class ConversationService(metaclass=SingletonMeta):
             logger.exception("Failed to initialize models")
             raise
 
-        model_mini = cast(IModel, models[ModelType.GPT4O_MINI])
+        model_mini = cast(IModel, models[MAIN_MODEL_MINI])
         # Set up the initial question handler, which will handle all the logic to generate the inital questions.
         self._init_questions_handler = (
             initial_questions_handler or InitialQuestionsHandler(model=model_mini)

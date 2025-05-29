@@ -86,7 +86,7 @@ class ToolResponseSummarizer:
             str: A consolidated summary of the tool response
         """
         # Divide the response list into chunks of equal size
-        chunks = self._create_chunks_from_list(tool_response, nums_of_chunks)
+        chunks = self._create_chunks_from_list([tool_response], nums_of_chunks)
 
         # Store summaries for each chunk
         chunk_summary = []

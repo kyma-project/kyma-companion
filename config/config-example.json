@@ -27,12 +27,12 @@
 
   "models": [
     {
-      "name": "gpt-4o",
+      "name": "gpt-4.1",
       "deployment_id": "<VALUE>",
       "temperature": 0
     },
     {
-      "name": "gpt-4o-mini",
+      "name": "gpt-4.1-mini",
       "deployment_id": "<VALUE>",
       "temperature": 0
     },
@@ -40,5 +40,8 @@
       "name": "text-embedding-3-large",
       "deployment_id": "<VALUE>"
     }
-  ]
+  ],
+  "MAIN_MODEL": "gpt-4.1",
+  "MAIN_MODEL_MINI": "gpt-4.1-mini",
+  "MAIN_EMBEDDING_MODEL": "text-embedding-3-large"
 }

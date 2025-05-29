@@ -6,7 +6,7 @@ from langchain_core.messages import AIMessage
 from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
 from services.usage import UsageExceedReport
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL_MINI
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
@@ -36,7 +36,7 @@ class TestConversation:
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
-        mock_models = {ModelType.GPT4O_MINI: mock_model}
+        mock_models = {MAIN_MODEL_MINI: mock_model}
         with patch("services.conversation.ModelFactory") as mock:
             mock.return_value.create_models.return_value = mock_models
             yield mock

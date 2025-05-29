@@ -1,5 +1,5 @@
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import (
     ContextualPrecisionMetric,
     ContextualRecallMetric,
@@ -111,12 +111,4 @@ async def test_rag_system(
         expected_output=expected_output,
     )
     # evaluate the test case using deepeval metrics
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=evaluation_metrics,
-    )
-
-    # Assert all metrics pass
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, evaluation_metrics)
