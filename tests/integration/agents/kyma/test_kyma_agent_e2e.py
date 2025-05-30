@@ -254,7 +254,8 @@ def function_resource_info():
 @pytest.fixture
 def function_complete_state(k8s_client):
     return create_basic_state(
-        task_description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        task_description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' "
+        "with api version 'serverless.kyma-project.io/v1alpha2'?",
         messages=[
             create_system_message(function_resource_info),
             HumanMessage(content="what is wrong?"),
@@ -298,35 +299,6 @@ def function_complete_state(k8s_client):
 def create_test_cases(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
-        # Complete response test cases
-        # TestCase(
-        #     "Should return right solution for API Rule with wrong access strategy",
-        #     api_rule_complete_state,
-        #     expected_response=EXPECTED_API_RULE_RESPONSE,
-        #     retrieval_context=KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
-        # ),
-        # TestCase(
-        #     "Should return right solution for Serverless Function with syntax error",
-        #     function_complete_state,
-        #     expected_response=EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
-        # ),
-        # # Tool call test cases
-        # TestCase(
-        #     "Should return Kyma resource query tool call for the first user query call",
-        #     create_basic_state(
-        #         system_content=f"The user query is related to: {api_rule_resource_info}",
-        #         user_query="What is wrong with api rule?",
-        #         task_description="What is wrong with api rule?",
-        #     ),
-        #     expected_tool_calls=[
-        #         ToolCall(
-        #             name="kyma_query_tool",
-        #             args={
-        #                 "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
-        #             },
-        #         ),
-        #     ],
-        # ),
         TestCase(
             "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
             state=create_basic_state(
@@ -359,24 +331,20 @@ def create_test_cases(k8s_client: IK8sClient):
             ],
         ),
         TestCase(
-            "Should use Kyma Resource Query for a single resource and then Kyma Doc Search Tool Calls sequentially",
+            "Should use Kyma Resource Query for a single API Rule resource and then Kyma Doc Search Tool Calls sequentially",
             state=create_basic_state(
                 task_description="What is wrong with api rule?",
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
                 k8s_client=k8s_client,
             ),
             expected_tool_calls=[
-                # ToolCall(
-                #     name="fetch_kyma_resource_version",
-                #     args={
-                #         "resource_kind": "APIRule",
-                #     },
-                # ),
+                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
                 ToolCall(
                     name="kyma_query_tool",
                     args={
@@ -391,76 +359,109 @@ def create_test_cases(k8s_client: IK8sClient):
                 ),
             ],
         ),
-        # TestCase(
-        #     "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
-        #     create_basic_state(
-        #         system_content=f"The user query is related to: {api_rule_resource_info}",
-        #         user_query="What is wrong with api rule?",
-        #         task_description="What is wrong with ApiRule?",
-        #         messages=[
-        #             create_system_message(api_rule_resource_info),
-        #             HumanMessage(content="What is wrong with api rule?"),
-        #             AIMessage(
-        #                 content="",
-        #                 tool_calls=[
-        #                     create_tool_call(
-        #                         "tool_call_id_1",
-        #                         "kyma_query_tool",
-        #                         {
-        #                             "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
-        #                         },
-        #                     )
-        #                 ],
-        #             ),
-        #             ToolMessage(
-        #                 content=API_RULE_WITH_WRONG_ACCESS_STRATEGY,
-        #                 name="kyma_query_tool",
-        #                 tool_call_id="tool_call_id_1",
-        #             ),
-        #         ],
-        #     ),
-        #     expected_tool_calls=[
-        #         ToolCall(
-        #             name="kyma_query_tool",
-        #             args={
-        #                 "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
-        #             },
-        #         ),
-        #         ToolCall(
-        #             name="search_kyma_doc",
-        #             args={"query": "APIRule validation errors"},
-        #         ),
-        #     ],
-        # ),
-        # # BTP Manager test case
-        # TestCase(
-        #     "Should return right solution for general Kyma question - only need Kyma Doc Search",
-        #     create_basic_state(
-        #         system_content="The user query is related to: {}",
-        #         user_query="what are the BTP Operator features?",
-        #         task_description="What are the BTP Operator features?",
-        #         messages=[
-        #             SystemMessage(content="The user query is related to: {}"),
-        #             HumanMessage(content="what are the BTP Operator features?"),
-        #             AIMessage(
-        #                 content="",
-        #                 tool_calls=[
-        #                     create_tool_call(
-        #                         "tool_call_id_1",
-        #                         "search_kyma_doc",
-        #                         {"query": "BTP Operator features"},
-        #                     )
-        #                 ],
-        #             ),
-        #             ToolMessage(
-        #                 content=RETRIEVAL_CONTEXT,
-        #                 name="search_kyma_doc",
-        #                 tool_call_id="tool_call_id_1",
-        #             ),
-        #         ],
-        #     ),
-        #     expected_response=EXPECTED_BTP_MANAGER_RESPONSE,
-        # ),
+        TestCase(
+            "Should use Kyma Resource Query for a single subscription resource and then Kyma Doc Search Tool Calls sequentially",
+            state=create_basic_state(
+                task_description="is there any issue?",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', 'resource_name': 'sub1'}"
+                    ),
+                    HumanMessage(content="is there any issue?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
+                    },
+                ),
+                ToolCall(
+                    name="search_kyma_doc",
+                    args={
+                        "query": "APIRule multiple accessStrategies error allow no_auth"
+                    },
+                ),
+            ],
+        ),
+        TestCase(
+            "Should use fetch subscription group version from the cluster as provided resource_api_version is wrong",
+            state=create_basic_state(
+                task_description="is there any issue?",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', 'resource_name': 'sub1'}"
+                    ),
+                    HumanMessage(content="is there any issue?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/eventing.kyma-project.io/v1beta1/namespaces/test-function-8/subscriptions/sub1"
+                    },
+                ),
+                # fetch_kyma_resource_version tool call as resource_api_version is wrong
+                ToolCall(
+                    name="fetch_kyma_resource_version",
+                    args={
+                        "resource_kind": "Function",
+                    },
+                ),
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
+                    },
+                ),
+                ToolCall(
+                    name="search_kyma_doc",
+                    args={"query": "Subscription validation errors"},
+                ),
+            ],
+        ),
+        TestCase(
+            "Should use function resource from the user query, not from the system message",
+            state=create_basic_state(
+                task_description="What is wrong with function in namespace test-function-8?",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+                    ),
+                    HumanMessage(
+                        content="What is wrong with function in namespace test-function-8?"
+                    ),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                # fetch_kyma_resource_version tool call as different resource mentioned in the user query
+                ToolCall(
+                    name="fetch_kyma_resource_version",
+                    args={
+                        "resource_kind": "Function",
+                    },
+                ),
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
+                    },
+                ),
+                ToolCall(
+                    name="search_kyma_doc",
+                    args={"query": "Function troubleshooting"},
+                ),
+            ],
+        ),
     ]
 
 

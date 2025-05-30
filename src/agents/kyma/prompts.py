@@ -6,7 +6,7 @@ KYMA_AGENT_INSTRUCTIONS = f"""
 ### Step 1. Analyse conversation and identify the query intent
 
 ### Step 2. Retrieve the group version for the mentioned resource kind
-If only if the resource kind mentioned in the user query is different from the resource kind in the system messages, retrieve the correct group version using the `fetch_kyma_resource_version` tool. Otherwise, skip this step.
+If the resource kind mentioned in the user query is different from the resource kind in the system messages, retrieve the correct group version using the `fetch_kyma_resource_version` tool. Otherwise, skip this step.
 
 ### Step 3. Decide which tools to use based on these criteria:
 **Use `kyma_query_tool` when:**

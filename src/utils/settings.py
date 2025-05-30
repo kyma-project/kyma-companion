@@ -113,3 +113,12 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     "K8S_RESOURCE_RELATIONS_JSON_FILE",
     default=f"{ Path(__file__).parent.parent.parent }/config/resource_relations.json",
 )
+
+if "pytest" in sys.modules:
+    TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
+    TEST_CLUSTER_CA_DATA = config("TEST_CLUSTER_CA_DATA", default="")
+    TEST_CLUSTER_AUTH_TOKEN = config("TEST_CLUSTER_AUTH_TOKEN", default="")
+    TEST_CLUSTER_CLIENT_CERTIFICATE_DATA = config(
+        "TEST_CLUSTER_CLIENT_CERTIFICATE_DATA", default=""
+    )
+    TEST_CLUSTER_CLIENT_KEY_DATA = config("TEST_CLUSTER_CLIENT_KEY_DATA", default="")
