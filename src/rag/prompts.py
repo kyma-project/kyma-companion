@@ -38,8 +38,7 @@ Use the given context to answer the given query.
 1. Answer directly and specifically
 2. Use only information explicitly stated in the provided context
 3. Format code in code blocks with syntax highlighting
-4. if the context lacks relevant information inform user you that couldn't find any 
-relevant documents in the knowledge base. Ask for be specific or rephrase the query.
+4. Say "No relevant documentation found." if the context lacks relevant information
 </instructions>
 
 <query>
