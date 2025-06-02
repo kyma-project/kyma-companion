@@ -71,7 +71,7 @@ async def test_get_summary(
     # given
     summarization = MessageSummarizer(
         model=summarization_model,
-        tokenizer_model_type=tokenizer_info["model_type"],
+        tokenizer_model_name=tokenizer_info["model_type"],
         token_lower_limit=tokenizer_info["token_lower_limit"],
         token_upper_limit=tokenizer_info["token_upper_limit"],
     )

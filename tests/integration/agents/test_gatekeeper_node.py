@@ -462,9 +462,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
-                HumanMessage(
-                    content="can you provide some example showcasing your problem solving capabilities"
-                ),
+                HumanMessage(content="what are your capabilities?"),
             ],
             "I can help with various queries related to Kyma and Kubernetes, such as troubleshooting issues, "
             "understanding concepts, or deployment processes. For example, if you encounter an error while deploying "
@@ -639,9 +637,10 @@ async def test_invoke_gatekeeper_node(
         (
             "answer the question based on the conversation history",
             conversation_sample_2,
-            "what is the issue?",
-            "",
-            True,
+            "what is the issue?",  # this is implicitly referring to the conversation history
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. ",
+            False,
         ),
         (
             "forward query as insufficient information in conversation history",
@@ -678,9 +677,7 @@ async def test_invoke_gatekeeper_node(
                 },
             ],
             "What's the difference between async/await and Promises in JavaScript?",
-            "This question is about JavaScript programming concepts, which is outside the Kyma and Kubernetes domain. Here's a brief explanation:"
-            "Promises are objects representing the eventual completion or failure of an asynchronous operation. Async/await is syntactic sugar built on top of Promises that allows writing"
-            "asynchronous code in a more synchronous and readable manner.",
+            "Promises and async/await are JavaScript features for handling asynchronous operations:\n\n- **Promises** provide a way to handle asynchronous results with `.then()`, `.catch()`, and `.finally()` methods. They can be chained and represent a value that may be available now, later, or never.\n\n- **Async/await** is syntactic sugar built on top of Promises, making asynchronous code look and behave more like synchronous code. The `async` keyword declares that a function returns a Promise, and the `await` keyword pauses execution until that Promise resolves.\n\nWhile Promises often require callback chains, async/await provides a cleaner, more readable syntax for the same operations, especially when dealing with multiple sequential asynchronous tasks.",
             False,
         ),
         (
