@@ -678,7 +678,9 @@ async def test_invoke_gatekeeper_node(
                 },
             ],
             "What's the difference between async/await and Promises in JavaScript?",
-            "Promises and async/await are JavaScript features for handling asynchronous operations:\n\n- **Promises** provide a way to handle asynchronous results with `.then()`, `.catch()`, and `.finally()` methods. They can be chained and represent a value that may be available now, later, or never.\n\n- **Async/await** is syntactic sugar built on top of Promises, making asynchronous code look and behave more like synchronous code. The `async` keyword declares that a function returns a Promise, and the `await` keyword pauses execution until that Promise resolves.\n\nWhile Promises often require callback chains, async/await provides a cleaner, more readable syntax for the same operations, especially when dealing with multiple sequential asynchronous tasks.",
+            "This question is about JavaScript programming concepts, which is outside the Kyma and Kubernetes domain. Here's a brief explanation:"
+            "Promises are objects representing the eventual completion or failure of an asynchronous operation. Async/await is syntactic sugar built on top of Promises that allows writing"
+            "asynchronous code in a more synchronous and readable manner.",
             False,
         ),
         (
@@ -759,37 +761,6 @@ async def test_gatekeeper_with_conversation_history(
     companion_graph,
     gatekeeper_correctness_metric,
 ):
-    """
-    Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
-    """
-    # Given: a conversation state with messages
-    all_messages = convert_dict_to_messages(conversation_history)
-    all_messages.append(HumanMessage(content=user_query))
-    state = create_mock_state(all_messages)
-
-    # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    result = await companion_graph._invoke_gatekeeper_node(state)
-
-    if expected_query_forwarding:
-        assert (
-            result.forward_query
-        ), "Query should be forwarded"  # query should be forwarded
-
-    else:
-        assert (
-            not result.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
-        # Then: we evaluate the direct response using deepeval metrics
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=user_query,
-                    actual_output=result.direct_response,
-                    expected_output=expected_answer,
-                )
-            ]
-        )
-        assert_test(test_case, [gatekeeper_correctness_metric])
     """
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """

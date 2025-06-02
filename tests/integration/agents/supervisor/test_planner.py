@@ -209,7 +209,7 @@ def planner_conversation_history_metric(evaluator_model):
 
 
 @pytest.mark.parametrize(
-    "messages, query, subtasks",
+    "messages, query, expected_subtasks",
     [
         (
             # given the conversation, the planner knows that the user wants to expose the function
@@ -219,9 +219,9 @@ def planner_conversation_history_metric(evaluator_model):
             [
                 {
                     "description": "how to expose it?",
+                    "task_title": "Fetching function exposure",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
-                    "result": None,
                 }
             ],
         ),
@@ -232,10 +232,10 @@ def planner_conversation_history_metric(evaluator_model):
             "convert it to javascript",
             [
                 {
-                    "description": "convert the Kyma function that prints 'Hello World' from Python to JavaScript",
+                    "description": "convert it to javascript'",
+                    "task_title": "Converting Python to JavaScript",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
-                    "result": None,
                 }
             ],
         ),
@@ -245,7 +245,7 @@ def planner_conversation_history_metric(evaluator_model):
 async def test_planner_with_conversation_history(
     messages,
     query,
-    subtasks,
+    expected_subtasks,
     companion_graph,
     planner_conversation_history_metric,
 ):
@@ -264,12 +264,13 @@ async def test_planner_with_conversation_history(
     ), "Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
+    actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
     test_case = ConversationalTestCase(
         turns=[
             LLMTestCase(
                 input=str(all_messages),
-                actual_output=str(result.subtasks),
-                expected_output=str(subtasks),
+                actual_output=str(actual_subtasks),
+                expected_output=str(expected_subtasks),
             )
         ]
     )

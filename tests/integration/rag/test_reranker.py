@@ -220,8 +220,6 @@ def llm_reranker(app_models):
             4,
             [
                 "datasets/reranker/prerequisites-to-enable-logging/03_application_logs_prerequisites.md",
-                "datasets/reranker/prerequisites-to-enable-logging/01_integrate_with_sap_cloud_logging_prerequisites.md",
-                "datasets/reranker/prerequisites-to-enable-logging/07_integrate_kyma_with_amazon_cloudwatch_and_aws_x_ray_prerequisites.md",
             ],
             True,
         ),

@@ -134,18 +134,18 @@ def k8s_agent(app_models):
                     SystemMessage(
                         content="The user query is related to: {'resource_namespace': 'production'}"
                     ),
-                    HumanMessage(content="Show me cluster-level resource usage"),
+                    HumanMessage(content="Check resources in the namespace"),
                 ],
                 subtasks=[
                     {
-                        "description": "Show me cluster-level resource usage",
-                        "task_title": "check resource usage",
+                        "description": "Check resources in the namespace",
+                        "task_title": "check resources",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Show me cluster-level resource usage",
-                    task_title="check resource usage",
+                    description="Check resources in the namespace",
+                    task_title="check resources",
                     assigned_to="KubernetesAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
