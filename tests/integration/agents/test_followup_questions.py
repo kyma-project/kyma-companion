@@ -119,6 +119,7 @@ async def test_followup_questions(
         metadata=None,
         created_at=None,
         parent_config=None,
+        interrupts=(),
     )
 
     given_conversation_id = str(uuid.uuid4())
