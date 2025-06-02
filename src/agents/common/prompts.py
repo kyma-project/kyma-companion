@@ -71,7 +71,6 @@ TOOL_CALLING_ERROR_HANDLING = """
 
 When a tool call fails, follow this protocol:
 
-- STOP RECURSIVE ATTEMPTS : Do not immediately retry the same tool call
 - ANALYZE THE FAILURE : Determine the type and likely cause of failure
 - EVALUATE ALTERNATIVES : Consider if a different tool or approach might work , Check for missing or malformed parameters.
 - INFORM THE USER : Acknowledge the user about the failure.
@@ -79,7 +78,7 @@ When a tool call fails, follow this protocol:
 ## Retry Logic :
 Only retry if:
 
-- The failure was clearly temporary (network timeout, etc.)
+- If no specific error returned by tool
 - You can modify the approach meaningfully (different parameters)
 - You haven't already attempted this tool for the same request
 - Maximum of THREE retry attempt per tool

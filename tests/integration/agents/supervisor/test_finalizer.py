@@ -11,6 +11,86 @@ from integration.agents.test_common_node import create_mock_state
 @pytest.mark.parametrize(
     "messages, expected_answer",
     [
+        # Finalizer do not answer the question itself
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                ),
+                HumanMessage(content="Describe Kyma in detail"),
+                AIMessage(name="KymaAgent", content="It is a color of fish."),
+            ],
+            dedent(
+                """It appears that the agents were unable to provide a detailed description of Kyma. 
+                    Therefore, I cannot offer any specific information on this topic. 
+                    If you have any other questions or need assistance with a different subject, feel free to ask!
+  
+                """
+            ),
+        ),
+        # Finalizer do not answer the question itself
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                ),
+                HumanMessage(content="What is k8s?"),
+                AIMessage(name="KubernetesAgent", content="The sky is blue."),
+            ],
+            dedent(
+                """
+            The agents did not provide any information regarding what Kubernetes (k8s) is. 
+            Therefore, I cannot offer any specific information on this topic. 
+            If you have any other questions or need assistance with a different subject, feel free to ask!
+            """
+            ),
+        ),
+        # Finalizer do not answer the question itself
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                ),
+                HumanMessage(content="What is k8s?"),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="Sorry, I need more steps to process the request.",
+                ),
+            ],
+            dedent(
+                """
+                I'm sorry, but the agents did not provide any information regarding what Kubernetes (k8s) is. 
+                Therefore, I cannot offer any specific information on this topic. 
+                If you have any other questions or need assistance with a different subject, feel free to ask!
+                """
+            ),
+        ),
+        # Finalizer do not answer the question itself
+        (
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                ),
+                HumanMessage(
+                    content="what are the types of a k8s service? what is a kyma function?"
+                ),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content="The sun emits light.",
+                ),
+                AIMessage(
+                    name="KymaAgent",
+                    content="The moon reflects the sun's light.",
+                ),
+            ],
+            dedent(
+                """The agents did not provide specific information regarding 
+                the types of Kubernetes services or the definition of a Kyma function. 
+                Therefore, I cannot offer any specific information on this topic. 
+                If you have any other questions or need assistance with a different subject, feel free to ask!
+            """
+            ),
+        ),
         # Finalizer answers based on Kyma agent's response
         (
             [
@@ -63,37 +143,6 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer ignores invalid response from Kyma agent and answers the question itself
-        (
-            [
-                SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(content="Describe Kyma in detail"),
-                AIMessage(name="KymaAgent", content="It is a color of fish."),
-            ],
-            dedent(
-                """
-            Kyma is an open-source platform designed to extend applications with microservices and serverless functions.
-            It provides a set of tools and components that enable developers to build, deploy, and manage cloud-native
-            applications. Key features of Kyma include:
-            1. **Kubernetes-based**: Kyma runs on Kubernetes, leveraging its orchestration capabilities for managing
-            containerized applications.
-            2. **Microservices Architecture**: It supports the development of microservices, allowing for modular
-            application design and easier scaling.
-            3. **Serverless Functions**: Kyma enables the creation of serverless functions, which can be triggered by
-            events, making it easier to build event-driven applications.
-            4. **Integration Capabilities**: It offers various integration options with external services and APIs,
-            facilitating seamless communication between different systems.
-            5. **Extensibility**: Developers can extend existing applications with new functionalities without needing
-            to modify the core application code.
-            6. **Service Management**: Kyma provides tools for managing services, including service discovery,
-            monitoring, and logging.
-            Overall, Kyma is aimed at simplifying the development and management of cloud-native applications, making it
-            easier for organizations to innovate and respond to changing business needs.
-            """
-            ),
-        ),
         # Finalizer answers based on K8S agent's response
         (
             [
@@ -122,47 +171,6 @@ from integration.agents.test_common_node import create_mock_state
             more. Kubernetes is widely used for managing microservices architectures and is known for its ability to
             handle complex container orchestration tasks efficiently.
             """
-            ),
-        ),
-        # Finalizer ignores invalid response from K8S agent and answers the question itself
-        (
-            [
-                SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(content="What is k8s?"),
-                AIMessage(name="KubernetesAgent", content="The sky is blue."),
-            ],
-            dedent(
-                """
-            Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate the deployment,
-            scaling, and management of containerized applications. It provides a framework to run distributed systems
-            resiliently, taking care of scaling and failover for your application, providing deployment patterns, and
-            more. Kubernetes is widely used for managing microservices architectures and is known for its ability to
-            handle complex container orchestration tasks efficiently.
-            """
-            ),
-        ),
-        # Finalizer ignores the K8S agent's response and answers the question itself
-        (
-            [
-                SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(content="What is k8s?"),
-                AIMessage(
-                    name="KubernetesAgent",
-                    content="Sorry, I need more steps to process the request.",
-                ),
-            ],
-            dedent(
-                """
-                Kubernetes, often abbreviated as K8s, is an open-source platform designed to automate the deployment,
-                scaling, and management of containerized applications. It provides a framework to run distributed systems
-                resiliently, taking care of scaling and failover for your application, providing deployment patterns, and
-                more. Kubernetes is widely used for managing microservices architectures and is known for its ability to
-                handle complex container orchestration tasks efficiently.
-                """
             ),
         ),
         # Finalizer answers based on K8S and Kyma agents' responses
@@ -249,39 +257,6 @@ from integration.agents.test_common_node import create_mock_state
             straightforward to manage and update them.
             Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native
             environment.
-            """
-            ),
-        ),
-        # Finalizer ignores the K8S agent's and Kyma agent's responses and answers the question itself
-        (
-            [
-                SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
-                ),
-                AIMessage(
-                    name="KubernetesAgent",
-                    content="The sun emits light.",
-                ),
-                AIMessage(
-                    name="KymaAgent",
-                    content="The moon reflects the sun's light.",
-                ),
-            ],
-            dedent(
-                """
-            In Kubernetes, there are several types of services that define how pods are exposed:
-            1. **ClusterIP**: This is the default type. It exposes the service on a cluster-internal IP, making it accessible only within the cluster.
-            2. **NodePort**: This type exposes the service on each node's IP at a static port. It makes the service accessible from outside the cluster using `<NodeIP>:<NodePort>`.
-            3. **LoadBalancer**: This type is used in cloud environments to expose the service externally using a cloud provider's load balancer.
-            4. **ExternalName**: This maps the service to the contents of the `externalName` field (e.g., `foo.bar.example.com`), returning a CNAME record with the name.
-            A Kyma Function is a lightweight, serverless function that runs on the Kyma platform, which is built on top of
-            Kubernetes. It allows developers to write code in a simple way to handle specific tasks or events without
-            managing the underlying infrastructure. Kyma Functions are typically used for extending applications,
-            integrating with external services, or automating workflows. They are managed and scaled automatically by
-            the platform, making it easy to deploy and run code in response to events.
             """
             ),
         ),

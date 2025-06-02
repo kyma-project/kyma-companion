@@ -322,8 +322,13 @@ class K8sClient:
 
                 # Check for continue token
                 continue_token = result.get("metadata", {}).get("continue", "")
+
                 if not continue_token:
-                    return all_items
+                    if all_items:  # if some resource found
+                        return all_items
+                    else:  # if no resource found
+                        return result  # type: ignore
+
             else:
                 return result  # type: ignore
 
