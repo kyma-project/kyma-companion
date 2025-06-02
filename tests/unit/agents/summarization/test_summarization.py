@@ -14,19 +14,19 @@ from pydantic import BaseModel
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL
+from utils.settings import MAIN_MODEL_NAME
 
 
 class TestSummarization:
     @pytest.mark.parametrize(
-        "tokenizer_model_type, token_lower_limit, token_upper_limit, messages_key, messages_summary_key",
+        "tokenizer_model_name, token_lower_limit, token_upper_limit, messages_key, messages_summary_key",
         [
-            (MAIN_MODEL, 100, 200, "messages", "messages_summary"),
+            (MAIN_MODEL_NAME, 100, 200, "messages", "messages_summary"),
         ],
     )
     def test_init(
         self,
-        tokenizer_model_type,
+        tokenizer_model_name,
         token_lower_limit,
         token_upper_limit,
         messages_key,
@@ -36,7 +36,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=tokenizer_model_type,
+            tokenizer_model_name=tokenizer_model_name,
             token_lower_limit=token_lower_limit,
             token_upper_limit=token_upper_limit,
             messages_key=messages_key,
@@ -44,7 +44,7 @@ class TestSummarization:
         )
 
         assert summarization._model == model
-        assert summarization._tokenizer_model_type == tokenizer_model_type
+        assert summarization._tokenizer_model_name == tokenizer_model_name
         assert summarization._token_lower_limit == token_lower_limit
         assert summarization._token_upper_limit == token_upper_limit
         assert summarization._messages_key == messages_key
@@ -64,7 +64,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=100,
             token_upper_limit=token_upper_limit,
         )
@@ -83,7 +83,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=token_lower_limit,
             token_upper_limit=100,
         )
@@ -94,7 +94,7 @@ class TestSummarization:
         [
             (
                 [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
-                MAIN_MODEL,
+                MAIN_MODEL_NAME,
                 3,  # Example token count
             ),
             (
@@ -102,13 +102,13 @@ class TestSummarization:
                     HumanMessage(content="This is a test."),
                     AIMessage(content="Another test."),
                 ],
-                MAIN_MODEL,
+                MAIN_MODEL_NAME,
                 8,  # Example token count
             ),
-            ([], MAIN_MODEL, 0),  # No messages
+            ([], MAIN_MODEL_NAME, 0),  # No messages
             (
                 [HumanMessage(content="A longer text input to test the token count.")],
-                MAIN_MODEL,
+                MAIN_MODEL_NAME,
                 10,  # Example token count
             ),
         ],
@@ -118,7 +118,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=model_type,
+            tokenizer_model_name=model_type,
             token_lower_limit=100,
             token_upper_limit=200,
         )
@@ -172,7 +172,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=token_lower_limit,
             token_upper_limit=100,
         )
@@ -224,7 +224,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=100,
             token_upper_limit=200,
         )
@@ -334,7 +334,7 @@ class TestSummarization:
         model.llm = Mock()
         summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=token_lower_limit,
             token_upper_limit=token_upper_limit,
         )

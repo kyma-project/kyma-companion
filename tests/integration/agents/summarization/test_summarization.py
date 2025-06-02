@@ -14,7 +14,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_3,
     conversation_sample_4,
 )
-from utils.settings import MAIN_MODEL, MAIN_MODEL_MINI
+from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME
 
 
 @pytest.fixture
@@ -40,13 +40,13 @@ def summarization_metric(evaluator_model):
 
 @pytest.fixture
 def summarization_model(app_models):
-    return app_models[MAIN_MODEL_MINI]
+    return app_models[MAIN_MODEL_MINI_NAME]
 
 
 @pytest.fixture
 def tokenizer_info():
     return {
-        "model_type": MAIN_MODEL,
+        "model_type": MAIN_MODEL_NAME,
         "token_lower_limit": 2000,
         "token_upper_limit": 3000,
     }

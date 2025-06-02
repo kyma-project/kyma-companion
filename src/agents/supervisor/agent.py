@@ -44,7 +44,7 @@ from utils.filter_messages import (
 )
 from utils.logging import get_logger
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_MINI
+from utils.settings import MAIN_MODEL_MINI_NAME
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
@@ -97,7 +97,7 @@ class SupervisorAgent:
         members: list[str],
         response_converter: IResponseConverter | None = None,
     ) -> None:
-        self.model = cast(IModel, models[MAIN_MODEL_MINI])
+        self.model = cast(IModel, models[MAIN_MODEL_MINI_NAME])
         self.members = members
         self.parser = self._route_create_parser()
         self.response_converter: IResponseConverter = (

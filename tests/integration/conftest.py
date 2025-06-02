@@ -19,9 +19,9 @@ from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory
 from utils.settings import (
-    MAIN_EMBEDDING_MODEL,
-    MAIN_MODEL,
-    MAIN_MODEL_MINI,
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
     REDIS_DB_NUMBER,
     REDIS_HOST,
     REDIS_PASSWORD,
@@ -59,15 +59,17 @@ def init_config():
 def app_models(init_config):
     model_factory = ModelFactory(config=init_config)
     return {
-        MAIN_MODEL_MINI: model_factory.create_model(MAIN_MODEL_MINI),
-        MAIN_MODEL: model_factory.create_model(MAIN_MODEL),
-        MAIN_EMBEDDING_MODEL: model_factory.create_model(MAIN_EMBEDDING_MODEL),
+        MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
+        MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
+        MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(
+            MAIN_EMBEDDING_MODEL_NAME
+        ),
     }
 
 
 @pytest.fixture(scope="session")
 def evaluator_model(app_models):
-    return LangChainOpenAI(app_models[MAIN_MODEL].llm)
+    return LangChainOpenAI(app_models[MAIN_MODEL_NAME].llm)
 
 
 @pytest.fixture(scope="session")

@@ -24,7 +24,7 @@ from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL
+from utils.settings import MAIN_MODEL_NAME
 
 mock_agent_prompt = ChatPromptTemplate.from_messages(
     [
@@ -37,7 +37,7 @@ mock_agent_prompt = ChatPromptTemplate.from_messages(
 
 def mock_agent() -> BaseAgent:
     mock_model = MagicMock(spec=IModel)
-    mock_model.name = MAIN_MODEL
+    mock_model.name = MAIN_MODEL_NAME
     return BaseAgent(
         name="KubernetesAgent",
         model=mock_model,

@@ -12,15 +12,19 @@ from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
 from utils.models.factory import IModel
-from utils.settings import MAIN_EMBEDDING_MODEL, MAIN_MODEL, MAIN_MODEL_MINI
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+)
 
 
 @pytest.fixture
 def mock_models():
     return {
-        MAIN_MODEL_MINI: MagicMock(spec=IModel),
-        MAIN_MODEL: MagicMock(spec=IModel),
-        MAIN_EMBEDDING_MODEL: MagicMock(spec=Embeddings),
+        MAIN_MODEL_MINI_NAME: MagicMock(spec=IModel),
+        MAIN_MODEL_NAME: MagicMock(spec=IModel),
+        MAIN_EMBEDDING_MODEL_NAME: MagicMock(spec=Embeddings),
     }
 
 

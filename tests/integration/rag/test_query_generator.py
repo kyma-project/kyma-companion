@@ -6,7 +6,7 @@ from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from rag.query_generator import Queries, QueryGenerator
-from utils.settings import MAIN_MODEL
+from utils.settings import MAIN_MODEL_NAME
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +29,7 @@ def correctness_metric(evaluator_model):
 
 @pytest.fixture(scope="session")
 def query_generator(app_models):
-    model = app_models[MAIN_MODEL]
+    model = app_models[MAIN_MODEL_NAME]
     return QueryGenerator(model=model)
 
 

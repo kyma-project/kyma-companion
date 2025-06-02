@@ -98,7 +98,7 @@ class BaseAgent:
         self.tools = tools
         self.summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=model.name,
+            tokenizer_model_name=model.name,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=AGENT_MESSAGES,

@@ -13,24 +13,28 @@ from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
-from utils.settings import MAIN_EMBEDDING_MODEL, MAIN_MODEL, MAIN_MODEL_MINI
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+)
 
 
 @pytest.fixture
 def mock_models():
     main_model_mini = MagicMock(spec=IModel)
-    main_model_mini.name = MAIN_MODEL_MINI
+    main_model_mini.name = MAIN_MODEL_MINI_NAME
 
     main_model = MagicMock(spec=IModel)
-    main_model.name = MAIN_MODEL
+    main_model.name = MAIN_MODEL_NAME
 
     main_embedding_model = MagicMock(spec=Embeddings)
-    main_embedding_model.name = MAIN_EMBEDDING_MODEL
+    main_embedding_model.name = MAIN_EMBEDDING_MODEL_NAME
 
     return {
-        MAIN_MODEL_MINI: main_model_mini,
-        MAIN_MODEL: main_model,
-        MAIN_EMBEDDING_MODEL: main_embedding_model,
+        MAIN_MODEL_MINI_NAME: main_model_mini,
+        MAIN_MODEL_NAME: main_model,
+        MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 
 
@@ -566,7 +570,7 @@ class TestCompanionGraph:
             mock_kyma_cls.assert_called_once_with(mock_models)
 
             # Verify KubernetesAgent was constructed with GPT4O model
-            mock_k8s_cls.assert_called_once_with(mock_models[MAIN_MODEL])
+            mock_k8s_cls.assert_called_once_with(mock_models[MAIN_MODEL_NAME])
 
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(

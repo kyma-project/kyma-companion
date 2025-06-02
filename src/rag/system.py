@@ -14,8 +14,8 @@ from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
     DOCS_TABLE_NAME,
-    MAIN_EMBEDDING_MODEL,
-    MAIN_MODEL_MINI,
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
 )
 
 logger = get_logger(__name__)
@@ -49,19 +49,19 @@ class RAGSystem:
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
         self.query_generator = QueryGenerator(
-            cast(IModel, cast(IModel, models[MAIN_MODEL_MINI]))
+            cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME]))
         )
         # setup retriever
         self.retriever = HanaDBRetriever(
-            embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL]),
+            embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
             connection=Hana().get_connction(),
             table_name=DOCS_TABLE_NAME,
         )
         # setup generator
-        self.generator = Generator(cast(IModel, models[MAIN_MODEL_MINI]))
+        self.generator = Generator(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
 
         # setup reranker
-        self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI]))
+        self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
 
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")

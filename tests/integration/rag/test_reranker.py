@@ -12,7 +12,7 @@ from rag.reranker.reranker import (
     format_documents,
     format_queries,
 )
-from utils.settings import MAIN_MODEL_MINI
+from utils.settings import MAIN_MODEL_MINI_NAME
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def evaluation_metrics(evaluator_model, semantic_similarity_metric):
 
 @pytest.fixture(scope="session")
 def llm_reranker(app_models):
-    return LLMReranker(app_models[MAIN_MODEL_MINI])
+    return LLMReranker(app_models[MAIN_MODEL_MINI_NAME])
 
 
 @pytest.mark.parametrize(

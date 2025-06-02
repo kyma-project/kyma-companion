@@ -56,8 +56,8 @@ from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
-    MAIN_MODEL,
-    MAIN_MODEL_MINI,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -126,8 +126,8 @@ class CompanionGraph:
         self.memory = memory
         self.handler = handler
 
-        main_model_mini = models[MAIN_MODEL_MINI]
-        main_model = models[MAIN_MODEL]
+        main_model_mini = models[MAIN_MODEL_MINI_NAME]
+        main_model = models[MAIN_MODEL_NAME]
 
         self.kyma_agent = KymaAgent(models)
 
@@ -139,7 +139,7 @@ class CompanionGraph:
 
         self.summarization = MessageSummarizer(
             model=main_model_mini,
-            tokenizer_model_type=MAIN_MODEL,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=MESSAGES,

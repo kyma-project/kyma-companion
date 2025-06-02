@@ -34,14 +34,14 @@ class MessageSummarizer:
     def __init__(
         self,
         model: IModel | Embeddings,
-        tokenizer_model_type: str,
+        tokenizer_model_name: str,
         token_lower_limit: int,
         token_upper_limit: int,
         messages_key: str = "messages",
         messages_summary_key: str = "messages_summary",
     ) -> None:
         self._model = model
-        self._tokenizer_model_type = tokenizer_model_type
+        self._tokenizer_model_name = tokenizer_model_name
         self._token_lower_limit = token_lower_limit
         self._token_upper_limit = token_upper_limit
         self._messages_key = messages_key
@@ -67,7 +67,7 @@ class MessageSummarizer:
 
     def get_messages_token_count(self, messages: Messages) -> int:
         """Returns the token count of the messages."""
-        return compute_messages_token_count(messages, self._tokenizer_model_type)
+        return compute_messages_token_count(messages, self._tokenizer_model_name)
 
     def filter_messages_by_token_limit(
         self, messages: list[BaseMessage]
@@ -78,7 +78,7 @@ class MessageSummarizer:
         tokens = 0
         for msg in reversed(messages):
             tokens += compute_string_token_count(
-                str(msg.content), self._tokenizer_model_type
+                str(msg.content), self._tokenizer_model_name
             )
             if tokens > self._token_lower_limit:
                 break

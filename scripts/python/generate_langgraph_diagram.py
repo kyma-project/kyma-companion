@@ -38,7 +38,7 @@ from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory  # noqa: E402
 from utils.settings import (
-    MAIN_MODEL,
+    MAIN_MODEL_NAME,
     REDIS_DB_NUMBER,
     REDIS_HOST,
     REDIS_PASSWORD,
@@ -87,7 +87,7 @@ except Exception:
 print("kyma_agent.png generated")
 
 print("Generating graph diagram for the k8s agent...")
-k8s_agent = KubernetesAgent(models[MAIN_MODEL])
+k8s_agent = KubernetesAgent(models[MAIN_MODEL_NAME])
 try:
     png_bytes = Image(
         k8s_agent.graph.get_graph().draw_mermaid_png(
