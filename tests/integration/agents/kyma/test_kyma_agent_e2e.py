@@ -331,6 +331,66 @@ def create_test_cases(k8s_client: IK8sClient):
             ],
         ),
         TestCase(
+            "Should use cluster scope retrieval with kyma query tool",
+            state=create_basic_state(
+                task_description="check all subscriptions in the cluster",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+                    ),
+                    HumanMessage(content="check all subscriptions in the cluster"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                ToolCall(
+                    name="fetch_kyma_resource_version",
+                    args={
+                        "resource_kind": "Subscription",
+                    },
+                ),
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"
+                    },
+                ),
+                # ToolCall(
+                #     name="search_kyma_doc",
+                #     args={"query": "troubleshoot subscriptions"},
+                # ),
+            ],
+        ),
+        # TestCase(
+        #     "Should use cluster scope retrieval with kyma query tool",
+        #     state=create_basic_state(
+        #         task_description="check all resources in the cluster",
+        #         messages=[
+        #             SystemMessage(
+        #                 content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+        #                 "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+        #             ),
+        #             HumanMessage(content="check all resources in the cluster"),
+        #         ],
+        #         k8s_client=k8s_client,
+        #     ),
+        #     expected_tool_calls=[
+        #         ToolCall(
+        #             name="kyma_query_tool",
+        #             args={
+        #                 "uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"
+        #             },
+        #         ),
+        #         ToolCall(
+        #             name="search_kyma_doc",
+        #             args={
+        #                 "query": "APIRule multiple accessStrategies error allow no_auth"
+        #             },
+        #         ),
+        #     ],
+        # ),
+        TestCase(
             "Should use Kyma Resource Query for a single API Rule resource and then Kyma Doc Search Tool Calls sequentially",
             state=create_basic_state(
                 task_description="What is wrong with api rule?",

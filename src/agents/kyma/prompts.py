@@ -3,32 +3,32 @@ from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
 KYMA_AGENT_INSTRUCTIONS = f"""
 ## Thinks step by step with the following steps:
 
-### Step 1. Analyse conversation and identify the query intent
+### Step 1. Identify the user's query intent
+Identify query intent with query, resource information, and message history.
 
 ### Step 2. Retrieve the group version for the mentioned resource kind
 If the resource kind mentioned in the user query is different from the resource kind in the system messages, retrieve the correct group version using the `fetch_kyma_resource_version` tool. Otherwise, skip this step.
 
 ### Step 3. Decide which tools to use based on these criteria:
-**Use `kyma_query_tool` when:**
+**Decide if `kyma_query_tool` is necessary:**
 - Resource information is provided in the system message (resource_kind, resource_api_version, resource_name, resource_namespace)
 - User asks about a specific resource issue (e.g., "what is wrong with X?", "why is Y not working?")
 - User requests status or details of a specific resource
 - Query mentions troubleshooting a named resource
 
-**Use `search_kyma_doc` when:**
-- User asks general "how to" questions (e.g., "how to create", "how to enable")
-- Query seeks conceptual knowledge about Kyma features
+**Decide if `search_kyma_doc` is necessary:**
+- Query intent is about general "how to" questions (e.g., "how to create", "how to enable")
+- Query intent is about conceptual knowledge about Kyma features
 - No specific resource information is provided
-- User asks about best practices or general guidance
-- After `kyma_query_tool` retrieves resource data in the conversation, ALWAYS use `search_kyma_doc` for troubleshooting context   
-- Resource analysis reveals issues that need documentation lookup
+- Query intent is about best practices or general guidance
+- ALWAYS use `search_kyma_doc` if `kyma_query_tool` is already called and its response reveals issues
 
-### Step 4. Retrieve relevant cluster resources if `kyma_query_tool` call is necessary
+### Step 4. Retrieve relevant cluster resources IF `kyma_query_tool` is necessary
 a. Consider resource information provided by the user in the resource information for `kyma_query_tool` call
 b. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool` for the given resource information
 c. Follow exact API paths when querying resources
 
-### Step 5. Kyma Documentation Search if `search_kyma_doc` tool call is necessary
+### Step 5. Kyma Documentation Search IF `search_kyma_doc` is necessary
 a. You MUST use `search_kyma_doc` tool before providing any technical information
 b. Always verify answers against official Kyma documentation
 c. Never provide technical guidance without first consulting documentation
