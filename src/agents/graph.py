@@ -17,7 +17,7 @@ from langchain_core.runnables import RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from agents.common.agent import IAgent
 from agents.common.constants import (
@@ -283,7 +283,7 @@ class CompanionGraph:
                 SUBTASKS: [],
             }
 
-    def _build_graph(self) -> CompiledGraph:
+    def _build_graph(self) -> CompiledStateGraph:
         """Create the companion parent graph."""
 
         # Define a new graph.

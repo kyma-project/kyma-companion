@@ -401,7 +401,7 @@ class K8sClient:
             resource = api_resources[0]
 
             # Return the API version
-            return resource.group_version
+            return str(resource.group_version)
         except Exception as e:
             logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
             raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
