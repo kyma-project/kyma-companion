@@ -1,5 +1,3 @@
-from typing import Any
-
 import pytest
 from deepeval import assert_test
 from deepeval.metrics import ConversationalGEval
@@ -7,6 +5,7 @@ from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseP
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
+from agents.common.utils import convert_string_to_object
 from integration.agents.fixtures.k8_query_tool_response import (
     sample_deployment_tool_response,
     sample_pods_tool_response,
@@ -132,7 +131,7 @@ providing HTTP (port 80) and HTTPS (port 443) access to the cluster.""",
 async def test_summarize_tool_response_integration(
     tool_response_summarization_metric,
     summarization_model,
-    tool_response: list[Any],
+    tool_response: str,
     user_query: str,
     nums_of_chunks: int,
     expected_summary: str,
@@ -141,8 +140,9 @@ async def test_summarize_tool_response_integration(
 
     config = RunnableConfig()
 
+    tool_response_list = convert_string_to_object(tool_response)
     generated_summary = await summarizer.summarize_tool_response(
-        tool_response=tool_response,
+        tool_response=tool_response_list,
         user_query=user_query,
         config=config,
         nums_of_chunks=nums_of_chunks,

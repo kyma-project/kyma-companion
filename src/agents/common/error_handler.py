@@ -43,24 +43,3 @@ def token_counting_error_handler(func: Callable) -> Callable:
             return 0  # Return 0 to indicate token counting failed
 
     return wrapper
-
-
-def summarization_execution_error_handler(func: Callable) -> Callable:
-    """
-    Decorator to handle summarization execution errors.
-
-    This decorator catches exceptions during the actual summarization process
-    and re-raises them with additional logging context.
-    """
-
-    @functools.wraps(func)
-    async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        try:
-            result = await func(*args, **kwargs)
-            logger.info("Tool Response Summarization completed successfully")
-            return result
-        except Exception as e:
-            logger.error(f"Tool response summarization failed: {e}")
-            raise
-
-    return wrapper

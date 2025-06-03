@@ -26,7 +26,6 @@ from agents.common.constants import (
     TOTAL_CHUNKS_LIMIT,
 )
 from agents.common.error_handler import (
-    summarization_execution_error_handler,
     token_counting_error_handler,
     tool_parsing_error_handler,
 )
@@ -186,7 +185,6 @@ class BaseAgent:
         """Compute token count for the given content."""
         return compute_string_token_count(content, self.model.name)
 
-    @summarization_execution_error_handler
     async def _execute_summarization(
         self,
         tool_responses: list[Any],

@@ -129,7 +129,7 @@ class TestToolResponseSummarizer:
         )
 
         summarizer._create_chunks_from_list.assert_called_once_with(
-            [tool_response], nums_of_chunks
+            tool_response, nums_of_chunks
         )
 
         assert mock_ainvoke_chain.call_count == nums_of_chunks
@@ -168,6 +168,6 @@ class TestToolResponseSummarizer:
 
         # then
         summarizer._create_chunks_from_list.assert_called_once_with(
-            [tool_response], nums_of_chunks
+            tool_response, nums_of_chunks
         )
         assert result == ""
