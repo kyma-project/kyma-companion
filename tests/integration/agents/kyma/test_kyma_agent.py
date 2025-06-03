@@ -457,12 +457,10 @@ def kyma_agent(app_models):
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
             "",
-            "I couldn't find specific documentation on the features of the BTP Operator in the Kyma documentation. "
-            "However, generally, the BTP Operator in Kyma is responsible for managing the lifecycle of "
-            "SAP BTP service instances and bindings. It integrates SAP BTP services into the Kyma environment, "
-            "allowing you to provision and bind services from the SAP Business Technology Platform."
-            "If you have specific questions or need further details, you might want to check the official "
-            "SAP BTP documentation or resources related to the BTP Operator for more comprehensive information.",
+            "I currently don't have sufficient information to answer your question about the BTP Operator features. "
+            "You might want to check the official Kyma documentation or "
+            "SAP resources for the most accurate and up-to-date information. "
+            "If you have any other questions or need further assistance, feel free to ask!",
             None,
             False,
         ),
