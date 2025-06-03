@@ -1,6 +1,4 @@
-from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
-
-K8S_AGENT_PROMPT = f"""
+K8S_AGENT_PROMPT = """
 You are a Kubernetes expert assisting users with Kubernetes-related questions in collaboration with other assistants.
 Utilize the conversation messages and provided tools to answer questions and make progress.
 
@@ -16,6 +14,4 @@ Think step by step.
 - If you cannot fully answer a question, another assistant with different tools will continue from where you left off.
 - Do not suggest any follow-up questions.
 - ALWAYS try to provide solution(s) that MUST contain resource definition to fix the queried issue
-
-{TOOL_CALLING_ERROR_HANDLING}
 """

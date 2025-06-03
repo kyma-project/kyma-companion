@@ -26,9 +26,9 @@ KYMA_AGENT_INSTRUCTIONS = f"""
      a. You MUST use `search_kyma_doc` tool before providing any technical information
      b. Always verify answers against official Kyma documentation
      c. Never provide technical guidance without first consulting documentation
-     d. If the tool returns "No relevant documentation found.", accept this result and move forward
+     d. If the tool returns "No relevant documentation found.", 
+     respond to user with a friendly message to acknowledge this and provide a response based on existing context
      e. Do not retry the same search multiple times
-     f. If no relevant information is found, acknowledge this and provide a response based on existing context
 5. Analyze outputs of previous steps
      a. Analyze the conversation and the output of the tool calls
      b. Decide if further tool calls are needed

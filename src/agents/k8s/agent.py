@@ -6,6 +6,7 @@ from agents.common.constants import (
     GRAPH_STEP_TIMEOUT_SECONDS,
     K8S_AGENT,
 )
+from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
 from agents.k8s.prompts import K8S_AGENT_PROMPT
 from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
@@ -23,6 +24,7 @@ class KubernetesAgent(BaseAgent):
                 ("system", K8S_AGENT_PROMPT),
                 MessagesPlaceholder(variable_name=AGENT_MESSAGES),
                 ("human", "{query}"),
+                ("system", TOOL_CALLING_ERROR_HANDLING),
             ]
         )
         super().__init__(
