@@ -468,6 +468,20 @@ class TestK8sClient:
                 "multi-page",
             ),
             (
+                "should return result for single page response",
+                None,
+                [{"metadata": {}}],
+                {"metadata": {}},
+                "single-page",
+            ),
+            (
+                "should return empty items for single page list response",
+                None,
+                [{"items": [], "metadata": {}}],
+                {"items": [], "metadata": {}},
+                "single-page",
+            ),
+            (
                 "should return sanitized items for single page list response",
                 Mock(sanitize=Mock(return_value=[{"sanitized": "data"}])),
                 [{"items": [{"raw": "data"}], "metadata": {}}],
