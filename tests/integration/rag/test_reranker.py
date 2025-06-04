@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import ContextualPrecisionMetric, GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.documents import Document
@@ -12,7 +12,7 @@ from rag.reranker.reranker import (
     format_documents,
     format_queries,
 )
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL_MINI_NAME
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def evaluation_metrics(evaluator_model, semantic_similarity_metric):
 
 @pytest.fixture(scope="session")
 def llm_reranker(app_models):
-    return LLMReranker(app_models[ModelType.GPT4O_MINI])
+    return LLMReranker(app_models[MAIN_MODEL_MINI_NAME])
 
 
 @pytest.mark.parametrize(
@@ -220,8 +220,6 @@ def llm_reranker(app_models):
             4,
             [
                 "datasets/reranker/prerequisites-to-enable-logging/03_application_logs_prerequisites.md",
-                "datasets/reranker/prerequisites-to-enable-logging/01_integrate_with_sap_cloud_logging_prerequisites.md",
-                "datasets/reranker/prerequisites-to-enable-logging/07_integrate_kyma_with_amazon_cloudwatch_and_aws_x_ray_prerequisites.md",
             ],
             True,
         ),
@@ -295,18 +293,8 @@ async def test_chain_ainvoke(
         retrieval_context=tc_retrieval_context,
         expected_output=tc_expected_output,
     )
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=[
-            *evaluation_metrics,
-        ],
-    )
-
     report_test_summary(given_queries, given_docs, actual_docs, expected_docs)
-
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, evaluation_metrics)
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:

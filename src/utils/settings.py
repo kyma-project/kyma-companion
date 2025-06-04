@@ -59,6 +59,14 @@ load_env_from_json()
 # Read the configs.
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
+
+# Initialization of the main chat LLM models and main embedding model.
+MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4.1-mini")
+MAIN_EMBEDDING_MODEL_NAME = config(
+    "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
+)
+
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
 REDIS_HOST = config("REDIS_HOST", default="localhost")
@@ -105,3 +113,12 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     "K8S_RESOURCE_RELATIONS_JSON_FILE",
     default=f"{ Path(__file__).parent.parent.parent }/config/resource_relations.json",
 )
+
+if "pytest" in sys.modules:
+    TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
+    TEST_CLUSTER_CA_DATA = config("TEST_CLUSTER_CA_DATA", default="")
+    TEST_CLUSTER_AUTH_TOKEN = config("TEST_CLUSTER_AUTH_TOKEN", default="")
+    TEST_CLUSTER_CLIENT_CERTIFICATE_DATA = config(
+        "TEST_CLUSTER_CLIENT_CERTIFICATE_DATA", default=""
+    )
+    TEST_CLUSTER_CLIENT_KEY_DATA = config("TEST_CLUSTER_CLIENT_KEY_DATA", default="")

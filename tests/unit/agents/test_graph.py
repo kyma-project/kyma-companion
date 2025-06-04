@@ -12,24 +12,29 @@ from agents.common.state import CompanionState, GatekeeperResponse, SubTask
 from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+)
 
 
 @pytest.fixture
 def mock_models():
-    gpt40_mini = MagicMock(spec=IModel)
-    gpt40_mini.name = ModelType.GPT4O_MINI
+    main_model_mini = MagicMock(spec=IModel)
+    main_model_mini.name = MAIN_MODEL_MINI_NAME
 
-    gpt40 = MagicMock(spec=IModel)
-    gpt40.name = ModelType.GPT4O
+    main_model = MagicMock(spec=IModel)
+    main_model.name = MAIN_MODEL_NAME
 
-    text_embedding_3_large = MagicMock(spec=Embeddings)
-    text_embedding_3_large.name = ModelType.TEXT_EMBEDDING_3_LARGE
+    main_embedding_model = MagicMock(spec=Embeddings)
+    main_embedding_model.name = MAIN_EMBEDDING_MODEL_NAME
 
     return {
-        ModelType.GPT4O_MINI: gpt40_mini,
-        ModelType.GPT4O: gpt40,
-        ModelType.TEXT_EMBEDDING_3_LARGE: text_embedding_3_large,
+        MAIN_MODEL_MINI_NAME: main_model_mini,
+        MAIN_MODEL_NAME: main_model,
+        MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 
 
@@ -565,7 +570,7 @@ class TestCompanionGraph:
             mock_kyma_cls.assert_called_once_with(mock_models)
 
             # Verify KubernetesAgent was constructed with GPT4O model
-            mock_k8s_cls.assert_called_once_with(mock_models[ModelType.GPT4O])
+            mock_k8s_cls.assert_called_once_with(mock_models[MAIN_MODEL_NAME])
 
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(
@@ -625,6 +630,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(return_value=given_latest_state)
 
@@ -674,6 +680,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(return_value=state_snapshot)
 
@@ -725,6 +732,7 @@ class TestCompanionGraph:
             metadata=None,
             created_at=None,
             parent_config=None,
+            interrupts=(),
         )
         companion_graph.graph.aget_state = AsyncMock(
             return_value=initial_state_snapshot

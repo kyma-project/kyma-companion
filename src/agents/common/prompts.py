@@ -75,13 +75,13 @@ When a tool call fails, follow this protocol:
 - EVALUATE ALTERNATIVES : Consider if a different tool or approach might work , Check for missing or malformed parameters.
 - INFORM THE USER : Acknowledge the user about the failure.
 
-## Retry Logic :
-Only retry if:
-
-- If no specific error returned by tool
-- You can modify the approach meaningfully (different parameters)
-- You haven't already attempted this tool for the same request
-- Maximum of THREE retry attempt per tool
+## Retry Logic for error handling:
+- If a tool call fails analyze the error and attempt to fix the issue:
+  -- Check for missing or malformed parameters.
+  -- Verify if the correct tool is assigned with correct name.
+- If three consecutive tool calls request fail, do not attempt further tool calls. Instead, respond to the user with:
+  -- A clear acknowledgment of the issue (e.g., "I encountered an error while retrieving the information.").
+  -- A concise explanation (if helpful) without technical details.
 """
 
 

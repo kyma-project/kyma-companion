@@ -11,15 +11,20 @@ from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
 from agents.supervisor.state import SupervisorState
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+)
 
 
 @pytest.fixture
 def mock_models():
     return {
-        ModelType.GPT4O_MINI: MagicMock(spec=IModel),
-        ModelType.GPT4O: MagicMock(spec=IModel),
-        ModelType.TEXT_EMBEDDING_3_LARGE: MagicMock(spec=Embeddings),
+        MAIN_MODEL_MINI_NAME: MagicMock(spec=IModel),
+        MAIN_MODEL_NAME: MagicMock(spec=IModel),
+        MAIN_EMBEDDING_MODEL_NAME: MagicMock(spec=Embeddings),
     }
 
 
@@ -303,7 +308,7 @@ class TestSupervisorAgent:
                             assigned_to=K8S_AGENT,
                         ),
                     ],
-                    "messages": [AIMessage(content="", name="Planner")],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -321,7 +326,7 @@ class TestSupervisorAgent:
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [AIMessage(content="", name="Planner")],
+                    "messages": [],
                     "error": None,
                     "next": ROUTER,
                 },

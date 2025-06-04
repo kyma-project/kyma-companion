@@ -1,18 +1,17 @@
-from typing import Any
-
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
+from agents.common.utils import convert_string_to_object
 from integration.agents.fixtures.k8_query_tool_response import (
     sample_deployment_tool_response,
     sample_pods_tool_response,
     sample_services_tool_response,
 )
-from utils.models.factory import ModelType
+from utils.settings import MAIN_MODEL_NAME
 
 
 @pytest.fixture
@@ -38,7 +37,7 @@ def tool_response_summarization_metric(evaluator_model):
 
 @pytest.fixture
 def summarization_model(app_models):
-    return app_models[ModelType.GPT4O]
+    return app_models[MAIN_MODEL_NAME]
 
 
 @pytest.mark.parametrize(
@@ -114,8 +113,8 @@ providing HTTP (port 80) and HTTPS (port 443) access to the cluster.""",
             "What are the deployment strategies used?",
             2,
             """
-        Both deployments use RollingUpdate strategy with maxUnavailable=25% and maxSurge=25%. 
-        They have 10 revision history limit and 600 seconds progress deadline. 
+        Both deployments use RollingUpdate strategy with maxUnavailable=25% and maxSurge=25%.
+        They have 10 revision history limit and 600 seconds progress deadline.
         Restart policy is Always with 30 seconds termination grace period.""",
         ),
         (
@@ -132,7 +131,7 @@ providing HTTP (port 80) and HTTPS (port 443) access to the cluster.""",
 async def test_summarize_tool_response_integration(
     tool_response_summarization_metric,
     summarization_model,
-    tool_response: list[Any],
+    tool_response: str,
     user_query: str,
     nums_of_chunks: int,
     expected_summary: str,
@@ -141,8 +140,9 @@ async def test_summarize_tool_response_integration(
 
     config = RunnableConfig()
 
+    tool_response_list = convert_string_to_object(tool_response)
     generated_summary = await summarizer.summarize_tool_response(
-        tool_response=tool_response,
+        tool_response=tool_response_list,
         user_query=user_query,
         config=config,
         nums_of_chunks=nums_of_chunks,
@@ -156,13 +156,5 @@ async def test_summarize_tool_response_integration(
             )
         ]
     )
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=[tool_response_summarization_metric],
-        run_async=False,
-    )
 
-    # Assert that all metrics passed
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, [tool_response_summarization_metric])

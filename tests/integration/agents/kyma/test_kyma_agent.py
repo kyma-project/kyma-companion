@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
@@ -684,91 +684,12 @@ async def test_invoke_chain(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])
 
 
 @pytest.mark.parametrize(
     "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
-        # Test case for Kyma Tool retry again when no response in Tool Call ,
-        (
-            "Should retry tool calling",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            None,  # expected_result
-            "kyma_query_tool",  # expected_tool_call
-            False,  # should_raise
-        ),
         # Test case for kyma tool when already failed multiple times
         # and should give proper response to user,
         (
@@ -1074,15 +995,4 @@ async def test_tool_calling(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])

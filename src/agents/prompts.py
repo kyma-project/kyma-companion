@@ -10,7 +10,7 @@ def handle_query(user_query, conversation_history):
     Processes user query related to Kyma and Kubernetes.
     """
     # Step 0: Identify user intent and detect query tense
-    user_intent = identify_user_intent(user_query)
+    user_intent = identify_user_intent(user_query, conversation_history)
     is_past_tense = detect_past_tense(user_query)
 
     # Step 1: Check if the answer can be derived from conversation history
@@ -25,10 +25,7 @@ def handle_query(user_query, conversation_history):
 
     # Step 3: Handling Kyma, Kubernetes, and technical troubleshooting queries
     if category in [
-        "Kyma", "Kubernetes",
-        "Technical Troubleshooting", "Error Messages", "Configuration Issues",
-        "Conceptual", "Resource Status Check",
-        "Installation", "Setup", "Deployment", "Integration"
+        "Kyma", "Kubernetes"
     ]:
         return {{
             "direct_response": "",
@@ -49,7 +46,7 @@ def handle_query(user_query, conversation_history):
             "forward_query": False,
         }}
 
-    # Step 6: Decline non-technical general knowledge queries
+    # Step 6: Decline irrelevant queries
     return {{
         "direct_response": "This question appears to be outside my domain of expertise. If you have any technical or Kyma-related questions, I'd be happy to help.",
         "forward_query": False,
@@ -69,15 +66,23 @@ def get_answer_from_history(user_intent, conversation_history):
     pass
 
 def classify_user_intent(user_intent):
-    """Classifies user intent into relevant categories. Uses the given Kyma and Kubernetes domain knowledge for classification too."""
+    """
+    Classifies user intent into  the following categories:
+    - "Kyma": kyma related queries
+    - "Kubernetes": kubernetes related queries
+    - "Programming": programming related queries
+    - "About You": queries about you and your capabilities
+    - "Greeting": greeting queries
+    - "Irrelevant": consider all other queries as irrelevant
+    """
     pass
 
 def generate_response(user_intent):
     """Generates responses based on the user intent."""
     pass
 
-def identify_user_intent(user_query):
-    """Identifies and extracts the user's intent from their query."""
+def identify_user_intent(user_query, conversation_history):
+    """Identifies and extracts the user's intent from their query and conversation history."""
     pass
 
 def detect_past_tense(user_query):

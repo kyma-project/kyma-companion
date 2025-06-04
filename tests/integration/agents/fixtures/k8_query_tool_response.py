@@ -60,12 +60,12 @@ sample_pods_tool_response = """[
               },
               "f:ownerReferences": {
                 ".": {},
-                "k:{\"uid\":\"c3d86149-e05a-4bd8-964d-5c51c603bc17\"}": {}
+                "k:{'uid':'c3d86149-e05a-4bd8-964d-5c51c603bc17'}": {}
               }
             },
             "f:spec": {
               "f:containers": {
-                "k:{\"name\":\"cert-manager-controller\"}": "[REDACTED]"
+                "k:{'name':'cert-manager-controller'}": "[REDACTED]"
               },
               "f:dnsPolicy": {},
               "f:enableServiceLinks": {},
@@ -112,28 +112,28 @@ sample_pods_tool_response = """[
           "fieldsV1": {
             "f:status": {
               "f:conditions": {
-                "k:{\"type\":\"ContainersReady\"}": {
+                "k:{'type':'ContainersReady'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Initialized\"}": {
+                "k:{'type':'Initialized'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                "k:{'type':'PodReadyToStartContainers'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Ready\"}": {
+                "k:{'type':'Ready'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
@@ -148,7 +148,7 @@ sample_pods_tool_response = """[
               "f:podIP": {},
               "f:podIPs": {
                 ".": {},
-                "k:{\"ip\":\"100.96.1.30\"}": {
+                "k:{'ip':'100.96.1.30'}": {
                   ".": {},
                   "f:ip": {}
                 }
@@ -413,12 +413,12 @@ sample_pods_tool_response = """[
               },
               "f:ownerReferences": {
                 ".": {},
-                "k:{\"uid\":\"035b5dd1-ec54-4a93-9d24-107ecee0ffb3\"}": {}
+                "k:{'uid':'035b5dd1-ec54-4a93-9d24-107ecee0ffb3'}": {}
               }
             },
             "f:spec": {
               "f:containers": {
-                "k:{\"name\":\"cert-manager-cainjector\"}": "[REDACTED]"
+                "k:{'name':'cert-manager-cainjector'}": "[REDACTED]"
               },
               "f:dnsPolicy": {},
               "f:enableServiceLinks": {},
@@ -466,28 +466,28 @@ sample_pods_tool_response = """[
           "fieldsV1": {
             "f:status": {
               "f:conditions": {
-                "k:{\"type\":\"ContainersReady\"}": {
+                "k:{'type':'ContainersReady'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Initialized\"}": {
+                "k:{'type':'Initialized'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"PodReadyToStartContainers\"}": {
+                "k:{'type':'PodReadyToStartContainers'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Ready\"}": {
+                "k:{'type':'Ready'}": {
                   ".": {},
                   "f:lastProbeTime": {},
                   "f:lastTransitionTime": {},
@@ -502,7 +502,7 @@ sample_pods_tool_response = """[
               "f:podIP": {},
               "f:podIPs": {
                 ".": {},
-                "k:{\"ip\":\"100.96.1.32\"}": {
+                "k:{'ip':'100.96.1.32'}": {
                   ".": {},
                   "f:ip": {}
                 }
@@ -765,7 +765,7 @@ sample_deployment_tool_response = """[
                 },
                 "f:spec": {
                   "f:containers": {
-                    "k:{\"name\":\"cert-manager-controller\"}": "[REDACTED]"
+                    "k:{'name':'cert-manager-controller'}": "[REDACTED]"
                   },
                   "f:nodeSelector": {},
                   "f:securityContext": {
@@ -797,7 +797,7 @@ sample_deployment_tool_response = """[
               "f:availableReplicas": {},
               "f:conditions": {
                 ".": {},
-                "k:{\"type\":\"Available\"}": {
+                "k:{'type':'Available'}": {
                   ".": {},
                   "f:lastTransitionTime": {},
                   "f:lastUpdateTime": {},
@@ -806,7 +806,7 @@ sample_deployment_tool_response = """[
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Progressing\"}": {
+                "k:{'type':'Progressing'}": {
                   ".": {},
                   "f:lastTransitionTime": {},
                   "f:lastUpdateTime": {},
@@ -935,7 +935,7 @@ sample_deployment_tool_response = """[
           "lastUpdateTime": "2025-02-04T09:47:34Z",
           "lastTransitionTime": "2025-02-04T09:47:33Z",
           "reason": "NewReplicaSetAvailable",
-          "message": "ReplicaSet \"cert-manager-769fdd4544\" has successfully progressed."
+          "message": "ReplicaSet 'cert-manager-769fdd4544' has successfully progressed."
         },
         {
           "type": "Available",
@@ -1000,7 +1000,7 @@ sample_deployment_tool_response = """[
                 },
                 "f:spec": {
                   "f:containers": {
-                    "k:{\"name\":\"cert-manager-cainjector\"}": "[REDACTED]"
+                    "k:{'name':'cert-manager-cainjector'}": "[REDACTED]"
                   },
                   "f:nodeSelector": {},
                   "f:securityContext": {
@@ -1032,7 +1032,7 @@ sample_deployment_tool_response = """[
               "f:availableReplicas": {},
               "f:conditions": {
                 ".": {},
-                "k:{\"type\":\"Available\"}": {
+                "k:{'type':'Available'}": {
                   ".": {},
                   "f:lastTransitionTime": {},
                   "f:lastUpdateTime": {},
@@ -1041,7 +1041,7 @@ sample_deployment_tool_response = """[
                   "f:status": {},
                   "f:type": {}
                 },
-                "k:{\"type\":\"Progressing\"}": {
+                "k:{'type':'Progressing'}": {
                   ".": {},
                   "f:lastTransitionTime": {},
                   "f:lastUpdateTime": {},
@@ -1155,7 +1155,7 @@ sample_deployment_tool_response = """[
           "lastUpdateTime": "2025-02-04T09:47:35Z",
           "lastTransitionTime": "2025-02-04T09:47:33Z",
           "reason": "NewReplicaSetAvailable",
-          "message": "ReplicaSet \"cert-manager-cainjector-56ccdfdd58\" has successfully progressed."
+          "message": "ReplicaSet 'cert-manager-cainjector-56ccdfdd58' has successfully progressed."
         },
         {
           "type": "Available",
@@ -1204,7 +1204,7 @@ sample_services_tool_response = """[
             },
             "f:spec": {
               "f:ports": {
-                "k:{\"port\":9402,\"protocol\":\"TCP\"}": {
+                "k:{'port':9402,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
@@ -1282,7 +1282,7 @@ sample_services_tool_response = """[
             },
             "f:spec": {
               "f:ports": {
-                "k:{\"port\":443,\"protocol\":\"TCP\"}": {
+                "k:{'port':443,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
@@ -1359,7 +1359,7 @@ sample_services_tool_response = """[
               "f:ipFamilyPolicy": {},
               "f:ports": {
                 ".": {},
-                "k:{\"port\":443,\"protocol\":\"TCP\"}": {
+                "k:{'port':443,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
@@ -1465,21 +1465,21 @@ sample_services_tool_response = """[
             },
             "f:spec": {
               "f:ports": {
-                "k:{\"port\":80,\"protocol\":\"TCP\"}": {
+                "k:{'port':80,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
                   "f:protocol": {},
                   "f:targetPort": {}
                 },
-                "k:{\"port\":443,\"protocol\":\"TCP\"}": {
+                "k:{'port':443,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
                   "f:protocol": {},
                   "f:targetPort": {}
                 },
-                "k:{\"port\":15021,\"protocol\":\"TCP\"}": {
+                "k:{'port':15021,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
@@ -1502,7 +1502,7 @@ sample_services_tool_response = """[
             "f:metadata": {
               "f:finalizers": {
                 ".": {},
-                "v:\"service.kubernetes.io/load-balancer-cleanup\"": {}
+                "v:'service.kubernetes.io/load-balancer-cleanup'": {}
               }
             },
             "f:status": {
@@ -1630,26 +1630,26 @@ sample_services_tool_response = """[
             },
             "f:spec": {
               "f:ports": {
-                "k:{\"port\":443,\"protocol\":\"TCP\"}": {
+                "k:{'port':443,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
                   "f:protocol": {},
                   "f:targetPort": {}
                 },
-                "k:{\"port\":15010,\"protocol\":\"TCP\"}": {
+                "k:{'port':15010,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
                   "f:protocol": {}
                 },
-                "k:{\"port\":15012,\"protocol\":\"TCP\"}": {
+                "k:{'port':15012,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
                   "f:protocol": {}
                 },
-                "k:{\"port\":15014,\"protocol\":\"TCP\"}": {
+                "k:{'port':15014,'protocol':'TCP'}": {
                   ".": {},
                   "f:name": {},
                   "f:port": {},
