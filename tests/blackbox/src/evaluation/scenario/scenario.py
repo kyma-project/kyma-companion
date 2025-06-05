@@ -163,11 +163,7 @@ class ScenarioList(BaseModel):
                     for test_result in query.evaluation_result.test_results:
                         if test_result.metrics_data:
                             for test_metric in test_result.metrics_data:
-                                score += (
-                                    test_metric.score
-                                    if test_metric.score
-                                    else 0.0
-                                )
+                                score += test_metric.score if test_metric.score else 0.0
 
         if total == 0:
             return 0.0
