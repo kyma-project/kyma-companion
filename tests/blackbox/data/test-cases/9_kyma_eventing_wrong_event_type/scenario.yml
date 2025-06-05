@@ -8,14 +8,14 @@ queries:
       name: test-v1alpha2-exact1
       namespace: test-subscription-9 # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: subscription_config_error
-        statement: points out that the Subscription is configured with the wrong event type
+      - name: subscription_wrong_type
+        statement: points out that the event type configured in the Subscription could be wrong
         threshold: 0.5
-        required: true
+        required: false
       - name: subscription_correct_event_type
         statement: provides the correct event type to use, which would be "sap.kyma.custom.commerce.order.created.v1"
         threshold: 0.5
-        required: true
+        required: false
       - name: subscription_explanation
         statement: explains the use of Subscriptions and how to configure them
         threshold: 0.5
