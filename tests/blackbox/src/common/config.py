@@ -49,7 +49,7 @@ class Config:
         self.test_cluster_ca_data = config("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = config("TEST_CLUSTER_AUTH_TOKEN")
 
-        self.model_name = config("MODEL_NAME", default="gpt-4o-mini")
+        self.model_name = config("MODEL_NAME", default="gpt-4.1-mini")
         self.streaming_response_timeout = config(
             "STREAMING_RESPONSE_TIMEOUT", default=600, cast=int
         )  # seconds

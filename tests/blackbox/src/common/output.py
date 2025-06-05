@@ -1,7 +1,7 @@
 import json
 
 import github_action_utils as gha_utils
-from deepeval.evaluate import print_test_result
+from deepeval.evaluate.utils import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
 from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import TestStatus
