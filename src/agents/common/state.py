@@ -123,8 +123,8 @@ class UserInput(BaseModel):
             result["resource_related_to"] = self.resource_related_to
         return result
 
-    def is_overview_query(self) -> bool:
-        """Check if the query is an overview query."""
+    def is_cluster_overview_query(self) -> bool:
+        """Check if the query is cluster overview query."""
         return self.resource_kind.lower() == CLUSTER
 
 

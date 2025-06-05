@@ -15,6 +15,7 @@ If the resource kind mentioned in the user query is different from the resource 
 - User asks about a specific resource issue (e.g., "what is wrong with X?", "why is Y not working?")
 - User requests status or details of a specific resource
 - Query mentions troubleshooting a named resource
+- Query intent is about getting all Kyma resources in a cluster or namespace
 
 **Decide if `search_kyma_doc` is necessary:**
 - Query intent is about general "how to" questions (e.g., "how to create", "how to enable")
@@ -24,7 +25,7 @@ If the resource kind mentioned in the user query is different from the resource 
 - ALWAYS use `search_kyma_doc` if `kyma_query_tool` is already called and its response reveals issues
 
 ### Step 4. Retrieve relevant cluster resources IF `kyma_query_tool` is necessary
-a. Consider resource information provided by the user in the resource information for `kyma_query_tool` call
+a. Use resource information from the latest system message for `kyma_query_tool` call
 b. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool` for the given resource information
 c. Follow exact API paths when querying resources
 
