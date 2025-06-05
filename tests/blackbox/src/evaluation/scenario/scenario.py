@@ -3,7 +3,7 @@ import os
 from logging import Logger
 
 import yaml
-from deepeval.evaluate import EvaluationResult, TestResult
+from deepeval.evaluate.types import EvaluationResult, TestResult
 from pydantic import BaseModel
 
 from evaluation.companion.response_models import ConversationResponseChunk

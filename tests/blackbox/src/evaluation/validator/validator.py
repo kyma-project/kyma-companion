@@ -1,7 +1,8 @@
 from typing import Any, Protocol
 
 from deepeval import evaluate
-from deepeval.evaluate import EvaluationResult
+from deepeval.evaluate import AsyncConfig, DisplayConfig, CacheConfig
+from deepeval.evaluate.types import EvaluationResult
 from deepeval.metrics import GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
@@ -87,11 +88,9 @@ class ChatOpenAIValidator:
         result = evaluate(
             test_cases=[test_case],
             metrics=evaluation_metrics,
-            run_async=False,
-            verbose_mode=False,
-            show_indicator=False,
-            print_results=False,
-            write_cache=False,
+            async_config=AsyncConfig(run_async=False),
+            display_config=DisplayConfig(show_indicator=False, print_results=False),
+            cache_config=CacheConfig(write_cache=False),
         )
         if len(result.test_results) == 0:
             raise ValueError("No test results found.")
