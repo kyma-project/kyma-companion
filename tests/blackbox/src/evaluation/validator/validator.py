@@ -1,9 +1,9 @@
 from typing import Any, Protocol
 
 from deepeval import evaluate
-from deepeval.evaluate import AsyncConfig, DisplayConfig, CacheConfig
+from deepeval.evaluate import AsyncConfig, CacheConfig, DisplayConfig
 from deepeval.evaluate.types import EvaluationResult
-from deepeval.metrics import GEval
+from deepeval.metrics import BaseMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
@@ -61,7 +61,7 @@ class ChatOpenAIValidator:
 
     def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
         """Evaluate the query using the model and expectations."""
-        evaluation_metrics = []
+        evaluation_metrics: list[BaseMetric] = []
         for expectation in query.expectations:
             # create a new metric for each expectation.
             new_metric = GEval(

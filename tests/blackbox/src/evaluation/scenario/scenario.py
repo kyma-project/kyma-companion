@@ -161,8 +161,13 @@ class ScenarioList(BaseModel):
                 total += len(query.expectations)
                 if query.evaluation_result is not None:
                     for test_result in query.evaluation_result.test_results:
-                        for test_metric in test_result.metrics_data:
-                            score += test_metric.score
+                        if test_result.metrics_data is not None:
+                            for test_metric in test_result.metrics_data:
+                                score += (
+                                    test_metric.score
+                                    if test_metric.score is not None
+                                    else 0.0
+                                )
 
         if total == 0:
             return 0.0
