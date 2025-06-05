@@ -11,7 +11,7 @@ queries:
       - name: subscription_wrong_type
         statement: points out that the event type configured in the Subscription could be wrong
         threshold: 0.5
-        required: false
+        required: true
       - name: subscription_correct_event_type
         statement: provides the correct event type to use, which would be "sap.kyma.custom.commerce.order.created.v1"
         threshold: 0.5
