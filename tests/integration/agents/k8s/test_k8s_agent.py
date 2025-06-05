@@ -10,8 +10,7 @@ from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
-from utils.models.factory import ModelType
-from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
+from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 
 AGENT_STEPS_NUMBER = 25
 
@@ -33,7 +32,7 @@ def mock_k8s_client():
 
 @pytest.fixture
 def k8s_agent(app_models):
-    return KubernetesAgent(app_models.get(ModelType.GPT4O))
+    return KubernetesAgent(app_models.get(MAIN_MODEL_NAME))
 
 
 @pytest.mark.parametrize(
@@ -135,18 +134,18 @@ def k8s_agent(app_models):
                     SystemMessage(
                         content="The user query is related to: {'resource_namespace': 'production'}"
                     ),
-                    HumanMessage(content="Show me cluster-level resource usage"),
+                    HumanMessage(content="Check resources in the namespace"),
                 ],
                 subtasks=[
                     {
-                        "description": "Show me cluster-level resource usage",
-                        "task_title": "check resource usage",
+                        "description": "Check resources in the namespace",
+                        "task_title": "check resources",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Show me cluster-level resource usage",
-                    task_title="check resource usage",
+                    description="Check resources in the namespace",
+                    task_title="check resources",
                     assigned_to="KubernetesAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa

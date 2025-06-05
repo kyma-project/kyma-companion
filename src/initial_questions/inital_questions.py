@@ -68,7 +68,15 @@ class InitialQuestionsHandler:
         )
         output_parser = QuestionOutputParser()
         self._chain = prompt | model.llm | output_parser
-        self._tokenizer = tokenizer or tiktoken.encoding_for_model(self._model.name)
+        # Handle custom model names that tiktoken doesn't recognize
+        try:
+            self._tokenizer = tokenizer or tiktoken.encoding_for_model(self._model.name)
+        except KeyError:
+            # Fallback to a compatible encoding for unrecognized model names
+            logger.warning(
+                f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding"
+            )
+            self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
         """Reduces the amount of tokens of a string by truncating exeeding tokens.

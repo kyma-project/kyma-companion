@@ -14,6 +14,7 @@ class OpenAIModel:
     def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
         self._name = config.name
         self._llm = ChatOpenAI(
+            proxy_model_name=config.name,
             deployment_id=config.deployment_id,
             proxy_client=proxy_client,
             temperature=config.temperature,

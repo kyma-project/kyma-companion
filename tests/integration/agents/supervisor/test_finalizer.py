@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -281,50 +281,28 @@ from integration.agents.test_common_node import create_mock_state
                 to execute custom business logic in response to events or HTTP requests. Functions are typically written
                 in JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
                 Key features of Kyma functions include:
-                1. **Event-Driven**: Functions can be triggered by various events, such as HTTP requests, messages from
-                a message broker, or other events in the Kyma environment.
-                2. **Scalability**: They automatically scale based on demand, allowing you to handle varying loads
-                without manual intervention.
-                3. **Integration**: Functions can easily integrate with other services and components in the Kyma
-                ecosystem, such as APIs, databases, and external services.
-                4. **Isolation**: Each function runs in its own isolated environment, ensuring that they do not
-                interfere with each other.
-                Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a
-                cloud-native environment.
-                5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines,
-                making it straightforward to manage and update them.
+                1. **Event-Driven**: Functions can be triggered by various events, such as HTTP requests, messages from a message broker, or other events in the Kyma environment.
+                2. **Scalability**: They automatically scale based on demand, allowing you to handle varying loads without manual intervention.
+                3. **Integration**: Functions can easily integrate with other services and components in the Kyma ecosystem, such as APIs, databases, and external services.
+                4. **Isolation**: Each function runs in its own isolated environment, ensuring that they do not interfere with each other.
+                Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native environment.
+                5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines, making it straightforward to manage and update them.
                 """
                     ),
                 ),
             ],
             dedent(
                 """
-            Stateful sets are a type of Kubernetes resource that manage the deployment and scaling of stateful
-            applications. They ensure that each instance of the application has its own persistent storage and can
-            handle failures gracefully. Key features of StatefulSets include:
-            1. **Stable Network Identity**: Each pod gets a persistent hostname with a predictable DNS name
-            2. **Ordered Deployment**: Pods are created in sequential order (0,1,2) and scaled down in reverse order
-            3. **Persistent Storage**: Each replica gets its own persistent volume that remains attached even after pod rescheduling
-            4. **Stable Storage**: Storage volumes persist even when pods are deleted
-            5. **Ordered Rolling Updates**: Updates are performed one pod at a time in a controlled manner
-            StatefulSets are ideal for applications like databases, message queues, and other stateful workloads that require
-            stable network identities and persistent storage.
-            A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you to
-            execute custom business logic in response to events or HTTP requests. Functions are typically written in
-            JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
-            Key features of Kyma functions include:
-            1. **Event-Driven**: Functions can be triggered by various events, such as HTTP requests, messages from a
-            message broker, or other events in the Kyma environment.
-            2. **Scalability**: They automatically scale based on demand, allowing you to handle varying loads without
-            manual intervention.
-            3. **Integration**: Functions can easily integrate with other services and components in the Kyma ecosystem,
-            such as APIs, databases, and external services.
-            4. **Isolation**: Each function runs in its own isolated environment, ensuring that they do not interfere
-            with each other.
-            5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines, making it
-            straightforward to manage and update them.
-            Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native
-            environment.
+                A Kyma function is a lightweight, serverless function that runs in the Kyma environment. It allows you
+                to execute custom business logic in response to events or HTTP requests. Functions are typically written
+                in JavaScript or TypeScript and can be deployed easily within the Kyma ecosystem.
+                Key features of Kyma functions include:
+                1. **Event-Driven**: Functions can be triggered by various events, such as HTTP requests, messages from a message broker, or other events in the Kyma environment.
+                2. **Scalability**: They automatically scale based on demand, allowing you to handle varying loads without manual intervention.
+                3. **Integration**: Functions can easily integrate with other services and components in the Kyma ecosystem, such as APIs, databases, and external services.
+                4. **Isolation**: Each function runs in its own isolated environment, ensuring that they do not interfere with each other.
+                Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native environment.
+                5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines, making it straightforward to manage and update them.
             """
             ),
         ),
@@ -513,13 +491,4 @@ async def test_generate_final_response(
         expected_output=expected_answer,
     )
 
-    # Then: We evaluate the response using deepeval metrics
-    eval_results = evaluate(
-        test_cases=[test_case],
-        metrics=[
-            semantic_similarity_metric,
-        ],
-    )
-    assert all(
-        result.success for result in eval_results.test_results
-    ), "Not all metrics passed"
+    assert_test(test_case, [semantic_similarity_metric])

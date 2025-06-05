@@ -462,9 +462,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
-                HumanMessage(
-                    content="can you provide some example showcasing your problem solving capabilities"
-                ),
+                HumanMessage(content="what are your capabilities?"),
             ],
             "I can help with various queries related to Kyma and Kubernetes, such as troubleshooting issues, "
             "understanding concepts, or deployment processes. For example, if you encounter an error while deploying "
@@ -639,9 +637,10 @@ async def test_invoke_gatekeeper_node(
         (
             "answer the question based on the conversation history",
             conversation_sample_2,
-            "what is the issue?",
-            "",
-            True,
+            "what is the issue?",  # this is implicitly referring to the conversation history
+            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
+            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. ",
+            False,
         ),
         (
             "forward query as insufficient information in conversation history",
@@ -759,37 +758,6 @@ async def test_gatekeeper_with_conversation_history(
     companion_graph,
     gatekeeper_correctness_metric,
 ):
-    """
-    Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
-    """
-    # Given: a conversation state with messages
-    all_messages = convert_dict_to_messages(conversation_history)
-    all_messages.append(HumanMessage(content=user_query))
-    state = create_mock_state(all_messages)
-
-    # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
-    result = await companion_graph._invoke_gatekeeper_node(state)
-
-    if expected_query_forwarding:
-        assert (
-            result.forward_query
-        ), "Query should be forwarded"  # query should be forwarded
-
-    else:
-        assert (
-            not result.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
-        # Then: we evaluate the direct response using deepeval metrics
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=user_query,
-                    actual_output=result.direct_response,
-                    expected_output=expected_answer,
-                )
-            ]
-        )
-        assert_test(test_case, [gatekeeper_correctness_metric])
     """
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """

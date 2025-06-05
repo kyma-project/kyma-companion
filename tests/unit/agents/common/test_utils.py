@@ -22,7 +22,6 @@ from agents.common.utils import (
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
-from utils.models.factory import ModelType
 
 # Mock the logging setup
 mock_logger = Mock()
@@ -270,12 +269,12 @@ def test_agent_edge(
 @pytest.mark.parametrize(
     "text, model_type, expected_token_count",
     [
-        ("Hello, world!", ModelType.GPT4O, 4),
-        ("This is a test.", ModelType.GPT4O, 5),  # Example token count
-        ("", ModelType.GPT4O, 0),  # Empty string
+        ("Hello, world!", "gpt-4o", 4),
+        ("This is a test.", "gpt-4o", 5),  # Example token count
+        ("", "gpt-4o", 0),  # Empty string
         (
             "A longer text input to test the token count.",
-            ModelType.GPT4O,
+            "gpt-4o",
             10,
         ),  # Example token count
     ],
@@ -289,7 +288,7 @@ def test_compute_string_token_count(text, model_type, expected_token_count):
     [
         (
             [HumanMessage(content="Hello"), AIMessage(content="Hi there")],
-            ModelType.GPT4O,
+            "gpt-4o",
             3,  # Example token count
         ),
         (
@@ -297,13 +296,13 @@ def test_compute_string_token_count(text, model_type, expected_token_count):
                 HumanMessage(content="This is a test."),
                 AIMessage(content="Another test."),
             ],
-            ModelType.GPT4O,
+            "gpt-4o",
             8,  # Example token count
         ),
-        ([], ModelType.GPT4O, 0),  # No messages
+        ([], "gpt-4o", 0),  # No messages
         (
             [HumanMessage(content="A longer text input to test the token count.")],
-            ModelType.GPT4O,
+            "gpt-4o",
             10,  # Example token count
         ),
     ],

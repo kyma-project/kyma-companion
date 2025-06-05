@@ -17,8 +17,16 @@ from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
-from utils.models.factory import ModelFactory, ModelType
-from utils.settings import REDIS_DB_NUMBER, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
+from utils.models.factory import ModelFactory
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+    REDIS_DB_NUMBER,
+    REDIS_HOST,
+    REDIS_PASSWORD,
+    REDIS_PORT,
+)
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -51,17 +59,17 @@ def init_config():
 def app_models(init_config):
     model_factory = ModelFactory(config=init_config)
     return {
-        ModelType.GPT4O_MINI: model_factory.create_model(ModelType.GPT4O_MINI),
-        ModelType.GPT4O: model_factory.create_model(ModelType.GPT4O),
-        ModelType.TEXT_EMBEDDING_3_LARGE: model_factory.create_model(
-            ModelType.TEXT_EMBEDDING_3_LARGE
+        MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
+        MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
+        MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(
+            MAIN_EMBEDDING_MODEL_NAME
         ),
     }
 
 
 @pytest.fixture(scope="session")
 def evaluator_model(app_models):
-    return LangChainOpenAI(app_models[ModelType.GPT4O].llm)
+    return LangChainOpenAI(app_models[MAIN_MODEL_NAME].llm)
 
 
 @pytest.fixture(scope="session")
