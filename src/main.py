@@ -25,7 +25,7 @@ app.include_router(probes_router)
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
-    return {"message": "Hello from Kyma Companion!"}
+    return {"message": "Kyma Companion!"}
 
 
 @app.get("/metrics")
