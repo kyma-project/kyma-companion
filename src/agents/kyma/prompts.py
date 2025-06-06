@@ -3,8 +3,9 @@ from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
 KYMA_AGENT_INSTRUCTIONS = f"""
 ## Thinks step by step with the following steps:
 
-### Step 1. Identify the user's query intent
-Identify query intent with query, resource information, and message history.
+### Step 1. Identify the query intent
+a. Analyse user query, resource information, message history and tool responses
+b. Identify query intent based on the analysis
 
 ### Step 2. Retrieve the group version for the mentioned resource kind when:
 - If the resource kind mentioned in the user query is different from the resource kind in the system messages, retrieve the correct group version using the `fetch_kyma_resource_version` tool. Otherwise, skip this step.
@@ -25,6 +26,7 @@ b. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool` for
 c. Follow exact API paths when querying resources
 
 ### Step 5. Decide if `search_kyma_doc` is necessary:
+- If `kyma_query_tool` is available and response reveals Kyma related issue(s)
 - Query intent is about troubleshooting Kyma related issues
 - Query intent is about general "how to" questions (e.g., "how to create", "how to enable")
 - Query intent is about conceptual knowledge about Kyma features
