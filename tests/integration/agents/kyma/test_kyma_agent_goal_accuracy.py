@@ -147,7 +147,8 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="The API Rule is not valid. The error is that the accessStrategies field has multiple entries, which is not allowed. The correct configuration should have only one accessStrategy entry.",
+            expected_goal="The API Rule has validation errors. The error is that accessStrategies field has multiple entries, "
+            "which is not allowed. The correct configuration should have only one accessStrategy entry.",
         ),
         TestCase(
             "Should find javascript Dates syntax error in Kyma function",

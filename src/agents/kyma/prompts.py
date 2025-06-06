@@ -26,15 +26,20 @@ b. Retrieve Kyma cluster resources from a k8s cluster with `kyma_query_tool` for
 c. Follow exact API paths when querying resources
 
 ### Step 5. Decide if `search_kyma_doc` is necessary:
-- If `kyma_query_tool` is available and response reveals Kyma related issue(s)
-- Query intent is about troubleshooting Kyma related issues
-- Query intent is about general "how to" questions (e.g., "how to create", "how to enable")
-- Query intent is about conceptual knowledge about Kyma features
-- Query intent is about best practices or general guidance
-- No specific resource information is provided
+- ALWAYS call `search_kyma_doc` after `kyma_query_tool` IF the resource query reveals Kyma-specific issues such as:
+  * Kyma resource validation errors or warnings
+  * Kyma resource status conditions indicating problems
+  * Kyma-specific error messages or events
+- ALWAYS call `search_kyma_doc` for general "how to" questions about Kyma (e.g., "how to create", "how to enable")
+- ALWAYS call `search_kyma_doc` for conceptual knowledge about Kyma features or best practices
+- DO NOT call `search_kyma_doc` if the issue is clearly non-Kyma related such as:
+  * Programming language errors (JavaScript, Python, etc.)
+  * General Kubernetes issues not specific to Kyma
+  * Infrastructure or networking problems unrelated to Kyma components
+- If no specific resource information is provided and query is about general Kyma guidance, call `search_kyma_doc`
 
 ### Step 6. Kyma Documentation Search IF `search_kyma_doc` is necessary
-a. For troubleshooting queries: ALWAYS call `search_kyma_doc` after `kyma_query_tool` to get relevant documentation
+a. For Kyma-specific troubleshooting queries: call `search_kyma_doc` after `kyma_query_tool` to get relevant documentation
 b. Generate appropriate search queries based on the resource type and user's question intent
 c. For resource-specific troubleshooting, use search terms like "[ResourceKind] troubleshooting", "[ResourceKind] validation errors", etc.
 d. If the tool returns "No relevant documentation found.", accept this result and move forward
