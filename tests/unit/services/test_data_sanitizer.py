@@ -997,18 +997,18 @@ class TestDataSanitizer:
                             "secretName": "my-secret",
                         },
                         "eventing": {
-                            "endpoint": "{{URL}}",
+                            "endpoint": "http://eventing-publisher-proxy.kyma-system.svc.cluster.local/publish",
                         },
                         "tracing": {
-                            "endpoint": "{{URL}}",
+                            "endpoint": "http://telemetry-otlp-traces.kyma-system.svc.cluster.local:4318/v1/traces",
                         },
                         "secretName": "my-secret",
                     },
                     "eventing": {
-                        "endpoint": "{{URL}}",
+                        "endpoint": "http://eventing-publisher-proxy.kyma-system.svc.cluster.local/publish",
                     },
                     "tracing": {
-                        "endpoint": "{{URL}}",
+                        "endpoint": "http://telemetry-otlp-traces.kyma-system.svc.cluster.local:4318/v1/traces",
                     },
                     "targetCPUUtilizationPercentage": 50,
                     "functionRequeueDuration": "5m",

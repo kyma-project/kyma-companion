@@ -157,7 +157,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 messages=[
                     SystemMessage(
                         content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'restapi'}"
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1'}"
                     ),
                     HumanMessage(content="What is wrong with function?"),
                 ],
