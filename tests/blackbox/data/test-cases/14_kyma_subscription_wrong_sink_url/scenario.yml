@@ -1,21 +1,21 @@
 id: test-subscription-14 # format: test-<resource_kind>-<test_id>
-description: The Subscription is set-up with an old event type "increase.counter.v0" instead of "increase.counter.v1".
+description: The Subscription is set-up to forward events to redis svc instead of func1 service.
 queries:
-  - user_query: Why the events for the Subscription are not being received?
+  - user_query: Why the events are not being received by my function func1?
     resource:
       kind: Subscription
       api_version: eventing.kyma-project.io/v1alpha2
       name: sub1
       namespace: test-subscription-14 # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: subscription_config_error
-        statement: points out that the Subscription is configured with the old event type
+      - name: subscription_wrong_sink_url
+        statement: points out that the sink configured in the Subscription is incorrect
         threshold: 0.5
         required: true
-      - name: subscription_correct_event_type
-        statement: provides the correct event type to use, which would be "increase.counter.v1"
+      - name: subscription_wrong_sink_url_reason
+        statement: provides the reason that the Subscription is set-up to forward events to redis svc instead of func1 service
         threshold: 0.5
-        required: true
+        required: false
       - name: subscription_explanation
         statement: explains the use of Subscriptions and how to configure them
         threshold: 0.5

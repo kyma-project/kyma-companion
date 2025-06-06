@@ -85,6 +85,7 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
         )
         self.scrubber = scrubadub.Scrubber()
+        self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
     def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
         """Sanitize the data by removing sensitive information."""

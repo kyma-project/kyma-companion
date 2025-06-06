@@ -838,7 +838,7 @@ If you continue to experience issues, you may want to consult the Kyma documenta
             ),  # context
             None,  # retrieval_context
             "",  # expected_result
-            "kyma_query_tool",  # expected_tool_call
+            "fetch_kyma_resource_version",  # expected_tool_call
             False,  # should_raise
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
