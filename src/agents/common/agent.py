@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.constants import END
 from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.common.chunk_summarizer import (
@@ -71,7 +72,7 @@ def agent_edge(state: BaseAgentState) -> Literal["Summarization", "finalizer"]:
 class IAgent(Protocol):
     """Agent interface."""
 
-    def agent_node(self):  # noqa ANN
+    def agent_node(self) -> CompiledStateGraph:
         """Main agent function."""
         ...
 
@@ -115,7 +116,7 @@ class BaseAgent:
         """Agent name."""
         return self._name
 
-    def agent_node(self) -> Any:
+    def agent_node(self) -> CompiledStateGraph:
         """Get agent node function."""
         return self.graph
 
@@ -442,7 +443,7 @@ class BaseAgent:
             SUBTASKS: state.subtasks,
         }
 
-    def _build_graph(self, state_class: type) -> Any:
+    def _build_graph(self, state_class: type) -> CompiledStateGraph:
         # Define a new graph
         workflow = StateGraph(state_class)
 

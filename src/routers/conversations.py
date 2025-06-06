@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
-from agents.common.constants import ERROR_RATE_LIMIT_CODE
+from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
 from routers.common import (
     API_PREFIX,
@@ -242,7 +242,7 @@ async def messages(
         ) from e
 
     # Validate the k8s resource context.
-    if not message.is_overview_query():
+    if not message.is_cluster_overview_query():
         try:
             resource_kind_details = K8sResourceDiscovery(k8s_client).get_resource_kind(
                 str(message.resource_api_version), str(message.resource_kind)
@@ -261,6 +261,9 @@ async def messages(
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=f"Failed to validate resource context info: {str(e)}",
             ) from e
+    else:
+        # mark the message as a cluster overview query
+        message.resource_scope = CLUSTER
 
     return StreamingResponse(
         (

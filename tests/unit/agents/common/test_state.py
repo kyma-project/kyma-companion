@@ -284,4 +284,4 @@ class TestUserInput:
             namespace="default",
         )
 
-        assert user_input.is_overview_query() == expected_result, description
+        assert user_input.is_cluster_overview_query() == expected_result, description

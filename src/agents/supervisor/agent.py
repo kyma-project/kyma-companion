@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableSequence
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 
 from agents.common.constants import (
@@ -122,7 +122,7 @@ class SupervisorAgent:
         """Agent name."""
         return self._name
 
-    def agent_node(self) -> CompiledGraph:
+    def agent_node(self) -> CompiledStateGraph:
         """Get Supervisor agent node function."""
         return self._graph
 
@@ -279,7 +279,7 @@ class SupervisorAgent:
                 ]
             }
 
-    def _build_graph(self) -> CompiledGraph:
+    def _build_graph(self) -> CompiledStateGraph:
         # Define a new graph.
         workflow = StateGraph(SupervisorState)
 

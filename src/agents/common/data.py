@@ -18,7 +18,7 @@ class Message(BaseModel):
     resource_scope: str | None = None
     resource_related_to: str | None = None
 
-    def is_overview_query(self) -> bool:
+    def is_cluster_overview_query(self) -> bool:
         """Check if the query is an overview query."""
         return self.resource_kind.lower() == CLUSTER
 
