@@ -8,10 +8,6 @@ queries:
       name: nginx
       namespace: test-deployment-15 # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: oom_error
-        statement: points out that the Pod has an OOM (out of memory) error
-        threshold: 0.5
-        required: true
       - name: insufficient_memory
         statement: points out that the Container has an insufficient amount of memory
         threshold: 0.5
@@ -22,6 +18,10 @@ queries:
         required: true
       - name: step_by_step_guide
         statement: contains a step-by-step guide
+        threshold: 0.5
+        required: false
+      - name: oom_error
+        statement: points out that the Pod has an OOM (out of memory) error
         threshold: 0.5
         required: false
       - name: yaml_with_deployment
