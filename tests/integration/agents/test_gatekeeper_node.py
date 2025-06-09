@@ -365,7 +365,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(
-                    content="I'm feeling frustrated today. Can you help me debug my Kyma function?"
+                    content="I'm feeling frustrated today. check my Kyma function"
                 ),
             ],
             "",  # Should be forwarded because of the Kyma technical component
@@ -432,7 +432,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node decline a general non-technical query",
+            "tests that the gatekeeper node decline a general non-technical query about Capital of Germany",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -640,7 +640,7 @@ async def test_invoke_gatekeeper_node(
             "what is the issue?",  # this is implicitly referring to the conversation history
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
             "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. ",
-            False,
+            True,
         ),
         (
             "forward query as insufficient information in conversation history",

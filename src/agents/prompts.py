@@ -32,14 +32,14 @@ def handle_query(user_query, conversation_history):
             "forward_query": True,
         }}
 
-    # Step 4: Handling queries
+    # Step 4: Handling programming and about you queries
     if category in ["Programming" , "About You"]:
         return {{
             "direct_response": generate_response(user_intent),
             "forward_query": False,
         }}
 
-    # Step 5: Handling non-technical queries
+    # Step 5: Handling greeting queries
     if category == "Greeting":
         return {{
             "direct_response": "Hello! How can I assist you with Kyma or Kubernetes today?",
@@ -48,7 +48,7 @@ def handle_query(user_query, conversation_history):
 
     # Step 6: Decline irrelevant queries
     return {{
-        "direct_response": "This question appears to be outside my domain of expertise. If you have any technical or Kyma-related questions, I'd be happy to help.",
+        "direct_response": "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
         "forward_query": False,
     }}
 
@@ -103,6 +103,10 @@ def detect_past_tense(user_query):
     - "are there any errors with the pod?"
     - "is something wrong with api rules?"
     - "what is the current state of"
+    - "any problem with function?"
+    - "find issue with function?"
+    - "any error in [resource]?"
+    - "anything wrong with [resource]?"
 '''
 
 GATEKEEPER_PROMPT = """
@@ -114,6 +118,7 @@ and determine whether to handle them directly or forward them.
 - IMPORTANT: properly detect query tense
   - for past tense queries like "what was the issue?" or "what caused the error?": CHECK conversation history for answers
   - for present tense queries like "what is the issue?" or "is there an error?": IGNORE conversation history for current issues, status, or configuration of resources
+- ALWAYS forward Kyma, Kubernetes queries asking about current status, issues, or configuration of resources
 - decline general knowledge queries that are non-technical
 - greeting is not a general knowledge query
 - asking about you and your capabilities is not a general knowledge query
