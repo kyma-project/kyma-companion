@@ -391,6 +391,10 @@ class K8sClient:
         Raises:
             ValueError: If the resource kind is not found
         """
+
+        if not kind:
+            raise ValueError("Resource kind is required.")
+
         try:
             # Query the API server for the resource kind
             api_resources = self.dynamic_client.resources.search(kind=kind)

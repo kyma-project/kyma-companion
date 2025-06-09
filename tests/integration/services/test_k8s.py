@@ -304,7 +304,7 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "test-horizontalpodautoscaler-17",
+            "test-deployment-4",
         ],
     )
     def test_list_k8s_events(self, k8s_client, given_namespace):
@@ -324,7 +324,7 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "test-horizontalpodautoscaler-17",
+            "test-deployment-4",
         ],
     )
     def test_list_k8s_warning_events(self, k8s_client, given_namespace):
@@ -343,7 +343,7 @@ class TestK8sClient:
         "given_kind,given_namespace,given_name",
         [
             # Test case: should be able to get events for specific resource.
-            ("ReplicaSet", "test-horizontalpodautoscaler-17", "whoami-6c78674dc7"),
+            ("Function", "test-function-8", "func1"),
         ],
     )
     def test_list_k8s_events_for_resource(
@@ -407,3 +407,52 @@ class TestK8sClient:
         for item in result:
             assert isinstance(item, str)
             assert item != ""
+
+    @pytest.mark.parametrize(
+        "given_kind, expected_api_version",
+        [
+            # Test case: Core API resources
+            ("Pod", "v1"),
+            ("Secret", "v1"),
+            ("ConfigMap", "v1"),
+            ("Service", "v1"),
+            ("Namespace", "v1"),
+            # Test case: Apps API group resources
+            ("Deployment", "apps/v1"),
+            ("ReplicaSet", "apps/v1"),
+            ("StatefulSet", "apps/v1"),
+            ("DaemonSet", "apps/v1"),
+            # Test case: Kyma custom resources
+            ("Function", "serverless.kyma-project.io/v1alpha2"),
+            ("Eventing", "operator.kyma-project.io/v1alpha1"),
+            ("NATS", "operator.kyma-project.io/v1alpha1"),
+        ],
+    )
+    def test_get_resource_version(self, k8s_client, given_kind, expected_api_version):
+        # when
+        result = k8s_client.get_resource_version(given_kind)
+
+        # then
+        assert isinstance(result, str)
+        assert result == expected_api_version
+
+    @pytest.mark.parametrize(
+        "given_kind",
+        [
+            # Test case: Non-existent resource kind
+            "NonExistentResource",
+            # Test case: Invalid resource kind with special characters
+            "Invalid@Resource",
+            # Test case: Empty string
+            "",
+            # Test case: Resource kind that doesn't exist in cluster
+            "FakeCustomResource",
+            # Test case: Misspelled common resource kind
+            "Deployments",  # Should be "Deployment"
+            "Pods",  # Should be "Pod"
+        ],
+    )
+    def test_get_resource_version_error_cases(self, k8s_client, given_kind):
+        # when & then
+        with pytest.raises(ValueError):
+            k8s_client.get_resource_version(given_kind)
