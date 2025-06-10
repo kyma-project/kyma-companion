@@ -11,22 +11,16 @@ def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     # if running tests with pytest, use config_test.json
     if "pytest" in sys.modules:
-        test_config_path = (
-            Path(__file__).parent.parent.parent / "config" / "config.test.json"
-        )
+        test_config_path = Path(__file__).parent.parent.parent / "config" / "config.test.json"
         if test_config_path.exists():
             default_config_path = test_config_path
         else:
-            default_config_path = (
-                Path(__file__).parent.parent.parent / "config" / "config.json"
-            )
+            default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
             logging.warning(
                 f"Test config file {test_config_path} not found. Using default config file {default_config_path}"
             )
     else:
-        default_config_path = (
-            Path(__file__).parent.parent.parent / "config" / "config.json"
-        )
+        default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
 
     config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
@@ -90,12 +84,8 @@ LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
 LANGFUSE_DEBUG_MODE = config("LANGFUSE_DEBUG_MODE", default="False")
 
 # Summarization
-SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
-    "SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int
-)
-SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
-    "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
-)
+SUMMARIZATION_TOKEN_UPPER_LIMIT = config("SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int)
+SUMMARIZATION_TOKEN_LOWER_LIMIT = config("SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
@@ -103,19 +93,17 @@ DATABASE_USER = config("DATABASE_USER", None)
 DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
 
-TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 5000000, cast=int)
-TOKEN_USAGE_RESET_INTERVAL = config(
-    "TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int
-)  # 24 hours
+TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 550_000, cast=int)
+TOKEN_USAGE_RESET_INTERVAL = config("TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int)  # 24 hours
 
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",
-    default=f"{ Path(__file__).parent.parent.parent }/config/api_resources.json",
+    default=f"{Path(__file__).parent.parent.parent}/config/api_resources.json",
 )
 K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     "K8S_RESOURCE_RELATIONS_JSON_FILE",
-    default=f"{ Path(__file__).parent.parent.parent }/config/resource_relations.json",
+    default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
 if "pytest" in sys.modules:
