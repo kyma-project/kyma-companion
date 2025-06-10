@@ -1,0 +1,28 @@
+id: test-question-19 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask what kyma is.
+queries:
+  - user_query: What is Kyma?
+    resource:
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_btp
+        statement: mentions btp and/ or Business Technology Platform
+        threshold: 0.5
+        required: true
+      - name: mentions_k8s
+        statement: mentions Kubernetes
+        threshold: 0.5
+        required: true
+      - name: mentions_sap
+        statement: mentions SAP
+        threshold: 0.5
+        required: true
+      - name: mentions_open_source
+        statement: mentions that Kyma is open source 
+        threshold: 0.5
+        required: false
+      - name: mentions_modules
+        statement: mentions the modularity of Kyma
+        threshold: 0.5
+        required: false
+
