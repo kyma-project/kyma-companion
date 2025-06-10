@@ -35,8 +35,6 @@ SUBTASKS = "subtasks"
 
 FINAL_RESPONSE = "final_response"
 
-GRAPH_STEP_TIMEOUT_SECONDS = 60
-
 IS_LAST_STEP = "is_last_step"
 
 K8S_CLIENT = "k8s_client"

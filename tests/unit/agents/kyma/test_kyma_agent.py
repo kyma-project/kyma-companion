@@ -4,7 +4,7 @@ import pytest
 from langchain_core.embeddings import Embeddings
 
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
-from agents.kyma.tools.query import kyma_query_tool
+from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
 from agents.kyma.tools.search import SearchKymaDocTool
 from rag.system import RAGSystem
 from utils.models.factory import IModel
@@ -46,5 +46,5 @@ def test_kyma_agent_init(mock_models, doc_search_tool):
     assert agent.model == mock_models[MAIN_MODEL_NAME]
 
     # Verify the tools are set correctly
-    expected_tools = [doc_search_tool, kyma_query_tool]
+    expected_tools = [fetch_kyma_resource_version, kyma_query_tool, doc_search_tool]
     assert agent.tools == expected_tools

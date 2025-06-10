@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.constants import END
 from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.common.chunk_summarizer import (
@@ -43,6 +44,7 @@ from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
+    GRAPH_STEP_TIMEOUT_SECONDS,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -71,7 +73,7 @@ def agent_edge(state: BaseAgentState) -> Literal["Summarization", "finalizer"]:
 class IAgent(Protocol):
     """Agent interface."""
 
-    def agent_node(self):  # noqa ANN
+    def agent_node(self) -> CompiledStateGraph:
         """Main agent function."""
         ...
 
@@ -108,14 +110,14 @@ class BaseAgent:
         )
         self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
-        self.graph.step_timeout = 60  # Default timeout, can be overridden
+        self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
 
     @property
     def name(self) -> str:
         """Agent name."""
         return self._name
 
-    def agent_node(self) -> Any:
+    def agent_node(self) -> CompiledStateGraph:
         """Get agent node function."""
         return self.graph
 
@@ -442,7 +444,7 @@ class BaseAgent:
             SUBTASKS: state.subtasks,
         }
 
-    def _build_graph(self, state_class: type) -> Any:
+    def _build_graph(self, state_class: type) -> CompiledStateGraph:
         # Define a new graph
         workflow = StateGraph(state_class)
 

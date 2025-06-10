@@ -110,6 +110,10 @@ class IK8sClient(Protocol):
         """Get a specific resource by name in a namespace."""
         ...
 
+    def get_resource_version(self, kind: str) -> str:
+        """Get the resource version for a given kind."""
+        ...
+
     def describe_resource(
         self,
         api_version: str,
@@ -374,6 +378,37 @@ class K8sClient:
         if self.data_sanitizer:
             return cast(dict, self.data_sanitizer.sanitize(resource))
         return resource  # type: ignore
+
+    def get_resource_version(self, kind: str) -> str:
+        """Get the resource version for a given kind.
+
+        Args:
+            kind: The Kyma/Kubernetes resource kind (e.g. 'Function', 'TracePipeline', 'Pod', 'Deployment', etc.)
+
+        Returns:
+            The resource version as a string
+
+        Raises:
+            ValueError: If the resource kind is not found
+        """
+
+        if not kind:
+            raise ValueError("Resource kind is required.")
+
+        try:
+            # Query the API server for the resource kind
+            api_resources = self.dynamic_client.resources.search(kind=kind)
+            if not api_resources:
+                raise ValueError(f"Resource kind '{kind}' not found")
+
+            # Get the first match (most accurate)
+            resource = api_resources[0]
+
+            # Return the API version
+            return str(resource.group_version)
+        except Exception as e:
+            logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
+            raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
 
     def describe_resource(
         self,

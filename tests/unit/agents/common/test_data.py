@@ -28,7 +28,7 @@ class TestMessage:
             resource_related_to=None,
         )
 
-        assert msg.is_overview_query() == expected_result, description
+        assert msg.is_cluster_overview_query() == expected_result, description
 
     @pytest.mark.parametrize(
         "description, initial, resource_kind_details, expected_kind, expected_scope, expected_related_to",
