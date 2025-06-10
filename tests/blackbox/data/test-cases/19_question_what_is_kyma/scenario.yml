@@ -16,12 +16,12 @@ queries:
         statement: mentions Kubernetes
         threshold: 0.5
         required: true
-      - name: mentions_sap
-        statement: mentions SAP
-        threshold: 0.5
-        required: true
       - name: mentions_open_source
         statement: mentions that Kyma is open source 
+        threshold: 0.5
+        required: true
+      - name: mentions_sap
+        statement: mentions SAP
         threshold: 0.5
         required: false
       - name: mentions_modules
