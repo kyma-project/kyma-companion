@@ -1,0 +1,31 @@
+id: test-question-20 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask at which regions kyma is available.
+queries:
+  - user_query: at which regions is kyma available?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_azure
+        statement: mentions azure
+        threshold: 0.5
+        required: true
+      - name: mentions_aws
+        statement: mentions aws (amazon web services)
+        threshold: 0.5
+        required: true
+      - name: mentions_GCP
+        statement: mentions GCP (google cloud platform)
+        threshold: 0.5
+        required: true
+      - name: mentions_us-central-1
+        statement: mentions eu-central-1 (Frankfurt) for AWS
+        threshold: 0.5
+        required: true
+      - name: mentions_us_east4
+        statement: mentions us-east4 (Virginia) for GCP
+        threshold: 0.5
+        required: true
+
