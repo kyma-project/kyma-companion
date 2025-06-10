@@ -54,7 +54,22 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
 
     # skip gatekeeper node, if request was forwarded to supervisor
     if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
-        return None
+        return {
+            "agent": GATEKEEPER,
+            "error": None,
+            "answer": {
+                "content": "",
+                "tasks": [
+                    {
+                        "task_id": 0,
+                        "task_name": "Planning your request...",
+                        "status": SubTaskStatus.PENDING,
+                        "agent": PLANNER,
+                    }
+                ],
+                NEXT: SUPERVISOR,
+            },
+        }
 
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:

@@ -1,8 +1,19 @@
+import json
 from unittest.mock import Mock, patch
 
 import pytest
 
-from utils.response import prepare_chunk_response, reformat_subtasks
+from agents.common.constants import (
+    FINALIZER,
+    GATEKEEPER,
+    INITIAL_SUMMARIZATION,
+    NEXT,
+    PLANNER,
+    SUMMARIZATION,
+)
+from agents.common.state import SubTaskStatus
+from agents.supervisor.agent import SUPERVISOR
+from utils.response import prepare_chunk_response, process_response, reformat_subtasks
 
 
 @pytest.mark.parametrize(
@@ -205,3 +216,222 @@ def test_reformat_subtasks(subtasks, expected_output):
     else:
         result = reformat_subtasks(subtasks)
         assert result == expected_output
+
+
+@pytest.mark.parametrize(
+    "agent,messages,last_agent,has_error,expected_skip,description",
+    [
+        # Skipping scenarios
+        (
+            SUMMARIZATION,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            True,
+            "summarization_agent_without_error",
+        ),
+        (
+            INITIAL_SUMMARIZATION,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            True,
+            "initial_summarization_without_error",
+        ),
+        (
+            SUMMARIZATION,
+            [],
+            None,
+            False,
+            True,
+            "summarization_with_empty_messages_no_error",
+        ),
+        (
+            SUPERVISOR,
+            [{"name": "intermediate_agent", "content": "test"}],
+            "intermediate_agent",
+            False,
+            True,
+            "supervisor_with_intermediate_agent",
+        ),
+        (
+            SUPERVISOR,
+            [{"name": "random_agent", "content": "test"}],
+            "random_agent",
+            False,
+            True,
+            "supervisor_with_random_agent",
+        ),
+        (
+            SUPERVISOR,
+            [{"name": "some_other", "content": "test"}],
+            "some_other",
+            False,
+            True,
+            "supervisor_with_other_agent",
+        ),
+        # Non-skipping scenarios
+        (
+            SUPERVISOR,
+            [{"name": PLANNER, "content": "test"}],
+            PLANNER,
+            False,
+            False,
+            "supervisor_with_planner",
+        ),
+        (
+            SUPERVISOR,
+            [{"name": FINALIZER, "content": "test"}],
+            FINALIZER,
+            False,
+            False,
+            "supervisor_with_finalizer",
+        ),
+        (SUPERVISOR, [], None, False, False, "supervisor_without_messages"),
+        (
+            PLANNER,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            False,
+            "planner_agent",
+        ),
+        (
+            GATEKEEPER,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            False,
+            "gatekeeper_agent",
+        ),
+        (
+            FINALIZER,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            False,
+            "finalizer_agent",
+        ),
+        (
+            "custom_agent",
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            False,
+            False,
+            "custom_agent",
+        ),
+        # Summarization agents with errors should NOT be skipped
+        (
+            SUMMARIZATION,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            True,
+            False,
+            "summarization_agent_with_error",
+        ),
+        (
+            INITIAL_SUMMARIZATION,
+            [{"name": "any_agent", "content": "test"}],
+            "any_agent",
+            True,
+            False,
+            "initial_summarization_with_error",
+        ),
+        (
+            SUMMARIZATION,
+            [],
+            None,
+            True,
+            False,
+            "summarization_with_empty_messages_but_error",
+        ),
+        (
+            INITIAL_SUMMARIZATION,
+            None,
+            None,
+            True,
+            False,
+            "initial_summarization_no_messages_but_error",
+        ),
+    ],
+)
+def test_prepare_chunk_response_all_skipping_scenarios(
+    agent, messages, last_agent, has_error, expected_skip, description
+):
+    """
+    Comprehensive test for all agent skipping and non-skipping scenarios in prepare_chunk_response.
+
+    Tests the following skipping logic:
+    1. Summarization agents (SUMMARIZATION, INITIAL_SUMMARIZATION) are skipped when NO error
+    2. Summarization agents are NOT skipped when they have errors (CRITICAL behavior)
+    3. Supervisor responses are skipped when last_agent is not PLANNER or FINALIZER
+    4. All other agents are processed normally
+    """
+    # Prepare chunk data
+    chunk_data = {agent: {}}
+    if messages is not None:
+        chunk_data[agent]["messages"] = messages
+
+    # Add error if specified
+    if has_error:
+        chunk_data[agent]["error"] = f"{agent} error occurred"
+
+    chunk = json.dumps(chunk_data).encode()
+
+    # Mock process_response to return appropriate response based on agent and error
+    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
+        # For summarization agents with errors, companion returns error response
+        if has_error:
+            mock_process_return = {
+                "agent": None,
+                "error": f"{agent} error occurred",
+                "answer": {"content": "", "tasks": [], NEXT: "__end__"},
+            }
+        else:
+            mock_process_return = None
+    else:
+        # For all other cases, return normal response
+        mock_process_return = {
+            "agent": agent,
+            "answer": {"content": "test response", "tasks": []},
+            "error": None,
+        }
+
+    with patch("utils.response.process_response") as mock_process:
+        mock_process.return_value = mock_process_return
+
+        result = prepare_chunk_response(chunk)
+
+        if expected_skip:
+            # Should return None (skipped)
+            assert (
+                result is None
+            ), f"Expected {description} to be skipped, but got result: {result}"
+
+        else:
+            # Should return a valid response
+            assert (
+                result is not None
+            ), f"Expected {description} to return result, but got None"
+
+            # Decode and verify response structure
+            result_dict = json.loads(result.decode())
+            assert result_dict["data"] == mock_process_return
+
+            # process_response should be called
+            mock_process.assert_called_once_with(chunk_data, agent)
+
+
+def test_process_response_gatekeeper_forwarded_to_supervisor():
+    """Test gatekeeper forwarding to supervisor"""
+    data = {GATEKEEPER: {NEXT: SUPERVISOR, "messages": []}}
+
+    result = process_response(data, GATEKEEPER)
+
+    assert result["agent"] == GATEKEEPER
+    assert result["error"] is None
+    assert result["answer"]["content"] == ""
+    assert result["answer"][NEXT] == SUPERVISOR
+    assert len(result["answer"]["tasks"]) == 1
+    assert result["answer"]["tasks"][0]["task_name"] == "Planning your request..."
+    assert result["answer"]["tasks"][0]["status"] == SubTaskStatus.PENDING
