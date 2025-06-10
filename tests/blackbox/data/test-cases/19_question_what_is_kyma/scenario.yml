@@ -3,6 +3,9 @@ description: Unrelated to existing cluster resources, ask what kyma is.
 queries:
   - user_query: What is Kyma?
     resource:
+      kind: ""
+      api_version: ""
+      name: ""
       namespace: default # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_btp
