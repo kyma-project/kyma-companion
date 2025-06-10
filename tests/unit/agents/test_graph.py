@@ -520,7 +520,7 @@ class TestCompanionGraph:
             first_message = kwargs["input"]["messages"][0]
             if (
                 message.namespace == ""
-                and (message.resource_kind == "" or message.resource_kind == "Cluster")
+                and (message.resource_kind == "")
                 and message.resource_name == ""
                 and message.resource_api_version == ""
             ):

@@ -11,7 +11,7 @@ from agents.common.constants import (
 )
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
-from agents.kyma.tools.query import kyma_query_tool
+from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
 from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel
 from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS, MAIN_MODEL_NAME
@@ -27,8 +27,9 @@ class KymaAgent(BaseAgent):
     def __init__(self, models: dict[str, IModel | Embeddings]) -> None:
         """Initialize the KymaAgent with necessary tools and models."""
         tools: list[BaseTool] = [
-            SearchKymaDocTool(models),
+            fetch_kyma_resource_version,
             kyma_query_tool,
+            SearchKymaDocTool(models),
         ]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
