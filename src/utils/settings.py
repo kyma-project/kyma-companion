@@ -69,6 +69,7 @@ MAIN_EMBEDDING_MODEL_NAME = config(
 LLM_REQUEST_TIMEOUT_SECONDS = config(
     "LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int
 )
+GRAPH_STEP_TIMEOUT_SECONDS = config("GRAPH_STEP_TIMEOUT_SECONDS", default=180, cast=int)
 
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
