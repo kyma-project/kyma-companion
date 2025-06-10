@@ -61,11 +61,32 @@ class TestGenerator:
                 "Kyma is a cloud-native platform that extends Kubernetes",
                 None,
             ),
-            # Test case: Empty documents
+            # Test case: Empty documents list
             (
                 "What is Kyma?",
                 [],
-                "I don't have enough information to answer that question",
+                "No relevant documentation found.",
+                None,
+            ),
+            # Test case: Documents with only whitespace content
+            (
+                "What is Kyma?",
+                [
+                    Document(page_content="   "),
+                    Document(page_content="\n\t  \n"),
+                    Document(page_content=""),
+                ],
+                "No relevant documentation found.",
+                None,
+            ),
+            # Test case: Documents with only empty strings
+            (
+                "What is Kyma?",
+                [
+                    Document(page_content=""),
+                    Document(page_content=""),
+                ],
+                "No relevant documentation found.",
                 None,
             ),
             # Test case: Error during generation
@@ -86,8 +107,8 @@ class TestGenerator:
         expected_response,
         expected_error,
     ):
-        """Test agenerate method including error logging."""
-        # Given
+        """Test agenerate method including error logging and early return scenarios."""
+
         with patch("rag.generator.logger") as mock_logger:
             generator = Generator(mock_model)
             generator.rag_chain = mock_chain
@@ -97,7 +118,6 @@ class TestGenerator:
             else:
                 mock_chain.ainvoke.return_value = expected_response
 
-            # When/Then
             if expected_error:
                 with pytest.raises(Exception) as exc_info:
                     await generator.agenerate(docs_content, query)
@@ -110,8 +130,13 @@ class TestGenerator:
                 assert result == expected_response
                 mock_logger.exception.assert_not_called()
 
-            # Verify chain was called with correct arguments
-            docs_content = "\n\n".join(doc.page_content for doc in docs_content)
-            mock_chain.ainvoke.assert_called_with(
-                config=None, input={"context": docs_content, "query": query}
-            )
+            docs_content_str = "\n\n".join(doc.page_content for doc in docs_content)
+
+            if not docs_content_str.strip():
+                # Early return case - chain should not be called
+                mock_chain.ainvoke.assert_not_called()
+            else:
+                # Normal case - chain should be called with correct arguments
+                mock_chain.ainvoke.assert_called_with(
+                    config=None, input={"context": docs_content_str, "query": query}
+                )

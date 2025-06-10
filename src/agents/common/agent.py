@@ -16,6 +16,7 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     AGENT_MESSAGES_SUMMARY,
     CONTINUE,
+    ERROR,
     IS_LAST_STEP,
     MESSAGES,
     MY_TASK,
@@ -25,14 +26,10 @@ from agents.common.constants import (
     TOTAL_CHUNKS_LIMIT,
 )
 from agents.common.error_handler import (
-    AGENT_STEPS_NUMBER,
-    _handle_recursive_limit_error,
-    agent_error_handler,
-    summarization_execution_error_handler,
     token_counting_error_handler,
     tool_parsing_error_handler,
-    tool_summarization_error_handler,
 )
+from agents.common.exceptions import TotalChunksLimitExceededError
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import (
     compute_string_token_count,
@@ -44,13 +41,16 @@ from agents.common.utils import (
 from agents.summarization.summarization import MessageSummarizer
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
 from utils.settings import (
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
 
 logger = get_logger(__name__)
+
+
+AGENT_STEPS_NUMBER = 3
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
@@ -97,7 +97,7 @@ class BaseAgent:
         self.tools = tools
         self.summarization = MessageSummarizer(
             model=model,
-            tokenizer_model_type=ModelType(model.name),
+            tokenizer_model_name=model.name,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=AGENT_MESSAGES,
@@ -183,9 +183,8 @@ class BaseAgent:
     @token_counting_error_handler
     def _compute_token_count(self, content: str) -> int:
         """Compute token count for the given content."""
-        return compute_string_token_count(content, ModelType(self.model.name))
+        return compute_string_token_count(content, self.model.name)
 
-    @summarization_execution_error_handler
     async def _execute_summarization(
         self,
         tool_responses: list[Any],
@@ -232,17 +231,9 @@ class BaseAgent:
         if not tool_responses:
             return ""
 
-        # Calculate token count for all tool responses using decorated method
-        combined_tool_content = str(tool_responses)
-        token_count = self._compute_token_count(combined_tool_content)
-
-        # If token counting failed, skip summarization
-        if token_count == 0:
-            return ""
-
+        token_count = self._compute_token_count(str(tool_responses))
         logger.info(f"Tool Response Token count: {token_count}")
 
-        # Check if summarization is needed
         model_token_limit = TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
         if token_count <= model_token_limit:
             logger.debug("Tool response within token limit, no summarization needed")
@@ -254,12 +245,11 @@ class BaseAgent:
 
         # Validate chunk limit
         if num_chunks > TOTAL_CHUNKS_LIMIT:
-            error_msg = (
+            logger.error(
                 f"Tool response requires {num_chunks} chunks, "
                 f"which exceeds the limit of {TOTAL_CHUNKS_LIMIT}"
             )
-            logger.error(error_msg)
-            raise Exception("Total number of chunks exceeds TOTAL_CHUNKS_LIMIT")
+            raise TotalChunksLimitExceededError()
 
         # Perform summarization using decorated method
         summarized_response = await self._execute_summarization(
@@ -288,42 +278,116 @@ class BaseAgent:
                 # Stop when we hit a non-tool message
                 break
 
-    @tool_summarization_error_handler
-    async def _handle_tool_summarization(
+    async def _summarize_tool_response_with_error_handling(
         self, state: BaseAgentState, config: RunnableConfig
-    ) -> str | None:
-        """Handle tool response summarization with error handling."""
-        return await self._summarize_tool_response(state, config)
+    ) -> tuple[str, dict[str, Any] | None]:
+        """
+        Summarize tool response with error handling. This method encapsulates the
+        error handling logic for the summarization process.
+        """
+        try:
+            summarized_tool_response = await self._summarize_tool_response(
+                state, config
+            )
+            return summarized_tool_response, None
+        except TotalChunksLimitExceededError:
+            logger.exception("Error while summarizing the tool response.")
+            if state.my_task:
+                state.my_task.status = SubTaskStatus.ERROR
+            error_dict: dict[str, Any] = {
+                AGENT_MESSAGES: [
+                    AIMessage(
+                        content="Your request is too broad and requires analyzing "
+                        "more resources than allowed at once. "
+                        "Please specify a particular resource you'd like to analyze so "
+                        "I can assist you more effectively.",
+                        name=self.name,
+                    )
+                ]
+            }
+            return "", error_dict
+        except Exception:
+            logger.exception("Error while summarizing the tool response.")
+            if state.my_task:
+                state.my_task.status = SubTaskStatus.ERROR
+            err_response: dict[str, Any] = {
+                AGENT_MESSAGES: [
+                    AIMessage(
+                        content="Sorry, an unexpected error occurred while processing your request. "
+                        "Please try again later.",
+                        name=self.name,
+                    )
+                ],
+                ERROR: "An error occurred while processing the request",
+            }
+            return "", err_response
 
-    @agent_error_handler
+    def _handle_recursive_limit_error(self, state: BaseAgentState) -> dict[str, Any]:
+        """Handle recursive limit error."""
+        if state.my_task:
+            state.my_task.status = SubTaskStatus.ERROR
+
+        logger.error(
+            f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
+        )
+        return {
+            AGENT_MESSAGES: [
+                AIMessage(
+                    content="Agent reached the recursive limit, not able to call Tools again",
+                    name=self.name,
+                )
+            ],
+        }
+
+    async def _invoke_chain_with_error_handling(
+        self,
+        state: BaseAgentState,
+        config: RunnableConfig,
+        summarized_tool_response: str = "",
+    ) -> tuple[Any, dict[str, Any] | None]:
+        """Handle model node error."""
+        try:
+            response = await self._invoke_chain(state, config, summarized_tool_response)
+            return response, None
+        except Exception:
+            logger.exception("An error occurred while processing the request.")
+            # Update current subtask status
+            if state.my_task:
+                state.my_task.status = SubTaskStatus.ERROR
+
+            error_response = {
+                AGENT_MESSAGES: [
+                    AIMessage(
+                        content="Sorry, an unexpected error occurred while processing your request. "
+                        "Please try again later.",
+                        name=self.name,
+                    )
+                ],
+                ERROR: "An error occurred while processing the request",
+            }
+            return None, error_response
+
     async def _model_node(
         self, state: BaseAgentState, config: RunnableConfig
     ) -> dict[str, Any]:
         # if the recursive limit is reached, return a message.
         if state.remaining_steps <= AGENT_STEPS_NUMBER:
-            return _handle_recursive_limit_error(self.name, state)
+            return self._handle_recursive_limit_error(state)
 
         # if the last message is a tool message, summarize the tool response if needed.
         summarized_tool_response = ""
         if state.agent_messages and isinstance(state.agent_messages[-1], ToolMessage):
-            summarized_tool_response = await self._handle_tool_summarization(
-                state, config
+            summarized_tool_response, error_response = (
+                await self._summarize_tool_response_with_error_handling(state, config)
             )
-            # If summarization failed (returned None), handle the error case
-            if summarized_tool_response is None:
-                return {
-                    AGENT_MESSAGES: [
-                        AIMessage(
-                            content="Your request is too broad and requires analyzing "
-                            "more resources than allowed at once. "
-                            "Please specify a particular resource you'd like to analyze so "
-                            "I can assist you more effectively.",
-                            name=self.name,
-                        )
-                    ]
-                }
+            if error_response:
+                return error_response
 
-        response = await self._invoke_chain(state, config, summarized_tool_response)
+        response, error_response = await self._invoke_chain_with_error_handling(
+            state, config, summarized_tool_response
+        )
+        if error_response:
+            return error_response
 
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.

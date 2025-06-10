@@ -54,8 +54,10 @@ from services.k8s import IK8sClient
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
 from utils.settings import (
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -124,20 +126,20 @@ class CompanionGraph:
         self.memory = memory
         self.handler = handler
 
-        gpt_4o_mini = models[ModelType.GPT4O_MINI]
-        gpt_4o = models[ModelType.GPT4O]
+        main_model_mini = models[MAIN_MODEL_MINI_NAME]
+        main_model = models[MAIN_MODEL_NAME]
 
         self.kyma_agent = KymaAgent(models)
 
-        self.k8s_agent = KubernetesAgent(cast(IModel, gpt_4o))
+        self.k8s_agent = KubernetesAgent(cast(IModel, main_model))
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT, COMMON],
         )
 
         self.summarization = MessageSummarizer(
-            model=gpt_4o_mini,
-            tokenizer_model_type=ModelType.GPT4O,
+            model=main_model_mini,
+            tokenizer_model_name=MAIN_MODEL_NAME,
             token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
             token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
             messages_key=MESSAGES,
@@ -145,8 +147,10 @@ class CompanionGraph:
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._common_chain = self._create_common_chain(cast(IModel, gpt_4o_mini))
-        self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, gpt_4o))
+        self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
+        self._gatekeeper_chain = self._create_gatekeeper_chain(
+            cast(IModel, main_model_mini)
+        )
         self.graph = self._build_graph()
 
     @staticmethod
@@ -227,7 +231,7 @@ class CompanionGraph:
                 ("system", GATEKEEPER_INSTRUCTIONS),
             ]
         )
-        return prompt | model.llm.with_structured_output(GatekeeperResponse)  # type: ignore
+        return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
     async def _invoke_gatekeeper_node(
         self, state: CompanionState

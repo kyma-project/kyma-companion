@@ -43,7 +43,8 @@ from utils.filter_messages import (
     is_system_message,
 )
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelType
+from utils.models.factory import IModel
+from utils.settings import MAIN_MODEL_MINI_NAME
 
 SUPERVISOR = "Supervisor"
 ROUTER = "Router"
@@ -96,7 +97,7 @@ class SupervisorAgent:
         members: list[str],
         response_converter: IResponseConverter | None = None,
     ) -> None:
-        self.model = cast(IModel, models[ModelType.GPT4O_MINI])
+        self.model = cast(IModel, models[MAIN_MODEL_MINI_NAME])
         self.members = members
         self.parser = self._route_create_parser()
         self.response_converter: IResponseConverter = (
@@ -153,7 +154,7 @@ class SupervisorAgent:
         ).partial(
             kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
         )
-        return self.planner_prompt | model.llm.with_structured_output(Plan)  # type: ignore
+        return self.planner_prompt | model.llm.with_structured_output(Plan, method="function_calling")  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
         """Invoke the planner with retry logic using tenacity."""
@@ -195,7 +196,6 @@ class SupervisorAgent:
 
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
-                message=AIMessage(content="", name=PLANNER),
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )

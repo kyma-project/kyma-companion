@@ -33,6 +33,8 @@ class Generator:
         """Generate a response based on the RAG chain."""
         # Convert Document objects to a list of their page_content
         docs_content = "\n\n".join(doc.page_content for doc in relevant_docs)
+        if not docs_content.strip():
+            return "No relevant documentation found."
         try:
             response = await ainvoke_chain(
                 self.rag_chain,

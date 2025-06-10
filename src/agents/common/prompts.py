@@ -67,8 +67,15 @@ K8S_DOMAIN_KNOWLEDGE = """
 
 
 TOOL_CALLING_ERROR_HANDLING = """
-## Error Handling 
-- Check conversation history for any previous tool calls and their results.
+## Failure Response Strategy
+
+When a tool call fails, follow this protocol:
+
+- ANALYZE THE FAILURE : Determine the type and likely cause of failure
+- EVALUATE ALTERNATIVES : Consider if a different tool or approach might work , Check for missing or malformed parameters.
+- INFORM THE USER : Acknowledge the user about the failure.
+
+## Retry Logic for error handling:
 - If a tool call fails analyze the error and attempt to fix the issue:
   -- Check for missing or malformed parameters.
   -- Verify if the correct tool is assigned with correct name.

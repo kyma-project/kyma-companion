@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 from agents.common.constants import CLUSTER, COMMON, K8S_AGENT, KYMA_AGENT
-from services.k8s import IK8sClient
 from utils.utils import to_sequence_messages
 
 
@@ -163,7 +162,7 @@ class CompanionState(BaseModel):
     next: str | None = None
     subtasks: list[SubTask] | None = []
     error: str | None = None
-    k8s_client: Annotated[IK8sClient | None, Field(default=None, exclude=True)]
+    k8s_client: Annotated[Any, Field(default=None, exclude=True)]
 
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -194,15 +193,15 @@ class BaseAgentState(BaseModel):
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
     subtasks: list[SubTask] | None = []
-    k8s_client: Annotated[IK8sClient | None, Field(default=None, exclude=True)]
+    k8s_client: Annotated[Any, Field(default=None, exclude=True)]
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
     agent_messages_summary: str = ""
     my_task: SubTask | None = None
-    is_last_step: IsLastStep
+    is_last_step: IsLastStep = Field(default=False)
     error: str | None = None
-    remaining_steps: RemainingSteps
+    remaining_steps: RemainingSteps = Field(default=RemainingSteps(25))
 
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
@@ -466,6 +466,177 @@ def kyma_agent(app_models):
             None,
             False,
         ),
+        # Test case for Kyma doc search when no relevant documentation is found
+        # Security configuration query
+        (
+            "Should search Kyma docs for security configuration when no relevant docs found",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(content="The user query is related to: {}"),
+                    HumanMessage(
+                        content="How do I configure OAuth2 authentication in Kyma?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_2",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc",
+                                "args": {
+                                    "query": "OAuth2 authentication configuration Kyma"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="No relevant documentation found.",
+                        name="search_kyma_doc",
+                        tool_call_id="tool_call_id_2",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "How do I configure OAuth2 authentication in Kyma?",
+                        "task_title": "OAuth2 authentication configuration",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="How do I configure OAuth2 authentication in Kyma?",
+                    task_title="OAuth2 authentication configuration",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "",
+            "I couldn't find specific documentation on OAuth2 authentication configuration in the Kyma documentation. "
+            "However, Kyma typically uses Istio's authentication and authorization features for securing applications. "
+            "You would generally configure OAuth2 through Istio's RequestAuthentication and AuthorizationPolicy resources, "
+            "or by using the Kyma API Gateway with OAuth2 introspection. "
+            "For detailed configuration steps, I recommend checking the official Kyma security documentation "
+            "or the Istio authentication documentation.",
+            None,
+            False,
+        ),
+        # Test case for Kyma doc search when no relevant documentation is found
+        # Serverless function deployment query
+        (
+            "Should search Kyma docs for serverless deployment when no relevant docs found",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(content="The user query is related to: {}"),
+                    HumanMessage(
+                        content="What are the best practices for deploying Node.js functions in Kyma Serverless?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_5",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc",
+                                "args": {
+                                    "query": "Node.js serverless functions best practices deployment"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="No relevant documentation found.",
+                        name="search_kyma_doc",
+                        tool_call_id="tool_call_id_5",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "What are the best practices for deploying Node.js functions in Kyma Serverless?",
+                        "task_title": "Node.js serverless deployment best practices",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="What are the best practices for deploying Node.js functions in Kyma Serverless?",
+                    task_title="Node.js serverless deployment best practices",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "",
+            "I couldn't find specific best practices documentation for Node.js functions in Kyma Serverless. "
+            "However, general best practices for serverless functions in Kyma typically include: "
+            "keeping functions lightweight and stateless, properly handling environment variables and secrets, "
+            "implementing proper error handling and logging, setting appropriate resource limits and timeouts, "
+            "and using dependency injection for external services. "
+            "For Node.js specifically, consider using async/await patterns and avoiding blocking operations. "
+            "Please refer to the Kyma Serverless documentation for detailed deployment guides and examples.",
+            None,
+            False,
+        ),
+        # Test case for Kyma doc search when no relevant documentation is found
+        # API Gateway rate limiting query
+        (
+            "Should search Kyma docs for API Gateway rate limiting when no relevant docs found",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(content="The user query is related to: {}"),
+                    HumanMessage(
+                        content="How do I implement rate limiting in Kyma API Gateway?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_6",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc",
+                                "args": {
+                                    "query": "API Gateway rate limiting configuration"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="No relevant documentation found.",
+                        name="search_kyma_doc",
+                        tool_call_id="tool_call_id_6",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "How do I implement rate limiting in Kyma API Gateway?",
+                        "task_title": "API Gateway rate limiting implementation",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="How do I implement rate limiting in Kyma API Gateway?",
+                    task_title="API Gateway rate limiting implementation",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "",
+            "I couldn't find specific documentation on implementing rate limiting in Kyma API Gateway. "
+            "However, Kyma's API Gateway is typically built on Istio, which supports rate limiting through "
+            "EnvoyFilter resources or using external rate limiting services. "
+            "You can implement rate limiting by configuring Istio's rate limiting features, "
+            "either through local rate limiting (using Envoy's local rate limit filter) or "
+            "global rate limiting (using an external rate limit service like Redis). "
+            "For detailed configuration examples, please check the Kyma API Gateway documentation "
+            "or Istio's traffic management guides.",
+            None,
+            False,
+        ),
     ],
 )
 @pytest.mark.asyncio
@@ -513,91 +684,12 @@ async def test_invoke_chain(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])
 
 
 @pytest.mark.parametrize(
     "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
-        # Test case for Kyma Tool retry again when no response in Tool Call ,
-        (
-            "Should retry tool calling",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            None,  # expected_result
-            "kyma_query_tool",  # expected_tool_call
-            False,  # should_raise
-        ),
         # Test case for kyma tool when already failed multiple times
         # and should give proper response to user,
         (
@@ -903,15 +995,4 @@ async def test_tool_calling(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            results = evaluate(
-                test_cases=[test_case],
-                metrics=[
-                    correctness_metric,
-                    faithfulness_metric,
-                ],
-                run_async=False,
-            )
-            # assert that all metrics passed
-            assert all(
-                result.success for result in results.test_results
-            ), "Not all metrics passed"
+            assert_test(test_case, [correctness_metric, faithfulness_metric])

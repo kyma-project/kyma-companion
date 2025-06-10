@@ -1,5 +1,5 @@
 import pytest
-from deepeval import evaluate
+from deepeval import assert_test
 from deepeval.metrics import ConversationalGEval
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -266,15 +266,8 @@ async def test_invoke_planner(
                 )
             ]
         )
-        results = evaluate(
-            test_cases=[test_case],
-            metrics=[planner_correctness_metric],
-            run_async=False,
-        )
-        # assert that all metrics passed
-        assert all(
-            result.success for result in results.test_results
-        ), "Not all metrics passed"
+
+        assert_test(test_case, [planner_correctness_metric])
     else:
         # For general queries, check answer relevancy where planner directly answers
         # Then: We evaluate the response using deepeval metrics
@@ -285,15 +278,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        eval_results = evaluate(
-            test_cases=[test_case],
-            metrics=[
-                answer_relevancy_metric,
-            ],
-        )
-        assert all(
-            result.success for result in eval_results.test_results
-        ), "Not all metrics passed"
+        assert_test(test_case, [answer_relevancy_metric])
 
 
 @pytest.fixture
@@ -316,7 +301,7 @@ def planner_conversation_history_metric(evaluator_model):
 
 
 @pytest.mark.parametrize(
-    "messages, query, subtasks",
+    "messages, query, expected_subtasks",
     [
         (
             # given the conversation, the planner knows that the user wants to expose the function
@@ -326,9 +311,9 @@ def planner_conversation_history_metric(evaluator_model):
             [
                 {
                     "description": "how to expose it?",
+                    "task_title": "Fetching function exposure",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
-                    "result": None,
                 }
             ],
         ),
@@ -339,10 +324,10 @@ def planner_conversation_history_metric(evaluator_model):
             "convert it to javascript",
             [
                 {
-                    "description": "convert the Kyma function that prints 'Hello World' from Python to JavaScript",
+                    "description": "convert it to javascript'",
+                    "task_title": "Converting Python to JavaScript",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
-                    "result": None,
                 }
             ],
         ),
@@ -352,7 +337,7 @@ def planner_conversation_history_metric(evaluator_model):
 async def test_planner_with_conversation_history(
     messages,
     query,
-    subtasks,
+    expected_subtasks,
     companion_graph,
     planner_conversation_history_metric,
 ):
@@ -371,21 +356,15 @@ async def test_planner_with_conversation_history(
     ), "Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
+    actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
     test_case = ConversationalTestCase(
         turns=[
             LLMTestCase(
                 input=str(all_messages),
-                actual_output=str(result.subtasks),
-                expected_output=str(subtasks),
+                actual_output=str(actual_subtasks),
+                expected_output=str(expected_subtasks),
             )
         ]
     )
-    results = evaluate(
-        test_cases=[test_case],
-        metrics=[planner_conversation_history_metric],
-        run_async=False,
-    )
-    # assert that all metrics passed
-    assert all(
-        result.success for result in results.test_results
-    ), "Not all metrics passed"
+
+    assert_test(test_case, [planner_conversation_history_metric])

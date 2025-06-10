@@ -59,6 +59,14 @@ load_env_from_json()
 # Read the configs.
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
+
+# Initialization of the main chat LLM models and main embedding model.
+MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4.1-mini")
+MAIN_EMBEDDING_MODEL_NAME = config(
+    "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
+)
+
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
 REDIS_HOST = config("REDIS_HOST", default="localhost")
