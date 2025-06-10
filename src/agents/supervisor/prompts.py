@@ -13,12 +13,10 @@ PLANNER_STEP_INSTRUCTIONS = """
 3. **Query Classification**:
     - Classify the query as General Queries (irrelevant to Kyma or Kubernetes) or Kyma/Kubernetes Queries
 4. **Cross-platform and Cluster-wide Query Detection**:
-    - Identify queries that need both Kyma and Kubernetes coverage:
-      * "Check all my resources"
-      * "Show me all deployments and functions"
-      * "What's running in my environment"
-    - All types of cluster scoped queries
-    - For these type of queries, create separate subtasks for both agents to ensure comprehensive coverage
+    - Identify queries that need both Kyma and Kubernetes coverage → Both agents
+    - If query is not explicitly mentioned whether is Kyma or Kubernetes queries → Both agents
+    - All types of cluster scoped queries → Both agents
+    - Create separate subtasks for both agents to ensure comprehensive coverage
 5. **Response Handling**:
       - Create subtasks that directly mirrors the current query points.
       - Assign each subtask to the appropriate agent:

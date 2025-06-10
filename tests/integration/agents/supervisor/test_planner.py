@@ -37,7 +37,7 @@ def planner_correctness_metric(evaluator_model):
     [# Cluster-wide query test cases
 
 (
-    # Test case 2: "List everything in my cluster" - should create subtasks for both agents
+    # Test case 1: "List everything in my cluster" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
@@ -50,7 +50,7 @@ def planner_correctness_metric(evaluator_model):
     False,
 ),
 (
-    # Test case 5: "Give me a complete overview" - should create subtasks for both agents
+    # Test case 2: "Give me a complete overview" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
@@ -63,7 +63,7 @@ def planner_correctness_metric(evaluator_model):
     False,
 ),
 (
-    # Test case 6: "Show all pods and serverless functions" - should create subtasks for both agents
+    # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
@@ -76,7 +76,7 @@ def planner_correctness_metric(evaluator_model):
     False,
 ),
 (
-    # Test case 7: "List all services and API rules" - should create subtasks for both agents
+    # Test case 4: "List all services and API rules" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
@@ -89,20 +89,20 @@ def planner_correctness_metric(evaluator_model):
     False,
 ),
 (
-    # Test case 8: "What resources do I have across the entire cluster" - should create subtasks for both agents
+    # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
             "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
         ),
-        HumanMessage(content="what resources do I have across the entire cluster"),
+        HumanMessage(content="what resources do I have in my cluster"),
     ],
     '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
     '{"description": "what Kubernetes resources do I have across the entire cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
     False,
 ),
 (
-    # Test case 9: "Show me everything deployed" - should create subtasks for both agents
+    # Test case 6: "Show me everything deployed" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
@@ -115,7 +115,7 @@ def planner_correctness_metric(evaluator_model):
     False,
 ),
 (
-    # Test case 10: "Get status of all workloads and functions" - should create subtasks for both agents
+    # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
     [
         SystemMessage(
             content="The user query is related to: "
