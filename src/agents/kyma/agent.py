@@ -7,7 +7,6 @@ from langchain_core.tools import BaseTool
 from agents.common.agent import BaseAgent
 from agents.common.constants import (
     AGENT_MESSAGES,
-    GRAPH_STEP_TIMEOUT_SECONDS,
     KYMA_AGENT,
 )
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
@@ -15,7 +14,7 @@ from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import kyma_query_tool
 from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_NAME
+from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS, MAIN_MODEL_NAME
 
 
 class KymaAgent(BaseAgent):

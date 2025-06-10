@@ -43,6 +43,7 @@ from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
+    GRAPH_STEP_TIMEOUT_SECONDS,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -108,7 +109,7 @@ class BaseAgent:
         )
         self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
-        self.graph.step_timeout = 60  # Default timeout, can be overridden
+        self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
 
     @property
     def name(self) -> str:

@@ -3,7 +3,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from agents.common.agent import BaseAgent
 from agents.common.constants import (
     AGENT_MESSAGES,
-    GRAPH_STEP_TIMEOUT_SECONDS,
     K8S_AGENT,
 )
 from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
@@ -12,6 +11,7 @@ from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from utils.models.factory import IModel
+from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS
 
 
 class KubernetesAgent(BaseAgent):
