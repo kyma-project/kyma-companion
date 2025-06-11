@@ -144,8 +144,6 @@ class ResponseConverter:
         """
         logger.debug("Response conversion node - creating HTML structure")
 
-
-
         html_content = f"""
         <div class="yaml-block">
             <div class="yaml">
