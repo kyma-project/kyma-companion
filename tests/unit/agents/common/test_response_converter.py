@@ -119,7 +119,8 @@ spec:
           value: "production" # New environment variable
 ```"""
 
-yaml_update_sample_with_link_2 = """apiVersion: apps/v1
+yaml_update_sample_with_link_2 = """```yaml
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-deployment
@@ -141,7 +142,8 @@ spec:
         - containerPort: 80
         env:
         - name: NGINX_ENV
-          value: "production" # New environment variable"""
+          value: "production" # New environment variable
+```"""
 
 
 @pytest.fixture
@@ -316,7 +318,7 @@ def test_generate_resource_link(
             "/test/link",
             NEW_YAML,
             [
-                'class="yaml-block',
+                'class="yaml-block"',
                 'class="yaml"',
                 'class="link"',
                 "/test/link",
@@ -417,7 +419,7 @@ def test_replace_yaml_with_html(
             NEW_YAML,
             [
                 f"""
-            <div class="yaml-block>
+            <div class="yaml-block">
                 <div class="yaml">
 apiVersion: apps/v1
 kind: Deployment
@@ -447,7 +449,7 @@ metadata:
             [
                 """invalid: :""",
                 f"""
-            <div class="yaml-block>
+            <div class="yaml-block">
                 <div class="yaml">
 apiVersion: apps/v1
 kind: Service
@@ -487,7 +489,7 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
 {yaml_new_sample_with_link_2}
 </YAML-NEW>""",
             f"""
-        <div class="yaml-block>
+        <div class="yaml-block">
             <div class="yaml">
             {yaml_new_sample_with_link_2}
             </div>
@@ -507,7 +509,7 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
 - Implement Pod Disruption Budgets to maintain application availability during maintenance.""",
             f"""Resource Management:
 - Define resource requests and limits for your pods to ensure efficient resource utilization. For example:
-        <div class="yaml-block>
+        <div class="yaml-block">
             <div class="yaml">
             {yaml_new_sample_with_link_1}
             </div>
