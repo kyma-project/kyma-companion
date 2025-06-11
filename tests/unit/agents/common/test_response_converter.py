@@ -119,33 +119,6 @@ spec:
           value: "production" # New environment variable
 ```"""
 
-yaml_update_sample_with_link_2 = """```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  namespace: nginx-oom
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.21.0 # Updated image version
-        ports:
-        - containerPort: 80
-        env:
-        - name: NGINX_ENV
-          value: "production" # New environment variable
-```"""
-
-
 @pytest.fixture
 def response_converter():
     return ResponseConverter()
