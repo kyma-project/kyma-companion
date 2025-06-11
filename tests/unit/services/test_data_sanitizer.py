@@ -1129,6 +1129,32 @@ class TestDataSanitizer:
                     },
                 },
             ),
+            # delete managedFields in metadata
+            (
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "metadata": {
+                        "name": "my-app",
+                        "managedFields": [{"name": "my-app"}],
+                    },
+                    "spec": {
+                        "replicas": 3,
+                        "selector": {"matchLabels": {"app": "my-app"}},
+                        "template": {"metadata": {"labels": {"app": "my-app"}}},
+                    },
+                },
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "metadata": {"name": "my-app"},
+                    "spec": {
+                        "replicas": 3,
+                        "selector": {"matchLabels": {"app": "my-app"}},
+                        "template": {"metadata": {"labels": {"app": "my-app"}}},
+                    },
+                },
+            ),
         ],
     )
     def test_kubernetes_resources(self, test_data, expected_results):
