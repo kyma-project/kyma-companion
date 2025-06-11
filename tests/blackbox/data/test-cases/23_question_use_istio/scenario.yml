@@ -1,0 +1,28 @@
+id: test-question-23 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask how to use isto.
+queries:
+  - user_query: How can I use Istio in Kyma?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: istio_is_included
+        statement: points out that Istio comes preinstalled in Kyma
+        threshold: 0.5
+        required: true
+      - name: mentions_sidecar_injection
+        statement: points out that by default Istio sidecar injection is only available in the kyma-system namespace
+        threshold: 0.5
+        required: true
+      - name: mentions_istio_resources
+        statement: mentions Istio resources like VirtualService, DestinationRule or PeerAuthentication
+        threshold: 0.5
+        required: true
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: false
+
+
