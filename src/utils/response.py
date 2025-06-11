@@ -18,11 +18,22 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+PLANNING_TASK = {
+    "task_id": 0,
+    "task_name": "Planning your request...",
+    "status": SubTaskStatus.PENDING,
+    "agent": PLANNER,
+}
+
+
 def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     """Reformat subtasks list for companion response"""
-    tasks = []
+    # Mark Planning Task completed
+    PLANNING_TASK["status"] = SubTaskStatus.COMPLETED
+    tasks = [PLANNING_TASK]  # Add Planning task as first task
+
     if subtasks:
-        for i, subtask in enumerate(subtasks):
+        for i, subtask in enumerate(subtasks, 1):
             task = {
                 "task_id": i,
                 "task_name": subtask["task_title"],
@@ -59,14 +70,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             "error": None,
             "answer": {
                 "content": "",
-                "tasks": [
-                    {
-                        "task_id": 0,
-                        "task_name": "Planning your request...",
-                        "status": SubTaskStatus.PENDING,
-                        "agent": PLANNER,
-                    }
-                ],
+                "tasks": [PLANNING_TASK],
                 NEXT: SUPERVISOR,
             },
         }
