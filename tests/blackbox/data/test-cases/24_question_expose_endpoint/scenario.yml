@@ -1,0 +1,24 @@
+id: test-question-24 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask how to expose an endpoint in a Kyma cluster.
+queries:
+  - user_query: How can I expose my endpoint using Kyma?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_apirule
+        statement: propose to use the APIRule custom resource
+        threshold: 0.5
+        required: true
+      - name: provide_exsample_yaml
+        statement: provides an example for an APIrule in the yaml format
+        threshold: 0.5
+        required: true
+      - name: mentions_accessStrategies
+        statement: mentions accessStrategies
+        threshold: 0.5
+        required: false
+
+
