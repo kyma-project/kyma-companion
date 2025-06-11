@@ -28,4 +28,8 @@ queries:
         statement: mentions us-east4 (Virginia) for GCP
         threshold: 0.5
         required: true
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: false
 

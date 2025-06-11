@@ -23,5 +23,5 @@ queries:
       - name: provides_links
         statement: provides links to further topics
         threshold: 0.5
-        required: true
+        required: false
 

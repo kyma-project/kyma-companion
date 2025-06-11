@@ -28,4 +28,8 @@ queries:
         statement: mentions the modularity of Kyma
         threshold: 0.5
         required: false
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: false
 
