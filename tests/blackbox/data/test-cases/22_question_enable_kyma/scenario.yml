@@ -1,0 +1,82 @@
+id: test-question-19 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask what kyma is.
+queries:
+  - user_query: What is Kyma?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_k8s
+        statement: mentions Kubernetes
+        threshold: 0.5
+        required: true
+      - name: mentions_open_source
+        statement: mentions that Kyma is open source 
+        threshold: 0.5
+        required: true
+      - name: mentions_btp
+        statement: mentions btp and/ or Business Technology Platform
+        threshold: 0.5
+        required: false
+      - name: mentions_sap
+        statement: mentions SAP
+        threshold: 0.5
+        required: false
+      - name: mentions_modules
+        statement: mentions the modularity of Kyma
+        threshold: 0.5
+        required: false
+  - user_query: at which regions is kyma available?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_azure
+        statement: mentions azure
+        threshold: 0.5
+        required: true
+      - name: mentions_aws
+        statement: mentions aws (amazon web services)
+        threshold: 0.5
+        required: true
+      - name: mentions_GCP
+        statement: mentions GCP (google cloud platform)
+        threshold: 0.5
+        required: true
+      - name: mentions_us-central-1
+        statement: mentions eu-central-1 (Frankfurt) for AWS
+        threshold: 0.5
+        required: true
+      - name: mentions_us_east4
+        statement: mentions us-east4 (Virginia) for GCP
+        threshold: 0.5
+        required: true
+  - user_query: How to get started with kyma?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: aquire_k8s_cluster
+        statement: points out how to aquire a k8s (kubernetes) cluster
+        threshold: 0.5
+        required: true
+      - name: mentions_btp
+        statement: mentions btp (Business Technology Platform)
+        threshold: 0.5
+        required: true
+      - name: mentions_modules
+        statement: mentions the Kyma modules
+        threshold: 0.5
+        required: true
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: true
+
+
