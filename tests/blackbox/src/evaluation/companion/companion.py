@@ -19,10 +19,10 @@ class ConversationPayload(BaseModel):
     """Payload for the Companion API conversation."""
 
     query: str = ""
-    resource_kind: str
-    resource_api_version: str
-    resource_name: str
-    namespace: str
+    resource_kind: str = ""
+    resource_api_version: str = ""
+    resource_name: str = ""
+    namespace: str = ""
 
 
 class CompanionClient:
