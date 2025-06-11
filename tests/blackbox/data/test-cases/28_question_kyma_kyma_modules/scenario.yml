@@ -1,0 +1,44 @@
+id: test-question-28 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask about Kyma Modules.
+queries:
+  - user_query: What modules does Kyma offer and what they do?
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_eventing
+        statement: mentions the eventing module
+        threshold: 0.5
+        required: true
+      - name: mentions_serverless
+        statement: mentions the serverless module
+        threshold: 0.5
+        required: true
+      - name: mentions_application-connector
+        statement: mentions the application connector module
+        threshold: 0.5
+        required: true
+      - name: mentions_cloud-manager
+        statement: mentions the cloud manager module
+        threshold: 0.5
+        required: true
+      - name: mentions_keda
+        statement: mentions the keda module
+        threshold: 0.5
+        required: true
+      - name: mentions_nats
+        statement: mentions the nats module
+        threshold: 0.5
+        required: true
+      - name: mentions_telemetry
+        statement: mentions the telemetry module
+        threshold: 0.5
+        required: true
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: false
+
+
