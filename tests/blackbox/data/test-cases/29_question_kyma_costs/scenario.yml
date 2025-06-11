@@ -1,0 +1,24 @@
+id: test-question-29 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask about the costs for the kyma runtime?
+queries:
+  - user_query: How much does SAP BTP Kyma runtime cost?
+    resource:
+      resource_kind": "Cluster"
+      resource_api_version": ""
+      resource_name": ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: no_concrete_price
+        statement: does not provide a concrete price
+        threshold: 0.5
+        required: true
+      - name: free_plan
+        statement: points out, that there is a free plan
+        threshold: 0.5
+        required: false
+      - name: calculator
+        statement: provide the link to https://kyma-project.github.io/price-calculator 
+        threshold: 0.5
+        required: false
+
+
