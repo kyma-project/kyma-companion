@@ -1,0 +1,32 @@
+id: test-question-26 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask to compare kyma and cloud foundry.
+queries:
+  - user_query: What is the difference between Kyma and Cloud Foundry??
+    resource:
+      kind: "Namespace"
+      api_version: "v1"
+      name: "default"
+      namespace: default # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: kyma_k8s
+        statement: mentions that kyma runs on k8s (kubernetes)
+        threshold: 0.5
+        required: true
+      - name: kyma_sap
+        statement: mentions that kyma integration with SAP services
+        threshold: 0.5
+        required: true
+      - name: kyma_event-driven_architecture
+        statement: points out that Kyma supports event driven architecture
+        threshold: 0.5
+        required: true
+      - name: cloud_foundry_paas
+        statement: points out that Cloud Foundry is PaaS (Platform as a service)
+        threshold: 0.5
+        required: true
+      - name: provides_links
+        statement: provides links to further topics
+        threshold: 0.5
+        required: false
+
+
