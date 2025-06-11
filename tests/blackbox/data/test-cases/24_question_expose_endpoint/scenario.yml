@@ -19,6 +19,6 @@ queries:
       - name: mentions_accessStrategies
         statement: mentions accessStrategies
         threshold: 0.5
-        required: false
+        required: true
 
 
