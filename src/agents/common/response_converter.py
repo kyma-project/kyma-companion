@@ -143,8 +143,9 @@ class ResponseConverter:
             Formatted HTML string containing YAML and link
         """
         logger.debug("Response conversion node - creating HTML structure")
+
         html_content = f"""
-        <div class="yaml-block>
+        <div class="yaml-block">
             <div class="yaml">
             {yaml_config}
             </div>
