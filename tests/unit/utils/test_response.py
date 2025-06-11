@@ -16,6 +16,21 @@ from agents.supervisor.agent import SUPERVISOR
 from utils.response import prepare_chunk_response, process_response, reformat_subtasks
 
 
+def test_process_response_gatekeeper_forwarded_to_supervisor():
+    """Test gatekeeper forwarding to supervisor"""
+    data = {GATEKEEPER: {NEXT: SUPERVISOR, "messages": []}}
+
+    result = process_response(data, GATEKEEPER)
+
+    assert result["agent"] == GATEKEEPER
+    assert result["error"] is None
+    assert result["answer"]["content"] == ""
+    assert result["answer"][NEXT] == SUPERVISOR
+    assert len(result["answer"]["tasks"]) == 1
+    assert result["answer"]["tasks"][0]["task_name"] == "Planning your request..."
+    assert result["answer"]["tasks"][0]["status"] == SubTaskStatus.PENDING
+
+
 @pytest.mark.parametrize(
     "input, expected",
     [
@@ -31,11 +46,12 @@ from utils.response import prepare_chunk_response, process_response, reformat_su
             # expected
             b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"c'
             b'ontent": "The Pod named is running and ready.", "tasks": [{"task_id": 0, "ta'
-            b'sk_name": "Checking status of pods", "status": "completed", "agent": "Kubern'
-            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
-            b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
-            b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
-            b'Agent"}], "next": "Common"}, "error": null}}',
+            b'sk_name": "Planning your request...", "status": "completed", "agent": "Plann'
+            b'er"}, {"task_id": 1, "task_name": "Checking status of pods", "status": "comp'
+            b'leted", "agent": "KubernetesAgent"}, {"task_id": 2, "task_name": "Retrieving'
+            b' hello world code in python", "status": "pending", "agent": "Common"}, {"tas'
+            b'k_id": 3, "task_name": "Fetching steps to create kyma function", "status": "'
+            b'pending", "agent": "KymaAgent"}], "next": "Common"}, "error": null}}',
         ),
         (
             # Supervisor Agent with last agent planner
@@ -47,13 +63,14 @@ from utils.response import prepare_chunk_response, process_response, reformat_su
             b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "KubernetesAgent"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"c'
-            b'ontent": "", "tasks": [{"task_id": 0, "ta'
-            b'sk_name": "Checking status of pods", "status": "pending", "agent": "Kubern'
-            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
-            b'hon", "status": "pending", "agent": "Common"}, {"task_id": 2, "task_name": "'
-            b'Fetching steps to create kyma function", "status": "pending", "agent": "Kyma'
-            b'Agent"}], "next": "KubernetesAgent"}, "error": null}}',
+            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
+            b't": "", "tasks": [{"task_id": 0, "task_name": "Planning your request...", "s'
+            b'tatus": "completed", "agent": "Planner"}, {"task_id": 1, "task_name": "Check'
+            b'ing status of pods", "status": "pending", "agent": "KubernetesAgent"}, {"tas'
+            b'k_id": 2, "task_name": "Retrieving hello world code in python", "status": "p'
+            b'ending", "agent": "Common"}, {"task_id": 3, "task_name": "Fetching steps to '
+            b'create kyma function", "status": "pending", "agent": "KymaAgent"}], "next": '
+            b'"KubernetesAgent"}, "error": null}}',
         ),
         (
             # Supervisor Agent with last agent finalizer
@@ -65,13 +82,14 @@ from utils.response import prepare_chunk_response, process_response, reformat_su
             b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "completed", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "completed", "task_title": "Fetching steps to create kyma function"}], "next": "__end__"}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"c'
-            b'ontent": "final response", "tasks": [{"task_id": 0, "ta'
-            b'sk_name": "Checking status of pods", "status": "completed", "agent": "Kubern'
-            b'etesAgent"}, {"task_id": 1, "task_name": "Retrieving hello world code in pyt'
-            b'hon", "status": "completed", "agent": "Common"}, {"task_id": 2, "task_name": "'
-            b'Fetching steps to create kyma function", "status": "completed", "agent": "Kyma'
-            b'Agent"}], "next": "__end__"}, "error": null}}',
+            b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
+            b't": "final response", "tasks": [{"task_id": 0, "task_name": "Planning your r'
+            b'equest...", "status": "completed", "agent": "Planner"}, {"task_id": 1, "task'
+            b'_name": "Checking status of pods", "status": "completed", "agent": "Kubernet'
+            b'esAgent"}, {"task_id": 2, "task_name": "Retrieving hello world code in pytho'
+            b'n", "status": "completed", "agent": "Common"}, {"task_id": 3, "task_name": "'
+            b'Fetching steps to create kyma function", "status": "completed", "agent": "Ky'
+            b'maAgent"}], "next": "__end__"}, "error": null}}',
         ),
         (
             # Skip response from supervisor if agent is not planner or not finalizer
@@ -142,11 +160,17 @@ def test_prepare_chunk_response(input, expected):
             ],
             [
                 {
+                    "agent": "Planner",
+                    "status": "completed",
                     "task_id": 0,
+                    "task_name": "Planning your request...",
+                },
+                {
+                    "task_id": 1,
                     "task_name": "Checking status of pods",
                     "status": "completed",
                     "agent": "KubernetesAgent",
-                }
+                },
             ],
         ),
         # Test case 3: Multiple subtasks
@@ -173,19 +197,25 @@ def test_prepare_chunk_response(input, expected):
             ],
             [
                 {
+                    "agent": "Planner",
+                    "status": "completed",
                     "task_id": 0,
+                    "task_name": "Planning your request...",
+                },
+                {
+                    "task_id": 1,
                     "task_name": "Checking status of pods",
                     "status": "completed",
                     "agent": "KubernetesAgent",
                 },
                 {
-                    "task_id": 1,
+                    "task_id": 2,
                     "task_name": "Retrieving hello world code in python",
                     "status": "pending",
                     "agent": "Common",
                 },
                 {
-                    "task_id": 2,
+                    "task_id": 3,
                     "task_name": "Fetching steps to create kyma function",
                     "status": "pending",
                     "agent": "KymaAgent",
@@ -420,18 +450,3 @@ def test_prepare_chunk_response_all_skipping_scenarios(
 
             # process_response should be called
             mock_process.assert_called_once_with(chunk_data, agent)
-
-
-def test_process_response_gatekeeper_forwarded_to_supervisor():
-    """Test gatekeeper forwarding to supervisor"""
-    data = {GATEKEEPER: {NEXT: SUPERVISOR, "messages": []}}
-
-    result = process_response(data, GATEKEEPER)
-
-    assert result["agent"] == GATEKEEPER
-    assert result["error"] is None
-    assert result["answer"]["content"] == ""
-    assert result["answer"][NEXT] == SUPERVISOR
-    assert len(result["answer"]["tasks"]) == 1
-    assert result["answer"]["tasks"][0]["task_name"] == "Planning your request..."
-    assert result["answer"]["tasks"][0]["status"] == SubTaskStatus.PENDING

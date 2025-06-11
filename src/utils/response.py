@@ -28,11 +28,13 @@ PLANNING_TASK = {
 
 def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     """Reformat subtasks list for companion response"""
-    # Mark Planning Task completed
-    PLANNING_TASK["status"] = SubTaskStatus.COMPLETED
-    tasks = [PLANNING_TASK]  # Add Planning task as first task
+
+    tasks = []
 
     if subtasks:
+        # Mark Planning Task completed
+        PLANNING_TASK["status"] = SubTaskStatus.COMPLETED
+        tasks.append(PLANNING_TASK)  # Add Planning task as first task
         for i, subtask in enumerate(subtasks, 1):
             task = {
                 "task_id": i,
