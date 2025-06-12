@@ -308,7 +308,12 @@ class TestSupervisorAgent:
                             assigned_to=K8S_AGENT,
                         ),
                     ],
-                    "messages": [],
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            name=PLANNER,
+                        )
+                    ],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -326,7 +331,12 @@ class TestSupervisorAgent:
                             assigned_to="KubernetesAgent",
                         )
                     ],
-                    "messages": [],
+                    "messages": [
+                        AIMessage(
+                            content="",
+                            name=PLANNER,
+                        )
+                    ],
                     "error": None,
                     "next": ROUTER,
                 },
@@ -390,6 +400,8 @@ class TestSupervisorAgent:
 
             state = SupervisorState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)
-
+            assert (
+                result["messages"][-1].name == "Planner"
+            ), "Last message name should be 'Planner'"
             assert result == expected_output, test_case
             mock_invoke_planner.assert_called_once_with(state)
