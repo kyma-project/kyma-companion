@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask how to get started wit
 queries:
   - user_query: How to get started with kyma?
     resource:
-      resource_kind: "Cluster"
-      resource_api_version: ""
-      resource_name: ""
+      kind: Cluster
+      api_version: ""
+      name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: aquire_k8s_cluster

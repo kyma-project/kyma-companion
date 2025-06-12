@@ -1,11 +1,11 @@
 id: test-question-26 # format: test-<resource_kind>-<test_id>
 description: Unrelated to existing cluster resources, ask to compare kyma and cloud foundry.
 queries:
-  - user_query: What is the difference between Kyma and Cloud Foundry??
+  - user_query: What is the difference between Kyma and Cloud Foundry?
     resource:
-      resource_kind: "Cluster"
-      resource_api_version: ""
-      resource_name: ""
+      kind: Cluster
+      api_version: ""
+      name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: kyma_k8s
