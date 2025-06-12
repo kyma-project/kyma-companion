@@ -12,10 +12,6 @@ queries:
         statement: mentions btp (Business Technology Platform)
         threshold: 0.5
         required: true
-      - name: mentions_kubernetes
-        statement: mentions the Kyma modules
-        threshold: 0.5
-        required: true
       - name: provides_links
         statement: provides links to further topics
         threshold: 0.5
