@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask to compare kyma with k
 queries:
   - user_query: What is the difference between Kyma and other Kuberenets environments provided by hypescalers??
     resource:
-      resource_kind": "Cluster"
-      resource_api_version": ""
-      resource_name": ""
+      resource_kind: "Cluster"
+      resource_api_version: ""
+      resource_name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_sap

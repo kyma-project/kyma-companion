@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask how to add modules via
 queries:
   - user_query: How to add a module in Kyma dashboard
     resource:
-      resource_kind": "Cluster"
-      resource_api_version": ""
-      resource_name": ""
+      resource_kind: "Cluster"
+      resource_api_version: ""
+      resource_name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: open_dashboard

@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask how to enable kyma.
 queries:
   - user_query: How to enable Kyma?
     resource:
-      resource_kind": "Cluster"
-      resource_api_version": ""
-      resource_name": ""
+      resource_kind: "Cluster"
+      resource_api_version: ""
+      resource_name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_btp

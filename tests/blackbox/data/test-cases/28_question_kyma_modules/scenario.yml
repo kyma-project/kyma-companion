@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask about Kyma Modules.
 queries:
   - user_query: What modules does Kyma offer and what they do?
     resource:
-      resource_kind": "Cluster"
-      resource_api_version": ""
-      resource_name": ""
+      resource_kind: "Cluster"
+      resource_api_version: ""
+      resource_name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_eventing

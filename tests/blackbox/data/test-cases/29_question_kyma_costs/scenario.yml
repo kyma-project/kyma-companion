@@ -3,9 +3,9 @@ description: Unrelated to existing cluster resources, ask about the costs for th
 queries:
   - user_query: How much does SAP BTP Kyma runtime cost?
     resource:
-      resource_kind": "Cluster"
-      resource_api_version": ""
-      resource_name": ""
+      resource_kind: "Cluster"
+      resource_api_version: ""
+      resource_name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: no_concrete_price
