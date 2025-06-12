@@ -12,7 +12,16 @@ PLANNER_STEP_INSTRUCTIONS = """
       - Prioritize recent messages in the conversation history.
 3. **Query Classification**:
     - Classify the query as General Queries (irrelevant to Kyma or Kubernetes) or Kyma/Kubernetes Queries
-4. **Response Handling**:
+4. **Cross-platform and Cluster-wide Query Detection**:
+    - Identify queries that need both Kyma and Kubernetes coverage → Both agents
+    - If query is not explicitly mentioned whether is Kyma or Kubernetes queries → Both agents
+    - All types of cluster scoped queries → Both agents
+    - Create separate subtasks for both agents to ensure comprehensive coverage
+    Example: 
+        Query: "list everything in my cluster"
+        KymaAgent: "list everything Kyma-related in my cluster"
+        KubernetesAgent: "list everything Kubernetes-related in my cluster"
+5. **Response Handling**:
       - Create subtasks that directly mirrors the current query points.
       - Assign each subtask to the appropriate agent:
         * "{kyma_agent}": Handles Kyma specific topics
