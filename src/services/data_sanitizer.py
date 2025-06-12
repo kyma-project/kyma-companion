@@ -138,6 +138,8 @@ class DataSanitizer(metaclass=SingletonMeta):
         try:
             # First remove last-applied-configuration
             obj = self._remove_last_applied_configuration(obj)
+            # Then remove managedFields in metadata if exists
+            obj = self._remove_managed_fields_in_metadata(obj)
 
             # Handle template-based resources (Deployment, StatefulSet, DaemonSet)
             if "spec" in obj and "template" in obj["spec"]:
@@ -180,6 +182,8 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         # First remove last-applied-configuration if exists
         result = self._remove_last_applied_configuration(result)
+        # Then remove managedFields in metadata if exists
+        result = self._remove_managed_fields_in_metadata(result)
 
         for key, value in data.items():
             # Check if the key should be excluded from sanitization
@@ -228,4 +232,11 @@ class DataSanitizer(metaclass=SingletonMeta):
             # Remove empty annotations dict if it's the last annotation
             if not data["metadata"]["annotations"]:
                 del data["metadata"]["annotations"]
+        return data
+
+    @staticmethod
+    def _remove_managed_fields_in_metadata(data: dict) -> dict:
+        """Remove managedFields in metadata if it exists."""
+        if "metadata" in data and "managedFields" in data["metadata"]:
+            del data["metadata"]["managedFields"]
         return data
