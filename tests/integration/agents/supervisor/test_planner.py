@@ -34,99 +34,98 @@ def planner_correctness_metric(evaluator_model):
 
 @pytest.mark.parametrize(
     "messages, expected_answer, general_query",
-    [# Cluster-wide query test cases
-
-(
-    # Test case 1: "List everything in my cluster" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+    [  # Cluster-wide query test cases
+        (
+            # Test case 1: "List everything in my cluster" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="list everything in my cluster"),
+            ],
+            '{"subtasks": [{"description": "list everything Kyma-related in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "list everything Kubernetes-related in my cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="list everything in my cluster"),
-    ],
-    '{"subtasks": [{"description": "list everything Kyma-related in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "list everything Kubernetes-related in my cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 2: "Give me a complete overview" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+        (
+            # Test case 2: "Give me a complete overview" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="give me a complete overview of my resources"),
+            ],
+            '{"subtasks": [{"description": "give me a complete overview of Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "give me a complete overview of Kubernetes resources", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="give me a complete overview of my resources"),
-    ],
-    '{"subtasks": [{"description": "give me a complete overview of Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "give me a complete overview of Kubernetes resources", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+        (
+            # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="show all pods and serverless functions"),
+            ],
+            '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "show all Kubernetes pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="show all pods and serverless functions"),
-    ],
-    '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "show all Kubernetes pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 4: "List all services and API rules" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+        (
+            # Test case 4: "List all services and API rules" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="list all services and API rules"),
+            ],
+            '{"subtasks": [{"description": "list all Kyma API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "list all Kubernetes services", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="list all services and API rules"),
-    ],
-    '{"subtasks": [{"description": "list all Kyma API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "list all Kubernetes services", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+        (
+            # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="what resources do I have in my cluster"),
+            ],
+            '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "what Kubernetes resources do I have across the entire cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="what resources do I have in my cluster"),
-    ],
-    '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "what Kubernetes resources do I have across the entire cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 6: "Show me everything deployed" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+        (
+            # Test case 6: "Show me everything deployed" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="show me everything deployed"),
+            ],
+            '{"subtasks": [{"description": "show me everything Kyma deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "show me everything Kubernetes deployed", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="show me everything deployed"),
-    ],
-    '{"subtasks": [{"description": "show me everything Kyma deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "show me everything Kubernetes deployed", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
-(
-    # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
-    [
-        SystemMessage(
-            content="The user query is related to: "
-            "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+        (
+            # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="get status of all workloads and functions"),
+            ],
+            '{"subtasks": [{"description": "get status of all Kyma functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "get status of all Kubernetes workloads", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
         ),
-        HumanMessage(content="get status of all workloads and functions"),
-    ],
-    '{"subtasks": [{"description": "get status of all Kyma functions", "assigned_to": "KymaAgent", "status": "pending"}, '
-    '{"description": "get status of all Kubernetes workloads", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
-    False,
-),
         (
             # tests if a Kyma related query is assigned to the Kyma agent
             [
