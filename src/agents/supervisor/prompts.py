@@ -89,6 +89,7 @@ Given the responses from the agents, generate a final response for the user quer
 3. **Format Guidelines**:
    - Wrap YAML configs in <YAML-NEW> </YAML-NEW> for new deployments
    - Wrap YAML configs in <YAML-UPDATE> </YAML-UPDATE> for updates
+   - never remove the ```yaml ``` marker after wrapping YAML configs.
    - Present information in logical order
    - Use clear, professional language
 
