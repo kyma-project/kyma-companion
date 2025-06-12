@@ -40,11 +40,14 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/istio.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/04-00-istio-custom-resource.md",
+      "docs/user/tutorials/01-10-external-authorization-provider.md",
+      "docs/user/tutorials/01-20-expose-httbin-gateway-api.md",
+      "docs/user/tutorials/01-50-send-requests-using-egress.md",
+      "docs/user/tutorials/01-55-send-requests-using-egress-and-mtls.md",
+      "docs/user/tutorials/01-60-enable-nlb-load-balancer.md",
+      "docs/user/technical-reference/05-00-istio-controller-parameters.md",
+      "docs/user/technical-reference/05-10-istio-controller-rbac.md"
     ]
   },
   {
@@ -64,11 +67,12 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/cloud-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
+      "docs/user/resources/*",
+      "docs/user/tutorials/*"
     ],
     "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/resources/README.md",
+      "docs/user/tutorials/README.md"
     ]
   },
   {
@@ -76,12 +80,17 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/api-gateway.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md",
-      "docs/contributor/adr/adr-template.md"
+      "docs/user/custom-resources/apigateway/*",
+      "docs/user/custom-resources/apirule/04-10-apirule-custom-resource.md",
+      "docs/user/custom-resources/apirule/04-15-api-rule-access-strategies.md",
+      "docs/user/custom-resources/apirule/04-60-apirule-migration.md",
+      "docs/user/custom-resources/apirule/04-70-changes-in-apirule-v2.md",
+      "docs/user/custom-resources/ratelimit/*",
+      "docs/user/troubleshooting-guides/*",
+      "docs/user/tutorials/01-10-setup-custom-domain-for-workload.md",
+      "docs/user/tutorials/01-20-set-up-tls-gateway.md",
+      "docs/user/tutorials/01-30-set-up-mtls-gateway.md",
+      "docs/user/tutorials/01-70-local-rate-limit.md"
     ]
   },
   {
@@ -89,11 +98,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/telemetry-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/resources/*",
+      "docs/user/integration/*"
     ]
   },
   {
@@ -101,11 +107,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/btp-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/resources/*",
+      "docs/user/tutorials/04-40-create-service-in-cluster.md"
     ]
   },
   {
@@ -125,11 +128,11 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/docker-registry.git",
     "include_files": [
-      "README.md",
-      "docs/*"
+      "docs/user/resources/*",
+      "docs/user/tutorials/*"
     ],
     "exclude_files": [
-      "*/_sidebar.md",
+      "docs/user/tutorials/README.md",
       "docs/user/resources/README.md"
     ]
   },
@@ -138,11 +141,8 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/keda-manager.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
+      "docs/user/04-10-footprint.md",
+      "docs/user/04-20-demo-applications.md"
     ]
   },
   {
@@ -150,11 +150,16 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/serverless.git",
     "include_files": [
-      "README.md",
-      "docs/*"
+      "docs/user/resources/*",
+      "docs/user/troubleshooting-guides/*",
+      "docs/user/technical-reference/*",
+      "docs/user/tutorials/*",
+      "docs/user/00-30-development-toolkit.md",
+      "docs/user/08-10-best-practices.md"
     ],
     "exclude_files": [
-      "*/_sidebar.md"
+      "*/README.md",
+      "docs/user/tutorials/01-60-set-external-registry.md"
     ]
   },
   {
@@ -170,16 +175,31 @@
     ]
   },
   {
-    "name": "kyma",
+    "name": "btp-foundation",
     "source_type": "Github",
-    "url": "https://github.com/kyma-project/kyma.git",
+    "url": "https://github.com/sap-tutorials/btp-foundation.git",
     "include_files": [
-      "README.md",
-      "docs/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md",
-      "*/_*.md"
+      "tutorials/cp-kyma-microservice-trigger/cp-kyma-microservice-trigger.md",
+      "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
+      "tutorials/cp-kyma-frontend-ui5-mssql/cp-kyma-frontend-ui5-mssql.md",
+      "tutorials/cp-kyma-api-mssql-golang/cp-kyma-api-mssql-golang.md",
+      "tutorials/cp-kyma-mssql-deployment/cp-kyma-mssql-deployment.md",
+      "tutorials/cp-kyma-download-cli/cp-kyma-download-cli.md",
+      "tutorials/cp-kyma-redis-function/cp-kyma-redis-function.md",
+      "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
+      "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md"
+    ]
+  },
+  {
+    "name": "btp-dev-guidance",
+    "source_type": "Github",
+    "url": "https://github.com/sap-tutorials/btp-dev-guidance.git",
+    "include_files": [
+      "tutorials/prepare-btp-kyma/prepare-btp-kyma.md",
+      "tutorials/deploy-to-kyma/deploy-to-kyma.md",
+      "tutorials/user-role-assignment/user-role-assignment.md",
+      "tutorials/integrate-with-work-zone-kymaruntime/integrate-with-work-zone-kymaruntime.md",
+      "tutorials/set-up-cicd-kyma/set-up-cicd-kyma.md"
     ]
   }
 ]
