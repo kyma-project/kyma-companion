@@ -2,8 +2,6 @@ id: test-question-20 # format: test-<resource_kind>-<test_id>
 description: Unrelated to existing cluster resources, ask at which regions kyma is available.
 queries:
   - user_query: at which regions is kyma available?
-    # should be answered by this doc:
-    # https://github.com/SAP-docs/btp-cloud-platform/blob/main/docs/10-concepts/regions-for-the-kyma-environment-557ec3a.md
     resource:
       kind: Cluster
       api_version: ""
