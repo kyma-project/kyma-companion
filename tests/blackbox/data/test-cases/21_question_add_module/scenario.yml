@@ -1,0 +1,14 @@
+id: test-question-21 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask how to add a module.
+queries:
+  - user_query: How to add a module?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: dashboard
+        statement: provides instructions on how to add modules via the Kyma dashboard
+        threshold: 0.5
+        required: true

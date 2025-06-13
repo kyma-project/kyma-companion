@@ -1,0 +1,16 @@
+id: test-question-26 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask to compare kyma and cloud foundry.
+queries:
+  - user_query: What is the difference between Kyma and Cloud Foundry?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: kyma_vs_cloud_foundry
+        statement: points out that kyma runs on k8s (kubernetes) and that Cloud Foundry is PaaS (Platform as a service)
+        threshold: 0.5
+        required: true
+
+

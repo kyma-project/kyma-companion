@@ -20,9 +20,9 @@ class Resource(BaseModel):
     """
 
     kind: str
-    api_version: str
-    name: str
-    namespace: str
+    api_version: str = ""
+    name: str = ""
+    namespace: str = ""
 
 
 class Expectation(BaseModel):
