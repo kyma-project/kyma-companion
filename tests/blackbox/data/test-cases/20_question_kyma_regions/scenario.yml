@@ -9,7 +9,7 @@ queries:
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_hyperscaler_regions
-        statement: mentions centralus	US Central (IA) for Azure, eu-central-1 (Frankfurt) for AWS (amazon web services) and us-east4 (Virginia) for GCP (google cloud platform)
+        statement: mentions centralus US Central (IA) for Azure, eu-central-1 (Frankfurt) for AWS (amazon web services) and us-east4 (Virginia) for GCP (google cloud platform)
         threshold: 0.5
         required: true
 
