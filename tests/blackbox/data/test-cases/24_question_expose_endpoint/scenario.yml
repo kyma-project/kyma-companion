@@ -8,16 +8,8 @@ queries:
       name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: mentions_apirule
-        statement: propose to use the APIRule custom resource
-        threshold: 0.5
-        required: true
-      - name: provide_exsample_yaml
-        statement: provides an example for an APIrule in the yaml format
-        threshold: 0.5
-        required: true
-      - name: mentions_accessStrategies
-        statement: mentions accessStrategies
+      - name: mentions_kyewords
+        statement: propose to use the APIRule custom resource and mentions accessStrategies 
         threshold: 0.5
         required: true
 

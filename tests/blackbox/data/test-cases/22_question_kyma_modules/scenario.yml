@@ -1,0 +1,14 @@
+id: test-question-28 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask about Kyma Modules.
+queries:
+  - user_query: What modules does Kyma offer and what they do?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_modules
+        statement: mentions the eventing, serverless and telemetry
+        threshold: 0.5
+        required: true

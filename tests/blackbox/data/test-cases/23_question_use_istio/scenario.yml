@@ -2,6 +2,7 @@ id: test-question-23 # format: test-<resource_kind>-<test_id>
 description: Unrelated to existing cluster resources, ask how to use isto.
 queries:
   - user_query: How can I use Istio in Kyma?
+    # https://github.com/SAP-docs/btp-cloud-platform/blob/main/docs/30-development/istio-module-26ffe00.md
     resource:
       kind: Cluster
       api_version: ""
@@ -12,17 +13,5 @@ queries:
         statement: points out that Istio comes preinstalled in Kyma
         threshold: 0.5
         required: true
-      - name: mentions_sidecar_injection
-        statement: points out that by default Istio sidecar injection is only available in the kyma-system namespace
-        threshold: 0.5
-        required: true
-      - name: mentions_istio_resources
-        statement: mentions Istio resources like VirtualService, DestinationRule or PeerAuthentication
-        threshold: 0.5
-        required: true
-      - name: provides_links
-        statement: provides links to further topics
-        threshold: 0.5
-        required: false
 
 

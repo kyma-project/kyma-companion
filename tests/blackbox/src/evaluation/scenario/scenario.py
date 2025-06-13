@@ -19,7 +19,7 @@ class Resource(BaseModel):
     Resource represents a K8s resource.
     """
 
-    kind: str = ""
+    kind: str
     api_version: str = ""
     name: str = ""
     namespace: str = ""

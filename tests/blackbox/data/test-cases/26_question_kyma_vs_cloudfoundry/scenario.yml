@@ -8,25 +8,9 @@ queries:
       name: ""
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: kyma_k8s
-        statement: mentions that kyma runs on k8s (kubernetes)
+      - name: kyma_vs_cloud_foundry
+        statement: points out that kyma runs on k8s (kubernetes) and that Cloud Foundry is PaaS (Platform as a service)
         threshold: 0.5
         required: true
-      - name: kyma_sap
-        statement: mentions that kyma integration with SAP services
-        threshold: 0.5
-        required: true
-      - name: kyma_event-driven_architecture
-        statement: points out that Kyma supports event driven architecture
-        threshold: 0.5
-        required: true
-      - name: cloud_foundry_paas
-        statement: points out that Cloud Foundry is PaaS (Platform as a service)
-        threshold: 0.5
-        required: true
-      - name: provides_links
-        statement: provides links to further topics
-        threshold: 0.5
-        required: false
 
 

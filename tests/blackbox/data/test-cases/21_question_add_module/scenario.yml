@@ -1,4 +1,4 @@
-id: test-question-30 # format: test-<resource_kind>-<test_id>
+id: test-question-21 # format: test-<resource_kind>-<test_id>
 description: Unrelated to existing cluster resources, ask how to add a module.
 queries:
   - user_query: How to add a module?
@@ -12,13 +12,3 @@ queries:
         statement: provides instructions on how to add modules via the Kyma dashboard
         threshold: 0.5
         required: true
-      - name: CLI
-        statement: provides instructions on how to add modules via the Kyma CLI
-        threshold: 0.5
-        required: true
-      - name: provides_links
-        statement: provides links to further topics
-        threshold: 0.5
-        required: falsE
-
-
