@@ -15,4 +15,4 @@ jobs:
             poetry-version: '2.1.1'          
             pr-title-prefix: 'deps:'
             pr-labels: 'enhancement'
-            test-command: poetry run poe pre-commit-change
+            test-command: "poetry run poe pre-commit-change"
