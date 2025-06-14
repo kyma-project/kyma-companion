@@ -1,0 +1,14 @@
+name: Update Python Poetry packages
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # every day at 5:00 am
+  workflow_dispatch:
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Apakottur/action-poetry-package-update@v1
+        with:
+          base-branch: main
