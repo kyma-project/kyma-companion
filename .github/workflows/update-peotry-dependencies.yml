@@ -15,4 +15,4 @@ jobs:
             poetry-version: '2.1.1'          
             pr-title-prefix: 'deps:'
             pr-labels: 'enhancement'
-            test-command: mkdir -p config && [ -e config/config.json ] || echo '{"mock-key": "mock-value"}' > config/config.json && poetry run poe pre-commit-check
+            test-command: "mkdir -p config && [ -e config/config.json ] || echo '{\"mock-key\": \"mock-value\"}' > config/config.json && poetry run poe pre-commit-check"
