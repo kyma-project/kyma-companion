@@ -5580,6 +5580,37 @@ botocore = ">=1.36.0,<2.0a.0"
 crt = ["botocore[crt] (>=1.36.0,<2.0a.0)"]
 
 [[package]]
+name = "sap-ai-sdk-base"
+version = "3.1.2"
+description = "SAP Cloud SDK for AI (Python): Base Client"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "sap_ai_sdk_base-3.1.2-py3-none-any.whl", hash = "sha256:1fb4529f1300547769358c0cac2d38d4dc9d598fc2a77a17123d6951c316534e"},
+]
+
+[package.dependencies]
+aenum = ">=3.1,<4.0"
+pyhumps = ">=3.0,<4.0"
+requests = "<3.0"
+
+[[package]]
+name = "sap-ai-sdk-core"
+version = "3.0.3"
+description = "SAP Cloud SDK for AI (Python): Core SDK"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "sap_ai_sdk_core-3.0.3-py3-none-any.whl", hash = "sha256:81fd91ed464d492ed3750aaf36458cc3482a2e89d970b91da6336e00464148ae"},
+]
+
+[package.dependencies]
+click = ">=8.1,<9.0"
+sap-ai-sdk-base = "3.1.2"
+
+[[package]]
 name = "scikit-learn"
 version = "1.6.1"
 description = "A set of python modules for machine learning and data mining"
@@ -7245,4 +7276,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "dcdbbf3bcab6b422f5e0175291b907186f0b900b9c8af2858aa20c8c1a6fa108"
+content-hash = "754f38e5d56e4959c9ecdf989eede5720c98354f17309ea65f5a1d01a7ca210a"
