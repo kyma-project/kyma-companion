@@ -14,3 +14,4 @@ jobs:
         with:
           base-branch: main
           python-version: 3.12
+          poetry-version: 2.1
