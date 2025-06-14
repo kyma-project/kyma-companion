@@ -11,5 +11,5 @@ jobs:
     steps:
         - uses: fuzzylabs/gha-poetry-update@v1
           with:
-            python-version: '3.12'
-            poetry-version: '2.1'
+            python-version: '3.12.11'
+            poetry-version: '2.1.1'
