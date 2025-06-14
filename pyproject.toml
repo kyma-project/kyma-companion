@@ -17,7 +17,6 @@ authors = [
 ]
 requires-python = "==3.12.*"
 dependencies = [
-  "ai-core-sdk (>=2.6.2,<3.0.0)",
   "cryptography (>=44.0.2,<45.0.0)",
   "fastapi[standard] (>=0.115.11,<0.116.0)",
   "generative-ai-hub-sdk[all] (>=4.12.4,<5.0.0)",
@@ -31,6 +30,7 @@ dependencies = [
   "python-decouple (>=3.8,<4.0)",
   "redis (>=5.2.1,<6.0.0)",
   "requests (>=2.32.3,<3.0.0)",
+  "sap-ai-sdk-core (>=3.0.3,<4.0.0)",
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.9.0,<0.10.0)",
@@ -41,12 +41,12 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {extras = ["all"], version = "^3.0.1"}
+deepeval = { extras = ["all"], version = "^3.0.1" }
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
 pytest-asyncio = "^0.25.3"
-pytest-cov = {extras = ["all"], version = "^6.1.1"}
+pytest-cov = { extras = ["all"], version = "^6.1.1" }
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.14.0"
 pytest-rerunfailures = "^12.0"
