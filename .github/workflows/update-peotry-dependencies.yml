@@ -13,6 +13,8 @@ jobs:
           with:
             python-version: '3.12.11'
             poetry-version: '2.1.1'          
-            pr-title-prefix: 'deps:'
+            pr-title-prefix: 'deps: '
             pr-labels: 'enhancement'
-            test-command: "mkdir -p config && [ -e config/config.json ] || echo '{\"mock-key\": \"mock-value\"}' > config/config.json && poetry run poe pre-commit-check"
+            # Create a test-config and run the `pre-commit-check`:
+            test-command: "echo '{\"mock-key\": \"mock-value\"}' > config/config.json && poetry run poe pre-commit-check"
+            github_token: ${{ secrets.github_token }}
