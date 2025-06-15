@@ -7,6 +7,12 @@ on:
       IMAGE_NAME:
         required: true
         type: string
+      TEST_REPO: 
+        default: ${{ github.event.pull_request.head.repo.full_name }} 
+        description: "The repository to checkout to acquire the tests, not the kyma-companion image."
+      TEST_REF: 
+        default: ${{ github.event.pull_request.head.ref }} 
+        description: "The ref to checkout to acquire the tests, not the kyma-companion image."
 
 # global env variables.
 env:
@@ -23,9 +29,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          TEST_REF: ${{ inputs.TEST_REF }}
+          TEST_REPO: ${{ inputs.TEST_REPO }}
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: "${TEST_REF}"
+          repository: "${TEST_REPO}"
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
@@ -87,6 +96,8 @@ jobs:
           kubectl apply -f scripts/k8s/companion-k3d-manifest.yaml
 
       - name: Companion Deploy - Update image name in Deployment
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
         run: |
           echo "Updating companion image to ${IMAGE_NAME}..."
           kubectl -n ai-system set image deployment/companion companion=${IMAGE_NAME}
@@ -113,7 +124,7 @@ jobs:
           exit 1
 
       - name: Companion Deploy - Debug information
-        if: failure()
+        if: always()
         run: |
           kubectl get deploy -n ai-system || true
           kubectl get pod -n ai-system || true
@@ -155,7 +166,7 @@ jobs:
           poetry run python src/run_evaluation.py
 
       - name: Evaluation Tests - Debug information
-        if: failure()
+        if: always()
         run: |
           kubectl get deploy -n ai-system || true
           kubectl get pod -n ai-system || true

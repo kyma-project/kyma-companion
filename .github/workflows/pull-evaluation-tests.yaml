@@ -58,4 +58,6 @@ jobs:
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
+      TEST_REPO: ${{ github.event.pull_request.head.repo.full_name }} 
+      TEST_REF: ${{ github.event.pull_request.head.ref }} 
 
