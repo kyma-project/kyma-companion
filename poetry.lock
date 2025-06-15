@@ -2921,14 +2921,14 @@ langchain-core = ">=0.3.51,<1.0.0"
 
 [[package]]
 name = "langfuse"
-version = "2.60.7"
+version = "2.60.8"
 description = "A client library for accessing langfuse"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langfuse-2.60.7-py3-none-any.whl", hash = "sha256:9434cd2a8858b6a656ea0de9ad0b469dc5211d6e32a0d5e27aff56034f8d0e41"},
-    {file = "langfuse-2.60.7.tar.gz", hash = "sha256:440783af444cc74efabfcd5c018d3da6080deaea2c9fb3ed3e40c47454250ede"},
+    {file = "langfuse-2.60.8-py3-none-any.whl", hash = "sha256:072b050ae4c20f81556b9c4c751359bc76de70970636225b32760d1bd4b93042"},
+    {file = "langfuse-2.60.8.tar.gz", hash = "sha256:0125841e8503b9ce1f405ab95411a7af2c244106e70eba99726c1f1a743cd164"},
 ]
 
 [package.dependencies]
