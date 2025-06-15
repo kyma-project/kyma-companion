@@ -28,7 +28,6 @@ on:
     inputs:
       name: # release tag
         description: 'Release tag (i.e. x.y.z). Make sure that branch with name release-x.y exists.'
-        default: ""
         required: true
       sec-scanners-config:
         type: boolean
@@ -38,7 +37,6 @@ on:
 # global env variables.
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
-  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
   RELEASE_TAG: "${{ inputs.name }}"
 
 jobs:
@@ -165,6 +163,21 @@ jobs:
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration
 
+  run-evaluation-tests:
+    ## **IMPORTANT**: If any changes are made to how to run the evaluation tests
+    ## in the release-workflow, make sure to update
+    ## in the run-integration-test.yaml workflow as well.
+    name: Run evaluation tests
+    env:
+      IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
+    needs: validate-input-params
+    permissions: read-all
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@${{ github.ref_name }} # The branch this workflow gets dispatched from.
+    with:
+      IMAGE_NAME: "${IMAGE_NAME}"
+      TEST_REPO: ${{ github.repository }}
+      TEST_REF: ${{ github.ref_name }}
+
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
     needs: [ validate-input-params, run-unit-tests, run-integration-tests]
@@ -242,7 +255,6 @@ jobs:
       - name: Create git tag
         run: |
           ./scripts/shell/create_git_tag.sh "${RELEASE_TAG}"
-          
 
   wait-for-build:
     name: Wait for image build job
