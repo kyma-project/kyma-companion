@@ -2,17 +2,17 @@ name: Update Python Poetry packages
 
 on:
   schedule:
-    - cron: '0 5 * * *' # every day at 5:00 am
-  workflow_dispatch:
+    - cron: '0 5 * * *' # Every day at 5:00 am.
+  workflow_dispatch: # Allows manually triggering the workflow.
 
 jobs:
   auto-update:
     runs-on: ubuntu-latest
     steps:
-        - uses: friedrichwilken/gha-poetry-update@main
+        - uses: friedrichwilken/update-poetry-dependencies@main
           with:
             python-version: '3.12.11'
-            poetry-version: '2.1.1'          
+            poetry-version: '2.1.1'
             pr-title-prefix: 'deps: '
             pr-labels: 'enhancement'
             # Create a test-config and run the `pre-commit-check`:
