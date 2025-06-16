@@ -1,0 +1,17 @@
+id: test-question-20 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask at which regions kyma is available.
+queries:
+  - user_query: at which regions is kyma available?
+    # should be answered by this doc:
+    # https://github.com/SAP-docs/btp-cloud-platform/blob/main/docs/10-concepts/regions-for-the-kyma-environment-557ec3a.md
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_hyperscaler_regions
+        statement: mentions centralus US Central (IA) for Azure, eu-central-1 (Frankfurt) for AWS (amazon web services) and us-east4 (Virginia) for GCP (google cloud platform)
+        threshold: 0.5
+        required: true
+

@@ -1,0 +1,14 @@
+id: test-question-19 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask what kyma is.
+queries:
+  - user_query: What is Kyma?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_keywords
+        statement: mentions 'Kubernetes (k8s)', 'open-source' and 'Business Technology Platform'.
+        threshold: 0.5
+        required: true
