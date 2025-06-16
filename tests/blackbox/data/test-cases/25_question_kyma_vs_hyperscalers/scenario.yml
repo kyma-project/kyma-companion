@@ -1,0 +1,16 @@
+id: test-question-25 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask to compare kyma with k8s environments provided by hyperscalers.
+queries:
+  - user_query: What is the difference between Kyma and other Kubernetes environments provided by hypescalers?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: mentions_keywords
+        statement: points out that kyma provides support for SAP services
+        threshold: 0.5
+        required: true
+
+

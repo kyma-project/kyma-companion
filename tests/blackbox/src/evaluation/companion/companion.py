@@ -20,9 +20,9 @@ class ConversationPayload(BaseModel):
 
     query: str = ""
     resource_kind: str
-    resource_api_version: str
-    resource_name: str
-    namespace: str
+    resource_api_version: str = ""
+    resource_name: str = ""
+    namespace: str = ""
 
 
 class CompanionClient:
@@ -60,8 +60,7 @@ class CompanionClient:
         )
         if response.status_code != HTTPStatus.OK:
             raise ValueError(
-                f"failed to get response (status: {response.status_code}). "
-                f"Response: {response.text}"
+                f"failed to get response (status: {response.status_code}). Response: {response.text}"
             )
 
         # record the response time.
@@ -87,8 +86,7 @@ class CompanionClient:
         )
         if response.status_code != HTTPStatus.OK:
             raise ValueError(
-                f"failed to get response from the utils API (status: {response.status_code}). "
-                f"Response: {response.text}"
+                f"failed to get response from the utils API (status: {response.status_code}). Response: {response.text}"
             )
 
         answer, chunks = self.__extract_final_response(response)
@@ -138,7 +136,7 @@ class CompanionClient:
             raise Exception("No response found in the stream")
 
         if "error" in obj["data"] and obj["data"]["error"]:
-            raise Exception(f"Error in response: {obj["data"]["error"]}")
+            raise Exception(f"Error in response: {obj['data']['error']}")
 
         if not obj["data"]["answer"] or not obj["data"]["answer"]["content"]:
             raise Exception("No response found in the stream")
