@@ -4,7 +4,6 @@ WORKDIR /app
 # Copy only necessary files
 COPY pyproject.toml poetry.lock ./
 COPY src ./src
-COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
