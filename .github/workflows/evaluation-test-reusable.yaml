@@ -10,9 +10,11 @@ on:
       TEST_REPO: 
         default: ${{ github.event.pull_request.head.repo.full_name }} 
         description: "The repository to checkout to acquire the tests, not the kyma-companion image."
+        type: string
       TEST_REF: 
         default: ${{ github.event.pull_request.head.ref }} 
         description: "The ref to checkout to acquire the tests, not the kyma-companion image."
+        type: string
 
 # global env variables.
 env:
