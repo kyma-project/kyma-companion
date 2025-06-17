@@ -24,7 +24,6 @@ env:
 jobs:
   evaluation-tests:
     name: Run evaluation tests
-    needs: wait-for-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -123,13 +122,17 @@ jobs:
           echo "Service did not become reachable within $TIMEOUT_SECONDS seconds";
           exit 1
 
-      - name: Companion Deploy - Debug information
+      - name: Companion Deploy - Information
         if: always()
         run: |
           kubectl get deploy -n ai-system || true
           kubectl get pod -n ai-system || true
-          kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
           kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
+
+      - name: Companion Deploy - Pod logs
+        if: failure()
+        run: |
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
 
       - name: Evaluation Tests Setup - Extract project Python version
         working-directory: tests/blackbox
@@ -166,7 +169,7 @@ jobs:
           poetry run python src/run_evaluation.py
 
       - name: Evaluation Tests - Debug information
-        if: always()
+        if: failure()
         run: |
           kubectl get deploy -n ai-system || true
           kubectl get pod -n ai-system || true
