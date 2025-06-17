@@ -8,7 +8,7 @@ from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 
 app = FastAPI(
-    title="Kyma Companion!",
+    title="Kyma-Companion",
 )
 
 
