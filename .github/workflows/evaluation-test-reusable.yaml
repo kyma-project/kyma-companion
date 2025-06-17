@@ -20,8 +20,6 @@ on:
 env:
   DOCKER_TIMEOUT: 30
   K3D_VERSION: "v5.7.2" # Required K3d version.
-  REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
-  GITHUB_EVENT_ACTION: "${{ github.event.action }}"
 
 jobs:
   evaluation-tests:
@@ -30,12 +28,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        env:
+        with:
           TEST_REF: ${{ inputs.TEST_REF }}
           TEST_REPO: ${{ inputs.TEST_REPO }}
-        with:
-          ref: "${TEST_REF}"
-          repository: "${TEST_REPO}"
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
