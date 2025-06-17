@@ -8,7 +8,7 @@ from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 
 app = FastAPI(
-    title="Kyma Companion",
+    title="Kyma-Companion",
 )
 
 
@@ -25,7 +25,7 @@ app.include_router(probes_router)
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
-    return {"message": "Hello, this is Kyma Companion!"}
+    return {"message": "Kyma Companion!"}
 
 
 @app.get("/metrics")
