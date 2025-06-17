@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          TEST_REF: ${{ inputs.TEST_REF }}
-          TEST_REPO: ${{ inputs.TEST_REPO }}
+        with:      
+          ref: ${{ inputs.TEST_REF }}
+          repository: ${{ inputs.TEST_REPO }}
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
