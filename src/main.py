@@ -9,6 +9,7 @@ from services.metrics import CustomMetrics
 
 app = FastAPI(
     title="Kyma-Companion",
+    # this triggers a job
 )
 
 
