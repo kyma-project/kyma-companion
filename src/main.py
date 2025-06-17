@@ -8,8 +8,12 @@ from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 
 app = FastAPI(
+<<<<<<< test_eval_test
     title="Kyma-Companion",
     # this triggers a job
+=======
+    title="Kyma-Companion.",
+>>>>>>> main
 )
 
 
