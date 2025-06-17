@@ -7,7 +7,7 @@ on:
       IMAGE_NAME:
         required: true
         type: string
-      TEST_REPO: 
+      TEST_REPO_FULLNAME: 
         required: true
         description: "The repository to checkout to acquire the tests, not the kyma-companion image."
         type: string
@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:      
           ref: ${{ inputs.TEST_REF }}
-          repository: ${{ inputs.TEST_REPO }}
+          repository: ${{ inputs.TEST_REPO_FULLNAME }}
 
       - name: K3d Setup - Install Kubectl CLI
         run: |

@@ -59,6 +59,6 @@ jobs:
     needs: wait-for-build
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
-      TEST_REPO: ${{ github.event.pull_request.head.repo.full_name }} 
+      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }} 
       TEST_REF: ${{ github.event.pull_request.head.ref }} 
 
