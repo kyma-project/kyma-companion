@@ -57,6 +57,7 @@ jobs:
   evaluation:
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     needs: wait-for-build
+    secrets: inherit
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }} 
