@@ -7,12 +7,12 @@ on:
       IMAGE_NAME:
         required: true
         type: string
-      TEST_REPO: 
-        default: ${{ github.event.pull_request.head.repo.full_name }} 
+      TEST_REPO_FULLNAME: 
+        required: true
         description: "The repository to checkout to acquire the tests, not the kyma-companion image."
         type: string
       TEST_REF: 
-        default: ${{ github.event.pull_request.head.ref }} 
+        required: true
         description: "The ref to checkout to acquire the tests, not the kyma-companion image."
         type: string
 
@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          TEST_REF: ${{ inputs.TEST_REF }}
-          TEST_REPO: ${{ inputs.TEST_REPO }}
+        with:      
+          ref: ${{ inputs.TEST_REF }}
+          repository: ${{ inputs.TEST_REPO_FULLNAME }}
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
