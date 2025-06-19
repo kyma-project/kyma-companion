@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ConversationalGEval
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -13,7 +13,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
 # Correctness metric for not general queries that needs planning
 @pytest.fixture
 def planner_correctness_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Correctness",
         evaluation_steps=[
             "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). ",
@@ -34,7 +34,98 @@ def planner_correctness_metric(evaluator_model):
 
 @pytest.mark.parametrize(
     "messages, expected_answer, general_query",
-    [
+    [  # Cluster-wide query test cases
+        (
+            # Test case 1: "List everything in my cluster" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="list everything in my cluster"),
+            ],
+            '{"subtasks": [{"description": "list everything Kyma-related in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "list everything Kubernetes-related in my cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 2: "Give me a complete overview" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="give me a complete overview of my resources"),
+            ],
+            '{"subtasks": [{"description": "give me a complete overview of Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "give me a complete overview of Kubernetes resources", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="show all pods and serverless functions"),
+            ],
+            '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "show all Kubernetes pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 4: "List all services and API rules" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="list all services and API rules"),
+            ],
+            '{"subtasks": [{"description": "list all Kyma API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "list all Kubernetes services", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="what resources do I have in my cluster"),
+            ],
+            '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "what Kubernetes resources do I have across the entire cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 6: "Show me everything deployed" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="show me everything deployed"),
+            ],
+            '{"subtasks": [{"description": "show me everything Kyma deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "show me everything Kubernetes deployed", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
+        (
+            # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="get status of all workloads and functions"),
+            ],
+            '{"subtasks": [{"description": "get status of all Kyma functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "get status of all Kubernetes workloads", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+        ),
         (
             # tests if a Kyma related query is assigned to the Kyma agent
             [
@@ -165,14 +256,10 @@ async def test_invoke_planner(
 
     # Then: We evaluate based on query type
     if not general_query:
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=str(messages),
-                    actual_output=result.json(),
-                    expected_output=expected_answer,
-                )
-            ]
+        test_case = LLMTestCase(
+            input=str(messages),
+            actual_output=result.json(),
+            expected_output=expected_answer,
         )
 
         assert_test(test_case, [planner_correctness_metric])
@@ -191,7 +278,7 @@ async def test_invoke_planner(
 
 @pytest.fixture
 def planner_conversation_history_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Conversation History Correctness",
         evaluation_steps=[
             "Check the actual output that semantically matches expected output and answers the user query.",
@@ -265,14 +352,10 @@ async def test_planner_with_conversation_history(
 
     # verify that the subtasks are the same as the expected subtasks
     actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
-    test_case = ConversationalTestCase(
-        turns=[
-            LLMTestCase(
-                input=str(all_messages),
-                actual_output=str(actual_subtasks),
-                expected_output=str(expected_subtasks),
-            )
-        ]
+    test_case = LLMTestCase(
+        input=str(all_messages),
+        actual_output=str(actual_subtasks),
+        expected_output=str(expected_subtasks),
     )
 
     assert_test(test_case, [planner_conversation_history_metric])

@@ -6,47 +6,43 @@ readme = "README.md"
 license = "Apache-2.0"
 authors = [
   { name = "Muhammad Faizan", email = "m.faizan@sap.com" },
-  { name = "Aleksei Chernyshov", email = "aleksei.chernyshov@sap.com" },
-  { name = "Carina Kothe", email = "carina.kothe@sap.com" },
   { name = "Friedrich Wilken", email = "jens.wilken@sap.com" },
-  { name = "Tibor Kiss", email = "tibor.kiss01@sap.com" },
-  { name = "Marco Bebway", email = "marco.bebway@sap.com" },
   { name = "Piotr Bochynski", email = "piotr.bochynski@sap.com" },
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
 requires-python = "==3.12.*"
 dependencies = [
-  "ai-core-sdk (>=2.6.2,<3.0.0)",
-  "cryptography (>=44.0.2,<45.0.0)",
+  "cryptography (>=44.0.3,<45.0.0)",
   "fastapi[standard] (>=0.115.11,<0.116.0)",
   "generative-ai-hub-sdk[all] (>=4.12.4,<5.0.0)",
-  "hdbcli (>=2.23.27,<3.0.0)",
-  "kubernetes (>=30.0.0,<33.0.0)",
+  "hdbcli (>=2.24.26,<3.0.0)",
+  "kubernetes (>=32.0.1,<33.0.0)",
   "langchain[all] (>=0.3.25,<0.4.0)",
-  "langfuse (>=2.59.7,<3.0.0)",
-  "langgraph[all] (>=0.4.7,<0.5.0)",
+  "langfuse (>=2.60.8,<3.0.0)",
+  "langgraph[all] (>=0.4.8,<0.5.0)",
   "prometheus-client (>=0.21.1,<0.22.0)",
   "pyjwt (>=2.10.1,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
   "redis (>=5.2.1,<6.0.0)",
-  "requests (>=2.32.3,<3.0.0)",
+  "requests (>=2.32.4,<3.0.0)",
+  "sap-ai-sdk-core (>=3.0.3,<4.0.0)",
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.9.0,<0.10.0)",
-  "uvicorn (>=0.34.0,<0.35.0)"
+  "uvicorn (>=0.34.3,<0.35.0)"
 ]
 [tool.poetry]
 packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {extras = ["all"], version = "^3.0.1"}
+deepeval = { extras = ["all"], version = "^3.0.1" }
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
 pytest-asyncio = "^0.25.3"
-pytest-cov = {extras = ["all"], version = "^6.1.1"}
+pytest-cov = { extras = ["all"], version = "^6.1.1" }
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.14.0"
 pytest-rerunfailures = "^12.0"

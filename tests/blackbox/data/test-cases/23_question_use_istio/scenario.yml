@@ -1,0 +1,17 @@
+id: test-question-23 # format: test-<resource_kind>-<test_id>
+description: Unrelated to existing cluster resources, ask how to use isto.
+queries:
+  - user_query: How can I use Istio in Kyma?
+    # https://github.com/SAP-docs/btp-cloud-platform/blob/main/docs/30-development/istio-module-26ffe00.md
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: "" # format: test-<resource_kind>-<test_id>
+    expectations:
+      - name: istio_is_included
+        statement: points out that Istio comes preinstalled in Kyma
+        threshold: 0.5
+        required: true
+
+

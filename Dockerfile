@@ -1,10 +1,9 @@
-FROM ghcr.io/gardenlinux/gardenlinux:1592.6 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1592.10 AS builder
 WORKDIR /app
 
 # Copy only necessary files
 COPY pyproject.toml poetry.lock ./
 COPY src ./src
-COPY data ./data
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
