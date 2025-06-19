@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ConversationalGEval
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -13,7 +13,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
 # Correctness metric for not general queries that needs planning
 @pytest.fixture
 def planner_correctness_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Correctness",
         evaluation_steps=[
             "Determine whether the output is subtask(s) of the input and assigned to dedicated agent(s). ",
@@ -256,14 +256,10 @@ async def test_invoke_planner(
 
     # Then: We evaluate based on query type
     if not general_query:
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=str(messages),
-                    actual_output=result.json(),
-                    expected_output=expected_answer,
-                )
-            ]
+        test_case = LLMTestCase(
+            input=str(messages),
+            actual_output=result.json(),
+            expected_output=expected_answer,
         )
 
         assert_test(test_case, [planner_correctness_metric])
@@ -282,7 +278,7 @@ async def test_invoke_planner(
 
 @pytest.fixture
 def planner_conversation_history_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Conversation History Correctness",
         evaluation_steps=[
             "Check the actual output that semantically matches expected output and answers the user query.",
@@ -356,14 +352,10 @@ async def test_planner_with_conversation_history(
 
     # verify that the subtasks are the same as the expected subtasks
     actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
-    test_case = ConversationalTestCase(
-        turns=[
-            LLMTestCase(
-                input=str(all_messages),
-                actual_output=str(actual_subtasks),
-                expected_output=str(expected_subtasks),
-            )
-        ]
+    test_case = LLMTestCase(
+        input=str(all_messages),
+        actual_output=str(actual_subtasks),
+        expected_output=str(expected_subtasks),
     )
 
     assert_test(test_case, [planner_conversation_history_metric])
