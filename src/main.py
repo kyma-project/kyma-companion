@@ -31,7 +31,7 @@ async def exception_handler_middleware(req: Request, call_next: Any) -> Any:
 
     except HTTPException as http_exc:
         logger.error(f"HTTPException {http_exc.status_code}: {http_exc}")
-        return await handle_http_exception(http_exc)
+        return handle_http_exception(http_exc)
 
     except Exception:
         logger.error("Unhandled exception occurred", exc_info=True)
@@ -44,7 +44,7 @@ async def exception_handler_middleware(req: Request, call_next: Any) -> Any:
         )
 
 
-async def handle_http_exception(exc: HTTPException) -> JSONResponse:
+def handle_http_exception(exc: HTTPException) -> JSONResponse:
     """Handles known HTTPException status codes."""
     status = exc.status_code
     default_response = {
