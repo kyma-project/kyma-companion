@@ -183,6 +183,15 @@ jobs:
       - name: Get the last commit's SHA of the release branch
         id: get_sha
         run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+  run-evaluation-tests:
+    name: Run evaluation tests
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
+    needs: get-image-sha
+    secrets: inherit
+    with:
+      IMAGE_NAME: europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${{ needs.get-image-sha.outputs.sha }}
+      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
+      TEST_REF: ${{ github.event.pull_request.head.ref }}
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
     needs: [ validate-input-params, run-unit-tests, run-integration-tests]
