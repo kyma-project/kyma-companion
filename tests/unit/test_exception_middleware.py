@@ -119,7 +119,7 @@ async def test_rate_limit_exception_handling(mock_logger, mock_request, mock_cal
     response = await exception_handler_middleware(mock_request, mock_call_next)
 
     assert isinstance(response, JSONResponse)
-    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert response.status_code == ERROR_RATE_LIMIT_CODE
 
     content = json.loads(response.body.decode())
     assert content == rate_limit_detail

@@ -89,7 +89,7 @@ def handle_http_exception(exc: HTTPException) -> JSONResponse:
 
     if status == ERROR_RATE_LIMIT_CODE:
         return JSONResponse(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            status_code=ERROR_RATE_LIMIT_CODE,
             content=exc.detail,
             headers=exc.headers,
         )
