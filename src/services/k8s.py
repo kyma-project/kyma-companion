@@ -5,6 +5,7 @@ import tempfile
 from enum import Enum
 from http import HTTPStatus
 from typing import Any, Protocol, cast, runtime_checkable
+from urllib.parse import urlparse
 
 import requests
 from kubernetes import client, dynamic
@@ -16,6 +17,7 @@ from agents.common.constants import (
 )
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
+from utils.settings import ALLOWED_K8S_DOMAINS
 
 logger = logging.get_logger(__name__)
 
@@ -40,11 +42,14 @@ class K8sAuthHeaders(BaseModel):
     x_k8s_authorization: str | None = None
     x_client_certificate_data: str | None = None
     x_client_key_data: str | None = None
+    allowed_domains: list[str] = ALLOWED_K8S_DOMAINS
 
     def validate_headers(self) -> None:
         """Validate the Kubernetes API authentication headers."""
         if self.x_cluster_url == "":
             raise ValueError("x-cluster-url header is required.")
+        if not self.is_cluster_url_allowed():
+            raise ValueError(f"Cluster URL {self.x_cluster_url} is not allowed.")
         if self.x_cluster_certificate_authority_data == "":
             raise ValueError("x-cluster-certificate-authority-data header is required.")
         if self.x_k8s_authorization is None and (
@@ -54,6 +59,31 @@ class K8sAuthHeaders(BaseModel):
                 "Either x-k8s-authorization header or "
                 "x-client-certificate-data and x-client-key-data headers are required."
             )
+
+    def is_cluster_url_allowed(self) -> bool:
+        """Check if the cluster URL is allowed based on the allowed domains."""
+        if len(self.allowed_domains) == 0:
+            logger.warning(
+                "ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation."
+            )
+            return True
+
+        try:
+            # parse the URL to get the domain
+            parsed_url = urlparse(self.x_cluster_url)
+            if not parsed_url or not parsed_url.hostname:
+                raise ValueError("Failed to parse. Invalid cluster URL format.")
+
+            domain = parsed_url.hostname.strip("/")
+            # if hostname ends with any of the allowed domains, return True
+            return any(
+                domain.endswith(f".{allowed_domain}") or domain == allowed_domain
+                for allowed_domain in self.allowed_domains
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to check if cluster_url: {self.x_cluster_url}  is allowed"
+            ) from e
 
     def get_auth_type(self) -> AuthType:
         """Get the authentication type."""
