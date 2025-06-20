@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ConversationalGEval
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
@@ -16,7 +16,7 @@ from utils.settings import MAIN_MODEL_NAME
 
 @pytest.fixture
 def tool_response_summarization_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Tool Response Summarization Quality",
         model=evaluator_model,
         threshold=0.5,
@@ -148,13 +148,9 @@ async def test_summarize_tool_response_integration(
         nums_of_chunks=nums_of_chunks,
     )
 
-    test_case = ConversationalTestCase(
-        turns=[
-            LLMTestCase(
-                input=f"User Query: {user_query}\nExpected Summary: {expected_summary}",
-                actual_output=generated_summary,
-            )
-        ]
+    test_case = LLMTestCase(
+        input=f"User Query: {user_query}\nExpected Summary: {expected_summary}",
+        actual_output=generated_summary,
     )
 
     assert_test(test_case, [tool_response_summarization_metric])

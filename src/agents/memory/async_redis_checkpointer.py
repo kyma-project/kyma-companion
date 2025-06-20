@@ -365,8 +365,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
                 await self._redis_call(self.conn.hset(key, mapping=data))
             else:
                 # Use HSETNX which will not overwrite existing values
-                for field, value in data.items():
-                    await self._redis_call(self.conn.hsetnx(key, field, value))
+                for field, item_value in data.items():
+                    await self._redis_call(self.conn.hsetnx(key, field, item_value))  # type: ignore[arg-type]
             # Set TTL for each write
             await self._redis_call(self.conn.expire(key, redis_ttl))
 

@@ -1,7 +1,10 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ConversationalGEval
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import (
+    LLMTestCase,
+    LLMTestCaseParams,
+)
 from langchain_core.messages import BaseMessage
 
 from agents.summarization.prompts import (
@@ -19,17 +22,16 @@ from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME
 
 @pytest.fixture
 def summarization_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Correctness",
         model=evaluator_model,
         threshold=0.5,
-        # criteria="Determine whether the generated summary is factually correct based on the given conversation history.",
         # NOTE: you can only provide either criteria or evaluation_steps, and not both
         evaluation_steps=[
             "Determine whether the generated summary is factually correct based on the given conversation history.",
             "The summary must concisely represent the main issues, points or topics discussed in the given chat history.",
             "There must not be any duplicate points in the summary.",
-            "Penalize heavily if any extra information is added to the summary not present in the original conversation.",
+            "No extra information is added to the summary which is not present in the previous summary or chat history.",
             f"The summary should follow the following given instructions:\n {MESSAGES_SUMMARIZATION_INSTRUCTIONS}",
         ],
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
@@ -80,8 +82,9 @@ async def test_get_summary(
     generated_summary = await summarization.get_summary(messages, {})
 
     # then
-    test_case = ConversationalTestCase(
-        turns=[LLMTestCase(input=str(messages), actual_output=generated_summary)]
+    test_case = LLMTestCase(
+        input=str(messages),
+        actual_output=generated_summary,
     )
 
     assert_test(test_case, [summarization_metric])

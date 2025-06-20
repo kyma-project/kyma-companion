@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ConversationalGEval
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -16,11 +16,11 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
 # Correctness metric for not general queries that needs planning
 @pytest.fixture
 def gatekeeper_correctness_metric(evaluator_model):
-    return ConversationalGEval(
+    return GEval(
         name="Semantic Similarity",
         evaluation_steps=[
             """
-            Evaluate whether two answers are semantically similar or convey the same meaning.
+            Evaluate whether two answers are semantically similar or convey the same meaning. Extra relevant information is acceptable.
             Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
             """,
         ],
@@ -380,7 +380,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="Hi"),
             ],
-            "Hello, how can I help you?",
+            "Hello! How can I assist you with Kyma or Kubernetes today?",
             False,
         ),
         (
@@ -516,14 +516,10 @@ async def test_invoke_gatekeeper_node(
             not actual_response.forward_query
         ), "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=messages[-1].content,
-                    actual_output=actual_response.direct_response,
-                    expected_output=expected_answer,
-                )
-            ]
+        test_case = LLMTestCase(
+            input=messages[-1].content,
+            actual_output=actual_response.direct_response,
+            expected_output=expected_answer,
         )
         assert_test(test_case, [gatekeeper_correctness_metric])
 
@@ -779,13 +775,9 @@ async def test_gatekeeper_with_conversation_history(
             not result.forward_query
         ), "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
-        test_case = ConversationalTestCase(
-            turns=[
-                LLMTestCase(
-                    input=user_query,
-                    actual_output=result.direct_response,
-                    expected_output=expected_answer,
-                )
-            ]
+        test_case = LLMTestCase(
+            input=user_query,
+            actual_output=result.direct_response,
+            expected_output=expected_answer,
         )
         assert_test(test_case, [gatekeeper_correctness_metric])

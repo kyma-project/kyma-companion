@@ -1,3 +1,4 @@
+import os
 from collections.abc import Sequence
 from threading import Thread
 
@@ -25,8 +26,10 @@ from utils.settings import (
     REDIS_DB_NUMBER,
     REDIS_HOST,
     REDIS_PASSWORD,
-    REDIS_PORT,
 )
+
+# the default port for redis is already in use by the system, so we use a different port for integration tests.
+integration_test_redis_port = 60379
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -74,7 +77,8 @@ def evaluator_model(app_models):
 
 @pytest.fixture(scope="session")
 def start_fake_redis():
-    server_address = (REDIS_HOST, REDIS_PORT)
+    os.environ["REDIS_HOST"] = str(integration_test_redis_port)
+    server_address = (REDIS_HOST, integration_test_redis_port)
     server = TcpFakeServer(server_address)
     t = Thread(target=server.serve_forever, daemon=True)
     t.start()
@@ -86,12 +90,17 @@ def start_fake_redis():
     server.shutdown()
     server.server_close()
     t.join(timeout=5)
+    if "REDIS_HOST" in os.environ:
+        del os.environ["REDIS_HOST"]
 
 
 @pytest.fixture(scope="session")
 def companion_graph(app_models, start_fake_redis):
     memory = AsyncRedisSaver.from_conn_info(
-        host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER, password=REDIS_PASSWORD
+        host=REDIS_HOST,
+        port=integration_test_redis_port,
+        db=REDIS_DB_NUMBER,
+        password=REDIS_PASSWORD,
     )
     graph = CompanionGraph(app_models, memory)
     return graph
