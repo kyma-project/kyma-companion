@@ -178,7 +178,6 @@ jobs:
         with:
           repository: ${REPOSITORY_FULL_NAME}
           ref: ${RELEASE_BRANCH}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get the last commit's SHA of the release branch
         id: get_sha
