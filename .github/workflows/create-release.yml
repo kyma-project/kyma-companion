@@ -27,12 +27,12 @@ on:
   workflow_dispatch:
     inputs:
       name: # release tag
-        description: 'Release tag (i.e. x.y.z). Make sure that branch with name release-x.y exists.'
+        description: "Release tag (i.e. x.y.z). Make sure that branch with name release-x.y exists."
         default: ""
         required: true
       sec-scanners-config:
         type: boolean
-        description: 'Create PR with sec-scanners-config bump'
+        description: "Create PR with sec-scanners-config bump"
         default: true
 
 # global env variables.
@@ -115,7 +115,7 @@ jobs:
       - name: Create config.json
         run: |
           mkdir -p config
-          echo '{"mock-key": "mock-value"}' > config/config.json 
+          echo '{"mock-key": "mock-value"}' > config/config.json
 
       - name: Run tests
         run: poetry run poe test
@@ -176,12 +176,13 @@ jobs:
       - name: Checkout target branch from another repo
         uses: actions/checkout@v4
         with:
-          repository: ${REPOSITORY_FULL_NAME}
-          ref: ${RELEASE_BRANCH}
+          repository: ${{ env.REPOSITORY_FULL_NAME }}
+          ref: ${{ env.RELEASE_BRANCH }}
 
       - name: Get the last commit's SHA of the release branch
         id: get_sha
         run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
   run-evaluation-tests:
     name: Run evaluation tests
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
@@ -191,9 +192,10 @@ jobs:
       IMAGE_NAME: europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${{ needs.get-image-sha.outputs.sha }}
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
       TEST_REF: ${{ github.event.pull_request.head.ref }}
+
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
-    needs: [ validate-input-params, run-unit-tests, run-integration-tests]
+    needs: [validate-input-params, run-unit-tests, run-integration-tests]
     runs-on: ubuntu-latest
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
@@ -247,7 +249,7 @@ jobs:
 
   create-git-tag:
     name: Create git tag for release
-    needs: [ validate-input-params, bump-sec-scanners-release-branch]
+    needs: [validate-input-params, bump-sec-scanners-release-branch]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
@@ -268,11 +270,10 @@ jobs:
       - name: Create git tag
         run: |
           ./scripts/shell/create_git_tag.sh "${RELEASE_TAG}"
-          
 
   wait-for-build:
     name: Wait for image build job
-    needs: [ validate-input-params, create-git-tag ]
+    needs: [validate-input-params, create-git-tag]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -283,8 +284,8 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
 
       - name: Install requirements
         run: |
@@ -327,7 +328,7 @@ jobs:
 
   bump-sec-scanners-main-branch:
     name: Bump image in sec-scanners-config
-    needs: [ validate-input-params, wait-for-build, create-draft ]
+    needs: [validate-input-params, wait-for-build, create-draft]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -373,7 +374,7 @@ jobs:
 
   check-prerequisites:
     name: Check release pre-requisites
-    needs: [ create-draft, wait-for-build, bump-sec-scanners-main-branch ]
+    needs: [create-draft, wait-for-build, bump-sec-scanners-main-branch]
     runs-on: ubuntu-latest
 
     steps:
