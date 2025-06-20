@@ -367,6 +367,21 @@ class TestK8sAuthHeaders:
                 False,
                 ValueError,
             ),
+            (
+                "Domain that contains allowed domain as substring (should be blocked)",
+                "https://api.notexample.com",
+                ["example.com"],
+                False,
+                None,
+            ),
+            ("Exact domain match", "https://example.com", ["example.com"], True, None),
+            (
+                "Port in URL should be handled correctly",
+                "https://api.example.com:8080",
+                ["example.com"],
+                True,
+                None,
+            ),
         ],
     )
     def test_is_cluster_url_allowed(

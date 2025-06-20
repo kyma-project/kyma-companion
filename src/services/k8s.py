@@ -77,7 +77,7 @@ class K8sAuthHeaders(BaseModel):
             domain = parsed_url.hostname.strip("/")
             # if hostname ends with any of the allowed domains, return True
             return any(
-                domain.endswith(allowed_domain)
+                domain.endswith(f".{allowed_domain}") or domain == allowed_domain
                 for allowed_domain in self.allowed_domains
             )
         except Exception as e:
