@@ -37,7 +37,11 @@ def load_env_from_json() -> None:
 
             # Set environment variables for all keys except "models"
             for key, value in config_file.items():
-                if key != "models":  # Skip models
+                if key == "models":  # Skip models
+                    continue
+                elif isinstance(value, list | dict):
+                    os.environ[key] = json.dumps(value)
+                else:
                     os.environ[key] = str(value)
     except json.JSONDecodeError as e:
         logging.error(f"Invalid JSON format in config file {config_path}: {e}")
@@ -117,6 +121,8 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     "K8S_RESOURCE_RELATIONS_JSON_FILE",
     default=f"{ Path(__file__).parent.parent.parent }/config/resource_relations.json",
 )
+
+ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
 
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
