@@ -70,7 +70,11 @@ class K8sAuthHeaders(BaseModel):
 
         try:
             # parse the URL to get the domain
-            domain = urlparse(self.x_cluster_url).hostname.strip("/")
+            parsed_url = urlparse(self.x_cluster_url)
+            if not parsed_url or not parsed_url.hostname:
+                raise ValueError("Failed to parse. Invalid cluster URL format.")
+
+            domain = parsed_url.hostname.strip("/")
             # if hostname ends with any of the allowed domains, return True
             return any(
                 domain.endswith(allowed_domain)

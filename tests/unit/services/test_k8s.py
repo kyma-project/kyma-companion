@@ -179,9 +179,10 @@ class TestK8sAuthHeaders:
         assert k8s_headers.get_auth_type() == expected_auth_type
 
     @pytest.mark.parametrize(
-        "k8s_headers, expected_error_msg",
+        "description, k8s_headers, expected_error_msg",
         [
             (
+                "Valid headers with token",
                 K8sAuthHeaders(
                     x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
@@ -192,6 +193,7 @@ class TestK8sAuthHeaders:
                 None,
             ),
             (
+                "Valid headers with client certificate and x_k8s_authorization",
                 K8sAuthHeaders(
                     x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
@@ -202,6 +204,7 @@ class TestK8sAuthHeaders:
                 None,
             ),
             (
+                "Valid headers with client certificate and x_client_key_data",
                 K8sAuthHeaders(
                     x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
@@ -212,6 +215,7 @@ class TestK8sAuthHeaders:
                 None,
             ),
             (
+                "missing x-cluster-url",
                 K8sAuthHeaders(
                     x_cluster_url="",
                     x_cluster_certificate_authority_data="abc",
@@ -222,8 +226,9 @@ class TestK8sAuthHeaders:
                 "x-cluster-url header is required.",
             ),
             (
+                "missing x-cluster-certificate-authority-data",
                 K8sAuthHeaders(
-                    x_cluster_url="abc",
+                    x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="",
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
@@ -232,8 +237,9 @@ class TestK8sAuthHeaders:
                 "x-cluster-certificate-authority-data header is required.",
             ),
             (
+                "missing required headers",
                 K8sAuthHeaders(
-                    x_cluster_url="abc",
+                    x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
@@ -243,8 +249,9 @@ class TestK8sAuthHeaders:
                 + "x-client-certificate-data and x-client-key-data headers are required.",
             ),
             (
+                "missing x_client_certificate_data header",
                 K8sAuthHeaders(
-                    x_cluster_url="abc",
+                    x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
@@ -254,8 +261,9 @@ class TestK8sAuthHeaders:
                 + "x-client-certificate-data and x-client-key-data headers are required.",
             ),
             (
+                "missing x_client_key_data header",
                 K8sAuthHeaders(
-                    x_cluster_url="abc",
+                    x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
                     x_k8s_authorization=None,
                     x_client_certificate_data="abc",
@@ -264,16 +272,126 @@ class TestK8sAuthHeaders:
                 "Either x-k8s-authorization header or "
                 + "x-client-certificate-data and x-client-key-data headers are required.",
             ),
+            (
+                "all domains allowed for x_cluster_url",
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data=None,
+                    allowed_domains=[],  # No domains specified, should allow all
+                ),
+                None,
+            ),
+            (
+                "allowed x_cluster_url domain",
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data=None,
+                    allowed_domains=["example.com"],
+                ),
+                None,
+            ),
+            (
+                "not allowed x_cluster_url domain",
+                K8sAuthHeaders(
+                    x_cluster_url="https://api.custom.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                    x_client_certificate_data="abc",
+                    x_client_key_data=None,
+                    allowed_domains=["example.com"],
+                ),
+                "Cluster URL https://api.custom.com is not allowed.",
+            ),
         ],
     )
-    def test_validate_headers(self, k8s_headers, expected_error_msg):
+    def test_validate_headers(
+        self, description: str, k8s_headers: K8sAuthHeaders, expected_error_msg: str
+    ):
         # given
         if expected_error_msg is not None:
             with pytest.raises(ValueError) as e:
                 k8s_headers.validate_headers()
-            assert expected_error_msg in str(e.value)
+            assert expected_error_msg in str(e.value), description
         else:
-            assert k8s_headers.validate_headers() is None
+            assert k8s_headers.validate_headers() is None, description
+
+    @pytest.mark.parametrize(
+        "description, x_cluster_url, allowed_domains, expected_result, expected_error",
+        [
+            ("Allowed domain", "https://api.example.com", ["example.com"], True, None),
+            (
+                "Subdomain allowed",
+                "https://k8s.cluster.example.com",
+                ["example.com"],
+                True,
+                None,
+            ),
+            (
+                "Not allowed domain",
+                "https://api.notallowed.com",
+                ["example.com"],
+                False,
+                None,
+            ),
+            (
+                "Multiple allowed domains, one matches",
+                "https://api.foo.org",
+                ["example.com", "foo.org"],
+                True,
+                None,
+            ),
+            (
+                "No allowed domains (should skip validation and allow)",
+                "https://api.anything.com",
+                [],
+                True,
+                None,
+            ),
+            (
+                "Malformed URL (should raise ValueError)",
+                "not-a-url",
+                ["example.com"],
+                False,
+                ValueError,
+            ),
+            (
+                "Hostname is None (should raise ValueError)",
+                "http://",
+                ["example.com"],
+                False,
+                ValueError,
+            ),
+        ],
+    )
+    def test_is_cluster_url_allowed(
+        self,
+        description,
+        x_cluster_url,
+        allowed_domains,
+        expected_result,
+        expected_error,
+    ):
+        headers = K8sAuthHeaders(
+            x_cluster_url=x_cluster_url,
+            x_cluster_certificate_authority_data="dGVzdA==",
+            x_k8s_authorization="token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+            allowed_domains=allowed_domains,
+        )
+
+        # when/then
+        if expected_error:
+            with pytest.raises(expected_error):
+                headers.is_cluster_url_allowed()
+        else:
+            assert headers.is_cluster_url_allowed() == expected_result, description
 
 
 class TestK8sClient:
