@@ -17,6 +17,7 @@ from utils.utils import (
     JWT_TOKEN_SERVICE_ACCOUNT,
     JWT_TOKEN_SUB,
     create_session_id,
+    generate_sha256_hash,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
     parse_k8s_token,
@@ -109,19 +110,19 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
         (
             "valid token with sub",
             {JWT_TOKEN_SUB: "user123"},
-            "user123",
+            "e606e38b0d8c19b24cf0ee3808183162ea7cd63ff7912dbb22b5e803286b4446",
             None,
         ),
         (
             "valid token with email",
             {JWT_TOKEN_EMAIL: "user@example.com"},
-            "user@example.com",
+            "b4c9a289323b21a01c3e940f150eb9b8c542587f1abfd8f0e1cc1ffc5e475514",
             None,
         ),
         (
             "valid token with service account name",
             {JWT_TOKEN_SERVICE_ACCOUNT: "service-account"},
-            "service-account",
+            "eb358b69ae30c7bea54b497b6ab1bcffb613bcf1e82099e6bb082047df8b4965",
             None,
         ),
         (
@@ -200,13 +201,13 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
         # Test case 1: Certificate with Common Name
         (
             generate_pem_cert("test_user", "12345"),
-            "test_user",
+            "1160130875fda0812c99c5e3f1a03516471a6370c4f97129b221938eb4763e63",
             None,
         ),
         # Test case 2: Certificate without Common Name but with serial number
         (
             generate_pem_cert("", "67890"),
-            "67890",
+            "e2217d3e4e120c6a3372a1890f03e232b35ad659d71f7a62501a4ee204a3e66d",
             None,
         ),
         # Test case 3: Invalid certificate data (e.g., not a valid PEM)
@@ -286,3 +287,31 @@ def test_to_sequence_messages(
     else:
         result = to_sequence_messages(input_data)
         assert result == expected_output, test_description
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_hash",
+    [
+        ("hello", "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"),
+        ("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+        ("123456", "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"),
+        (
+            "test string",
+            "d5579c46dfcc7f18207013e65b44e4cb4e2c2298f4ac457ba8f82743f31e930b",
+        ),
+        (
+            "test@email.com",
+            "73062d872926c2a556f17b36f50e328ddf9bff9d403939bd14b6c3b7f5a33fc2",
+        ),
+        (
+            "Person Name",
+            "524540a60d1c748cbd8019a8702f5ba3e345168e590fe6460715af0f552c7083",
+        ),
+        (
+            "UNAUTHORIZED",
+            "87a5e00b7c0b4287fea96bbeabc05fdfdaacba5346b606366be40fbf3046cc9a",
+        ),
+    ],
+)
+def test_generate_sha256_hash(input_data, expected_hash):
+    assert generate_sha256_hash(input_data) == expected_hash

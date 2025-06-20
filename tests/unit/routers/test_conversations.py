@@ -45,7 +45,10 @@ class MockService(IService):
         ]
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
-        return user_identifier != "UNAUTHORIZED"
+        return (
+            user_identifier
+            != "87a5e00b7c0b4287fea96bbeabc05fdfdaacba5346b606366be40fbf3046cc9a"
+        )
 
     async def is_usage_limit_exceeded(
         self, cluster_id: str
@@ -904,7 +907,7 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
             "conversation1",
             jwt.encode({"sub": "user1"}, "secret", algorithm="HS256"),
             None,
-            "user1",
+            "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
             True,
             None,
         ),
@@ -931,7 +934,7 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
             "conversation1",
             None,
             SAMPLE_CLIENT_CERTIFICATE_DATA,
-            "system:admin",
+            "259c31ec6667be354fc6d007a452e2d09002bc396b2b6da976980b0cca0b8ced",
             True,
             None,
         ),
