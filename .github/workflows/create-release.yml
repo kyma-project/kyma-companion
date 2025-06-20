@@ -173,7 +173,7 @@ jobs:
     outputs:
       sha: ${{ steps.get_sha.outputs.sha }}
     steps:
-      - name: Checkout target branch from another repo
+      - name: Checkout release branch
         uses: actions/checkout@v4
         with:
           repository: ${{ env.REPOSITORY_FULL_NAME }}
