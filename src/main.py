@@ -96,7 +96,7 @@ def handle_http_exception(exc: HTTPException) -> JSONResponse:
 
     return JSONResponse(
         status_code=status,
-        content=response_map.get(status, default_response),
+        content=response_map.get(status, default_response),  # type: ignore
     )
 
 
