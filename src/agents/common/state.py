@@ -45,6 +45,20 @@ class GatekeeperResponse(BaseModel):
         ),
     ]
 
+    query_intent: Annotated[
+        str,
+        Field(
+            description="Intent of the user query",
+        ),
+    ]
+
+    category: Annotated[
+        str,
+        Field(
+            description="Category of the user intent",
+        ),
+    ]
+
 
 class SubTask(BaseModel):
     """Sub-task data model."""
