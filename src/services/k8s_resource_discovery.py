@@ -16,7 +16,11 @@ RETRY_ATTEMPTS = 3
 
 
 class ResourceKind(BaseModel):
-    """ResourceKind is a class that represents a kind of resource in Kubernetes."""
+    """ResourceKind is a class that represents a kind of resource in Kubernetes.
+    The resource kind is the kind of the resource in the Kubernetes API.
+    The resource kind is used to identify the resource in the Kubernetes API.
+    The resource kind is used to identify the resource in the Kubernetes API.
+    """
 
     name: str
     singular_name: str | None = Field(
