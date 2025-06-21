@@ -21,8 +21,6 @@ def handle_query(user_query, conversation_history):
     is_past_tense = detect_past_tense(user_query)
 
     # Step 2: Check if the answer can be derived from conversation history
-    # For past tense queries, look for answers in conversation history
-    # If multiple issues are discussed, prioritize the most recent one
     if is_past_tense and answer_in_history(user_intent, conversation_history) and is_complete_answer(user_intent, conversation_history):
         return {{
             "direct_response": get_answer_from_history(user_intent, conversation_history),
@@ -92,7 +90,18 @@ def generate_response(user_intent):
     pass
 
 def identify_user_intent(user_query, conversation_history):
-    """Identifies and extracts the user's intent from the user query and conversation history."""
+    """
+    Identifies and extracts the user's intent from the user query and conversation history.
+    
+    CRITICAL: When the user query contains pronouns or refers to previous topics (like "it", "that", "this", "them", "example of it"),
+    you MUST analyze the conversation history to understand what the user is referring to.
+        
+    For example:
+    - If previous context discussed "Kyma Function" and user asks "check it?"
+    - The intent should be identified as "Check Kyma Function"
+        
+    The conversation history provides essential context for resolving ambiguous references.
+    """
     pass
 
 def detect_past_tense(user_query):
