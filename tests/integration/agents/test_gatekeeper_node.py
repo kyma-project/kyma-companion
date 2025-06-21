@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import GEval
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.metrics.g_eval.g_eval import GEval
+from deepeval.test_case.llm_test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -432,7 +432,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node decline a general non-technical query about Capital of Germany",
+            "tests that the gatekeeper node decline a general non-technical query about Capital of Germany - should not be influenced by system message context",
             [
                 SystemMessage(
                     content="The user query is related to: "
