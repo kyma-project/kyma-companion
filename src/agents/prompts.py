@@ -30,7 +30,7 @@ def handle_query(user_query, conversation_history):
     # Step 3: Classify the user intent into categories
     category = classify_user_intent(user_intent)
 
-    # Step 4: Handling Kyma and Kubernetes
+    # Step 4: Handling Kyma or Kubernetes
     if category in [
         "Kyma", "Kubernetes"
     ]:
@@ -39,7 +39,7 @@ def handle_query(user_query, conversation_history):
             "forward_query": True,
         }}
 
-    # Step 5: Handling programming and about you queries
+    # Step 5: Handling programming or about you queries
     if category in ["Programming" , "About You"]:
         return {{
             "direct_response": generate_response(user_intent),
@@ -75,12 +75,14 @@ def get_answer_from_history(user_intent, conversation_history):
 def classify_user_intent(user_intent):
     """
     Classifies user intent into the following categories:
-    - "Kyma": kyma related queries 
-    - "Kubernetes": kubernetes related queries
-    - "Programming": general programming related queries (NOT specific to Kyma/Kubernetes)
-    - "About You": queries about you and your capabilities
-    - "Greeting": greeting queries
-    - "Irrelevant": ALL other queries including general knowledge, geography, history, science, etc.
+    - "Kyma": kyma related user intent 
+    - "Kubernetes": kubernetes related user intent
+    - "Programming": Programming related user intent (NOT specific to Kyma/Kubernetes)
+    - "About You": user intent about you and your capabilities
+    - "Greeting": greeting user intent, e.g "Hello", "Hi", "How are you?", "Hey", "Good morning", 
+      "Good afternoon", "Good evening", "Howdy", "Hey there", "Greetings", or any simple 
+      social pleasantries without technical content
+    - "Irrelevant": ALL other user intent including general knowledge, geography, history, science, etc.
     
     """
     pass
