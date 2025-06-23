@@ -166,6 +166,7 @@ jobs:
           poetry run poe test-integration
 
   get-image-sha:
+    name: Get Release branch head commit SHA
     runs-on: ubuntu-latest
     needs: validate-input-params
     env:
@@ -190,8 +191,8 @@ jobs:
     secrets: inherit
     with:
       IMAGE_NAME: europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${{ needs.get-image-sha.outputs.sha }}
-      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
-      TEST_REF: ${{ github.event.pull_request.head.ref }}
+      TEST_REPO_FULLNAME: ${{ github.repository }}
+      TEST_REF: ${{ needs.get-image-sha.outputs.sha }}
 
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
