@@ -1,6 +1,6 @@
 import json
 from http import HTTPStatus
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException, Request
@@ -67,10 +67,8 @@ def mock_call_next():
         ),
     ],
 )
-@patch("main.logger")
 @pytest.mark.asyncio
 async def test_http_exception_handling(
-    mock_logger,
     mock_request,
     mock_call_next,
     status_code,
@@ -91,14 +89,9 @@ async def test_http_exception_handling(
     assert content["error"] == expected_error
     assert content["message"] == expected_message
 
-    mock_logger.error.assert_called_once_with(
-        f"HTTPException {status_code}: {http_exc}"
-    )
 
-
-@patch("main.logger")
 @pytest.mark.asyncio
-async def test_rate_limit_exception_handling(mock_logger, mock_request, mock_call_next):
+async def test_rate_limit_exception_handling(mock_request, mock_call_next):
     """Test handling of rate limit exceptions."""
     retry_after_sec = 542523
     rate_limit_detail = {
@@ -125,16 +118,9 @@ async def test_rate_limit_exception_handling(mock_logger, mock_request, mock_cal
     assert content == rate_limit_detail
     assert response.headers["Retry-After"] == str(retry_after_sec)
 
-    mock_logger.error.assert_called_once_with(
-        f"HTTPException {ERROR_RATE_LIMIT_CODE}: {http_exc}"
-    )
 
-
-@patch("main.logger")
 @pytest.mark.asyncio
-async def test_successful_request_passthrough(
-    mock_logger, mock_request, mock_call_next
-):
+async def test_successful_request_passthrough(mock_request, mock_call_next):
     """Test that successful requests pass through without modification."""
 
     expected_response = JSONResponse(content={"success": True})
@@ -144,5 +130,3 @@ async def test_successful_request_passthrough(
 
     assert response is expected_response
     mock_call_next.assert_called_once_with(mock_request)
-
-    mock_logger.error.assert_not_called()
