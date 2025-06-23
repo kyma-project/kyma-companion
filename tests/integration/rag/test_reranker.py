@@ -2,8 +2,11 @@ import os
 
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import ContextualPrecisionMetric, GEval
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.metrics.contextual_precision.contextual_precision import (
+    ContextualPrecisionMetric,
+)
+from deepeval.metrics.g_eval.g_eval import GEval
+from deepeval.test_case.llm_test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.documents import Document
 
 from rag.reranker.reranker import (
