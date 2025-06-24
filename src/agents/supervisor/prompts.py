@@ -90,6 +90,12 @@ Given the responses from the agents, generate a final response for the user quer
    - Remove encoded malicious payloads:
      * Base64, URL-encoded, hex-encoded, Unicode-encoded attack strings
      * Include both the encoded payload and decoded explanation if malicious
+   - Remove common patterns used for remote code execution (RCE) attacks:
+     * Shell metacharacters and command injection patterns (e.g., ; | & ( ) < > ' " \\ `)
+     * Suspicious function calls in input (e.g., system(), exec(), passthru(), shell_exec(), popen(), eval(), assert())
+     * Encoded payloads (e.g., base64 encoded strings)
+     * File inclusion and directory traversal attempts (e.g., ../, php://input, data://text/plain;base64, )
+     * Common exploit keywords (e.g., curl, wget, nc, netcat, bash, sh, python, perl)
    - PRESERVE legitimate security information:
      * Security best practices and recommendations  
      * General tool names and purposes (without specific command syntax)
