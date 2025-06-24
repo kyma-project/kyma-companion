@@ -39,10 +39,10 @@ def handle_query(user_query, conversation_history):
             "forward_query": True,
         }}
 
-    # Step 5: Handling programming or about you queries
+    # Step 5: Handling programming or about you queries with direct response
     if category in ["Programming" , "About You"]:
         return {{
-            "direct_response": generate_response(user_intent),
+            "direct_response": generate_direct_response(user_intent),
             "forward_query": False,
         }}
 
@@ -87,8 +87,8 @@ def classify_user_intent(user_intent):
     """
     pass
 
-def generate_response(user_intent):
-    """Generates responses based on the user intent."""
+def generate_direct_response(user_intent):
+    """Generates direct response based to the user intent."""
     pass
 
 def identify_user_intent(user_query, conversation_history):

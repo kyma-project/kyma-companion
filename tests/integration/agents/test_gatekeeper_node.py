@@ -671,6 +671,32 @@ async def test_invoke_gatekeeper_node(
             "Kubernetes",
             True,
         ),
+        (
+            "Kyma vs Cloud Foundry comparison should be categorized as Kyma",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(
+                    content="What is the difference between Kyma and Cloud Foundry?"
+                ),
+            ],
+            "Kyma",
+            True,
+        ),
+        (
+            "Kyma vs OpenShift comparison should be categorized as Kyma",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="How does Kyma compare to OpenShift?"),
+            ],
+            "Kyma",
+            True,
+        ),
     ],
 )
 @pytest.mark.asyncio
