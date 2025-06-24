@@ -150,6 +150,7 @@ def llm_reranker(app_models):
             4,
             [
                 "datasets/reranker/expose-function-using-apirule/01_expose_a_function_using_the_apirule_custom_resource_steps.md",
+                "datasets/reranker/expose-function-using-apirule/02_expose_a_function_using_the_apirule_custom_resource.md",
             ],
             True,
         ),
