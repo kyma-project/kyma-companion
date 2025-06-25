@@ -65,8 +65,10 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
         return None
 
-    # skip gatekeeper node, if request was forwarded to supervisor
+    # send planing task, if request was forwarded to supervisor
     if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
+        # Mark Planning Task pending
+        PLANNING_TASK["status"] = SubTaskStatus.PENDING
         return {
             "agent": GATEKEEPER,
             "error": None,
