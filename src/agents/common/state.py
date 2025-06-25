@@ -150,6 +150,16 @@ class Plan(BaseModel):
     )
 
 
+class GraphInput(BaseModel):
+    """Input for the companion graph."""
+
+    messages: list[BaseMessage]
+    user_input: UserInput
+    k8s_client: Annotated[Any, Field(default=None, exclude=True)]
+    subtasks: list[SubTask] = []
+    error: str | None = None
+
+
 class CompanionState(BaseModel):
     """State for the main companion graph.
 
