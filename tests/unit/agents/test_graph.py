@@ -283,7 +283,7 @@ class TestCompanionGraph:
             (
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false}',
+                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "query_intent" : "Programming", "category" : "Programming"}',
                 {
                     "messages": [
                         AIMessage(
@@ -300,7 +300,7 @@ class TestCompanionGraph:
             (
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
-                '{"direct_response" :"", "forward_query" : true}',
+                '{"direct_response" :"", "forward_query" : true, "query_intent" : "Kyma", "category" : "Kyma"}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
