@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics import GEval
-from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.metrics.g_eval.g_eval import GEval
+from deepeval.test_case.llm_test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -307,7 +307,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             [
                 SystemMessage(
                     content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="What is Kyma?"),
                 AIMessage(
@@ -372,7 +372,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node correctly reply to greeting",
+            "correctly reply to greeting",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -384,7 +384,43 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            "tests that the gatekeeper node correctly forward the query",
+            "correctly replies to Hello greeting despite technical context",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'apps/v1', 'resource_namespace': 'kyma-system'}"
+                ),
+                HumanMessage(content="Hello"),
+            ],
+            "Hello! How can I assist you with Kyma or Kubernetes today?",
+            False,
+        ),
+        (
+            "correctly replies to Hey greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="Hey"),
+            ],
+            "Hello! How can I assist you with Kyma or Kubernetes today?",
+            False,
+        ),
+        (
+            "correctly replies to Good morning greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'serverless.kyma-project.io/v1alpha1', 'resource_namespace': 'default'}"
+                ),
+                HumanMessage(content="Good morning"),
+            ],
+            "Hello! How can I assist you with Kyma or Kubernetes today?",
+            False,
+        ),
+        (
+            "correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -396,7 +432,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node correctly forward the query",
+            "correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -408,7 +444,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node correctly forward the query",
+            "correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -420,7 +456,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node correctly forward the query",
+            "correctly forward the query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -432,7 +468,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             True,
         ),
         (
-            "tests that the gatekeeper node decline a general non-technical query about Capital of Germany",
+            "decline a general non-technical query about Capital of Germany - should not be influenced by system message context",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -444,7 +480,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            "tests that the gatekeeper node correctly answers a general programming related query",
+            "answers a general programming related query",
             [
                 SystemMessage(
                     content="The user query is related to: "
@@ -471,7 +507,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            "tests that the gatekeeper node to forward user query as user explicitly ask  for recheck status",
+            "forward user query as user explicitly ask  for recheck status",
             [
                 AIMessage(
                     content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
@@ -522,6 +558,171 @@ async def test_invoke_gatekeeper_node(
             expected_output=expected_answer,
         )
         assert_test(test_case, [gatekeeper_correctness_metric])
+
+
+@pytest.mark.parametrize(
+    "test_description, messages, expected_category, expected_query_forwarding",
+    [
+        (
+            "Programming query should be categorized as Programming",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content='Write "Hello, World!" code in Python'),
+            ],
+            "Programming",
+            False,
+        ),
+        (
+            "Greeting query should be categorized as Greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="Hi"),
+            ],
+            "Greeting",
+            False,
+        ),
+        (
+            "Hello greeting should be categorized as Greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                ),
+                HumanMessage(content="Hello"),
+            ],
+            "Greeting",
+            False,
+        ),
+        (
+            "Hey greeting should be categorized as Greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'prod-namespace'}"
+                ),
+                HumanMessage(content="Hey"),
+            ],
+            "Greeting",
+            False,
+        ),
+        (
+            "Good morning greeting should be categorized as Greeting",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test'}"
+                ),
+                HumanMessage(content="Good morning"),
+            ],
+            "Greeting",
+            False,
+        ),
+        (
+            "Capabilities query should be categorized as About You",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                ),
+                HumanMessage(content="what are your capabilities?"),
+            ],
+            "About You",
+            False,
+        ),
+        (
+            "Non-technical query should be categorized as Irrelevant",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="What is the capital of Germany?"),
+            ],
+            "Irrelevant",
+            False,
+        ),
+        (
+            "Kyma query should be categorized as Kyma",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="what is the status of my api rule"),
+            ],
+            "Kyma",
+            True,
+        ),
+        (
+            "Kubernetes query should be categorized as Kubernetes",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                ),
+                HumanMessage(content="what is the status of my pod"),
+            ],
+            "Kubernetes",
+            True,
+        ),
+        (
+            "Kyma vs Cloud Foundry comparison should be categorized as Kyma",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(
+                    content="What is the difference between Kyma and Cloud Foundry?"
+                ),
+            ],
+            "Kyma",
+            True,
+        ),
+        (
+            "Kyma vs OpenShift comparison should be categorized as Kyma",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="How does Kyma compare to OpenShift?"),
+            ],
+            "Kyma",
+            True,
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_gatekeeper_categorization(
+    test_description,
+    messages,
+    expected_category,
+    expected_query_forwarding,
+    companion_graph,
+):
+    """
+    Tests that the invoke_gatekeeper_node method correctly categorizes different types of queries.
+    """
+    # Given: a conversation state with messages
+    state = create_mock_state(messages)
+
+    # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
+    actual_response = await companion_graph._invoke_gatekeeper_node(state)
+
+    # Then: verify the category is correct
+    assert (
+        actual_response.category == expected_category
+    ), f"Expected category '{expected_category}' but got '{actual_response.category}'"
+    assert (
+        actual_response.forward_query == expected_query_forwarding
+    ), f"Expected forward_query {expected_query_forwarding} but got {actual_response.forward_query}"
 
 
 @pytest.mark.parametrize(
