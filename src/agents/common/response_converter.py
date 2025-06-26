@@ -144,6 +144,10 @@ class ResponseConverter:
         """
         logger.debug("Response conversion node - creating HTML structure")
 
+        # check if yaml markers available
+        if yaml_config[:7] != "```yaml":
+            yaml_config = "```yaml\n" + yaml_config + "\n```"
+
         html_content = f"""
         <div class="yaml-block">
             <div class="yaml">
