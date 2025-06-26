@@ -1103,7 +1103,7 @@ class TestK8sClient:
 
         # Verify that the sanitizer was called with the raw logs
         raw_logs = [str(line) for line in mock_response_lines]
-        mock_sanitizer.sanitize.assert_called_once_with(mock_response_lines)
+        mock_sanitizer.sanitize.assert_called_once_with(raw_logs)
 
         # Verify the API call was made correctly
         expected_url = "https://k8s-api.example.com/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
