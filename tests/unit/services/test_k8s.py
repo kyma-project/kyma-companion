@@ -1060,7 +1060,7 @@ class TestK8sClient:
         """
         Test the data sanitizer functionality in fetch_pod_logs method.
         """
-        # Arrange
+
         mock_response = Mock()
         mock_response.status_code = HTTPStatus.OK
         mock_response.iter_lines.return_value = mock_response_lines
@@ -1070,7 +1070,6 @@ class TestK8sClient:
         mock_sanitizer = Mock()
         mock_sanitizer.sanitize.return_value = expected_sanitized_logs
 
-        # Create K8sClient instance with mocked sanitizer
         mock_k8s_auth_headers = MagicMock()
         mock_k8s_auth_headers.get_decoded_certificate_authority_data.return_value = (
             b"fake-ca-cert"
@@ -1082,14 +1081,13 @@ class TestK8sClient:
             k8s_client = K8sClient(
                 k8s_auth_headers=mock_k8s_auth_headers, data_sanitizer=mock_sanitizer
             )
-        # Mock the necessary methods of K8sClient
+
         k8s_client.get_api_server = Mock(return_value="https://k8s-api.example.com")
         k8s_client._get_auth_headers = Mock(
             return_value={"Authorization": "Bearer token"}
         )
         k8s_client.ca_temp_filename = "/tmp/ca.crt"
 
-        # Act
         result = k8s_client.fetch_pod_logs(
             name="test-pod",
             namespace="default",
@@ -1105,7 +1103,7 @@ class TestK8sClient:
 
         # Verify that the sanitizer was called with the raw logs
         raw_logs = [str(line) for line in mock_response_lines]
-        mock_sanitizer.sanitize.assert_called_once_with(raw_logs)
+        mock_sanitizer.sanitize.assert_called_once_with(mock_response_lines)
 
         # Verify the API call was made correctly
         expected_url = "https://k8s-api.example.com/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
