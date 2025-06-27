@@ -550,6 +550,9 @@ class K8sClient:
         logs = []
         for line in response.iter_lines():
             logs.append(str(line))
+
+        if self.data_sanitizer:
+            return self.data_sanitizer.sanitize(logs)  # type: ignore
         return logs
 
     def get_group_version(self, group_version: str) -> dict:
