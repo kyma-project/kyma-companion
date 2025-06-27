@@ -23,6 +23,7 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     CONTINUE,
+    FEEDBACK,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
     MESSAGES,
@@ -34,6 +35,7 @@ from agents.common.constants import (
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
+    FeedbackResponse,
     GatekeeperResponse,
     GraphInput,
     Plan,
@@ -46,6 +48,7 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
+    FEEDBACK_PROMPT,
     GATEKEEPER_INSTRUCTIONS,
     GATEKEEPER_PROMPT,
 )
@@ -87,6 +90,23 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif isinstance(o, IK8sClient):
             return o.model_dump()
         return super().default(o)
+
+
+def create_chain(
+    main_sys_prompt: str,
+    followup_sys_prompt: str,
+    model: IModel,
+    schema: Any,
+) -> RunnableSequence:
+    """Create the a chain."""
+    prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", main_sys_prompt),
+            MessagesPlaceholder(variable_name="messages"),
+            ("system", followup_sys_prompt),
+        ]
+    )
+    return prompt_template | model.llm.with_structured_output(schema, method="function_calling")  # type: ignore
 
 
 class IGraph(Protocol):
@@ -149,6 +169,9 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
+        self._feedback_chain = self._create_feedback_chain(
+            cast(IModel, models["gpt-4.1-nano"])
+        )
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
 
@@ -232,9 +255,33 @@ class CompanionGraph:
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
+    @staticmethod
+    def _create_feedback_chain(model: IModel) -> RunnableSequence:
+        """Feedback node chain to handle feedback queries."""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", FEEDBACK_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        return prompt | model.llm.with_structured_output(FeedbackResponse, method="function_calling")  # type: ignore
+
+    async def _invoke_feedback_node(self, state: CompanionState) -> FeedbackResponse:
+        """Invoke the Feedback node."""
+        response = await ainvoke_chain(
+            self._feedback_chain,
+            {
+                "messages": filter_valid_messages(
+                    state.get_messages_including_summary()
+                ),
+            },
+        )
+        return response
+
     async def _invoke_gatekeeper_node(
         self, state: CompanionState
-    ) -> GatekeeperResponse | Any:
+    ) -> GatekeeperResponse:
         """Invoke the Gatekeeper node."""
         response = await ainvoke_chain(
             self._gatekeeper_chain,
@@ -250,9 +297,23 @@ class CompanionGraph:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
 
         try:
-            response = await self._invoke_gatekeeper_node(state)
+            feedback_response = await self._invoke_feedback_node(state)
+            if feedback_response.response == FEEDBACK:
+                logger.debug("Feedback node responding directly")
+                return {
+                    NEXT: END,
+                    MESSAGES: [
+                        AIMessage(
+                            content="Thank you for your feedback.",
+                            name=FEEDBACK,
+                        )
+                    ],
+                    SUBTASKS: [],
+                }
 
-            if response.forward_query:
+            gatekeeper_response = await self._invoke_gatekeeper_node(state)
+
+            if gatekeeper_response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")
                 return {
                     NEXT: SUPERVISOR,
@@ -263,7 +324,7 @@ class CompanionGraph:
                 NEXT: END,
                 MESSAGES: [
                     AIMessage(
-                        content=response.direct_response,
+                        content=gatekeeper_response.direct_response,
                         name=GATEKEEPER,
                     )
                 ],

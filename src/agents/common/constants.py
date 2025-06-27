@@ -80,3 +80,5 @@ TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
 )
 
 TOTAL_CHUNKS_LIMIT = 3  # Limit the number of allowed chunking of tool response
+
+FEEDBACK = "feedback"

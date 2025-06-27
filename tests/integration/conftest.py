@@ -64,6 +64,7 @@ def app_models(init_config):
     return {
         MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
         MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
+        "gpt-4.1-nano": model_factory.create_model("gpt-4.1-nano"),
         MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(
             MAIN_EMBEDDING_MODEL_NAME
         ),
