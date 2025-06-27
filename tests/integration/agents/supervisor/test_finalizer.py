@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 from deepeval import assert_test
-from deepeval.test_case import LLMTestCase
+from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.test_common_node import create_mock_state
@@ -95,7 +95,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'resource_namespace': ''}"
                 ),
                 HumanMessage(content="What is Kyma?"),
                 AIMessage(
@@ -486,7 +486,7 @@ async def test_generate_final_response(
         msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
     )
     test_case = LLMTestCase(
-        input=latest_human_message,
+        input=str(latest_human_message),
         actual_output=result["messages"][0].content,
         expected_output=expected_answer,
     )
