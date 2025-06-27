@@ -13,7 +13,7 @@ from langchain_core.messages import (
 )
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableSequence
+from langchain_core.runnables import RunnableConfig, RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.constants import END
 from langgraph.graph import StateGraph
@@ -35,6 +35,7 @@ from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
     GatekeeperResponse,
+    GraphInput,
     Plan,
     SubTask,
     UserInput,
@@ -354,26 +355,29 @@ class CompanionGraph:
         x_cluster_url = k8s_client.get_api_server()
         cluster_id = x_cluster_url.split(".")[1]
 
+        # define the graph input.
+        graph_input = GraphInput(
+            messages=messages,
+            user_input=user_input,
+            k8s_client=k8s_client,
+            subtasks=[],
+            error=None,
+        )
+
+        run_config = RunnableConfig(
+            configurable={
+                "thread_id": conversation_id,
+            },
+            callbacks=[
+                self.handler,
+                UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
+            ],
+            tags=[cluster_id],  # cluster_id as a tag for traceability and rate limiting
+        )
+
         async for chunk in self.graph.astream(
-            input={
-                "messages": messages,
-                "input": user_input,
-                "k8s_client": k8s_client,
-                "subtasks": [],
-                "error": None,
-            },
-            config={
-                "configurable": {
-                    "thread_id": conversation_id,
-                },
-                "callbacks": [
-                    self.handler,
-                    UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
-                ],
-                "tags": [
-                    cluster_id
-                ],  # cluster_id as a tag for traceability and rate limiting
-            },
+            input=graph_input,
+            config=run_config,
         ):
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
