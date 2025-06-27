@@ -517,7 +517,7 @@ class TestCompanionGraph:
 
         # Create an async generator function to mock the graph's astream method
         async def mock_astream(*args, **kwargs):
-            first_message = kwargs["input"]["messages"][0]
+            first_message = kwargs["input"].messages[0]
             if (
                 message.namespace == ""
                 and (message.resource_kind == "")

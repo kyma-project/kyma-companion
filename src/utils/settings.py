@@ -2,9 +2,18 @@ import json
 import logging
 import os
 import sys
+from enum import StrEnum
 from pathlib import Path
 
 from decouple import config
+
+
+class LangfuseMaskingModes(StrEnum):
+    """Enumeration for Langfuse masking modes."""
+
+    DISABLED = "DISABLED"
+    PARTIAL = "PARTIAL"
+    REDACTED = "REDACTED"
 
 
 def load_env_from_json() -> None:
@@ -91,7 +100,9 @@ LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
-LANGFUSE_DEBUG_MODE = config("LANGFUSE_DEBUG_MODE", default="False")
+LANGFUSE_MASKING_MODE = config(
+    "LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes
+)
 
 # Summarization
 SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
