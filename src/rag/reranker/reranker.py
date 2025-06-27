@@ -73,9 +73,11 @@ class LLMReranker(IReranker):
         logger.info(f"Reranking documents for queries: {queries}")
         docs = []
         try:
-            docs = get_relevant_documents(docs_list, input_limit)
+            # Use RRF to get relevant documents with limit output_limit + 3.
+            docs = get_relevant_documents(docs_list, input_limit, output_limit + 3)
             if not docs:
                 docs = flatten_unique(docs_list, output_limit)
+            # Use the LLM model to rerank the documents with limit output_limit.
             return await self._chain_ainvoke(docs, queries, output_limit)
         except Exception as e:
             logger.error(
@@ -102,6 +104,9 @@ class LLMReranker(IReranker):
                 "queries": format_queries(queries),
                 "limit": limit,
             },
+        )
+        logger.info(
+            f"Reranked {len(response.documents)} documents for queries: {queries}"
         )
         # return reranked documents capped at the output limit
         reranked_docs = [

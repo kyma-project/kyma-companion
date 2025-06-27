@@ -221,7 +221,7 @@ def llm_reranker(app_models):
             [
                 "what are the prerequisites for Kyma application to enable logging?",
             ],
-            4,
+            1,
             [
                 "datasets/reranker/prerequisites-to-enable-logging/03_application_logs_prerequisites.md",
             ],

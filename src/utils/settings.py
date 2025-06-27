@@ -66,7 +66,7 @@ DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Initialization of the main chat LLM models and main embedding model.
 MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
-MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4.1-mini")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
 MAIN_EMBEDDING_MODEL_NAME = config(
     "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
 )
