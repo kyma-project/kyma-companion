@@ -6,6 +6,7 @@ from rag.reranker.utils import dict_to_document, document_to_str, str_to_documen
 def test_document_to_str():
     # Given
     doc = Document(
+        id="doc1",
         type="Document",
         page_content="this is a test content",
         metadata={"type": "test", "metadata": "test"},
@@ -15,7 +16,7 @@ def test_document_to_str():
     s = document_to_str(doc)
 
     # Then
-    assert s == '{"kwargs": {"page_content": "this is a test content"}}'
+    assert s == '{"kwargs": {"id": "doc1", "page_content": "this is a test content"}}'
 
 
 def test_dict_to_document():

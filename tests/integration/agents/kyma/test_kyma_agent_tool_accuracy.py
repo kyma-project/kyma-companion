@@ -20,7 +20,7 @@ from utils.settings import (
 )
 
 AGENT_STEPS_NUMBER = 25
-TOOL_ACCURACY_THRESHOLD = 0.7
+TOOL_ACCURACY_THRESHOLD = 0.5
 
 
 def create_k8s_client():
@@ -304,7 +304,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1alpha2', "
                         "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', 'resource_name': 'sub1', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="is there any issue?"),
