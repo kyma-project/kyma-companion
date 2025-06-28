@@ -112,6 +112,11 @@ SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
     "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
 )
 
+# RAG
+RAG_RELEVANCY_SCORE_THRESHOLD = config(
+    "RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float
+)
+
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)

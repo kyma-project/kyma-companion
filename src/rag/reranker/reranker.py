@@ -1,3 +1,4 @@
+import copy
 from typing import Protocol
 
 from langchain_core.documents import Document
@@ -10,20 +11,22 @@ from rag.reranker.utils import document_to_str
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
+from utils.settings import RAG_RELEVANCY_SCORE_THRESHOLD
 
 logger = get_logger(__name__)
 
 
-class RerankedDoc(BaseModel):
-    """A Reranked Document with page content."""
+class DocumentRelevancyScore(BaseModel):
+    """Model representing a document's relevancy score."""
 
-    page_content: str
+    id: str
+    score: float
 
 
-class RerankedDocs(BaseModel):
-    """A list of Reranked Documents."""
+class DocumentRelevancyScores(BaseModel):
+    """Model representing a list of document relevancy scores."""
 
-    documents: list[RerankedDoc]
+    documents: list[DocumentRelevancyScore]
 
 
 class IReranker(Protocol):
@@ -47,7 +50,7 @@ class LLMReranker(IReranker):
         """Initialize the reranker."""
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
         self.chain = prompt | model.llm.with_structured_output(
-            RerankedDocs, method="function_calling"
+            DocumentRelevancyScores, method="function_calling"
         )
         logger.info("Reranker initialized")
 
@@ -96,24 +99,51 @@ class LLMReranker(IReranker):
         :return: A list of reranked documents.
         """
 
+        # Assign a unique ID to each document.
+        # This is necessary because the LLM model expects unique IDs for each document.
+        # clone the documents to avoid modifying the original ones.
+        docs_cloned = [copy.copy(doc) for doc in docs]
+        doc_id_prefix = "tmp-id-"
+        for i, doc in enumerate(docs_cloned):
+            doc.id = doc.id or f"{doc_id_prefix}{i + 1}"
+
         # reranking using the LLM model
-        response: RerankedDocs = await ainvoke_chain(
+        response: DocumentRelevancyScores = await ainvoke_chain(
             self.chain,
             {
-                "documents": format_documents(docs),
+                "documents": format_documents(docs_cloned),
                 "queries": format_queries(queries),
                 "limit": limit,
             },
         )
-        logger.info(
-            f"Reranked {len(response.documents)} documents for queries: {queries}"
-        )
-        # return reranked documents capped at the output limit
-        reranked_docs = [
-            Document(page_content=doc.page_content)
-            for doc in response.documents[:limit]
+
+        # sort the documents by score in descending order
+        response.documents.sort(key=lambda x: x.score, reverse=True)
+        # filter out documents with a score below the threshold.
+        response.documents = [
+            doc
+            for doc in response.documents
+            if doc.score >= RAG_RELEVANCY_SCORE_THRESHOLD
         ]
-        return reranked_docs
+
+        logger.info(
+            f"Reranker: filtered {len(response.documents)} out of {len(docs_cloned)} documents for queries: {queries}"
+        )
+
+        # return reranked documents capped at the output limit
+        reranked_docs: list[Document] = []
+        for doc in response.documents:
+            # find the original document by ID.
+            original_doc = next((d for d in docs_cloned if d.id == doc.id), None)
+            if original_doc:
+                # remove the temporary ID if it exists.
+                original_doc.id = (
+                    None
+                    if original_doc.id.startswith(doc_id_prefix)
+                    else original_doc.id
+                )
+                reranked_docs.append(original_doc)
+        return reranked_docs[:limit]
 
 
 def flatten_unique(docs_list: list[list[Document]], limit: int = -1) -> list[Document]:

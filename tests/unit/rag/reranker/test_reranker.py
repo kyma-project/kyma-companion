@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, Mock
 
 import pytest
 from langchain_core.documents import Document
@@ -6,9 +6,8 @@ from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.reranker import (
+    DocumentRelevancyScores,
     LLMReranker,
-    RerankedDoc,
-    RerankedDocs,
     flatten_unique,
     format_documents,
     format_queries,
@@ -44,7 +43,9 @@ class TestLLMReranker:
         reranker = LLMReranker(model=mock_model)
 
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        expected_chain = prompt | mock_model.llm.with_structured_output(RerankedDocs)
+        expected_chain = prompt | mock_model.llm.with_structured_output(
+            DocumentRelevancyScores
+        )
 
         # Then
         assert reranker is not None
@@ -126,7 +127,7 @@ class TestLLMReranker:
         """
 
         # Given
-        mock_response = docs_to_reranked_docs(expected_docs_list)
+        mock_response = expected_docs_list
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
         reranker = LLMReranker(model=mock_model)
@@ -148,7 +149,7 @@ class TestLLMReranker:
         reranker.chain.ainvoke.assert_called_with(
             config=None,
             input={
-                "documents": format_documents(given_relevant_docs),
+                "documents": ANY,
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
             },
@@ -262,15 +263,3 @@ def test_format_queries():
 
     # Then
     assert s == '["this is a test query 1","this is a test query 2"]'
-
-
-def docs_to_reranked_docs(docs: list[Document]) -> list[RerankedDoc]:
-    """
-    Convert a list of documents to a list of RerankedDoc objects.
-    :param docs: A list of documents.
-    :return: A list of RerankedDoc objects.
-    """
-    reranked_docs = []
-    for doc in docs:
-        reranked_docs.append(RerankedDoc(page_content=doc.page_content))
-    return reranked_docs
