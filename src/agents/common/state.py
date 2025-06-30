@@ -64,9 +64,9 @@ class FeedbackResponse(BaseModel):
     """Feedback response data model."""
 
     response: Annotated[
-        str,
+        bool,
         Field(
-            description="return 'feedback' if user query is positive feedback, or 'forward' if user query is not positive feedback",
+            description="return 'True' if user query is feedback, 'False' if user query is not feedback",
         ),
     ]
 

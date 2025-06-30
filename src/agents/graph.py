@@ -23,7 +23,6 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     COMMON,
     CONTINUE,
-    FEEDBACK,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
     MESSAGES,
@@ -272,9 +271,7 @@ class CompanionGraph:
         response = await ainvoke_chain(
             self._feedback_chain,
             {
-                "messages": filter_valid_messages(
-                    state.get_messages_including_summary()
-                ),
+                "messages": [state.messages[-1]],  # last human message
             },
         )
         return response
@@ -298,18 +295,6 @@ class CompanionGraph:
 
         try:
             feedback_response = await self._invoke_feedback_node(state)
-            if feedback_response.response == FEEDBACK:
-                logger.debug("Feedback node responding directly")
-                return {
-                    NEXT: END,
-                    MESSAGES: [
-                        AIMessage(
-                            content="Thank you for your feedback.",
-                            name=FEEDBACK,
-                        )
-                    ],
-                    SUBTASKS: [],
-                }
 
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
 
@@ -318,6 +303,7 @@ class CompanionGraph:
                 return {
                     NEXT: SUPERVISOR,
                     SUBTASKS: [],
+                    "is_feedback": feedback_response.response,
                 }
             logger.debug("Gatekeeper node responding directly")
             return {
@@ -329,6 +315,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
+                "is_feedback": feedback_response.response,
             }
         except Exception:
             logger.exception("Error in gatekeeper node")
@@ -341,6 +328,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
+                "is_feedback": feedback_response.response,
             }
 
     def _build_graph(self) -> CompiledStateGraph:

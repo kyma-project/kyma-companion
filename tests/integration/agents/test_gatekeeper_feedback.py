@@ -1,13 +1,13 @@
 import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from agents.common.constants import FEEDBACK
 from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
     "test_description, messages, expected_answer",
-    [  # Implicit Kubernetes/Kyma queries that should be forwarded
+    [
+        # Implicit Kubernetes/Kyma queries that should be forwarded
         (
             "user gives good feedback",
             [
@@ -17,7 +17,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="your response is useful."),
             ],
-            FEEDBACK,
+            True,
         ),
         # Additional positive feedback variations
         (
@@ -29,7 +29,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Thanks, that helped!"),
             ],
-            FEEDBACK,
+            True,
         ),
         (
             "user confirms solution worked",
@@ -40,7 +40,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Perfect, exactly what I needed"),
             ],
-            FEEDBACK,
+            True,
         ),
         (
             "user gives enthusiastic positive feedback",
@@ -51,7 +51,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Great explanation! This solved my problem."),
             ],
-            FEEDBACK,
+            True,
         ),
         (
             "user gives bad feedback",
@@ -62,7 +62,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="this is wrong response."),
             ],
-            "forward",
+            True,
         ),
         # Additional negative feedback variations
         (
@@ -74,7 +74,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="This doesn't work for my use case."),
             ],
-            "forward",
+            True,
         ),
         (
             "user states response is off-topic",
@@ -85,7 +85,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="This is not what I asked for."),
             ],
-            "forward",
+            True,
         ),
         (
             "user finds solution incomplete",
@@ -96,7 +96,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="The solution is incomplete and missing steps."),
             ],
-            "forward",
+            True,
         ),
         # Neutral/clarifying feedback
         (
@@ -108,7 +108,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Can you explain this better?"),
             ],
-            "forward",
+            False,
         ),
         (
             "user requests more details",
@@ -119,7 +119,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="I need more details about this approach."),
             ],
-            "forward",
+            False,
         ),
         (
             "user asks about specific scenario",
@@ -130,7 +130,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="What about high availability scenarios?"),
             ],
-            "forward",
+            False,
         ),
         # Mixed feedback
         (
@@ -144,7 +144,7 @@ from integration.conftest import create_mock_state
                     content="This is helpful but I need more information about security aspects."
                 ),
             ],
-            "forward",
+            True,
         ),
         (
             "user gives neutral response",
@@ -155,7 +155,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Alright."),
             ],
-            "forward",
+            False,
         ),
         # Specific technical feedback
         (
@@ -167,7 +167,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="The YAML syntax is incorrect in your example."),
             ],
-            "forward",
+            True,
         ),
         (
             "user requests alternative approach",
@@ -180,7 +180,7 @@ from integration.conftest import create_mock_state
                     content="Is there a different way to achieve this without using HPA?"
                 ),
             ],
-            "forward",
+            False,
         ),
         # I am still confused
         (
@@ -192,7 +192,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="I'm still confused about this."),
             ],
-            "forward",
+            True,
         ),
         # Ambiguous feedback
         (
@@ -204,7 +204,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="Hmm, okay."),
             ],
-            "forward",
+            False,
         ),
         (
             "user gives brief confirmation",
@@ -215,7 +215,39 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="I see."),
             ],
-            "forward",
+            False,
+        ),
+        # can you clarify more?
+        (
+            "user asks for clarification",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'ConfigMap', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="Can you clarify more?"),
+            ],
+            False,
+        ),
+        (
+            "user asks for clarification",
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_kind': 'ConfigMap', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
+                ),
+                HumanMessage(content="Can you elaborate more?"),
+            ],
+            False,
+        ),
+        # give shorter explanation
+        (
+            "user gives shorter explanation",
+            [
+                SystemMessage(content="The user query is related to: "),
+                HumanMessage(content="give me a shorter explanation"),
+            ],
+            False,
         ),
     ],
 )
@@ -234,4 +266,6 @@ async def test_invoke_feedback_node(
 
     # When: the feedback node's invoke_feedback_node method is invoked
     actual_response = await companion_graph._invoke_feedback_node(state)
-    assert actual_response.response == expected_answer
+    assert (
+        actual_response.response == expected_answer
+    ), f"Expected {expected_answer} but got {actual_response.response} for test case: {test_description}"
