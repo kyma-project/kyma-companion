@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock
 
 import pytest
 from langchain_core.documents import Document
@@ -6,13 +6,14 @@ from langchain_core.prompts import PromptTemplate
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.reranker import (
+    DocumentRelevancyScore,
+    DocumentRelevancyScores,
     LLMReranker,
-    RerankedDoc,
-    RerankedDocs,
     flatten_unique,
     format_documents,
     format_queries,
 )
+from rag.reranker.utils import TMP_DOC_ID_PREFIX, get_tmp_document_id
 from unit.rag.reranker.fixtures import (
     doc1,
     doc2,
@@ -44,7 +45,9 @@ class TestLLMReranker:
         reranker = LLMReranker(model=mock_model)
 
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        expected_chain = prompt | mock_model.llm.with_structured_output(RerankedDocs)
+        expected_chain = prompt | mock_model.llm.with_structured_output(
+            DocumentRelevancyScores
+        )
 
         # Then
         assert reranker is not None
@@ -80,7 +83,7 @@ class TestLLMReranker:
                 ["this is a test query 1", "this is a test query 2"],
                 10,
                 5,
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8],
                 True,
                 [doc1, doc2, doc3, doc4, doc5],
             ),
@@ -103,7 +106,7 @@ class TestLLMReranker:
                 ["this is a test query 1", "this is a test query 2"],
                 10,
                 5,
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
+                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8],
                 False,
                 [doc1, doc2, doc3, doc4, doc5],
             ),
@@ -126,7 +129,7 @@ class TestLLMReranker:
         """
 
         # Given
-        mock_response = docs_to_reranked_docs(expected_docs_list)
+        mock_response = expected_docs_list
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
         reranker = LLMReranker(model=mock_model)
@@ -148,11 +151,119 @@ class TestLLMReranker:
         reranker.chain.ainvoke.assert_called_with(
             config=None,
             input={
-                "documents": format_documents(given_relevant_docs),
+                "documents": ANY,
                 "queries": format_queries(given_queries),
                 "limit": given_output_limit,
             },
         )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "description, docs, limit, scores, threshold, expected_docs",
+        [
+            (
+                "All documents above threshold, sorted by score",
+                [doc1, doc2, doc3],
+                5,
+                [
+                    (get_tmp_document_id("1"), 0.8),
+                    (get_tmp_document_id("2"), 0.9),
+                    (get_tmp_document_id("3"), 0.7),
+                ],
+                0.5,
+                [doc2, doc1, doc3],
+            ),
+            (
+                "All documents equal or above threshold, sorted by score",
+                [doc1, doc2, doc3],
+                5,
+                [
+                    (get_tmp_document_id("1"), 0.8),
+                    (get_tmp_document_id("2"), 0.9),
+                    (get_tmp_document_id("3"), 0.5),
+                ],
+                0.5,
+                [doc2, doc1, doc3],
+            ),
+            (
+                "All documents above threshold, sorted by score, but limit is less than number of documents.",
+                [doc1, doc2, doc3],
+                2,
+                [
+                    (get_tmp_document_id("1"), 0.8),
+                    (get_tmp_document_id("2"), 0.9),
+                    (get_tmp_document_id("3"), 0.7),
+                ],
+                0.5,
+                [doc2, doc1],
+            ),
+            (
+                "Some documents below threshold",
+                [doc1, doc2, doc3],
+                5,
+                [
+                    (get_tmp_document_id("1"), 0.9),
+                    (get_tmp_document_id("2"), 0.3),
+                    (get_tmp_document_id("3"), 0.6),
+                ],
+                0.5,
+                [doc1, doc3],
+            ),
+            (
+                "All documents below threshold",
+                [doc1, doc2],
+                5,
+                [(get_tmp_document_id("1"), 0.1), (get_tmp_document_id("2"), 0.2)],
+                0.5,
+                [],
+            ),
+            (
+                "Limit greater than available docs",
+                [doc1, doc2],
+                5,
+                [(get_tmp_document_id("1"), 0.9), (get_tmp_document_id("2"), 0.8)],
+                0.5,
+                [doc1, doc2],
+            ),
+        ],
+    )
+    async def test_chain_ainvoke(
+        self, monkeypatch, description, docs, limit, scores, threshold, expected_docs
+    ):
+        # Patch RAG_RELEVANCY_SCORE_THRESHOLD
+        monkeypatch.setattr(
+            "rag.reranker.reranker.RAG_RELEVANCY_SCORE_THRESHOLD", threshold
+        )
+
+        # Patch ainvoke_chain to return a DocumentRelevancyScores with the given scores
+        async def fake_ainvoke_chain(chain, input_dict):
+            return DocumentRelevancyScores(
+                documents=[
+                    DocumentRelevancyScore(id=doc_id, score=score)
+                    for doc_id, score in scores
+                ]
+            )
+
+        monkeypatch.setattr("rag.reranker.reranker.ainvoke_chain", fake_ainvoke_chain)
+
+        # Patch model and chain
+        mock_model = MagicMock()
+        reranker = LLMReranker(model=mock_model)
+        reranker.chain = MagicMock()
+
+        given_queries = ["This is a test query 1", "This is a test query 2"]
+
+        # when
+        got_docs = await reranker._chain_ainvoke(docs, given_queries, limit)
+
+        # then
+        # Check that the returned documents have the expected IDs (order matters)
+        assert got_docs == expected_docs, description
+        for doc in got_docs:
+            if doc.id:
+                assert not doc.id.startswith(
+                    TMP_DOC_ID_PREFIX
+                ), "Temporary Document ID should have been removed."
 
 
 @pytest.mark.parametrize(
@@ -262,15 +373,3 @@ def test_format_queries():
 
     # Then
     assert s == '["this is a test query 1","this is a test query 2"]'
-
-
-def docs_to_reranked_docs(docs: list[Document]) -> list[RerankedDoc]:
-    """
-    Convert a list of documents to a list of RerankedDoc objects.
-    :param docs: A list of documents.
-    :return: A list of RerankedDoc objects.
-    """
-    reranked_docs = []
-    for doc in docs:
-        reranked_docs.append(RerankedDoc(page_content=doc.page_content))
-    return reranked_docs

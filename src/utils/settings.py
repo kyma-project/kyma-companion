@@ -75,7 +75,7 @@ DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Initialization of the main chat LLM models and main embedding model.
 MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
-MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4.1-mini")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
 MAIN_EMBEDDING_MODEL_NAME = config(
     "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
 )
@@ -110,6 +110,11 @@ SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
 )
 SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
     "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
+)
+
+# RAG
+RAG_RELEVANCY_SCORE_THRESHOLD = config(
+    "RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float
 )
 
 DATABASE_URL = config("DATABASE_URL", None)
