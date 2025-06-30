@@ -292,7 +292,7 @@ class TestCompanionGraph:
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
                 '{"response" : true}',
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "query_intent" : "Programming", "category" : "Programming"}',
+                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "messages": [
                         AIMessage(
@@ -311,7 +311,7 @@ class TestCompanionGraph:
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
                 '{"response" : false}',
-                '{"direct_response" :"", "forward_query" : true, "query_intent" : "Kyma", "category" : "Kyma"}',
+                '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
@@ -341,7 +341,7 @@ class TestCompanionGraph:
                 "Handles exception in feedback node with direct response",
                 [HumanMessage(content="What are Java and Python?")],
                 "feedback_exception",
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "query_intent" : "Programming", "category" : "Programming"}',
+                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "messages": [
                         AIMessage(
@@ -360,7 +360,7 @@ class TestCompanionGraph:
                 "Handles exception in feedback node with forward query",
                 [HumanMessage(content="What is Kyma?")],
                 "feedback_exception",
-                '{"direct_response" :"", "forward_query" : true, "query_intent" : "Kyma", "category" : "Kyma"}',
+                '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,

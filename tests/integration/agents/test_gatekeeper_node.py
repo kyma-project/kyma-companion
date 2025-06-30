@@ -507,7 +507,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             False,
         ),
         (
-            "forward user query as user explicitly ask  for recheck status",
+            "forward user query as user explicitly ask for recheck status",
             [
                 AIMessage(
                     content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
@@ -519,7 +519,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="Check why pod is failing"),
+                HumanMessage(content="Check again why pod is failing"),
             ],
             "",
             True,
@@ -546,7 +546,6 @@ async def test_invoke_gatekeeper_node(
 
     if expected_query_forwarding:
         assert actual_response.forward_query, "Query should be forwarded"
-
     else:
         assert (
             not actual_response.forward_query

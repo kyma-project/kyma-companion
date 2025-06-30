@@ -29,6 +29,9 @@ from agents.common.constants import (
     MESSAGES,
     MESSAGES_SUMMARY,
     NEXT,
+    RESPONSE_HELLO,
+    RESPONSE_QUERY_OUTSIDE_DOMAIN,
+    RESPONSE_UNABLE_TO_PROCESS,
     SUBTASKS,
     SUMMARIZATION,
 )
@@ -290,7 +293,48 @@ class CompanionGraph:
                 ),
             },
         )
-        return cast(GatekeeperResponse, response)
+        gatekeeper_response = cast(GatekeeperResponse, response)
+        gatekeeper_response.forward_query = False
+
+        if (
+            gatekeeper_response.is_prompt_injection
+            or gatekeeper_response.is_security_threat
+        ):
+            logger.debug("Prompt injection or security issue detected")
+            gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
+        elif gatekeeper_response.category == "Greeting":
+            logger.debug("Gatekeeper responding to greeting")
+            gatekeeper_response.direct_response = RESPONSE_HELLO
+        elif (
+            gatekeeper_response.category in ["Programming", "About You"]
+            and gatekeeper_response.direct_response
+        ):
+            logger.debug(
+                "Gatekeeper responding with direct response for programming or about you category"
+            )
+            gatekeeper_response.direct_response = gatekeeper_response.direct_response
+        elif (
+            gatekeeper_response.category in ["Kyma", "Kubernetes"]
+            and gatekeeper_response.answer_from_history
+        ):
+            logger.debug(
+                "Gatekeeper answering from conversation history for Kyma or Kubernetes"
+            )
+            gatekeeper_response.direct_response = (
+                gatekeeper_response.answer_from_history
+            )
+        elif gatekeeper_response.category in ["Kyma", "Kubernetes"]:
+            logger.debug("Gatekeeper forwarding the query")
+            gatekeeper_response.forward_query = True
+        else:
+            # If no category matched, return a default response.
+            logger.debug(
+                "Gatekeeper responding with default response because no category matched"
+            )
+            gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
+
+        # return the gatekeeper response.
+        return gatekeeper_response
 
     async def _gatekeeper_node(self, state: CompanionState) -> dict[str, Any]:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
@@ -303,7 +347,6 @@ class CompanionGraph:
 
         try:
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
-
             if gatekeeper_response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")
                 return {
@@ -311,12 +354,17 @@ class CompanionGraph:
                     SUBTASKS: [],
                     IS_FEEDBACK: feedback_response.response,
                 }
-            logger.debug("Gatekeeper node responding directly")
+
+            logger.debug("Gatekeeper node directly responding")
             return {
                 NEXT: END,
                 MESSAGES: [
                     AIMessage(
-                        content=gatekeeper_response.direct_response,
+                        content=(
+                            gatekeeper_response.direct_response
+                            if gatekeeper_response.direct_response
+                            else RESPONSE_UNABLE_TO_PROCESS
+                        ),
                         name=GATEKEEPER,
                     )
                 ],
