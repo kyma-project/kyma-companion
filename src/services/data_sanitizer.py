@@ -1,5 +1,6 @@
 import json
-from typing import Protocol
+import re
+from typing import Any, Protocol
 
 import scrubadub
 
@@ -69,7 +70,7 @@ SECRET_KIND_NAME = "Secret"
 class IDataSanitizer(Protocol):
     """A protocol for a data sanitizer."""
 
-    def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
+    def sanitize(self, data: Any | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
         ...
 
@@ -87,13 +88,53 @@ class DataSanitizer(metaclass=SingletonMeta):
         self.scrubber = scrubadub.Scrubber()
         self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
-    def sanitize(self, data: dict | list[dict]) -> dict | list[dict]:
+    def sanitize(self, data: Any | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
-        if isinstance(data, list):
-            return [self._sanitize_object(obj) for obj in data]
+        if isinstance(data, str):
+            return self._sanitize_raw_string_data(data)
+        elif isinstance(data, list):
+            return [
+                (
+                    self._sanitize_raw_string_data(obj)
+                    if isinstance(obj, str)
+                    else self._sanitize_object(obj)
+                )
+                for obj in data
+            ]
         elif isinstance(data, dict):
             return self._sanitize_object(data)
-        raise ValueError("Data must be a list or a dictionary.")
+        raise ValueError("Data must be a string or list or dictionary.")
+
+    def _sanitize_raw_string_data(
+        self, raw_text: str, replacement_text: str = "{{REDACTED}}"
+    ) -> str:
+        """
+        Sanitize raw string data by replacing personal information and credentials.
+        """
+
+        # Custom patterns for common credentials and sensitive data
+        credential_patterns = [
+            r"(?i)(password|passwd|pwd)\s*[=:]\s*[^\s\n]+",  # Passwords
+            r"(?i)(api[_-]?key|apikey)\s*[=:]\s*[^\s\n]+",  # API keys
+            r"(?i)(secret[_-]?key|secretkey)\s*[=:]\s*[^\s\n]+",  # Secret keys
+            r"(?i)(access[_-]?token|accesstoken)\s*[=:]\s*[^\s\n]+",  # Access tokens
+            r"(?i)(bearer\s+)[a-zA-Z0-9\-._~+/]+=*",  # Bearer tokens
+            r"(?i)(authorization:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
+            r"(?i)(auth:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
+            r"[a-zA-Z0-9]{32,}",  # Long alphanumeric strings (potential hashes/tokens)
+            r"(?i)(username|user)\s*[=:]\s*[^\s\n]+",  # Usernames
+        ]
+
+        # First pass: Use scrubadub for standard PII
+        sanitized_text = self.scrubber.clean(raw_text)
+
+        # Second pass: Apply custom credential patterns
+        for pattern in credential_patterns:
+            sanitized_text = re.sub(
+                pattern, replacement_text, sanitized_text, flags=re.IGNORECASE
+            )
+
+        return str(sanitized_text)
 
     def _sanitize_object(self, obj: dict) -> dict:
         """Sanitize a single object."""
@@ -210,8 +251,9 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         return result
 
-    def _clean_personal_information(self, data: dict) -> dict:
+    def _clean_personal_information(self, data: dict | str) -> dict | str:
         """Cleans personal information from a string."""
+
         data_str = json.dumps(data)
 
         sanitized_data_str = self.scrubber.clean(data_str)
