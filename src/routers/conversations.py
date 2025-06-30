@@ -1,6 +1,7 @@
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
@@ -140,7 +141,7 @@ async def init_conversation(
 
 @router.get("/{conversation_id}/questions", response_model=FollowUpQuestionsResponse)
 async def followup_questions(
-    conversation_id: Annotated[str, Path(title="The ID of the conversation")],
+    conversation_id: Annotated[UUID, Path(title="The ID of the conversation")],
     x_cluster_url: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
@@ -164,7 +165,7 @@ async def followup_questions(
         raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(conversation_id, k8s_auth_headers, conversation_service)
+    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -172,7 +173,7 @@ async def followup_questions(
     try:
         # Create follow-up questions.
         questions = await conversation_service.handle_followup_questions(
-            conversation_id=conversation_id
+            conversation_id=str(conversation_id)
         )
 
         # Return response.
@@ -190,7 +191,7 @@ async def followup_questions(
 @router.post("/{conversation_id}/messages")
 async def messages(
     conversation_id: Annotated[
-        str, Path(title="The ID of the conversation to continue")
+        UUID, Path(title="The ID of the conversation to continue")
     ],
     message: Annotated[Message, Body(title="The message to send")],
     x_cluster_url: Annotated[str, Header()],
@@ -204,7 +205,7 @@ async def messages(
     """Endpoint to send a message to the Kyma companion"""
 
     logger.info(
-        f"Handling conversation: {conversation_id}. Request data: {message.model_dump_json()}"
+        f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}"
     )
 
     # Validate if all the required K8s headers are provided.
@@ -223,7 +224,7 @@ async def messages(
         ) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(conversation_id, k8s_auth_headers, conversation_service)
+    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -266,7 +267,7 @@ async def messages(
         (
             chunk_response + b"\n"
             async for chunk in conversation_service.handle_request(
-                conversation_id, message, k8s_client
+                str(conversation_id), message, k8s_client
             )
             for chunk_response in (prepare_chunk_response(chunk),)
             if chunk_response is not None

@@ -3,6 +3,13 @@ import json
 from langchain.load import dumpd
 from langchain_core.documents import Document
 
+TMP_DOC_ID_PREFIX = "tmp-id-"
+
+
+def get_tmp_document_id(identifier: str, prefix: str = TMP_DOC_ID_PREFIX) -> str:
+    """Generate a temporary document ID with a given prefix."""
+    return f"{prefix}{identifier}"
+
 
 def document_to_str(doc: Document) -> str:
     """
