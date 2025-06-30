@@ -76,6 +76,7 @@ TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
     {
         "gpt-4.1": 100000,  # GPT-4.1 supports 1,047,576 input and 32,768 output tokens
         "gpt-4.1-mini": 100000,  # GPT-4.1 Mini supports 1,047,576 input and 32,768 output tokens
+        "gpt-4o-mini": 100000,  # GPT-4o Mini supports 112,000 input and 16,384 output tokens
     },
 )
 
