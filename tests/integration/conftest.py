@@ -18,6 +18,7 @@ from agents.common.state import CompanionState, UserInput
 from agents.graph import CompanionGraph
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
+from utils.models.contants import GPT_41_NANO_MODEL_NAME
 from utils.models.factory import ModelFactory
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
@@ -64,7 +65,7 @@ def app_models(init_config):
     return {
         MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
         MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
-        "gpt-4.1-nano": model_factory.create_model("gpt-4.1-nano"),
+        GPT_41_NANO_MODEL_NAME: model_factory.create_model(GPT_41_NANO_MODEL_NAME),
         MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(
             MAIN_EMBEDDING_MODEL_NAME
         ),
