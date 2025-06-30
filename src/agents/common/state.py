@@ -60,6 +60,17 @@ class GatekeeperResponse(BaseModel):
     ]
 
 
+class FeedbackResponse(BaseModel):
+    """Feedback response data model."""
+
+    response: Annotated[
+        bool,
+        Field(
+            description="return 'True' if user query is feedback, 'False' if user query is not feedback",
+        ),
+    ]
+
+
 class SubTask(BaseModel):
     """Sub-task data model."""
 
@@ -187,6 +198,7 @@ class CompanionState(BaseModel):
     subtasks: list[SubTask] | None = []
     error: str | None = None
     k8s_client: Annotated[Any, Field(default=None, exclude=True)]
+    is_feedback: bool = Field(default=False)
 
     # Model config for pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
