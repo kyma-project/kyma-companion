@@ -8,7 +8,12 @@ from langgraph.types import StateSnapshot
 
 from agents.common.constants import COMMON, GATEKEEPER
 from agents.common.data import Message
-from agents.common.state import CompanionState, GatekeeperResponse, SubTask
+from agents.common.state import (
+    CompanionState,
+    FeedbackResponse,
+    GatekeeperResponse,
+    SubTask,
+)
 from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
@@ -34,6 +39,7 @@ def mock_models():
     return {
         MAIN_MODEL_MINI_NAME: main_model_mini,
         MAIN_MODEL_NAME: main_model,
+        "gpt-4.1-nano": MagicMock(spec=IModel),
         MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 
@@ -89,6 +95,7 @@ def companion_graph(
         graph = CompanionGraph(mock_models, mock_memory)
         graph._invoke_common_node = AsyncMock()
         graph._invoke_gatekeeper_node = AsyncMock()
+        graph._invoke_feedback_node = AsyncMock()
         return graph
 
 
@@ -278,11 +285,12 @@ class TestCompanionGraph:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "test_case, messages, chain_response, expected_output, expected_error",
+        "test_case, messages, feedback_node_response, chain_response, expected_output, expected_error",
         [
             (
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
+                '{"response" : true}',
                 '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "query_intent" : "Programming", "category" : "Programming"}',
                 {
                     "messages": [
@@ -294,22 +302,26 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
+                    "is_feedback": True,
                 },
                 None,
             ),
             (
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
+                '{"response" : false}',
                 '{"direct_response" :"", "forward_query" : true, "query_intent" : "Kyma", "category" : "Kyma"}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
+                    "is_feedback": False,
                 },
                 None,
             ),
             (
                 "Handles exception during gatekeeper execution",
                 [HumanMessage(content="What is Java?")],
+                '{"response" : false}',
                 None,
                 {
                     "messages": [
@@ -320,6 +332,7 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
+                    "is_feedback": False,
                 },
                 "Error in common node: Test error",
             ),
@@ -330,12 +343,18 @@ class TestCompanionGraph:
         companion_graph,
         test_case,
         messages,
+        feedback_node_response,
         chain_response,
         expected_output,
         expected_error,
     ):
         # Given
         state = CompanionState(subtasks=[], messages=messages)
+
+        # Always set up feedback node
+        companion_graph._invoke_feedback_node.return_value = (
+            FeedbackResponse.model_validate_json(feedback_node_response)
+        )
 
         if expected_error:
             companion_graph._invoke_gatekeeper_node.side_effect = Exception(

@@ -47,19 +47,34 @@ def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     return tasks
 
 
-def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
-    """Process agent data and return the last message only."""
-    agent_data = data[agent]
+def handle_agent_error(
+    agent_data: dict[str, Any], agent: str
+) -> tuple[str | None, dict[str, Any] | None]:
+    """Handle agent error cases and return error message and response if applicable."""
+
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
         if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
             # we don't show summarization node, but only error
-            return {
+            error_response = {
                 "agent": None,
                 "error": agent_error,
                 "answer": {"content": "", "tasks": [], NEXT: END},
             }
+            return agent_error, error_response
+
+    return agent_error, None
+
+
+def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
+    """Process agent data and return the last message only."""
+    agent_data = data[agent]
+
+    # Handle error cases
+    agent_error, error_response = handle_agent_error(agent_data, agent)
+    if error_response is not None:
+        return error_response
 
     # skip summarization node
     if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
