@@ -6,7 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON, GATEKEEPER
+from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
@@ -302,7 +302,7 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    "is_feedback": True,
+                    IS_FEEDBACK: True,
                 },
                 None,
             ),
@@ -314,7 +314,7 @@ class TestCompanionGraph:
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
-                    "is_feedback": False,
+                    IS_FEEDBACK: False,
                 },
                 None,
             ),
@@ -332,7 +332,7 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    "is_feedback": False,
+                    IS_FEEDBACK: False,
                 },
                 "Error in common node: Test error",
             ),

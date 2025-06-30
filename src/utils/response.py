@@ -7,6 +7,7 @@ from agents.common.constants import (
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
+    IS_FEEDBACK,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -84,18 +85,18 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:
         # Mark Planning Task pending
         PLANNING_TASK["status"] = SubTaskStatus.PENDING
-        response = {
+        return {
             "agent": GATEKEEPER,
             "error": None,
             "answer": {
                 "content": "",
                 "tasks": [PLANNING_TASK],
+                IS_FEEDBACK: (
+                    agent_data.get(IS_FEEDBACK) if IS_FEEDBACK in agent_data else None
+                ),
                 NEXT: SUPERVISOR,
             },
         }
-        if "is_feedback" in agent_data:
-            response["answer"]["is_feedback"] = agent_data.get("is_feedback")
-        return response
 
     answer = {}
     if "messages" in agent_data and agent_data["messages"]:
@@ -106,8 +107,8 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
     if agent in (SUPERVISOR, GATEKEEPER):
         answer[NEXT] = agent_data.get(NEXT)
-        if "is_feedback" in agent_data:
-            answer["is_feedback"] = agent_data.get("is_feedback")
+        if IS_FEEDBACK in agent_data:
+            answer[IS_FEEDBACK] = agent_data.get(IS_FEEDBACK)
     else:
         # for all other agent, decide next based on pending task
         if agent_data.get("subtasks"):

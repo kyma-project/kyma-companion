@@ -25,6 +25,7 @@ from agents.common.constants import (
     CONTINUE,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
+    IS_FEEDBACK,
     MESSAGES,
     MESSAGES_SUMMARY,
     NEXT,
@@ -268,19 +269,19 @@ class CompanionGraph:
 
     async def _invoke_feedback_node(self, state: CompanionState) -> FeedbackResponse:
         """Invoke the Feedback node."""
-        response = await ainvoke_chain(
+        response: Any = await ainvoke_chain(
             self._feedback_chain,
             {
                 "messages": [state.messages[-1]],  # last human message
             },
         )
-        return response
+        return cast(FeedbackResponse, response)
 
     async def _invoke_gatekeeper_node(
         self, state: CompanionState
     ) -> GatekeeperResponse:
         """Invoke the Gatekeeper node."""
-        response = await ainvoke_chain(
+        response: Any = await ainvoke_chain(
             self._gatekeeper_chain,
             {
                 "messages": filter_valid_messages(
@@ -288,7 +289,7 @@ class CompanionGraph:
                 ),
             },
         )
-        return response
+        return cast(GatekeeperResponse, response)
 
     async def _gatekeeper_node(self, state: CompanionState) -> dict[str, Any]:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
@@ -303,7 +304,7 @@ class CompanionGraph:
                 return {
                     NEXT: SUPERVISOR,
                     SUBTASKS: [],
-                    "is_feedback": feedback_response.response,
+                    IS_FEEDBACK: feedback_response.response,
                 }
             logger.debug("Gatekeeper node responding directly")
             return {
@@ -315,7 +316,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                "is_feedback": feedback_response.response,
+                IS_FEEDBACK: feedback_response.response,
             }
         except Exception:
             logger.exception("Error in gatekeeper node")
@@ -328,7 +329,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                "is_feedback": feedback_response.response,
+                IS_FEEDBACK: feedback_response.response,
             }
 
     def _build_graph(self) -> CompiledStateGraph:
