@@ -159,10 +159,10 @@ class TestLLMReranker:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "docs, limit, scores, threshold, expected_docs",
+        "description, docs, limit, scores, threshold, expected_docs",
         [
-            # All documents above threshold, sorted by score
             (
+                "All documents above threshold, sorted by score",
                 [doc1, doc2, doc3],
                 5,
                 [
@@ -173,8 +173,8 @@ class TestLLMReranker:
                 0.5,
                 [doc2, doc1, doc3],
             ),
-            # All documents equal or above (>=) the threshold, sorted by score
             (
+                "All documents equal or above threshold, sorted by score",
                 [doc1, doc2, doc3],
                 5,
                 [
@@ -185,8 +185,8 @@ class TestLLMReranker:
                 0.5,
                 [doc2, doc1, doc3],
             ),
-            # All documents above threshold, sorted by score, but limit is less than number of documents.
             (
+                "All documents above threshold, sorted by score, but limit is less than number of documents.",
                 [doc1, doc2, doc3],
                 2,
                 [
@@ -197,8 +197,8 @@ class TestLLMReranker:
                 0.5,
                 [doc2, doc1],
             ),
-            # Some documents below threshold
             (
+                "Some documents below threshold",
                 [doc1, doc2, doc3],
                 5,
                 [
@@ -209,16 +209,16 @@ class TestLLMReranker:
                 0.5,
                 [doc1, doc3],
             ),
-            # All documents below threshold
             (
+                "All documents below threshold",
                 [doc1, doc2],
                 5,
                 [(get_tmp_document_id("1"), 0.1), (get_tmp_document_id("2"), 0.2)],
                 0.5,
                 [],
             ),
-            # Limit greater than available docs
             (
+                "Limit greater than available docs",
                 [doc1, doc2],
                 5,
                 [(get_tmp_document_id("1"), 0.9), (get_tmp_document_id("2"), 0.8)],
@@ -228,7 +228,7 @@ class TestLLMReranker:
         ],
     )
     async def test_chain_ainvoke(
-        self, monkeypatch, docs, limit, scores, threshold, expected_docs
+        self, monkeypatch, description, docs, limit, scores, threshold, expected_docs
     ):
         # Patch RAG_RELEVANCY_SCORE_THRESHOLD
         monkeypatch.setattr(
@@ -258,7 +258,7 @@ class TestLLMReranker:
 
         # then
         # Check that the returned documents have the expected IDs (order matters)
-        assert got_docs == expected_docs
+        assert got_docs == expected_docs, description
         for doc in got_docs:
             if doc.id:
                 assert not doc.id.startswith(
