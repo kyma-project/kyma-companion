@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.rrf import get_relevant_documents
-from rag.reranker.utils import document_to_str
+from rag.reranker.utils import TMP_DOC_ID_PREFIX, document_to_str, get_tmp_document_id
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
@@ -103,9 +103,8 @@ class LLMReranker(IReranker):
         # This is necessary because the LLM model expects unique IDs for each document.
         # clone the documents to avoid modifying the original ones.
         docs_cloned = [copy.copy(doc) for doc in docs]
-        doc_id_prefix = "tmp-id-"
         for i, doc in enumerate(docs_cloned):
-            doc.id = doc.id or f"{doc_id_prefix}{i + 1}"
+            doc.id = doc.id or get_tmp_document_id(f"{i + 1}", TMP_DOC_ID_PREFIX)
 
         # reranking using the LLM model
         response: DocumentRelevancyScores = await ainvoke_chain(
@@ -139,7 +138,7 @@ class LLMReranker(IReranker):
                 # remove the temporary ID if it exists.
                 original_doc.id = (
                     None
-                    if original_doc.id.startswith(doc_id_prefix)
+                    if original_doc.id.startswith(TMP_DOC_ID_PREFIX)
                     else original_doc.id
                 )
                 reranked_docs.append(original_doc)

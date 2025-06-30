@@ -1,6 +1,30 @@
+import pytest
 from langchain_core.documents import Document
 
-from rag.reranker.utils import dict_to_document, document_to_str, str_to_document
+from rag.reranker.utils import (
+    TMP_DOC_ID_PREFIX,
+    dict_to_document,
+    document_to_str,
+    get_tmp_document_id,
+    str_to_document,
+)
+
+
+@pytest.mark.parametrize(
+    "identifier, prefix, expected",
+    [
+        ("abc", TMP_DOC_ID_PREFIX, "tmp-id-abc"),
+        ("123", "custom-", "custom-123"),
+        ("", TMP_DOC_ID_PREFIX, "tmp-id-"),
+        ("xyz", "", "xyz"),
+        ("test", None, "tmp-id-test"),
+    ],
+)
+def test_get_tmp_document_id(identifier, prefix, expected):
+    if prefix is None:
+        assert get_tmp_document_id(identifier) == expected
+    else:
+        assert get_tmp_document_id(identifier, prefix) == expected
 
 
 def test_document_to_str():
