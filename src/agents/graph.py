@@ -296,7 +296,11 @@ class CompanionGraph:
 
         try:
             feedback_response = await self._invoke_feedback_node(state)
+        except Exception:
+            logger.exception("Error in feedback node")
+            feedback_response = FeedbackResponse(response=False)
 
+        try:
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
 
             if gatekeeper_response.forward_query:
