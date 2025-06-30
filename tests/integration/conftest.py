@@ -31,6 +31,8 @@ from utils.settings import (
 
 # the default port for redis is already in use by the system, so we use a different port for integration tests.
 integration_test_redis_port = 60379
+integration_test_mini_evaluator_model_name = "gpt-4.1-mini"
+integration_test_main_evaluator_model_name = "gpt-4.1"
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -62,7 +64,7 @@ def init_config():
 @pytest.fixture(scope="session")
 def app_models(init_config):
     model_factory = ModelFactory(config=init_config)
-    return {
+    models = {
         MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
         MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
         GPT_41_NANO_MODEL_NAME: model_factory.create_model(GPT_41_NANO_MODEL_NAME),
@@ -71,10 +73,29 @@ def app_models(init_config):
         ),
     }
 
+    if integration_test_mini_evaluator_model_name not in models:
+        models[integration_test_mini_evaluator_model_name] = model_factory.create_model(
+            integration_test_mini_evaluator_model_name
+        )
+
+    if integration_test_main_evaluator_model_name not in models:
+        models[integration_test_main_evaluator_model_name] = model_factory.create_model(
+            integration_test_main_evaluator_model_name
+        )
+
+    return models
+
 
 @pytest.fixture(scope="session")
 def evaluator_model(app_models):
-    return LangChainOpenAI(app_models[MAIN_MODEL_NAME].llm)
+    # It uses mini model for evaluation.
+    # Use evaluator_main_model, if bigger model is required for evaluation.
+    return LangChainOpenAI(app_models[integration_test_mini_evaluator_model_name].llm)
+
+
+@pytest.fixture(scope="session")
+def evaluator_main_model(app_models):
+    return LangChainOpenAI(app_models[integration_test_main_evaluator_model_name].llm)
 
 
 @pytest.fixture(scope="session")
