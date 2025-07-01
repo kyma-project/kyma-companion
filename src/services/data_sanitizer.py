@@ -97,7 +97,7 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
             sensitive_field_names=DEFAULT_SENSITIVE_FIELD_NAMES,
             sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
-            data_sanitization_regex_patterns=DEFAULT_REGEX_PATTERNS,
+            regex_patterns=DEFAULT_REGEX_PATTERNS,
         )
         self.scrubber = scrubadub.Scrubber()
         self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
@@ -130,7 +130,7 @@ class DataSanitizer(metaclass=SingletonMeta):
         sanitized_text = self.scrubber.clean(raw_text)
 
         # Second pass: Apply custom credential patterns
-        for pattern in self.config.data_sanitization_regex_patterns:
+        for pattern in self.config.regex_patterns:
             sanitized_text = re.sub(
                 pattern, replacement_text, sanitized_text, flags=re.IGNORECASE
             )

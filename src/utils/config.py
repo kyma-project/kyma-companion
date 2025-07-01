@@ -24,7 +24,7 @@ class DataSanitizationConfig(BaseModel):
     sensitive_field_names: list[str] | None = None
     sensitive_env_vars: list[str] | None = None
     sensitive_field_to_exclude: list[str] | None = None
-    data_sanitization_regex_patterns: list[str] | None = None
+    regex_patterns: list[str] | None = None
 
 
 class Config(BaseModel):
