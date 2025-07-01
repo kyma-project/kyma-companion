@@ -252,9 +252,8 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         return result
 
-    def _clean_personal_information(self, data: dict | str) -> dict | str:
+    def _clean_personal_information(self, data: dict) -> dict:
         """Cleans personal information from a string."""
-
         data_str = json.dumps(data)
 
         sanitized_data_str = self.scrubber.clean(data_str)
