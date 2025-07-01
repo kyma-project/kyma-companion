@@ -123,6 +123,9 @@ class ScenarioList(BaseModel):
 
         # get all the directories in the path.
         directories: list[str] = os.listdir(path)
+        if directories:
+            # sort directories to ensure consistent order
+            directories.sort(reverse=True)
         logger.info(f"Number of directories: {len(directories)}")
 
         # loop over all the directory names
