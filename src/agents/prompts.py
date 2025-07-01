@@ -2,51 +2,7 @@ COMMON_QUESTION_PROMPT = """
 Given the conversation and the last user query you are tasked with generating a response.
 """
 
-GATEKEEPER_INSTRUCTIONS = '''
-# Kyma Companion - Query Handling Logic
-
-# Helper functions 
-
-def get_answer_from_history(user_query, conversation_history):
-    """
-    Tries to answer the user query based on conversation history. Otherwise, returns an empty string.
-    """
-
-    # Step 1: Detect Past Tense.
-    is_past_tense = detect_past_tense(user_query)
-
-    # Step 2: Check if the answer can be derived from conversation history
-    if is_past_tense and answer_in_history(user_intent, conversation_history) and is_complete_answer(user_intent, conversation_history):
-        return generate_answer_from_history(user_intent, conversation_history)
-    
-    else:
-        return ""
-
-def answer_in_history(user_intent, conversation_history):
-    """Checks if an answer exists in conversation history. For ambiguous queries, assume they refer to the most recent issue."""
-    pass
-
-def is_complete_answer(user_intent, conversation_history):
-    """Determines if the conversation history contains a complete answer without generating new content."""
-    pass
-
-def generate_answer_from_history(user_intent, conversation_history):
-    """Retrieves relevant answer from conversation history. For ambiguous queries, prioritize the most recent issue discussed."""
-    pass
-
-def detect_past_tense(user_query):
-    """
-    Determines if the query is in past tense, which indicates we should check conversation history.
-    Look for past tense patterns and indicators:
-    - "what was", "what happened", "what went wrong", "what did you find"
-    - "what were", "what caused", "what led to", "how did"
-    - "why was", "why did", "why were", "previously"
-    - "what issue/problem/error/bug was", "what was the diagnosis" 
-    
-    The key principle is detecting when the user is asking about something that already occurred.
-    """
-    pass
-
+GATEKEEPER_INSTRUCTIONS = """
 # Additional information
   Resource status queries are queries that are asking about current status, issues, or configuration of resources.
   Examples:
@@ -64,7 +20,7 @@ def detect_past_tense(user_query):
   check if the complete answer exists in the conversation history before returning.
   However, present tense technical queries should still be forwarded for current status checks.
   In addition, follow up questions not answered in the conversation history should be forwarded.
-'''
+"""
 
 GATEKEEPER_PROMPT = """
 You are Kyma Companion, developed by SAP. Your purpose is to analyze user queries about Kyma and Kubernetes, 
@@ -80,10 +36,9 @@ and determine whether to handle them directly or forward them.
 - IMPORTANT: properly detect query tense
   - for past tense queries (starting with "what was...", "why was...", or containing past tense verbs): CHECK conversation history for answers
   - for present tense queries (starting with "what is...", "is there...", "are there..."): IGNORE conversation history for current issues, status, or configuration of resources
-- ALWAYS forward Kyma, Kubernetes queries asking about current status, issues, or configuration of resources
-- DECLINE all general knowledge queries that are non-technical (geography, history, science, entertainment, etc.)
-- greeting is not a general knowledge query
-- asking about you and your capabilities is not a general knowledge query
+- DECLINE all queries that are non-technical (geography, history, science, entertainment, etc.), but consider the following points:
+    - greeting is not a general knowledge query
+    - asking about you and your capabilities is not a general knowledge query
 """
 
 FEEDBACK_PROMPT = """

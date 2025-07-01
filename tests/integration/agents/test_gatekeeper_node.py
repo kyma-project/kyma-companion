@@ -519,7 +519,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     content="The user query is related to: "
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
-                HumanMessage(content="Check again why pod is failing"),
+                HumanMessage(content="Check why pod is failing"),
             ],
             "",
             True,

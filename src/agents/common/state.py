@@ -89,15 +89,15 @@ class GatekeeperResponse(BaseModel):
         str,
         Field(
             description="""
-            Classifies 'user intent' into the following categories:
-            - "Kyma": kyma related user intent
-            - "Kubernetes": kubernetes related user intent
-            - "Programming": Programming related user intent (NOT specific to Kyma/Kubernetes)
-            - "About You": user intent about you and your capabilities
+            Classifies 'user query or intent' into the following categories:
+            - "Kyma": User query related to kyma related user intent.
+            - "Kubernetes": User query related to kubernetes.
+            - "Programming": User query related to Programming but NOT specific to Kyma or Kubernetes.
+            - "About You": User query about you and your capabilities and expertise.
             - "Greeting": greeting user intent, e.g "Hello", "Hi", "How are you?", "Hey", "Good morning", 
                           "Good afternoon", "Good evening", "Howdy", "Hey there", "Greetings", 
                           or any simple social pleasantries without technical content
-            - "Irrelevant": ALL other user intent including general knowledge, geography, history, science, etc.
+            - "Irrelevant": ALL other user queries including general knowledge, geography, history, science, etc.
             """,
         ),
     ]
@@ -106,7 +106,7 @@ class GatekeeperResponse(BaseModel):
         str,
         Field(
             description="""
-            if category is "Programming" or "About You", then generate direct response based to the user intent.
+            If category is "Programming" or "About You", then generate direct response based to the user intent.
             Otherwise return empty string.
             """,
         ),
@@ -120,12 +120,35 @@ class GatekeeperResponse(BaseModel):
         ),
     ]
 
+    is_user_query_in_past_tense: Annotated[
+        bool,
+        Field(
+            default=False,
+            description="""
+                Determines if the query is in past tense, which indicates we should check conversation history.
+                Look for past tense patterns and indicators:
+                - "what was", "what happened", "what went wrong", "what did you find"
+                - "what were", "what caused", "what led to", "how did"
+                - "why was", "why did", "why were", "previously"
+                - "what issue/problem/error/bug was", "what was the diagnosis" 
+                
+                The key principle is detecting when the user is asking about something that already occurred.
+                """,
+        ),
+    ]
+
     answer_from_history: Annotated[
         str,
         Field(
+            default="",
             description="""
-            if category is Kyma or Kubernetes, then use get_answer_from_history helper method to fill this field.
+            Retrieve an answer from the conversation history only if the following conditions are true. 
             Otherwise return empty string.
+            1. If user query is NOT asking about current status, issues, or configuration of resources.
+            2. If an complete answer exists in conversation history. For ambiguous queries, 
+                assume they refer to the most recent issue.
+            3. If the conversation history contains a complete answer without generating new content.
+            For ambiguous queries, prioritize the most recent issue discussed.
             """,
         ),
     ]

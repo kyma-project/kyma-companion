@@ -293,7 +293,11 @@ class CompanionGraph:
                 ),
             },
         )
+
+        # Cast the response to GatekeeperResponse.
         gatekeeper_response = cast(GatekeeperResponse, response)
+
+        # set forward_query as false by default.
         gatekeeper_response.forward_query = False
 
         if (
@@ -312,10 +316,10 @@ class CompanionGraph:
             logger.debug(
                 "Gatekeeper responding with direct response for programming or about you category"
             )
-            gatekeeper_response.direct_response = gatekeeper_response.direct_response
         elif (
             gatekeeper_response.category in ["Kyma", "Kubernetes"]
             and gatekeeper_response.answer_from_history
+            and gatekeeper_response.is_user_query_in_past_tense
         ):
             logger.debug(
                 "Gatekeeper answering from conversation history for Kyma or Kubernetes"
