@@ -102,7 +102,7 @@ class DataSanitizer(metaclass=SingletonMeta):
         self.scrubber = scrubadub.Scrubber()
         self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
-    def sanitize(self, data: str | dict | list) -> dict | list | str:
+    def sanitize(self, data: str | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
         if isinstance(data, str):
             return self._sanitize_raw_string_data(data)
