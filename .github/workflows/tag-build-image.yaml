@@ -35,3 +35,5 @@ jobs:
       dockerfile: Dockerfile
       context: .
       tags: ${{ needs.compute-tags.outputs.tags }}
+      platforms: |
+        linux/amd64
