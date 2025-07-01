@@ -62,6 +62,19 @@ DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE = [
     "authorizers",
 ]
 
+# default_regex
+DEFAULT_REGEX_PATTERNS = [
+    r"(?i)(password|passwd|pwd)\s*[=:]\s*[^\s\n]+",  # Passwords
+    r"(?i)(api[_-]?key|apikey)\s*[=:]\s*[^\s\n]+",  # API keys
+    r"(?i)(secret[_-]?key|secretkey)\s*[=:]\s*[^\s\n]+",  # Secret keys
+    r"(?i)(access[_-]?token|accesstoken)\s*[=:]\s*[^\s\n]+",  # Access tokens
+    r"(?i)(bearer\s+)[a-zA-Z0-9\-._~+/]+=*",  # Bearer tokens
+    r"(?i)(authorization:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
+    r"(?i)(auth:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
+    r"[a-zA-Z0-9]{32,}",  # Long alphanumeric strings (potential hashes/tokens)
+    r"(?i)(username|user)\s*[=:]\s*[^\s\n]+",  # Usernames
+]
+
 REDACTED_VALUE = "[REDACTED]"
 SECRET_LIST_KIND_NAME = "SecretList"
 SECRET_KIND_NAME = "Secret"
@@ -70,7 +83,7 @@ SECRET_KIND_NAME = "Secret"
 class IDataSanitizer(Protocol):
     """A protocol for a data sanitizer."""
 
-    def sanitize(self, data: Any | dict | list[dict]) -> dict | list[dict] | Any:
+    def sanitize(self, data: str | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
         ...
 
@@ -84,11 +97,12 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_env_vars=DEFAULT_SENSITIVE_ENV_VARS,
             sensitive_field_names=DEFAULT_SENSITIVE_FIELD_NAMES,
             sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
+            data_sanitization_regex_patterns=DEFAULT_REGEX_PATTERNS,
         )
         self.scrubber = scrubadub.Scrubber()
         self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
-    def sanitize(self, data: Any | dict | list[dict]) -> dict | list[dict] | Any:
+    def sanitize(self, data: str | dict | list) -> dict | list | str:
         """Sanitize the data by removing sensitive information."""
         if isinstance(data, str):
             return self._sanitize_raw_string_data(data)
@@ -112,24 +126,11 @@ class DataSanitizer(metaclass=SingletonMeta):
         Sanitize raw string data by replacing personal information and credentials.
         """
 
-        # Custom patterns for common credentials and sensitive data
-        credential_patterns = [
-            r"(?i)(password|passwd|pwd)\s*[=:]\s*[^\s\n]+",  # Passwords
-            r"(?i)(api[_-]?key|apikey)\s*[=:]\s*[^\s\n]+",  # API keys
-            r"(?i)(secret[_-]?key|secretkey)\s*[=:]\s*[^\s\n]+",  # Secret keys
-            r"(?i)(access[_-]?token|accesstoken)\s*[=:]\s*[^\s\n]+",  # Access tokens
-            r"(?i)(bearer\s+)[a-zA-Z0-9\-._~+/]+=*",  # Bearer tokens
-            r"(?i)(authorization:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
-            r"(?i)(auth:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
-            r"[a-zA-Z0-9]{32,}",  # Long alphanumeric strings (potential hashes/tokens)
-            r"(?i)(username|user)\s*[=:]\s*[^\s\n]+",  # Usernames
-        ]
-
         # First pass: Use scrubadub for standard PII
         sanitized_text = self.scrubber.clean(raw_text)
 
         # Second pass: Apply custom credential patterns
-        for pattern in credential_patterns:
+        for pattern in self.config.data_sanitization_regex_patterns:
             sanitized_text = re.sub(
                 pattern, replacement_text, sanitized_text, flags=re.IGNORECASE
             )
