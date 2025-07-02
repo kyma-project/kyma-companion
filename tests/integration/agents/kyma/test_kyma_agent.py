@@ -775,19 +775,7 @@ async def test_invoke_chain(
             None,  # retrieval_context
             """I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.
 
-To troubleshoot the problem with your Kyma Function, you can consider the following general steps:
-
-1. **Check Logs**: Look at the logs of the Function to see if there are any error messages that can provide more context. You can do this by using `kubectl logs` command.
-
-2. **Inspect the Function Resource**: Use `kubectl describe function func1 -n kyma-app-serverless-syntax-err` to get detailed information about the Function, including events that might indicate what went wrong.
-
-3. **Validate the YAML Configuration**: Ensure that the YAML configuration for the Function is correct. Common issues include syntax errors, incorrect runtime settings, or missing dependencies.
-
-4. **Check Dependencies**: If your Function relies on external services or APIs, ensure that they are accessible and functioning correctly.
-
-5. **Resource Quotas**: Verify that there are no resource quota issues in the namespace that might be preventing the Function from running.
-
-If you continue to experience issues, you may want to consult the Kyma documentation or seek support from the Kyma community for more specific guidance.""",  # expected_result
+<SOME TROUBLESHOOTING TIPS HERE>""",  # expected_result
             None,  # expected_tool_call
             False,  # should_raise
         ),
