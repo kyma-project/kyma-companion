@@ -1224,6 +1224,11 @@ class TestDataSanitizer:
                 "32 char hash token",
             ),
             (
+                "This is a hash: 1234567890abcdef1234567890abcdef",
+                "This is a hash: 1234567890abcdef1234567890abcdef",
+                "just a hash with a prefix of key or token should not redacted",
+            ),
+            (
                 "Token: abcdef1234567890abcdef1234567890abcdef",
                 "{{REDACTED}}",
                 "40 char token",
