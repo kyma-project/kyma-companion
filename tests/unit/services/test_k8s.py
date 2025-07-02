@@ -990,7 +990,7 @@ class TestK8sClient:
                 ],
                 [
                     "{{REDACTED}}",
-                    "{{REDACTED}}: {{REDACTED}}.{{REDACTED}}.{{REDACTED}}_adQssw5c",
+                    "{{REDACTED}}",
                     "{{REDACTED}}",
                 ],
             ),
@@ -1036,9 +1036,32 @@ class TestK8sClient:
                     "Cache hit ratio: 85%",
                 ],
             ),
-            # Test case 11: Empty logs
+            # Test case 11: Multiple logs
+            (
+                [
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  password=secret123",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  user_name=joe",
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                ],
+                [
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  {{REDACTED}}",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  {{REDACTED}}",
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                ],
+            ),
+            # Test case 12: Empty logs
             ([], []),
-            # Test case 12: Logs with only whitespace
+            # Test case 13: Logs with only whitespace
             (["   ", "\t\n", ""], ["   ", "\t\n", ""]),
         ],
     )

@@ -68,11 +68,11 @@ DEFAULT_REGEX_PATTERNS = [
     r"(?i)(api[_-]?key|apikey)\s*[=:]\s*[^\s\n]+",  # API keys
     r"(?i)(secret[_-]?key|secretkey)\s*[=:]\s*[^\s\n]+",  # Secret keys
     r"(?i)(access[_-]?token|accesstoken)\s*[=:]\s*[^\s\n]+",  # Access tokens
-    r"(?i)(bearer\s+)[a-zA-Z0-9\-._~+/]+=*",  # Bearer tokens
+    r"\b(Bearer|Token|Key)(?:\s+token)?\s*[:=]?\s*([^\s\n]+)",  # tokens
     r"(?i)(authorization:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
     r"(?i)(auth:\s*basic\s+)[a-zA-Z0-9+/=]+",  # Basic auth
-    r"[a-zA-Z0-9]{32,}",  # Long alphanumeric strings (potential hashes/tokens)
     r"(?i)(username|user)\s*[=:]\s*[^\s\n]+",  # Usernames
+    r"(?i)(user_name)\s*[=:]\s*[^\s\n]+",  # Usernames
 ]
 
 REDACTED_VALUE = "[REDACTED]"

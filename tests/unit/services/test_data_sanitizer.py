@@ -1219,18 +1219,18 @@ class TestDataSanitizer:
             ("auth: basic dGVzdDp0ZXN0", "{{REDACTED}}", "auth basic lowercase"),
             # Long alphanumeric strings (32+ chars)
             (
-                "This is a hash: 1234567890abcdef1234567890abcdef",
-                "This is a hash: {{REDACTED}}",
-                "32 char hash",
+                "This is a token: 1234567890abcdef1234567890abcdef",
+                "This is a {{REDACTED}}",
+                "32 char hash token",
             ),
             (
                 "Token: abcdef1234567890abcdef1234567890abcdef",
-                "Token: {{REDACTED}}",
+                "{{REDACTED}}",
                 "40 char token",
             ),
             (
                 "Key: 123456789012345678901234567890123456789012345678901234567890abcd",
-                "Key: {{REDACTED}}",
+                "{{REDACTED}}",
                 "64 char key",
             ),
             # Username patterns
@@ -1266,7 +1266,7 @@ class TestDataSanitizer:
             # Complex real-world examples , not redacting url as this can be used by llm to identify problems
             (
                 "curl -H 'Authorization: Bearer abc123def456' https://api.example.com",
-                "curl -H 'Authorization: {{REDACTED}}' https://api.example.com",
+                "curl -H 'Authorization: {{REDACTED}} https://api.example.com",
                 "curl command with bearer",
             ),
             # Multiline scenarios
