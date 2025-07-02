@@ -354,7 +354,11 @@ def gatekeeper_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What's your favorite color?"),
             ],
-            "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
+            """I don't have personal preferences or favorites, but I'm here to help you with any Kyma or Kubernetes questions you might have!
+            
+            OR
+            
+            This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.""",
             False,
         ),
         (
