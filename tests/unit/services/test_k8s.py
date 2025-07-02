@@ -1,9 +1,10 @@
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from agents.common.constants import K8S_API_PAGINATION_MAX_PAGE
+from services.data_sanitizer import DataSanitizer
 from services.k8s import AuthType, K8sAuthHeaders, K8sClient
 
 
@@ -955,3 +956,165 @@ class TestK8sClient:
             mock_execute_get_api_request.assert_called_once_with(
                 expected_uri
             ), test_description
+
+    @pytest.mark.parametrize(
+        "mock_response_lines,expected_sanitized_logs",
+        [
+            # Test case 1: Email addresses should be redacted
+            (
+                [
+                    "User logged in: john.doe@company.com",
+                    "Processing request for admin@example.org",
+                ],
+                ["User logged in: {{EMAIL}}", "Processing request for {{EMAIL}}"],
+            ),
+            # Test case 2: Credit card numbers should be redacted
+            (
+                ["Payment processed: 378282246310005", "Card ending in 1234"],
+                ["Payment processed: {{CREDIT_CARD}}", "Card ending in 1234"],
+            ),
+            # Test case 3: Social Security Numbers should be redacted
+            (
+                ["SSN: 123-45-6789", "Social Security: 001-01-0001"],
+                [
+                    "SSN: {{SOCIAL_SECURITY_NUMBER}}",
+                    "Social Security: {{SOCIAL_SECURITY_NUMBER}}",
+                ],
+            ),
+            # Test case 4: API keys and tokens should be redacted
+            (
+                [
+                    "API_KEY=sk-1234567890abcdef1234567890abcdef",
+                    "Bearer token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                    "Auth: Basic dXNlcjpwYXNzd29yZA==",
+                ],
+                [
+                    "{{REDACTED}}",
+                    "{{REDACTED}}",
+                    "{{REDACTED}}",
+                ],
+            ),
+            # Test case 6: Passwords in logs should be redacted
+            (
+                [
+                    "password=secretpassword123",
+                    "pwd: mypassword",
+                    "LOGIN: user=admin password=admin123",
+                ],
+                [
+                    "{{REDACTED}}",
+                    "{{REDACTED}}",
+                    "LOGIN: {{REDACTED}} {{REDACTED}}",
+                ],
+            ),
+            # Test case 8: Database connection strings should be redacted
+            (
+                [
+                    "DB_URL=postgresql://user:pass@localhost:5432/mydb",
+                    "Connection: mysql://admin:secret@db.example.com/prod",
+                ],
+                [
+                    "DB_URL=postgresql://{{REDACTED}}",
+                    "Connection: mysql://admin:{{EMAIL}}/prod",
+                ],
+            ),
+            # Test case 9: Mixed sensitive data in single log line
+            (
+                ["User john@example.com logged with user=admin password=admin123"],
+                ["User {{EMAIL}} logged with {{REDACTED}} {{REDACTED}}"],
+            ),
+            # Test case 10: Normal logs without sensitive data should remain unchanged
+            (
+                [
+                    "Application started successfully",
+                    "Processing batch job #12345",
+                    "Cache hit ratio: 85%",
+                ],
+                [
+                    "Application started successfully",
+                    "Processing batch job #12345",
+                    "Cache hit ratio: 85%",
+                ],
+            ),
+            # Test case 11: Multiple logs
+            (
+                [
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  password=secret123",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  user_name=joe",
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                ],
+                [
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  {{REDACTED}}",
+                    "2025-06-30 14:12:34,184 - agents.Kyma - INFO  {{REDACTED}}",
+                    "2025-06-30 14:12:34,184 - agents.summarization.summarization - DEBUG - Summarization node started",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base encoding",
+                    "2025-06-30 14:12:34,184 - agents.common.utils - WARNING - Model 'gpt-4.1' not recognized by tiktoken, using cl100k_base e",
+                ],
+            ),
+            # Test case 12: Empty logs
+            ([], []),
+            # Test case 13: Logs with only whitespace
+            (["   ", "\t\n", ""], ["   ", "\t\n", ""]),
+        ],
+    )
+    @patch("requests.get")
+    def test_fetch_pod_logs_data_sanitizer(
+        self, mock_get, mock_response_lines, expected_sanitized_logs
+    ):
+        """
+        Test the data sanitizer functionality in fetch_pod_logs method.
+        """
+
+        mock_response = Mock()
+        mock_response.status_code = HTTPStatus.OK
+        mock_response.iter_lines.return_value = mock_response_lines
+        mock_get.return_value = mock_response
+
+        # Create mock data sanitizer
+        mock_sanitizer = Mock()
+        mock_sanitizer.sanitize.return_value = expected_sanitized_logs
+
+        mock_k8s_auth_headers = MagicMock()
+        mock_k8s_auth_headers.get_decoded_certificate_authority_data.return_value = (
+            b"fake-ca-cert"
+        )
+
+        with patch.object(
+            K8sClient, "_create_dynamic_client", return_value=MagicMock()
+        ):
+            k8s_client = K8sClient(
+                k8s_auth_headers=mock_k8s_auth_headers, data_sanitizer=DataSanitizer()
+            )
+
+        k8s_client.get_api_server = Mock(return_value="https://k8s-api.example.com")
+        k8s_client._get_auth_headers = Mock(
+            return_value={"Authorization": "Bearer token"}
+        )
+        k8s_client.ca_temp_filename = "/tmp/ca.crt"
+
+        result = k8s_client.fetch_pod_logs(
+            name="test-pod",
+            namespace="default",
+            container_name="app",
+            is_terminated=False,
+            tail_limit=100,
+        )
+
+        # Assert
+        assert result == expected_sanitized_logs
+
+        # Verify the API call was made correctly
+        expected_url = "https://k8s-api.example.com/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+        mock_get.assert_called_once_with(
+            url=expected_url,
+            headers={"Authorization": "Bearer token"},
+            verify="/tmp/ca.crt",
+        )
