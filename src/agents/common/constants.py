@@ -85,3 +85,15 @@ TOTAL_CHUNKS_LIMIT = 3  # Limit the number of allowed chunking of tool response
 FEEDBACK = "feedback"
 
 IS_FEEDBACK = "is_feedback"
+
+RESPONSE_QUERY_OUTSIDE_DOMAIN = (
+    "This question appears to be outside my domain of expertise. "
+    "If you have any technical or Kyma related questions, I'd be happy to help."
+)
+
+RESPONSE_HELLO = "Hello! How can I assist you with Kyma or Kubernetes today?"
+
+RESPONSE_UNABLE_TO_PROCESS = (
+    "I'm currently unable to process your request. "
+    "Please try again later or ask a different question."
+)
