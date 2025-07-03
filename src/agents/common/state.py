@@ -86,7 +86,9 @@ class GatekeeperResponse(BaseModel):
     ]
 
     category: Annotated[
-        str,
+        Literal[
+            "Kyma", "Kubernetes", "Programming", "About You", "Greeting", "Irrelevant"
+        ],
         Field(
             description="""
             Classifies 'user query or intent' into the following categories:
