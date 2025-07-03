@@ -26,6 +26,14 @@ class SubTaskStatus(str, Enum):
 class GatekeeperResponse(BaseModel):
     """Gatekeeper response data model."""
 
+    forward_query: Annotated[
+        bool,
+        Field(
+            default=False,
+            exclude=True,
+        ),
+    ]
+
     is_prompt_injection: Annotated[
         bool,
         Field(
@@ -111,14 +119,6 @@ class GatekeeperResponse(BaseModel):
             If category is "Programming" or "About You", then generate direct response based to the user intent.
             Otherwise return empty string.
             """,
-        ),
-    ]
-
-    forward_query: Annotated[
-        bool,
-        Field(
-            default=False,
-            description="Always False.",
         ),
     ]
 
