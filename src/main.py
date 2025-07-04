@@ -30,11 +30,11 @@ async def exception_handler_middleware(req: Request, call_next: Any) -> Any:
         return await call_next(req)
 
     except HTTPException as http_exc:
-        logger.error(f"HTTPException {http_exc.status_code}: {http_exc}")
+        logger.exception(f"HTTPException {http_exc.status_code}")
         return handle_http_exception(http_exc)
 
     except Exception:
-        logger.error("Unhandled exception occurred", exc_info=True)
+        logger.exception("Unhandled exception occurred")
         return JSONResponse(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             content={
