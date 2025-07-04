@@ -358,7 +358,7 @@ class TestDataSanitizer:
             ),
             # invalid input
             (
-                "invalid input",
+                ("invalid input", "invalid input"),
                 None,
                 ValueError,
             ),
@@ -367,7 +367,9 @@ class TestDataSanitizer:
     def test_data_structures_and_pii(self, test_data, expected_results, error):
         """Test sanitization of various data structures and PII data."""
         if error:
-            with pytest.raises(error, match="Data must be a list or a dictionary."):
+            with pytest.raises(
+                error, match="Data must be a string or list or dictionary."
+            ):
                 self.data_sanitizer.sanitize(test_data)
         else:
             sanitized = self.data_sanitizer.sanitize(test_data)
@@ -1161,3 +1163,145 @@ class TestDataSanitizer:
         """Test sanitization of various Kubernetes resource types and edge cases."""
         sanitized = self.data_sanitizer.sanitize(test_data)
         assert sanitized == expected_results
+
+    @pytest.mark.parametrize(
+        "input_text,expected_contains,test_description",
+        [
+            # Password patterns
+            ("password=secret123", "{{REDACTED}}", "password with equals"),
+            ("Password: mypassword", "{{REDACTED}}", "password with colon uppercase"),
+            ("passwd=admin123", "{{REDACTED}}", "passwd abbreviation"),
+            ("pwd: letmein", "{{REDACTED}}", "pwd abbreviation"),
+            ("PASSWORD = strongpass", "{{REDACTED}}", "password with spaces"),
+            # API Key patterns
+            ("api_key=sk-1234567890abcdef", "{{REDACTED}}", "api_key with underscore"),
+            ("api-key: xyz789", "{{REDACTED}}", "api-key with hyphen"),
+            ("apikey=abcd1234", "{{REDACTED}}", "apikey no separator"),
+            ("API_KEY: test123", "{{REDACTED}}", "API_KEY uppercase"),
+            # Secret key patterns
+            ("secret_key=mysecret", "{{REDACTED}}", "secret_key with underscore"),
+            ("secret-key: topsecret", "{{REDACTED}}", "secret-key with hyphen"),
+            ("secretkey=hidden", "{{REDACTED}}", "secretkey no separator"),
+            ("SECRET_KEY: classified", "{{REDACTED}}", "SECRET_KEY uppercase"),
+            # Access token patterns
+            ("access_token=bearer123", "{{REDACTED}}", "access_token with underscore"),
+            ("access-token: token456", "{{REDACTED}}", "access-token with hyphen"),
+            ("accesstoken=mytoken", "{{REDACTED}}", "accesstoken no separator"),
+            ("ACCESS_TOKEN: xyz", "{{REDACTED}}", "ACCESS_TOKEN uppercase"),
+            # Bearer token patterns
+            (
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+                "{{REDACTED}}",
+                "bearer token JWT-like",
+            ),
+            ("bearer abc123def456", "{{REDACTED}}", "bearer token simple"),
+            (
+                "BEARER token_with_special-chars.+/=",
+                "{{REDACTED}}",
+                "bearer uppercase with special chars",
+            ),
+            # Basic auth patterns
+            (
+                "Authorization: Basic dXNlcjpwYXNz",
+                "{{REDACTED}}",
+                "authorization basic",
+            ),
+            (
+                "authorization: basic YWRtaW46YWRtaW4=",
+                "{{REDACTED}}",
+                "authorization basic lowercase",
+            ),
+            (
+                "Auth: Basic bXl1c2VyOnNlY3JldA==",
+                "{{REDACTED}}",
+                "auth basic short form",
+            ),
+            ("auth: basic dGVzdDp0ZXN0", "{{REDACTED}}", "auth basic lowercase"),
+            # Long alphanumeric strings (32+ chars)
+            (
+                "This is a token: 1234567890abcdef1234567890abcdef",
+                "This is a {{REDACTED}}",
+                "32 char hash token",
+            ),
+            (
+                "This is a hash: 1234567890abcdef1234567890abcdef",
+                "This is a hash: 1234567890abcdef1234567890abcdef",
+                "just a hash with a prefix of key or token should not redacted",
+            ),
+            (
+                "Token: abcdef1234567890abcdef1234567890abcdef",
+                "{{REDACTED}}",
+                "40 char token",
+            ),
+            (
+                "Key: 123456789012345678901234567890123456789012345678901234567890abcd",
+                "{{REDACTED}}",
+                "64 char key",
+            ),
+            # Username patterns
+            ("username=johndoe", "{{REDACTED}}", "username with equals"),
+            ("user: admin", "{{REDACTED}}", "user with colon"),
+            ("USERNAME = testuser", "{{REDACTED}}", "USERNAME uppercase with spaces"),
+            ("User: service_account", "{{REDACTED}}", "User capitalized"),
+            # Multiple patterns in one string
+            (
+                "username=admin password=secret api_key=sk-123456",
+                "{{REDACTED}} {{REDACTED}} {{REDACTED}}",
+                "multiple credentials",
+            ),
+            # Edge cases - should NOT be redacted
+            (
+                "This is a short string",
+                "This is a short string",
+                "normal text unchanged",
+            ),
+            ("password", "password", "keyword alone without assignment"),
+            ("api_key", "api_key", "api_key without value"),
+            ("Short123", "Short123", "short alphanumeric string"),
+            ("email@example.com", "{{EMAIL}}", "email format"),
+            # Case sensitivity tests
+            ("PASSWORD=TEST123", "{{REDACTED}}", "all caps password"),
+            ("Api_Key=test", "{{REDACTED}}", "mixed case api key"),
+            # Different separators and spacing
+            (
+                "api_key:   token_with_leading_spaces",
+                "{{REDACTED}}",
+                "api_key with leading spaces after colon",
+            ),
+            # Complex real-world examples , not redacting url as this can be used by llm to identify problems
+            (
+                "curl -H 'Authorization: Bearer abc123def456' https://api.example.com",
+                "curl -H 'Authorization: {{REDACTED}} https://api.example.com",
+                "curl command with bearer",
+            ),
+            # Multiline scenarios
+            (
+                "line1\npassword=secret\nline3",
+                "line1\n{{REDACTED}}\nline3",
+                "multiline with password",
+            ),
+            # Special characters in credentials
+            ("password=p@ssw0rd!", "{{REDACTED}}", "password with special chars"),
+            (
+                "api_key=sk-proj-1234567890abcdef",
+                "{{REDACTED}}",
+                "api key with project prefix",
+            ),
+            # Mixed sensitive data in single log line
+            (
+                "User john@example.com logged with user=admin password=admin123",
+                "User {{EMAIL}} logged with {{REDACTED}} {{REDACTED}}",
+                "Mixed sensitive data in single log line",
+            ),
+        ],
+    )
+    def test_sanitize_raw_string_data(
+        self, input_text, expected_contains, test_description
+    ):
+        """Test _sanitize_raw_string_data with various input patterns."""
+
+        result = self.data_sanitizer.sanitize(input_text)
+
+        assert (
+            result == expected_contains
+        ), f"Failed {test_description}: Expected '{expected_contains}', got '{result}'"

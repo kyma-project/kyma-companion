@@ -6,7 +6,7 @@ from pathlib import Path
 from decouple import config
 
 DEFAULT_RETRY_WAIT_TIME = 60
-DEFAULT_RETRY_MAX_WAIT_TIME = 600
+DEFAULT_RETRY_MAX_WAIT_TIME = 240
 
 
 class Config:
@@ -58,7 +58,7 @@ class Config:
             "RETRY_WAIT_TIME", default=60, cast=int
         )  # seconds
         self.retry_max_wait_time = config(
-            "RETRY_MAX_WAIT_TIME", default=600, cast=int
+            "RETRY_MAX_WAIT_TIME", default=240, cast=int
         )  # seconds
         self.redis_url = config("REDIS_URL", default="redis://localhost:6379")
 

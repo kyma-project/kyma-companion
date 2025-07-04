@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, patch
@@ -175,7 +176,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            1,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "Cluster",
@@ -193,7 +194,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            1,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "Cluster",
@@ -209,7 +210,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            2,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "Pod",
@@ -221,7 +222,7 @@ def client_factory():
         ),
         (
             {},
-            3,
+            uuid.uuid4(),
             {
                 "query": "should return error when k8s headers are missing",
                 "resource_kind": "Pod",
@@ -237,7 +238,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            4,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "",
@@ -255,7 +256,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            5,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "",
@@ -271,7 +272,7 @@ def client_factory():
                 "x-cluster-url": "https://api.EXCEEDED.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            6,
+            uuid.uuid4(),
             {
                 "query": "Test query",
                 "resource_kind": "",
@@ -297,7 +298,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            3,
+            uuid.uuid4(),
             {
                 "query": "should return error when k8s auth headers are missing",
                 "resource_kind": "Pod",
@@ -313,7 +314,7 @@ def client_factory():
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
                 "X-Client-Certificate-Data": SAMPLE_CLIENT_CERTIFICATE_DATA,
             },
-            3,
+            uuid.uuid4(),
             {
                 "query": "should return error when k8s X-Client-Key-Data auth header is missing",
                 "resource_kind": "Pod",
@@ -329,7 +330,7 @@ def client_factory():
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
                 "X-Client-Key-Data": "non-empty-client-key-data",
             },
-            3,
+            uuid.uuid4(),
             {
                 "query": "should return error when k8s X-Client-Certificate-Data auth header is missing",
                 "resource_kind": "Pod",
@@ -346,7 +347,7 @@ def client_factory():
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
-            9,
+            uuid.uuid4(),
             {
                 "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
                 "resource_kind": "PodInvalid",
@@ -359,6 +360,42 @@ def client_factory():
                 "content-type": "application/json",
                 "expected_error_msg": "Invalid resource context info",
             },
+        ),
+        (
+            # should return 422, when conversation_id is not provided.
+            {
+                "X-Client-Certificate-Data": SAMPLE_CLIENT_CERTIFICATE_DATA,
+                "X-Client-Key-Data": "non-empty-client-key-data",
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            None,
+            {
+                "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {"status_code": 422, "content-type": "application/json"},
+        ),
+        (
+            # should return 422, when conversation_id is not a valid uuid.
+            {
+                "X-Client-Certificate-Data": SAMPLE_CLIENT_CERTIFICATE_DATA,
+                "X-Client-Key-Data": "non-empty-client-key-data",
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            "abcdef",
+            {
+                "query": "How to expose a Kyma application? What is the reason of getting crashloopbackoff in k8s pod?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {"status_code": 422, "content-type": "application/json"},
         ),
     ],
 )
@@ -809,6 +846,36 @@ def test_init_conversation(
                 "content-type": "application/json",
                 "body": {
                     "detail": "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+                },
+            },
+        ),
+        (
+            # should return error when conversation_id is not a valid uuid.
+            {
+                "X-Client-Certificate-Data": SAMPLE_CLIENT_CERTIFICATE_DATA,
+                "X-Client-Key-Data": "non-empty-client-key-data",
+                "x-cluster-url": "https://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            "abcdef",
+            None,
+            {
+                "status_code": 422,
+                "content-type": "application/json",
+                "body": {
+                    "detail": [
+                        {
+                            "ctx": {
+                                "error": "invalid length: expected length 32 for simple "
+                                "format, found 6"
+                            },
+                            "input": "abcdef",
+                            "loc": ["path", "conversation_id"],
+                            "msg": "Input should be a valid UUID, invalid length: expected "
+                            "length 32 for simple format, found 6",
+                            "type": "uuid_parsing",
+                        }
+                    ]
                 },
             },
         ),

@@ -32,6 +32,8 @@ jobs:
       dockerfile: Dockerfile
       context: .
       export-tags: true
+      platforms: |
+        linux/amd64
   test-image:
     runs-on: ubuntu-latest
     needs: build

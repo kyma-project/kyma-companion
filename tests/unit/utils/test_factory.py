@@ -37,12 +37,6 @@ class TestModelFactory:
                 None,
             ),
             (
-                "should return OpenAIModel when gpt-4.1-mini is requested",
-                "gpt-4.1-mini",
-                OpenAIModel,
-                None,
-            ),
-            (
                 "should raise error when non_existent_model is requested",
                 "non_existent_model",
                 None,

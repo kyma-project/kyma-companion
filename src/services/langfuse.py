@@ -1,16 +1,19 @@
 from typing import Any, Protocol
 
+import scrubadub
 from aiohttp import BasicAuth, ClientSession
 from langfuse.callback import CallbackHandler
 
 from agents.common.constants import SUCCESS_CODE
+from agents.common.state import GraphInput
 from utils.common import MetricsResponse
 from utils.settings import (
-    LANGFUSE_DEBUG_MODE,
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
+    LANGFUSE_MASKING_MODE,
     LANGFUSE_PUBLIC_KEY,
     LANGFUSE_SECRET_KEY,
+    LangfuseMaskingModes,
 )
 from utils.singleton_meta import SingletonMeta
 from utils.utils import string_to_bool
@@ -59,7 +62,7 @@ class LangfuseService(metaclass=SingletonMeta):
         public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
         secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
         auth (BasicAuth): An authentication object created using the public and secret keys.
-        debug_enabled (bool): A boolean flag to enable debug mode, set to LANGFUSE_DEBUG_MODE.
+        masking_mode (str): Data masking options, set LANGFUSE_MASKING_MODE.
         _handler (CallbackHandler) : A callback handler for langfuse.
     """
 
@@ -75,14 +78,15 @@ class LangfuseService(metaclass=SingletonMeta):
             enabled=string_to_bool(str(LANGFUSE_ENABLED)),
             mask=self.masking_production_data,
         )
-        self.debug_enabled = string_to_bool(str(LANGFUSE_DEBUG_MODE))
+        self.masking_mode = LANGFUSE_MASKING_MODE
+        self.data_scrubber = scrubadub.Scrubber()
 
     @property
     def handler(self) -> CallbackHandler:
         """Returns the callback handler"""
         return self._handler
 
-    def masking_production_data(self, data: str) -> str:
+    def masking_production_data(self, data: Any) -> Any:
         """
         Removes sensitive information from traces.
 
@@ -92,9 +96,20 @@ class LangfuseService(metaclass=SingletonMeta):
         Returns:
             dict: The data with sensitive information removed.
         """
-        if not self.debug_enabled:
+        if self.masking_mode == LangfuseMaskingModes.DISABLED:
+            # If masking is disabled, return the data unmasked.
+            return data
+        elif self.masking_mode == LangfuseMaskingModes.REDACTED:
+            # If masking is set to REDACTED, return a placeholder string
             return "REDACTED"
-        return data
+
+        # If masking is set to PARTIAL, return only the user input and resource information.
+        if isinstance(data, GraphInput):
+            output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
+            if output:
+                return self.data_scrubber.clean(output)
+
+        return "REDACTED"
 
     async def get_daily_metrics(
         self,
