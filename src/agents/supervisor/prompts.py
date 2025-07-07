@@ -68,7 +68,6 @@ Your ONLY role is to combine and present responses from specialized agents: "{me
 2. **NEVER answer questions the agents couldn't answer** - If agents say they don't know, you must reflect that
 3. **NEVER supplement missing information** - If agents lack information, acknowledge the gap
 4. **NEVER fill gaps with your own knowledge**
-
 """
 
 FINALIZER_PROMPT_FOLLOW_UP = """

@@ -192,16 +192,12 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-                    I'm sorry, but I cannot provide examples of encoded attack payloads. The information requested involves potentially harmful content, and I cannot assist with that. If you have any other questions or need information on security best practices, feel free to ask!
-
-                    OR
-
-                    Encoded attack payloads can be:
-                    1. Base64 encoded XSS
-                    2. URL encoded SQL injection
-                    3. Hex encoded command
-                    4. Unicode encoded payload
-                    These bypass basic input filtering.
+                        Encoded attack payloads can be:
+                        1. Base64 encoded XSS
+                        2. URL encoded SQL injection
+                        3. Hex encoded command
+                        4. Unicode encoded payload
+                        These bypass basic input filtering.
                 """
             ).strip(),
         ),
