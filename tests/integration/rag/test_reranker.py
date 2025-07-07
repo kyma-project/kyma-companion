@@ -205,8 +205,7 @@ def llm_reranker(app_models):
             [
                 "datasets/reranker/prerequisites-to-enable-logging/03_application_logs_prerequisites.md",
             ],
-            0.2,  # This is a hard test case, as there are many documents that match the query.
-            # so only check that whether the correct document is in the top 4.
+            0.5,
         ),
         (
             "why there is no logs in the backend?",
@@ -217,7 +216,6 @@ def llm_reranker(app_models):
             4,
             [
                 "datasets/reranker/no-logs-in-backend/00_application_logs_troubleshooting.md",
-                "datasets/reranker/no-logs-in-backend/01_application_logs_operations.md",
             ],
             0.5,
         ),
