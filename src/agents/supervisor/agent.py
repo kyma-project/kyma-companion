@@ -84,7 +84,7 @@ def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINAL
 
 
 class SupervisorAgent:
-    """Supervisor agent class."""
+    """Supervisor agent class for routing the conversation to the next agent."""
 
     model: IModel
     _name: str = SUPERVISOR
