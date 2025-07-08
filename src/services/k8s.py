@@ -331,7 +331,8 @@ class K8sClient:
                 )
 
             # Add continue token to URL if it exists
-            query_params = f"?limit={K8S_API_PAGINATION_LIMIT}" + (
+            separator = "&" if "?" in base_url else "?"
+            query_params = f"{separator}limit={K8S_API_PAGINATION_LIMIT}" + (
                 f"&continue={continue_token}" if continue_token else ""
             )
             current_url = base_url + query_params

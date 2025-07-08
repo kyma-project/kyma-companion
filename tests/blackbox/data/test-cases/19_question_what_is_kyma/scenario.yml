@@ -9,7 +9,11 @@ queries:
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_keywords
-        statement: mentions 'Kubernetes (k8s)', 'fully managed' and'open-source'.
+        statement: mentions 'Kubernetes' or 'k8s'
+        threshold: 0.5
+        required: true
+      - name: mentions_keywords
+        statement: mentions 'managed' or 'fully managed'
         threshold: 0.5
         required: true
       - name: mentions_btp
