@@ -26,7 +26,13 @@ cat <<EOF | tee ${FILENAME}
 module-name: kyma-companion
 kind: kcp
 bdba:
+  # kyma-companion
   - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${TAG}
+  # langfuse
+  - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse-worker:3.63.0
+  - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse:3.63.0
+  - europe-docker.pkg.dev/kyma-project/prod/external/bitnami/clickhouse:24.12.3-debian-12-r1
+  - europe-docker.pkg.dev/kyma-project/prod/external/bitnami/zookeeper:3.9.3-debian-12-r3
 checkmarx-one:
   preset: python-default
   exclude:
