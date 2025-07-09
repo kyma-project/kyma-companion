@@ -35,6 +35,8 @@ on:
         description: "Create PR with sec-scanners-config bump"
         default: true
 
+permissions: write-all
+
 # global env variables.
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
