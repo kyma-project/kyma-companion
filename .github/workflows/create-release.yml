@@ -205,10 +205,6 @@ jobs:
 
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
-    if: |
-      (needs.run-unit-tests.result == 'success' || needs.run-unit-tests.result == 'skipped') &&
-      (needs.run-integration-tests.result == 'success' || needs.run-integration-tests.result == 'skipped') &&
-      (needs.run-evaluation-tests.result == 'success' || needs.run-evaluation-tests.result == 'skipped')
     needs:
       [
         validate-input-params,
