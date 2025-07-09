@@ -34,10 +34,6 @@ on:
         type: boolean
         description: "Create PR with sec-scanners-config bump"
         default: true
-      skip-tests:
-        type: boolean
-        description: "If true, the execution of tests will be skipped."
-        default: false
 
 permissions: write-all
 
@@ -88,7 +84,6 @@ jobs:
     needs: validate-input-params
     runs-on: ubuntu-latest
     permissions: read-all
-    if: ${{ inputs.skip-tests == 'false' }}
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
@@ -135,7 +130,6 @@ jobs:
     needs: validate-input-params
     runs-on: ubuntu-latest
     permissions: read-all
-    if: ${{ inputs.skip-tests == 'false' }}
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
@@ -197,7 +191,6 @@ jobs:
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     needs: get-image-sha
     secrets: inherit
-    if: ${{ inputs.skip-tests == 'false' }}
     with:
       IMAGE_NAME: europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${{ needs.get-image-sha.outputs.sha }}
       TEST_REPO_FULLNAME: ${{ github.repository }}
@@ -205,10 +198,6 @@ jobs:
 
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
-    if: |
-      (needs.run-unit-tests.result == 'success' || needs.run-unit-tests.result == 'skipped') &&
-      (needs.run-integration-tests.result == 'success' || needs.run-integration-tests.result == 'skipped') &&
-      (needs.run-evaluation-tests.result == 'success' || needs.run-evaluation-tests.result == 'skipped')
     needs:
       [
         validate-input-params,
