@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE
 from agents.common.data import Message
+from agents.common.utils import compute_string_token_count
 from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
@@ -24,6 +25,7 @@ from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
+from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
     create_session_id,
     get_user_identifier_from_client_certificate,
@@ -57,6 +59,18 @@ def init_conversation_service(
 ) -> IService:
     """Initialize the conversation service instance"""
     return ConversationService(langfuse_handler=langfuse_service.handler, config=config)
+
+
+def enforce_query_token_limit(
+    message: Annotated[Message, Body(title="The message to send")],
+) -> None:
+    """Enforce query token limit to input request."""
+    token_count = compute_string_token_count(message.model_dump_json(), MAIN_MODEL_NAME)
+    logger.info(f"Input Query Token count is {token_count}")
+    if token_count > MAX_TOKEN_LIMIT_INPUT_QUERY:
+        raise HTTPException(
+            status_code=400, detail="Input Query exceeds the allowed token limit."
+        )
 
 
 router = APIRouter(
@@ -201,6 +215,7 @@ async def messages(
     x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    _: Annotated[None, Depends(enforce_query_token_limit)] = None,
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
