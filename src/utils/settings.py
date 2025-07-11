@@ -113,7 +113,7 @@ SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
 )
 
 MAX_TOKEN_LIMIT_INPUT_QUERY = config(
-    "MAX_TOKEN_LIMIT_INPUT_QUERY", default=2048, cast=int
+    "MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int
 )
 
 # RAG
