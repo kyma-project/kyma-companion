@@ -62,9 +62,14 @@ def init_conversation_service(
 
 
 def enforce_query_token_limit(
-    message: Annotated[Message, Body(title="The message to send")],
+    message: Annotated[
+        Message | InitConversationBody | None,
+        Body(title="The payload which may be either a Message or InitConversationBody"),
+    ] = None,
 ) -> None:
     """Enforce query token limit to input request."""
+    if message is None:
+        return
     token_count = compute_string_token_count(message.model_dump_json(), MAIN_MODEL_NAME)
     logger.info(f"Input Query Token count is {token_count}")
     if token_count > MAX_TOKEN_LIMIT_INPUT_QUERY:
@@ -81,7 +86,7 @@ router = APIRouter(
 
 @router.post("/", response_model=InitialQuestionsResponse)
 async def init_conversation(
-    data: InitConversationBody,
+    message: InitConversationBody,
     x_cluster_url: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
@@ -90,11 +95,12 @@ async def init_conversation(
     x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    _: Annotated[None, Depends(enforce_query_token_limit)] = None,
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
     logger.info(
-        f"Initializing new conversation. Request data: {data.model_dump_json()}"
+        f"Initializing new conversation. Request data: {message.model_dump_json()}"
     )
 
     # Validate if all the required K8s headers are provided.
@@ -131,10 +137,10 @@ async def init_conversation(
             k8s_client=k8s_client,
             message=Message(
                 query="",
-                resource_kind=data.resource_kind,
-                resource_name=data.resource_name,
-                resource_api_version=data.resource_api_version,
-                namespace=data.namespace,
+                resource_kind=message.resource_kind,
+                resource_name=message.resource_name,
+                resource_api_version=message.resource_api_version,
+                namespace=message.namespace,
             ),
         )
 
@@ -149,7 +155,8 @@ async def init_conversation(
     except Exception as e:
         logger.error(e)
         raise HTTPException(
-            status_code=500, detail=f"{str(e)}, Request data: {data.model_dump_json()}"
+            status_code=500,
+            detail=f"{str(e)}, Request data: {message.model_dump_json()}",
         ) from e
 
 
