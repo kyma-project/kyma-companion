@@ -15,6 +15,7 @@ from main import app
 from routers.conversations import (
     authorize_user,
     check_token_usage,
+    enforce_query_token_limit,
     init_conversation_service,
 )
 from services.conversation import IService
@@ -1051,3 +1052,38 @@ async def test_authorize_user(
         mock_conversation_service.authorize_user.assert_called_once_with(
             conversation_id, user_identifier
         )
+
+
+@pytest.mark.parametrize(
+    "mock_token_count, should_raise_exception",
+    [
+        (500, False),  # Within limit
+        (9000, True),  # Exceeds limit
+    ],
+)
+def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
+    message = Message(
+        query="What is Kubernetes?",
+        resource_kind="Pod",
+        resource_api_version="v1",
+        resource_name="mypod",
+        namespace="default",
+        resource_scope=None,
+        resource_related_to=None,
+    )
+
+    with patch(
+        "routers.conversations.compute_string_token_count"
+    ) as mock_token_counter:
+        mock_token_counter.return_value = mock_token_count
+
+        if should_raise_exception:
+            with pytest.raises(HTTPException) as exc_info:
+                enforce_query_token_limit(message)
+
+            assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
+            assert (
+                exc_info.value.detail == "Input Query exceeds the allowed token limit."
+            )
+        else:
+            enforce_query_token_limit(message)  # Should not raise
