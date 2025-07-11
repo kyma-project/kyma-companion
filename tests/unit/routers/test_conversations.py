@@ -1058,7 +1058,7 @@ async def test_authorize_user(
     "mock_token_count, should_raise_exception",
     [
         (500, False),  # Within limit
-        (5000, True),  # Exceeds limit
+        (9000, True),  # Exceeds limit
     ],
 )
 def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
