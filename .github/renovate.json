@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "labels": [
+    "evaluation requested"
+  ],
+  "prTitlePrefix": "deps: ",
+  "packageRules": [
+    {
+      "groupName": null
+    }
+  ]
+}
