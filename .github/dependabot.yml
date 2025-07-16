@@ -11,3 +11,6 @@ updates:
       interval: "daily"
     commit-message:
       prefix: "deps: "
+    labels:
+      - "run-integration-test"
+      - "evaluation requested"
