@@ -3,7 +3,8 @@
     "config:base"
   ],
   "labels": [
-    "evaluation requested"
+    "evaluation requested",
+    "run-integration-test"
   ],
   "prTitlePrefix": "deps: ",
   "packageRules": [
