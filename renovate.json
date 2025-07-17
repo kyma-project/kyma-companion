@@ -3,4 +3,10 @@
   "extends": [
     "config:recommended"
   ]
+  "prTitlePrefix": "deps: ",
+  "packageRules": [
+    {
+      "groupName": null
+    }
+  ]
 }
