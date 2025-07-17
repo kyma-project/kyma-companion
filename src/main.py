@@ -3,6 +3,7 @@ from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.responses import JSONResponse
 
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
@@ -23,30 +24,45 @@ async def monitor_http_requests(req: Request, call_next: Any) -> Any:
     return await CustomMetrics().monitor_http_requests(req, call_next)
 
 
-@app.middleware("http")
-async def exception_handler_middleware(req: Request, call_next: Any) -> Any:
-    """Middleware to handle HTTP and generic exceptions."""
-    try:
-        return await call_next(req)
-
-    except HTTPException as http_exc:
-        logger.exception(f"HTTPException {http_exc.status_code}")
-        return handle_http_exception(http_exc)
-
-    except Exception:
-        logger.exception("Unhandled exception occurred")
-        return JSONResponse(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            content={
-                "error": "Internal Server Error",
-                "message": "An unexpected error occurred. Please try again later.",
-            },
-        )
+@app.exception_handler(HTTPException)
+@app.exception_handler(RequestValidationError)
+@app.exception_handler(ResponseValidationError)
+async def custom_http_exception_handler(
+    request: Request, exc: HTTPException
+) -> JSONResponse:
+    """Exception Handler for HTTPException"""
+    logger.error("HTTPException", exc_info=(type(exc), exc, exc.__traceback__))
+    return handle_http_exception(exc)
 
 
-def handle_http_exception(exc: HTTPException) -> JSONResponse:
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Exception Handler all exceptions other than HTTPException"""
+    logger.error(
+        "Unhandled exception occurred", exc_info=(type(exc), exc, exc.__traceback__)
+    )
+    return JSONResponse(
+        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred. Please try again later.",
+        },
+    )
+
+
+def handle_http_exception(
+    exc: HTTPException | RequestValidationError | ResponseValidationError,
+) -> JSONResponse:
     """Handles known HTTPException status codes."""
-    status = exc.status_code
+    exc_detail: Any = []
+    if isinstance(exc, HTTPException):
+        status = exc.status_code
+    elif isinstance(exc, RequestValidationError | ResponseValidationError):
+        status = HTTPStatus.UNPROCESSABLE_ENTITY
+        exc_detail = exc.errors()
+    else:
+        status = HTTPStatus.INTERNAL_SERVER_ERROR
+
     default_response = {
         "error": "Request Error",
         "message": "An error occurred, Please try again later.",
@@ -72,6 +88,7 @@ def handle_http_exception(exc: HTTPException) -> JSONResponse:
         HTTPStatus.UNPROCESSABLE_ENTITY: {
             "error": "Validation Error",
             "message": "Request validation failed",
+            "detail": exc_detail,
         },
         HTTPStatus.METHOD_NOT_ALLOWED: {
             "error": "Method Not Allowed",
