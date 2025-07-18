@@ -183,8 +183,13 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> Compani
     """Create a mock langgraph state for tests."""
     if subtasks is None:
         subtasks = []
+
+    last_human_message = next(
+        (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)),
+    )
+
     user_input = UserInput(
-        query=messages[-1].content,
+        query=last_human_message.content,
         resource_kind=None,
         resource_api_version=None,
         resource_name=None,

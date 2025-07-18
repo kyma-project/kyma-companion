@@ -482,9 +482,7 @@ async def test_generate_final_response(
 
     # When: The Finalizer generates a final response
     result = await companion_graph.supervisor_agent._generate_final_response(state)
-    latest_human_message = next(
-        msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
-    )
+    latest_human_message = HumanMessage(content=state.input.query)
     test_case = LLMTestCase(
         input=str(latest_human_message),
         actual_output=result["messages"][0].content,
