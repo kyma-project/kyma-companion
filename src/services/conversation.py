@@ -1,8 +1,10 @@
+import json
 from collections.abc import AsyncGenerator
 from typing import Protocol, cast
 
 from langfuse.callback import CallbackHandler
 
+from agents.common.constants import ERROR, ERROR_RESPONSE
 from agents.common.data import Message
 from agents.graph import CompanionGraph, IGraph
 from agents.memory.async_redis_checkpointer import get_async_redis_saver
@@ -145,11 +147,15 @@ class ConversationService(metaclass=SingletonMeta):
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
     ) -> AsyncGenerator[bytes, None]:
         """Handle a request"""
-
-        async for chunk in self._companion_graph.astream(
-            conversation_id, message, k8s_client
-        ):
-            yield chunk.encode()
+        try:
+            async for chunk in self._companion_graph.astream(
+                conversation_id, message, k8s_client
+            ):
+                yield chunk.encode()
+        except Exception:
+            logger.exception("Error during streaming")
+            error_chunk = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}})
+            yield error_chunk.encode()
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
         """Authorize the user to access the conversation."""

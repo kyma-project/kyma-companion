@@ -482,10 +482,7 @@ class CompanionGraph:
             tags=[cluster_id],  # cluster_id as a tag for traceability and rate limiting
         )
 
-        async for chunk in self.graph.astream(
-            input=graph_input,
-            config=run_config,
-        ):
+        async for chunk in self.graph.astream(input=graph_input, config=run_config):
             chunk_json = json.dumps(chunk, cls=CustomJSONEncoder)
             if "__end__" not in chunk:
                 yield chunk_json

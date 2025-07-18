@@ -169,6 +169,14 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             # expected
             b'{"event": "unknown", "data": {"error": "No agent found"}}',
         ),
+        (
+            b'{"error": {"error":"We encountered an error while processing your request. Please try again shortly. Thank you for your patience!"}}',
+            b'{"event": "unknown", "data": {"agent": null, "error": "We encountered an err'
+            b"or while processing your request. Please try again shortly. Thank you for yo"
+            b'ur patience!", "answer": {"content": "We encountered an error while processi'
+            b'ng your request. Please try again shortly. Thank you for your patience!", "t'
+            b'asks": [], "next": "__end__"}}}',
+        ),
     ],
 )
 @patch("utils.response.get_logger", Mock())

@@ -97,3 +97,8 @@ RESPONSE_UNABLE_TO_PROCESS = (
     "I'm currently unable to process your request. "
     "Please try again later or ask a different question."
 )
+
+ERROR_RESPONSE = (
+    "We encountered an error while processing your request. "
+    "Please try again shortly. Thank you for your patience!"
+)
