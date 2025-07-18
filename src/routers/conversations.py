@@ -307,8 +307,10 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
         raise HTTPException(
             status_code=ERROR_RATE_LIMIT_CODE,
             detail={
-                "error": "Rate limit exceeded",
-                "message": f"Daily token limit of {report.token_limit} exceeded for this cluster",
+                "error": "Token usage limit exceeded",
+                "message": f"Token usage limit of {report.token_limit} exceeded for this cluster. "
+                f"To ensure a fair usage, Kyma Companion controls the number"
+                f" of requests a cluster can make within 24 hours.",
                 "current_usage": report.total_tokens_used,
                 "limit": report.token_limit,
                 "time_remaining_seconds": report.reset_seconds_left,
