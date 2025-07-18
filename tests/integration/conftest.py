@@ -185,16 +185,18 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> Compani
         subtasks = []
 
     last_human_message = next(
-        (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)),
+        (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None
     )
 
-    user_input = UserInput(
-        query=last_human_message.content,
-        resource_kind=None,
-        resource_api_version=None,
-        resource_name=None,
-        namespace=None,
-    )
+    user_input = None
+    if last_human_message:
+        UserInput(
+            query=last_human_message.content,
+            resource_kind=None,
+            resource_api_version=None,
+            resource_name=None,
+            namespace=None,
+        )
 
     return CompanionState(
         input=user_input,

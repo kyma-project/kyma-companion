@@ -173,7 +173,7 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
-            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"}] }',
+            '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"},{"description": "what is the status of my cluster?", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
             0.8,
         ),
