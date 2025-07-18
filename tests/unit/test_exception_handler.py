@@ -7,7 +7,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
-from main import exception_handler_middleware
+from main import handle_http_exception
 
 
 @pytest.fixture
@@ -78,9 +78,8 @@ async def test_http_exception_handling(
     """Test handling of various HTTP exceptions."""
 
     http_exc = HTTPException(status_code=status_code, detail="Test error")
-    mock_call_next.side_effect = http_exc
 
-    response = await exception_handler_middleware(mock_request, mock_call_next)
+    response = handle_http_exception(http_exc)
 
     assert isinstance(response, JSONResponse)
     assert response.status_code == status_code
@@ -95,8 +94,10 @@ async def test_rate_limit_exception_handling(mock_request, mock_call_next):
     """Test handling of rate limit exceptions."""
     retry_after_sec = 542523
     rate_limit_detail = {
-        "error": "Rate limit exceeded",
-        "message": "Daily token limit of 5000000 exceeded for this cluster",
+        "error": "Token usage limit exceeded",
+        "message": "Token usage limit of 5000000 exceeded for this cluster. "
+        "To ensure a fair usage, Kyma Companion controls the number"
+        " of requests a cluster can make within 24 hours.",
         "current_usage": 6000000,
         "limit": 5000000,
         "time_remaining_seconds": retry_after_sec,
@@ -107,9 +108,8 @@ async def test_rate_limit_exception_handling(mock_request, mock_call_next):
         detail=rate_limit_detail,
         headers=rate_limit_headers,
     )
-    mock_call_next.side_effect = http_exc
 
-    response = await exception_handler_middleware(mock_request, mock_call_next)
+    response = handle_http_exception(http_exc)
 
     assert isinstance(response, JSONResponse)
     assert response.status_code == ERROR_RATE_LIMIT_CODE
@@ -117,16 +117,3 @@ async def test_rate_limit_exception_handling(mock_request, mock_call_next):
     content = json.loads(response.body.decode())
     assert content == rate_limit_detail
     assert response.headers["Retry-After"] == str(retry_after_sec)
-
-
-@pytest.mark.asyncio
-async def test_successful_request_passthrough(mock_request, mock_call_next):
-    """Test that successful requests pass through without modification."""
-
-    expected_response = JSONResponse(content={"success": True})
-    mock_call_next.return_value = expected_response
-
-    response = await exception_handler_middleware(mock_request, mock_call_next)
-
-    assert response is expected_response
-    mock_call_next.assert_called_once_with(mock_request)
