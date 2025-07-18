@@ -264,7 +264,7 @@ async def test_get_total_token_usage(
                     SystemMessage(content="message 1"),
                     HumanMessage(content="message 2"),
                 ],
-                user_input=UserInput(query="foo bar"),
+                input=UserInput(query="foo bar"),
                 k8s_client=None,
             ),
             "message 2\nmessage 1",  # Will be scrubbed, so we patch scrubber
@@ -277,7 +277,7 @@ async def test_get_total_token_usage(
                     SystemMessage(content="message 1"),
                     HumanMessage(content="message 2 for testuser@kyma.com"),
                 ],
-                user_input=UserInput(query="foo bar"),
+                input=UserInput(query="foo bar"),
                 k8s_client=None,
             ),
             "message 2 for {{EMAIL}}\nmessage 1",  # Will be scrubbed, so we patch scrubber
