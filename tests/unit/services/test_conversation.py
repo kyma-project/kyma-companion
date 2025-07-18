@@ -1,8 +1,10 @@
+import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage
 
+from agents.common.constants import ERROR, ERROR_RESPONSE
 from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
 from services.usage import UsageExceedReport
@@ -161,6 +163,30 @@ class TestConversation:
             )
         ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]
+
+    @pytest.mark.asyncio
+    async def test_handle_request_exception(
+        self,
+        mock_model_factory,
+        mock_redis_saver,
+        mock_companion_graph,
+        mock_config,
+    ):
+        mock_k8s_client = Mock()
+        mock_companion_graph.astream.side_effect = Exception("stream failure")
+
+        messaging_service = ConversationService(config=mock_config)
+        messaging_service._companion_graph = mock_companion_graph
+
+        result = [
+            chunk
+            async for chunk in messaging_service.handle_request(
+                CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client
+            )
+        ]
+
+        error_response = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}}).encode()
+        assert result == [error_response]
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

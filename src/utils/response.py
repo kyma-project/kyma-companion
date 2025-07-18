@@ -4,6 +4,7 @@ from typing import Any
 from langgraph.constants import END
 
 from agents.common.constants import (
+    ERROR,
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
@@ -147,6 +148,19 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
         ).encode()
 
     agent_data = data[agent]
+
+    if agent == ERROR:
+        return json.dumps(
+            {
+                "event": "unknown",
+                "data": {
+                    "agent": None,
+                    "error": agent_data[ERROR],
+                    "answer": {"content": agent_data[ERROR], "tasks": [], NEXT: END},
+                },
+            }
+        ).encode()
+
     if agent_data.get("messages"):
         last_agent = agent_data["messages"][-1].get("name")
         # skip all intermediate supervisor response
