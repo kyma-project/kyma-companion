@@ -28,7 +28,7 @@ async def monitor_http_requests(req: Request, call_next: Any) -> Any:
 @app.exception_handler(RequestValidationError)
 @app.exception_handler(ResponseValidationError)
 async def custom_http_exception_handler(
-    request: Request, exc: HTTPException
+    request: Request, exc: HTTPException | RequestValidationError | ResponseValidationError
 ) -> JSONResponse:
     """Exception Handler for HTTPException"""
     logger.error("HTTPException", exc_info=(type(exc), exc, exc.__traceback__))
