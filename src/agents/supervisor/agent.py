@@ -217,9 +217,9 @@ class SupervisorAgent:
 
     def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
         # last human message must be the query
-        last_human_message = next(
-            (msg for msg in reversed(state.messages) if isinstance(msg, HumanMessage)),
-        )
+        if not state.input or not state.input.query:
+            raise ValueError("Input query is missing in the finalizer state.")
+        last_human_message = HumanMessage(content=state.input.query)
 
         prompt = ChatPromptTemplate.from_messages(
             [

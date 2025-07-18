@@ -93,6 +93,10 @@ class CustomJSONEncoder(json.JSONEncoder):
             return o.__dict__
         elif isinstance(o, IK8sClient):
             return o.model_dump()
+        elif hasattr(o, "model_dump_json"):
+            return o.model_dump_json()
+        elif hasattr(o, "model_dump"):
+            return o.model_dump()
         return super().default(o)
 
 
@@ -465,7 +469,7 @@ class CompanionGraph:
         # define the graph input.
         graph_input = GraphInput(
             messages=messages,
-            user_input=user_input,
+            input=user_input,
             k8s_client=k8s_client,
             subtasks=[],
             error=None,
