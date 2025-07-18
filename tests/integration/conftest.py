@@ -184,25 +184,26 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> Compani
     if subtasks is None:
         subtasks = []
 
+    # find the last human message and use its content as user query.
     last_human_message = next(
         (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None
     )
 
-    user_input = None
-    if last_human_message:
-        UserInput(
-            query=last_human_message.content,
-            resource_kind=None,
-            resource_api_version=None,
-            resource_name=None,
-            namespace=None,
-        )
+    # if no human message is found, use the last message's content.
+    user_input = UserInput(
+        query=(
+            last_human_message.content if last_human_message else messages[-1].content
+        ),
+        resource_kind=None,
+        resource_api_version=None,
+        resource_name=None,
+        namespace=None,
+    )
 
     return CompanionState(
         input=user_input,
         messages=messages,
         next="",
         subtasks=subtasks,
-        final_response="",
         error=None,
     )

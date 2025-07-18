@@ -481,6 +481,7 @@ async def test_generate_final_response(
     state = create_mock_state(messages)
 
     # When: The Finalizer generates a final response
+    assert state.input is not None
     result = await companion_graph.supervisor_agent._generate_final_response(state)
     latest_human_message = HumanMessage(content=state.input.query)
     test_case = LLMTestCase(
