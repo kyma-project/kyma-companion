@@ -359,7 +359,7 @@ def client_factory():
             {
                 "status_code": 400,
                 "content-type": "application/json",
-                "expected_error_msg": "Invalid resource context info",
+                "expected_error_msg": '{"error":"bad request","message":"invalid request format or parameters"}',
             },
         ),
         (
@@ -552,18 +552,20 @@ def test_messages_endpoint(
                 "body": {
                     "detail": [
                         {
-                            "type": "missing",
+                            "input": None,
                             "loc": ["header", "x-cluster-url"],
                             "msg": "Field required",
-                            "input": None,
+                            "type": "missing",
                         },
                         {
-                            "type": "missing",
+                            "input": None,
                             "loc": ["header", "x-cluster-certificate-authority-data"],
                             "msg": "Field required",
-                            "input": None,
+                            "type": "missing",
                         },
-                    ]
+                    ],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -585,7 +587,9 @@ def test_messages_endpoint(
                 "status_code": 422,
                 "content-type": "application/json",
                 "body": {
-                    "detail": "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+                    "detail": [],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -607,7 +611,9 @@ def test_messages_endpoint(
                 "status_code": 422,
                 "content-type": "application/json",
                 "body": {
-                    "detail": "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+                    "detail": [],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -629,7 +635,8 @@ def test_messages_endpoint(
                 "status_code": 500,
                 "content-type": "application/json",
                 "body": {
-                    "detail": 'service failed, Request data: {"resource_kind":"Pod","resource_name":"nginx-123","resource_api_version":"v1","namespace":"default"}'
+                    "error": "Internal Server Error",
+                    "message": "Something went wrong.",
                 },
             },
         ),
@@ -747,7 +754,10 @@ def test_init_conversation(
             {
                 "status_code": 500,
                 "content-type": "application/json",
-                "body": {"detail": "service failed"},
+                "body": {
+                    "error": "Internal Server Error",
+                    "message": "Something went wrong.",
+                },
             },
         ),
         (
@@ -764,7 +774,7 @@ def test_init_conversation(
             {
                 "status_code": 403,
                 "content-type": "application/json",
-                "body": {"detail": "User not authorized to access the conversation"},
+                "body": {"error": "Unauthorized", "message": "Authentication failed"},
             },
         ),
         (
@@ -780,13 +790,13 @@ def test_init_conversation(
                 "status_code": ERROR_RATE_LIMIT_CODE,
                 "content-type": "application/json",
                 "body": {
-                    "detail": {
-                        "current_usage": 1000,
-                        "error": "Rate limit exceeded",
-                        "limit": 1000,
-                        "message": "Daily token limit of 1000 exceeded for this cluster",
-                        "time_remaining_seconds": 60,
-                    },
+                    "current_usage": 1000,
+                    "error": "Token usage limit exceeded",
+                    "limit": 1000,
+                    "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
+                    "fair usage, Kyma Companion controls the number of requests a "
+                    "cluster can make within 24 hours.",
+                    "time_remaining_seconds": 60,
                 },
             },
         ),
@@ -801,18 +811,20 @@ def test_init_conversation(
                 "body": {
                     "detail": [
                         {
-                            "type": "missing",
+                            "input": None,
                             "loc": ["header", "x-cluster-url"],
                             "msg": "Field required",
-                            "input": None,
+                            "type": "missing",
                         },
                         {
-                            "type": "missing",
+                            "input": None,
                             "loc": ["header", "x-cluster-certificate-authority-data"],
                             "msg": "Field required",
-                            "input": None,
+                            "type": "missing",
                         },
-                    ]
+                    ],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -829,7 +841,9 @@ def test_init_conversation(
                 "status_code": 422,
                 "content-type": "application/json",
                 "body": {
-                    "detail": "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+                    "detail": [],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -846,7 +860,9 @@ def test_init_conversation(
                 "status_code": 422,
                 "content-type": "application/json",
                 "body": {
-                    "detail": "Either x-k8s-authorization header or x-client-certificate-data and x-client-key-data headers are required."
+                    "detail": [],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
@@ -876,7 +892,9 @@ def test_init_conversation(
                             "length 32 for simple format, found 6",
                             "type": "uuid_parsing",
                         }
-                    ]
+                    ],
+                    "error": "Validation Error",
+                    "message": "Request validation failed",
                 },
             },
         ),
