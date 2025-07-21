@@ -344,7 +344,7 @@ class TestBaseAgent:
         token_limit = 1000
         monkeypatch.setattr(
             "agents.common.agent.TOOL_RESPONSE_TOKEN_COUNT_LIMIT",
-            {agent.model.name: token_limit},
+            token_limit,
         )
         monkeypatch.setattr("agents.common.agent.TOTAL_CHUNKS_LIMIT", 10)
 
@@ -411,7 +411,7 @@ class TestBaseAgent:
         )
         monkeypatch.setattr(
             "agents.common.agent.TOOL_RESPONSE_TOKEN_COUNT_LIMIT",
-            {agent.model.name: token_limit},
+            token_limit,
         )
         monkeypatch.setattr("agents.common.agent.TOTAL_CHUNKS_LIMIT", chunks_limit)
 
