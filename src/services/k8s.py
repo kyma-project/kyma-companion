@@ -11,13 +11,13 @@ import requests
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
-from agents.common.constants import (
+from services.data_sanitizer import IDataSanitizer
+from utils import logging
+from utils.settings import (
+    ALLOWED_K8S_DOMAINS,
     K8S_API_PAGINATION_LIMIT,
     K8S_API_PAGINATION_MAX_PAGE,
 )
-from services.data_sanitizer import IDataSanitizer
-from utils import logging
-from utils.settings import ALLOWED_K8S_DOMAINS
 
 logger = logging.get_logger(__name__)
 
@@ -325,6 +325,7 @@ class K8sClient:
 
             # Check if we've exceeded the maximum number of pages
             if page_count > K8S_API_PAGINATION_MAX_PAGE:
+                logger.error("Kubernetes API rate limit exceeded")
                 raise ValueError(
                     "Kubernetes API rate limit exceeded. Please refine your query and "
                     "provide more specific resource details."

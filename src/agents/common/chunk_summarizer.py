@@ -6,11 +6,11 @@ from langchain.schema import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables.config import RunnableConfig
 
-from agents.common.constants import TOTAL_CHUNKS_LIMIT
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
+from utils.settings import TOTAL_CHUNKS_LIMIT
 
 logger = get_logger(__name__)
 
