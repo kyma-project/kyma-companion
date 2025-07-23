@@ -12,15 +12,42 @@ PLANNER_STEP_INSTRUCTIONS = """
       - Prioritize recent messages in the conversation history.
 3. **Query Classification**:
     - Classify the query as General Queries (irrelevant to Kyma or Kubernetes) or Kyma/Kubernetes Queries
-4. **Cluster-wide Query Detection**:
-    - Identify queries that need data from both Kyma and Kubernetes agents, if yes then assign tasks to both agents with detailed description.
-    - If query is not explicitly mentioned whether is Kyma or Kubernetes queries, then assign tasks to kyma agent with detailed description.
-    - For all types of cluster scoped queries, assign tasks to both: Kyma and Kubernetes agents with detailed description.
-    - Create separate subtasks for both agents to ensure comprehensive coverage.
-    Example: 
-        Query: "list all resource in my cluster"
-        KymaAgent: "list everything Kyma related in my cluster"
-        KubernetesAgent: "list everything Kubernetes related in my cluster"
+4. **Cluster-wide and Namespace-wide quries without specific resources**:
+    - **True cluster-wide queries**: For comprehensive queries about the entire cluster including "list everything", "complete overview", "all resources", "check resources", "check resource", "cluster status", assign tasks to both Kyma and Kubernetes agents with detailed descriptions.
+    - **True namespace-wide queries**: For comprehensive queries about a specific namespace including "list everything in namespace X", "all resources in namespace Y", "check namespace Z", assign tasks to both Kyma and Kubernetes agents with namespace-specific descriptions.
+    - **Mixed domain queries**: For queries mentioning both Kubernetes and Kyma resources (e.g., "show pods and serverless functions"), split into separate subtasks for each agent based on their domain expertise.
+    - **Domain-specific queries**: For queries specific to one domain (e.g., "check all pods" → KubernetesAgent only, "list Kyma functions" → KymaAgent only), assign to the appropriate agent only.
+    - **Ambiguous queries**: If the query is not explicitly categorized as Kyma or Kubernetes, assign to KymaAgent with detailed description.
+    - **Cluster status queries**: Queries about cluster status, health, or overall state should go to both agents since cluster includes both Kyma and Kubernetes components.
+    - Create separate subtasks for each agent to ensure comprehensive coverage when multiple agents are needed.
+    
+    Examples: 
+        Query: "list all resources in my cluster" (true cluster-wide)
+        → KymaAgent: "list everything Kyma-related in my cluster"
+        → KubernetesAgent: "list everything Kubernetes-related in my cluster"
+        
+        Query: "check resource in the cluster" (true cluster-wide)
+        → KymaAgent: "check Kyma resources in the cluster"
+        → KubernetesAgent: "check Kubernetes resources in the cluster"
+        
+        Query: "what is the status of my cluster?" (cluster status - both agents needed)
+        → KymaAgent: "what is the status of my cluster?"
+        → KubernetesAgent: "what is the status of my cluster?"
+        
+        Query: "show all resources in default namespace" (true namespace-wide)
+        → KymaAgent: "show all Kyma resources in default namespace"
+        → KubernetesAgent: "show all Kubernetes resources in default namespace"
+        
+        Query: "list everything in kyma-system namespace" (true namespace-wide)
+        → KymaAgent: "list everything Kyma-related in kyma-system namespace"
+        → KubernetesAgent: "list everything Kubernetes-related in kyma-system namespace"
+        
+        Query: "show all pods and serverless functions" (mixed domain)
+        → KymaAgent: "show all Kyma serverless functions"  
+        → KubernetesAgent: "show all pods"
+        
+        Query: "check all pods in production namespace" (domain-specific namespace)
+        → KubernetesAgent: "check all pods in production namespace"
 5. **Response Handling**:
       - Create subtasks that directly mirrors the current query points.
       - Assign each subtask to the appropriate agent:
