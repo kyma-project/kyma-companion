@@ -44,13 +44,39 @@ def planner_correctness_metric(evaluator_model):
             # Test case 1: "List everything in my cluster" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
                 ),
                 HumanMessage(content="list everything in my cluster"),
             ],
             '{"subtasks": [{"description": "list everything Kyma-related in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
             '{"description": "list everything Kubernetes-related in my cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+            0.8,
+        ),
+        (
+            # Test case 1: "List everything in my cluster" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: "
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                ),
+                HumanMessage(content="check resources in the cluster"),
+            ],
+            '{"subtasks": [{"description": "check Kyma resources in the cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "check Kubernetes resources in the cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+            0.8,
+        ),
+        (
+            # Test case 1: "check Kubernetes resources" - should create subtasks for both agents
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                ),
+                HumanMessage(content="check resources"),
+            ],
+            '{"subtasks": [{"description": "check Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "check Kubernetes resources", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
@@ -78,12 +104,24 @@ def planner_correctness_metric(evaluator_model):
                 HumanMessage(content="show all pods and serverless functions"),
             ],
             '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
-            '{"description": "show all Kubernetes pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            '{"description": "show all pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
         (
-            # Test case 4: "List all services and API rules" - should create subtasks for both agents
+            # Test case 4: "Check all pods" - should only assign to KubernetesAgent
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                ),
+                HumanMessage(content="check all pods"),
+            ],
+            '{"subtasks": [{"description": "check all pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            False,
+            0.8,
+        ),
+        (
+            # Test case 5: "List all services and API rules" - should create subtasks for both agents
             [
                 SystemMessage(
                     content="The user query is related to: "
