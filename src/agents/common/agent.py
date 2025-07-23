@@ -23,8 +23,6 @@ from agents.common.constants import (
     MY_TASK,
     SUBTASKS,
     SUMMARIZATION,
-    TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
-    TOTAL_CHUNKS_LIMIT,
 )
 from agents.common.error_handler import (
     token_counting_error_handler,
@@ -47,6 +45,8 @@ from utils.settings import (
     GRAPH_STEP_TIMEOUT_SECONDS,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
+    TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
+    TOTAL_CHUNKS_LIMIT,
 )
 
 logger = get_logger(__name__)
@@ -236,7 +236,7 @@ class BaseAgent:
         token_count = self._compute_token_count(str(tool_responses))
         logger.info(f"Tool Response Token count: {token_count}")
 
-        model_token_limit = TOOL_RESPONSE_TOKEN_COUNT_LIMIT[self.model.name]
+        model_token_limit = TOOL_RESPONSE_TOKEN_COUNT_LIMIT
         if token_count <= model_token_limit:
             logger.debug("Tool response within token limit, no summarization needed")
             return ""
@@ -295,7 +295,7 @@ class BaseAgent:
         except TotalChunksLimitExceededError:
             logger.exception("Error while summarizing the tool response.")
             if state.my_task:
-                state.my_task.status = SubTaskStatus.ERROR
+                state.my_task.status = SubTaskStatus.COMPLETED
             error_dict: dict[str, Any] = {
                 AGENT_MESSAGES: [
                     AIMessage(

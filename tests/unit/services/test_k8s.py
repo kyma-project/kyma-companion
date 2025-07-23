@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from agents.common.constants import K8S_API_PAGINATION_MAX_PAGE
 from services.data_sanitizer import DataSanitizer
 from services.k8s import AuthType, K8sAuthHeaders, K8sClient
+from utils.settings import K8S_API_PAGINATION_MAX_PAGE
 
 
 def sample_k8s_secret():

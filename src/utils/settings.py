@@ -132,6 +132,19 @@ TOKEN_USAGE_RESET_INTERVAL = config(
     "TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int
 )  # 24 hours
 
+
+K8S_API_PAGINATION_LIMIT = config("K8S_API_PAGINATION_LIMIT", 40, cast=int)
+
+K8S_API_PAGINATION_MAX_PAGE = config("K8S_API_PAGINATION_MAX_PAGE", 1, cast=int)
+
+TOTAL_CHUNKS_LIMIT = config(
+    "TOTAL_CHUNKS_LIMIT", 2, cast=int
+)  # Limit the number of allowed chunking of tool response
+
+TOOL_RESPONSE_TOKEN_COUNT_LIMIT = config(
+    "TOOL_RESPONSE_TOKEN_COUNT_LIMIT", 10000, cast=int
+)
+
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",

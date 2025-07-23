@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 PLANNER = "Planner"
 
 SUMMARIZATION = "Summarization"
@@ -66,21 +64,6 @@ UPDATE_YAML = "Update"
 SUCCESS_CODE = 200
 
 ERROR_RATE_LIMIT_CODE = 429
-
-K8S_API_PAGINATION_LIMIT = 50
-
-K8S_API_PAGINATION_MAX_PAGE = 2
-
-TOOL_RESPONSE_TOKEN_COUNT_LIMIT = defaultdict(
-    lambda: 16000,  # Default token limit if model not found
-    {
-        "gpt-4.1": 100000,  # GPT-4.1 supports 1,047,576 input and 32,768 output tokens
-        "gpt-4.1-mini": 100000,  # GPT-4.1 Mini supports 1,047,576 input and 32,768 output tokens
-        "gpt-4o-mini": 100000,  # GPT-4o Mini supports 112,000 input and 16,384 output tokens
-    },
-)
-
-TOTAL_CHUNKS_LIMIT = 3  # Limit the number of allowed chunking of tool response
 
 FEEDBACK = "feedback"
 
