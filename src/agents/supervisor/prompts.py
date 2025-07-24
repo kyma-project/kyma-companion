@@ -98,7 +98,7 @@ Your ONLY role is to combine and present responses from specialized agents: "{me
 """
 
 FINALIZER_PROMPT_FOLLOW_UP = """
-Given the responses from the agents, generate a final response for the last user query.
+Given the responses from the agents, generate a final response for the user query: "{query}"
 
 # Step-by-Step Process:
 
