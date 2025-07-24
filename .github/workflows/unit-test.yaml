@@ -5,13 +5,6 @@ on:
     branches:
       - "main"
       - "release-**"
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "doc_indexer/**"
-      - CODEOWNERS
-      - LICENSE
-      - "sec-scanners-config.yaml"
 
 ## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
 ## in the create-release.yml workflow as well.
@@ -26,27 +19,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files_ignore: |
+            - "docs/**"
+            - "**.md"
+            - "doc_indexer/**"
+            - CODEOWNERS
+            - LICENSE
+
       - name: Extract Python version
+        if: steps.changed-files.outputs.all_changed_files != ''
         id: python-version
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
+        if: steps.changed-files.outputs.all_changed_files != ''
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
+        if: steps.changed-files.outputs.all_changed_files != ''
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
+        if: steps.changed-files.outputs.all_changed_files != ''
         run: poetry install --with dev
 
       - name: Create config.json
+        if: steps.changed-files.outputs.all_changed_files != ''
         run: |
           mkdir -p config
-          echo '{"mock-key": "mock-value"}' > config/config.json      
+          echo '{"mock-key": "mock-value"}' > config/config.json
 
       - name: Run tests
+        if: steps.changed-files.outputs.all_changed_files != ''
         run: poetry run poe test
