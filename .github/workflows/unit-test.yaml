@@ -6,9 +6,6 @@ on:
       - "main"
       - "release-**"
 
-## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
-## in the create-release.yml workflow as well.
-
 jobs:
   check-if-test-is-needed:
     runs-on: ubuntu-latest
@@ -46,6 +43,8 @@ jobs:
             echo "run_tests=true" >> $GITHUB_OUTPUT
           fi
 
+  ## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
+  ## in the create-release.yml workflow as well.
   unit-test:
     runs-on: ubuntu-latest
     permissions:
