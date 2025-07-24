@@ -70,32 +70,26 @@ jobs:
             - sec-scanners-config.yaml
 
       - name: Extract Python version
-        if: steps.changed-files.outputs.all_changed_files != ''
         id: python-version
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        if: steps.changed-files.outputs.all_changed_files != ''
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        if: steps.changed-files.outputs.all_changed_files != ''
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
-        if: steps.changed-files.outputs.all_changed_files != ''
         run: poetry install --with dev
 
       - name: Create config.json
-        if: steps.changed-files.outputs.all_changed_files != ''
         run: |
           mkdir -p config
           echo '{"mock-key": "mock-value"}' > config/config.json
 
       - name: Run tests
-        if: steps.changed-files.outputs.all_changed_files != ''
         run: poetry run poe test
