@@ -14,7 +14,7 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 app = FastAPI(
-    title="Kyma-Companion",
+    title="Joule",
 )
 
 
@@ -125,7 +125,7 @@ app.include_router(probes_router)
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
-    return {"message": "Kyma Companion!!!"}
+    return {"message": "Joule!!!"}
 
 
 @app.get("/metrics")
