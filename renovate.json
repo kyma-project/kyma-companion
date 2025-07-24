@@ -1,12 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScopeDisabled"
   ],
-  "prTitlePrefix": "deps: ",
-  "packageRules": [
+  "packagerules": [
     {
-      "groupName": null
+      "groupname": null
     }
   ]
 }
