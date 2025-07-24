@@ -24,12 +24,12 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files_ignore: |
-            - "docs/**"
-            - "**.md"
-            - "doc_indexer/**"
+            - docs/**
+            - **.md
+            - doc_indexer/**
             - CODEOWNERS
             - LICENSE
-            - "sec-scanners-config.yaml"
+            - sec-scanners-config.yaml
 
       - name: Extract Python version
         if: steps.changed-files.outputs.all_changed_files != ''
