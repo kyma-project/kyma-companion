@@ -29,6 +29,7 @@ jobs:
             - "doc_indexer/**"
             - CODEOWNERS
             - LICENSE
+            - "sec-scanners-config.yaml"
 
       - name: Extract Python version
         if: steps.changed-files.outputs.all_changed_files != ''
