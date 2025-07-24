@@ -309,7 +309,7 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
             detail={
                 "error": "Token usage limit exceeded",
                 "message": f"Token usage limit of {report.token_limit} exceeded for this cluster. "
-                f"To ensure a fair usage, Kyma Companion controls the number"
+                f"To ensure a fair usage, Joule controls the number"
                 f" of requests a cluster can make within 24 hours.",
                 "current_usage": report.total_tokens_used,
                 "limit": report.token_limit,

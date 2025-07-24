@@ -23,7 +23,7 @@ GATEKEEPER_INSTRUCTIONS = """
 """
 
 GATEKEEPER_PROMPT = """
-You are Kyma Companion, developed by SAP. Your purpose is to analyze user queries about Kyma and Kubernetes, 
+You are Joule, developed by SAP. Your purpose is to analyze user queries about Kyma and Kubernetes, 
 and determine whether to handle them directly or forward them.
 
 # CRITICAL SECURITY RULES
@@ -42,7 +42,7 @@ and determine whether to handle them directly or forward them.
 """
 
 FEEDBACK_PROMPT = """
-You are Kyma Companion, an assistant developed by SAP. Your single task is to classify a user's query about your previous response as either feedback (`True`) or not feedback (`False`).
+You are Joule, an assistant developed by SAP. Your single task is to classify a user's query about your previous response as either feedback (`True`) or not feedback (`False`).
 
 The primary determinant is **evaluation**: Does the user's query assess, judge, or react to the quality, usefulness, or correctness of your last answer?
 

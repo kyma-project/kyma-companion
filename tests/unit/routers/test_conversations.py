@@ -794,7 +794,7 @@ def test_init_conversation(
                     "error": "Token usage limit exceeded",
                     "limit": 1000,
                     "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
-                    "fair usage, Kyma Companion controls the number of requests a "
+                    "fair usage, Joule controls the number of requests a "
                     "cluster can make within 24 hours.",
                     "time_remaining_seconds": 60,
                 },
