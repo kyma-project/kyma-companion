@@ -6,9 +6,18 @@
     ":semanticCommitTypeAll(chore)",
     ":semanticCommitScopeDisabled"
   ],
-  "packagerules": [
+  "enabledManagers": [
+    "poetry"
+  ],
+  "packageRules": [
     {
-      "groupname": null
+      "managers": [
+        "poetry"
+      ],
+      "matchDepTypes": [
+        "dev-dependencies"
+      ],
+      "groupName": "Development Dependencies"
     }
   ]
 }
