@@ -22,13 +22,14 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v46
         with:
-          files_ignore: |
+          files_ignore: | # do not use quotes
             - docs/**
             - **.md
             - doc_indexer/**
             - CODEOWNERS
             - LICENSE
             - sec-scanners-config.yaml
+            - renovate.json
 
       - name: Determine if tests should run
         id: determine
