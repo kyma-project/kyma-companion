@@ -11,7 +11,7 @@
   ],
   "packageRules": [
     {
-      "managers": [
+      "matchManagers": [
         "poetry"
       ],
       "matchDepTypes": [
