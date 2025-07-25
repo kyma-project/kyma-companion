@@ -56,6 +56,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files_ignore: |
+            - docs/**
+            - **.md
+            - doc_indexer/**
+            - CODEOWNERS
+            - LICENSE
+            - sec-scanners-config.yaml
+
       - name: Extract Python version
         id: python-version
         run: ./scripts/shell/extract-python-version.sh
