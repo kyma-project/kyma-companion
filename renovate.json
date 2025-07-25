@@ -17,6 +17,10 @@
       "matchDepTypes": [
         "dev-dependencies"
       ],
+      "addLabels": [
+        "evaluation requested",
+        "run-integration-test"
+      ],
       "groupName": "Development Dependencies"
     }
   ]
