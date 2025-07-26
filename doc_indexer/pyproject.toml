@@ -28,7 +28,7 @@ markdown = "^3.7"
 pydantic = "^2.9.2"
 
 [tool.poetry.group.test.dependencies]
-poethepoet = "^0.29.0"
+poethepoet = "^0.36.0"
 black = "^24.10.0"
 ruff = "^0.7.1"
 mypy = "^1.13.0"
