@@ -18,8 +18,7 @@
         "dev-dependencies"
       ],
       "addLabels": [
-        "evaluation requested",
-        "run-integration-test"
+        "dependencies"
       ],
       "groupName": "Development Dependencies"
     }
