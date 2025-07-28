@@ -17,6 +17,9 @@
       "matchDepTypes": [
         "dev-dependencies"
       ],
+      "addLabels": [
+        "dependencies"
+      ],
       "groupName": "Development Dependencies"
     }
   ]
