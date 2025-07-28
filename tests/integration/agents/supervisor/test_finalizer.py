@@ -9,10 +9,10 @@ from integration.agents.test_common_node import create_mock_state
 
 
 @pytest.mark.parametrize(
-    "messages, expected_answer",
+    "test_case, messages, expected_answer",
     [
-        # Finalizer do not answer the question itself
         (
+            "case 1: Finalizer do not answer the question itself",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -21,15 +21,15 @@ from integration.agents.test_common_node import create_mock_state
                 AIMessage(name="KymaAgent", content="It is a color of fish."),
             ],
             dedent(
-                """It appears that the agents were unable to provide a detailed description of Kyma. 
-                    Therefore, I cannot offer any specific information on this topic. 
+                """It appears that the agents were unable to provide a detailed description of Kyma.
+                    Therefore, I cannot offer any specific information on this topic.
                     If you have any other questions or need assistance with a different subject, feel free to ask!
-  
+
                 """
             ),
         ),
-        # Finalizer do not answer the question itself
         (
+            "case 2: Finalizer do not answer the question itself",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -39,14 +39,14 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-            The agents did not provide any information regarding what Kubernetes (k8s) is. 
-            Therefore, I cannot offer any specific information on this topic. 
+            The agents did not provide any information regarding what Kubernetes (k8s) is.
+            Therefore, I cannot offer any specific information on this topic.
             If you have any other questions or need assistance with a different subject, feel free to ask!
             """
             ),
         ),
-        # Finalizer do not answer the question itself
         (
+            "case 3: Finalizer do not answer the question itself",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -59,14 +59,14 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-                I'm sorry, but the agents did not provide any information regarding what Kubernetes (k8s) is. 
-                Therefore, I cannot offer any specific information on this topic. 
+                I'm sorry, but the agents did not provide any information regarding what Kubernetes (k8s) is.
+                Therefore, I cannot offer any specific information on this topic.
                 If you have any other questions or need assistance with a different subject, feel free to ask!
                 """
             ),
         ),
-        # Finalizer do not answer the question itself
         (
+            "case 4: Finalizer do not answer the question itself",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -84,15 +84,15 @@ from integration.agents.test_common_node import create_mock_state
                 ),
             ],
             dedent(
-                """The agents did not provide specific information regarding 
-                the types of Kubernetes services or the definition of a Kyma function. 
-                Therefore, I cannot offer any specific information on this topic. 
+                """The agents did not provide specific information regarding
+                the types of Kubernetes services or the definition of a Kyma function.
+                Therefore, I cannot offer any specific information on this topic.
                 If you have any other questions or need assistance with a different subject, feel free to ask!
             """
             ),
         ),
-        # Finalizer answers based on Kyma agent's response
         (
+            "Finalizer answers based on Kyma agent's response",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'resource_namespace': ''}"
@@ -143,8 +143,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer answers based on K8S agent's response
         (
+            "Finalizer answers based on K8S agent's response",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -173,8 +173,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer answers based on K8S and Kyma agents' responses
         (
+            "Finalizer answers based on K8S and Kyma agents' responses",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -260,8 +260,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer answers based on one of the agents' responses if another agent's response is invalid
         (
+            "Finalizer answers based on one of the agents' responses if another agent's response is invalid",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -306,8 +306,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        # Finalizer answers based on Common and Kyma agent's responses
         (
+            "Finalizer answers based on Common and Kyma agent's responses",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -396,6 +396,7 @@ from integration.agents.test_common_node import create_mock_state
             ),
         ),
         (
+            "finalizer answers short query based on Kyma agent's response",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_namespace': 'test-namespace'}"
@@ -411,22 +412,23 @@ from integration.agents.test_common_node import create_mock_state
             "The latest Istio version included in Kyma is 1.24.1.",
         ),
         (
+            "finalizer answers query based on kubernetes agent's response",
             [
                 SystemMessage(
                     content="The user query is related to: {'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="list me deployments in this namespace"),
                 AIMessage(
-                    name="KymaAgent",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         There is one deployment in the `nginx-oom` namespace:
-                        
+
                         1. **Deployment Name:** nginx
                            - **Labels:** app: nginx
                            - **Replicas:** 1
                            - **Image:** nginx
-                           - **Resource Limits:** 
+                           - **Resource Limits:**
                              - CPU: 250m
                              - Memory: 2Mi
                            - **Resource Requests:**
@@ -434,7 +436,7 @@ from integration.agents.test_common_node import create_mock_state
                              - Memory: 1Mi
                            - **Environment Variables:**
                              - ACCESS_TOKEN: abcdefg
-                        
+
                         The deployment is currently facing issues:
                         - **Available Status:** False
                           - **Reason:** MinimumReplicasUnavailable
@@ -454,7 +456,7 @@ from integration.agents.test_common_node import create_mock_state
                    - **Labels:** app: nginx
                    - **Replicas:** 1
                    - **Image:** nginx
-                   - **Resource Limits:** 
+                   - **Resource Limits:**
                      - CPU: 250m
                      - Memory: 2Mi
                    - **Resource Requests:**
@@ -462,8 +464,58 @@ from integration.agents.test_common_node import create_mock_state
                      - Memory: 1Mi
                    - **Environment Variables:**
                      - ACCESS_TOKEN: abcdefg
-                     
+
                 The deployment is currently facing issues with availability and progress.
+                """
+            ),
+        ),
+        (
+            "Should mention about Joule context when kubenretes agent ask for resource name and namespace",
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_kind': 'Cluster' }"
+                ),
+                HumanMessage(content="Why is my pod in error state?"),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content=dedent(
+                        """
+                        To determine why your pod is in an error state, I need to know the specific pod name and its namespace. Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries.
+                        This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
+                        """
+                    ),
+                ),
+            ],
+            dedent(
+                """
+                To determine why your pod is in an error state, I need to know the specific pod name and its namespace. Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries.
+                This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
+                """
+            ),
+        ),
+        (
+            "Should mention about Joule context when kyma agent ask for resource name and namespace",
+            [
+                SystemMessage(
+                    content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+                ),
+                HumanMessage(
+                    content="Why is the pod of the serverless Function not ready?"
+                ),
+                AIMessage(
+                    name="KubernetesAgent",
+                    content=dedent(
+                        """
+                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                        Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
+                        """
+                    ),
+                ),
+            ],
+            dedent(
+                """
+                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                 """
             ),
         ),
@@ -471,7 +523,7 @@ from integration.agents.test_common_node import create_mock_state
 )
 @pytest.mark.asyncio
 async def test_generate_final_response(
-    messages, expected_answer, companion_graph, semantic_similarity_metric
+    test_case, messages, expected_answer, companion_graph, semantic_similarity_metric
 ):
     """
     Tests that the _generate_final_response method of the Finalizer correctly synthesizes
@@ -490,4 +542,4 @@ async def test_generate_final_response(
         expected_output=expected_answer,
     )
 
-    assert_test(test_case, [semantic_similarity_metric])
+    assert_test(test_case, [semantic_similarity_metric]), test_case
