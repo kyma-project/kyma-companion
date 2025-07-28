@@ -29,6 +29,7 @@ from agents.common.error_handler import (
     tool_parsing_error_handler,
 )
 from agents.common.exceptions import TotalChunksLimitExceededError
+from agents.common.prompts import JOULE_CONTEXT_INFORMATION
 from agents.common.state import BaseAgentState, SubTaskStatus
 from agents.common.utils import (
     compute_string_token_count,
@@ -302,7 +303,7 @@ class BaseAgent:
                         content="Your request is too broad and requires analyzing "
                         "more resources than allowed at once. "
                         "Please specify a particular resource you'd like to analyze so "
-                        "I can assist you more effectively.",
+                        f"I can assist you more effectively. {JOULE_CONTEXT_INFORMATION}",
                         name=self.name,
                     )
                 ]

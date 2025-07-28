@@ -1,9 +1,12 @@
 from unittest.mock import Mock
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
+    GEval,
 )
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agents.common.state import SubTask
@@ -13,6 +16,25 @@ from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 
 AGENT_STEPS_NUMBER = 25
+
+
+@pytest.fixture
+def correctness_metric(evaluator_model):
+    return GEval(
+        name="Correctness",
+        evaluation_params=[
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+        ],
+        evaluation_steps=[
+            "Evaluate whether two answers are semantically similar or convey the same meaning."
+            "Check whether the facts in 'actual output' contradict any facts in 'expected output'",
+            "Lightly penalize omissions of detail, focusing on the main idea",
+            "Vague language are permissible",
+        ],
+        model=evaluator_model,
+        threshold=0.7,
+    )
 
 
 @pytest.fixture
@@ -33,6 +55,85 @@ def mock_k8s_client():
 @pytest.fixture
 def k8s_agent(app_models):
     return KubernetesAgent(app_models.get(MAIN_MODEL_NAME))
+
+
+@pytest.mark.parametrize(
+    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
+    [
+        (
+            "Should mention about Joule context in kyma dashboard",
+            KubernetesAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_kind': 'Cluster' }"
+                    ),
+                    HumanMessage(content="Why is my pod in error state?"),
+                ],
+                subtasks=[
+                    {
+                        "description": "Why is my pod in error state?",
+                        "task_title": "Why is my pod in error state?",
+                        "assigned_to": "KubernetesAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="Why is my pod in error state?",
+                    task_title="Why is my pod in error state?",
+                    assigned_to="KubernetesAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            None,
+            "To determine why your pod is in an error state, I need to know the specific pod name and its namespace. Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. "
+            "This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.",
+            None,
+            False,
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_invoke_chain(
+    k8s_agent,
+    correctness_metric,
+    faithfulness_metric,
+    test_case,
+    state,
+    retrieval_context,
+    expected_result,
+    expected_tool_call,
+    should_raise,
+):
+    """
+    Tests that the _invoke_chain method of the KubernetesAgent returns the expected response
+    for the given user query, subtask and tool calls.
+    """
+    # Given: A KubernetesAgent instance and test parameters
+
+    # When: the chain is invoked normally
+    response = await k8s_agent._invoke_chain(state, {})
+    assert isinstance(response, AIMessage), test_case
+
+    # Then: Verify the response based on expected behavior
+    if expected_tool_call:
+        # for tool call cases, verify tool call properties
+        assert response.tool_calls is not None, "Expected tool calls but found none"
+        assert len(response.tool_calls) > 0, "Expected at least one tool call"
+        tool_call = response.tool_calls[0]
+        assert tool_call.get("type") == "tool_call"
+        assert tool_call.get("name") == expected_tool_call
+    else:
+        # for content response cases, verify using deepeval metrics
+        test_case = LLMTestCase(
+            input=state.my_task.description,
+            actual_output=response.content,
+            expected_output=expected_result if expected_result else None,
+            retrieval_context=([retrieval_context] if retrieval_context else []),
+        )
+        # evaluate if the gotten response is semantically similar and faithful to the expected response
+        assert_test(test_case, [correctness_metric, faithfulness_metric]), test_case
 
 
 @pytest.mark.parametrize(
