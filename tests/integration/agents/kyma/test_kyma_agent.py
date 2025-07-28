@@ -637,6 +637,58 @@ def kyma_agent(app_models):
             None,
             False,
         ),
+        (
+            "Should mention about Joule context in kyma dashboard",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+                    ),
+                    HumanMessage(
+                        content="Why is the pod of the serverless Function not ready?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"
+                                },
+                            },
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Please specify the function name.",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "Why is the pod of the serverless Function not ready?",
+                        "task_title": "Why is the pod of the serverless Function not ready?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="Why is the pod of the serverless Function not ready?",
+                    task_title="Why is the pod of the serverless Function not ready?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            None,
+            "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. "
+            "Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.",
+            None,
+            False,
+        ),
     ],
 )
 @pytest.mark.asyncio
@@ -960,7 +1012,7 @@ async def test_tool_calling(
         # When: the chain is invoked and an error is expected
         # Then: the expected error should be raised
         with pytest.raises(expected_result):
-            kyma_agent._invoke_chain(state, {})
+            await kyma_agent._invoke_chain(state, {})
     else:
         # When: the chain is invoked normally
         response = await kyma_agent._invoke_chain(state, {})
