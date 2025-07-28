@@ -1,4 +1,4 @@
-import os
+import socket
 from collections.abc import Sequence
 from threading import Thread
 
@@ -29,10 +29,26 @@ from utils.settings import (
     REDIS_PASSWORD,
 )
 
-# the default port for redis is already in use by the system, so we use a different port for integration tests.
-integration_test_redis_port = 60379
+# integration test configurations.
 integration_test_mini_evaluator_model_name = "gpt-4.1-mini"
 integration_test_main_evaluator_model_name = "gpt-4.1"
+
+
+def get_free_port_in_range(start_port=60000, end_port=60999, host="127.0.0.1") -> int:
+    """
+    Find a free port in the specified range.
+    :param host:
+    :param start_port: The starting port number of the range.
+    :param end_port: The ending port number of the range.
+    """
+    for port in range(start_port, end_port + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"No free port found in range {start_port}-{end_port}")
 
 
 class LangChainOpenAI(DeepEvalBaseLLM):
@@ -100,8 +116,8 @@ def evaluator_main_model(app_models):
 
 @pytest.fixture(scope="session")
 def start_fake_redis():
-    os.environ["REDIS_HOST"] = str(integration_test_redis_port)
-    server_address = (REDIS_HOST, integration_test_redis_port)
+    redis_port = get_free_port_in_range()
+    server_address = (REDIS_HOST, redis_port)
     server = TcpFakeServer(server_address)
     t = Thread(target=server.serve_forever, daemon=True)
     t.start()
@@ -113,15 +129,14 @@ def start_fake_redis():
     server.shutdown()
     server.server_close()
     t.join(timeout=5)
-    if "REDIS_HOST" in os.environ:
-        del os.environ["REDIS_HOST"]
 
 
 @pytest.fixture(scope="session")
 def companion_graph(app_models, start_fake_redis):
+    redis_port = start_fake_redis.server_address[1]
     memory = AsyncRedisSaver.from_conn_info(
         host=REDIS_HOST,
-        port=integration_test_redis_port,
+        port=redis_port,
         db=REDIS_DB_NUMBER,
         password=REDIS_PASSWORD,
     )
