@@ -21,6 +21,18 @@
         "dependencies"
       ],
       "groupName": "Development Dependencies"
+    },
+    {
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchDepTypes": [
+        "test-dependencies"
+      ],
+      "addLabels": [
+        "dependencies"
+      ],
+      "groupName": "Test Dependencies"
     }
   ]
 }
