@@ -246,7 +246,9 @@ async def messages(
         ) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
+    message.user_identifier = await authorize_user(
+        str(conversation_id), k8s_auth_headers, conversation_service
+    )
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -323,7 +325,7 @@ async def authorize_user(
     conversation_id: str,
     k8s_auth_headers: K8sAuthHeaders,
     conversation_service: IService,
-) -> None:
+) -> str:
     """Authorize the user to access the conversation."""
     user_identifier = ""
     if k8s_auth_headers.x_k8s_authorization is not None:
@@ -356,3 +358,5 @@ async def authorize_user(
         raise HTTPException(
             status_code=403, detail="User not authorized to access the conversation"
         )
+
+    return user_identifier

@@ -1,12 +1,11 @@
 from typing import Any, Protocol
 
 import scrubadub
-from aiohttp import BasicAuth, ClientSession
+from aiohttp import BasicAuth
+from langchain_core.messages import BaseMessage, ToolMessage
 from langfuse.callback import CallbackHandler
 
-from agents.common.constants import SUCCESS_CODE
 from agents.common.state import GraphInput
-from utils.common import MetricsResponse
 from utils.settings import (
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
@@ -18,6 +17,8 @@ from utils.settings import (
 from utils.singleton_meta import SingletonMeta
 from utils.utils import string_to_bool
 
+REDACTED = "REDACTED"
+
 
 class ILangfuseService(Protocol):
     """Service interface"""
@@ -26,31 +27,25 @@ class ILangfuseService(Protocol):
         """Returns the callback handler"""
         ...
 
-    async def get_daily_metrics(
-        self,
-        from_timestamp: str,
-        to_timestamp: str,
-        tags: Any = None,
-        user_id: Any = None,
-    ) -> MetricsResponse | None:
-        """
-        Fetch daily metrics from the Langfuse API."""
-        ...
-
-    async def get_total_token_usage(
-        self, from_timestamp: str, to_timestamp: str, tags: Any = None
-    ) -> int:
-        """
-        Calculate the total token utilization by each cluster filtered by tags.
-        """
-        ...
-
     def masking_production_data(self, data: str) -> str:
         """
         masking_production_data removes sensitive information from traces
         if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
         """
         ...
+
+
+def get_langfuse_metadata(user_id: str, session_id: str) -> dict:
+    """
+    Returns metadata for Langfuse traces.
+    Args:
+        user_id (str): The user ID.
+        session_id (str): The session ID.
+    """
+    return {
+        "langfuse_session_id": session_id,
+        "langfuse_user_id": user_id,
+    }
 
 
 class LangfuseService(metaclass=SingletonMeta):
@@ -80,6 +75,7 @@ class LangfuseService(metaclass=SingletonMeta):
         )
         self.masking_mode = LANGFUSE_MASKING_MODE
         self.data_scrubber = scrubadub.Scrubber()
+        self.data_scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
     @property
     def handler(self) -> CallbackHandler:
@@ -101,75 +97,73 @@ class LangfuseService(metaclass=SingletonMeta):
             return data
         elif self.masking_mode == LangfuseMaskingModes.REDACTED:
             # If masking is set to REDACTED, return a placeholder string
-            return "REDACTED"
+            return REDACTED
+        elif self.masking_mode == LangfuseMaskingModes.PARTIAL:
+            return self._masking_mode_partial(data)
+        elif self.masking_mode == LangfuseMaskingModes.FILTERED:
+            return self._masking_mode_filtered(data)
 
-        # If masking is set to PARTIAL, return only the user input and resource information.
+        return REDACTED
+
+    def _masking_mode_partial(self, data: Any) -> Any:
+        """Return only the user input and resource information. Everything else is redacted."""
         if isinstance(data, GraphInput):
             output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
             if output:
                 return self.data_scrubber.clean(output)
 
-        return "REDACTED"
+        return REDACTED
 
-    async def get_daily_metrics(
-        self,
-        from_timestamp: str,
-        to_timestamp: str,
-        tags: Any = None,
-        user_id: Any = None,
-    ) -> MetricsResponse | None:
+    def _masking_mode_filtered(self, data: Any) -> Any:  # noqa: C901
+        """Recursively masks sensitive information in the provided data."""
+        try:
+            if not data or isinstance(data, int | float | bool):
+                return data
+            # If data is a GraphInput, sanitize the messages in reverse order for better readability.
+            if isinstance(data, GraphInput):
+                output = "\n".join(
+                    [str(msg.content) for msg in reversed(data.messages)]
+                )
+                return self.data_scrubber.clean(output if output else REDACTED)
+            # If data is a string, sanitize it directly.
+            elif isinstance(data, str):
+                return self.data_scrubber.clean(data)
+            elif isinstance(data, ToolMessage):
+                data.content = REDACTED
+                return data
+            elif isinstance(data, BaseMessage):
+                data.content = self._get_cleaned_content(data.content)
+                return data
+            elif isinstance(data, dict) and "content" in data and "role" in data:
+                # If data is a dictionary with role and content, sanitize the content.
+                data["content"] = (
+                    self.data_scrubber.clean(data["content"])
+                    if data["role"] != "tool"
+                    else REDACTED
+                )
+                return data
+            elif isinstance(data, dict):
+                for key, value in data.items():
+                    # Recursively sanitize each value in the dictionary.
+                    data[key] = self._masking_mode_filtered(value)
+                return data
+            elif isinstance(data, list):
+                # If data is a list, sanitize each item in the list (recursively).
+                return [self._masking_mode_filtered(item) for item in data]
+            elif hasattr(data, "to_dict"):
+                return self._masking_mode_filtered(data.to_dict())
+            elif hasattr(data, "model_dump"):
+                return self._masking_mode_filtered(data.model_dump())
+            elif hasattr(data, "model_dump_json"):
+                return self._masking_mode_filtered(data.model_dump_json())
+            return f"{REDACTED} - Unsupported data type ({type(data)}) for masking."
+        except Exception as e:
+            return f"Error while masking data: {e}"
+
+    def _get_cleaned_content(self, content: Any) -> Any:
         """
-        Fetch daily metrics from the Langfuse API.
-
-        :param from_timestamp: Start timestamp in ISO format (e.g., '2025-01-08T13:50:56.406Z').
-        :param to_timestamp: End timestamp in ISO format (e.g., '2025-12-16T13:50:56.406Z').
-        :param tags: Optional tags to filter metrics based on tags.
-        :param user_id: Optional userId to filter metrics based on user id.
-        :return: Parsed MetricsResponse object.
+        Helper function to clean the content of a message.
         """
-        url = f"{self.base_url}/api/public/metrics/daily"
-
-        params = {
-            "fromTimestamp": from_timestamp,
-            "toTimestamp": to_timestamp,
-        }
-
-        if tags:
-            params["tags"] = tags
-
-        if user_id:
-            params["userId"] = user_id
-
-        async with (
-            ClientSession() as session,
-            session.get(url, params=params, auth=self.auth) as response,
-        ):
-            if response.status == SUCCESS_CODE:
-                # Parse the JSON response into the MetricsResponse Pydantic model
-                data = await response.json()
-                return MetricsResponse(**data)
-            # If status is not successful, raise the HTTP error
-            response.raise_for_status()
-            return None
-
-    async def get_total_token_usage(
-        self, from_timestamp: str, to_timestamp: str, tags: Any = None
-    ) -> int:
-        """
-        Calculate the total token utilization by each cluster filtered by tags.
-
-        :param from_timestamp: Start timestamp in ISO format (e.g., '2025-01-08T13:50:56.406Z').
-        :param to_timestamp: End timestamp in ISO format (e.g., '2025-12-16T13:50:56.406Z').
-        :param tags: Optional tags to filter metrics (e.g., 'ClusterID').
-        :return: Total token utilization as an integer.
-        """
-        # Fetch the daily metrics
-        metrics = await self.get_daily_metrics(from_timestamp, to_timestamp, tags)
-
-        # Calculate the total token utilization
-        total_token_utilization = 0
-        if metrics and metrics.data:
-            for daily_metric in metrics.data:
-                for usage in daily_metric.usage:
-                    total_token_utilization += usage.total_usage
-        return total_token_utilization
+        if isinstance(content, str):
+            return self.data_scrubber.clean(content)
+        return f"Error while masking message content: content (type: {type(content)}) is not a string."
