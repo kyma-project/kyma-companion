@@ -22,10 +22,10 @@
       "matchDepTypes": [
         "dev"
       ],
+      "groupName": "Dev Dependencies in {{packageFileName}} / {{packageName}}",
       "addLabels": [
         "dependencies"
-      ],
-      "groupName": "Development Dependencies"
+      ]
     },
     {
       "matchManagers": [
@@ -34,10 +34,10 @@
       "matchDepTypes": [
         "test"
       ],
+      "groupName": "Test Dependencies in {{packageFileName}} / {{packageName}}",
       "addLabels": [
         "dependencies"
-      ],
-      "groupName": "Test Dependencies"
+      ]
     }
   ]
 }
