@@ -20,7 +20,7 @@
         "poetry"
       ],
       "matchDepTypes": [
-        "dev-dependencies"
+        "dev"
       ],
       "addLabels": [
         "dependencies"
@@ -32,7 +32,7 @@
         "poetry"
       ],
       "matchDepTypes": [
-        "test-dependencies"
+        "test"
       ],
       "addLabels": [
         "dependencies"
