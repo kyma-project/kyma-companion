@@ -4787,14 +4787,14 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.25.3"
+version = "1.1.0"
 description = "Pytest support for asyncio"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "pytest_asyncio-0.25.3-py3-none-any.whl", hash = "sha256:9e89518e0f9bd08928f97a3482fdc4e244df17529460bc038291ccaf8f85c7c3"},
-    {file = "pytest_asyncio-0.25.3.tar.gz", hash = "sha256:fc1da2cf9f125ada7e710b4ddad05518d4cee187ae9412e9ac9271003497f07a"},
+    {file = "pytest_asyncio-1.1.0-py3-none-any.whl", hash = "sha256:5fe2d69607b0bd75c656d1211f969cadba035030156745ee09e7d71740e58ecf"},
+    {file = "pytest_asyncio-1.1.0.tar.gz", hash = "sha256:796aa822981e01b68c12e4827b8697108f7205020f24b5793b3c41555dab68ea"},
 ]
 
 [package.dependencies]
@@ -6096,14 +6096,14 @@ test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "termcolor"
-version = "2.5.0"
+version = "3.1.0"
 description = "ANSI color formatting for output in terminal"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "termcolor-2.5.0-py3-none-any.whl", hash = "sha256:37b17b5fc1e604945c2642c872a3764b5d547a48009871aea3edd3afa180afb8"},
-    {file = "termcolor-2.5.0.tar.gz", hash = "sha256:998d8d27da6d48442e8e1f016119076b690d962507531df4890fcd2db2ef8a6f"},
+    {file = "termcolor-3.1.0-py3-none-any.whl", hash = "sha256:591dd26b5c2ce03b9e43f391264626557873ce1d379019786f99b0c2bee140aa"},
+    {file = "termcolor-3.1.0.tar.gz", hash = "sha256:6a6dd7fbee581909eeec6a756cff1d7f7c376063b14e4a298dc4980309e55970"},
 ]
 
 [package.extras]
@@ -7288,4 +7288,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "ec494e5266e100ca3fc45289b7d7c71e0fa76e202ce09b2b9be48a769aaeeff4"
+content-hash = "8e4f6d4f32b3dd1af8537272306383034a38dab85d2f750f2f60a3da40a88a7b"
