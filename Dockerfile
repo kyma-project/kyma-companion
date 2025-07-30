@@ -8,7 +8,7 @@ COPY config ./config
 
 # Install Poetry and dependencies in one layer
 RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.13 python3.13-venv adduser \
-  && python3.12 -m venv ./venv \
+  && python3.13 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.create false \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
