@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "packageFiles": [
+  "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
     "tests/blackbox/pyproject.toml"
