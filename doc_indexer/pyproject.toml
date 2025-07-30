@@ -23,7 +23,7 @@ hdbcli = "^2.22.29"
 python-decouple = "^3.8"
 generative-ai-hub-sdk = {extras = ["all"], version = "^4.0.0"}
 python-dotenv = "^1.0.1"
-unstructured = "^0.16.0"
+unstructured = "^0.18.0"
 markdown = "^3.7"
 pydantic = "^2.9.2"
 
