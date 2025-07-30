@@ -1,4 +1,4 @@
-FROM ghcr.io/gardenlinux/gardenlinux:1592.11 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1877.1 AS builder
 WORKDIR /app
 
 # Copy only necessary files
@@ -7,7 +7,7 @@ COPY src ./src
 COPY config ./config
 
 # Install Poetry and dependencies in one layer
-RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.12 python3.12-venv adduser \
+RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.13 python3.13-venv adduser \
   && python3.12 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.create false \
