@@ -19,10 +19,10 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchDepTypes": [
-        "dev"
+      "matchPaths": [
+        "pyproject.toml"
       ],
-      "groupName": "Dev Dependencies in {{packageFileName}}",
+      "groupName": "Dependencies in pyproject.toml",
       "addLabels": [
         "dependencies"
       ]
@@ -31,10 +31,22 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchDepTypes": [
-        "test"
+      "matchPaths": [
+        "doc_indexer/pyproject.toml"
       ],
-      "groupName": "Test Dependencies in {{packageFileName}}",
+      "groupName": "Dependencies in doc_indexer/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchPaths": [
+        "tests/blackbox/pyproject.toml"
+      ],
+      "groupName": "Dependencies in tests/blackbox/pyproject.toml",
       "addLabels": [
         "dependencies"
       ]
