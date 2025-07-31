@@ -1,5 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "schedule": [
+    "* 0-8 * * 1"
+  ],
+  "timezone": "Europe/Berlin",
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",

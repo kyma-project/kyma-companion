@@ -640,6 +640,34 @@ def test_messages_endpoint(
                 },
             },
         ),
+        (
+            "should return token usage exceeded error",
+            {
+                "x-k8s-authorization": "non-empty-auth",
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            {
+                "resource_kind": "Pod",
+                "resource_api_version": "v1",
+                "resource_name": "nginx-123",
+                "namespace": "default",
+            },
+            None,
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "current_usage": 1000,
+                    "error": "Token usage limit exceeded",
+                    "limit": 1000,
+                    "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
+                    "fair usage, Joule controls the number of requests a "
+                    "cluster can make within 24 hours.",
+                    "time_remaining_seconds": 60,
+                },
+            },
+        ),
     ],
 )
 @patch("services.k8s.K8sClient.__init__", return_value=None)
