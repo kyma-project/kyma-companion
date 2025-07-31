@@ -131,6 +131,9 @@ async def init_conversation(
             status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
         ) from e
 
+    # Check rate limitation
+    await check_token_usage(x_cluster_url, conversation_service)
+
     try:
         # Create initial questions.
         questions = conversation_service.new_conversation(
