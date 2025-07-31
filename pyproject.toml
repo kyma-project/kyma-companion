@@ -11,7 +11,7 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.12.*"
+requires-python = "==3.13.*"
 dependencies = [
   "cryptography (>=44.0.3,<45.0.0)",
   "fastapi[standard] (>=0.115.11,<0.116.0)",
@@ -29,7 +29,7 @@ dependencies = [
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.9.0,<0.10.0)",
-  "uvicorn (>=0.34.3,<0.35.0)"
+  "uvicorn (>=0.34.3,<0.35.0)",
 ]
 [tool.poetry]
 packages = [{ include = "src" }]
