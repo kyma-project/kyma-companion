@@ -1,8 +1,11 @@
+from unittest.mock import Mock
+
 import pytest
 from langchain_core.messages import AIMessage
 
 from agents.common.constants import FINALIZER, MESSAGES, NEW_YAML, UPDATE_YAML
 from agents.common.response_converter import ResponseConverter
+from services.k8s import IK8sClient
 
 yaml_new_sample_with_link_1 = """```yaml
    apiVersion: v1
@@ -139,7 +142,19 @@ spec:
 
 @pytest.fixture
 def response_converter():
-    return ResponseConverter()
+    def mock_get_namespace(name):
+        existing_namespaces = [
+            "default",
+            "kube-system",
+            "test-ns",
+            "kyma-system",
+            "nginx-oom",
+        ]
+        return name in existing_namespaces
+
+    k8s_client = Mock(IK8sClient)
+    k8s_client.get_namespace.side_effect = mock_get_namespace
+    return ResponseConverter(k8s_client=k8s_client)
 
 
 @pytest.mark.parametrize(
@@ -275,6 +290,15 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
             "/namespaces/test-ns/Deployment",
         ),
         (
+            "should generate link for new deployment with default namespace, when namespace do not exist",
+            {
+                "metadata": {"namespace": "non-existing-ns123", "name": "test-deploy"},
+                "kind": "Deployment",
+            },
+            NEW_YAML,
+            "/namespaces/default/Deployment",
+        ),
+        (
             "Generate link for updating old deployment",
             {
                 "metadata": {"namespace": "test-ns", "name": "test-deploy"},
@@ -282,6 +306,15 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
             },
             UPDATE_YAML,
             "/namespaces/test-ns/Deployment/test-deploy",
+        ),
+        (
+            "should not generate link for updating old deployment when namespace do not exist",
+            {
+                "metadata": {"namespace": "non-existing-ns123", "name": "test-deploy"},
+                "kind": "Deployment",
+            },
+            UPDATE_YAML,
+            None,
         ),
         (
             "Test no link generation",
