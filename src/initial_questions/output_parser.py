@@ -26,6 +26,7 @@ class QuestionOutputParser(BaseOutputParser):
         """Parse the output and return the questions."""
 
         questions = [
+            # Remove the leading number and dot from each line.
             PATTERN_NUMBER_LINE.sub("", line).strip()
             for line in output.strip().split("\n")
             if line.strip()  # Skip empty lines
