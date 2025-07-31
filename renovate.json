@@ -1,5 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "includePaths": [
+    "pyproject.toml",
+    "doc_indexer/pyproject.toml",
+    "tests/blackbox/pyproject.toml"
+  ],
   "extends": [
     "config:recommended",
     ":semanticCommits",
@@ -14,13 +19,37 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchDepTypes": [
-        "dev-dependencies"
+      "matchPaths": [
+        "pyproject.toml"
       ],
+      "groupName": "Dependencies in pyproject.toml",
       "addLabels": [
         "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "poetry"
       ],
-      "groupName": "Development Dependencies"
+      "matchPaths": [
+        "doc_indexer/pyproject.toml"
+      ],
+      "groupName": "Dependencies in doc_indexer/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchPaths": [
+        "tests/blackbox/pyproject.toml"
+      ],
+      "groupName": "Dependencies in tests/blackbox/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
     }
   ]
 }
