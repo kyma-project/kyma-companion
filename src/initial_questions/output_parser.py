@@ -17,11 +17,14 @@ class QuestionOutputParser(BaseOutputParser):
 
     def parse(self, output: str) -> list[str]:
         """Parse the output and return the questions."""
-        # Split the output into lines.
-        output = output.strip().split("\n")
-        # Remove empty lines and leading and trailing whitespaces.
-        output = [line.strip() for line in output if line.strip()]
-        # Remove leading numbers.
-        output = [re.sub(r"^\d+\.", "", line).strip() for line in output]
-
-        return output
+        # Regex pattern matches leading whitespace, digits, and a dot (e.g., "   1.", "\t2.", "3.")
+        pattern = re.compile(r"^\s*\d+\.")
+        questions = [
+            # For each non-empty line:
+            #   - Remove leading whitespace, numbers, and dot (e.g., "   1.")
+            #   - Strip leading/trailing whitespace
+            pattern.sub("", line).strip()
+            for line in output.strip().split("\n")
+            if line.strip()  # Skip empty lines
+        ]
+        return questions
