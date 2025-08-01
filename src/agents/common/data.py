@@ -17,6 +17,7 @@ class Message(BaseModel):
     namespace: str | None
     resource_scope: str | None = None
     resource_related_to: str | None = None
+    user_identifier: str | None = None
 
     def is_cluster_overview_query(self) -> bool:
         """Check if the query is an overview query."""
