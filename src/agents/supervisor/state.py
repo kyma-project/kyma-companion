@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, Any
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph import add_messages
@@ -22,3 +22,4 @@ class SupervisorState(BaseModel):
             default=None,
         ),
     ]
+    k8s_client: Annotated[Any, Field(default=None, exclude=True)]

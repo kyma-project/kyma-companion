@@ -456,3 +456,35 @@ class TestK8sClient:
         # when & then
         with pytest.raises(ValueError):
             k8s_client.get_resource_version(given_kind)
+
+    @pytest.mark.parametrize(
+        "description, given_namespace, should_exist",
+        [
+            (
+                "should be able to get a namespace",
+                "kyma-system",
+                True,
+            ),
+            (
+                "should throw an error for non-existent namespace",
+                "non-existent-namespace",
+                False,
+            ),
+        ],
+    )
+    def test_get_namespace(
+        self, k8s_client, description, given_namespace, should_exist
+    ):
+        if not should_exist:
+            with pytest.raises(ValueError):
+                k8s_client.get_namespace(given_namespace)
+            return
+
+        # when
+        result = k8s_client.get_namespace(given_namespace)
+
+        # then
+        assert isinstance(result, dict)
+
+        assert result["kind"] == "Namespace"
+        assert result["metadata"]["name"] == given_namespace
