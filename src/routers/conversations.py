@@ -189,7 +189,10 @@ async def followup_questions(
         raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
+    user_identifier = extract_user_identifier(k8s_auth_headers)
+    await authorize_user(
+        str(conversation_id), user_identifier, conversation_service
+    )
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -249,8 +252,9 @@ async def messages(
         ) from e
 
     # Authorize the user to access the conversation.
-    message.user_identifier = await authorize_user(
-        str(conversation_id), k8s_auth_headers, conversation_service
+    message.user_identifier = extract_user_identifier(k8s_auth_headers)
+    await authorize_user(
+        str(conversation_id), message.user_identifier, conversation_service
     )
 
     # Check rate limitation
@@ -324,12 +328,10 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
         )
 
 
-async def authorize_user(
-    conversation_id: str,
+def extract_user_identifier(
     k8s_auth_headers: K8sAuthHeaders,
-    conversation_service: IService,
 ) -> str:
-    """Authorize the user to access the conversation."""
+    """Get the user identifier from the K8s auth headers."""
     user_identifier = ""
     if k8s_auth_headers.x_k8s_authorization is not None:
         try:
@@ -357,9 +359,17 @@ async def authorize_user(
             "Unable to get user identifier from the provided Authorization headers.",
         )
 
+    return user_identifier
+
+
+async def authorize_user(
+    conversation_id: str,
+    user_identifier: str,
+    conversation_service: IService,
+) -> None:
+    """Authorize the user to access the conversation."""
+
     if not await conversation_service.authorize_user(conversation_id, user_identifier):
         raise HTTPException(
             status_code=403, detail="User not authorized to access the conversation"
         )
-
-    return user_identifier

@@ -486,7 +486,7 @@ class CompanionGraph:
             ],
             tags=[cluster_id],
             metadata=get_langfuse_metadata(
-                message.user_identifier if message.user_identifier else "unknown",
+                message.user_identifier or "unknown",
                 cluster_id,
             ),
         )
