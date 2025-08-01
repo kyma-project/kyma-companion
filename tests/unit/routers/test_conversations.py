@@ -16,7 +16,8 @@ from routers.conversations import (
     authorize_user,
     check_token_usage,
     enforce_query_token_limit,
-    init_conversation_service, extract_user_identifier,
+    extract_user_identifier,
+    init_conversation_service,
 )
 from services.conversation import IService
 from services.k8s import IK8sClient, K8sAuthHeaders

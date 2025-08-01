@@ -190,9 +190,7 @@ async def followup_questions(
 
     # Authorize the user to access the conversation.
     user_identifier = extract_user_identifier(k8s_auth_headers)
-    await authorize_user(
-        str(conversation_id), user_identifier, conversation_service
-    )
+    await authorize_user(str(conversation_id), user_identifier, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
