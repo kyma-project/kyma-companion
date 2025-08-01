@@ -8,9 +8,10 @@ updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: weekly
+      day: monday
+      time: "00:00" # UTC (is equal to CET-1 and CET-2 in daylight saving time)
     commit-message:
       prefix: "deps: "
-#    labels:
-#      - "run-integration-test"
-#      - "evaluation requested"
+    labels:
+      - "dependencies"
