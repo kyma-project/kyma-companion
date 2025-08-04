@@ -45,7 +45,11 @@ from agents.common.state import (
     SubTask,
     UserInput,
 )
-from agents.common.utils import filter_valid_messages, should_continue
+from agents.common.utils import (
+    filter_valid_messages,
+    get_resource_context_message,
+    should_continue,
+)
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
@@ -454,13 +458,11 @@ class CompanionGraph:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
         messages: list[BaseMessage] = [HumanMessage(content=message.query)]
-        resource_context = user_input.get_resource_information()
-        if resource_context and len(resource_context) > 0:
+        resource_context_message = get_resource_context_message(user_input)
+        if resource_context_message:
             messages.insert(
                 0,
-                SystemMessage(
-                    content=f"The user query is related to: {resource_context}"
-                ),
+                resource_context_message,
             )
 
         x_cluster_url = k8s_client.get_api_server()
