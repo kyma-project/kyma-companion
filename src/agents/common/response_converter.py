@@ -12,6 +12,7 @@ from agents.common.constants import (
     NEXT,
     UPDATE_YAML,
 )
+from services.k8s import IK8sClient
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -34,10 +35,11 @@ class ResponseConverter:
     resource links based on the YAML content.
     """
 
-    def __init__(self):
+    def __init__(self, k8s_client: IK8sClient):
         # Regular expression patterns to extract YAML blocks
         self.new_yaml_pattern = r"<YAML-NEW>\s*([\s\S]*?)\s*</YAML-NEW>"
         self.update_yaml_pattern = r"<YAML-UPDATE>\s*([\s\S]*?)\s*</YAML-UPDATE>"
+        self.k8s_client = k8s_client
 
     def _extract_yaml(self, finalizer_response: str) -> tuple[list[str], list[str]]:
         """
@@ -116,17 +118,27 @@ class ResponseConverter:
             resource_type = yaml_config["kind"]
         except Exception:
             logger.exception(
-                f"Error in generating link, skipping the yaml: {yaml_config}"
+                f"Error in generating link, skipping generating link for yaml: {yaml_config}"
             )
             return None
 
+        # check if namespace exists.
+        namespace_exists = False
+        try:
+            if self.k8s_client.get_namespace(namespace):
+                namespace_exists = True
+        except Exception:
+            logger.warning(
+                f"Namespace {namespace} does not exist, skipping generating link for yaml: {yaml_config}"
+            )
+
         # Generate appropriate link based on type
         if link_type == NEW_YAML:
-            # New resource link format
-            return f"/namespaces/{namespace}/{resource_type}"
-        else:
-            # Update resource link format includes deployment name
+            ns = namespace if namespace_exists else "default"
+            return f"/namespaces/{ns}/{resource_type}"
+        elif link_type == UPDATE_YAML and namespace_exists:
             return f"/namespaces/{namespace}/{resource_type}/{deployment_name}"
+        return None
 
     def _create_html_nested_yaml(
         self, yaml_config: str, resource_link: str, link_type: str

@@ -187,6 +187,21 @@ class IK8sClient(Protocol):
         """Fetch logs of Kubernetes Pod."""
         ...
 
+    def get_namespace(self, name: str) -> dict:
+        """
+        Fetch a specific Kubernetes namespace by name.
+
+        Args:
+            name: The name of the namespace.
+
+        Returns:
+            The namespace resource as a dictionary.
+
+        Raises:
+            ValueError: If the namespace is not found or the API call fails.
+        """
+        ...
+
     def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
         ...
@@ -556,6 +571,25 @@ class K8sClient:
         if self.data_sanitizer:
             return self.data_sanitizer.sanitize(logs)  # type: ignore
         return logs
+
+    def get_namespace(self, name: str) -> dict:
+        """
+        Fetch a specific Kubernetes namespace by name.
+
+        Args:
+            name: The name of the namespace.
+
+        Returns:
+            The namespace resource as a dictionary.
+
+        Raises:
+            ValueError: If the namespace is not found or the API call fails.
+        """
+        uri = f"api/v1/namespaces/{name}"
+        result = self.execute_get_api_request(uri)
+        if not isinstance(result, dict):
+            raise ValueError(f"Failed to fetch namespace '{name}'.")
+        return result
 
     def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
