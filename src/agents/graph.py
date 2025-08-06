@@ -38,7 +38,6 @@ from agents.common.constants import (
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
-    FeedbackResponse,
     GatekeeperResponse,
     GraphInput,
     Plan,
@@ -55,7 +54,6 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
-    FEEDBACK_PROMPT,
     GATEKEEPER_INSTRUCTIONS,
     GATEKEEPER_PROMPT,
 )
@@ -66,7 +64,6 @@ from services.langfuse import get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
-from utils.models.contants import GPT_41_NANO_MODEL_NAME
 from utils.models.factory import IModel
 from utils.settings import (
     MAIN_MODEL_MINI_NAME,
@@ -182,9 +179,6 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
-        self._feedback_chain = self._create_feedback_chain(
-            cast(IModel, models[GPT_41_NANO_MODEL_NAME])
-        )
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
 
@@ -268,28 +262,6 @@ class CompanionGraph:
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
-    @staticmethod
-    def _create_feedback_chain(model: IModel) -> RunnableSequence:
-        """Feedback node chain to handle feedback queries."""
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", FEEDBACK_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        )
-        return prompt | model.llm.with_structured_output(FeedbackResponse, method="function_calling")  # type: ignore
-
-    async def _invoke_feedback_node(self, state: CompanionState) -> FeedbackResponse:
-        """Invoke the Feedback node."""
-        response: Any = await ainvoke_chain(
-            self._feedback_chain,
-            {
-                "messages": [state.messages[-1]],  # last human message
-            },
-        )
-        return cast(FeedbackResponse, response)
-
     async def _invoke_gatekeeper_node(
         self, state: CompanionState
     ) -> GatekeeperResponse:
@@ -353,12 +325,6 @@ class CompanionGraph:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
 
         try:
-            feedback_response = await self._invoke_feedback_node(state)
-        except Exception:
-            logger.exception("Error in feedback node")
-            feedback_response = FeedbackResponse(response=False)
-
-        try:
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
             if gatekeeper_response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")
@@ -382,7 +348,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                IS_FEEDBACK: feedback_response.response,
+                IS_FEEDBACK: gatekeeper_response.is_feedback,
             }
         except Exception:
             logger.exception("Error in gatekeeper node")
@@ -395,7 +361,7 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                IS_FEEDBACK: feedback_response.response,
+                IS_FEEDBACK: False,
             }
 
     def _build_graph(self) -> CompiledStateGraph:

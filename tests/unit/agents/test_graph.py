@@ -10,7 +10,6 @@ from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK, UNKNOWN
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
-    FeedbackResponse,
     GatekeeperResponse,
     SubTask,
 )
@@ -286,13 +285,12 @@ class TestCompanionGraph:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "test_case, messages, feedback_node_response, chain_response, expected_output, expected_error",
+        "test_case, messages, chain_response, expected_output, expected_error",
         [
             (
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
-                '{"response" : true}',
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
+                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "is_feedback": true, "answer_from_history": ""}',
                 {
                     "messages": [
                         AIMessage(
@@ -310,7 +308,6 @@ class TestCompanionGraph:
             (
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
-                '{"response" : false}',
                 '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
@@ -322,7 +319,6 @@ class TestCompanionGraph:
             (
                 "Handles exception during gatekeeper execution",
                 [HumanMessage(content="What is Java?")],
-                '{"response" : false}',
                 None,
                 {
                     "messages": [
@@ -340,7 +336,6 @@ class TestCompanionGraph:
             (
                 "Handles exception in feedback node with direct response",
                 [HumanMessage(content="What are Java and Python?")],
-                "feedback_exception",
                 '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "messages": [
@@ -359,7 +354,6 @@ class TestCompanionGraph:
             (
                 "Handles exception in feedback node with forward query",
                 [HumanMessage(content="What is Kyma?")],
-                "feedback_exception",
                 '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
@@ -371,7 +365,6 @@ class TestCompanionGraph:
             (
                 "Handles exception in both feedback and gatekeeper nodes",
                 [HumanMessage(content="What is Java?")],
-                "feedback_exception",
                 None,
                 {
                     "messages": [
@@ -393,23 +386,12 @@ class TestCompanionGraph:
         companion_graph,
         test_case,
         messages,
-        feedback_node_response,
         chain_response,
         expected_output,
         expected_error,
     ):
         # Given
         state = CompanionState(subtasks=[], messages=messages)
-
-        # Set up feedback node - handle exception case
-        if feedback_node_response == "feedback_exception":
-            companion_graph._invoke_feedback_node.side_effect = Exception(
-                "Error in feedback node"
-            )
-        else:
-            companion_graph._invoke_feedback_node.return_value = (
-                FeedbackResponse.model_validate_json(feedback_node_response)
-            )
 
         if expected_error:
             companion_graph._invoke_gatekeeper_node.side_effect = Exception(
@@ -425,9 +407,6 @@ class TestCompanionGraph:
         assert result == expected_output, test_case
 
         # Then
-        # Feedback node should always be called (even if it raises an exception)
-        companion_graph._invoke_feedback_node.assert_awaited_once_with(state)
-
         if chain_response:
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(state)
         elif expected_error:
