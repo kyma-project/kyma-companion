@@ -9,7 +9,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from agents.common.constants import ERROR_RATE_LIMIT_CODE
+from agents.common.constants import ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from main import app
 from routers.conversations import (
@@ -71,6 +71,14 @@ class MockService(IService):
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
+        if message.resource_kind == UNKNOWN:
+            yield (
+                b'{"KymaAgent": {"messages": [{"content": '
+                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "additional_kwargs": {}, '
+                b'"response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, '
+                b'"example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+            )
+
         yield (
             b'{"KymaAgent": {"messages": [{"content": '
             b'"To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, '
@@ -358,9 +366,10 @@ def client_factory():
                 "namespace": "default",
             },
             {
-                "status_code": 400,
-                "content-type": "application/json",
-                "expected_error_msg": '{"error":"bad request","message":"invalid request format or parameters"}',
+                "status_code": 200,
+                "content-type": "text/event-stream; charset=utf-8",
+                "expected_chunk": b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
+                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "tasks": []}, "error": null}}\n',
             },
         ),
         (
@@ -461,6 +470,9 @@ def test_messages_endpoint(
         return
 
     content = response.content
+
+    if "expected_chunk" in expected_output:
+        assert expected_output["expected_chunk"] in content
 
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '

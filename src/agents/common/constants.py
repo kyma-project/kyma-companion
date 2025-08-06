@@ -5,6 +5,8 @@ INITIAL_SUMMARIZATION = "InitialSummarization"
 
 CLUSTER = "cluster"
 
+UNKNOWN = "unknown"
+
 NAMESPACED = "namespaced"
 
 FINALIZER = "Finalizer"
