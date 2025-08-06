@@ -365,7 +365,7 @@ class CompanionGraph:
                 return {
                     NEXT: SUPERVISOR,
                     SUBTASKS: [],
-                    IS_FEEDBACK: False, # Quick FIx - Need to remove this hardcoded value
+                    IS_FEEDBACK: False,  # Quick FIx - Need to remove this hardcoded value
                 }
 
             logger.debug("Gatekeeper node directly responding")
