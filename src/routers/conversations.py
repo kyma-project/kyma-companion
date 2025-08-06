@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
-from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE
+from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from agents.common.utils import compute_string_token_count
 from routers.common import (
@@ -278,16 +278,10 @@ async def messages(
             )
             # Add details to the message.
             message.add_details(resource_kind_details)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail=f"Invalid resource context info: {str(e)}",
-            ) from e
         except Exception as e:
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=f"Failed to validate resource context info: {str(e)}",
-            ) from e
+            logger.warning(f"Invalid resource context info: {str(e)}")
+            message.resource_kind = UNKNOWN
+            message.resource_api_version = UNKNOWN
     else:
         # mark the message as a cluster overview query
         message.resource_scope = CLUSTER
