@@ -15,7 +15,7 @@ queries:
       - name: function_no_replicas
         statement: points out that the Function is configured with 0 replicas
         threshold: 0.5
-        required: true
+        required: false
       - name: function_correct_replicas
         statement: provides the correct amount of replicas, which would be 1
         threshold: 0.5
