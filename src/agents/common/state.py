@@ -149,6 +149,7 @@ class GatekeeperResponse(BaseModel):
     direct_response: Annotated[
         str,
         Field(
+            default="",
             description="""
             If category is "Programming" or "About You", then generate direct response based to the user intent.
             Otherwise return empty string.

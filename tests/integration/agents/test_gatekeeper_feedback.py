@@ -142,7 +142,7 @@ from integration.conftest import create_mock_state
                 ),
                 HumanMessage(content="I'm still confused about this."),
             ],
-            True,
+            False,
         ),
         # Mixed feedback
         (
@@ -156,7 +156,7 @@ from integration.conftest import create_mock_state
                     content="This is helpful but I need more information about security aspects."
                 ),
             ],
-            True,
+            False,
         ),
         (
             "user gives neutral response",
@@ -265,7 +265,7 @@ async def test_invoke_feedback_node(
     state = create_mock_state(messages)
 
     # When: the feedback node's invoke_feedback_node method is invoked
-    actual_response = await companion_graph._invoke_feedback_node(state)
+    actual_response = await companion_graph._invoke_gatekeeper_node(state)
     assert (
-        actual_response.response == expected_answer
-    ), f"Expected {expected_answer} but got {actual_response.response} for test case: {test_description}"
+        actual_response.is_feedback == expected_answer
+    ), f"Expected {expected_answer} but got {actual_response.is_feedback} for test case: {test_description}"
