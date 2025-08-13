@@ -251,7 +251,9 @@ class K8sClient:
                 self.k8s_auth_headers.get_decoded_certificate_authority_data()
             )
         self.ca_temp_filename = ca_file.name
-        self.client_ssl_context = ssl.create_default_context(cafile=self.ca_temp_filename)
+        self.client_ssl_context = ssl.create_default_context(
+            cafile=self.ca_temp_filename
+        )
 
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             # Write the client certificate data to a temporary file.
@@ -269,7 +271,8 @@ class K8sClient:
             self.client_key_temp_filename = client_key_file.name
             self.client_ssl_context.load_cert_chain(
                 certfile=self.client_cert_temp_filename,
-                keyfile=self.client_key_temp_filename)
+                keyfile=self.client_key_temp_filename,
+            )
 
         self.dynamic_client = self._create_dynamic_client()
 
@@ -340,13 +343,9 @@ class K8sClient:
             )
         return headers
 
-    async def _paginated_api_request(
-        self, base_url: str
-    ) -> dict | list[dict]:
+    async def _paginated_api_request(self, base_url: str) -> dict | list[dict]:
         """Pagination support for the api request."""
-        async with aiohttp.ClientSession(
-                headers=self._get_auth_headers()
-        ) as session:
+        async with aiohttp.ClientSession(headers=self._get_auth_headers()) as session:
             # Initialize variables for pagination
             page_count = 0
             all_items: list[dict] = []
@@ -358,16 +357,17 @@ class K8sClient:
 
                 # Check if we've exceeded the maximum number of pages
                 if page_count > K8S_API_PAGINATION_MAX_PAGE:
-                    err_msg = ("Kubernetes API rate limit exceeded. Please refine your query and "
-                               "provide more specific resource details.")
+                    err_msg = (
+                        "Kubernetes API rate limit exceeded. Please refine your query and "
+                        "provide more specific resource details."
+                    )
                     logger.debug(err_msg)
                     raise ValueError(err_msg)
 
                 # fetch the next batch of items.
                 next_url = get_url_for_paged_request(base_url, continue_token)
                 async with session.get(
-                        url=next_url,
-                        ssl=self.client_ssl_context
+                    url=next_url, ssl=self.client_ssl_context
                 ) as response:
                     # Check if the response status is not OK.
                     if response.status != HTTPStatus.OK:
@@ -386,7 +386,6 @@ class K8sClient:
                     continue_token = result.get("metadata", {}).get("continue", "")
                     if not continue_token:
                         return all_items if len(all_items) else result
-
 
     async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API"""
@@ -556,28 +555,30 @@ class K8sClient:
         if is_terminated:
             uri += "&previous=true"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    f"{self.get_api_server()}/{uri.lstrip('/')}",
-                    headers=self._get_auth_headers(),
-                    ssl=self.client_ssl_context
-            ) as response:
-                # Check if the response status is not OK.
-                if response.status != HTTPStatus.OK:
-                    raise ValueError(
-                        f"Failed to fetch logs for pod {name} in namespace {namespace} "
-                        f"with container {container_name}. Error: {await response.text()}"
-                    )
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                f"{self.get_api_server()}/{uri.lstrip('/')}",
+                headers=self._get_auth_headers(),
+                ssl=self.client_ssl_context,
+            ) as response,
+        ):
+            # Check if the response status is not OK.
+            if response.status != HTTPStatus.OK:
+                raise ValueError(
+                    f"Failed to fetch logs for pod {name} in namespace {namespace} "
+                    f"with container {container_name}. Error: {await response.text()}"
+                )
 
-                logs = []
-                async for line_bytes in response.content:
-                    # Decode each line (assuming utf-8 encoding)
-                    line = line_bytes.decode('utf-8').strip()
-                    logs.append(line)
+            logs = []
+            async for line_bytes in response.content:
+                # Decode each line (assuming utf-8 encoding)
+                line = line_bytes.decode("utf-8").strip()
+                logs.append(line)
 
-                if self.data_sanitizer:
-                    return self.data_sanitizer.sanitize(logs)  # type: ignore
-                return logs
+            if self.data_sanitizer:
+                return self.data_sanitizer.sanitize(logs)  # type: ignore
+            return logs
 
     async def get_namespace(self, name: str) -> dict:
         """

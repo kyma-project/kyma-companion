@@ -46,7 +46,7 @@ async def k8s_query_tool(
 
 
 @tool()
-def k8s_overview_query_tool(
+async def k8s_overview_query_tool(
     namespace: str,
     resource_kind: str,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
@@ -63,7 +63,7 @@ def k8s_overview_query_tool(
             resource_api_version="",
             resource_name="",
         )
-        result = get_relevant_context_from_k8s_cluster(message, k8s_client)
+        result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
 
         return result
     except Exception as e:

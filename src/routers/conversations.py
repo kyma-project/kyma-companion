@@ -136,7 +136,7 @@ async def init_conversation(
 
     try:
         # Create initial questions.
-        questions = conversation_service.new_conversation(
+        questions = await conversation_service.new_conversation(
             k8s_client=k8s_client,
             message=Message(
                 query="",
@@ -273,7 +273,9 @@ async def messages(
     # Validate the k8s resource context.
     if not message.is_cluster_overview_query():
         try:
-            resource_kind_details = K8sResourceDiscovery(k8s_client).get_resource_kind(
+            resource_kind_details = await K8sResourceDiscovery(
+                k8s_client
+            ).get_resource_kind(
                 str(message.resource_api_version), str(message.resource_kind)
             )
             # Add details to the message.

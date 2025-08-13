@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from aioresponses import aioresponses
@@ -541,8 +541,8 @@ class TestK8sClient:
                 "should return raw items when sanitizer is not set for paginated list response",
                 None,
                 [
-                    { "items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
-                    { "items": [{"raw": "data2"}], "metadata": {}},
+                    {"items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
+                    {"items": [{"raw": "data2"}], "metadata": {}},
                 ],
                 [{"raw": "data1"}, {"raw": "data2"}],
                 "multi-page",
@@ -676,9 +676,15 @@ class TestK8sClient:
                 #   - For page 0: continue_token = None (first request has no continue token)
                 #   - For page 1: Gets continue token from raw_data_pages[0]["metadata"]["continue"]
                 #   - For page 2: Gets continue token from raw_data_pages[1]["metadata"]["continue"]
-                continue_token = None if i-1 < 0 else raw_data_pages[i-1].get("metadata", {}).get("continue", None)
+                continue_token = (
+                    None
+                    if i - 1 < 0
+                    else raw_data_pages[i - 1].get("metadata", {}).get("continue", None)
+                )
                 mock_url = get_url_for_paged_request(
-                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", continue_token)
+                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri",
+                    continue_token,
+                )
                 aio_mock_response.get(
                     mock_url,
                     payload=page,
@@ -687,7 +693,6 @@ class TestK8sClient:
 
             # when
             result = await k8s_client.execute_get_api_request("/test/uri")
-
 
         # then
         if data_sanitizer:
@@ -753,7 +758,8 @@ class TestK8sClient:
                 ),
             ):
                 mock_url = get_url_for_paged_request(
-                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", "")
+                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", ""
+                )
                 aio_mock_response.get(
                     mock_url,
                     body=error_message,
@@ -770,7 +776,9 @@ class TestK8sClient:
                 for i in range(pages_to_exceed_limit):
                     mock_url = get_url_for_paged_request(
                         f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri",
-                        f"token-{i}" if i != 0 else "" # First page has no continue token.
+                        (
+                            f"token-{i}" if i != 0 else ""
+                        ),  # First page has no continue token.
                     )
                     payload = {
                         "items": [{"data": f"page-{i+1}"}],
