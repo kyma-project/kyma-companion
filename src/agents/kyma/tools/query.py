@@ -23,7 +23,7 @@ class KymaQueryToolArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=KymaQueryToolArgs)
-def kyma_query_tool(
+async def kyma_query_tool(
     uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 ) -> dict | list[dict]:
     """Query the state of Kyma resources in the cluster using the provided URI.
@@ -33,7 +33,7 @@ def kyma_query_tool(
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
-        result = k8s_client.execute_get_api_request(uri)
+        result = await k8s_client.execute_get_api_request(uri)
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing kyma_query_tool with URI: {uri}."

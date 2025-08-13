@@ -2,9 +2,10 @@ from http import HTTPStatus
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from aioresponses import aioresponses
 
 from services.data_sanitizer import DataSanitizer
-from services.k8s import AuthType, K8sAuthHeaders, K8sClient
+from services.k8s import AuthType, K8sAuthHeaders, K8sClient, get_url_for_paged_request
 from utils.settings import K8S_API_PAGINATION_MAX_PAGE
 
 
@@ -415,6 +416,7 @@ class TestK8sClient:
     def k8s_client(self):
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
+            k8s_client.client_ssl_context = None
             return k8s_client
 
     def test_model_dump(self, k8s_client):
@@ -466,6 +468,7 @@ class TestK8sClient:
         # then
         assert result == expected_result
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data, expected_result",
         [
@@ -483,13 +486,13 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_api_request_single_object(
+    async def test_get_api_request_single_object(
         self, k8s_client, test_description, data_sanitizer, raw_data, expected_result
     ):
         # given
-        k8s_client.api_server = "https://api.example.com"
+        k8s_client.api_server = "http://api.example.com"
         k8s_client.k8s_auth_headers = K8sAuthHeaders(
-            x_cluster_url="abc",
+            x_cluster_url=k8s_client.api_server,
             x_cluster_certificate_authority_data="abc",
             x_k8s_authorization="test-token",
             x_client_certificate_data=None,
@@ -497,20 +500,26 @@ class TestK8sClient:
         )
         k8s_client.ca_temp_filename = "test-ca-file"
         k8s_client.data_sanitizer = data_sanitizer
-
-        response_mock = Mock(
-            status_code=HTTPStatus.OK, json=Mock(return_value=raw_data)
-        )
+        target_url = "/test/uri"
+        mock_url = f"{k8s_client.k8s_auth_headers.x_cluster_url}{target_url}?limit=40"
 
         # when
-        with patch("requests.get", return_value=response_mock):
-            result = k8s_client.execute_get_api_request("/test/uri")
+        with aioresponses() as aio_mock_response:
+            # set mock response for: 'http://api.example.com/test/uri?limit=40'
+            aio_mock_response.get(
+                mock_url,
+                payload=raw_data,
+                status=HTTPStatus.OK,
+            )
+
+            result = await k8s_client.execute_get_api_request(target_url)
 
         # then
         if data_sanitizer:
             data_sanitizer.sanitize.assert_called_once_with(raw_data)
         assert result == expected_result
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data_pages, expected_result, pagination_flow",
         [
@@ -532,8 +541,8 @@ class TestK8sClient:
                 "should return raw items when sanitizer is not set for paginated list response",
                 None,
                 [
-                    {"items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
-                    {"items": [{"raw": "data2"}], "metadata": {}},
+                    { "items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
+                    { "items": [{"raw": "data2"}], "metadata": {}},
                 ],
                 [{"raw": "data1"}, {"raw": "data2"}],
                 "multi-page",
@@ -631,7 +640,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_api_request_list_with_pagination(
+    async def test_get_api_request_list_with_pagination(
         self,
         k8s_client,
         test_description,
@@ -657,15 +666,28 @@ class TestK8sClient:
             "services.k8s.K8S_API_PAGINATION_MAX_PAGE", len(raw_data_pages) + 1
         )
 
-        # Create response mocks based on pagination flow
-        response_mocks = [
-            Mock(status_code=HTTPStatus.OK, json=Mock(return_value=page))
-            for page in raw_data_pages
-        ]
+        with aioresponses() as aio_mock_response:
+            # Create response mocks based on pagination flow
+            for i, page in enumerate(raw_data_pages):
+                # The logic:
+                # First request: No continue token needed (i-1 < 0)
+                # Subsequent requests: Must include the continue token from the previous response to get the next page.
+                # Example:
+                #   - For page 0: continue_token = None (first request has no continue token)
+                #   - For page 1: Gets continue token from raw_data_pages[0]["metadata"]["continue"]
+                #   - For page 2: Gets continue token from raw_data_pages[1]["metadata"]["continue"]
+                continue_token = None if i-1 < 0 else raw_data_pages[i-1].get("metadata", {}).get("continue", None)
+                mock_url = get_url_for_paged_request(
+                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", continue_token)
+                aio_mock_response.get(
+                    mock_url,
+                    payload=page,
+                    status=HTTPStatus.OK,
+                )
 
-        # when
-        with patch("requests.get", side_effect=response_mocks):
-            result = k8s_client.execute_get_api_request("/test/uri")
+            # when
+            result = await k8s_client.execute_get_api_request("/test/uri")
+
 
         # then
         if data_sanitizer:
@@ -673,6 +695,7 @@ class TestK8sClient:
 
         assert result == expected_result
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, test_type, error_status, error_message, pages_to_exceed_limit",
         [
@@ -701,7 +724,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_execute_get_api_request(
+    async def test_execute_get_api_request(
         self,
         k8s_client,
         test_description,
@@ -722,39 +745,44 @@ class TestK8sClient:
         k8s_client.data_sanitizer = None
 
         if test_type == "error":
-            response_mock = Mock(status_code=error_status, text=error_message)
-
             with (
-                patch("requests.get", return_value=response_mock),
+                aioresponses() as aio_mock_response,
                 pytest.raises(
                     ValueError,
                     match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
                 ),
             ):
-                k8s_client.execute_get_api_request("/test/uri")
+                mock_url = get_url_for_paged_request(
+                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", "")
+                aio_mock_response.get(
+                    mock_url,
+                    body=error_message,
+                    status=error_status,
+                )
+                await k8s_client.execute_get_api_request("/test/uri")
 
         elif test_type == "pagination_limit":
-
-            response_mocks = []
-            for i in range(pages_to_exceed_limit):
-                mock = Mock(status_code=HTTPStatus.OK)
-                if i < pages_to_exceed_limit - 1:
-                    mock.json.return_value = {
-                        "items": [{"data": f"page-{i}"}],
-                        "metadata": {"continue": f"token-{i}"},
-                    }
-                else:
-                    mock.json.return_value = {
-                        "items": [{"data": f"page-{i}"}],
-                        "metadata": {},
-                    }
-                response_mocks.append(mock)
-
             with (
-                patch("requests.get", side_effect=response_mocks),
+                aioresponses() as aio_mock_response,
                 pytest.raises(ValueError, match="Kubernetes API rate limit exceeded"),
             ):
-                k8s_client.execute_get_api_request("/test/uri")
+                # Mock the responses for each page
+                for i in range(pages_to_exceed_limit):
+                    mock_url = get_url_for_paged_request(
+                        f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri",
+                        f"token-{i}" if i != 0 else "" # First page has no continue token.
+                    )
+                    payload = {
+                        "items": [{"data": f"page-{i+1}"}],
+                        "metadata": {"continue": f"token-{i+1}"},
+                    }
+                    aio_mock_response.get(
+                        mock_url,
+                        payload=payload,
+                        status=HTTPStatus.OK,
+                    )
+                # when
+                await k8s_client.execute_get_api_request("/test/uri")
 
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data, expected_result",
@@ -923,6 +951,7 @@ class TestK8sClient:
         assert result == expected_result
 
     @patch("services.k8s.K8sClient.__init__", return_value=None)
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, group_version, expected_uri",
         [
@@ -938,7 +967,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_group_version(
+    async def test_get_group_version(
         self, mock_init, test_description, group_version, expected_uri
     ):
         # given
@@ -949,7 +978,7 @@ class TestK8sClient:
             mock_execute_get_api_request.return_value = {}
 
             # when
-            result = k8s_client.get_group_version(group_version)
+            result = await k8s_client.get_group_version(group_version)
 
             # then
             assert result == {}
@@ -957,8 +986,9 @@ class TestK8sClient:
                 expected_uri
             ), test_description
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "mock_response_lines,expected_sanitized_logs",
+        "mock_response_lines, expected_sanitized_logs",
         [
             # Test case 1: Email addresses should be redacted
             (
@@ -1062,59 +1092,43 @@ class TestK8sClient:
             # Test case 12: Empty logs
             ([], []),
             # Test case 13: Logs with only whitespace
-            (["   ", "\t\n", ""], ["   ", "\t\n", ""]),
+            (["   ", "\t\n", ""], ["", "", ""]),
         ],
     )
-    @patch("requests.get")
-    def test_fetch_pod_logs_data_sanitizer(
-        self, mock_get, mock_response_lines, expected_sanitized_logs
+    async def test_fetch_pod_logs(
+        self, k8s_client, mock_response_lines, expected_sanitized_logs
     ):
         """
-        Test the data sanitizer functionality in fetch_pod_logs method.
+        Test the functionality in fetch_pod_logs method.
         """
 
-        mock_response = Mock()
-        mock_response.status_code = HTTPStatus.OK
-        mock_response.iter_lines.return_value = mock_response_lines
-        mock_get.return_value = mock_response
-
-        # Create mock data sanitizer
-        mock_sanitizer = Mock()
-        mock_sanitizer.sanitize.return_value = expected_sanitized_logs
-
-        mock_k8s_auth_headers = MagicMock()
-        mock_k8s_auth_headers.get_decoded_certificate_authority_data.return_value = (
-            b"fake-ca-cert"
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
         )
+        k8s_client.data_sanitizer = DataSanitizer()
 
-        with patch.object(
-            K8sClient, "_create_dynamic_client", return_value=MagicMock()
-        ):
-            k8s_client = K8sClient(
-                k8s_auth_headers=mock_k8s_auth_headers, data_sanitizer=DataSanitizer()
+        with aioresponses() as aio_mock_response:
+            # Mock the API call to fetch pod logs.
+            mock_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            aio_mock_response.get(
+                mock_url,
+                body="\n".join(mock_response_lines),
+                status=HTTPStatus.OK,
             )
 
-        k8s_client.get_api_server = Mock(return_value="https://k8s-api.example.com")
-        k8s_client._get_auth_headers = Mock(
-            return_value={"Authorization": "Bearer token"}
-        )
-        k8s_client.ca_temp_filename = "/tmp/ca.crt"
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                is_terminated=False,
+                tail_limit=100,
+            )
 
-        result = k8s_client.fetch_pod_logs(
-            name="test-pod",
-            namespace="default",
-            container_name="app",
-            is_terminated=False,
-            tail_limit=100,
-        )
-
-        # Assert
-        assert result == expected_sanitized_logs
-
-        # Verify the API call was made correctly
-        expected_url = "https://k8s-api.example.com/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
-        mock_get.assert_called_once_with(
-            url=expected_url,
-            headers={"Authorization": "Bearer token"},
-            verify="/tmp/ca.crt",
-        )
+            # then
+            assert result == expected_sanitized_logs

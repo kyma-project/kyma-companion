@@ -1,13 +1,14 @@
 import base64
 import copy
 import os
+import ssl
 import tempfile
 from enum import Enum
 from http import HTTPStatus
 from typing import Any, Protocol, cast, runtime_checkable
 from urllib.parse import urlparse
 
-import requests
+import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
@@ -122,7 +123,7 @@ class IK8sClient(Protocol):
         """Dump the model without any confidential data."""
         ...
 
-    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
+    async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
         ...
 
@@ -158,7 +159,7 @@ class IK8sClient(Protocol):
         """List all pods that are not in the Running phase"""
         ...
 
-    def list_nodes_metrics(self) -> list[dict]:
+    async def list_nodes_metrics(self) -> list[dict]:
         """List all node metrics."""
         ...
 
@@ -176,7 +177,7 @@ class IK8sClient(Protocol):
         """List all Kubernetes events for a specific resource."""
         ...
 
-    def fetch_pod_logs(
+    async def fetch_pod_logs(
         self,
         name: str,
         namespace: str,
@@ -187,7 +188,7 @@ class IK8sClient(Protocol):
         """Fetch logs of Kubernetes Pod."""
         ...
 
-    def get_namespace(self, name: str) -> dict:
+    async def get_namespace(self, name: str) -> dict:
         """
         Fetch a specific Kubernetes namespace by name.
 
@@ -202,9 +203,18 @@ class IK8sClient(Protocol):
         """
         ...
 
-    def get_group_version(self, group_version: str) -> dict:
+    async def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
         ...
+
+
+def get_url_for_paged_request(base_url: str, continue_token: str) -> str:
+    """Construct the URL for paginated requests."""
+    separator = "&" if "?" in base_url else "?"
+    query_params = f"{separator}limit={K8S_API_PAGINATION_LIMIT}" + (
+        f"&continue={continue_token}" if continue_token else ""
+    )
+    return base_url + query_params
 
 
 class K8sClient:
@@ -241,6 +251,7 @@ class K8sClient:
                 self.k8s_auth_headers.get_decoded_certificate_authority_data()
             )
         self.ca_temp_filename = ca_file.name
+        self.client_ssl_context = ssl.create_default_context(cafile=self.ca_temp_filename)
 
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             # Write the client certificate data to a temporary file.
@@ -256,6 +267,9 @@ class K8sClient:
                     self.k8s_auth_headers.get_decoded_client_key_data()
                 )
             self.client_key_temp_filename = client_key_file.name
+            self.client_ssl_context.load_cert_chain(
+                certfile=self.client_cert_temp_filename,
+                keyfile=self.client_key_temp_filename)
 
         self.dynamic_client = self._create_dynamic_client()
 
@@ -326,71 +340,60 @@ class K8sClient:
             )
         return headers
 
-    def _paginated_api_request(
-        self, base_url: str, cert: tuple | None = None
+    async def _paginated_api_request(
+        self, base_url: str
     ) -> dict | list[dict]:
         """Pagination support for the api request."""
-        # Initialize variables for pagination
-        page_count = 0
-        all_items: list[dict] = []
-        continue_token = ""
-        # Handle pagination
-        while True:
-            page_count += 1
+        async with aiohttp.ClientSession(
+                headers=self._get_auth_headers()
+        ) as session:
+            # Initialize variables for pagination
+            page_count = 0
+            all_items: list[dict] = []
+            continue_token = ""
 
-            # Check if we've exceeded the maximum number of pages
-            if page_count > K8S_API_PAGINATION_MAX_PAGE:
-                logger.error("Kubernetes API rate limit exceeded")
-                raise ValueError(
-                    "Kubernetes API rate limit exceeded. Please refine your query and "
-                    "provide more specific resource details."
-                )
+            # loop until all items are fetched or continue token is empty.
+            while True:
+                page_count += 1
 
-            # Add continue token to URL if it exists
-            separator = "&" if "?" in base_url else "?"
-            query_params = f"{separator}limit={K8S_API_PAGINATION_LIMIT}" + (
-                f"&continue={continue_token}" if continue_token else ""
-            )
-            current_url = base_url + query_params
+                # Check if we've exceeded the maximum number of pages
+                if page_count > K8S_API_PAGINATION_MAX_PAGE:
+                    err_msg = ("Kubernetes API rate limit exceeded. Please refine your query and "
+                               "provide more specific resource details.")
+                    logger.debug(err_msg)
+                    raise ValueError(err_msg)
 
-            response = requests.get(
-                url=current_url,
-                headers=self._get_auth_headers(),
-                verify=self.ca_temp_filename,
-                cert=cert,
-            )
+                # fetch the next batch of items.
+                next_url = get_url_for_paged_request(base_url, continue_token)
+                async with session.get(
+                        url=next_url,
+                        ssl=self.client_ssl_context
+                ) as response:
+                    # Check if the response status is not OK.
+                    if response.status != HTTPStatus.OK:
+                        raise ValueError(
+                            f"Failed to execute GET request to the Kubernetes API. Error: {await response.text()}"
+                        )
 
-            if response.status_code != HTTPStatus.OK:
-                raise ValueError(
-                    f"Failed to execute GET request to the Kubernetes API. Error: {response.text}"
-                )
+                    result = await response.json()
+                    if "items" not in result:
+                        return all_items if len(all_items) else result
 
-            result = response.json()
+                    if len(result["items"]) > 0:
+                        all_items.extend(result["items"])
 
-            # Extract items if this is a list response
-            if "items" in result:
-                all_items.extend(result["items"])
+                    # Check for continue token
+                    continue_token = result.get("metadata", {}).get("continue", "")
+                    if not continue_token:
+                        return all_items if len(all_items) else result
 
-                # Check for continue token
-                continue_token = result.get("metadata", {}).get("continue", "")
 
-                if not continue_token:
-                    if all_items:  # if some resource found
-                        return all_items
-                    else:  # if no resource found
-                        return result  # type: ignore
-
-            else:
-                return result  # type: ignore
-
-    def execute_get_api_request(self, uri: str) -> dict | list[dict]:
+    async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API"""
-        cert = None
-        if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
-            cert = (self.client_cert_temp_filename, self.client_key_temp_filename)
         base_url = f"{self.get_api_server()}/{uri.lstrip('/')}"
-
-        result = self._paginated_api_request(base_url, cert)
+        logger.debug(f"Executing GET request to {base_url}")
+        result = await self._paginated_api_request(base_url)
+        logger.debug(f"Completed Executing GET request to {base_url}")
 
         if self.data_sanitizer:
             result = self.data_sanitizer.sanitize(result)
@@ -498,9 +501,9 @@ class K8sClient:
                 items.append(pod)
         return items
 
-    def list_nodes_metrics(self) -> list[dict]:
-        """List all nodes metrics."""
-        result = self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
+    async def list_nodes_metrics(self) -> list[dict]:
+        """List all K8s Nodes metrics."""
+        result = await self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
         return list[dict](result)
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
@@ -539,7 +542,7 @@ class K8sClient:
 
         return result
 
-    def fetch_pod_logs(
+    async def fetch_pod_logs(
         self,
         name: str,
         namespace: str,
@@ -549,30 +552,34 @@ class K8sClient:
     ) -> list[str]:
         """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
-
+        # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:
             uri += "&previous=true"
 
-        response = requests.get(
-            url=f"{self.get_api_server()}/{uri.lstrip('/')}",
-            headers=self._get_auth_headers(),
-            verify=self.ca_temp_filename,
-        )
-        if response.status_code != HTTPStatus.OK:
-            raise ValueError(
-                f"Failed to fetch logs for pod {name} in namespace {namespace} "
-                f"with container {container_name}. Error: {response.text}"
-            )
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                    f"{self.get_api_server()}/{uri.lstrip('/')}",
+                    headers=self._get_auth_headers(),
+                    ssl=self.client_ssl_context
+            ) as response:
+                # Check if the response status is not OK.
+                if response.status != HTTPStatus.OK:
+                    raise ValueError(
+                        f"Failed to fetch logs for pod {name} in namespace {namespace} "
+                        f"with container {container_name}. Error: {await response.text()}"
+                    )
 
-        logs = []
-        for line in response.iter_lines():
-            logs.append(str(line))
+                logs = []
+                async for line_bytes in response.content:
+                    # Decode each line (assuming utf-8 encoding)
+                    line = line_bytes.decode('utf-8').strip()
+                    logs.append(line)
 
-        if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(logs)  # type: ignore
-        return logs
+                if self.data_sanitizer:
+                    return self.data_sanitizer.sanitize(logs)  # type: ignore
+                return logs
 
-    def get_namespace(self, name: str) -> dict:
+    async def get_namespace(self, name: str) -> dict:
         """
         Fetch a specific Kubernetes namespace by name.
 
@@ -586,12 +593,12 @@ class K8sClient:
             ValueError: If the namespace is not found or the API call fails.
         """
         uri = f"api/v1/namespaces/{name}"
-        result = self.execute_get_api_request(uri)
+        result = await self.execute_get_api_request(uri)
         if not isinstance(result, dict):
             raise ValueError(f"Failed to fetch namespace '{name}'.")
         return result
 
-    def get_group_version(self, group_version: str) -> dict:
+    async def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
         parts_count = len(group_version.split(GROUP_VERSION_SEPARATOR))
 
@@ -606,7 +613,7 @@ class K8sClient:
             uri = f"apis/{group_version}"
 
         # fetch the result.
-        result = self.execute_get_api_request(uri)
+        result = await self.execute_get_api_request(uri)
         if not isinstance(result, dict):
             raise ValueError(
                 f"Invalid response from Kubernetes API for group version {group_version}. "

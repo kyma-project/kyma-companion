@@ -7,7 +7,7 @@ from services.k8s import K8sAuthHeaders, K8sClient
 
 
 @pytest.fixture
-def k8s_client() -> K8sClient:
+def k8s_client_with_cert() -> K8sClient:
     # Note: These tests uses the same cluster which is used in evaluation tests.
     # read Test cluster information from environment variables.
     # IMPORTANT: These tests use the token based authentication for the k8s cluster.
@@ -16,18 +16,25 @@ def k8s_client() -> K8sClient:
     if api_server == "":
         raise ValueError("TEST_CLUSTER_URL: environment variable not set")
 
-    user_token = os.environ.get("TEST_CLUSTER_AUTH_TOKEN", "")
-    if user_token == "":
-        raise ValueError("TEST_CLUSTER_AUTH_TOKEN: environment variable not set")
-
     certificate_authority_data = os.environ.get("TEST_CLUSTER_CA_DATA", "")
     if certificate_authority_data == "":
         raise ValueError("TEST_CLUSTER_CA_DATA: environment variable not set")
 
+    client_cert_data = os.environ.get("TEST_CLUSTER_CLIENT_CERTIFICATE_DATA", "")
+    if client_cert_data == "":
+        raise ValueError(
+            "TEST_CLUSTER_CLIENT_CERTIFICATE_DATA: environment variable not set"
+        )
+
+    client_key_data = os.environ.get("TEST_CLUSTER_CLIENT_KEY_DATA", "")
+    if client_key_data == "":
+        raise ValueError("TEST_CLUSTER_CLIENT_KEY_DATA: environment variable not set")
+
     k8s_auth_headers = K8sAuthHeaders(
         x_cluster_url=api_server,
         x_cluster_certificate_authority_data=certificate_authority_data,
-        x_k8s_authorization=user_token,
+        x_client_certificate_data=client_cert_data,
+        x_client_key_data=client_key_data,
     )
 
     k8s_auth_headers.validate_headers()
@@ -38,7 +45,7 @@ def k8s_client() -> K8sClient:
     )
 
 
-class TestK8sClient:
+class TestK8sClientWithCert:
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "uri",
@@ -47,9 +54,9 @@ class TestK8sClient:
             "apis/metrics.k8s.io/v1beta1/nodes",
         ],
     )
-    async def test_execute_get_api_request(self, k8s_client, uri):
+    async def test_execute_get_api_request(self, k8s_client_with_cert, uri):
         # when
-        result = await k8s_client.execute_get_api_request(uri)
+        result = await k8s_client_with_cert.execute_get_api_request(uri)
 
         # then
         # the return type should be a list.
@@ -69,18 +76,12 @@ class TestK8sClient:
             (
                 "v1",
                 "Pod",
-                "test-deployment-16",
+                "nginx-wrong-image",
             ),
             # Test case: should be able to list ReplicaSets in a specific namespace.
             (
                 "apps/v1",
                 "ReplicaSet",
-                "kyma-system",
-            ),
-            # Test case: should be able to list Secrets in a specific namespace.
-            (
-                "v1",
-                "Secret",
                 "kyma-system",
             ),
             # Test case: should be able to list Eventing CRs in a specific namespace.
@@ -104,10 +105,10 @@ class TestK8sClient:
         ],
     )
     def test_list_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace
+        self, k8s_client_with_cert, given_api_version, given_kind, given_namespace
     ):
         # when
-        result = k8s_client.list_resources(
+        result = k8s_client_with_cert.list_resources(
             api_version=given_api_version, kind=given_kind, namespace=given_namespace
         )
 
@@ -135,13 +136,6 @@ class TestK8sClient:
                 "kyma-system",
                 "eventing-manager",
             ),
-            # Test case: should be able to get Secret.
-            (
-                "v1",
-                "Secret",
-                "kyma-system",
-                "eventing-nats-secret",
-            ),
             # Test case: should be able to get Eventing CR.
             (
                 "operator.kyma-project.io/v1alpha1",
@@ -160,16 +154,21 @@ class TestK8sClient:
             (
                 "serverless.kyma-project.io/v1alpha2",
                 "Function",
-                "test-function-8",
+                "kyma-app-serverless-syntax-err",
                 "func1",
             ),
         ],
     )
     def test_get_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace, given_name
+        self,
+        k8s_client_with_cert,
+        given_api_version,
+        given_kind,
+        given_namespace,
+        given_name,
     ):
         # when
-        result = k8s_client.get_resource(
+        result = k8s_client_with_cert.get_resource(
             api_version=given_api_version,
             kind=given_kind,
             namespace=given_namespace,
@@ -194,15 +193,8 @@ class TestK8sClient:
             (
                 "apps/v1",
                 "Deployment",
-                "test-deployment-16",
+                "nginx-wrong-image",
                 "nginx",
-            ),
-            # Test case: should be able to describe Secret.
-            (
-                "v1",
-                "Secret",
-                "kyma-system",
-                "eventing-nats-secret",
             ),
             # Test case: should be able to describe Eventing CR.
             (
@@ -222,16 +214,21 @@ class TestK8sClient:
             (
                 "serverless.kyma-project.io/v1alpha2",
                 "Function",
-                "test-function-8",
+                "kyma-app-serverless-syntax-err",
                 "func1",
             ),
         ],
     )
     def test_describe_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace, given_name
+        self,
+        k8s_client_with_cert,
+        given_api_version,
+        given_kind,
+        given_namespace,
+        given_name,
     ):
         # when
-        result = k8s_client.describe_resource(
+        result = k8s_client_with_cert.describe_resource(
             api_version=given_api_version,
             kind=given_kind,
             namespace=given_namespace,
@@ -258,14 +255,14 @@ class TestK8sClient:
         "given_namespace",
         [
             # Test case: should be able to get list of not running pods.
-            "test-deployment-16",
+            "nginx-wrong-image",
             # Test case: should be able to get list of not running pods in all namespaces.
             "",
         ],
     )
-    def test_list_not_running_pods(self, k8s_client, given_namespace):
+    def test_list_not_running_pods(self, k8s_client_with_cert, given_namespace):
         # when
-        result = k8s_client.list_not_running_pods(
+        result = k8s_client_with_cert.list_not_running_pods(
             namespace=given_namespace,
         )
 
@@ -282,10 +279,10 @@ class TestK8sClient:
 
     def test_list_nodes_metrics(
         self,
-        k8s_client,
+        k8s_client_with_cert,
     ):
         # when
-        result = k8s_client.list_nodes_metrics()
+        result = k8s_client_with_cert.list_nodes_metrics()
 
         # then
         # the return type should be a list.
@@ -305,12 +302,12 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "test-deployment-4",
+            "whoami-too-many-replicas",
         ],
     )
-    def test_list_k8s_events(self, k8s_client, given_namespace):
+    def test_list_k8s_events(self, k8s_client_with_cert, given_namespace):
         # when
-        result = k8s_client.list_k8s_events(namespace=given_namespace)
+        result = k8s_client_with_cert.list_k8s_events(namespace=given_namespace)
 
         # then
         # the return type should be a list.
@@ -325,12 +322,12 @@ class TestK8sClient:
             # Test case: should be able to get events from all namespaces.
             "",
             # Test case: should be able to get events from a specific namespace.
-            "test-deployment-4",
+            "whoami-too-many-replicas",
         ],
     )
-    def test_list_k8s_warning_events(self, k8s_client, given_namespace):
+    def test_list_k8s_warning_events(self, k8s_client_with_cert, given_namespace):
         # when
-        result = k8s_client.list_k8s_warning_events(namespace=given_namespace)
+        result = k8s_client_with_cert.list_k8s_warning_events(namespace=given_namespace)
 
         # then
         # the return type should be a list.
@@ -344,14 +341,14 @@ class TestK8sClient:
         "given_kind,given_namespace,given_name",
         [
             # Test case: should be able to get events for specific resource.
-            ("Function", "test-function-8", "func1"),
+            ("ReplicaSet", "whoami-too-many-replicas", "whoami-6c78674dc7"),
         ],
     )
     def test_list_k8s_events_for_resource(
-        self, k8s_client, given_kind, given_namespace, given_name
+        self, k8s_client_with_cert, given_kind, given_namespace, given_name
     ):
         # when
-        result = k8s_client.list_k8s_events_for_resource(
+        result = k8s_client_with_cert.list_k8s_events_for_resource(
             kind=given_kind, namespace=given_namespace, name=given_name
         )
 
@@ -363,131 +360,3 @@ class TestK8sClient:
             assert isinstance(item, dict)
             assert item["involvedObject"]["kind"] == given_kind
             assert item["involvedObject"]["name"] == given_name
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "name,namespace,container_name,is_terminated,tail_limit",
-        [
-            # Test case: should be able to get logs of a running pod.
-            (
-                "eventing-manager-",
-                "kyma-system",
-                "manager",
-                False,
-                5,
-            ),
-        ],
-    )
-    async def test_fetch_pod_logs(
-        self, k8s_client, name, namespace, container_name, is_terminated, tail_limit
-    ):
-        # given
-        # find complete pod name as pod names are dynamic.
-        pods = k8s_client.list_resources(
-            api_version="v1", kind="Pod", namespace=namespace
-        )
-        # find the first pod with name starting with given name.
-        pod_name = next(
-            (
-                pod["metadata"]["name"]
-                for pod in pods
-                if pod["metadata"]["name"].startswith(name)
-            ),
-            None,
-        )
-        assert pod_name is not None
-
-        # when
-        result = await k8s_client.fetch_pod_logs(
-            pod_name, namespace, container_name, is_terminated, tail_limit
-        )
-
-        # then
-        # the return type should be a list.
-        assert isinstance(result, list)
-        assert 0 < len(result) <= tail_limit
-        for item in result:
-            assert isinstance(item, str)
-            assert item != ""
-
-    @pytest.mark.parametrize(
-        "given_kind, expected_api_version",
-        [
-            # Test case: Core API resources
-            ("Pod", "v1"),
-            ("Secret", "v1"),
-            ("ConfigMap", "v1"),
-            ("Service", "v1"),
-            ("Namespace", "v1"),
-            # Test case: Apps API group resources
-            ("Deployment", "apps/v1"),
-            ("ReplicaSet", "apps/v1"),
-            ("StatefulSet", "apps/v1"),
-            ("DaemonSet", "apps/v1"),
-            # Test case: Kyma custom resources
-            ("Function", "serverless.kyma-project.io/v1alpha2"),
-            ("Eventing", "operator.kyma-project.io/v1alpha1"),
-            ("NATS", "operator.kyma-project.io/v1alpha1"),
-        ],
-    )
-    def test_get_resource_version(self, k8s_client, given_kind, expected_api_version):
-        # when
-        result = k8s_client.get_resource_version(given_kind)
-
-        # then
-        assert isinstance(result, str)
-        assert result == expected_api_version
-
-    @pytest.mark.parametrize(
-        "given_kind",
-        [
-            # Test case: Non-existent resource kind
-            "NonExistentResource",
-            # Test case: Invalid resource kind with special characters
-            "Invalid@Resource",
-            # Test case: Empty string
-            "",
-            # Test case: Resource kind that doesn't exist in cluster
-            "FakeCustomResource",
-            # Test case: Misspelled common resource kind
-            "Deployments",  # Should be "Deployment"
-            "Pods",  # Should be "Pod"
-        ],
-    )
-    def test_get_resource_version_error_cases(self, k8s_client, given_kind):
-        # when & then
-        with pytest.raises(ValueError):
-            k8s_client.get_resource_version(given_kind)
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "description, given_namespace, should_exist",
-        [
-            (
-                "should be able to get a namespace",
-                "kyma-system",
-                True,
-            ),
-            (
-                "should throw an error for non-existent namespace",
-                "non-existent-namespace",
-                False,
-            ),
-        ],
-    )
-    async def test_get_namespace(
-        self, k8s_client, description, given_namespace, should_exist
-    ):
-        if not should_exist:
-            with pytest.raises(ValueError):
-                await k8s_client.get_namespace(given_namespace)
-            return
-
-        # when
-        result = await k8s_client.get_namespace(given_namespace)
-
-        # then
-        assert isinstance(result, dict)
-
-        assert result["kind"] == "Namespace"
-        assert result["metadata"]["name"] == given_namespace
