@@ -52,5 +52,9 @@ class SearchKymaDocTool(BaseTool):
         # For now, just call the sync version
         query_obj = Query(text=query)
         relevant_docs = await self.rag_system.aretrieve(query_obj)
-        rag_response = await self.rag_system.agenerate(query_obj, relevant_docs)
-        return rag_response
+        docs_content = "\n\n -- next document -- \n\n".join(
+            doc.page_content for doc in relevant_docs
+        )
+        if not docs_content.strip():
+            return "No relevant documentation found."
+        return docs_content
