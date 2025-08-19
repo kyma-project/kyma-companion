@@ -69,6 +69,8 @@ def fetch_kyma_resource_version(
     """Tool for fetching the resource version for a given resource kind.
     Use this to get the resource version for a given resource kind.
     Example resource kinds: Function, APIRule, TracePipeline, etc.
+    Use this tool when the resource version is not known or needs
+    to be verified or kyma_query_tool returns 404 not found.
     """
     try:
         resource_version = k8s_client.get_resource_version(resource_kind)
