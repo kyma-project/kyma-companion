@@ -11,8 +11,6 @@ from rag.system import RAGSystem
 from utils.models.factory import IModel
 from utils.settings import MAIN_EMBEDDING_MODEL_NAME, MAIN_MODEL_NAME
 
-from src.rag.system import Query
-
 
 @pytest.fixture
 def mock_models():
@@ -58,41 +56,46 @@ class MockDocument:
     page_content: str
 
 
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize("mock_documents,expected_output", [
-    # Single document case
-    ([MockDocument("Single document content")],
-     "Single document content"),
-
-    # Multiple documents case
-    ([MockDocument("First doc"), MockDocument("Second doc")],
-     "First doc\n\n -- next document -- \n\nSecond doc"),
-
-    # Three documents case
-    ([MockDocument("Doc 1"), MockDocument("Doc 2"), MockDocument("Doc 3")],
-     "Doc 1\n\n -- next document -- \n\nDoc 2\n\n -- next document -- \n\nDoc 3"),
-
-    # Empty documents list - should return fallback message
-    ([],
-     "No relevant documentation found."),
-
-    # Documents with empty content
-    ([MockDocument("")],
-     "No relevant documentation found."),
-
-    # Documents with only whitespace
-    ([MockDocument("   "), MockDocument("\n\n")],
-     "No relevant documentation found."),
-
-    # Mixed content with special characters
-    ([MockDocument("Content with special chars: !@#$"), MockDocument("Unicode: αβγ")],
-     "Content with special chars: !@#$\n\n -- next document -- \n\nUnicode: αβγ"),
-
-    # Documents with newlines
-    ([MockDocument("Multi\nline\ncontent"), MockDocument("Another\ndocument")],
-     "Multi\nline\ncontent\n\n -- next document -- \n\nAnother\ndocument"),
-])
+@pytest.mark.parametrize(
+    "mock_documents,expected_output",
+    [
+        # Single document case
+        ([MockDocument("Single document content")], "Single document content"),
+        # Multiple documents case
+        (
+            [MockDocument("First doc"), MockDocument("Second doc")],
+            "First doc\n\n -- next document -- \n\nSecond doc",
+        ),
+        # Three documents case
+        (
+            [MockDocument("Doc 1"), MockDocument("Doc 2"), MockDocument("Doc 3")],
+            "Doc 1\n\n -- next document -- \n\nDoc 2\n\n -- next document -- \n\nDoc 3",
+        ),
+        # Empty documents list - should return fallback message
+        ([], "No relevant documentation found."),
+        # Documents with empty content
+        ([MockDocument("")], "No relevant documentation found."),
+        # Documents with only whitespace
+        (
+            [MockDocument("   "), MockDocument("\n\n")],
+            "No relevant documentation found.",
+        ),
+        # Mixed content with special characters
+        (
+            [
+                MockDocument("Content with special chars: !@#$"),
+                MockDocument("Unicode: αβγ"),
+            ],
+            "Content with special chars: !@#$\n\n -- next document -- \n\nUnicode: αβγ",
+        ),
+        # Documents with newlines
+        (
+            [MockDocument("Multi\nline\ncontent"), MockDocument("Another\ndocument")],
+            "Multi\nline\ncontent\n\n -- next document -- \n\nAnother\ndocument",
+        ),
+    ],
+)
 async def test_arun(mock_models, mock_documents, expected_output):
     """Test _arun method with different document scenarios"""
 

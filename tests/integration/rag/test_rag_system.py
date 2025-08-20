@@ -84,7 +84,7 @@ async def test_rag_system(
     retrieved_docs_content = [doc.page_content for doc in retrieved_docs]
 
     test_case = LLMTestCase(
-        actual_output="", # we dont evaluate any llm output
+        actual_output="",  # we dont evaluate any llm output
         input=user_query,
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,
