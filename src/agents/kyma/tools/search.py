@@ -53,7 +53,7 @@ class SearchKymaDocTool(BaseTool):
         query_obj = Query(text=query)
         relevant_docs = await self.rag_system.aretrieve(query_obj)
         docs_content = "\n\n -- next document -- \n\n".join(
-            doc.page_content for doc in relevant_docs
+            doc.page_content for doc in relevant_docs if doc.page_content.strip()
         )
         if not docs_content.strip():
             return "No relevant documentation found."
