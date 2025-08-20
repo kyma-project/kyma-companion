@@ -422,7 +422,7 @@ async def test_kyma_agent_namespace_scoped(
     score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
     assert (
         score > TOOL_ACCURACY_THRESHOLD
-    ), f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    ), f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
 
 
 def create_test_cases_cluster_scoped(k8s_client: IK8sClient):

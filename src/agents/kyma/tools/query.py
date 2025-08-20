@@ -23,7 +23,7 @@ class KymaQueryToolArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=KymaQueryToolArgs)
-def kyma_query_tool(
+async def kyma_query_tool(
     uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 ) -> dict | list[dict]:
     """Query the state of Kyma resources in the cluster using the provided URI.
@@ -33,7 +33,7 @@ def kyma_query_tool(
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
-        result = k8s_client.execute_get_api_request(uri)
+        result = await k8s_client.execute_get_api_request(uri)
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing kyma_query_tool with URI: {uri}."
@@ -69,6 +69,8 @@ def fetch_kyma_resource_version(
     """Tool for fetching the resource version for a given resource kind.
     Use this to get the resource version for a given resource kind.
     Example resource kinds: Function, APIRule, TracePipeline, etc.
+    Use this tool when the resource version is not known or needs
+    to be verified or kyma_query_tool returns 404 not found.
     """
     try:
         resource_version = k8s_client.get_resource_version(resource_kind)

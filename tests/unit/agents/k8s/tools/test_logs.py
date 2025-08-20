@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -38,7 +38,8 @@ from services.k8s import IK8sClient
         ),
     ],
 )
-def test_fetch_pod_logs_tool(
+@pytest.mark.asyncio
+async def test_fetch_pod_logs_tool(
     given_name,
     given_namespace,
     given_container_name,
@@ -49,14 +50,14 @@ def test_fetch_pod_logs_tool(
 ):
     # Given
     tool_node = ToolNode([fetch_pod_logs_tool])
-    k8s_client = Mock(spec=IK8sClient)
+    k8s_client = AsyncMock(spec=IK8sClient)
     if given_error:
         k8s_client.fetch_pod_logs.side_effect = given_error
     else:
         k8s_client.fetch_pod_logs.return_value = expected_logs
 
     # When: invoke the tool.
-    result = tool_node.invoke(
+    result = await tool_node.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [
