@@ -280,12 +280,13 @@ class TestK8sClient:
             if given_namespace != "":
                 assert item["metadata"]["namespace"] == given_namespace
 
-    def test_list_nodes_metrics(
+    @pytest.mark.asyncio
+    async def test_list_nodes_metrics(
         self,
         k8s_client,
     ):
         # when
-        result = k8s_client.list_nodes_metrics()
+        result = await k8s_client.list_nodes_metrics()
 
         # then
         # the return type should be a list.

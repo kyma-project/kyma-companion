@@ -83,7 +83,7 @@ lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]
 test = "pytest -n 2 -v tests/unit"
 test-local = "pytest -n auto -v tests/unit"
-test-integration = "pytest -n 2 -v tests/integration -x --reruns=6 --reruns-delay=10 -r=aR"
+test-integration = "pytest -n 1 -v tests/integration/services/test_k8s.py -x --reruns=6 --reruns-delay=10 -r=aR"
 test-integration-local = "pytest -n auto -v tests/integration -x --reruns=6 --reruns-delay=10 -r=aR"
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
