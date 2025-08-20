@@ -324,13 +324,12 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
         ),
     ],
 )
-def test_generate_resource_link(
+@pytest.mark.asyncio
+async def test_generate_resource_link(
     response_converter, description, yaml_config, link_type, expected_link
 ):
-    assert (
-        response_converter._generate_resource_link(yaml_config, link_type)
-        == expected_link
-    )
+    result = await response_converter._generate_resource_link(yaml_config, link_type)
+    assert result == expected_link
 
 
 @pytest.mark.parametrize(
@@ -541,8 +540,11 @@ def test_replace_yaml_with_html(
     ],
     ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"],
 )
-def test_create_replacement_list(response_converter, yaml_list, yaml_type, expected):
-    result = response_converter._create_replacement_list(yaml_list, yaml_type)
+@pytest.mark.asyncio
+async def test_create_replacement_list(
+    response_converter, yaml_list, yaml_type, expected
+):
+    result = await response_converter._create_replacement_list(yaml_list, yaml_type)
 
     # Compare lengths
     assert len(result) == len(expected)
@@ -718,9 +720,12 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
         ("", ""),
     ],
 )
-def test_convert_final_response(response_converter, state_content, expected_content):
+@pytest.mark.asyncio
+async def test_convert_final_response(
+    response_converter, state_content, expected_content
+):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
-    result = response_converter.convert_final_response(state)
+    result = await response_converter.convert_final_response(state)
     assert " ".join(result[MESSAGES][0].content.split()) == " ".join(
         expected_content.split()
     )
