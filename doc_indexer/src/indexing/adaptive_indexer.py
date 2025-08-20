@@ -293,7 +293,7 @@ class AdaptiveSplitMarkdownIndexer:
                         batch = []
 
                         # Wait before processing next batch
-                        time.sleep(1)
+                        time.sleep(3)
 
                 # Process any remaining documents in the final batch
                 if batch:
