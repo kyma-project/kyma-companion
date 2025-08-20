@@ -276,7 +276,7 @@ class SupervisorAgent:
                 raise ValueError(
                     "K8s client is not initialized in the SupervisorState."
                 )
-            return ResponseConverter(state.k8s_client).convert_final_response(
+            return await ResponseConverter(state.k8s_client).convert_final_response(
                 final_response
             )
         except Exception:

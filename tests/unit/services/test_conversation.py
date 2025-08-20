@@ -69,7 +69,8 @@ class TestConversation:
         mock_config.sanitization_config = Mock()
         return mock_config
 
-    def test_new_conversation(
+    @pytest.mark.asyncio
+    async def test_new_conversation(
         self,
         mock_model_factory,
         mock_companion_graph,
@@ -78,7 +79,9 @@ class TestConversation:
     ) -> None:
         # Given:
         mock_handler = Mock()
-        mock_handler.fetch_relevant_data_from_k8s_cluster = Mock(return_value=POD_YAML)
+        mock_handler.fetch_relevant_data_from_k8s_cluster = AsyncMock(
+            return_value=POD_YAML
+        )
         mock_handler.apply_token_limit = Mock(return_value=POD_YAML)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
         conversation_service = ConversationService(
@@ -89,7 +92,7 @@ class TestConversation:
         mock_k8s_client = Mock()
 
         # When:
-        result = conversation_service.new_conversation(
+        result = await conversation_service.new_conversation(
             k8s_client=mock_k8s_client, message=TEST_MESSAGE
         )
 

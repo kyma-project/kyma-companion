@@ -159,7 +159,7 @@ def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
     return None
 
 
-def get_relevant_context_from_k8s_cluster(
+async def get_relevant_context_from_k8s_cluster(
     message: Message, k8s_client: IK8sClient
 ) -> str:
     """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
@@ -182,7 +182,7 @@ def get_relevant_context_from_k8s_cluster(
             "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
         )
         pods = yaml.dump_all(k8s_client.list_not_running_pods(namespace=namespace))
-        metrics = yaml.dump_all(k8s_client.list_nodes_metrics())
+        metrics = yaml.dump_all(await k8s_client.list_nodes_metrics())
         events = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
 
         context = f"{pods}\n{metrics}\n{events}"
