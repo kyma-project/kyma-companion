@@ -23,7 +23,7 @@ class K8sQueryToolArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=K8sQueryToolArgs)
-def k8s_query_tool(
+async def k8s_query_tool(
     uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 ) -> dict | list[dict]:
     """Query the state of objects in Kubernetes using the provided URI.
@@ -31,7 +31,7 @@ def k8s_query_tool(
     The returned data is sanitized to remove any sensitive information.
     For example, it will always remove the `data` field of a `Secret` object."""
     try:
-        result = k8s_client.execute_get_api_request(uri)
+        result = await k8s_client.execute_get_api_request(uri)
         if not isinstance(result, list) and not isinstance(result, dict):
             raise Exception(
                 f"failed executing k8s_query_tool with URI: {uri}."
@@ -46,7 +46,7 @@ def k8s_query_tool(
 
 
 @tool()
-def k8s_overview_query_tool(
+async def k8s_overview_query_tool(
     namespace: str,
     resource_kind: str,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
@@ -63,7 +63,7 @@ def k8s_overview_query_tool(
             resource_api_version="",
             resource_name="",
         )
-        result = get_relevant_context_from_k8s_cluster(message, k8s_client)
+        result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
 
         return result
     except Exception as e:

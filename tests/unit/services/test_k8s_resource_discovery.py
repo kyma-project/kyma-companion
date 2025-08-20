@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -245,6 +245,7 @@ class TestK8sResourceDiscovery:
             result = discovery.get_resource_kind_static(group_version, kind)
             assert result.name == expected_name, description
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, group_version, kind, api_response, expected_name, expect_error",
         [
@@ -312,7 +313,7 @@ class TestK8sResourceDiscovery:
             ),
         ],
     )
-    def test_get_resource_kind_dynamic(
+    async def test_get_resource_kind_dynamic(
         self,
         description,
         group_version,
@@ -322,18 +323,19 @@ class TestK8sResourceDiscovery:
         expect_error,
     ):
         k8s_client = Mock()
-        k8s_client.get_group_version = Mock()
+        k8s_client.get_group_version = AsyncMock()
         k8s_client.get_group_version.return_value = api_response
         discovery = K8sResourceDiscovery(k8s_client)
 
         # when / then
         if expect_error:
             with pytest.raises(ValueError):
-                discovery.get_resource_kind_dynamic(group_version, kind)
+                await discovery.get_resource_kind_dynamic(group_version, kind)
         else:
-            result = discovery.get_resource_kind_dynamic(group_version, kind)
+            result = await discovery.get_resource_kind_dynamic(group_version, kind)
             assert result.name == expected_name, description
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, group_version, kind, static_result, dynamic_result, expect_error, expected_name",
         [
@@ -378,7 +380,7 @@ class TestK8sResourceDiscovery:
             ),
         ],
     )
-    def test_get_resource_kind(
+    async def test_get_resource_kind(
         self,
         description,
         group_version,
@@ -408,7 +410,7 @@ class TestK8sResourceDiscovery:
             # when / then
             if expect_error:
                 with pytest.raises(ValueError):
-                    discovery.get_resource_kind(group_version, kind)
+                    await discovery.get_resource_kind(group_version, kind)
             else:
-                result = discovery.get_resource_kind(group_version, kind)
+                result = await discovery.get_resource_kind(group_version, kind)
                 assert result.name == expected_name, description

@@ -39,6 +39,7 @@ def k8s_client() -> K8sClient:
 
 
 class TestK8sClient:
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "uri",
         [
@@ -46,9 +47,9 @@ class TestK8sClient:
             "apis/metrics.k8s.io/v1beta1/nodes",
         ],
     )
-    def test_execute_get_api_request(self, k8s_client, uri):
+    async def test_execute_get_api_request(self, k8s_client, uri):
         # when
-        result = k8s_client.execute_get_api_request(uri)
+        result = await k8s_client.execute_get_api_request(uri)
 
         # then
         # the return type should be a list.
@@ -279,12 +280,13 @@ class TestK8sClient:
             if given_namespace != "":
                 assert item["metadata"]["namespace"] == given_namespace
 
-    def test_list_nodes_metrics(
+    @pytest.mark.asyncio
+    async def test_list_nodes_metrics(
         self,
         k8s_client,
     ):
         # when
-        result = k8s_client.list_nodes_metrics()
+        result = await k8s_client.list_nodes_metrics()
 
         # then
         # the return type should be a list.
@@ -363,6 +365,7 @@ class TestK8sClient:
             assert item["involvedObject"]["kind"] == given_kind
             assert item["involvedObject"]["name"] == given_name
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "name,namespace,container_name,is_terminated,tail_limit",
         [
@@ -376,7 +379,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_fetch_pod_logs(
+    async def test_fetch_pod_logs(
         self, k8s_client, name, namespace, container_name, is_terminated, tail_limit
     ):
         # given
@@ -396,7 +399,7 @@ class TestK8sClient:
         assert pod_name is not None
 
         # when
-        result = k8s_client.fetch_pod_logs(
+        result = await k8s_client.fetch_pod_logs(
             pod_name, namespace, container_name, is_terminated, tail_limit
         )
 
@@ -457,6 +460,7 @@ class TestK8sClient:
         with pytest.raises(ValueError):
             k8s_client.get_resource_version(given_kind)
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "description, given_namespace, should_exist",
         [
@@ -472,16 +476,16 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_namespace(
+    async def test_get_namespace(
         self, k8s_client, description, given_namespace, should_exist
     ):
         if not should_exist:
             with pytest.raises(ValueError):
-                k8s_client.get_namespace(given_namespace)
+                await k8s_client.get_namespace(given_namespace)
             return
 
         # when
-        result = k8s_client.get_namespace(given_namespace)
+        result = await k8s_client.get_namespace(given_namespace)
 
         # then
         assert isinstance(result, dict)
