@@ -104,6 +104,7 @@ Given the responses from the agents, generate a final response for the user quer
 
 1. **Response Decision Logic**:
    - IF all agents indicate they cannot answer → Acknowledge politely and clearly state this limitation
+   - IF all agents indicate that they need resource information, mention to user that {joule_context_info}.
    - IF some agents provide partial answers → Synthesize only the provided information and note limitations
    - IF agents provide complete answers → Synthesize into comprehensive response
 

@@ -10,14 +10,16 @@ from langchain_core.messages import (
     ToolMessage,
 )
 
+import agents.common.constants as constants
 from agents.common.agent import agent_edge, subtask_selector_edge
-from agents.common.state import CompanionState, SubTask, SubTaskStatus
+from agents.common.state import CompanionState, SubTask, SubTaskStatus, UserInput
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
     compute_messages_token_count,
     compute_string_token_count,
     filter_messages,
     filter_valid_messages,
+    get_resource_context_message,
 )
 from agents.k8s.agent import K8S_AGENT
 from agents.k8s.state import KubernetesAgentState
@@ -519,3 +521,51 @@ def test_compute_messages_token_count(msgs, model_type, expected_token_count):
 def test_filter_valid_messages(test_description, input_messages, expected_output):
     result = filter_valid_messages(input_messages)
     assert result == expected_output, test_description
+
+
+@pytest.mark.parametrize(
+    "description, user_input,expected_message",
+    [
+        (
+            "should add Resource information is not available message when resource_kind is UNKNOWN",
+            UserInput(query="test", resource_kind=constants.UNKNOWN),
+            SystemMessage(
+                content="Resource information is not available. Ask the user, if you need resource information like kind, name or namespace."
+            ),
+        ),
+        (
+            "should add complete resource information when available",
+            UserInput(
+                query="test",
+                resource_kind="Pod",
+                resource_api_version="v1",
+                resource_name="my-pod",
+                namespace="default",
+            ),
+            SystemMessage(
+                content="The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'my-pod', 'resource_namespace': 'default'}"
+            ),
+        ),
+        (
+            "should add resource information when available",
+            UserInput(query="test", resource_kind="Pod"),
+            SystemMessage(
+                content="The user query is related to: {'resource_kind': 'Pod'}"
+            ),
+        ),
+        (
+            "should return None when no resource information",
+            UserInput(query="", resource_kind=""),
+            None,
+        ),
+    ],
+)
+def test_get_resource_context_message(
+    description: str, user_input: UserInput, expected_message
+):
+    result = get_resource_context_message(user_input)
+    if expected_message is None:
+        assert result is None, description
+    else:
+        assert isinstance(result, SystemMessage), description
+        assert result.content == expected_message.content, description

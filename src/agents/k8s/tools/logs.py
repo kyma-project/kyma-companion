@@ -24,7 +24,7 @@ class FetchPodLogsArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=FetchPodLogsArgs)
-def fetch_pod_logs_tool(
+async def fetch_pod_logs_tool(
     name: str,
     namespace: str,
     container_name: str,
@@ -34,7 +34,7 @@ def fetch_pod_logs_tool(
     """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
     The logs of previous terminated pod will be fetched."""
     try:
-        return k8s_client.fetch_pod_logs(
+        return await k8s_client.fetch_pod_logs(
             name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
         )
     except Exception as e:

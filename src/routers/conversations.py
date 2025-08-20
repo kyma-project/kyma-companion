@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse, StreamingResponse
 
-from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE
+from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from agents.common.utils import compute_string_token_count
 from routers.common import (
@@ -131,9 +131,12 @@ async def init_conversation(
             status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
         ) from e
 
+    # Check rate limitation
+    await check_token_usage(x_cluster_url, conversation_service)
+
     try:
         # Create initial questions.
-        questions = conversation_service.new_conversation(
+        questions = await conversation_service.new_conversation(
             k8s_client=k8s_client,
             message=Message(
                 query="",
@@ -186,7 +189,8 @@ async def followup_questions(
         raise HTTPException(status_code=422, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
+    user_identifier = extract_user_identifier(k8s_auth_headers)
+    await authorize_user(str(conversation_id), user_identifier, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -246,7 +250,10 @@ async def messages(
         ) from e
 
     # Authorize the user to access the conversation.
-    await authorize_user(str(conversation_id), k8s_auth_headers, conversation_service)
+    message.user_identifier = extract_user_identifier(k8s_auth_headers)
+    await authorize_user(
+        str(conversation_id), message.user_identifier, conversation_service
+    )
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -266,21 +273,17 @@ async def messages(
     # Validate the k8s resource context.
     if not message.is_cluster_overview_query():
         try:
-            resource_kind_details = K8sResourceDiscovery(k8s_client).get_resource_kind(
+            resource_kind_details = await K8sResourceDiscovery(
+                k8s_client
+            ).get_resource_kind(
                 str(message.resource_api_version), str(message.resource_kind)
             )
             # Add details to the message.
             message.add_details(resource_kind_details)
-        except ValueError as e:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail=f"Invalid resource context info: {str(e)}",
-            ) from e
         except Exception as e:
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=f"Failed to validate resource context info: {str(e)}",
-            ) from e
+            logger.warning(f"Invalid resource context info: {str(e)}")
+            message.resource_kind = UNKNOWN
+            message.resource_api_version = UNKNOWN
     else:
         # mark the message as a cluster overview query
         message.resource_scope = CLUSTER
@@ -319,12 +322,10 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
         )
 
 
-async def authorize_user(
-    conversation_id: str,
+def extract_user_identifier(
     k8s_auth_headers: K8sAuthHeaders,
-    conversation_service: IService,
-) -> None:
-    """Authorize the user to access the conversation."""
+) -> str:
+    """Get the user identifier from the K8s auth headers."""
     user_identifier = ""
     if k8s_auth_headers.x_k8s_authorization is not None:
         try:
@@ -351,6 +352,16 @@ async def authorize_user(
             detail="User not authorized to access the conversation. "
             "Unable to get user identifier from the provided Authorization headers.",
         )
+
+    return user_identifier
+
+
+async def authorize_user(
+    conversation_id: str,
+    user_identifier: str,
+    conversation_service: IService,
+) -> None:
+    """Authorize the user to access the conversation."""
 
     if not await conversation_service.authorize_user(conversation_id, user_identifier):
         raise HTTPException(

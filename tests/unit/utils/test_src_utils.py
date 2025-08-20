@@ -196,22 +196,24 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
 
 # Test cases
 @pytest.mark.parametrize(
-    "client_certificate_data, expected_user_identifier, expected_error",
+    "test_description, client_certificate_data, expected_user_identifier, expected_error",
     [
-        # Test case 1: Certificate with Common Name
         (
-            generate_pem_cert("test_user", "12345"),
+            "Test case 1 Certificate with Common Name",
+            # generated using generate_pem_cert("test_user", "12345")
+            b"-----BEGIN CERTIFICATE-----\nMIICsjCCAZqgAwIBAgICMDkwDQYJKoZIhvcNAQELBQAwDzENMAsGA1UEAwwEdGVz\ndDAeFw0yNTA3MjgxNDQ3NDlaFw0yNjA3MjgxNDQ3NDlaMBQxEjAQBgNVBAMMCXRl\nc3RfdXNlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJX9BZd2A76C\nZy2sBjjZIaIFO2lF59h3bcqw9k0GXt5d8Jo372Kw1MdT6DTHuSv63SEmM2slXy2Z\nDOGSZg9nyoh+yTLEO5XS21f9o53j89XQ/dSAX0QsYvwmTeHvnJAksEuKhRDWQXLy\nD50BcmMyaT8mPrAVg4OMIzcFfpl4wwBSv6ftLcdG0whe7f9e7ke69FNJy2f7VG8i\nt0zDBijxtNVxFkeWYgZDvvIJuTgoJNw1lRoAXEkbbqPa+y4B9ShcpZqhZd/yT8Jx\nenxf3pVWZwKxx2opvwRQJ2tlMqln5+FITX+qKriEA96XGOie+EUGBBFGabf/pLKn\nILHPKP8vaW0CAwEAAaMTMBEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsF\nAAOCAQEAX1r2GF8SVY9wey4bQ9Nn/1luSf60DMGUJfE8C/Lcq85MjpiAQ30qV/bb\nPOgNZ7LDISg5e06MP2ZCIqIhUMS6MfW/JX/g8XJo9RGgM3WWLhb43VesFb+SFi7Q\nKQ+LtvFlykaHyVmlLwnvnyG29vIt77cOngL9g5ESWAl7qGRa7pb2+w/YjLR5oOnU\nxqvtn8N2KAh1cwFslOi9IfgGEcwA+hd/rc6tlXDbmd8AZcWZo2pmBCYu+YZGSkGX\nTBIxLnQLRtaxwR8tENbb0x2PgiSK0cLAex86VOYlBNsb8Pt4FpSlupDFhKPtT0Va\nSUcAlZwnnepwKMSTCiTupOqi859+BA==\n-----END CERTIFICATE-----\n",
             "1160130875fda0812c99c5e3f1a03516471a6370c4f97129b221938eb4763e63",
             None,
         ),
-        # Test case 2: Certificate without Common Name but with serial number
         (
-            generate_pem_cert("", "67890"),
+            "Test case 2 Certificate without Common Name but with serial number",
+            # generated using generate_pem_cert("", "67890")
+            b"-----BEGIN CERTIFICATE-----\nMIICnzCCAYegAwIBAgIDAQkyMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMMBHRl\nc3QwHhcNMjUwNzI4MTQ0NzQ5WhcNMjYwNzI4MTQ0NzQ5WjAAMIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0KwcFwyPInr7IJfeH/15aSljGQjnSkPLoMun\nPqBv/fX2A7Ms/yoYOL6AwRzjZUhtq+qxQ5topKJPRbnk3US1vwv5CL32wxZIDbne\nDA0NWBqujtSSE3SdoA9TyW2wPj7RJVTuastrGZt9TAX4zuaIY3OeIUA99bHrckgn\nITUk+3mky5Bp6RvBdD/XlgcqtimBec2rETXnvk+hVOSLv1J/hem55cFNN16h6+El\nIRTo1ofVa7G+D3Slpgm0S5UZWoc/D133p0oL+9tqtWiZZcfJms4wlmFuVoYj+4AP\n3RFVsY58aTvTG51FoBQtODdvdF+gnVsc+T1BEavTNopHxERifwIDAQABoxMwETAP\nBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCBGARgbIMGYnBiw1pV\n5AFji0g1L1YmsTJC6W69CAi6GihvtzRtHMyTu8dyMvObVYxonzJ4CSmhEA4z6X0i\n4mKCRmjgSa4XkGBfBFJkbuq2iMDQZECgcE+nSZJgSw/tFcyjuTuhysuBuk66xN4i\niLDiLV4Z5qLYfcYnIoIBis6xkOHT3ynS9GC9Dp5Gu5grVqUQYXsEeITldjHaz79O\n8imuqZe74QX2NmXizpwASGPNrTyCe4D5jZ6b7aDo9Pg9JPuIHOKP+fVZMSzyfbmj\nwKslFuEecN1ORnGNE8PoEv9itGh18bQ2gnewqxLxWTsDzq9N7KsRf2OBiIxgpV1j\naDxa\n-----END CERTIFICATE-----\n",
             "e2217d3e4e120c6a3372a1890f03e232b35ad659d71f7a62501a4ee204a3e66d",
             None,
         ),
-        # Test case 3: Invalid certificate data (e.g., not a valid PEM)
         (
+            "Test case 3: Invalid certificate data",
             b"Invalid certificate data",
             "",
             ValueError,
@@ -219,7 +221,7 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
     ],
 )
 def test_get_user_identifier_from_client_certificate(
-    client_certificate_data, expected_user_identifier, expected_error
+    test_description, client_certificate_data, expected_user_identifier, expected_error
 ):
     if expected_error:
         with pytest.raises(ValueError):

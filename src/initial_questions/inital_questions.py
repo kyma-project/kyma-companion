@@ -22,7 +22,7 @@ class IInitialQuestionsHandler(Protocol):
         """Generates initial questions given a context with cluster data."""
         ...
 
-    def fetch_relevant_data_from_k8s_cluster(
+    async def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
@@ -101,11 +101,11 @@ class InitialQuestionsHandler:
         # Format prompt and send to llm.
         return self._chain.invoke({"context": context})  # type: ignore
 
-    def fetch_relevant_data_from_k8s_cluster(
+    async def fetch_relevant_data_from_k8s_cluster(
         self, message: Message, k8s_client: IK8sClient
     ) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
-        return get_relevant_context_from_k8s_cluster(
+        return await get_relevant_context_from_k8s_cluster(
             message=message, k8s_client=k8s_client
         )

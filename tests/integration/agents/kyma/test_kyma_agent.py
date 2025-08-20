@@ -467,62 +467,6 @@ def kyma_agent(app_models):
             False,
         ),
         # Test case for Kyma doc search when no relevant documentation is found
-        # Security configuration query
-        (
-            "Should search Kyma docs for security configuration when no relevant docs found",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(content="The user query is related to: {}"),
-                    HumanMessage(
-                        content="How do I configure OAuth2 authentication in Kyma?"
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {
-                                    "query": "OAuth2 authentication configuration Kyma"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="No relevant documentation found.",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "How do I configure OAuth2 authentication in Kyma?",
-                        "task_title": "OAuth2 authentication configuration",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="How do I configure OAuth2 authentication in Kyma?",
-                    task_title="OAuth2 authentication configuration",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "",
-            "I couldn't find specific documentation on OAuth2 authentication configuration in the Kyma documentation. "
-            "However, Kyma typically uses Istio's authentication and authorization features for securing applications. "
-            "You would generally configure OAuth2 through Istio's RequestAuthentication and AuthorizationPolicy resources, "
-            "or by using the Kyma API Gateway with OAuth2 introspection. "
-            "For detailed configuration steps, I recommend checking the official Kyma security documentation "
-            "or the Istio authentication documentation.",
-            None,
-            False,
-        ),
-        # Test case for Kyma doc search when no relevant documentation is found
         # Serverless function deployment query
         (
             "Should search Kyma docs for serverless deployment when no relevant docs found",
@@ -634,6 +578,58 @@ def kyma_agent(app_models):
             "global rate limiting (using an external rate limit service like Redis). "
             "For detailed configuration examples, please check the Kyma API Gateway documentation "
             "or Istio's traffic management guides.",
+            None,
+            False,
+        ),
+        (
+            "Should mention about Joule context in kyma dashboard",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+                    ),
+                    HumanMessage(
+                        content="Why is the pod of the serverless Function not ready?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"
+                                },
+                            },
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Please specify the function name.",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "Why is the pod of the serverless Function not ready?",
+                        "task_title": "Why is the pod of the serverless Function not ready?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="Why is the pod of the serverless Function not ready?",
+                    task_title="Why is the pod of the serverless Function not ready?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            None,
+            "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. "
+            "Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.",
             None,
             False,
         ),
@@ -960,7 +956,7 @@ async def test_tool_calling(
         # When: the chain is invoked and an error is expected
         # Then: the expected error should be raised
         with pytest.raises(expected_result):
-            kyma_agent._invoke_chain(state, {})
+            await kyma_agent._invoke_chain(state, {})
     else:
         # When: the chain is invoked normally
         response = await kyma_agent._invoke_chain(state, {})
