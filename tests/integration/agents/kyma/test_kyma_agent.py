@@ -82,6 +82,61 @@ def kyma_agent(app_models):
         # - Verifies agent correctly identifies and explains API Rule validation error
         # - Checks agent uses both kyma_query_tool and search_kyma_doc
         # - Validates response matches expected explanation about multiple access strategies
+        # Security configuration query
+        (
+            "Should search Kyma docs for security configuration when no relevant docs found",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(content="The user query is related to: {}"),
+                    HumanMessage(
+                        content="How do I configure OAuth2 authentication in Kyma?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_2",
+                                "type": "tool_call",
+                                "name": "search_kyma_doc",
+                                "args": {
+                                    "query": "OAuth2 authentication configuration Kyma"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="No relevant documentation found.",
+                        name="search_kyma_doc",
+                        tool_call_id="tool_call_id_2",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "How do I configure OAuth2 authentication in Kyma?",
+                        "task_title": "OAuth2 authentication configuration",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="How do I configure OAuth2 authentication in Kyma?",
+                    task_title="OAuth2 authentication configuration",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "",
+            "I couldn't find specific documentation on OAuth2 authentication configuration in the Kyma documentation. "
+            "However, Kyma typically uses Istio's authentication and authorization features for securing applications. "
+            "You would generally configure OAuth2 through Istio's RequestAuthentication and AuthorizationPolicy resources, "
+            "or by using the Kyma API Gateway with OAuth2 introspection. "
+            "For detailed configuration steps, I recommend checking the official Kyma security documentation "
+            "or the Istio authentication documentation.",
+            None,
+            False,
+        ),
         (
             "Should return right solution for API Rule with wrong access strategy",
             KymaAgentState(
@@ -467,61 +522,6 @@ def kyma_agent(app_models):
             False,
         ),
         # Test case for Kyma doc search when no relevant documentation is found
-        # Security configuration query
-        (
-            "Should search Kyma docs for security configuration when no relevant docs found",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(content="The user query is related to: {}"),
-                    HumanMessage(
-                        content="How do I configure OAuth2 authentication in Kyma?"
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {
-                                    "query": "OAuth2 authentication configuration Kyma"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="No relevant documentation found.",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "How do I configure OAuth2 authentication in Kyma?",
-                        "task_title": "OAuth2 authentication configuration",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="How do I configure OAuth2 authentication in Kyma?",
-                    task_title="OAuth2 authentication configuration",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "",
-            "I couldn't find specific documentation on OAuth2 authentication configuration in the Kyma documentation. "
-            "However, Kyma typically uses Istio's authentication and authorization features for securing applications. "
-            "You would generally configure OAuth2 through Istio's RequestAuthentication and AuthorizationPolicy resources, "
-            "or by using the Kyma API Gateway with OAuth2 introspection. "
-            "For detailed configuration steps, I recommend checking the official Kyma security documentation "
-            "or the Istio authentication documentation.",
-            None,
-            False,
-        ),
         # Test case for Kyma doc search when no relevant documentation is found
         # Serverless function deployment query
         (
