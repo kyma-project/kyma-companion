@@ -207,7 +207,9 @@ class K8sResourceDiscovery:
         after=after_log,
         reraise=True,
     )
-    def get_resource_kind_dynamic(self, group_version: str, kind: str) -> ResourceKind:
+    async def get_resource_kind_dynamic(
+        self, group_version: str, kind: str
+    ) -> ResourceKind:
         """
         Get the resource kind from the K8s API resources list.
         This is a dynamic lookup that queries the K8s API for the resource kind.
@@ -215,7 +217,7 @@ class K8sResourceDiscovery:
         :param kind:
         :return:
         """
-        group_version_details = self.k8s_client.get_group_version(group_version)
+        group_version_details = await self.k8s_client.get_group_version(group_version)
         if group_version_details is None:
             raise ValueError(f"Invalid groupVersion: {group_version}. Not found.")
 
@@ -232,7 +234,7 @@ class K8sResourceDiscovery:
             )
         return resource_kind
 
-    def get_resource_kind(self, group_version: str, kind: str) -> ResourceKind:
+    async def get_resource_kind(self, group_version: str, kind: str) -> ResourceKind:
         """
         Get the resource kind by first trying static lookup and then dynamic lookup.
         :param group_version:
@@ -249,7 +251,7 @@ class K8sResourceDiscovery:
                 f"Looking up dynamically..."
             )
             # If static lookup fails, try dynamic lookup.
-            return self.get_resource_kind_dynamic(group_version, kind)
+            return await self.get_resource_kind_dynamic(group_version, kind)
         except Exception as e:
             logger.error(
                 f"Error while getting resource (group_version: {group_version}, kind: {kind}): {e}"

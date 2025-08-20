@@ -36,7 +36,9 @@ TOKEN_LIMIT = 16_000
 class IService(Protocol):
     """Service interface"""
 
-    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
+    async def new_conversation(
+        self, k8s_client: IK8sClient, message: Message
+    ) -> list[str]:
         """Initialize a new conversation."""
         ...
 
@@ -108,7 +110,9 @@ class ConversationService(metaclass=SingletonMeta):
             models, memory=checkpointer, handler=langfuse_handler
         )
 
-    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
+    async def new_conversation(
+        self, k8s_client: IK8sClient, message: Message
+    ) -> list[str]:
         """Initialize a new conversation."""
 
         logger.info(
@@ -117,8 +121,10 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Fetch the context for our questions from the Kubernetes cluster.
-        k8s_context = self._init_questions_handler.fetch_relevant_data_from_k8s_cluster(
-            message=message, k8s_client=k8s_client
+        k8s_context = (
+            await self._init_questions_handler.fetch_relevant_data_from_k8s_cluster(
+                message=message, k8s_client=k8s_client
+            )
         )
 
         # Reduce the amount of tokens according to the limits.
