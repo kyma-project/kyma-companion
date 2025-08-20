@@ -117,8 +117,8 @@ class MarkdownIndexer:
                 )
 
                 # Wait 3 seconds before processing next batch
-                # if i + CHUNKS_BATCH_SIZE < len(all_chunks):
-                #     time.sleep(1)
+                if i + CHUNKS_BATCH_SIZE < len(all_chunks):
+                    time.sleep(1)
 
             except Exception:
                 logger.exception(

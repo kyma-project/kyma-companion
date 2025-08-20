@@ -41,7 +41,7 @@ def openai_embedding_creator(
 ) -> Embeddings:
     """Create an OpenAI embedding model."""
     try:
-        # time.sleep(1)  # Sleep to avoid rate limiting
+        time.sleep(1)  # Sleep to avoid rate limiting
         llm = cast(
             Embeddings,
             OpenAIEmbeddings(
