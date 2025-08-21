@@ -83,14 +83,17 @@
       "docs/user/custom-resources/apigateway/*",
       "docs/user/custom-resources/apirule/04-10-apirule-custom-resource.md",
       "docs/user/custom-resources/apirule/04-15-api-rule-access-strategies.md",
-      "docs/user/custom-resources/apirule/04-60-apirule-migration.md",
       "docs/user/custom-resources/apirule/04-70-changes-in-apirule-v2.md",
       "docs/user/custom-resources/ratelimit/*",
       "docs/user/troubleshooting-guides/*",
       "docs/user/tutorials/01-10-setup-custom-domain-for-workload.md",
       "docs/user/tutorials/01-20-set-up-tls-gateway.md",
       "docs/user/tutorials/01-30-set-up-mtls-gateway.md",
-      "docs/user/tutorials/01-70-local-rate-limit.md"
+      "docs/user/tutorials/01-70-local-rate-limit.md",
+      "docs/user/apirule-migration/01-81-retrieve-v1beta1-spec.md",
+      "docs/user/apirule-migration/01-82-migrate-allow-noop-no_auth-v1beta1-to-v2.md",
+      "docs/user/apirule-migration/01-83-migrate-jwt-v1beta1-to-v2.md",
+      "docs/user/apirule-migration/01-84-migrate-oauth2-v1beta1-to-v2.md"
     ]
   },
   {
