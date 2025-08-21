@@ -23,7 +23,7 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchPaths": [
+      "matchFileNames": [
         "pyproject.toml"
       ],
       "groupName": "Dependencies in pyproject.toml",
@@ -35,7 +35,7 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchPaths": [
+      "matchFileNames": [
         "doc_indexer/pyproject.toml"
       ],
       "groupName": "Dependencies in doc_indexer/pyproject.toml",
@@ -47,7 +47,7 @@
       "matchManagers": [
         "poetry"
       ],
-      "matchPaths": [
+      "matchFileNames": [
         "tests/blackbox/pyproject.toml"
       ],
       "groupName": "Dependencies in tests/blackbox/pyproject.toml",
