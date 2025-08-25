@@ -36,7 +36,7 @@ jobs:
     with:
       name: kyma-companion-indexer
       dockerfile: doc_indexer/Dockerfile
-      context: .
+      context: ./doc_indexer
       tags: ${{ needs.compute-tags.outputs.tags }}
       platforms: |
         linux/amd64

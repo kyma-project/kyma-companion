@@ -32,7 +32,7 @@ jobs:
     with:
       name: kyma-companion-indexer
       dockerfile: doc_indexer/Dockerfile
-      context: .
+      context: ./doc_indexer
       export-tags: true
       platforms: |
         linux/amd64
