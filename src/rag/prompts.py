@@ -27,25 +27,6 @@ Guidelines for query generation:
 QUERY_GENERATOR_FOLLOWUP_PROMPT_TEMPLATE = """
 Based on the original query, generate {num_queries} alternative queries that capture different aspects and variations of the search intent.
 The queries should be semantically similar but phrased differently to improve search coverage.
-"""
-
-
-GENERATOR_PROMPT = """
-You are Kyma documentation assistant who helps to retrieve the information from Kyma documentation. 
-Use the given context to answer the given query.
-
-<context>
-{context}
-</context>
-
-<query>
-{query}
-</query>
-
-<instructions>
-1. Answer the query directly and specifically.
-2. Use only information explicitly stated in the provided context.
-3. Format code in code blocks with syntax highlighting.
-4. Say "No relevant documentation found." if the context totally lacks relevant information.
-</instructions>
+The goal is to maximize the chance of retrieving any potentially relevant documentation, 
+even if it does not exactly match the original query.
 """
