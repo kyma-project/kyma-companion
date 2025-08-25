@@ -42,7 +42,7 @@ def run_fetcher() -> None:
     try:
         subprocess.run(["tree", DOCS_PATH])
     except Exception:
-        logger.info("Failed to print the filtered documents list")
+        logger.warning("Fetcher Completed but Failed to print the documents list")
 
 
 def run_indexer() -> None:
