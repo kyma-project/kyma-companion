@@ -1,0 +1,38 @@
+name: Pull Build Image
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+    paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
+      - "docs/**"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
+      - "src/**"
+      - "doc_indexer/.vscode/**"
+      - "doc_indexer/tests/**"
+      - CODEOWNERS
+      - LICENSE
+      - "sec-scanners-config.yaml"
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+jobs:
+  build:
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: kyma-companion-indexer
+      dockerfile: Dockerfile
+      context: .
+      export-tags: true
+      platforms: |
+        linux/amd64
