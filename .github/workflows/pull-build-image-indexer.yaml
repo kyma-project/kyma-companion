@@ -1,4 +1,4 @@
-name: Pull Build Image
+name: Pull Build Image for Indexer
 
 on:
   pull_request_target:
