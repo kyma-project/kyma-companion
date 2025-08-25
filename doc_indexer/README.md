@@ -32,6 +32,36 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+---
+
+### Running with Docker
+
+You can also run the project inside a Docker container to simplify environment setup.
+
+1. **Build the Docker image**:
+
+```bash
+docker build -t doc-indexer .
+```
+
+2. **Run the container**:
+
+Make sure you mount your local `config` and `data` folders into the container. Replace `<path-to-config>` and `<path-to-data>` with the absolute paths on your machine:
+
+```bash
+docker run -v <path-to-config>:/config -v <path-to-data>:/data doc-indexer -- fetch
+```
+
+or
+
+```bash
+docker run -v <path-to-config>:/config -v <path-to-data>:/data doc-indexer -- index
+```
+
+> The `--` separates Docker options from arguments passed to your Python script. Use `fetch` to fetch documents or `index` to index them.
+
+
+
 ## Testing
 
 The `config-doc-indexer.json` file can also be used for testing.
