@@ -66,7 +66,7 @@ cases = [
         ),
     },
     {
-        "input": "why there is no logs in the backend?",
+        "input": "why are there no logs in the backend?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
