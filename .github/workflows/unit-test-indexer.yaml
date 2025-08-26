@@ -66,7 +66,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: doc_indexer
-        run: poetry install --with dev
+        run: poetry install
 
       - name: Run tests
         working-directory: doc_indexer
