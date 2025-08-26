@@ -35,7 +35,7 @@ jobs:
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: kyma-companion-indexer
-      dockerfile: doc_indexer/Dockerfile
+      dockerfile: Dockerfile
       context: ./doc_indexer
       tags: ${{ needs.compute-tags.outputs.tags }}
       platforms: |
