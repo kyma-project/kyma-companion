@@ -68,6 +68,11 @@ jobs:
         working-directory: doc_indexer
         run: poetry install
 
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json
+
       - name: Run tests
         working-directory: doc_indexer
         run: poetry run poe test
