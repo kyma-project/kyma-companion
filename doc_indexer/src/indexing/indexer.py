@@ -16,14 +16,10 @@ from utils.settings import CHUNKS_BATCH_SIZE
 logger = get_logger(__name__)
 
 
-def create_chunks(
-    documents: list[Document], headers_to_split_on: list[tuple[str, str]]
-) -> list[Document]:
+def create_chunks(documents: list[Document], headers_to_split_on: list[tuple[str, str]]) -> list[Document]:
     """Given the Markdown documents, split them into chunks based on the provided headers."""
 
-    text_splitter = MarkdownHeaderTextSplitter(
-        headers_to_split_on=headers_to_split_on, strip_headers=False
-    )
+    text_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
     all_chunks: list[Document] = []
     try:
         for doc in documents:
@@ -54,6 +50,8 @@ class MarkdownIndexer:
         embedding: Embeddings,
         connection: dbapi.Connection,
         table_name: str | None = None,
+        temp_table_name: str = "temp_table",
+        backup_table_name: str = "backup_table",
         headers_to_split_on: list[tuple[str, str]] | None = None,
     ):
         if headers_to_split_on is None:
@@ -62,68 +60,113 @@ class MarkdownIndexer:
             table_name = docs_path.split("/")[-1]
 
         self.docs_path = docs_path
-        self.table_name = table_name
+        self.main_table_name = table_name
+        self.backup_table_name = backup_table_name
         self.embedding = embedding
         self.headers_to_split_on = headers_to_split_on
         self.db = HanaDB(
             connection=connection,
             embedding=embedding,
-            table_name=table_name,
+            table_name=temp_table_name,
         )
+
+    @property
+    def temp_table_name(self) -> str:
+        """
+        Returns the name of the temporary table used in the database.
+        """
+        return self.db.table_name
 
     def _load_documents(self) -> list[Document]:
         # Load all documents from the given directory
         try:
-            loader = DirectoryLoader(
-                self.docs_path, loader_cls=TextLoader, recursive=True
-            )
+            loader = DirectoryLoader(self.docs_path, loader_cls=TextLoader, recursive=True)
             docs = loader.load()
             return docs
         except Exception:
             logger.exception("Error while loading documents")
             raise
 
+    def _drop_table(self, table_name: str) -> None:
+        """Drop the given table from the HanaDB."""
+        cursor = self.db.connection.cursor()
+        try:
+            logger.info(f"Dropping table {table_name} if exists...")
+            cursor.execute(f"DROP TABLE {table_name}")
+            self.db.connection.commit()
+        except Exception:
+            logger.exception(f"Error while dropping table {table_name} in HanaDB.")
+        finally:
+            cursor.close()
+
+    def _rename_table(self, old_name: str, new_name: str) -> None:
+        """Rename the given table in the HanaDB."""
+        cursor = self.db.connection.cursor()
+        try:
+            logger.info(f"Renaming table {old_name} to {new_name}...")
+            cursor.execute(f"RENAME TABLE {old_name} TO {new_name}")
+            self.db.connection.commit()
+        except Exception:
+            logger.exception(f"Error while renaming table {old_name} to {new_name} in HanaDB.")
+        finally:
+            cursor.close()
+
+    def _index_chunks_in_batches(self, chunks: list[Document]) -> None:
+        """Store all new document chunks in the temporary table."""
+        logger.info("Indexing and storing indexes to HanaDB...")
+        for i in range(0, len(chunks), CHUNKS_BATCH_SIZE):
+            batch = chunks[i : i + CHUNKS_BATCH_SIZE]
+            try:
+                self.db.add_documents(batch)
+                logger.info(f"Indexed batch {i // CHUNKS_BATCH_SIZE + 1} of {len(chunks) // CHUNKS_BATCH_SIZE + 1}")
+                if i + CHUNKS_BATCH_SIZE < len(chunks):
+                    time.sleep(3)
+            except Exception as e:
+                logger.error(f"Batch {i // CHUNKS_BATCH_SIZE + 1} failed: {e}")
+                raise
+        logger.info(f"Successfully indexed {len(chunks)} markdown files chunks to {self.temp_table_name} table.")
+
     def index(self) -> None:
         """
-        Indexes the markdown files in the given directory.
-        It uses ('#', 'Header1') as the default header to split on.
+        Indexes the markdown files in the given directory
+        by chunking and storing them in the database.
+        The symbol '#' ('Header1') is used as the default header to split.
+
+        Database table operations performed in order:
+        1. Drops the temporary table (if exists) to ensure a clean state.
+        2. Stores all new document chunks in the temporary table.
+        3. Drops the backup table (if exists).
+        4. Renames the current main table to the backup table.
+        5. Renames the temporary table to become the new main table.
+        6. If renaming the temporary table fails, restores the backup table as the main table.
         """
 
         docs = self._load_documents()
 
-        # chunk the documents by the headers
-        all_chunks = create_chunks(docs, self.headers_to_split_on)
+        # Chunk the documents by the headers.
+        chunks = create_chunks(docs, self.headers_to_split_on)
 
-        logger.info(
-            f"Indexing {len(all_chunks)} markdown files chunks for {self.table_name}..."
-        )
+        # Drop the temporary table (if exists) to ensure a clean state.
+        self._drop_table(self.temp_table_name)
 
-        logger.info("Deleting existing index in HanaDB...")
+        # Store all new document chunks in the temporary table.
+        logger.info(f"Indexing {len(chunks)} markdown files chunks for {self.temp_table_name}...")
+        self._index_chunks_in_batches(chunks)
+
+        # Drop the backup table (if exists).
+        self._drop_table(self.backup_table_name)
+
+        # Rename the current main table to the backup table.
+        self._rename_table(self.main_table_name, self.backup_table_name)
+
+        # Rename the temporary table to become the new main table.
         try:
-            self.db.delete(filter={})
+            self._rename_table(self.temp_table_name, self.main_table_name)
         except Exception:
-            logger.exception("Error while deleting existing documents in HanaDB.")
+            # If renaming the temporary table fails, restore the backup table as the main table.
+            logger.exception(
+                f"Error while renaming temporary table {self.temp_table_name} to {self.main_table_name} in HanaDB."
+            )
+            logger.info(f"Restoring backup table {self.backup_table_name} to {self.main_table_name}.")
+            self._rename_table(self.backup_table_name, self.main_table_name)
             raise
-        logger.info("Successfully deleted existing documents in HanaDB.")
-
-        logger.info("Indexing and storing indexes to HanaDB...")
-        for i in range(0, len(all_chunks), CHUNKS_BATCH_SIZE):
-            batch = all_chunks[i : i + CHUNKS_BATCH_SIZE]
-            try:
-                # Add current batch of documents
-                self.db.add_documents(batch)
-                logger.info(
-                    f"Indexed batch {i//CHUNKS_BATCH_SIZE + 1} of {len(all_chunks)//CHUNKS_BATCH_SIZE + 1}"
-                )
-
-                # Wait 3 seconds before processing next batch
-                if i + CHUNKS_BATCH_SIZE < len(all_chunks):
-                    time.sleep(3)
-
-            except Exception:
-                logger.exception(
-                    f"Error while storing documents batch {i//CHUNKS_BATCH_SIZE + 1} in HanaDB"
-                )
-                raise
-
-        logger.info(f"Successfully indexed {len(all_chunks)} markdown files chunks.")
