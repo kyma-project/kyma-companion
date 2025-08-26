@@ -313,3 +313,4 @@ class AdaptiveSplitMarkdownIndexer:
             logger.info(
                 f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}."
             )
+
