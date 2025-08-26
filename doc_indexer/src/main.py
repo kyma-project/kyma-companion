@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 
 def run_fetcher() -> None:
     """Entry function to run the document fetcher."""
-    # create an instance of the fetcher.
+    # Create an instance of the fetcher.
     fetcher = DocumentsFetcher(
         source_file=DOCS_SOURCES_FILE_PATH,
         output_dir=DOCS_PATH,
