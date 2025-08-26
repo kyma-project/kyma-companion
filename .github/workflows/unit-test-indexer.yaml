@@ -1,0 +1,74 @@
+name: Indexer Unit Test
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "release-**"
+
+jobs:
+  check-if-test-is-needed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: none
+    outputs:
+      run_tests: ${{ steps.determine.outputs.run_tests }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: | # do not use quotes
+            - doc_indexer/**
+
+      - name: Determine if tests should run
+        id: determine
+        run: |
+          echo "Changed files: '${{ steps.changed-files.outputs.all_changed_files }}'"
+
+          if [ -z "${{ steps.changed-files.outputs.all_changed_files }}" ]; then
+            echo "No relevant files changed. Skipping tests."
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          else
+            echo "Relevant files changed. Running tests."
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+          fi
+
+  ## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
+  ## in the create-release.yml workflow as well.
+  unit-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: none
+    needs: check-if-test-is-needed
+    if: needs.check-if-test-is-needed.outputs.run_tests == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: doc_indexer
+        run: poetry install --with dev
+
+      - name: Run tests
+        working-directory: doc_indexer
+        run: poetry run poe test
