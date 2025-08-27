@@ -5,8 +5,13 @@ on:
     branches:
       - "main"
       - "release-*"
+    paths-ignore:
+      - "LICENSES/**"
+      - "**/*.md"
+      - "doc_indexer/.vscode/**"
+      - "doc_indexer/tests/**"
     paths:
-      - "doc_indexer/src/**"
+      - "doc_indexer/**"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
