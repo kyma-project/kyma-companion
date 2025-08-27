@@ -36,9 +36,9 @@ def run_fetcher() -> None:
         output_dir=DOCS_PATH,
         tmp_dir=TMP_DIR,
     )
-    # run the fetcher.
+    # run the fetcher
     fetcher.run()
-    # print the filtered documents.
+    # print the filtered documents
     try:
         subprocess.run(["tree", DOCS_PATH])
     except Exception:
