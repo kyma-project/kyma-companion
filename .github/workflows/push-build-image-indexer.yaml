@@ -5,9 +5,8 @@ on:
     branches:
       - "main"
       - "release-*"
-    paths-ignore:
-      - "docs/**"
-      - "src/**"
+    paths:
+      - "doc_indexer/src/**"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
