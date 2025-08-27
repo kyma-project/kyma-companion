@@ -49,13 +49,13 @@ docker build -t doc-indexer .
 Make sure you mount your local `config` and `data` folders into the container. Replace `<path-to-config>` and `<path-to-data>` with the absolute paths on your machine:
 
 ```bash
-docker run -v <path-to-config>:/config -v <path-to-data>:/data doc-indexer -- fetch
+docker run -v <path-to-config>:/config -v <path-to-data>:/app/data doc-indexer -- fetch
 ```
 
 or
 
 ```bash
-docker run -v <path-to-config>:/config -v <path-to-data>:/data doc-indexer -- index
+docker run -v <path-to-config>:/config -v <path-to-data>:/app/data doc-indexer -- index
 ```
 
 > The `--` separates Docker options from arguments passed to your Python script. Use `fetch` to fetch documents or `index` to index them.
