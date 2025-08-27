@@ -38,7 +38,7 @@ async def custom_http_exception_handler(
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Exception Handler all exceptions other than HTTPException"""
+    """Exception Handler all exceptions other than HTTPException."""
     logger.error(
         "Unhandled exception occurred", exc_info=(type(exc), exc, exc.__traceback__)
     )
