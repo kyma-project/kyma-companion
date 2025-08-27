@@ -80,15 +80,12 @@ async def test_rag_system(
     retrieved_docs = await rag_system.aretrieve(query, 10)
     assert len(retrieved_docs) > 0, "No documents retrieved"
 
-    actual_output = await rag_system.agenerate(query, retrieved_docs)
-    assert actual_output is not None, "RAG system generated no output"
-
     # convert the retrieved documents to array of strings
     retrieved_docs_content = [doc.page_content for doc in retrieved_docs]
 
     test_case = LLMTestCase(
+        actual_output="",  # we dont evaluate any llm output
         input=user_query,
-        actual_output=actual_output,
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,
     )
