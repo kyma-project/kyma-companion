@@ -5,7 +5,6 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel
 
-from rag.generator import Generator
 from rag.query_generator import QueryGenerator
 from rag.reranker.reranker import LLMReranker
 from rag.retriever import HanaDBRetriever
@@ -34,14 +33,6 @@ class IRAGSystem(Protocol):
         """Retrieve documents for a given query."""
         ...
 
-    async def agenerate(
-        self,
-        query: Query,
-        relevant_docs: list[Document],
-    ) -> str:
-        """Generate a response to a given query."""
-        ...
-
 
 class RAGSystem:
     """A system that can be used to generate queries and retrieve documents."""
@@ -57,8 +48,6 @@ class RAGSystem:
             connection=Hana().get_connction(),
             table_name=DOCS_TABLE_NAME,
         )
-        # setup generator
-        self.generator = Generator(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
 
         # setup reranker
         self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
@@ -89,11 +78,3 @@ class RAGSystem:
 
         logger.info(f"Retrieved {len(reranked_docs)} documents.")
         return reranked_docs
-
-    async def agenerate(
-        self,
-        query: Query,
-        relevant_docs: list[Document],
-    ) -> str:
-        """Generate a response to a given query."""
-        return await self.generator.agenerate(relevant_docs, query.text)
