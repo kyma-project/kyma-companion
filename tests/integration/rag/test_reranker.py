@@ -208,10 +208,10 @@ def llm_reranker(app_models):
             0.5,
         ),
         (
-            "why there is no logs in the backend?",
+            "why are there no logs in the backend?",
             "datasets/reranker/no-logs-in-backend",
             [
-                "why there is no logs in the backend?",
+                "why are there no logs in the backend?",
             ],
             4,
             [
@@ -329,7 +329,7 @@ def report_test_summary(given_queries, given_docs, actual_docs, expected_docs):
 
 
 def report_queries(prefix, queries):
-    print(f"{prefix} ({len(queries):02d}):\n- {"\n- ".join(queries)}\n")
+    print(f"{prefix} ({len(queries):02d}):\n- {'\n- '.join(queries)}\n")
 
 
 def get_docs_titles(docs):
@@ -338,4 +338,4 @@ def get_docs_titles(docs):
 
 def report_docs(prefix, docs):
     docs_list = get_docs_titles(docs)
-    print(f"{prefix} ({len(docs_list):02d}):\n- {"\n- ".join(docs_list)}\n")
+    print(f"{prefix} ({len(docs_list):02d}):\n- {'\n- '.join(docs_list)}\n")
