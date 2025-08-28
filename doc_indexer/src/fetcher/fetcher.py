@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 class DocumentsFetcher:
-    """Class to fetch the documents from the specified sources"""
+    """Class to fetch the documents from the specified sources."""
 
     output_dir: str
     tmp_dir: str
