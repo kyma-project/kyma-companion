@@ -21,6 +21,10 @@ on:
       - CODEOWNERS
       - LICENSE
       - "sec-scanners-config.yaml"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "renovate.json"
+      - ".gitignore"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
