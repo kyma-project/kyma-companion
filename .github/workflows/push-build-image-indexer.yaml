@@ -6,12 +6,25 @@ on:
       - "main"
       - "release-*"
     paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
       - "LICENSES/**"
+      - "config/**"
+      - "data/**"
+      - "docs/**"
+      - "scripts/**"
+      - "tests/**"
       - "**/*.md"
+      - "src/**"
       - "doc_indexer/.vscode/**"
       - "doc_indexer/tests/**"
-    paths:
-      - "doc_indexer/**"
+      - CODEOWNERS
+      - LICENSE
+      - "sec-scanners-config.yaml"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "renovate.json"
+      - ".gitignore"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
