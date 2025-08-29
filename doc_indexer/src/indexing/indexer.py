@@ -15,7 +15,7 @@ from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER
 
 logger = get_logger(__name__)
 
-ERR_SQL_INV_TABLE = 259  # SQL error code for invalid table in HANA
+ERR_SQL_INV_TABLE = 259  # SQL error code for invalid table name in HANA Databases.
 
 
 def create_chunks(
@@ -91,26 +91,41 @@ class MarkdownIndexer:
     def _handle_database_operation(
         self, operation: str, only_warn_if_table_inexistend: bool = True
     ) -> None:
+        """
+        Executes a database operation using the provided SQL statement.
+
+        Handles exceptions related to missing tables and other database errors.
+        If the table does not exist and only_warn_if_table_inexistend is True,
+        logs a warning; otherwise, logs the exception and raises it.
+
+        Args:
+            operation (str): The SQL statement to execute.
+            only_warn_if_table_inexistend (bool): If True, only warns when the table does not exist;
+                if False, raises the exception.
+
+        Raises:
+            dbapi.ProgrammingError: If a programming error occurs and only_warn_if_table_inexistend is False.
+            Exception: For any other database-related errors.
+        """
         cursor = self.db.connection.cursor()
         try:
-            cursor.execute(operation)
-            self.db.connection.commit()
+            with self.db.connection.cursor() as cursor:
+                cursor.execute(operation)
+                self.db.connection.commit()
         except dbapi.ProgrammingError as e:
-            if e.args and e.args[0] == ERR_SQL_INV_TABLE:
-                if only_warn_if_table_inexistend:
-                    logger.warning(
-                        f"While operating with '{operation}', table does not exist in HanaDB."
-                    )
-                else:
-                    logger.exception(
-                        f"Error while operting with '{operation}' in HanaDB."
-                    )
-                    raise
-            else:
-                logger.exception(f"Error while operting with '{operation}' in HanaDB.")
-                raise
+            if (
+                e.args
+                and e.args[0] == ERR_SQL_INV_TABLE
+                and only_warn_if_table_inexistend
+            ):
+                logger.warning(
+                    f"While operating with '{operation}', table does not exist in HanaDB."
+                )
+                return
+            logger.exception(f"Error while operating with '{operation}' in HanaDB.")
+            raise
         except Exception:
-            logger.exception(f"Error while operting with '{operation}' in HanaDB.")
+            logger.exception(f"Error while operating with '{operation}' in HanaDB.")
             raise
         finally:
             cursor.close()
@@ -121,7 +136,22 @@ class MarkdownIndexer:
         target_table: str,
         only_warn_if_table_inexistend: bool = True,
     ) -> None:
-        """Copy the source_table to target_table in HanaDB (structure and data)."""
+        """
+        copies a table in hanadb from source_table to target_table, including structure and data.
+
+        drops the target table if it exists to avoid duplicate table errors, then creates
+        the target table as a copy of the source table.
+
+        args:
+            source_table (str): name of the table to copy from.
+            target_table (str): name of the table to copy to.
+            only_warn_if_table_inexistend (bool): if true, only warns if the table does not exist;
+                if false, raises an exception.
+
+        raises:
+            dbapi.programmingerror: if a programming error occurs and only_warn_if_table_inexistend is false.
+            exception: for any other database-related errors.
+        """
         logger.info(f"Copying table {source_table} to {target_table}...")
         # Drop the target table if it exists to avoid duplicate table errors
         self._drop_table(target_table, only_warn_if_table_inexistend=True)
@@ -131,7 +161,13 @@ class MarkdownIndexer:
     def _drop_table(
         self, table_name: str, only_warn_if_table_inexistend: bool = True
     ) -> None:
-        """Drop the given table from the HanaDB."""
+        """
+        Drops the specified table from the HanaDB schema.
+
+        Args:
+            table_name (str): Name of the table to drop.
+            only_warn_if_table_inexistend (bool, optional): If True, only logs a warning if the table does not exist.
+        """
         logger.info(f"Dropping table {table_name} if exists...")
         operation = f'DROP TABLE "{DATABASE_USER}"."{table_name}"'
         self._handle_database_operation(operation, only_warn_if_table_inexistend)
@@ -139,6 +175,14 @@ class MarkdownIndexer:
     def _rename_table(
         self, old_name: str, new_name: str, only_warn_if_table_inexistend: bool = True
     ) -> None:
+        """
+        Renames a table in the HanaDB schema.
+
+        Args:
+            old_name (str): Current name of the table.
+            new_name (str): New name for the table.
+            only_warn_if_table_inexistend (bool, optional): If True, only logs a warning if the source table does not exist.
+        """
         logger.info(f"Renaming table {old_name} to {new_name}...")
         operation = f'RENAME TABLE "{DATABASE_USER}"."{old_name}" TO "{DATABASE_USER}"."{new_name}"'
         self._handle_database_operation(
@@ -146,7 +190,12 @@ class MarkdownIndexer:
         )
 
     def _index_chunks_in_batches(self, chunks: list[Document]) -> None:
-        """Store all new document chunks in the temporary table."""
+        """
+        Indexes and stores document chunks in batches to the temporary HanaDB table.
+
+        Args:
+            chunks (list[Document]): List of document chunks to index and store.
+        """
         logger.info("Indexing and storing indexes to HanaDB...")
         for i in range(0, len(chunks), CHUNKS_BATCH_SIZE):
             batch = chunks[i : i + CHUNKS_BATCH_SIZE]
@@ -166,17 +215,17 @@ class MarkdownIndexer:
 
     def index(self) -> None:
         """
-        Indexes the markdown files in the given directory
-        by chunking and storing them in the database.
-        The symbol '#' ('Header1') is used as the default header to split.
+        Indexes markdown files in the specified directory by chunking them and storing the chunks in the database.
 
-        Database table operations performed in order:
-        1. Drops the temporary table (if exists) to ensure a clean state.
-        2. Stores all new document chunks in the temporary table.
-        3. Drops the backup table (if exists).
-        4. Renames the current main table to the backup table.
-        5. Renames the temporary table to become the new main table.
-        6. If renaming the temporary table fails, restores the backup table as the main table.
+        The process involves:
+            1. Loading and chunking markdown documents by specified headers.
+            2. Backing up the current main table (if it exists).
+            3. Deleting all data from the main table.
+            4. Storing new document chunks in the main table.
+            5. On error, restoring the main table from backup.
+
+        Raises:
+            Exception: If indexing fails and restoration from backup is attempted.
         """
 
         docs = self._load_documents()
