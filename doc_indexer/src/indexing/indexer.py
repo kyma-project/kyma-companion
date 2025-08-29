@@ -56,8 +56,7 @@ class MarkdownIndexer:
         embedding: Embeddings,
         connection: dbapi.Connection,
         table_name: str | None = None,
-        temp_table_name: str = "TEMP_TABLE",
-        backup_table_name: str = "BACKUP_TABLE",
+        backup_table_name: str | None = None,
         headers_to_split_on: list[tuple[str, str]] | None = None,
     ):
         if headers_to_split_on is None:
@@ -66,22 +65,16 @@ class MarkdownIndexer:
             table_name = docs_path.split("/")[-1]
 
         self.docs_path = docs_path
-        self.main_table_name = table_name
-        self.backup_table_name = backup_table_name
         self.embedding = embedding
         self.headers_to_split_on = headers_to_split_on
         self.db = HanaDB(
             connection=connection,
             embedding=embedding,
-            table_name=temp_table_name,
+            table_name=table_name,
         )
-
-    @property
-    def temp_table_name(self) -> str:
-        """
-        Returns the name of the temporary table used in the database.
-        """
-        return self.db.table_name
+        self.backup_table_name = (
+            backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}"
+        )
 
     def _load_documents(self) -> list[Document]:
         # Load all documents from the given directory
@@ -122,6 +115,17 @@ class MarkdownIndexer:
         finally:
             cursor.close()
 
+    def _copy_table(
+        self,
+        source_table: str,
+        target_table: str,
+        only_warn_if_table_inexistend: bool = True,
+    ) -> None:
+        """Copy the source_table to target_table in HanaDB (structure and data)."""
+        logger.info(f"Copying table {source_table} to {target_table}...")
+        operation = f'CREATE TABLE "{DATABASE_USER}"."{target_table}" AS (SELECT * FROM "{DATABASE_USER}"."{source_table}")'
+        self._handle_database_operation(operation, only_warn_if_table_inexistend)
+
     def _drop_table(
         self, table_name: str, only_warn_if_table_inexistend: bool = True
     ) -> None:
@@ -139,23 +143,6 @@ class MarkdownIndexer:
             operation, only_warn_if_table_inexistend=only_warn_if_table_inexistend
         )
 
-    def _rename_table_with_backup(
-        self, old_name: str, new_name: str, backup_name: str
-    ) -> None:
-        cursor = self.db.connection.cursor()
-        try:
-            self._rename_table(old_name, new_name, only_warn_if_table_inexistend=False)
-        except Exception:
-            logger.exception(
-                f"Error while renaming {old_name} to {new_name}. Attempting to restore from backup {backup_name}."
-            )
-            self._rename_table(
-                backup_name, new_name, only_warn_if_table_inexistend=True
-            )
-            raise
-        finally:
-            cursor.close()
-
     def _index_chunks_in_batches(self, chunks: list[Document]) -> None:
         """Store all new document chunks in the temporary table."""
         logger.info("Indexing and storing indexes to HanaDB...")
@@ -172,7 +159,7 @@ class MarkdownIndexer:
                 logger.error(f"Batch {i // CHUNKS_BATCH_SIZE + 1} failed: {e}")
                 raise
         logger.info(
-            f"Successfully indexed {len(chunks)} markdown files chunks to {self.temp_table_name} table."
+            f"Successfully indexed {len(chunks)} markdown files chunks to {self.db.table_name} table."
         )
 
     def index(self) -> None:
@@ -195,24 +182,34 @@ class MarkdownIndexer:
         # Chunk the documents by the headers.
         chunks = create_chunks(docs, self.headers_to_split_on)
 
-        # Drop any old temporary table.
-        logger.info(f"Dropping temporary table {self.temp_table_name} if exists...")
-        self.db.delete(filter={})
-
-        # Store all new document chunks in the temporary table.
+        # Create a backup of the current main table (if exists).
         logger.info(
-            f"Indexing {len(chunks)} markdown files chunks for {self.temp_table_name}..."
+            f"Backing up current table {self.db.table_name} to {self.backup_table_name} if exists..."
         )
-        self._index_chunks_in_batches(chunks)
-
-        # Drop any old backup table.
-        self._drop_table(self.backup_table_name)
-
-        # Rename the current main table to the backup table.
-        self._rename_table(self.main_table_name, self.backup_table_name)
-
-        # Rename the temporary table to become the new main table. If this fails,
-        # restore the backup table as the main table.
-        self._rename_table_with_backup(
-            self.temp_table_name, self.main_table_name, self.backup_table_name
+        self._copy_table(
+            self.db.table_name,
+            self.backup_table_name,
+            only_warn_if_table_inexistend=True,
         )
+
+        try:
+            # Drop any old temporary table.
+            logger.info(f"Cleaning data from {self.db.table_name}.")
+            self.db.delete(filter={})
+
+            # Store all new document chunks in the temporary table.
+            logger.info(
+                f"Indexing {len(chunks)} markdown files chunks for {self.db.table_name}..."
+            )
+            self._index_chunks_in_batches(chunks)
+        except Exception:
+            logger.exception(
+                "Error during indexing. Attempting to restore from backup."
+            )
+            self._drop_table(self.db.table_name, only_warn_if_table_inexistend=True)
+            self._rename_table(
+                self.backup_table_name,
+                self.db.table_name,
+                only_warn_if_table_inexistend=True,
+            )
+            raise

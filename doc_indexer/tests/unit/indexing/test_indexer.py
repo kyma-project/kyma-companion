@@ -6,10 +6,8 @@ from indexing.indexer import MarkdownIndexer, create_chunks
 from langchain_core.documents import Document
 
 SINGLE_BATCH_DOCS = [Document(page_content="# My Header 1\nContent")]
-MAIN_TABLE_NAME = "test_table"
-TEMP_TABLE_NAME = "temp_table"
-BACKUP_TABLE_NAME = "backup_table"
-DROP_TABLE_CALL_COUNT = 2
+TABLE_NAME = "test_table"
+BACKUP_TABLE_NAME = "backup_test_table"
 
 
 @pytest.fixture(scope="session")
@@ -32,20 +30,21 @@ def mock_hana_db():
     with patch("indexing.indexer.HanaDB") as mock:
         mock_instance = mock.return_value
         mock_instance.close = patch("indexing.indexer.HanaDB.close").start()
-        mock_instance.table_name = TEMP_TABLE_NAME
+        mock_instance.table_name = TABLE_NAME
+        mock_instance.delete = Mock()
         yield mock
 
 
 @pytest.fixture
 def indexer(mock_embedding, mock_connection, mock_hana_db):
-    return MarkdownIndexer(
+    indexer = MarkdownIndexer(
         docs_path="",
         embedding=mock_embedding,
         connection=mock_connection,
-        table_name=MAIN_TABLE_NAME,
+        table_name=TABLE_NAME,
         backup_table_name=BACKUP_TABLE_NAME,
-        temp_table_name=TEMP_TABLE_NAME,
     )
+    return indexer
 
 
 @pytest.fixture
@@ -204,7 +203,9 @@ def test_load_documents(
         (
             "Multiple batches",
             None,
-            [Document(page_content=f"# Header {i}\nContent") for i in range(6)],  # Assuming CHUNKS_BATCH_SIZE is 5
+            [
+                Document(page_content=f"# Header {i}\nContent") for i in range(6)
+            ],  # Assuming CHUNKS_BATCH_SIZE is 5
             [Document(page_content=f"# Header {i}\nContent") for i in range(6)],
         ),
     ],
@@ -219,33 +220,26 @@ def test_index_batches(
 ) -> None:
     with (
         patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch("indexing.indexer.create_chunks", return_value=expected_chunks) as mock_create_chunks,
+        patch(
+            "indexing.indexer.create_chunks", return_value=expected_chunks
+        ) as mock_create_chunks,
         patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
         patch("time.sleep") as mock_sleep,
-        patch.object(indexer, "_drop_table") as mock_drop_table,
-        patch.object(indexer, "_rename_table") as mock_rename_table,
-        patch.object(indexer, "_rename_table_with_backup") as mock_rename_table_with_backup,
+        patch.object(indexer, "_copy_table") as mock_copy_table,
     ):
         indexer.headers_to_split_on = headers_to_split_on
         indexer.index()
 
-        # Verify create_chunks was called
+        # Verify _load_documents was called.
         mock_create_chunks.assert_called_once_with(loaded_docs, headers_to_split_on)
-
-        # Verify _drop_table was called twice: once for NEW_TABLE_NAME, once for ORIGINAL_TABLE_NAME
-        assert mock_drop_table.call_count == DROP_TABLE_CALL_COUNT
-        mock_drop_table.assert_any_call(BACKUP_TABLE_NAME)
-
-        # Verify _rename_table was called with NEW_TABLE_NAME and ORIGINAL_TABLE_NAME
-        mock_rename_table.assert_called_once_with(MAIN_TABLE_NAME, BACKUP_TABLE_NAME)
-
-        # Verify _rename_table_with_backup was called with ORIGINAL_TABLE_NAME and BACKUP_TABLE_NAME
-        mock_rename_table_with_backup.assert_called_once_with(TEMP_TABLE_NAME, MAIN_TABLE_NAME, BACKUP_TABLE_NAME)
 
         # Calculate expected number of batches
         num_chunks = len(expected_chunks)
         batch_size = 5  # From the mocked CHUNKS_BATCH_SIZE
-        expected_batches = [expected_chunks[i : i + batch_size] for i in range(0, num_chunks, batch_size)]
+        expected_batches = [
+            expected_chunks[i : i + batch_size]
+            for i in range(0, num_chunks, batch_size)
+        ]
 
         # Verify add_documents was called for each batch
         assert indexer.db.add_documents.call_count == len(expected_batches)
@@ -257,72 +251,70 @@ def test_index_batches(
             assert mock_sleep.call_count == len(expected_batches) - 1
             mock_sleep.assert_has_calls([call(3)] * (len(expected_batches) - 1))
 
+        # Verify _copy_table was called to backup the table.
+        mock_copy_table.assert_called_once_with(
+            TABLE_NAME, BACKUP_TABLE_NAME, only_warn_if_table_inexistend=True
+        )
 
-def test_index_drop_table_error(indexer, mock_hana_db):
-    loaded_docs = SINGLE_BATCH_DOCS
-    expected_chunks = SINGLE_BATCH_DOCS
-
-    with (
-        patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch("indexing.indexer.create_chunks", return_value=expected_chunks),
-        patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
-        patch("time.sleep"),
-        patch.object(indexer, "_drop_table", side_effect=Exception("Drop table error")),
-    ):
-        with pytest.raises(Exception) as exc_info:
-            indexer.index()
-        assert "Drop table error" in str(exc_info.value)
+        # Verify db.delete was called to backup the table.
+        indexer.db.delete.assert_called_once_with(filter={})
 
 
-def test_index_add_documents_error(indexer, mock_hana_db):
-    loaded_docs = SINGLE_BATCH_DOCS
-    expected_chunks = SINGLE_BATCH_DOCS
-    indexer.db.add_documents.side_effect = Exception("Add documents error")
+def test_index_db_delete_error_triggers_restore(indexer, mock_hana_db):
+    """
+    In case of an error during db.delete,
+    we want to ensure that the original data is restored from the backup table.
+    """
+    # Patch delete to raise an exception
+    indexer.db.delete.side_effect = Exception("DB error")
 
-    with (
-        patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch("indexing.indexer.create_chunks", return_value=expected_chunks),
-        patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
-        patch("time.sleep"),
-    ):
-        with pytest.raises(Exception) as exc_info:
-            indexer.index()
-        assert exc_info.type is Exception
-        assert str(exc_info.value) == "Add documents error"
+    # Patch functions, called by inderx but out of context of this test.
+    indexer._load_documents = Mock(return_value=SINGLE_BATCH_DOCS)
+    indexer.create_chunks = Mock(return_value=SINGLE_BATCH_DOCS)
+    indexer._copy_table = Mock()
 
+    # Patch functions, called in the except block.
+    indexer._drop_table = Mock()
+    indexer._rename_table = Mock()
 
-def test_index_rename_table_error(indexer, mock_hana_db):
-    loaded_docs = SINGLE_BATCH_DOCS
-    expected_chunks = SINGLE_BATCH_DOCS
+    # Run index and check error handling
+    with pytest.raises(Exception, match="DB error"):
+        indexer.index()
 
-    with (
-        patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch("indexing.indexer.create_chunks", return_value=expected_chunks),
-        patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
-        patch("time.sleep"),
-        patch.object(indexer, "_rename_table", side_effect=Exception("Rename table error")),
-    ):
-        with pytest.raises(Exception) as exc_info:
-            indexer.index()
-        assert "Rename table error" in str(exc_info.value)
+    # Ensure backup restore methods in the except block were called.
+    indexer._drop_table.assert_called_once_with(
+        TABLE_NAME, only_warn_if_table_inexistend=True
+    )
+    indexer._rename_table.assert_called_once_with(
+        BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistend=True
+    )
 
 
-def test_index_rename_table_with_backup_error(indexer, mock_hana_db):
-    loaded_docs = SINGLE_BATCH_DOCS
-    expected_chunks = SINGLE_BATCH_DOCS
+def test_index_index_chunks_in_batches_error_triggers_restore(indexer, mock_hana_db):
+    """
+    In case of an error during _index_chunks_in_batches,
+    we want to ensure that the original data is restored from the backup table.
+    """
+    # Patch _index_chunks_in_batches method to raise an exception.
+    indexer._index_chunks_in_batches = Mock(side_effect=Exception("index error"))
 
-    # Patch _rename_table_with_backup to raise, and _rename_table to track calls
-    with (
-        patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch("indexing.indexer.create_chunks", return_value=expected_chunks),
-        patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
-        patch("time.sleep"),
-        patch.object(
-            indexer,
-            "_rename_table_with_backup",
-            side_effect=Exception("Rename table with backup error"),
-        ),
-    ):
-        with pytest.raises(Exception) as exc_info:
-            indexer.index()
-        assert "Rename table with backup error" in str(exc_info.value)
+    # Patch functions, called by inderx but out of context of this test.
+    indexer._load_documents = Mock(return_value=SINGLE_BATCH_DOCS)
+    indexer.create_chunks = Mock(return_value=SINGLE_BATCH_DOCS)
+    indexer._copy_table = Mock()
+
+    # Patch functions, called in the except block.
+    indexer._drop_table = Mock()
+    indexer._rename_table = Mock()
+
+    # Run index and check error handling
+    with pytest.raises(Exception, match="index error"):
+        indexer.index()
+
+    # Ensure backup restore methods in the except block were called.
+    indexer._drop_table.assert_called_once_with(
+        TABLE_NAME, only_warn_if_table_inexistend=True
+    )
+    indexer._rename_table.assert_called_once_with(
+        BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistend=True
+    )
