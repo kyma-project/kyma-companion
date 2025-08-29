@@ -119,6 +119,21 @@ class MarkdownIndexer:
         finally:
             cursor.close()
 
+    def _rename_table_with_backup(
+        self, old_name: str, new_name: str, backup_name: str
+    ) -> None:
+        cursor = self.db.connection.cursor()
+        try:
+            self._rename_table(old_name, new_name)
+        except Exception:
+            logger.exception(
+                f"Error while renaming {old_name} to {new_name}. Attempting to restore from backup {backup_name}."
+            )
+            self._rename_table(backup_name, new_name)
+            raise
+        finally:
+            cursor.close()
+
     def _index_chunks_in_batches(self, chunks: list[Document]) -> None:
         """Store all new document chunks in the temporary table."""
         logger.info("Indexing and storing indexes to HanaDB...")
@@ -174,15 +189,6 @@ class MarkdownIndexer:
         self._rename_table(self.main_table_name, self.backup_table_name)
 
         # Rename the temporary table to become the new main table.
-        try:
-            self._rename_table(self.temp_table_name, self.main_table_name)
-        except Exception:
-            # If renaming the temporary table fails, restore the backup table as the main table.
-            logger.exception(
-                f"Error while renaming temporary table {self.temp_table_name} to {self.main_table_name} in HanaDB."
-            )
-            logger.info(
-                f"Restoring backup table {self.backup_table_name} to {self.main_table_name}."
-            )
-            self._rename_table(self.backup_table_name, self.main_table_name)
-            raise
+        self._rename_table_with_backup(
+            self.temp_table_name, self.main_table_name, self.backup_table_name
+        )
