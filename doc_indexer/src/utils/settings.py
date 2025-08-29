@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from decouple import config
 
@@ -49,23 +50,49 @@ def load_env_from_json() -> None:
 load_env_from_json()
 
 
-LOG_LEVEL = config("LOG_LEVEL", default="INFO")
-EMBEDDING_MODEL_NAME = config("EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
+def get_config_or_raise(key: str, *args: Any, **kwargs: Any) -> Any:
+    """
+    Retrieve a configuration value for the given key.
+    Raises ValueError if the value is missing (None).
+    Raises TypeError if the value does not match expected_type (if provided).
 
-TMP_DIR = config("TMP_DIR", default=os.path.join(project_root, "tmp"))
-DOCS_SOURCES_FILE_PATH = config(
-    "DOCS_SOURCES_FILE_PATH", default=os.path.join(project_root, "docs_sources.json")
+    Args:
+        key (str): The configuration key.
+        expected_type (type, optional): Type to validate the returned value.
+        *args: Additional positional arguments for config().
+        **kwargs: Additional keyword arguments for config().
+
+    Returns:
+        Any: The configuration value.
+    """
+    value = config(key, *args, **kwargs)
+    if value is None:
+        raise ValueError(f"Missing required config value for '{key}'")
+    return value
+
+
+LOG_LEVEL = str(config("LOG_LEVEL", default="INFO"))
+EMBEDDING_MODEL_NAME = str(
+    config("EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
 )
-DOCS_PATH = config("DOCS_PATH", default="data")
-DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
-CHUNKS_BATCH_SIZE = config("CHUNKS_BATCH_SIZE", cast=int, default=200)
 
-DATABASE_URL = config("DATABASE_URL")
-DATABASE_PORT = config("DATABASE_PORT", cast=int)
-DATABASE_USER = config("DATABASE_USER")
-DATABASE_PASSWORD = config("DATABASE_PASSWORD")
+TMP_DIR = str(config("TMP_DIR", default=os.path.join(project_root, "tmp")))
+DOCS_SOURCES_FILE_PATH = str(
+    config(
+        "DOCS_SOURCES_FILE_PATH",
+        default=os.path.join(project_root, "docs_sources.json"),
+    )
+)
+DOCS_PATH = str(config("DOCS_PATH", default="data"))
+DOCS_TABLE_NAME = str(config("DOCS_TABLE_NAME", default="kyma_docs"))
+CHUNKS_BATCH_SIZE = int(config("CHUNKS_BATCH_SIZE", cast=int, default=200))
 
-INDEX_TO_FILE = config("INDEX_TO_FILE", default=False)
+DATABASE_URL = str(get_config_or_raise("DATABASE_URL"))
+DATABASE_PORT = int(get_config_or_raise("DATABASE_PORT", cast=int))
+DATABASE_USER = str(get_config_or_raise("DATABASE_USER"))
+DATABASE_PASSWORD = str(get_config_or_raise("DATABASE_PASSWORD"))
+
+INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:
