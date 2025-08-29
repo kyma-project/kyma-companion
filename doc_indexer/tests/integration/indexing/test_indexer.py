@@ -31,9 +31,10 @@ def hana_conn():
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
+    if not hana_conn:
+        raise ValueError("Failed to create Hana DB connection.")
     yield hana_conn
-    if hana_conn:
-        hana_conn.close()
+    hana_conn.close()
 
 
 @pytest.fixture(scope="session")

@@ -11,9 +11,11 @@ from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE
+from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER
 
 logger = get_logger(__name__)
+
+ERR_SQL_INV_TABLE = 259  # SQL error code for invalid table in HANA
 
 
 def create_chunks(
@@ -54,8 +56,8 @@ class MarkdownIndexer:
         embedding: Embeddings,
         connection: dbapi.Connection,
         table_name: str | None = None,
-        temp_table_name: str = "temp_table",
-        backup_table_name: str = "backup_table",
+        temp_table_name: str = "TEMP_TABLE",
+        backup_table_name: str = "BACKUP_TABLE",
         headers_to_split_on: list[tuple[str, str]] | None = None,
     ):
         if headers_to_split_on is None:
@@ -93,43 +95,63 @@ class MarkdownIndexer:
             logger.exception("Error while loading documents")
             raise
 
-    def _drop_table(self, table_name: str) -> None:
-        """Drop the given table from the HanaDB."""
+    def _handle_database_operation(
+        self, operation: str, only_warn_if_table_inexistend: bool = True
+    ) -> None:
         cursor = self.db.connection.cursor()
         try:
-            logger.info(f"Dropping table {table_name} if exists...")
-            cursor.execute(f"DROP TABLE {table_name}")
+            cursor.execute(operation)
             self.db.connection.commit()
+        except dbapi.ProgrammingError as e:
+            if e.args and e.args[0] == ERR_SQL_INV_TABLE:
+                if only_warn_if_table_inexistend:
+                    logger.warning(
+                        f"While operating with '{operation}', table does not exist in HanaDB."
+                    )
+                else:
+                    logger.exception(
+                        f"Error while operting with '{operation}' in HanaDB."
+                    )
+                    raise
+            else:
+                logger.exception(f"Error while operting with '{operation}' in HanaDB.")
+                raise
         except Exception:
-            logger.exception(f"Error while dropping table {table_name} in HanaDB.")
+            logger.exception(f"Error while operting with '{operation}' in HanaDB.")
+            raise
         finally:
             cursor.close()
 
-    def _rename_table(self, old_name: str, new_name: str) -> None:
-        """Rename the given table in the HanaDB."""
-        cursor = self.db.connection.cursor()
-        try:
-            logger.info(f"Renaming table {old_name} to {new_name}...")
-            cursor.execute(f"RENAME TABLE {old_name} TO {new_name}")
-            self.db.connection.commit()
-        except Exception:
-            logger.exception(
-                f"Error while renaming table {old_name} to {new_name} in HanaDB."
-            )
-        finally:
-            cursor.close()
+    def _drop_table(
+        self, table_name: str, only_warn_if_table_inexistend: bool = True
+    ) -> None:
+        """Drop the given table from the HanaDB."""
+        logger.info(f"Dropping table {table_name} if exists...")
+        operation = f'DROP TABLE "{DATABASE_USER}"."{table_name}"'
+        self._handle_database_operation(operation, only_warn_if_table_inexistend)
+
+    def _rename_table(
+        self, old_name: str, new_name: str, only_warn_if_table_inexistend: bool = True
+    ) -> None:
+        logger.info(f"Renaming table {old_name} to {new_name}...")
+        operation = f'RENAME TABLE "{DATABASE_USER}"."{old_name}" TO "{DATABASE_USER}"."{new_name}"'
+        self._handle_database_operation(
+            operation, only_warn_if_table_inexistend=only_warn_if_table_inexistend
+        )
 
     def _rename_table_with_backup(
         self, old_name: str, new_name: str, backup_name: str
     ) -> None:
         cursor = self.db.connection.cursor()
         try:
-            self._rename_table(old_name, new_name)
+            self._rename_table(old_name, new_name, only_warn_if_table_inexistend=False)
         except Exception:
             logger.exception(
                 f"Error while renaming {old_name} to {new_name}. Attempting to restore from backup {backup_name}."
             )
-            self._rename_table(backup_name, new_name)
+            self._rename_table(
+                backup_name, new_name, only_warn_if_table_inexistend=True
+            )
             raise
         finally:
             cursor.close()
@@ -175,7 +197,7 @@ class MarkdownIndexer:
 
         # Drop any old temporary table.
         logger.info(f"Dropping temporary table {self.temp_table_name} if exists...")
-        self._drop_table(self.temp_table_name)
+        self.db.delete(filter={})
 
         # Store all new document chunks in the temporary table.
         logger.info(
