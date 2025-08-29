@@ -1014,14 +1014,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "3.4.0"
+version = "3.4.2"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-3.4.0-py3-none-any.whl", hash = "sha256:ae95fd290f47861e004e5174c995dd0902def477d537cb8c80eff4bd9b93b9bd"},
-    {file = "deepeval-3.4.0.tar.gz", hash = "sha256:c21af882f078b220e28a4455e3363abc1f57a45a04fcf380e1b3a2d4a526f5ef"},
+    {file = "deepeval-3.4.2-py3-none-any.whl", hash = "sha256:7896cd751e9899b6eba526505c3e11da917060c2f96a49c63de8d20e4a509a89"},
+    {file = "deepeval-3.4.2.tar.gz", hash = "sha256:897e0d5cb91013cb44ba980daa1ec398e0ab4128e0cba0c4c7cb4d538c843841"},
 ]
 
 [package.dependencies]
@@ -1286,14 +1286,14 @@ tzdata = "*"
 
 [[package]]
 name = "fakeredis"
-version = "2.30.2"
+version = "2.31.0"
 description = "Python implementation of redis API, can be used for testing purposes."
 optional = false
 python-versions = ">=3.7"
 groups = ["test"]
 files = [
-    {file = "fakeredis-2.30.2-py3-none-any.whl", hash = "sha256:743106c677aaf82f5c811ac3f0ddf2387efb736a2ecfc414c58b04d1102ce54f"},
-    {file = "fakeredis-2.30.2.tar.gz", hash = "sha256:6b75697d3257a2684abdb65a5df70ed6dca9d34ae37bc8cf84ba627d432831c3"},
+    {file = "fakeredis-2.31.0-py3-none-any.whl", hash = "sha256:2584e57d93df4eb8e87931b29279902826d3caf77d06911106df4e066c2ad198"},
+    {file = "fakeredis-2.31.0.tar.gz", hash = "sha256:2942a7e7900fd9076ff9e608b9190a87315ac5a325a9ab8bfe288a2d985ecd23"},
 ]
 
 [package.dependencies]
@@ -2454,14 +2454,14 @@ xai = ["python-dotenv (>=1.0.0)", "xai-sdk (>=0.2.0) ; python_version >= \"3.10\
 
 [[package]]
 name = "ipython"
-version = "9.4.0"
+version = "9.5.0"
 description = "IPython: Productive Interactive Computing"
 optional = false
 python-versions = ">=3.11"
 groups = ["dev"]
 files = [
-    {file = "ipython-9.4.0-py3-none-any.whl", hash = "sha256:25850f025a446d9b359e8d296ba175a36aedd32e83ca9b5060430fe16801f066"},
-    {file = "ipython-9.4.0.tar.gz", hash = "sha256:c033c6d4e7914c3d9768aabe76bbe87ba1dc66a92a05db6bfa1125d81f2ee270"},
+    {file = "ipython-9.5.0-py3-none-any.whl", hash = "sha256:88369ffa1d5817d609120daa523a6da06d02518e582347c29f8451732a9c5e72"},
+    {file = "ipython-9.5.0.tar.gz", hash = "sha256:129c44b941fe6d9b82d36fc7a7c18127ddb1d6f02f78f867f402e2e3adde3113"},
 ]
 
 [package.dependencies]
@@ -2481,7 +2481,7 @@ all = ["ipython[doc,matplotlib,test,test-extra]"]
 black = ["black"]
 doc = ["docrepr", "exceptiongroup", "intersphinx_registry", "ipykernel", "ipython[test]", "matplotlib", "setuptools (>=18.5)", "sphinx (>=1.3)", "sphinx-rtd-theme", "sphinx_toml (==0.0.4)", "typing_extensions"]
 matplotlib = ["matplotlib"]
-test = ["packaging", "pytest", "pytest-asyncio (<0.22)", "testpath"]
+test = ["packaging", "pytest", "pytest-asyncio", "testpath"]
 test-extra = ["curio", "ipykernel", "ipython[test]", "jupyter_ai", "matplotlib (!=3.2.0)", "nbclient", "nbformat", "numpy (>=1.23)", "pandas", "trio"]
 
 [[package]]
@@ -2809,20 +2809,20 @@ adal = ["adal (>=1.0.2)"]
 
 [[package]]
 name = "langchain"
-version = "0.3.25"
+version = "0.3.27"
 description = "Building applications with LLMs through composability"
 optional = false
-python-versions = ">=3.9"
+python-versions = "<4.0,>=3.9"
 groups = ["main", "test"]
 files = [
-    {file = "langchain-0.3.25-py3-none-any.whl", hash = "sha256:931f7d2d1eaf182f9f41c5e3272859cfe7f94fc1f7cef6b3e5a46024b4884c21"},
-    {file = "langchain-0.3.25.tar.gz", hash = "sha256:a1d72aa39546a23db08492d7228464af35c9ee83379945535ceef877340d2a3a"},
+    {file = "langchain-0.3.27-py3-none-any.whl", hash = "sha256:7b20c4f338826acb148d885b20a73a16e410ede9ee4f19bb02011852d5f98798"},
+    {file = "langchain-0.3.27.tar.gz", hash = "sha256:aa6f1e6274ff055d0fd36254176770f356ed0a8994297d1df47df341953cec62"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.3.58,<1.0.0"
-langchain-text-splitters = ">=0.3.8,<1.0.0"
-langsmith = ">=0.1.17,<0.4"
+langchain-core = ">=0.3.72,<1.0.0"
+langchain-text-splitters = ">=0.3.9,<1.0.0"
+langsmith = ">=0.1.17"
 pydantic = ">=2.7.4,<3.0.0"
 PyYAML = ">=5.3"
 requests = ">=2,<3"
@@ -2893,20 +2893,20 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
 
 [[package]]
 name = "langchain-core"
-version = "0.3.65"
+version = "0.3.75"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_core-0.3.65-py3-none-any.whl", hash = "sha256:80e8faf6e9f331f8ef728f3fe793549f1d3fb244fcf9e1bdcecab6a6f4669394"},
-    {file = "langchain_core-0.3.65.tar.gz", hash = "sha256:54b5e0c8d9bb405415c3211da508ef9cfe0acbe5b490d1b4a15664408ee82d9b"},
+    {file = "langchain_core-0.3.75-py3-none-any.whl", hash = "sha256:03ca1fadf955ee3c7d5806a841f4b3a37b816acea5e61a7e6ba1298c05eea7f5"},
+    {file = "langchain_core-0.3.75.tar.gz", hash = "sha256:ab0eb95a06ed6043f76162e6086b45037690cb70b7f090bd83b5ebb8a05b70ed"},
 ]
 
 [package.dependencies]
 jsonpatch = ">=1.33,<2.0"
-langsmith = ">=0.3.45,<0.4"
-packaging = ">=23.2,<25"
+langsmith = ">=0.3.45"
+packaging = ">=23.2"
 pydantic = ">=2.7.4"
 PyYAML = ">=5.3"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
@@ -2955,29 +2955,30 @@ tiktoken = ">=0.7,<1"
 
 [[package]]
 name = "langchain-text-splitters"
-version = "0.3.8"
+version = "0.3.10"
 description = "LangChain text splitting utilities"
 optional = false
-python-versions = "<4.0,>=3.9"
+python-versions = ">=3.9"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_text_splitters-0.3.8-py3-none-any.whl", hash = "sha256:e75cc0f4ae58dcf07d9f18776400cf8ade27fadd4ff6d264df6278bb302f6f02"},
-    {file = "langchain_text_splitters-0.3.8.tar.gz", hash = "sha256:116d4b9f2a22dda357d0b79e30acf005c5518177971c66a9f1ab0edfdb0f912e"},
+    {file = "langchain_text_splitters-0.3.10-py3-none-any.whl", hash = "sha256:4bc6ebef274d954e79321d0781dc5ab89b79f40c3cb8ba3310cc2d05ff73c945"},
+    {file = "langchain_text_splitters-0.3.10.tar.gz", hash = "sha256:b00a82b92eb362a9842f7d7a16d6d223fc93a9be4c51c14109be7d15d120c67f"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.3.51,<1.0.0"
+langchain-core = ">=0.3.75,<2.0.0"
+pip = ">=25.2"
 
 [[package]]
 name = "langfuse"
-version = "2.60.8"
+version = "2.60.9"
 description = "A client library for accessing langfuse"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langfuse-2.60.8-py3-none-any.whl", hash = "sha256:072b050ae4c20f81556b9c4c751359bc76de70970636225b32760d1bd4b93042"},
-    {file = "langfuse-2.60.8.tar.gz", hash = "sha256:0125841e8503b9ce1f405ab95411a7af2c244106e70eba99726c1f1a743cd164"},
+    {file = "langfuse-2.60.9-py3-none-any.whl", hash = "sha256:e4291a66bc579c66d7652da5603ca7f0409536700d7b812e396780b5d9a0685d"},
+    {file = "langfuse-2.60.9.tar.gz", hash = "sha256:040753346d7df4a0be6967dfc7efe3de313fee362524fe2f801867fcbbca3c98"},
 ]
 
 [package.dependencies]
@@ -2997,21 +2998,21 @@ openai = ["openai (>=0.27.8)"]
 
 [[package]]
 name = "langgraph"
-version = "0.4.8"
+version = "0.6.6"
 description = "Building stateful, multi-actor applications with LLMs"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "langgraph-0.4.8-py3-none-any.whl", hash = "sha256:273b02782669a474ba55ef4296607ac3bac9e93639d37edc0d32d8cf1a41a45b"},
-    {file = "langgraph-0.4.8.tar.gz", hash = "sha256:48445ac8a351b7bdc6dee94e2e6a597f8582e0516ebd9dea0fd0164ae01b915e"},
+    {file = "langgraph-0.6.6-py3-none-any.whl", hash = "sha256:a2283a5236abba6c8307c1a485c04e8a0f0ffa2be770878782a7bf2deb8d7954"},
+    {file = "langgraph-0.6.6.tar.gz", hash = "sha256:e7d3cefacf356f8c01721b166b67b3bf581659d5361a3530f59ecd9b8448eca7"},
 ]
 
 [package.dependencies]
 langchain-core = ">=0.1"
-langgraph-checkpoint = ">=2.0.26"
-langgraph-prebuilt = ">=0.2.0"
-langgraph-sdk = ">=0.1.42"
+langgraph-checkpoint = ">=2.1.0,<3.0.0"
+langgraph-prebuilt = ">=0.6.0,<0.7.0"
+langgraph-sdk = ">=0.2.2,<0.3.0"
 pydantic = ">=2.7.4"
 xxhash = ">=3.5.0"
 
@@ -3033,30 +3034,30 @@ ormsgpack = ">=1.10.0"
 
 [[package]]
 name = "langgraph-prebuilt"
-version = "0.2.2"
+version = "0.6.4"
 description = "Library with high-level APIs for creating and executing LangGraph agents and tools."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "langgraph_prebuilt-0.2.2-py3-none-any.whl", hash = "sha256:72de5ef1d969a8f02ad7adc7cc1915bb9b4467912d57ba60da34b5a70fdad1f6"},
-    {file = "langgraph_prebuilt-0.2.2.tar.gz", hash = "sha256:0a5d1f651f97c848cd1c3dd0ef017614f47ee74effb7375b59ac639e41b253f9"},
+    {file = "langgraph_prebuilt-0.6.4-py3-none-any.whl", hash = "sha256:819f31d88b84cb2729ff1b79db2d51e9506b8fb7aaacfc0d359d4fe16e717344"},
+    {file = "langgraph_prebuilt-0.6.4.tar.gz", hash = "sha256:e9e53b906ee5df46541d1dc5303239e815d3ec551e52bb03dd6463acc79ec28f"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.3.22"
-langgraph-checkpoint = ">=2.0.10"
+langchain-core = ">=0.3.67"
+langgraph-checkpoint = ">=2.1.0,<3.0.0"
 
 [[package]]
 name = "langgraph-sdk"
-version = "0.1.70"
+version = "0.2.4"
 description = "SDK for interacting with LangGraph API"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "langgraph_sdk-0.1.70-py3-none-any.whl", hash = "sha256:47f2b04a964f40a610c1636b387ea52f961ce7a233afc21d3103e5faac8ca1e5"},
-    {file = "langgraph_sdk-0.1.70.tar.gz", hash = "sha256:cc65ec33bcdf8c7008d43da2d2b0bc1dd09f98d21a7f636828d9379535069cf9"},
+    {file = "langgraph_sdk-0.2.4-py3-none-any.whl", hash = "sha256:b9dfbe77abc86ee6280b6d328320b7e1ca2b303b5fd89540dc5a28f780222cd1"},
+    {file = "langgraph_sdk-0.2.4.tar.gz", hash = "sha256:65c37fdb1d6f572deb7d5dda45aab79916c13c276a1e08b29309ae7729567a36"},
 ]
 
 [package.dependencies]
@@ -4255,6 +4256,18 @@ typing = ["typing-extensions ; python_version < \"3.10\""]
 xmp = ["defusedxml"]
 
 [[package]]
+name = "pip"
+version = "25.2"
+description = "The PyPA recommended tool for installing Python packages."
+optional = false
+python-versions = ">=3.9"
+groups = ["main", "test"]
+files = [
+    {file = "pip-25.2-py3-none-any.whl", hash = "sha256:6d67a2b4e7f14d8b31b8b52648866fa717f45a1eb70e83002f4331d07e953717"},
+    {file = "pip-25.2.tar.gz", hash = "sha256:578283f006390f85bb6282dffb876454593d637f5d1be494b5202ce4877e71f2"},
+]
+
+[[package]]
 name = "pkginfo"
 version = "1.12.1.2"
 description = "Query metadata from sdists / bdists / installed packages."
@@ -4304,14 +4317,14 @@ testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poethepoet"
-version = "0.33.1"
-description = "A task runner that works well with poetry."
+version = "0.37.0"
+description = "A task runner that works well with poetry and uv."
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "poethepoet-0.33.1-py3-none-any.whl", hash = "sha256:b86d80a81b2ca4e4ce8e8f716cc6004a1a1cdead027778bc07d1c26cb3664770"},
-    {file = "poethepoet-0.33.1.tar.gz", hash = "sha256:8775e09b64f773278b5483659ff238a708723491efadeedd1c2cbf773558cb4c"},
+    {file = "poethepoet-0.37.0-py3-none-any.whl", hash = "sha256:861790276315abcc8df1b4bd60e28c3d48a06db273edd3092f3c94e1a46e5e22"},
+    {file = "poethepoet-0.37.0.tar.gz", hash = "sha256:73edf458707c674a079baa46802e21455bda3a7f82a408e58c31b9f4fe8e933d"},
 ]
 
 [package.dependencies]
@@ -7705,4 +7718,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "e340ace14ade48728ab95a53ad7215764aafaf2c19d8f94461a41ec851c451a1"
+content-hash = "7ac74b615fe71b3f81b9d60fb2e3eed82373f1f0b6d22ccb9d8991b5a6748bf4"
