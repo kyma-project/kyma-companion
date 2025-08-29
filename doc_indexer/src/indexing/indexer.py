@@ -181,7 +181,8 @@ class MarkdownIndexer:
         Args:
             old_name (str): Current name of the table.
             new_name (str): New name for the table.
-            only_warn_if_table_inexistend (bool, optional): If True, only logs a warning if the source table does not exist.
+            only_warn_if_table_inexistend (bool, optional): If True,
+                only logs a warning if the source table does not exist.
         """
         logger.info(f"Renaming table {old_name} to {new_name}...")
         operation = f'RENAME TABLE "{DATABASE_USER}"."{old_name}" TO "{DATABASE_USER}"."{new_name}"'
