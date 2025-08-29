@@ -173,7 +173,8 @@ class MarkdownIndexer:
         # Chunk the documents by the headers.
         chunks = create_chunks(docs, self.headers_to_split_on)
 
-        # Drop the temporary table (if exists) to ensure a clean state.
+        # Drop any old temporary table.
+        logger.info(f"Dropping temporary table {self.temp_table_name} if exists...")
         self._drop_table(self.temp_table_name)
 
         # Store all new document chunks in the temporary table.
@@ -182,13 +183,14 @@ class MarkdownIndexer:
         )
         self._index_chunks_in_batches(chunks)
 
-        # Drop the backup table (if exists).
+        # Drop any old backup table.
         self._drop_table(self.backup_table_name)
 
         # Rename the current main table to the backup table.
         self._rename_table(self.main_table_name, self.backup_table_name)
 
-        # Rename the temporary table to become the new main table.
+        # Rename the temporary table to become the new main table. If this fails,
+        # restore the backup table as the main table.
         self._rename_table_with_backup(
             self.temp_table_name, self.main_table_name, self.backup_table_name
         )
