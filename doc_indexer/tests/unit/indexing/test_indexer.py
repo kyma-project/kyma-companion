@@ -336,7 +336,6 @@ def test_index_rename_table_with_backup_error(indexer, mock_hana_db):
             "_rename_table_with_backup",
             side_effect=Exception("Rename table with backup error"),
         ),
-        patch.object(indexer, "_rename_table") as mock_rename_table,
     ):
         with pytest.raises(Exception) as exc_info:
             indexer.index()
