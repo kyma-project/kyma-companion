@@ -32,7 +32,8 @@ def hana_conn():
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
     yield hana_conn
-    hana_conn.close()
+    if hana_conn:
+        hana_conn.close()
 
 
 @pytest.fixture(scope="session")
@@ -141,7 +142,6 @@ def test_index(
         for chunk in expected_chunks:
             assert chunk in stored_chunks, f"Expected chunk not found: {chunk}"
 
-        assert len(stored_chunks) == len(expected_chunks), (
-            f"Number of chunks mismatch. Expected {len(expected_chunks)}, "
-            f"but got {len(stored_chunks)}"
-        )
+        assert len(stored_chunks) == len(
+            expected_chunks
+        ), f"Number of chunks mismatch. Expected {len(expected_chunks)}, but got {len(stored_chunks)}"
