@@ -39,7 +39,7 @@ package-mode = false
 deepeval = { extras = ["all"], version = "^3.0.1" }
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
-pytest = "^8.3.5"
+pytest = "^8.4.1"
 pytest-aioresponses = "^0.3.0"
 pytest-asyncio = "^1.0.0"
 pytest-cov = { extras = ["all"], version = "^6.1.1" }
@@ -51,7 +51,7 @@ pytest-xdist = "^3.8.0"
 pyyaml = "^6.0.2"
 ragas = "^0.3.0"
 termcolor = "^3.1.0"
-types-pyyaml = "^6.0.12.20241230"
+types-pyyaml = "^6.0.12.20250822"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
