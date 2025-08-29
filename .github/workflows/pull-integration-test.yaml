@@ -2,21 +2,10 @@ name: Integration Test
 
 on:
   pull_request_target:
-    types: [ labeled, opened, synchronize, reopened, ready_for_review ]
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
       - "release-**"
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - CODEOWNERS
-      - LICENSE
-      - "LICENSES/**"
-      - ".reuse/**"
-      - "config/**"
-      - "data/**"
-      - "doc_indexer/**"
-      - "scripts/**"
 
 ## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
 ## integration-tests in the create-release.yml workflow as well.
