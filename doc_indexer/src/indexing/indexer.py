@@ -123,6 +123,8 @@ class MarkdownIndexer:
     ) -> None:
         """Copy the source_table to target_table in HanaDB (structure and data)."""
         logger.info(f"Copying table {source_table} to {target_table}...")
+        # Drop the target table if it exists to avoid duplicate table errors
+        self._drop_table(target_table, only_warn_if_table_inexistend=True)
         op = f'CREATE TABLE "{DATABASE_USER}"."{target_table}" AS (SELECT * FROM "{DATABASE_USER}"."{source_table}")'
         self._handle_database_operation(op, only_warn_if_table_inexistend)
 
