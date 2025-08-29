@@ -31,6 +31,8 @@ def hana_conn():
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
+    if not hana_conn:
+        raise ValueError("Failed to create Hana DB connection.")
     yield hana_conn
     hana_conn.close()
 
@@ -141,7 +143,6 @@ def test_index(
         for chunk in expected_chunks:
             assert chunk in stored_chunks, f"Expected chunk not found: {chunk}"
 
-        assert len(stored_chunks) == len(expected_chunks), (
-            f"Number of chunks mismatch. Expected {len(expected_chunks)}, "
-            f"but got {len(stored_chunks)}"
-        )
+        assert len(stored_chunks) == len(
+            expected_chunks
+        ), f"Number of chunks mismatch. Expected {len(expected_chunks)}, but got {len(stored_chunks)}"
