@@ -72,10 +72,10 @@ DOCS_PATH = str(config("DOCS_PATH", default="data"))
 DOCS_TABLE_NAME = str(config("DOCS_TABLE_NAME", default="kyma_docs"))
 CHUNKS_BATCH_SIZE = int(config("CHUNKS_BATCH_SIZE", cast=int, default=200))
 
-DATABASE_URL = str(config("DATABASE_URL", default="empty"))
+DATABASE_URL = str(config("DATABASE_URL", default=""))
 DATABASE_PORT = int(config("DATABASE_PORT", cast=int, default=443))
-DATABASE_USER = str(config("DATABASE_USER", "empty"))
-DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default="empty"))
+DATABASE_USER = str(config("DATABASE_USER", ""))
+DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
 

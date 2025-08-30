@@ -32,6 +32,10 @@ def hana_conn():
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
     if not hana_conn:
+        if DATABASE_URL == "" or DATABASE_USER == "" or DATABASE_PASSWORD == "":
+            raise ValueError(
+                "Failed to create Hana DB connection. Some configuration values are missing."
+            )
         raise ValueError("Failed to create Hana DB connection.")
     yield hana_conn
     hana_conn.close()
