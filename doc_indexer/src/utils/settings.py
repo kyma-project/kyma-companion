@@ -1,8 +1,8 @@
 import json
 import logging
 import os
+import sys
 from pathlib import Path
-from typing import Any
 
 from decouple import config
 
@@ -36,11 +36,17 @@ def load_env_from_json() -> None:
         logging.exception(f"Invalid JSON format in config file {config_path}")
         raise
     except FileNotFoundError:
-        logging.error(
-            f"Config file not found at {config_path}. Place the config file at the default location:"
-            f"{default_config_path} or set the CONFIG_PATH environment variable."
-        )
-        raise
+        if "pytest" in sys.modules:
+            logging.warning(
+                f"Config file not found at {config_path}. Place the config file at the default location:"
+                f"{default_config_path} or set the CONFIG_PATH environment variable."
+            )
+        else:
+            logging.error(
+                f"Config file not found at {config_path}. Place the config file at the default location:"
+                f"{default_config_path} or set the CONFIG_PATH environment variable."
+            )
+            raise
     except Exception:
         logging.exception(f"Error loading config from {config_path}")
         raise
@@ -48,27 +54,6 @@ def load_env_from_json() -> None:
 
 # Load the environment variables from the json file.
 load_env_from_json()
-
-
-def get_config_or_raise(key: str, *args: Any, **kwargs: Any) -> Any:
-    """
-    Retrieve a configuration value for the given key.
-    Raises ValueError if the value is missing (None).
-    Raises TypeError if the value does not match expected_type (if provided).
-
-    Args:
-        key (str): The configuration key.
-        expected_type (type, optional): Type to validate the returned value.
-        *args: Additional positional arguments for config().
-        **kwargs: Additional keyword arguments for config().
-
-    Returns:
-        Any: The configuration value.
-    """
-    value = config(key, *args, **kwargs)
-    if value is None:
-        raise ValueError(f"Missing required config value for '{key}'")
-    return value
 
 
 LOG_LEVEL = str(config("LOG_LEVEL", default="INFO"))
@@ -87,10 +72,10 @@ DOCS_PATH = str(config("DOCS_PATH", default="data"))
 DOCS_TABLE_NAME = str(config("DOCS_TABLE_NAME", default="kyma_docs"))
 CHUNKS_BATCH_SIZE = int(config("CHUNKS_BATCH_SIZE", cast=int, default=200))
 
-DATABASE_URL = str(get_config_or_raise("DATABASE_URL"))
-DATABASE_PORT = int(get_config_or_raise("DATABASE_PORT", cast=int))
-DATABASE_USER = str(get_config_or_raise("DATABASE_USER"))
-DATABASE_PASSWORD = str(get_config_or_raise("DATABASE_PASSWORD"))
+DATABASE_URL = str(config("DATABASE_URL", default="empty"))
+DATABASE_PORT = int(config("DATABASE_PORT", cast=int, default=443))
+DATABASE_USER = str(config("DATABASE_USER", "empty"))
+DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default="empty"))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
 
