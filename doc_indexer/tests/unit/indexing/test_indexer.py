@@ -234,33 +234,33 @@ def test_index_batches(
         indexer.index()
 
         # Then:
-        # Verify _load_documents was called.
+        # Verify that _load_documents was called.
         mock_create_chunks.assert_called_once_with(loaded_docs, headers_to_split_on)
 
-        # Calculate expected number of batches
+        # Calculate the expected number of batches.
         num_chunks = len(expected_chunks)
-        batch_size = 5  # From the mocked CHUNKS_BATCH_SIZE
+        batch_size = 5  # from the mocked CHUNKS_BATCH_SIZE
         expected_batches = [
             expected_chunks[i : i + batch_size]
             for i in range(0, num_chunks, batch_size)
         ]
 
-        # Verify add_documents was called for each batch
+        # Verify that add_documents was called for each batch.
         assert indexer.db.add_documents.call_count == len(expected_batches)
         for i, batch in enumerate(expected_batches):
             assert indexer.db.add_documents.call_args_list[i] == call(batch)
 
-        # Verify sleep was called between batches
+        # Verify that sleep was called between batches.
         if len(expected_batches) > 1:
             assert mock_sleep.call_count == len(expected_batches) - 1
             mock_sleep.assert_has_calls([call(3)] * (len(expected_batches) - 1))
 
-        # Verify _copy_table was called to backup the table.
+        # Verify that _copy_table was called to backup the table.
         mock_copy_table.assert_called_once_with(
             TABLE_NAME, BACKUP_TABLE_NAME, only_warn_if_table_inexistent=True
         )
 
-        # Verify db.delete was called to clear the original table.
+        # Verify that db.delete was called to clear the original table.
         indexer.db.delete.assert_called_once_with(filter={})
 
 
@@ -270,25 +270,25 @@ def test_index_db_delete_error_triggers_restore(indexer, mock_hana_db):
     we want to ensure that the original data is restored from the backup table.
     """
     # Given:
-    # Patch delete to raise an exception.
+    # Patch the delete to raise an exception.
     indexer.db.delete.side_effect = Exception("DB error")
 
-    # Patch functions that are called by index but are out of context of this test.
+    # Patch the functions that are called by index but are out of context of this test.
     indexer._load_documents = Mock(return_value=SINGLE_BATCH_DOCS)
     indexer.create_chunks = Mock(return_value=SINGLE_BATCH_DOCS)
     indexer._copy_table = Mock()
 
-    # Patch functions that are called in the except block and thus object of this test.
+    # Patch the functions that are called in the except block and are thus object of this test.
     indexer._drop_table = Mock()
     indexer._rename_table = Mock()
 
     # When:
-    # Run index and check error handling
+    # Run index and check the error handling.
     with pytest.raises(Exception, match="DB error"):
         indexer.index()
 
     # Then:
-    # Ensure backup restore methods in the except block were called.
+    # Ensure that methods to restore backup in the except block were called.
     indexer._drop_table.assert_called_once_with(
         TABLE_NAME, only_warn_if_table_inexistent=True
     )
@@ -303,25 +303,25 @@ def test_index_index_chunks_in_batches_error_triggers_restore(indexer, mock_hana
     we want to ensure that the original data is restored from the backup table.
     """
     # Given:
-    # Patch _index_chunks_in_batches method to raise an exception.
+    # Patch the _index_chunks_in_batches method to raise an exception.
     indexer._index_chunks_in_batches = Mock(side_effect=Exception("index error"))
 
-    # Patch functions that are called by index but are out of context of this test.
+    # Patch the functions that are called by index but are out of context of this test.
     indexer._load_documents = Mock(return_value=SINGLE_BATCH_DOCS)
     indexer.create_chunks = Mock(return_value=SINGLE_BATCH_DOCS)
     indexer._copy_table = Mock()
 
-    # Patch functions that are called in the except block and thus object of this test.
+    # Patch the functions that are called in the except block and are thus object of this test.
     indexer._drop_table = Mock()
     indexer._rename_table = Mock()
 
     # When:
-    # Run index and check error handling
+    # Run index and check the error handling.
     with pytest.raises(Exception, match="index error"):
         indexer.index()
 
     # Then:
-    # Ensure backup restore methods in the except block were called.
+    # Ensure that methods to restore backup in the except block were called.
     indexer._drop_table.assert_called_once_with(
         TABLE_NAME, only_warn_if_table_inexistent=True
     )
