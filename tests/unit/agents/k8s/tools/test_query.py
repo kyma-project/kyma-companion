@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -70,19 +70,20 @@ def sample_k8s_sanitized_secret():
         ),
     ],
 )
-def test_k8s_query_tool(
+@pytest.mark.asyncio
+async def test_k8s_query_tool(
     given_uri, given_object, given_exception, expected_object, expected_error
 ):
     # Given
     tool_node = ToolNode([k8s_query_tool])
-    k8s_client = Mock(spec=IK8sClient)
+    k8s_client = AsyncMock(spec=IK8sClient)
     if given_exception:
         k8s_client.execute_get_api_request.side_effect = given_exception
     else:
         k8s_client.execute_get_api_request.return_value = given_object
 
     # When: invoke the tool.
-    result = tool_node.invoke(
+    result = await tool_node.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [
@@ -122,6 +123,7 @@ def sample_namespace_overview():
     return {"pods": 5, "services": 2, "deployments": 3}
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "given_namespace, given_resource_kind, given_result, given_exception, expected_result, expected_error",
     [
@@ -172,7 +174,7 @@ def sample_namespace_overview():
     ],
 )
 @patch("agents.k8s.tools.query.get_relevant_context_from_k8s_cluster")
-def test_k8s_overview_query_tool(
+async def test_k8s_overview_query_tool(
     mock_get_context,
     given_namespace,
     given_resource_kind,
@@ -192,7 +194,7 @@ def test_k8s_overview_query_tool(
         mock_get_context.return_value = given_result
 
     # When: invoke the tool.
-    result = tool_node.invoke(
+    result = await tool_node.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [

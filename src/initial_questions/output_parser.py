@@ -3,6 +3,13 @@ from typing import Protocol
 
 from langchain_core.output_parsers import BaseOutputParser
 
+# Compiled regex pattern that matches:
+# - Optional leading whitespace (spaces or tabs)
+# - One or more digits
+# - A literal dot (.)
+# Example matches: "1.", "   2.", "\t3."
+PATTERN_NUMBER_LINE = re.compile(r"^\s*\d+\.")
+
 
 class IOutputParser(Protocol):
     """Interface for OutputParser."""
@@ -17,11 +24,11 @@ class QuestionOutputParser(BaseOutputParser):
 
     def parse(self, output: str) -> list[str]:
         """Parse the output and return the questions."""
-        # Split the output into lines.
-        output = output.strip().split("\n")
-        # Remove empty lines and leading and trailing whitespaces.
-        output = [line.strip() for line in output if line.strip()]
-        # Remove leading numbers.
-        output = [re.sub(r"^\d+\.", "", line).strip() for line in output]
 
-        return output
+        questions = [
+            # Remove the leading number and dot from each line.
+            PATTERN_NUMBER_LINE.sub("", line).strip()
+            for line in output.strip().split("\n")
+            if line.strip()  # Skip empty lines
+        ]
+        return questions

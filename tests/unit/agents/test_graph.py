@@ -6,7 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK
+from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK, UNKNOWN
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
@@ -576,9 +576,27 @@ class TestCompanionGraph:
                 ],
                 None,
             ),
+            (
+                "Should include resource information not available when resource info is unkown",
+                "conv_456",
+                Message(
+                    query="What is Kubernetes?",
+                    resource_kind=UNKNOWN,
+                    resource_api_version="",
+                    resource_name="",
+                    namespace="",
+                ),
+                [
+                    {"Exit": AIMessage(content="final response")},
+                ],
+                [
+                    f'{{"Exit": {create_messages_json("final response", "ai", "Exit")}}}',
+                ],
+                None,
+            ),
         ],
     )
-    async def test_astream(
+    async def test_astream(  # noqa: C901
         self,
         companion_graph,
         description,
@@ -610,6 +628,13 @@ class TestCompanionGraph:
                     raise Exception(
                         "The first message should be a SystemMessage when resource_name info is non-empty."
                     )
+                if message.resource_kind == UNKNOWN:
+                    assert (
+                        first_message.content
+                        == "Resource information is not available. Ask the user, if you need resource information like kind, name or namespace."
+                    )
+                else:
+                    assert "The user query is related to:" in first_message.content
             if isinstance(mock_chunks, Exception):
                 raise mock_chunks
             for chunk in mock_chunks:

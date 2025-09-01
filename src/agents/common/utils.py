@@ -8,6 +8,7 @@ import yaml
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
+    SystemMessage,
     ToolMessage,
 )
 from langgraph.constants import END
@@ -22,9 +23,10 @@ from agents.common.constants import (
     NEXT,
     RECENT_MESSAGES_LIMIT,
     SUBTASKS,
+    UNKNOWN,
 )
 from agents.common.data import Message
-from agents.common.state import SubTask
+from agents.common.state import SubTask, UserInput
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.utils import is_empty_str, is_non_empty_str
@@ -140,7 +142,24 @@ def should_continue(state: BaseModel) -> str:
     return CONTINUE
 
 
-def get_relevant_context_from_k8s_cluster(
+def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
+    """Get the resource context message based on the user input."""
+    if user_input.resource_kind == UNKNOWN:
+        return SystemMessage(
+            content="Resource information is not available. "
+            "Ask the user, if you need resource information like kind, name or namespace."
+        )
+
+    resource_context = user_input.get_resource_information()
+    if resource_context and len(resource_context) > 0:
+        return SystemMessage(
+            content=f"The user query is related to: {resource_context}"
+        )
+
+    return None
+
+
+async def get_relevant_context_from_k8s_cluster(
     message: Message, k8s_client: IK8sClient
 ) -> str:
     """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
@@ -163,7 +182,7 @@ def get_relevant_context_from_k8s_cluster(
             "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
         )
         pods = yaml.dump_all(k8s_client.list_not_running_pods(namespace=namespace))
-        metrics = yaml.dump_all(k8s_client.list_nodes_metrics())
+        metrics = yaml.dump_all(await k8s_client.list_nodes_metrics())
         events = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
 
         context = f"{pods}\n{metrics}\n{events}"

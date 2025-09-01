@@ -14,7 +14,7 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 app = FastAPI(
-    title="Kyma-Companion",
+    title="Joule",
 )
 
 
@@ -31,7 +31,7 @@ async def custom_http_exception_handler(
     request: Request,
     exc: HTTPException | RequestValidationError | ResponseValidationError,
 ) -> JSONResponse:
-    """Exception Handler for HTTPException"""
+    """Exception Handler for HTTPException."""
     logger.error("HTTPException", exc_info=(type(exc), exc, exc.__traceback__))
     return handle_http_exception(exc)
 
@@ -125,7 +125,7 @@ app.include_router(probes_router)
 @app.get("/")
 async def root() -> dict:
     """The root endpoint of the API."""
-    return {"message": "Kyma Companion!!!"}
+    return {"message": "Joule!"}
 
 
 @app.get("/metrics")

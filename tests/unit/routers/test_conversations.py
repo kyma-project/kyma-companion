@@ -9,13 +9,14 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from agents.common.constants import ERROR_RATE_LIMIT_CODE
+from agents.common.constants import ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from main import app
 from routers.conversations import (
     authorize_user,
     check_token_usage,
     enforce_query_token_limit,
+    extract_user_identifier,
     init_conversation_service,
 )
 from services.conversation import IService
@@ -32,7 +33,9 @@ class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
 
-    def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
+    async def new_conversation(
+        self, k8s_client: IK8sClient, message: Message
+    ) -> list[str]:
         if self.expected_error:
             raise self.expected_error
         return ["Test question 1", "Test question 2", "Test question 3"]
@@ -70,6 +73,14 @@ class MockService(IService):
     ) -> AsyncGenerator[bytes, None]:
         if self.expected_error:
             raise self.expected_error
+        if message.resource_kind == UNKNOWN:
+            yield (
+                b'{"KymaAgent": {"messages": [{"content": '
+                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "additional_kwargs": {}, '
+                b'"response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, '
+                b'"example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+            )
+
         yield (
             b'{"KymaAgent": {"messages": [{"content": '
             b'"To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, '
@@ -357,9 +368,10 @@ def client_factory():
                 "namespace": "default",
             },
             {
-                "status_code": 400,
-                "content-type": "application/json",
-                "expected_error_msg": '{"error":"bad request","message":"invalid request format or parameters"}',
+                "status_code": 200,
+                "content-type": "text/event-stream; charset=utf-8",
+                "expected_chunk": b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
+                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "tasks": []}, "error": null}}\n',
             },
         ),
         (
@@ -460,6 +472,9 @@ def test_messages_endpoint(
         return
 
     content = response.content
+
+    if "expected_chunk" in expected_output:
+        assert expected_output["expected_chunk"] in content
 
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
@@ -640,6 +655,34 @@ def test_messages_endpoint(
                 },
             },
         ),
+        (
+            "should return token usage exceeded error",
+            {
+                "x-k8s-authorization": "non-empty-auth",
+                "x-cluster-url": "https://api.EXCEEDED.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            {
+                "resource_kind": "Pod",
+                "resource_api_version": "v1",
+                "resource_name": "nginx-123",
+                "namespace": "default",
+            },
+            None,
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "current_usage": 1000,
+                    "error": "Token usage limit exceeded",
+                    "limit": 1000,
+                    "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
+                    "fair usage, Joule controls the number of requests a "
+                    "cluster can make within 24 hours.",
+                    "time_remaining_seconds": 60,
+                },
+            },
+        ),
     ],
 )
 @patch("services.k8s.K8sClient.__init__", return_value=None)
@@ -794,7 +837,7 @@ def test_init_conversation(
                     "error": "Token usage limit exceeded",
                     "limit": 1000,
                     "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
-                    "fair usage, Kyma Companion controls the number of requests a "
+                    "fair usage, Joule controls the number of requests a "
                     "cluster can make within 24 hours.",
                     "time_remaining_seconds": 60,
                 },
@@ -986,25 +1029,69 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "test_description, conversation_id, token, certificate_data, user_identifier, is_authorized, expected_exception",
+    "test_description, conversation_id, user_identifier, is_authorized, expected_exception",
     [
         (
-            "valid token, user authorized",
+            "user authorized",
             "conversation1",
-            jwt.encode({"sub": "user1"}, "secret", algorithm="HS256"),
-            None,
             "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
             True,
             None,
         ),
         (
-            "valid token, user not authorized",
+            "user not authorized",
             "conversation2",
-            jwt.encode({"sub": "user2"}, "secret", algorithm="HS256"),
-            None,
             "user2",
             False,
             HTTPException,
+        ),
+    ],
+)
+async def test_authorize_user(
+    test_description,
+    conversation_id,
+    user_identifier,
+    is_authorized,
+    expected_exception,
+):
+    # given
+    # Mock the conversation_service
+    mock_conversation_service = Mock()
+    mock_conversation_service.authorize_user = AsyncMock(return_value=is_authorized)
+
+    # when / then
+    if expected_exception or not is_authorized:
+        with pytest.raises(expected_exception):
+            await authorize_user(
+                conversation_id, user_identifier, mock_conversation_service
+            )
+    else:
+        await authorize_user(
+            conversation_id, user_identifier, mock_conversation_service
+        )
+        mock_conversation_service.authorize_user.assert_called_once_with(
+            conversation_id, user_identifier
+        )
+
+
+@pytest.mark.parametrize(
+    "test_description, conversation_id, token, certificate_data, expected_user_identifier, expected_exception",
+    [
+        (
+            "valid token 1",
+            "conversation1",
+            jwt.encode({"sub": "user1"}, "secret", algorithm="HS256"),
+            None,
+            "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
+            None,
+        ),
+        (
+            "valid token 2",
+            "conversation2",
+            jwt.encode({"sub": "user2"}, "secret", algorithm="HS256"),
+            None,
+            "6025d18fe48abd45168528f18a82e265dd98d421a7084aa09f61b341703901a3",
+            None,
         ),
         (
             "invalid token",
@@ -1012,16 +1099,14 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
             "invalid_token",
             None,
             None,
-            None,
             HTTPException,
         ),
         (
-            "valid client certificate, user authorized",
+            "valid client certificate",
             "conversation1",
             None,
             SAMPLE_CLIENT_CERTIFICATE_DATA,
             "259c31ec6667be354fc6d007a452e2d09002bc396b2b6da976980b0cca0b8ced",
-            True,
             None,
         ),
         (
@@ -1030,18 +1115,16 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
             None,
             "invalid-client-certificate",
             None,
-            None,
             HTTPException,
         ),
     ],
 )
-async def test_authorize_user(
+def test_extract_user_identifier(
     test_description,
     conversation_id,
     token,
     certificate_data,
-    user_identifier,
-    is_authorized,
+    expected_user_identifier,
     expected_exception,
 ):
     # given
@@ -1053,23 +1136,13 @@ async def test_authorize_user(
         x_client_key_data="non-empty-client-key-data",
     )
 
-    # Mock the conversation_service
-    mock_conversation_service = Mock()
-    mock_conversation_service.authorize_user = AsyncMock(return_value=is_authorized)
-
     # when / then
-    if expected_exception or not is_authorized:
+    if expected_exception:
         with pytest.raises(expected_exception):
-            await authorize_user(
-                conversation_id, k8s_auth_headers, mock_conversation_service
-            )
+            extract_user_identifier(k8s_auth_headers)
     else:
-        await authorize_user(
-            conversation_id, k8s_auth_headers, mock_conversation_service
-        )
-        mock_conversation_service.authorize_user.assert_called_once_with(
-            conversation_id, user_identifier
-        )
+        user_identifier = extract_user_identifier(k8s_auth_headers)
+        assert user_identifier == expected_user_identifier
 
 
 @pytest.mark.parametrize(

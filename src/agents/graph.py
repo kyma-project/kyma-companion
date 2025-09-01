@@ -45,7 +45,11 @@ from agents.common.state import (
     SubTask,
     UserInput,
 )
-from agents.common.utils import filter_valid_messages, should_continue
+from agents.common.utils import (
+    filter_valid_messages,
+    get_resource_context_message,
+    should_continue,
+)
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
@@ -58,6 +62,7 @@ from agents.prompts import (
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
+from services.langfuse import get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -360,7 +365,7 @@ class CompanionGraph:
                 return {
                     NEXT: SUPERVISOR,
                     SUBTASKS: [],
-                    IS_FEEDBACK: feedback_response.response,
+                    IS_FEEDBACK: False,  # Quick FIx - Need to remove this hardcoded value
                 }
 
             logger.debug("Gatekeeper node directly responding")
@@ -454,13 +459,11 @@ class CompanionGraph:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
         messages: list[BaseMessage] = [HumanMessage(content=message.query)]
-        resource_context = user_input.get_resource_information()
-        if resource_context and len(resource_context) > 0:
+        resource_context_message = get_resource_context_message(user_input)
+        if resource_context_message:
             messages.insert(
                 0,
-                SystemMessage(
-                    content=f"The user query is related to: {resource_context}"
-                ),
+                resource_context_message,
             )
 
         x_cluster_url = k8s_client.get_api_server()
@@ -483,7 +486,11 @@ class CompanionGraph:
                 self.handler,
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
             ],
-            tags=[cluster_id],  # cluster_id as a tag for traceability and rate limiting
+            tags=[cluster_id],
+            metadata=get_langfuse_metadata(
+                message.user_identifier or "unknown",
+                cluster_id,
+            ),
         )
 
         async for chunk in self.graph.astream(input=graph_input, config=run_config):

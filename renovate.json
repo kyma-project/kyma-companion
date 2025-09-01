@@ -1,12 +1,59 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "schedule": [
+    "* 0-8 * * 1"
+  ],
+  "timezone": "Europe/Berlin",
+  "includePaths": [
+    "pyproject.toml",
+    "doc_indexer/pyproject.toml",
+    "tests/blackbox/pyproject.toml"
+  ],
   "extends": [
-    "config:recommended"
-  ]
-  "prTitlePrefix": "deps: ",
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScopeDisabled"
+  ],
+  "enabledManagers": [
+    "poetry"
+  ],
   "packageRules": [
     {
-      "groupName": null
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchFileNames": [
+        "pyproject.toml"
+      ],
+      "groupName": "Dependencies in pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchFileNames": [
+        "doc_indexer/pyproject.toml"
+      ],
+      "groupName": "Dependencies in doc_indexer/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "poetry"
+      ],
+      "matchFileNames": [
+        "tests/blackbox/pyproject.toml"
+      ],
+      "groupName": "Dependencies in tests/blackbox/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
     }
   ]
 }

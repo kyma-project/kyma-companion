@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import tiktoken
@@ -78,6 +78,7 @@ def test_generate_questions(mock_init):
 def mock_k8s_client():
     mock = Mock()
     mock.list_not_running_pods.return_value = [{KEY: LIST_NOT_RUNNING_PODS}, MOCK_DICT]
+    mock.list_nodes_metrics = AsyncMock()
     mock.list_nodes_metrics.return_value = [{KEY: LIST_NODES_METRICS}, MOCK_DICT]
     mock.list_k8s_warning_events.return_value = [
         {KEY: LIST_K8S_WARNING_EVENTS},
@@ -93,6 +94,7 @@ def mock_k8s_client():
     return mock
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "message,expected_calls",
     [
@@ -138,13 +140,17 @@ def mock_k8s_client():
         ),
     ],
 )
-def test_fetch_relevant_data_from_k8s_cluster(message, expected_calls, mock_k8s_client):
+async def test_fetch_relevant_data_from_k8s_cluster(
+    message, expected_calls, mock_k8s_client
+):
     # Given:
     mock_model = Mock()
     handler = InitialQuestionsHandler(model=mock_model)
 
     # When:
-    result = handler.fetch_relevant_data_from_k8s_cluster(message, mock_k8s_client)
+    result = await handler.fetch_relevant_data_from_k8s_cluster(
+        message, mock_k8s_client
+    )
 
     # Then:
     for call in expected_calls:

@@ -23,3 +23,8 @@ CHUNK_SUMMARIZER_PROMPT = """
             "{tool_response_chunk}\n\n"
             "Summary (keep it concise, no preamble):"
         """
+
+JOULE_CONTEXT_INFORMATION = """
+Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. 
+This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
+"""

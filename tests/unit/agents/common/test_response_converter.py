@@ -1,8 +1,11 @@
+from unittest.mock import Mock
+
 import pytest
 from langchain_core.messages import AIMessage
 
 from agents.common.constants import FINALIZER, MESSAGES, NEW_YAML, UPDATE_YAML
 from agents.common.response_converter import ResponseConverter
+from services.k8s import IK8sClient
 
 yaml_new_sample_with_link_1 = """```yaml
    apiVersion: v1
@@ -139,7 +142,19 @@ spec:
 
 @pytest.fixture
 def response_converter():
-    return ResponseConverter()
+    def mock_get_namespace(name):
+        existing_namespaces = [
+            "default",
+            "kube-system",
+            "test-ns",
+            "kyma-system",
+            "nginx-oom",
+        ]
+        return name in existing_namespaces
+
+    k8s_client = Mock(IK8sClient)
+    k8s_client.get_namespace.side_effect = mock_get_namespace
+    return ResponseConverter(k8s_client=k8s_client)
 
 
 @pytest.mark.parametrize(
@@ -275,6 +290,15 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
             "/namespaces/test-ns/Deployment",
         ),
         (
+            "should generate link for new deployment with default namespace, when namespace do not exist",
+            {
+                "metadata": {"namespace": "non-existing-ns123", "name": "test-deploy"},
+                "kind": "Deployment",
+            },
+            NEW_YAML,
+            "/namespaces/default/Deployment",
+        ),
+        (
             "Generate link for updating old deployment",
             {
                 "metadata": {"namespace": "test-ns", "name": "test-deploy"},
@@ -284,6 +308,15 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
             "/namespaces/test-ns/Deployment/test-deploy",
         ),
         (
+            "should not generate link for updating old deployment when namespace do not exist",
+            {
+                "metadata": {"namespace": "non-existing-ns123", "name": "test-deploy"},
+                "kind": "Deployment",
+            },
+            UPDATE_YAML,
+            None,
+        ),
+        (
             "Test no link generation",
             {"metadata": {"namespace": "test-ns"}, "kind": "Deployment"},
             NEW_YAML,
@@ -291,13 +324,12 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
         ),
     ],
 )
-def test_generate_resource_link(
+@pytest.mark.asyncio
+async def test_generate_resource_link(
     response_converter, description, yaml_config, link_type, expected_link
 ):
-    assert (
-        response_converter._generate_resource_link(yaml_config, link_type)
-        == expected_link
-    )
+    result = await response_converter._generate_resource_link(yaml_config, link_type)
+    assert result == expected_link
 
 
 @pytest.mark.parametrize(
@@ -508,8 +540,11 @@ def test_replace_yaml_with_html(
     ],
     ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"],
 )
-def test_create_replacement_list(response_converter, yaml_list, yaml_type, expected):
-    result = response_converter._create_replacement_list(yaml_list, yaml_type)
+@pytest.mark.asyncio
+async def test_create_replacement_list(
+    response_converter, yaml_list, yaml_type, expected
+):
+    result = await response_converter._create_replacement_list(yaml_list, yaml_type)
 
     # Compare lengths
     assert len(result) == len(expected)
@@ -685,9 +720,12 @@ def test_create_replacement_list(response_converter, yaml_list, yaml_type, expec
         ("", ""),
     ],
 )
-def test_convert_final_response(response_converter, state_content, expected_content):
+@pytest.mark.asyncio
+async def test_convert_final_response(
+    response_converter, state_content, expected_content
+):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
-    result = response_converter.convert_final_response(state)
+    result = await response_converter.convert_final_response(state)
     assert " ".join(result[MESSAGES][0].content.split()) == " ".join(
         expected_content.split()
     )

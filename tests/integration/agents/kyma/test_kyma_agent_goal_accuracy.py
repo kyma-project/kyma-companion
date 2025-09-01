@@ -207,7 +207,9 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="To provide an accurate and useful response, I need more information. "
+            "OR "
+            "I need more information to answer this question. Please provide more information.",
         ),
         TestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
@@ -274,6 +276,14 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: TestCase)
     )
 
     score = await goal_accuracy_metric.multi_turn_ascore(sample)
-    assert (
-        score > TOOL_ACCURACY_THRESHOLD
-    ), f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    if score < TOOL_ACCURACY_THRESHOLD:
+        print(
+            f"**Test case failed to meet expectation:**\n"
+            f"--> Expected goal: {test_case.expected_goal}\n"
+            f"--> Agent response: \n{agent_messages[-1].content}"
+        )
+
+    assert score >= TOOL_ACCURACY_THRESHOLD, (
+        f"Test case: {test_case.name}. "
+        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    )

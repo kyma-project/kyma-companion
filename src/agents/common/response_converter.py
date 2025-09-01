@@ -12,6 +12,7 @@ from agents.common.constants import (
     NEXT,
     UPDATE_YAML,
 )
+from services.k8s import IK8sClient
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +21,7 @@ logger = get_logger(__name__)
 class IResponseConverter(Protocol):
     """Protocol for IResponseConverter."""
 
-    def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
+    async def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Main conversion method that orchestrates the entire YAML to HTML conversion process.
         """
@@ -34,10 +35,11 @@ class ResponseConverter:
     resource links based on the YAML content.
     """
 
-    def __init__(self):
+    def __init__(self, k8s_client: IK8sClient):
         # Regular expression patterns to extract YAML blocks
         self.new_yaml_pattern = r"<YAML-NEW>\s*([\s\S]*?)\s*</YAML-NEW>"
         self.update_yaml_pattern = r"<YAML-UPDATE>\s*([\s\S]*?)\s*</YAML-UPDATE>"
+        self.k8s_client = k8s_client
 
     def _extract_yaml(self, finalizer_response: str) -> tuple[list[str], list[str]]:
         """
@@ -95,7 +97,7 @@ class ResponseConverter:
 
         return parsed_yaml
 
-    def _generate_resource_link(
+    async def _generate_resource_link(
         self, yaml_config: dict[str, Any], link_type: str
     ) -> str | None:
         """
@@ -116,17 +118,27 @@ class ResponseConverter:
             resource_type = yaml_config["kind"]
         except Exception:
             logger.exception(
-                f"Error in generating link, skipping the yaml: {yaml_config}"
+                f"Error in generating link, skipping generating link for yaml: {yaml_config}"
             )
             return None
 
+        # check if namespace exists.
+        namespace_exists = False
+        try:
+            if await self.k8s_client.get_namespace(namespace):
+                namespace_exists = True
+        except Exception:
+            logger.warning(
+                f"Namespace {namespace} does not exist, skipping generating link for yaml: {yaml_config}"
+            )
+
         # Generate appropriate link based on type
         if link_type == NEW_YAML:
-            # New resource link format
-            return f"/namespaces/{namespace}/{resource_type}"
-        else:
-            # Update resource link format includes deployment name
+            ns = namespace if namespace_exists else "default"
+            return f"/namespaces/{ns}/{resource_type}"
+        elif link_type == UPDATE_YAML and namespace_exists:
             return f"/namespaces/{namespace}/{resource_type}/{deployment_name}"
+        return None
 
     def _create_html_nested_yaml(
         self, yaml_config: str, resource_link: str, link_type: str
@@ -198,7 +210,7 @@ class ResponseConverter:
         )
         return converted_response
 
-    def _create_replacement_list(
+    async def _create_replacement_list(
         self, yaml_list: list[str], yaml_type: str
     ) -> list[str]:
         """
@@ -222,7 +234,7 @@ class ResponseConverter:
                 continue
 
             # Generate resource link
-            generated_link = self._generate_resource_link(parsed_yaml, yaml_type)
+            generated_link = await self._generate_resource_link(parsed_yaml, yaml_type)
 
             if generated_link:
                 # Create HTML if link generation successful
@@ -236,7 +248,7 @@ class ResponseConverter:
 
         return replacement_list
 
-    def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
+    async def convert_final_response(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Main conversion method that orchestrates the entire YAML to HTML conversion process.
 
@@ -253,7 +265,7 @@ class ResponseConverter:
 
             if new_yaml_list or update_yaml_list:
                 # Process new resource YAML configs
-                replacement_list = self._create_replacement_list(
+                replacement_list = await self._create_replacement_list(
                     new_yaml_list, NEW_YAML
                 )
                 finalizer_response = self._replace_yaml_with_html(
@@ -261,7 +273,7 @@ class ResponseConverter:
                 )
 
                 # Process update resource YAML configs
-                replacement_list = self._create_replacement_list(
+                replacement_list = await self._create_replacement_list(
                     update_yaml_list, UPDATE_YAML
                 )
                 finalizer_response = self._replace_yaml_with_html(
