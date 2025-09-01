@@ -89,22 +89,22 @@ class MarkdownIndexer:
             raise
 
     def _handle_database_operation(
-        self, operation: str, only_warn_if_table_inexistend: bool = True
+        self, operation: str, only_warn_if_table_inexistent: bool = True
     ) -> None:
         """
         Executes a database operation using the provided SQL statement.
 
         Handles exceptions related to missing tables and other database errors.
-        If the table does not exist and only_warn_if_table_inexistend is True,
+        If the table does not exist and only_warn_if_table_inexistent is True,
         logs a warning; otherwise, logs the exception and raises it.
 
         Args:
             operation (str): The SQL statement to execute.
-            only_warn_if_table_inexistend (bool): If True, only warns when the table does not exist;
+            only_warn_if_table_inexistent (bool): If True, only warns when the table does not exist;
                 if False, raises the exception.
 
         Raises:
-            dbapi.ProgrammingError: If a programming error occurs and only_warn_if_table_inexistend is False.
+            dbapi.ProgrammingError: If a programming error occurs and only_warn_if_table_inexistent is False.
             Exception: For any other database-related errors.
         """
         cursor = self.db.connection.cursor()
@@ -116,7 +116,7 @@ class MarkdownIndexer:
             if (
                 e.args
                 and e.args[0] == ERR_SQL_INV_TABLE
-                and only_warn_if_table_inexistend
+                and only_warn_if_table_inexistent
             ):
                 logger.warning(
                     f"While operating with '{operation}', table does not exist in HanaDB."
@@ -134,7 +134,7 @@ class MarkdownIndexer:
         self,
         source_table: str,
         target_table: str,
-        only_warn_if_table_inexistend: bool = True,
+        only_warn_if_table_inexistent: bool = True,
     ) -> None:
         """
         copies a table in hanadb from source_table to target_table, including structure and data.
@@ -145,35 +145,35 @@ class MarkdownIndexer:
         args:
             source_table (str): name of the table to copy from.
             target_table (str): name of the table to copy to.
-            only_warn_if_table_inexistend (bool): if true, only warns if the table does not exist;
+            only_warn_if_table_inexistent (bool): if true, only warns if the table does not exist;
                 if false, raises an exception.
 
         raises:
-            dbapi.programmingerror: if a programming error occurs and only_warn_if_table_inexistend is false.
+            dbapi.programmingerror: if a programming error occurs and only_warn_if_table_inexistent is false.
             exception: for any other database-related errors.
         """
         logger.info(f"Copying table {source_table} to {target_table}...")
         # Drop the target table if it exists to avoid duplicate table errors
-        self._drop_table(target_table, only_warn_if_table_inexistend=True)
+        self._drop_table(target_table, only_warn_if_table_inexistent=True)
         op = f'CREATE TABLE "{DATABASE_USER}"."{target_table}" AS (SELECT * FROM "{DATABASE_USER}"."{source_table}")'
-        self._handle_database_operation(op, only_warn_if_table_inexistend)
+        self._handle_database_operation(op, only_warn_if_table_inexistent)
 
     def _drop_table(
-        self, table_name: str, only_warn_if_table_inexistend: bool = True
+        self, table_name: str, only_warn_if_table_inexistent: bool = True
     ) -> None:
         """
         Drops the specified table from the HanaDB schema.
 
         Args:
             table_name (str): Name of the table to drop.
-            only_warn_if_table_inexistend (bool, optional): If True, only logs a warning if the table does not exist.
+            only_warn_if_table_inexistent (bool, optional): If True, only logs a warning if the table does not exist.
         """
         logger.info(f"Dropping table {table_name} if exists...")
         operation = f'DROP TABLE "{DATABASE_USER}"."{table_name}"'
-        self._handle_database_operation(operation, only_warn_if_table_inexistend)
+        self._handle_database_operation(operation, only_warn_if_table_inexistent)
 
     def _rename_table(
-        self, old_name: str, new_name: str, only_warn_if_table_inexistend: bool = True
+        self, old_name: str, new_name: str, only_warn_if_table_inexistent: bool = True
     ) -> None:
         """
         Renames a table in the HanaDB schema.
@@ -181,13 +181,13 @@ class MarkdownIndexer:
         Args:
             old_name (str): Current name of the table.
             new_name (str): New name for the table.
-            only_warn_if_table_inexistend (bool, optional): If True,
+            only_warn_if_table_inexistent (bool, optional): If True,
                 only logs a warning if the source table does not exist.
         """
         logger.info(f"Renaming table {old_name} to {new_name}...")
         operation = f'RENAME TABLE "{DATABASE_USER}"."{old_name}" TO "{DATABASE_USER}"."{new_name}"'
         self._handle_database_operation(
-            operation, only_warn_if_table_inexistend=only_warn_if_table_inexistend
+            operation, only_warn_if_table_inexistent=only_warn_if_table_inexistent
         )
 
     def _index_chunks_in_batches(self, chunks: list[Document]) -> None:
@@ -241,7 +241,7 @@ class MarkdownIndexer:
         self._copy_table(
             self.db.table_name,
             self.backup_table_name,
-            only_warn_if_table_inexistend=True,
+            only_warn_if_table_inexistent=True,
         )
 
         try:
@@ -258,10 +258,10 @@ class MarkdownIndexer:
             logger.exception(
                 "Error during indexing. Attempting to restore from backup."
             )
-            self._drop_table(self.db.table_name, only_warn_if_table_inexistend=True)
+            self._drop_table(self.db.table_name, only_warn_if_table_inexistent=True)
             self._rename_table(
                 self.backup_table_name,
                 self.db.table_name,
-                only_warn_if_table_inexistend=True,
+                only_warn_if_table_inexistent=True,
             )
             raise
