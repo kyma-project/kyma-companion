@@ -51,14 +51,10 @@ def run_indexer() -> None:
     embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
     create_embedding = create_embedding_factory(openai_embedding_creator)
     embeddings_model = create_embedding(embedding_model.deployment_id)
-
-    # Setup connection to Hana Cloud DB
+    # setup connection to Hana Cloud DB
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
-    if not hana_conn:
-        logger.error("Failed to connect to the database. Exiting.")
-        raise
 
     indexer = AdaptiveSplitMarkdownIndexer(
         DOCS_PATH, embeddings_model, hana_conn, DOCS_TABLE_NAME
