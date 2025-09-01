@@ -11,9 +11,12 @@ from decouple import config
 class LangfuseMaskingModes(StrEnum):
     """Enumeration for Langfuse masking modes."""
 
-    DISABLED = "DISABLED"
-    PARTIAL = "PARTIAL"
-    REDACTED = "REDACTED"
+    DISABLED = "DISABLED"  # No masking, return data as is.
+    PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
+    FILTERED = (
+        "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
+    )
+    REDACTED = "REDACTED"  # Everything is redacted.
 
 
 def load_env_from_json() -> None:

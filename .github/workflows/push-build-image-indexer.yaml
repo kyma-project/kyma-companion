@@ -1,9 +1,30 @@
-name: Tag Build Image
+name: Push Build Image for Indexer
 
 on:
   push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+' # This will trigger the workflow when a tag (x.y.z) is pushed.
+    branches:
+      - "main"
+      - "release-*"
+    paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
+      - "docs/**"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
+      - "src/**"
+      - "doc_indexer/.vscode/**"
+      - "doc_indexer/tests/**"
+      - CODEOWNERS
+      - LICENSE
+      - "sec-scanners-config.yaml"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "renovate.json"
+      - ".gitignore"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
@@ -27,22 +48,10 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
   build:
-    name: build-${{ github.ref_name }} # The release pipeline will check the status of this job by this name format (e.g. build-1.0.1).
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
-      name: kyma-companion
-      dockerfile: Dockerfile
-      context: .
-      tags: ${{ needs.compute-tags.outputs.tags }}
-      platforms: |
-        linux/amd64
-  build-indexer:
-    name: build-indexer-${{ github.ref_name }}
-    needs: compute-tags
-    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
-    with:
-      name: kyma-companion-doc-indexer
+      name: kyma-companion-indexer
       dockerfile: Dockerfile
       context: ./doc_indexer
       tags: ${{ needs.compute-tags.outputs.tags }}

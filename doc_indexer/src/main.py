@@ -5,6 +5,7 @@ from fetcher.fetcher import DocumentsFetcher
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
 
 from utils.hana import create_hana_connection
+from utils.logging import get_logger
 from utils.models import (
     create_embedding_factory,
     openai_embedding_creator,
@@ -24,6 +25,7 @@ from utils.settings import (
 
 TASK_FETCH = "fetch"
 TASK_INDEX = "index"
+logger = get_logger(__name__)
 
 
 def run_fetcher() -> None:
@@ -34,10 +36,13 @@ def run_fetcher() -> None:
         output_dir=DOCS_PATH,
         tmp_dir=TMP_DIR,
     )
-    # run the fetcher.
+    # run the fetcher
     fetcher.run()
-    # print the filtered documents.
-    subprocess.run(["tree", DOCS_PATH])
+    # print the filtered documents
+    try:
+        subprocess.run(["tree", DOCS_PATH])
+    except Exception:
+        logger.warning("Fetcher Completed but Failed to print the documents list")
 
 
 def run_indexer() -> None:

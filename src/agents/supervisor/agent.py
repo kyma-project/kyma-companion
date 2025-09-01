@@ -101,9 +101,6 @@ class SupervisorAgent:
         self.model = cast(IModel, models[MAIN_MODEL_MINI_NAME])
         self.members = members
         self.parser = self._route_create_parser()
-        self.response_converter: IResponseConverter = (
-            response_converter or ResponseConverter()
-        )
         self._planner_chain = self._create_planner_chain(self.model)
         self._graph = self._build_graph()
 
@@ -275,7 +272,13 @@ class SupervisorAgent:
         try:
             final_response = await self._generate_final_response(state)
             logger.debug("Response conversion node started")
-            return self.response_converter.convert_final_response(final_response)
+            if state.k8s_client is None:
+                raise ValueError(
+                    "K8s client is not initialized in the SupervisorState."
+                )
+            return await ResponseConverter(state.k8s_client).convert_final_response(
+                final_response
+            )
         except Exception:
             logger.exception("Error in generating final response")
             return {
