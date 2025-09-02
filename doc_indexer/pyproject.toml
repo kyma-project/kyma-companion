@@ -1,31 +1,30 @@
-[tool.poetry]
+[project]
 name = "doc_indexer"
 version = "0.1.0"
 description = "Indexes Kyma documents for RAG"
 authors = [
-    "Muhammad Faizan m.faizan@sap.com",
-    "Aleksei Chernyshov aleksei.chernyshov@sap.com",
-    "Carina Kothe carina.kothe@sap.com",
-    "Friedrich Wilken jens.wilken@sap.com",
-    "Tibor Kiss tibor.kiss01@sap.com",
-    "Marco Bebway marco.bebway@sap.com",
-    "Piotr Bochynski piotr.bochynski@sap.com",
-    "Mansur Uralov m.uralov@sap.com",
+  { name = "Muhammad Faizan", email = "m.faizan@sap.com" },
+  { name = "Friedrich Wilken", email = "jens.wilken@sap.com" },
+  { name = "Piotr Bochynski", email = "piotr.bochynski@sap.com" },
+  { name = "Mansur Uralov", email = "m.uralov@sap.com" },
+  { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
 readme = "README.md"
-packages = [{ include = "src" }]
 license = "Apache-2.0"
-package-mode = false
+requires-python = "==3.12.*"
+dependencies = [
+    "hdbcli (>=2.22.29,<3.0.0)",
+    "python-decouple (>=3.8,<4.0.0)",
+    "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
+    "python-dotenv (>=1.0.1,<2.0.0)",
+    "unstructured (>=0.16.0,<0.17.0)",
+    "markdown (>=3.7,<4.0.0)",
+    "pydantic (>=2.9.2,<3.0.0)",
+]
 
-[tool.poetry.dependencies]
-python = "~3.12"
-hdbcli = "^2.22.29"
-python-decouple = "^3.8"
-generative-ai-hub-sdk = {extras = ["all"], version = "^4.0.0"}
-python-dotenv = "^1.0.1"
-unstructured = "^0.16.0"
-markdown = "^3.7"
-pydantic = "^2.9.2"
+[tool.poetry]
+packages = [{ include = "src" }]
+package-mode = false
 
 [tool.poetry.group.test.dependencies]
 poethepoet = "^0.29.0"
