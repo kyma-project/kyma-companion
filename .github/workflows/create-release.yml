@@ -122,6 +122,54 @@ jobs:
       - name: Run tests
         run: poetry run poe test
 
+  run-unit-tests-indexer:
+    ## **IMPORTANT**: If any changes are made to how to run the unit tests
+    ## in the release-workflow, make sure to update the steps
+    ## in the unit-test.yaml workflow as well.
+    name: Run indexer unit tests
+    needs: validate-input-params
+    runs-on: ubuntu-latest
+    permissions: read-all
+    env:
+      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${RELEASE_BRANCH}
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+        working-directory: doc_indexer
+
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json
+
+      - name: Run tests
+        run: poetry run poe test-unit
+        working-directory: doc_indexer
+
   run-integration-tests:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
     ## in the release-workflow, make sure to update
@@ -166,6 +214,53 @@ jobs:
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
           poetry run poe test-integration
+
+  run-integration-tests-indexer:
+    ## **IMPORTANT**: If any changes are made to how to run the integration tests
+    ## in the release-workflow, make sure to update
+    ## in the run-integration-test.yaml workflow as well.
+    name: Run indexer integration tests
+    needs: validate-input-params
+    runs-on: ubuntu-latest
+    permissions: read-all
+    env:
+      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with: # checkout the release branch.
+          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+
+      - name: Check if the checked out branch is the release branch.
+        run: |
+          git branch --show-current
+          git branch --show-current | grep -q ${RELEASE_BRANCH}
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --with dev
+        working-directory: doc_indexer
+
+      - name: Run integration tests
+        env:
+          LOG_LEVEL: "DEBUG"
+        run: |
+          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
+          poetry run poe test-integration
+        working-directory: doc_indexer
 
   get-image-sha:
     name: Get Release branch head commit SHA
@@ -300,12 +395,22 @@ jobs:
         run: |
           pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
 
-      - name: wait for build
+      - name: wait for build companion
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ inputs.name }}
           # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
           GIT_CHECK_RUN_NAME: "build-${{ inputs.name }} / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+      - name: wait for build indexer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ inputs.name }}
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build-indexer-${{ inputs.name }} / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
