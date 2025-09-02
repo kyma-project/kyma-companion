@@ -30,6 +30,7 @@ jobs:
             - LICENSE
             - sec-scanners-config.yaml
             - renovate.json
+            - external-images.yaml
 
       - name: Determine if tests should run
         id: determine
