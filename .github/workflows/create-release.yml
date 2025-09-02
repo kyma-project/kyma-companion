@@ -41,6 +41,7 @@ permissions: write-all
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
+  IMAGE_NAME_INDEXER: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion-doc-indexer" # without tag.
   RELEASE_TAG: "${{ inputs.name }}"
 
 jobs:
@@ -497,5 +498,11 @@ jobs:
         with:
           ref: main
 
-      - name: Check pre-requisites before publishing release
+      - name: Check pre-requisites before publishing release for Companion
         run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
+
+      - name: Check pre-requisites before publishing release for Indexer
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME_INDEXER }}
+        run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
+
