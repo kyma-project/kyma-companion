@@ -42,7 +42,7 @@ def create_chunks(
 class IIndexer(Protocol):
     """Indexer interface."""
 
-    def index(self, docs_path: str) -> None:
+    def index(self) -> None:
         """Index the markdown files in the given directory."""
         ...
 
@@ -107,7 +107,6 @@ class MarkdownIndexer:
             dbapi.ProgrammingError: If a programming error occurs and only_warn_if_table_inexistent is False.
             Exception: For any other database-related errors.
         """
-        cursor = self.db.connection.cursor()
         try:
             with self.db.connection.cursor() as cursor:
                 cursor.execute(operation)
@@ -127,8 +126,6 @@ class MarkdownIndexer:
         except Exception:
             logger.exception(f"Error while operating with '{operation}' in HanaDB.")
             raise
-        finally:
-            cursor.close()
 
     def _copy_table(
         self,
@@ -207,8 +204,8 @@ class MarkdownIndexer:
                 )
                 if i + CHUNKS_BATCH_SIZE < len(chunks):
                     time.sleep(3)
-            except Exception as e:
-                logger.error(f"Batch {i // CHUNKS_BATCH_SIZE + 1} failed: {e}")
+            except:
+                logger.exception(f"Batch {i // CHUNKS_BATCH_SIZE + 1} failed")
                 raise
         logger.info(
             f"Successfully indexed {len(chunks)} markdown files chunks to {self.db.table_name} table."
@@ -265,3 +262,5 @@ class MarkdownIndexer:
                 only_warn_if_table_inexistent=True,
             )
             raise
+        # Clean up the backup table after successful indexing.
+        self._drop_table(self.backup_table_name, only_warn_if_table_inexistent=True)
