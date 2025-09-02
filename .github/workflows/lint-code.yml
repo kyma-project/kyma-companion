@@ -12,7 +12,7 @@ on:
       - "**.md"
       - CODEOWNERS
       - LICENSE
-
+      - external-images.yaml
 
 jobs:
   code-linter:
