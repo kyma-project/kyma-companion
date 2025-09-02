@@ -25,6 +25,7 @@ on:
       - "poetry.lock"
       - "renovate.json"
       - ".gitignore"
+      - external-images.yaml
 
 permissions:
   id-token: write # This is required for requesting the JWT token

@@ -19,6 +19,7 @@ on:
       - CODEOWNERS
       - LICENSE
       - "sec-scanners-config.yaml"
+      - external-images.yaml
 
 permissions:
   id-token: write # This is required for requesting the JWT token
