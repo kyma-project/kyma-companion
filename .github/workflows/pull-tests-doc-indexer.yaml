@@ -2,7 +2,7 @@ name: pull-tests-doc-indexer
 
 on:
   pull_request_target:
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
       - "release-**"
@@ -49,8 +49,6 @@ jobs:
           DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
         run: |
-          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
           poetry run poe test-unit
 
       - name: Run integration tests
