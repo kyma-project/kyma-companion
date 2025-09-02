@@ -19,6 +19,7 @@ on:
       - "doc_indexer/**"
       - CODEOWNERS
       - LICENSE
+      - external-images.yaml
 
 jobs:
   wait-for-build:
@@ -60,6 +61,5 @@ jobs:
     secrets: inherit
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
-      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }} 
-      TEST_REF: ${{ github.event.pull_request.head.ref }} 
-
+      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
+      TEST_REF: ${{ github.event.pull_request.head.ref }}
