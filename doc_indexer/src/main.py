@@ -55,6 +55,9 @@ def run_indexer() -> None:
     hana_conn = create_hana_connection(
         DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
     )
+    if not hana_conn:
+        logger.error("Failed to connect to the database. Exiting.")
+        raise
 
     indexer = AdaptiveSplitMarkdownIndexer(
         DOCS_PATH, embeddings_model, hana_conn, DOCS_TABLE_NAME
