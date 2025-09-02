@@ -13,13 +13,13 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = "==3.12.*"
 dependencies = [
-    "hdbcli (>=2.22.29,<3.0.0)",
-    "python-decouple (>=3.8,<4.0.0)",
-    "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
-    "python-dotenv (>=1.0.1,<2.0.0)",
-    "unstructured (>=0.16.0,<0.17.0)",
-    "markdown (>=3.7,<4.0.0)",
-    "pydantic (>=2.9.2,<3.0.0)",
+  "hdbcli (>=2.22.29,<3.0.0)",
+  "python-decouple (>=3.8,<4.0.0)",
+  "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
+  "python-dotenv (>=1.0.1,<2.0.0)",
+  "unstructured (>=0.18.0,<0.19.0)",
+  "markdown (>=3.7,<4.0.0)",
+  "pydantic (>=2.9.2,<3.0.0)",
 ]
 
 [tool.poetry]
@@ -36,12 +36,8 @@ pytest = "^8.3.3"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra"
-pythonpath = [
-    "src"
-]
-testpaths = [
-    "tests"
-]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.poe.tasks]
 format = "black . --check"
@@ -52,7 +48,4 @@ typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit"
 test-integration = "pytest tests/integration"
-test = [
-    "test-unit",
-    "test-integration"
-]
+test = ["test-unit", "test-integration"]
