@@ -3,6 +3,8 @@ kind: kcp
 bdba:
   # kyma-companion
   - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:0.2.0
+  - # doc-indexer
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:v20250902-37c646cb
   # langfuse
   - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse-worker:3.63.0
   - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse:3.63.0
