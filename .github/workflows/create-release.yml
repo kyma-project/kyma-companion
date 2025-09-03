@@ -174,7 +174,7 @@ jobs:
           # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+          DOCS_TABLE_NAME: "kc_pr_release_${{ inputs.name }}"
         run: poetry run poe test-unit
 
   run-integration-tests:
@@ -268,7 +268,7 @@ jobs:
           # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+          DOCS_TABLE_NAME: "kc_pr_release_${{ inputs.name }}"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
