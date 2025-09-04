@@ -18,14 +18,14 @@ dependencies = [
   "fastapi[standard] (>=0.116.1,<0.117.0)",
   "hdbcli (>=2.24.26,<3.0.0)",
   "kubernetes (>=33.1.0,<33.2.0)",
-  "langchain[all] (>=0.3.25,<0.4.0)",
+  "langchain[all] (>=0.3.27,<0.4.0)",
   "langfuse (>=2.60.8,<3.0.0)",
-  "langgraph[all] (>=0.4.8,<0.5.0)",
+  "langgraph[all] (>=0.6.6,<0.7.0)",
   "prometheus-client (>=0.22.1,<0.23.0)",
   "pyjwt (>=2.10.1,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
   "redis (>=6.4.0,<6.5.0)",
-  "sap-ai-sdk-gen[all] (>=5.4.2,<6.0.0)",
+  "sap-ai-sdk-gen[all] (>=5.5.0,<6.0.0)",
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.11.0,<0.12.0)",
@@ -36,7 +36,7 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = { extras = ["all"], version = "^3.4.2" }
+deepeval = { extras = ["all"], version = ">=3.4.2, <4.0.0" }
 fakeredis = "^2.31.1"
 prettytable = "^3.15.1"
 pytest = "^8.4.1"
@@ -45,7 +45,7 @@ pytest-asyncio = "^1.0.0"
 pytest-cov = { extras = ["all"], version = "^6.1.1" }
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.14.0"
-pytest-rerunfailures = "^12.0"
+pytest-rerunfailures = ">=12.0,<13.0"
 pytest-sugar = "^1.1.1"
 pytest-xdist = "^3.8.0"
 pyyaml = "^6.0.2"
