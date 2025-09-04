@@ -447,7 +447,7 @@ class BaseAgent:
 
     def _build_graph(self, state_class: type) -> CompiledStateGraph:
         # Define a new graph
-        workflow = StateGraph(state_class)
+        workflow: StateGraph = StateGraph(state_class)
 
         # Define nodes with async awareness
         workflow.add_node("subtask_selector", self._subtask_selector_node)
