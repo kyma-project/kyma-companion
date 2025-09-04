@@ -252,14 +252,14 @@ files = [
 
 [[package]]
 name = "anthropic"
-version = "0.65.0"
+version = "0.66.0"
 description = "The official Python library for the anthropic API"
 optional = false
 python-versions = ">=3.8"
 groups = ["test"]
 files = [
-    {file = "anthropic-0.65.0-py3-none-any.whl", hash = "sha256:ba9d9f82678046c74ddf5698ca06d9f5b0f599cfac922ab0d5921638eb448d98"},
-    {file = "anthropic-0.65.0.tar.gz", hash = "sha256:6b6b6942574e54342050dfd42b8d856a8366b171daec147df3b80be4722733b9"},
+    {file = "anthropic-0.66.0-py3-none-any.whl", hash = "sha256:67b8cd4486f3cdd09211598dc5325cc8e4e349c106a03041231d551603551c06"},
+    {file = "anthropic-0.66.0.tar.gz", hash = "sha256:5aa8b18da57dc27d83fc1d82c9fb860977e5adfae3e0c215d7ab2ebd70afb9cb"},
 ]
 
 [package.dependencies]
@@ -1076,14 +1076,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "3.4.3"
+version = "3.4.5"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-3.4.3-py3-none-any.whl", hash = "sha256:ad7035c8b5c03616d65643859fae5572bae19eedb181e94d0fd8baed6ff4c0e6"},
-    {file = "deepeval-3.4.3.tar.gz", hash = "sha256:2db0c3bdd2d036eb7df26f68b8a544ef8eaaf5407ea3d282cd1c58b712478dde"},
+    {file = "deepeval-3.4.5-py3-none-any.whl", hash = "sha256:593f8a59c39d68692aa0b4078e9f43456d7fbfc140dba33aed7fb018ca475cb2"},
+    {file = "deepeval-3.4.5.tar.gz", hash = "sha256:257560f28306d673c8d7c8599b4bc81838336b74e83c0c0f1773afdbd34b7a89"},
 ]
 
 [package.dependencies]
@@ -1967,14 +1967,14 @@ testing = ["pytest"]
 
 [[package]]
 name = "google-genai"
-version = "1.32.0"
+version = "1.33.0"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "test"]
 files = [
-    {file = "google_genai-1.32.0-py3-none-any.whl", hash = "sha256:c0c4b1d45adf3aa99501050dd73da2f0dea09374002231052d81a6765d15e7f6"},
-    {file = "google_genai-1.32.0.tar.gz", hash = "sha256:349da3f5ff0e981066bd508585fcdd308d28fc4646f318c8f6d1aa6041f4c7e3"},
+    {file = "google_genai-1.33.0-py3-none-any.whl", hash = "sha256:1710e958af0a0f3d19521fabbefd86b22d1f212376103f18fed11c9d96fa48e8"},
+    {file = "google_genai-1.33.0.tar.gz", hash = "sha256:7d3a5ebad712d95a0d1775842505886eb43cc52f9f478aa4ab0e2d25412499a2"},
 ]
 
 [package.dependencies]
@@ -3115,14 +3115,14 @@ langgraph-checkpoint = ">=2.1.0,<3.0.0"
 
 [[package]]
 name = "langgraph-sdk"
-version = "0.2.5"
+version = "0.2.6"
 description = "SDK for interacting with LangGraph API"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "langgraph_sdk-0.2.5-py3-none-any.whl", hash = "sha256:a837a7a3c5e16ba55a3952037f9d8e247d3e001e9a0e3b07aacef55861e5dc58"},
-    {file = "langgraph_sdk-0.2.5.tar.gz", hash = "sha256:b28aa0f485811388465ac5d2a19d728ab84b59a8900cdfcf0f4e8177802cbf62"},
+    {file = "langgraph_sdk-0.2.6-py3-none-any.whl", hash = "sha256:477216b573b8177bbd849f4c754782a81279fbbd88bfadfeda44422d14b18b08"},
+    {file = "langgraph_sdk-0.2.6.tar.gz", hash = "sha256:7db27cd86d1231fa614823ff416fcd2541b5565ad78ae950f31ae96d7af7c519"},
 ]
 
 [package.dependencies]
@@ -3810,14 +3810,14 @@ pydantic = ">=2.9"
 
 [[package]]
 name = "openai"
-version = "1.104.2"
+version = "1.105.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "test"]
 files = [
-    {file = "openai-1.104.2-py3-none-any.whl", hash = "sha256:0148951da12ea651f890ef38f8adef75b78c053dba37ea2bdba857c8945860d4"},
-    {file = "openai-1.104.2.tar.gz", hash = "sha256:9b582ead9dd208753f89dae8e36b6548c6ada076e87ba3db36630e29239661ab"},
+    {file = "openai-1.105.0-py3-none-any.whl", hash = "sha256:3ad7635132b0705769ccae31ca7319f59ec0c7d09e94e5e713ce2d130e5b021f"},
+    {file = "openai-1.105.0.tar.gz", hash = "sha256:a68a47adce0506d34def22dd78a42cbb6cfecae1cf6a5fe37f38776d32bbb514"},
 ]
 
 [package.dependencies]
@@ -4553,14 +4553,14 @@ tests = ["coverage-conditional-plugin (>=0.9.0)", "portalocker[redis]", "pytest 
 
 [[package]]
 name = "posthog"
-version = "6.7.1"
+version = "6.7.2"
 description = "Integrate PostHog into any python application."
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "posthog-6.7.1-py3-none-any.whl", hash = "sha256:57d9a891ddedf690d2b294bb8b7832095c149729a3f123f47b7bcaf7b2b6e1a0"},
-    {file = "posthog-6.7.1.tar.gz", hash = "sha256:1011ddda110b65e0d080f2a5f88eb0337547ed6b5a50d0f8f6191e9357b99434"},
+    {file = "posthog-6.7.2-py3-none-any.whl", hash = "sha256:2b13c458aa0413772efb029d8c3fc0c169107fdd6206eadcfd9b670d4b8ae35e"},
+    {file = "posthog-6.7.2.tar.gz", hash = "sha256:83d829b1a6025212feec8088dc057a359201631411626336ba0337fa497b97b1"},
 ]
 
 [package.dependencies]
@@ -6290,14 +6290,14 @@ jeepney = ">=0.6"
 
 [[package]]
 name = "sentry-sdk"
-version = "2.35.2"
+version = "2.36.0"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = ">=3.6"
 groups = ["main", "test"]
 files = [
-    {file = "sentry_sdk-2.35.2-py2.py3-none-any.whl", hash = "sha256:38c98e3cbb620dd3dd80a8d6e39c753d453dd41f8a9df581b0584c19a52bc926"},
-    {file = "sentry_sdk-2.35.2.tar.gz", hash = "sha256:e9e8f3c795044beb59f2c8f4c6b9b0f9779e5e604099882df05eec525e782cc6"},
+    {file = "sentry_sdk-2.36.0-py2.py3-none-any.whl", hash = "sha256:0f95586a141068d215376e5bf8ebd279e126f7f42805e9570190ef82a7e232b3"},
+    {file = "sentry_sdk-2.36.0.tar.gz", hash = "sha256:af9260e8155e41e8217615a453828e98aa40740865ac4b16b1ccb6a63b4b2e31"},
 ]
 
 [package.dependencies]
@@ -7860,4 +7860,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "ebcfd88a668dfcba48a9913f5437eae02eb28413f85bc0f0b9f7891f585084c9"
+content-hash = "b0b8a39e97ddea733ec23d2c3cbe2e5dad57f9f09063905283d29639df5ec9ef"
