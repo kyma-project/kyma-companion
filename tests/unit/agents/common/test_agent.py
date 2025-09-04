@@ -15,7 +15,7 @@ from langchain_core.prompts import (
     SystemMessagePromptTemplate,
 )
 from langchain_core.runnables import RunnableLambda
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from agents.common.agent import AGENT_STEPS_NUMBER, BaseAgent
 from agents.common.constants import AGENT_MESSAGES, ERROR
@@ -79,7 +79,7 @@ class TestBaseAgent:
 
         # Then
         assert result is not None
-        assert isinstance(result, CompiledGraph)
+        assert isinstance(result, CompiledStateGraph)
 
     def test_create_chain(self):
         # Given
