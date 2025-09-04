@@ -311,6 +311,8 @@ jobs:
         run-unit-tests,
         run-integration-tests,
         run-evaluation-tests,
+        run-integration-tests-indexer,
+        run-unit-tests-indexer
       ]
     runs-on: ubuntu-latest
     env:
