@@ -158,7 +158,7 @@ class AdaptiveSplitMarkdownIndexer:
         parent_title: str = "",
         module: str | None = "kyma",
         module_version: str | None = "latest",
-    ) -> Generator[Document, None, None]:
+    ) -> Generator[Document]:
         tokens = len(encoding.encode(doc.page_content))
 
         if tokens <= self.min_chunk_token_count:
@@ -211,9 +211,7 @@ class AdaptiveSplitMarkdownIndexer:
                 chunk, level + 1, parent_title=title if level == 0 else parent_title
             )
 
-    def get_document_chunks(
-        self, docs_to_chunk: list[Document]
-    ) -> Generator[Document, None, None]:
+    def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
         """
         Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
         It splits the documents recursively if larger than given token number.
@@ -223,9 +221,7 @@ class AdaptiveSplitMarkdownIndexer:
         for doc in docs_to_chunk:
             yield from self._process_doc(doc)
 
-    def process_document_titles(
-        self, docs: list[Document]
-    ) -> Generator[Document, None, None]:
+    def process_document_titles(self, docs: list[Document]) -> Generator[Document]:
         """
         Add a combined title to the document if the title is not already set.
         Clear the header from the document if it starts with the header.
