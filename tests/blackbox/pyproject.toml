@@ -10,7 +10,7 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.12.*"
+requires-python = "==3.13.*"
 dependencies = [
   "ai-core-sdk (>=2.6.2,<3.0.0)",
   "cryptography (>=44.0.2,<45.0.0)",
@@ -29,14 +29,14 @@ dependencies = [
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
   "tiktoken (>=0.9.0,<0.10.0)",
-  "uvicorn (>=0.34.0,<0.35.0)"
+  "uvicorn (>=0.34.0,<0.35.0)",
 ]
 [tool.poetry]
 packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {extras = ["all"], version = "^3.0.1"}
+deepeval = { extras = ["all"], version = "^3.0.1" }
 fakeredis = "^2.27.0"
 prettytable = "^3.15.1"
 pytest = "^8.3.5"
@@ -79,4 +79,3 @@ code-fix = ["format-fix", "lint-fix"]
 sort = "poetry sort"
 pre-commit-check = ["sort", "code-fix", "codecheck"]
 run-evaluation = "python src/run_evaluation.py"
-

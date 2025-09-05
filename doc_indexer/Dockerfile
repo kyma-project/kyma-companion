@@ -1,12 +1,12 @@
-FROM ghcr.io/gardenlinux/gardenlinux:1592.12 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1877.2 AS builder
 WORKDIR /app
 
 # Copy only necessary files
 COPY pyproject.toml poetry.lock ./
 
 # Install Poetry and dependencies in one layer
-RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.12 python3.12-venv adduser \
-  && python3.12 -m venv ./venv \
+RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.13 python3.13-venv adduser \
+  && python3.13 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.create false \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
@@ -24,6 +24,4 @@ USER appuser
 COPY src ./src
 COPY docs_sources.json ./
 
-
-
-ENTRYPOINT ["python3.12", "src/main.py"]
+ENTRYPOINT ["python3.13", "src/main.py"]
