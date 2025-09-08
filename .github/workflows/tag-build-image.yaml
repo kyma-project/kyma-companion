@@ -42,7 +42,7 @@ jobs:
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
-      name: kyma-companion-doc-indexer
+      name: kyma-companion-indexer
       dockerfile: Dockerfile
       context: ./doc_indexer
       tags: ${{ needs.compute-tags.outputs.tags }}

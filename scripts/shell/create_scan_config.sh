@@ -29,7 +29,7 @@ bdba:
   # kyma-companion
   - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${TAG}
   # doc-indexer
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-doc-indexer:${TAG}
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:${TAG}
   # langfuse
   - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse-worker:3.63.0
   - europe-docker.pkg.dev/kyma-project/prod/external/langfuse/langfuse:3.63.0
