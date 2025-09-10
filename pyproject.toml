@@ -44,7 +44,7 @@ pytest-aioresponses = "^0.3.0"
 pytest-asyncio = "^1.0.0"
 pytest-cov = { extras = ["all"], version = "^6.1.1" }
 pytest-dotenv = "^0.5.2"
-pytest-mock = "^3.14.0"
+pytest-mock = "^3.15.0"
 pytest-rerunfailures = ">=12.0,<13.0"
 pytest-sugar = "^1.1.1"
 pytest-xdist = "^3.8.0"
