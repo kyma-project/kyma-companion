@@ -181,6 +181,29 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
         TestCase(
+            "Should not call kyma doc search tool as Function has JavaScript issue",
+            state=create_basic_state(
+                task_description="is there any issue?",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
+                                "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
+                    ),
+                    HumanMessage(content="is there any issue?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
+                    },
+                ),
+            ],
+        ),
+        TestCase(
             "Should not call fetch_kyma_resource_version tool call as Subscription resource version is correct",
             state=create_basic_state(
                 task_description="is there any issue?",
@@ -208,29 +231,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 ),
             ],
         ),
-        TestCase(
-            "Should not call kyma doc search tool as Function has JavaScript issue",
-            state=create_basic_state(
-                task_description="is there any issue?",
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="is there any issue?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
-                    },
-                ),
-            ],
-        ),
+
         TestCase(
             "Should not call kyma doc search tool as Function is successfully deployed",
             state=create_basic_state(
