@@ -214,7 +214,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+                        content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
                         "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="is there any issue?"),
