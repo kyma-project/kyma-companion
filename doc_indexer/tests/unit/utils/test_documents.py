@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import pytest
 from langchain.schema import Document
-
 from utils.documents import load_documents
 
 
