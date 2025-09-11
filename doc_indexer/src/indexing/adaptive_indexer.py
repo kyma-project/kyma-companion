@@ -11,8 +11,8 @@ from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
-
 from utils.documents import load_documents
+
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
 
@@ -127,11 +127,17 @@ class AdaptiveSplitMarkdownIndexer:
             table_name=table_name,
         )
 
-        self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
+        self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(
+            headers_to_split_on=[HEADER1]
+        )
 
-        self.markdown_splitter_h2 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2])
+        self.markdown_splitter_h2 = MarkdownHeaderTextSplitter(
+            headers_to_split_on=[HEADER1, HEADER2]
+        )
 
-        self.markdown_splitter_h3 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2, HEADER3])
+        self.markdown_splitter_h3 = MarkdownHeaderTextSplitter(
+            headers_to_split_on=[HEADER1, HEADER2, HEADER3]
+        )
 
     def _build_title(self, doc: Document) -> str:
         # the following lines build the combined title from the headers H1, H2, H3
@@ -164,14 +170,17 @@ class AdaptiveSplitMarkdownIndexer:
                 page_content=doc.page_content,
                 metadata={
                     "source": doc.metadata.get("source", ""),
-                    "title": doc.metadata.get("title") or extract_first_title(doc.page_content),
+                    "title": doc.metadata.get("title")
+                    or extract_first_title(doc.page_content),
                     "module": module,
                     "version": module_version,
                 },
             )
             return
         # Split document using current header level
-        markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADER_LEVELS[level], strip_headers=False)
+        markdown_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=HEADER_LEVELS[level], strip_headers=False
+        )
         splitted_docs = markdown_splitter.split_text(doc.page_content)
 
         for sub_doc in splitted_docs:
@@ -198,7 +207,9 @@ class AdaptiveSplitMarkdownIndexer:
             )
 
             # Recursively process this chunk with next header level
-            yield from self._process_doc(chunk, level + 1, parent_title=title if level == 0 else parent_title)
+            yield from self._process_doc(
+                chunk, level + 1, parent_title=title if level == 0 else parent_title
+            )
 
     def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
         """
@@ -243,7 +254,8 @@ class AdaptiveSplitMarkdownIndexer:
             with open(output_file_path, "w", encoding="utf-8") as out:
                 # Convert Documents to dictionaries
                 serializable_chunks = [
-                    {"page_content": chunk.page_content, "metadata": chunk.metadata} for chunk in all_chunks
+                    {"page_content": chunk.page_content, "metadata": chunk.metadata}
+                    for chunk in all_chunks
                 ]
                 json.dump({"kyma_docs": serializable_chunks}, fp=out, indent=2)
             logger.info(f"Indexed {len(serializable_chunks)} chunks.")
@@ -269,7 +281,9 @@ class AdaptiveSplitMarkdownIndexer:
                         self.db.add_documents(batch)
                         batch_count += 1
                         total_chunk_number += len(batch)
-                        logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
+                        logger.info(
+                            f"Indexed batch {batch_count} with {len(batch)} chunks"
+                        )
 
                         # Clear the batch
                         batch = []
@@ -282,10 +296,16 @@ class AdaptiveSplitMarkdownIndexer:
                     self.db.add_documents(batch)
                     batch_count += 1
                     total_chunk_number += len(batch)
-                    logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks")
+                    logger.info(
+                        f"Indexed final batch {batch_count} with {len(batch)} chunks"
+                    )
 
             except Exception:
-                logger.exception(f"Error while storing documents batch {batch_count + 1} in HanaDB")
+                logger.exception(
+                    f"Error while storing documents batch {batch_count + 1} in HanaDB"
+                )
                 raise
 
-            logger.info(f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}.")
+            logger.info(
+                f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}."
+            )

@@ -44,6 +44,7 @@ format = "black . --check"
 lint = "ruff check ."
 lint-fix = "ruff check . --fix"
 format-fix = "black ."
+code-fix = ["format-fix", "lint-fix"]
 typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit"
