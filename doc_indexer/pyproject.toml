@@ -29,7 +29,7 @@ package-mode = false
 [tool.poetry.group.test.dependencies]
 poethepoet = "^0.37.0"
 black = "^25.0.0"
-ruff = "^0.12.0"
+ruff = "^0.13.0"
 mypy = "^1.13.0"
 pytest = "^8.3.3"
 
@@ -44,6 +44,7 @@ format = "black . --check"
 lint = "ruff check ."
 lint-fix = "ruff check . --fix"
 format-fix = "black ."
+code-fix = ["format-fix", "lint-fix"]
 typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit"
