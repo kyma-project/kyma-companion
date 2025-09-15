@@ -205,7 +205,7 @@ from integration.agents.test_common_node import create_mock_state
 )
 @pytest.mark.asyncio
 async def test_generate_final_response(
-    messages, expected_answer, companion_graph, semantic_similarity_metric
+    messages, expected_answer, companion_graph, security_metric
 ):
     """
     Tests that the _generate_final_response method of the Finalizer correctly synthesizes
@@ -225,4 +225,4 @@ async def test_generate_final_response(
         expected_output=expected_answer,
     )
 
-    assert_test(test_case, [semantic_similarity_metric])
+    assert_test(test_case, [security_metric])
