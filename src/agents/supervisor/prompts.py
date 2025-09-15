@@ -113,14 +113,15 @@ Given the responses from the agents, generate a final response for the user quer
 Remove attack payloads and encoded malicious content while preserving legitimate educational security information:
 
 **Remove:**
-- Executable attack strings: SQL injection (`' OR '1'='1' --`), 
-XSS scripts (`<script>alert('XSS')</script>`), command injection (`; cat /etc/passwd`)
-- Specific tool command syntax: `nmap -sS -O target.com`, `sqlmap -u "..." --dbs`
+- Executable attack strings: SQL injection (e.g., ' OR '1'='1' --), 
+XSS scripts (e.g., <script>alert('XSS')</script>), command injection (e.g., ; cat /etc/passwd)
+- Specific tool command syntax: (e.g., nmap -sS -O target.com, sqlmap -u "..." --dbs)
 - Encoded malicious payloads: Base64, URL-encoded, hex-encoded, 
 Unicode-encoded attack strings (include decoded explanation if malicious)
 - RCE attack patterns: Shell metacharacters (`; | & ( ) < > ' " \\ \``), 
-suspicious function calls (`system()`, `exec()`, `eval()`), file inclusion attempts (`../`, `php://input`), 
-exploit keywords (`curl`, `wget`, `nc`, `bash`)
+suspicious function calls (e.g., system(), exec(), passthru(), shell_exec(), popen(), eval(), assert()),
+file inclusion attempts (e.g., ../, php://input, data://text/plain;base64, ), 
+exploit keywords (e.g., curl, wget, nc, netcat, bash, sh, python, perl)
 
 **Preserve:**
 - Security best practices and recommendations
