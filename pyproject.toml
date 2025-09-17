@@ -11,7 +11,7 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.13.*"
+requires-python = "==3.12.*"
 dependencies = [
   "aiohttp (>=3.12.15,<4.0.0)",
   "cryptography (>=45.0.6,<45.1.0)",
