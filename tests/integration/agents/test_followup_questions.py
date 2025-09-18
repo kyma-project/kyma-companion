@@ -62,7 +62,7 @@ def conversation_service(app_models, companion_graph):
         [
             SystemMessage(
                 content="""
-                        The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                        {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                         """
             ),
             HumanMessage(content="What is Kyma?"),
@@ -91,7 +91,7 @@ def conversation_service(app_models, companion_graph):
         ],
         [
             SystemMessage(
-                content="The user query is related to: "
+                content=""
                 "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
             ),
             HumanMessage(content="why is the pod failing?"),

@@ -13,7 +13,7 @@ from integration.conftest import create_mock_state
             # tests that the Common node corretly answers a general non-technical query
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
@@ -24,7 +24,7 @@ from integration.conftest import create_mock_state
             # tests that the Common node correctly answers a general programming related query
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content='Write "Hello, World!" code in Python'),

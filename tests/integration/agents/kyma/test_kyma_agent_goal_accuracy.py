@@ -77,7 +77,7 @@ def kyma_agent(app_models):
 # Helper functions for test simplification
 def create_system_message(resource_info: dict) -> SystemMessage:
     """Create a system message with resource information."""
-    return SystemMessage(content=f"The user query is related to: {resource_info}")
+    return SystemMessage(content=f"{resource_info}")
 
 
 def create_basic_state(
@@ -140,7 +140,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 task_description="What is wrong with api rule?",
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
@@ -156,7 +156,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 task_description="What is wrong with function?",
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
+                        content="{'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
                         "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1'}"
                     ),
                     HumanMessage(content="What is wrong with function?"),
