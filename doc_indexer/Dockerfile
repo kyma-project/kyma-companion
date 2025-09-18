@@ -1,36 +1,28 @@
-FROM ghcr.io/gardenlinux/gardenlinux:1877.3 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1592.12 AS builder
 WORKDIR /app
 
 # Copy only necessary files
 COPY pyproject.toml poetry.lock ./
-
-# Install Poetry and dependencies in one layer
-RUN apt-get update \
-  && apt-get dist-upgrade -y \
-  && apt-get install -y --no-install-recommends \
-  build-essential \
-  gcc \
-  python3.13 \
-  python3.13-venv \
-  adduser \
-  git \
-  && python3.13 -m venv ./venv \
-  && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
-  && ./venv/bin/poetry config virtualenvs.create false \
-  && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
-  && ./venv/bin/pip uninstall -y poetry
-
-# Clean up
-RUN apt-get remove build-essential gcc git -y \
-  && apt clean -y \
-  && apt autoremove -y \
-  && apt autoclean -y \
-  && rm -rf /var/lib/apt/lists/*
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
-
-# Copy rest of the files
 COPY src ./src
 COPY docs_sources.json ./
 
-ENTRYPOINT ["python3.13", "src/main.py"]
+# Install Poetry and dependencies in one layer
+RUN apt update &&  apt dist-upgrade -y && apt install -y build-essential gcc python3.12 python3.12-venv adduser git \
+  && python3.12 -m venv ./.venv \
+  && ./.venv/bin/pip install --no-cache-dir poetry>=2.1 \
+  && ./.venv/bin/poetry config virtualenvs.create false \
+  && ./.venv/bin/poetry install --only main --no-interaction --no-ansi \
+  && ./.venv/bin/pip uninstall -y poetry
+
+# Clean up
+RUN apt remove build-essential gcc -y && apt clean -y && apt autoremove -y && apt autoclean -y && rm -rf /var/lib/apt/lists/* 
+
+# Create the non-root user and application directories
+RUN useradd -u 10001 --create-home --shell /bin/bash appuser \
+    && mkdir -p data \
+    && chown -R appuser /app
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Switch to the non-root user
+USER appuser
