@@ -1,6 +1,6 @@
 images:
-  - source: bitnami/clickhouse@sha256:3cf6544f6c6cd33f6cc4960bc4a237de5e95a0df35af2bfbf6cc6073754fea04
-    tag: 24.12.3-debian-12-r1
+  - source: bitnamilegacy/clickhouse@sha256:aca8db51b177630eb405c6401e5f820e9e71d366d60562974d709bbddea7ad12
+    tag: 25.5.2-debian-12-r1
     amd64Only: true
   - source: langfuse/langfuse@sha256:90e1cf747c0815cdf8fe458efe9059f6430e673d93a103c4b60fddfe5e92218f
     tag: 3.63.0
