@@ -8,6 +8,6 @@ images:
   - source: langfuse/langfuse-worker@sha256:d77fdb447cda3ebad266641f504578eb8bf35e02e2bb3492378c19db7caa9353
     tag: 3.63.0
     amd64Only: true
-  - source: bitnami/zookeeper@sha256:6f2bdff0e22c3b156f40fac40bc163b97254b699b1c224cb491df6d51dc023a1
-    tag: 3.9.3-debian-12-r3
+  - source: bitnamilegacy/zookeeper@sha256:46d5bcbdf4434f40b7a453a7f53e6ea436a770981433c173ab782c0b13a5fb87
+    tag: 3.9.3-debian-12-r17
     amd64Only: true
