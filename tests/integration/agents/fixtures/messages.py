@@ -42,7 +42,7 @@ conversation_sample_2 = [
         "type": "system",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
+        "content": "{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
         "type": "system",
     },
     {
@@ -54,7 +54,7 @@ conversation_sample_2 = [
         "type": "ai",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
+        "content": "{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
         "type": "system",
     },
 ]
@@ -71,7 +71,7 @@ conversation_sample_3 = [
         "id": "58b1cb8c-f54d-4d1a-8ac1-2b38ff2334f3",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
+        "content": "{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
         "type": "system",
         "id": "1f97f2b8-0005-45f9-9e83-6effc4dc1ace",
     },
@@ -89,7 +89,7 @@ conversation_sample_3 = [
 
 conversation_sample_4 = [
     {
-        "content": "The user query is related to: {'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
+        "content": "{'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
         "type": "system",
         "id": "86c0a5f2-74ca-450a-a7c0-3fae4345a060",
     },
@@ -110,7 +110,7 @@ conversation_sample_4 = [
         "id": "29219073-0028-43d7-82bf-87ef22e65255",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
+        "content": "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
         "type": "system",
         "id": "b556062e-5553-45fd-95f2-ded631d99653",
     },
@@ -131,7 +131,7 @@ conversation_sample_4 = [
         "id": "27861fd9-02e5-47a3-9f2e-fde074e489de",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-wrong-rbac-permissions'}",
+        "content": "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-wrong-rbac-permissions'}",
         "type": "system",
         "id": "3dc2d885-6462-4d26-ac3f-a2cf7499c7f0",
     },
@@ -152,7 +152,7 @@ conversation_sample_4 = [
         "id": "58b1cb8c-f54d-4d1a-8ac1-2b38ff2334f3",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
+        "content": "{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-serverless-function-no-replicas'}",
         "type": "system",
         "id": "1f97f2b8-0005-45f9-9e83-6effc4dc1ace",
     },
@@ -170,7 +170,7 @@ conversation_sample_4 = [
 
 conversation_sample_5 = [
     {
-        "content": "The user query is related to: {'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
+        "content": "{'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': 'nginx', 'resource_namespace': 'nginx-oom'}",
         "type": "system",
         "id": "86c0a5f2-74ca-450a-a7c0-3fae4345a060",
     },
@@ -191,7 +191,7 @@ conversation_sample_5 = [
         "id": "29219073-0028-43d7-82bf-87ef22e65255",
     },
     {
-        "content": "The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
+        "content": "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'pod-check', 'resource_namespace': 'bitnami-role-missing'}",
         "type": "system",
         "id": "b556062e-5553-45fd-95f2-ded631d99653",
     },
@@ -216,7 +216,7 @@ conversation_sample_5 = [
 
 conversation_sample_6 = [
     {
-        "content": "The user query is related to: {'resource_namespace': 'test-ns'}",
+        "content": "{'resource_namespace': 'test-ns'}",
         "type": "system",
         "id": "5a1b0ec9-ba45-40b7-9f10-7010e350b981",
     },
@@ -245,7 +245,7 @@ conversation_sample_7 = [
     },
     {
         "type": "system",
-        "content": "The user query is related to: {'resource_namespace': 'test-function-8'}",
+        "content": "{'resource_namespace': 'test-function-8'}",
     },
     {"type": "human", "content": "what is wrong with function?"},
     {
@@ -258,7 +258,7 @@ conversation_sample_7 = [
     },
     {
         "type": "system",
-        "content": "The user query is related to: {'resource_namespace': 'test-function-8'}",
+        "content": "{'resource_namespace': 'test-function-8'}",
     },
     {"type": "human", "content": "what is wrong with function?"},
     {
@@ -271,6 +271,6 @@ conversation_sample_7 = [
     },
     {
         "type": "system",
-        "content": "The user query is related to: {'resource_namespace': 'test-function-8'}",
+        "content": "{'resource_namespace': 'test-function-8'}",
     },
 ]

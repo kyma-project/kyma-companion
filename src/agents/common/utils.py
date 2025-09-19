@@ -152,9 +152,7 @@ def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
 
     resource_context = user_input.get_resource_information()
     if resource_context and len(resource_context) > 0:
-        return SystemMessage(
-            content=f"The user query is related to: {resource_context}"
-        )
+        return SystemMessage(content=str(resource_context))
 
     return None
 

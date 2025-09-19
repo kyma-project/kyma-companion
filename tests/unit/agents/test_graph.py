@@ -633,8 +633,6 @@ class TestCompanionGraph:
                         first_message.content
                         == "Resource information is not available. Ask the user, if you need resource information like kind, name or namespace."
                     )
-                else:
-                    assert "The user query is related to:" in first_message.content
             if isinstance(mock_chunks, Exception):
                 raise mock_chunks
             for chunk in mock_chunks:

@@ -12,7 +12,7 @@ from integration.conftest import create_mock_state
             "user gives good feedback",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="your response is useful."),
@@ -24,7 +24,7 @@ from integration.conftest import create_mock_state
             "user expresses gratitude",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'test-pod', 'namespace': 'default'}"
                 ),
                 HumanMessage(content="Thanks, that helped!"),
@@ -35,7 +35,7 @@ from integration.conftest import create_mock_state
             "user confirms solution worked",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Deployment', 'resource_api_version': 'apps/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Perfect, exactly what I needed"),
@@ -46,7 +46,7 @@ from integration.conftest import create_mock_state
             "user gives enthusiastic positive feedback",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Service', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Great explanation! This solved my problem."),
@@ -57,7 +57,7 @@ from integration.conftest import create_mock_state
             "user gives bad feedback",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="this is wrong response."),
@@ -69,7 +69,7 @@ from integration.conftest import create_mock_state
             "user states solution doesn't work",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'ConfigMap', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="This doesn't work for my use case."),
@@ -80,7 +80,7 @@ from integration.conftest import create_mock_state
             "user states response is off-topic",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Ingress', 'resource_api_version': 'networking.k8s.io/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="This is not what I asked for."),
@@ -91,7 +91,7 @@ from integration.conftest import create_mock_state
             "user finds solution incomplete",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'StatefulSet', 'resource_api_version': 'apps/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="The solution is incomplete and missing steps."),
@@ -103,7 +103,7 @@ from integration.conftest import create_mock_state
             "user requests more explanation",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'PersistentVolume', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Can you explain this better?"),
@@ -114,7 +114,7 @@ from integration.conftest import create_mock_state
             "user requests more details",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Job', 'resource_api_version': 'batch/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="I need more details about this approach."),
@@ -125,7 +125,7 @@ from integration.conftest import create_mock_state
             "user asks about specific scenario",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'CronJob', 'resource_api_version': 'batch/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="What about high availability scenarios?"),
@@ -137,7 +137,7 @@ from integration.conftest import create_mock_state
             "user is still confused",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Secret', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="I'm still confused about this."),
@@ -149,7 +149,7 @@ from integration.conftest import create_mock_state
             "user gives partial positive with request for more info",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Namespace', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(
@@ -162,7 +162,7 @@ from integration.conftest import create_mock_state
             "user gives neutral response",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'RoleBinding', 'resource_api_version': 'rbac.authorization.k8s.io/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Alright."),
@@ -174,7 +174,7 @@ from integration.conftest import create_mock_state
             "user points out technical error",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'CustomResourceDefinition', 'resource_api_version': 'apiextensions.k8s.io/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="The YAML syntax is incorrect in your example."),
@@ -185,7 +185,7 @@ from integration.conftest import create_mock_state
             "user requests alternative approach",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'HorizontalPodAutoscaler', 'resource_api_version': 'autoscaling/v2', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(
@@ -199,7 +199,7 @@ from integration.conftest import create_mock_state
             "user gives minimal acknowledgment",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'ServiceAccount', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Hmm, okay."),
@@ -210,7 +210,7 @@ from integration.conftest import create_mock_state
             "user gives brief confirmation",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'Role', 'resource_api_version': 'rbac.authorization.k8s.io/v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="I see."),
@@ -222,7 +222,7 @@ from integration.conftest import create_mock_state
             "user asks for clarification",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'ConfigMap', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Can you clarify more?"),
@@ -233,7 +233,7 @@ from integration.conftest import create_mock_state
             "user asks for clarification",
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_kind': 'ConfigMap', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
                 HumanMessage(content="Can you elaborate more?"),
@@ -244,7 +244,7 @@ from integration.conftest import create_mock_state
         (
             "user gives shorter explanation",
             [
-                SystemMessage(content="The user query is related to: "),
+                SystemMessage(content=""),
                 HumanMessage(content="give me a shorter explanation"),
             ],
             False,
