@@ -410,9 +410,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             state=create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
-                    SystemMessage(
-                        content="{'resource_namespace': 'test-apirule-7'}"
-                    ),
+                    SystemMessage(content="{'resource_namespace': 'test-apirule-7'}"),
                     HumanMessage(content="What is wrong with api rules?"),
                 ],
                 k8s_client=k8s_client,
