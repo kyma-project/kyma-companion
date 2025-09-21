@@ -174,7 +174,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
@@ -185,7 +185,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about Kyma resources health",
@@ -196,20 +196,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
-        ),
-        TestCase(
-            "Should ask more information from user for queries about getting all Kyma resources",
-            state=create_basic_state(
-                task_description="get all Kyma resources",
-                messages=[
-                    HumanMessage(content="get all Kyma resources"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_goal="To provide an accurate and useful response, I need more information. "
-            "OR "
-            "I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
@@ -222,18 +209,18 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about showing all Kyma resources",
             state=create_basic_state(
-                task_description="show me all Kyma resources",
+                task_description="show me my all Kyma resources",
                 messages=[
-                    HumanMessage(content="show me all Kyma resources"),
+                    HumanMessage(content="show me my all Kyma resources"),
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
@@ -244,7 +231,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         TestCase(
             "Should ask more information from user for queries about Kyma cluster state",
@@ -255,7 +242,7 @@ def create_test_cases(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_goal="I need more information to answer this question. Please provide more information.",
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
     ]
 

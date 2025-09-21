@@ -411,13 +411,19 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 task_description="What is wrong with api rules?",
                 messages=[
                     SystemMessage(
-                        content="The query is related to: {'resource_namespace': 'test-apirule-7'}"
+                        content="{'resource_namespace': 'test-apirule-7'}"
                     ),
                     HumanMessage(content="What is wrong with api rules?"),
                 ],
                 k8s_client=k8s_client,
             ),
             expected_tool_calls=[
+                ToolCall(
+                    name="fetch_kyma_resource_version",
+                    args={
+                        "resource_kind": "APIRule",
+                    },
+                ),
                 ToolCall(
                     name="kyma_query_tool",
                     args={
@@ -438,7 +444,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 task_description="check all subscriptions in the cluster",
                 messages=[
                     SystemMessage(
-                        content="The query is related {'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="check all subscriptions in the cluster"),
