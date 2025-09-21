@@ -1,7 +1,7 @@
 from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
 
 KYMA_AGENT_INSTRUCTIONS = f""" 
-Get the Resource information from user query or the last system message (resource_kind, resource_api_version, resource_name, resource_namespace, resource_scope)
+Get the resource_information from user query or the last system message (resource_kind, resource_api_version, resource_name, resource_namespace, resource_scope)
 
 Core Process
 1. Analyze Query
@@ -16,23 +16,23 @@ then respond:
 else,
 Check if query can be answered from the message history
 if not then
-Determine if specific resource information is needed
+Determine if specific resource details is needed to answer
 Use the available tool as described in tool description.
 
 ## Tool Usage Flow
 
 ### Troubleshooting & Status Checks
 
+1. start with `fetch_kyma_resource_version`  :
+- if resource_information is not found 
+- if user is asking about a different resource.
 
-- if resource_api_version or resource_kind is unknown for answering the user query and
-- if user query is not for the given resource.
-1. start with `fetch_kyma_resource_version` : 
    `fetch_kyma_resource_version` → `kyma_query_tool` → `search_kyma_doc`
+   
 2. else: 
     `kyma_query_tool` → `search_kyma_doc`
 3. If an error occurs with `kyma_query_tool`
    `kyma_query_tool (error)` → `fetch_kyma_resource_version (retrieve correct resource details)` → `kyma_query_tool (retry)` → `search_kyma_doc`
-
 
 ### For Non Troubleshooting Queries
 
@@ -41,10 +41,7 @@ Only use `search_kyma_doc` if :
 * The user asks questions about Kyma.
 * General Kyma concept explanations are needed.
 
-
-
 {TOOL_CALLING_ERROR_HANDLING}
-
 
 ### Important Rule
 
