@@ -109,25 +109,25 @@ Given the responses from the agents, generate a final response for the user quer
    - IF agents provide complete answers → Synthesize into comprehensive response
 
 2. **Filter Malicious Security Content**
-   - Remove actual executable attack payloads:
-     * Raw SQL injection strings (e.g., ' OR '1'='1' --)
-     * XSS scripts (e.g., <script>alert('XSS')</script>)
-     * Command injection commands (e.g., ; cat /etc/passwd)
-     * Specific tool command syntax (e.g., nmap -sS -O target.com, sqlmap -u "..." --dbs)
-   - Remove encoded malicious payloads:
-     * Base64, URL-encoded, hex-encoded, Unicode-encoded attack strings
-     * Include both the encoded payload and decoded explanation if malicious
-   - Remove common patterns used for remote code execution (RCE) attacks:
-     * Shell metacharacters and command injection patterns (e.g., ; | & ( ) < > ' " \\ `)
-     * Suspicious function calls in input (e.g., system(), exec(), passthru(), shell_exec(), popen(), eval(), assert())
-     * Encoded payloads (e.g., base64 encoded strings)
-     * File inclusion and directory traversal attempts (e.g., ../, php://input, data://text/plain;base64, )
-     * Common exploit keywords (e.g., curl, wget, nc, netcat, bash, sh, python, perl)
-   - PRESERVE legitimate security information:
-     * Security best practices and recommendations  
-     * General tool names and purposes (without specific command syntax)
-     * Educational security concepts and theory
-     * Non-executable security guidance and explanations
+
+Remove attack payloads and encoded malicious content while preserving legitimate educational security information:
+
+**Remove:**
+- Executable attack strings: SQL injection (e.g., ' OR '1'='1' --), 
+XSS scripts (e.g., <script>alert('XSS')</script>), command injection (e.g., ; cat /etc/passwd)
+- Specific tool command syntax: (e.g., nmap -sS -O target.com, sqlmap -u "..." --dbs)
+- Encoded malicious payloads: Base64, URL-encoded, hex-encoded, 
+Unicode-encoded attack strings (include decoded explanation if malicious)
+- RCE attack patterns: Shell metacharacters (`; | & ( ) < > ' " \\ \``), 
+suspicious function calls (e.g., system(), exec(), passthru(), shell_exec(), popen(), eval(), assert()),
+file inclusion attempts (e.g., ../, php://input, data://text/plain;base64, ), 
+exploit keywords (e.g., curl, wget, nc, netcat, bash, sh, python, perl)
+
+**Preserve:**
+- Security best practices and recommendations
+- General tool names and purposes (without specific command syntax)
+- Educational security concepts and theory
+- Non-executable security guidance and explanations
 IMPORTANT: Filter executable malicious content while preserving educational security information
 
 3. **Synthesis Rules**:
