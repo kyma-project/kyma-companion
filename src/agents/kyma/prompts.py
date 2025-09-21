@@ -26,7 +26,7 @@ Use the available tool as described in tool description.
 
 - if resource_api_version or resource_kind is unknown for answering the user query and
 - if user query is not for the given resource.
-1. start with `fetch_kyma_resource_version` when : 
+1. start with `fetch_kyma_resource_version` : 
    `fetch_kyma_resource_version` → `kyma_query_tool` → `search_kyma_doc`
 2. else: 
     `kyma_query_tool` → `search_kyma_doc`
