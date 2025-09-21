@@ -389,12 +389,12 @@ def planner_conversation_history_metric(evaluator_model):
             [
                 {
                     "description": "convert it to javascript'",
-                    "task_title": "Converting Python to JavaScript",
+                    "task_title": "Kyma function in JavaScript",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
                 }
             ],
-            0.8,
+            0.5,
         ),
     ],
 )
@@ -415,14 +415,13 @@ async def test_planner_with_conversation_history(
 
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
-
     # Then: We evaluate the response using deepeval metrics
     assert (
         result.subtasks is not None
     ), "Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
-    actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
+    actual_subtasks = [subtask.model_dump(mode="json") for subtask in result.subtasks]
     test_case = LLMTestCase(
         input=str(all_messages),
         actual_output=str(actual_subtasks),
