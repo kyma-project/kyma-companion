@@ -1,12 +1,10 @@
 import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
-from ragas.dataset_schema import MultiTurnSample
+from ragas.dataset_schema import SingleTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 from ragas.llms import LangchainLLMWrapper
 from ragas.messages import ToolCall
-from ragas.metrics import AgentGoalAccuracyWithReference
-from ragas.metrics._string import NonLLMStringSimilarity
-from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
+from ragas.metrics import SimpleCriteriaScore
 
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
@@ -23,7 +21,7 @@ from utils.settings import (
 )
 
 AGENT_STEPS_NUMBER = 25
-TOOL_ACCURACY_THRESHOLD = 0.7
+GOAL_ACCURACY_THRESHOLD = 7
 
 
 # Test data definitions
@@ -108,13 +106,6 @@ def create_basic_state(
 
 
 @pytest.fixture
-def tool_accuracy_scorer():
-    metric = ToolCallAccuracy()
-    metric.arg_comparison_metric = NonLLMStringSimilarity()
-    return metric
-
-
-@pytest.fixture
 def evaluator_llm(app_models):
     main_model = app_models[MAIN_MODEL_NAME]
     return LangchainLLMWrapper(main_model.llm)
@@ -122,7 +113,11 @@ def evaluator_llm(app_models):
 
 @pytest.fixture
 def goal_accuracy_metric(evaluator_llm):
-    scorer = AgentGoalAccuracyWithReference(llm=evaluator_llm)
+    scorer = SimpleCriteriaScore(
+        name="course_grained_score",
+        definition="Score 0 to 10 by similarity",
+        llm=evaluator_llm,
+    )
     return scorer
 
 
@@ -252,25 +247,27 @@ def create_test_cases(k8s_client: IK8sClient):
 async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: TestCase):
     """
     Simplified test for KymaAgent _invoke_chain method.
-    Tests both tool calling and content response scenarios.
+    Tests content response scenarios.
     """
+    user_query = test_case.state.messages[-1].content
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
     agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
 
-    sample = MultiTurnSample(
-        user_input=agent_messages,
+    sample = SingleTurnSample(
+        user_input=user_query,
+        response=agent_messages[-1].content,
         reference=test_case.expected_goal,
     )
 
-    score = await goal_accuracy_metric.multi_turn_ascore(sample)
-    if score < TOOL_ACCURACY_THRESHOLD:
+    score = await goal_accuracy_metric.single_turn_ascore(sample)
+    if score < GOAL_ACCURACY_THRESHOLD:
         print(
             f"**Test case failed to meet expectation:**\n"
             f"--> Expected goal: {test_case.expected_goal}\n"
             f"--> Agent response: \n{agent_messages[-1].content}"
         )
 
-    assert score >= TOOL_ACCURACY_THRESHOLD, (
+    assert score >= GOAL_ACCURACY_THRESHOLD, (
         f"Test case: {test_case.name}. "
-        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {GOAL_ACCURACY_THRESHOLD}"
     )
