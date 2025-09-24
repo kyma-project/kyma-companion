@@ -232,6 +232,29 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
             ],
         ),
         TestCase(
+            "Should not call kyma doc search tool as Function is successfully deployed",
+            state=create_basic_state(
+                task_description="check for errors?",
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
+                    ),
+                    HumanMessage(content="check for errors?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_tool_calls=[
+                # only retrieves function as function is successfully deployed
+                ToolCall(
+                    name="kyma_query_tool",
+                    args={
+                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
+                    },
+                ),
+            ],
+        ),
+        TestCase(
             "Should call fetch_kyma_resource_version tool call if kyma_query_tool call fails",
             state=create_basic_state(
                 task_description="What is wrong with api rules?",

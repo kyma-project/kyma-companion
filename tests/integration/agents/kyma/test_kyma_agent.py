@@ -863,6 +863,72 @@ async def test_invoke_chain(
             "search_kyma_doc",  # expected_tool_call
             False,  # should_raise
         ),
+        # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
+        (
+            "Should return use search_kyma_doc tool for Kyma question",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_namespace': 'sample-ns'}"
+                    ),
+                    HumanMessage(content="how to enable a Kyma module?"),
+                ],
+                subtasks=[
+                    {
+                        "description": "how to enable a Kyma module?",
+                        "task_title": "Fetching info on enabling a Kyma module",
+                        "assigned_to": "KymaAgent",
+                        "status": "pending",
+                    },
+                ],
+                my_task=SubTask(
+                    description="how to enable a Kyma module?",
+                    task_title="Fetching info on enabling a Kyma module",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),  # context
+            None,  # retrieval_context
+            "",  # expected_result
+            "search_kyma_doc",  # expected_tool_call
+            False,  # should_raise
+        ),
+        # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
+        (
+            "Should return use search_kyma_doc tool for Kyma question",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="The user query is related to: {'resource_namespace': 'sample-ns'}"
+                    ),
+                    HumanMessage(content="show how to create an API Rule"),
+                ],
+                subtasks=[
+                    {
+                        "description": "show how to create an API Rule",
+                        "task_title": "Fetching info on creating an API Rule",
+                        "assigned_to": "KymaAgent",
+                        "status": "pending",
+                    },
+                ],
+                my_task=SubTask(
+                    description="show how to create an API Rule",
+                    task_title="Fetching info on creating an API Rule",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),  # context
+            None,  # retrieval_context
+            "",  # expected_result
+            "search_kyma_doc",  # expected_tool_call
+            False,  # should_raise
+        ),
     ],
 )
 @pytest.mark.asyncio

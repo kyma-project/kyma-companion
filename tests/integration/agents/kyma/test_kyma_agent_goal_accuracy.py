@@ -214,9 +214,9 @@ def create_test_cases(k8s_client: IK8sClient):
         TestCase(
             "Should ask more information from user for queries about showing all Kyma resources",
             state=create_basic_state(
-                task_description="show me my all Kyma resources",
+                task_description="show me all Kyma resources",
                 messages=[
-                    HumanMessage(content="show me my all Kyma resources"),
+                    HumanMessage(content="show me all Kyma resources"),
                 ],
                 k8s_client=k8s_client,
             ),
