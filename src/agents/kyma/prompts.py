@@ -44,7 +44,7 @@ Only use `search_kyma_doc` if :
 {TOOL_CALLING_ERROR_HANDLING}
 
 ### Important Rule
-
+Consider Subscription as Kyma Subscription and Function as Kyma Function
 Always use `search_kyma_doc` after `kyma_query_tool` if the identified problem is kyma related. 
 Never use `search_kyma_doc` and answer directly : 
 - if there is no problem 
