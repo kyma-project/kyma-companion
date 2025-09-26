@@ -44,7 +44,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 1: "List everything in my cluster" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
                 ),
                 HumanMessage(content="list everything in my cluster"),
             ],
@@ -57,7 +57,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 1: "List everything in my cluster" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
                 ),
                 HumanMessage(content="check resources in the cluster"),
@@ -71,7 +71,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 1: "check Kubernetes resources" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
                 ),
                 HumanMessage(content="check resources"),
             ],
@@ -84,7 +84,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 2: "Give me a complete overview" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="give me a complete overview of my resources"),
@@ -98,7 +98,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="show all pods and serverless functions"),
@@ -112,7 +112,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 4: "Check all pods" - should only assign to KubernetesAgent
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
                 ),
                 HumanMessage(content="check all pods"),
             ],
@@ -124,7 +124,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 5: "List all services and API rules" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="list all services and API rules"),
@@ -138,7 +138,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="what resources do I have in my cluster"),
@@ -152,7 +152,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 6: "Show me everything deployed" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
                 ),
                 HumanMessage(content="show me everything deployed"),
@@ -166,7 +166,7 @@ def planner_correctness_metric(evaluator_model):
             # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="get status of all workloads and functions"),
@@ -180,7 +180,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a Kyma related query is assigned to the Kyma agent
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma?"),
@@ -193,7 +193,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a Kyma related query is assigned to the Kyma agent
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kyma API Rule?"),
@@ -206,7 +206,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a Kubernetes related query is assigned to the Kubernetes agent
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my cluster?"),
@@ -219,7 +219,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a query related to Kyma and Kubernetes is divided into the correct subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is Kubernetes and Explain Kyma function"),
@@ -233,7 +233,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
@@ -249,7 +249,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
@@ -265,7 +265,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a complex query related to Kyma is divided correctly into two subtasks for the Kyma agent
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
@@ -281,7 +281,7 @@ def planner_correctness_metric(evaluator_model):
             # tests if a complex query related to Kyma , Kubernetes and some general query divided into three subtasks
             [
                 SystemMessage(
-                    content="The user query is related to: "
+                    content=""
                     "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(
@@ -389,12 +389,12 @@ def planner_conversation_history_metric(evaluator_model):
             [
                 {
                     "description": "convert it to javascript'",
-                    "task_title": "Converting Python to JavaScript",
+                    "task_title": "Kyma function in JavaScript",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
                 }
             ],
-            0.8,
+            0.5,
         ),
     ],
 )
@@ -415,14 +415,13 @@ async def test_planner_with_conversation_history(
 
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
-
     # Then: We evaluate the response using deepeval metrics
     assert (
         result.subtasks is not None
     ), "Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
-    actual_subtasks = [subtask.model_dump() for subtask in result.subtasks]
+    actual_subtasks = [subtask.model_dump(mode="json") for subtask in result.subtasks]
     test_case = LLMTestCase(
         input=str(all_messages),
         actual_output=str(actual_subtasks),

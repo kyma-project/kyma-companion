@@ -65,9 +65,7 @@ def k8s_agent(app_models):
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Cluster' }"
-                    ),
+                    SystemMessage(content="{'resource_kind': 'Cluster' }"),
                     HumanMessage(content="Why is my pod in error state?"),
                 ],
                 subtasks=[
@@ -145,7 +143,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': '', 'resource_namespace': ''}"
+                        content="{'resource_api_version': '', 'resource_namespace': ''}"
                     ),
                     HumanMessage(
                         content="What is causing the ImagePullBackOff status for many pods?"
@@ -175,7 +173,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'default', 'resource_kind': 'Pod'}"
+                        content="{'resource_api_version': 'v1', 'resource_namespace': 'default', 'resource_kind': 'Pod'}"
                     ),
                     HumanMessage(
                         content="What deployments exist in the 'kube-system' namespace?"
@@ -204,9 +202,7 @@ async def test_invoke_chain(
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'production'}"
-                    ),
+                    SystemMessage(content="{'resource_namespace': 'production'}"),
                     HumanMessage(content="Is there any issue with my namespace"),
                 ],
                 subtasks=[
@@ -232,9 +228,7 @@ async def test_invoke_chain(
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'production'}"
-                    ),
+                    SystemMessage(content="{'resource_namespace': 'production'}"),
                     HumanMessage(content="Check resources in the namespace"),
                 ],
                 subtasks=[
@@ -261,7 +255,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="Show me the details of my-app deployment"),
                 ],
@@ -289,7 +283,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="Show me the details of resource"),
                 ],
@@ -317,7 +311,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'monitoring', 'resource_kind': 'Pod'}"
+                        content="{'resource_api_version': 'v1', 'resource_namespace': 'monitoring', 'resource_kind': 'Pod'}"
                     ),
                     HumanMessage(
                         content="Why is my prometheus pod in CrashLoopBackOff?"
@@ -347,7 +341,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': '', 'resource_namespace': ''}"
+                        content="{'resource_api_version': '', 'resource_namespace': ''}"
                     ),
                     HumanMessage(content="Are there any nodes with disk pressure?"),
                 ],
@@ -375,7 +369,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="give me cluster overview"),
                 ],
@@ -402,7 +396,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="check all resources in cluster"),
                 ],
@@ -430,7 +424,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="give me namespace overview"),
                 ],
@@ -458,7 +452,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
+                        content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
                     HumanMessage(content="check all resources in namespace"),
                 ],

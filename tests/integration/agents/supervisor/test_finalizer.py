@@ -15,7 +15,7 @@ from integration.agents.test_common_node import create_mock_state
             "case 1: Finalizer do not answer the question itself",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="Describe Kyma in detail"),
                 AIMessage(name="KymaAgent", content="It is a color of fish."),
@@ -32,7 +32,7 @@ from integration.agents.test_common_node import create_mock_state
             "case 2: Finalizer do not answer the question itself",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(name="KubernetesAgent", content="The sky is blue."),
@@ -49,7 +49,7 @@ from integration.agents.test_common_node import create_mock_state
             "case 3: Finalizer do not answer the question itself",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(
@@ -69,7 +69,7 @@ from integration.agents.test_common_node import create_mock_state
             "case 4: Finalizer do not answer the question itself",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(
                     content="what are the types of a k8s service? what is a kyma function?"
@@ -95,7 +95,7 @@ from integration.agents.test_common_node import create_mock_state
             "Finalizer answers based on Kyma agent's response",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'resource_namespace': ''}"
+                    content="{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'resource_namespace': ''}"
                 ),
                 HumanMessage(content="What is Kyma?"),
                 AIMessage(
@@ -147,7 +147,7 @@ from integration.agents.test_common_node import create_mock_state
             "Finalizer answers based on K8S agent's response",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(
@@ -177,7 +177,7 @@ from integration.agents.test_common_node import create_mock_state
             "Finalizer answers based on K8S and Kyma agents' responses",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(
                     content="what are the types of a k8s service? what is a kyma function?"
@@ -264,7 +264,7 @@ from integration.agents.test_common_node import create_mock_state
             "Finalizer answers based on one of the agents' responses if another agent's response is invalid",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(
                     content="what is k8s stateful set and what is a kyma function?"
@@ -310,7 +310,7 @@ from integration.agents.test_common_node import create_mock_state
             "Finalizer answers based on Common and Kyma agent's responses",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(
                     content="write hello world nodejs script. Show me how to deploy it as a Kyma function."
@@ -398,9 +398,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "finalizer answers short query based on Kyma agent's response",
             [
-                SystemMessage(
-                    content="The user query is related to: {'resource_namespace': 'test-namespace'}"
-                ),
+                SystemMessage(content="{'resource_namespace': 'test-namespace'}"),
                 HumanMessage(
                     content="what is the latest istio version included in Kyma?"
                 ),
@@ -414,9 +412,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "finalizer answers query based on kubernetes agent's response",
             [
-                SystemMessage(
-                    content="The user query is related to: {'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="list me deployments in this namespace"),
                 AIMessage(
                     name="KubernetesAgent",
@@ -472,9 +468,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "Should mention about Joule context when kubenretes agent ask for resource name and namespace",
             [
-                SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Cluster' }"
-                ),
+                SystemMessage(content="{'resource_kind': 'Cluster' }"),
                 HumanMessage(content="Why is my pod in error state?"),
                 AIMessage(
                     name="KubernetesAgent",
@@ -497,7 +491,7 @@ from integration.agents.test_common_node import create_mock_state
             "Should mention about Joule context when kyma agent ask for resource name and namespace",
             [
                 SystemMessage(
-                    content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+                    content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
                 ),
                 HumanMessage(
                     content="Why is the pod of the serverless Function not ready?"

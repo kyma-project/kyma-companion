@@ -19,7 +19,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -37,7 +37,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -55,7 +55,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -77,7 +77,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -101,7 +101,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -125,7 +125,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -153,7 +153,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -177,7 +177,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
@@ -201,7 +201,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(
                     content="""
-                The user query is related to: {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
                 """
                 )
             ],
