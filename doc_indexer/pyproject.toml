@@ -11,7 +11,7 @@ authors = [
 ]
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = "==3.12.*"
+requires-python = "==3.13.*"
 dependencies = [
   "hdbcli (>=2.22.29,<3.0.0)",
   "python-decouple (>=3.8,<4.0.0)",
