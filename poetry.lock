@@ -3623,6 +3623,27 @@ files = [
 ]
 
 [[package]]
+name = "networkx"
+version = "3.5"
+description = "Python package for creating and manipulating graphs and networks"
+optional = false
+python-versions = ">=3.11"
+groups = ["test"]
+files = [
+    {file = "networkx-3.5-py3-none-any.whl", hash = "sha256:0030d386a9a06dee3565298b4a734b68589749a544acbb6c412dc9e2489ec6ec"},
+    {file = "networkx-3.5.tar.gz", hash = "sha256:d4c6f9cf81f52d69230866796b82afbccdec3db7ae4fbd1b65ea750feed50037"},
+]
+
+[package.extras]
+default = ["matplotlib (>=3.8)", "numpy (>=1.25)", "pandas (>=2.0)", "scipy (>=1.11.2)"]
+developer = ["mypy (>=1.15)", "pre-commit (>=4.1)"]
+doc = ["intersphinx-registry", "myst-nb (>=1.1)", "numpydoc (>=1.8.0)", "pillow (>=10)", "pydata-sphinx-theme (>=0.16)", "sphinx (>=8.0)", "sphinx-gallery (>=0.18)", "texext (>=0.6.7)"]
+example = ["cairocffi (>=1.7)", "contextily (>=1.6)", "igraph (>=0.11)", "momepy (>=0.7.2)", "osmnx (>=2.0.0)", "scikit-learn (>=1.5)", "seaborn (>=0.13)"]
+extra = ["lxml (>=4.6)", "pydot (>=3.0.1)", "pygraphviz (>=1.14)", "sympy (>=1.10)"]
+test = ["pytest (>=7.2)", "pytest-cov (>=4.0)", "pytest-xdist (>=3.0)"]
+test-extras = ["pytest-mpl", "pytest-randomly"]
+
+[[package]]
 name = "nltk"
 version = "3.9.1"
 description = "Natural Language Toolkit"
@@ -5517,14 +5538,14 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.3.3"
+version = "0.3.6"
 description = "Evaluation framework for RAG and LLM applications"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "ragas-0.3.3-py3-none-any.whl", hash = "sha256:87ce8fcb53643fcb317f55155bced92e592b559a17a109776ecc607398adfbef"},
-    {file = "ragas-0.3.3.tar.gz", hash = "sha256:b0915ee51fa5682f84996798857f2e11238f37df23d135134970a924e8d668a7"},
+    {file = "ragas-0.3.6-py3-none-any.whl", hash = "sha256:0663bcfcbc4a446d3ad3b3641b41bff18ab8c489a1fe68339e3832b75b2ac8b8"},
+    {file = "ragas-0.3.6.tar.gz", hash = "sha256:e829bea3e981983fccff3331cd905de63b765a8a30c45f0d59fe3c4912ee3a59"},
 ]
 
 [package.dependencies]
@@ -5538,11 +5559,13 @@ langchain-community = "*"
 langchain-core = "*"
 langchain_openai = "*"
 nest-asyncio = "*"
-numpy = "*"
+networkx = "*"
+numpy = ">=1.21.0,<3.0.0"
 openai = ">=1.0.0"
 pillow = ">=10.4.0"
 pydantic = ">=2.0.0"
 rich = "*"
+scikit-network = "*"
 tiktoken = "*"
 tqdm = "*"
 typer = "*"
@@ -5552,6 +5575,7 @@ ai-frameworks = ["haystack-ai"]
 all = ["datacompy", "llama_index", "nltk", "pandas", "r2r", "rapidfuzz", "rouge_score", "sacrebleu", "sentence-transformers", "transformers"]
 dev-minimal = ["build (>=1.3.0)", "nbmake", "pre-commit (>=4.3.0)", "pyright (>=1.1.403)", "pytest", "pytest-asyncio", "pytest-xdist[psutil]", "ruff"]
 gdrive = ["google-api-python-client (>=2.178.0)", "google-auth (>=2.40.3)", "google-auth-oauthlib (>=1.2.2)"]
+oci = ["oci (>=2.160.1)"]
 test = ["scipy"]
 tracing = ["langfuse (>=3.2.4)", "mlflow (>=3.1.4)"]
 
@@ -6179,12 +6203,55 @@ maintenance = ["conda-lock (==3.0.1)"]
 tests = ["matplotlib (>=3.5.0)", "mypy (>=1.15)", "numpydoc (>=1.2.0)", "pandas (>=1.4.0)", "polars (>=0.20.30)", "pooch (>=1.6.0)", "pyamg (>=4.2.1)", "pyarrow (>=12.0.0)", "pytest (>=7.1.2)", "pytest-cov (>=2.9.0)", "ruff (>=0.11.7)", "scikit-image (>=0.19.0)"]
 
 [[package]]
+name = "scikit-network"
+version = "0.33.3"
+description = "Graph algorithms"
+optional = false
+python-versions = ">=3.9"
+groups = ["test"]
+files = [
+    {file = "scikit_network-0.33.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d945cbca5cce1cc8ec437e06254d2b927d08ce2477440f23fec054b9109a8c4b"},
+    {file = "scikit_network-0.33.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:a5ff3e576aabcbc31770307465b6f96ae07be45b71bcdad261068f26e3f1c2ad"},
+    {file = "scikit_network-0.33.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:41488c87c522c4cc81da8ee998f1843026e28136d48ab505de4f6a20ba0c59da"},
+    {file = "scikit_network-0.33.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:549384e5e0201e9a3a9adfeb0afa54d6c9c500df4986fe4b8e46c39bb985be58"},
+    {file = "scikit_network-0.33.3-cp310-cp310-win_amd64.whl", hash = "sha256:8b059641e2c7109431b9a1d3a1a4010a7cb02ac909c506db0d9dad5eae5df2db"},
+    {file = "scikit_network-0.33.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:62926bb9cd64fbcd9e2d1d7bdd2eaeadc2db833995368ef76dac7c4571fdfb3a"},
+    {file = "scikit_network-0.33.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:09d4cdfee33e3d0a615072d9a5e3584448988c949a508f0c697ab79dadeeac42"},
+    {file = "scikit_network-0.33.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5f463d5ae812e49ecada358f7ebc0446798fe4feba4c86c9e86e5e7b8bf7d35f"},
+    {file = "scikit_network-0.33.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:794bdef1318addf020d5a64f5cf59bce51da5898106405b76b92ae3128fe0d92"},
+    {file = "scikit_network-0.33.3-cp311-cp311-win_amd64.whl", hash = "sha256:2e011a76d2cbf684b9c893aeb9bdcbae5dd19fc7394866eb7e6078c96c2d4ad8"},
+    {file = "scikit_network-0.33.3-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:0f4860b1ea70a7973350035a9da1c4dad7b754840ff58070d3e97b34f1a95e9c"},
+    {file = "scikit_network-0.33.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:80b2aa3436ba6284d8b88f2560e4387a48bf4e18c8cd2f09416855d84aba2029"},
+    {file = "scikit_network-0.33.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:09fe541a543a22358dce189d485810b0980c8a49584c993fa9a868878b31ca65"},
+    {file = "scikit_network-0.33.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3dd17c0bc9fabb3ac04514f6682b91d87397825c4c202ddfd640cbd10471c26b"},
+    {file = "scikit_network-0.33.3-cp312-cp312-win_amd64.whl", hash = "sha256:907c79bf01a22f5f5072e2ebea395ef7c6831fe72610d35ebb71eea24b022345"},
+    {file = "scikit_network-0.33.3-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:2a90ff18fefb16b4b6e8b53f747a932367fa19210ce7d4ed47bdfe71d553134d"},
+    {file = "scikit_network-0.33.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:e47e22b90455696826c3aaf56db31cb454ccd6796c82895e1a61392e422a23d7"},
+    {file = "scikit_network-0.33.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a861cca79b867cb0c24215ca962f3b0e793487347b9d081c3225bed2fd426202"},
+    {file = "scikit_network-0.33.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:25eb1e697de691e1b823718627c7c43d261594c5eeacb452edee820223382a2e"},
+    {file = "scikit_network-0.33.3-cp313-cp313-win_amd64.whl", hash = "sha256:e1bbe329b642116d64b8660e75d796340a712f17dbff42564e8c69caf7d26ef2"},
+    {file = "scikit_network-0.33.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:e75a299f8c02da2156340bba48f82cf7b7fa031d41a77ac1ea9d2cdb63f6b22f"},
+    {file = "scikit_network-0.33.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:fdecd2aab04eaadddca628c18c1f415a6093201b2b079d8142502f7dee0bc500"},
+    {file = "scikit_network-0.33.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:15d321eb5ea34bda4fa0213e70c4981267044834f607459531f99d4c34eae862"},
+    {file = "scikit_network-0.33.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dd7f74f7144f2f3771eb4608b0f8499c1237b746994b806606cfe5085de463fb"},
+    {file = "scikit_network-0.33.3-cp39-cp39-win_amd64.whl", hash = "sha256:3fae79aa1023d714bcb69adb722d4908d5cd6c4192d4fdce407b071f22ef2239"},
+    {file = "scikit_network-0.33.3.tar.gz", hash = "sha256:c5add343f3691dcf6dd35884ec7d92202923897c0458ce79aa2f1540a7a14f06"},
+]
+
+[package.dependencies]
+numpy = ">=1.22.4"
+scipy = ">=1.7.3"
+
+[package.extras]
+test = ["note", "pluggy (>=0.7.1)", "pytest"]
+
+[[package]]
 name = "scipy"
 version = "1.16.1"
 description = "Fundamental algorithms for scientific computing in Python"
 optional = false
 python-versions = ">=3.11"
-groups = ["main"]
+groups = ["main", "test"]
 files = [
     {file = "scipy-1.16.1-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:c033fa32bab91dc98ca59d0cf23bb876454e2bb02cbe592d5023138778f70030"},
     {file = "scipy-1.16.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:6e5c2f74e5df33479b5cd4e97a9104c511518fbd979aa9b8f6aec18b2e9ecae7"},
@@ -7862,4 +7929,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "7d6b56d46c69256d1a45d7935668a459c37a671288f708dcb467a2d256a6d613"
+content-hash = "4357cf91911583fccf26c69f1145a316849463df41631df10057b9bf38f9954c"
