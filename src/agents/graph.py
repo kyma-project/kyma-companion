@@ -75,6 +75,12 @@ from utils.settings import (
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
 
+import mlflow
+
+mlflow.langchain.autolog()
+mlflow.set_experiment(experiment_id=2643571428613970)
+mlflow.set_tracking_uri("databricks")
+
 logger = get_logger(__name__)
 
 
@@ -487,10 +493,6 @@ class CompanionGraph:
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
             ],
             tags=[cluster_id],
-            metadata=get_langfuse_metadata(
-                message.user_identifier or "unknown",
-                cluster_id,
-            ),
         )
 
         async for chunk in self.graph.astream(input=graph_input, config=run_config):
