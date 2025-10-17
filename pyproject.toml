@@ -41,7 +41,7 @@ fakeredis = "^2.32.0"
 prettytable = "^3.15.1"
 pytest = "^8.4.1"
 pytest-aioresponses = "^0.3.0"
-pytest-asyncio = "^1.0.0"
+pytest-asyncio = "^1.2.0"
 pytest-cov = { extras = ["all"], version = "^7.0.0" }
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.15.0"
