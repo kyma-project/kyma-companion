@@ -1,7 +1,9 @@
 import json
 from collections.abc import AsyncGenerator
+from http import HTTPStatus
 from typing import Protocol, cast
 
+from kubernetes.client import ApiException
 from langfuse.callback import CallbackHandler
 
 from agents.common.constants import ERROR, ERROR_RESPONSE
@@ -121,11 +123,18 @@ class ConversationService(metaclass=SingletonMeta):
         )
 
         # Fetch the context for our questions from the Kubernetes cluster.
-        k8s_context = (
-            await self._init_questions_handler.fetch_relevant_data_from_k8s_cluster(
-                message=message, k8s_client=k8s_client
+        k8s_context = "No relevant context found"
+        try:
+            k8s_context = (
+                await self._init_questions_handler.fetch_relevant_data_from_k8s_cluster(
+                    message=message, k8s_client=k8s_client
+                )
             )
-        )
+        except ApiException as exp:
+            # if the status is 403, we just log the error and continue with an empty context.
+            logger.warning(f"Error fetching data from k8s cluster: {exp}")
+            if exp.status != HTTPStatus.FORBIDDEN:
+                raise exp
 
         # Reduce the amount of tokens according to the limits.
         k8s_context = self._init_questions_handler.apply_token_limit(

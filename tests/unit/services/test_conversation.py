@@ -2,6 +2,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from kubernetes.client import ApiException
 from langchain_core.messages import AIMessage
 
 from agents.common.constants import ERROR, ERROR_RESPONSE
@@ -70,20 +71,50 @@ class TestConversation:
         return mock_config
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "test_description, k8s_context, fetch_relevant_data_from_k8s_cluster_mock, should_expect_exception",
+        [
+            (
+                "should return questions when k8s context fetch is successful",
+                POD_YAML,
+                AsyncMock(return_value=POD_YAML),
+                False,
+            ),
+            (
+                "should return general questions when k8s context fetch fails due to permission error",
+                "No relevant context found",
+                AsyncMock(side_effect=ApiException(status=403, reason="Forbidden")),
+                False,
+            ),
+            (
+                "should fail when k8s context fetch fails due to any other error",
+                "None",
+                AsyncMock(side_effect=ApiException(status=404, reason="Unknown")),
+                True,
+            ),
+        ],
+    )
     async def test_new_conversation(
         self,
         mock_model_factory,
         mock_companion_graph,
         mock_redis_saver,
         mock_config,
+        test_description,
+        k8s_context,
+        fetch_relevant_data_from_k8s_cluster_mock,
+        should_expect_exception,
     ) -> None:
         # Given:
         mock_handler = Mock()
-        mock_handler.fetch_relevant_data_from_k8s_cluster = AsyncMock(
-            return_value=POD_YAML
+        mock_handler.fetch_relevant_data_from_k8s_cluster = (
+            fetch_relevant_data_from_k8s_cluster_mock
         )
-        mock_handler.apply_token_limit = Mock(return_value=POD_YAML)
+        mock_handler.apply_token_limit = Mock(return_value=k8s_context)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
+
+        # Reset singleton instances to ensure test isolation.
+        ConversationService._instances = {}
         conversation_service = ConversationService(
             config=mock_config,
             initial_questions_handler=mock_handler,
@@ -92,6 +123,13 @@ class TestConversation:
         mock_k8s_client = Mock()
 
         # When:
+        if should_expect_exception:
+            with pytest.raises(ApiException):
+                await conversation_service.new_conversation(
+                    k8s_client=mock_k8s_client, message=TEST_MESSAGE
+                )
+            return
+
         result = await conversation_service.new_conversation(
             k8s_client=mock_k8s_client, message=TEST_MESSAGE
         )
@@ -101,8 +139,8 @@ class TestConversation:
         mock_handler.fetch_relevant_data_from_k8s_cluster.assert_called_once_with(
             message=TEST_MESSAGE, k8s_client=mock_k8s_client
         )
-        mock_handler.apply_token_limit.assert_called_once_with(POD_YAML, TOKEN_LIMIT)
-        mock_handler.generate_questions.assert_called_once_with(context=POD_YAML)
+        mock_handler.apply_token_limit.assert_called_once_with(k8s_context, TOKEN_LIMIT)
+        mock_handler.generate_questions.assert_called_once_with(context=k8s_context)
 
     @pytest.mark.asyncio
     async def test_handle_followup_questions(
