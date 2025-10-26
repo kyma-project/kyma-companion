@@ -543,15 +543,13 @@ def test_filter_valid_messages(test_description, input_messages, expected_output
                 namespace="default",
             ),
             SystemMessage(
-                content="The user query is related to: {'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'my-pod', 'resource_namespace': 'default'}"
+                content="{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_name': 'my-pod', 'resource_namespace': 'default'}"
             ),
         ),
         (
             "should add resource information when available",
             UserInput(query="test", resource_kind="Pod"),
-            SystemMessage(
-                content="The user query is related to: {'resource_kind': 'Pod'}"
-            ),
+            SystemMessage(content="{'resource_kind': 'Pod'}"),
         ),
         (
             "should return None when no resource information",

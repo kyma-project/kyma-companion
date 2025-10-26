@@ -78,6 +78,57 @@ def kyma_agent(app_models):
 @pytest.mark.parametrize(
     "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
+        (
+            "Should mention about Joule context in kyma dashboard",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+                    ),
+                    HumanMessage(
+                        content="Why is the pod of the serverless Function not ready?"
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"
+                                },
+                            },
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Please specify the function name.",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "Why is the pod of the serverless Function not ready?",
+                        "task_title": "Why is the pod of the serverless Function not ready?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="Why is the pod of the serverless Function not ready?",
+                    task_title="Why is the pod of the serverless Function not ready?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            None,
+            "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. ",
+            None,
+            False,
+        ),
         # Test case for API Rule with wrong access strategy
         # - Verifies agent correctly identifies and explains API Rule validation error
         # - Checks agent uses both kyma_query_tool and search_kyma_doc
@@ -88,7 +139,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -155,7 +206,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
@@ -189,7 +240,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -241,7 +292,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
@@ -309,7 +360,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'kyma-serverless-function-no-replicas'}"
+                        content="{'resource_namespace': 'kyma-serverless-function-no-replicas'}"
                     ),
                     HumanMessage(
                         content="Why is the pod of the serverless Function not ready?"
@@ -374,7 +425,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="{}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",
@@ -421,7 +472,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="{}"),
                     HumanMessage(content="what are the BTP Operator features?"),
                     AIMessage(
                         content="",
@@ -473,7 +524,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="{}"),
                     HumanMessage(
                         content="What are the best practices for deploying Node.js functions in Kyma Serverless?"
                     ),
@@ -530,7 +581,7 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(content="The user query is related to: {}"),
+                    SystemMessage(content="{}"),
                     HumanMessage(
                         content="How do I implement rate limiting in Kyma API Gateway?"
                     ),
@@ -578,58 +629,6 @@ def kyma_agent(app_models):
             "global rate limiting (using an external rate limit service like Redis). "
             "For detailed configuration examples, please check the Kyma API Gateway documentation "
             "or Istio's traffic management guides.",
-            None,
-            False,
-        ),
-        (
-            "Should mention about Joule context in kyma dashboard",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
-                    ),
-                    HumanMessage(
-                        content="Why is the pod of the serverless Function not ready?"
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"
-                                },
-                            },
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Please specify the function name.",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "Why is the pod of the serverless Function not ready?",
-                        "task_title": "Why is the pod of the serverless Function not ready?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="Why is the pod of the serverless Function not ready?",
-                    task_title="Why is the pod of the serverless Function not ready?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            None,
-            "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. "
-            "Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.",
             None,
             False,
         ),
@@ -694,7 +693,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
@@ -782,7 +781,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="The user query is related to: {'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
                     HumanMessage(content="what is wrong?"),
                     AIMessage(
@@ -831,9 +830,7 @@ async def test_invoke_chain(
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'sample-ns'}"
-                    ),
+                    SystemMessage(content="{'resource_namespace': 'sample-ns'}"),
                     HumanMessage(
                         content="how to create an application with Kyma and register external service"
                     ),
