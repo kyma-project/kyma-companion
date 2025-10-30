@@ -13,7 +13,6 @@ Think step by step.
 - `fetch_pod_logs_tool` - If needed, use this to fetch the logs of the Pods to gather more information. Use this tool if the user's query is related to pod and no issue found with pod resources.
 
 ## Important Rules
-- If the resource information is not provided, try to get the missing information by running the appropriate tool multiple times if needed.
 - If you cannot fully answer a question, another assistant with different tools will continue from where you left off.
 - If you need resource information like name or namespace, mention to user that {JOULE_CONTEXT_INFORMATION}.
 - Do not suggest any follow-up questions.
