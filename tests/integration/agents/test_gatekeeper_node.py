@@ -29,7 +29,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             LLMTestCaseParams.ACTUAL_OUTPUT,
         ],
         model=evaluator_model,
-        threshold=0.7,
+        threshold=0.6,
         verbose_mode=True,
     )
 

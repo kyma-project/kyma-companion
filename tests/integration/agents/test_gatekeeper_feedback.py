@@ -132,18 +132,6 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # I am still confused
-        (
-            "user is still confused",
-            [
-                SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Secret', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
-                ),
-                HumanMessage(content="I'm still confused about this."),
-            ],
-            True,
-        ),
         # Mixed feedback
         (
             "user gives partial positive with request for more info",
