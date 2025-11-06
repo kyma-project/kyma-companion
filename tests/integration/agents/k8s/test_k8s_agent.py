@@ -490,8 +490,9 @@ async def test_tool_calls(
     assert isinstance(response, AIMessage)
 
     # for tool call cases, verify tool call properties
-    assert response.tool_calls is not None, "Expected tool calls but found none"
-    assert len(response.tool_calls) > 0, "Expected at least one tool call"
+    if expected_tool_call:
+        assert response.tool_calls is not None, "Expected tool calls but found none"
+        assert len(response.tool_calls) > 0, "Expected at least one tool call"
     tool_call = response.tool_calls[0]
     assert tool_call.get("type") == "tool_call"
     assert tool_call.get("name") == expected_tool_call
