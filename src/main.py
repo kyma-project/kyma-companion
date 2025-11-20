@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from routers.conversations import router as conversations_router
 from routers.probes import router as probes_router
+from routers.rag_api import router as rag_router
 from services.metrics import CustomMetrics
 from utils.logging import get_logger
 
@@ -120,6 +121,7 @@ def handle_http_exception(
 
 app.include_router(conversations_router)
 app.include_router(probes_router)
+app.include_router(rag_router)
 
 
 @app.get("/")
