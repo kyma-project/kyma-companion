@@ -22,7 +22,9 @@ class SearchRequest(BaseModel):
     """Request model for RAG search."""
 
     query: str = Field(..., description="The search query text")
-    top_k: int = Field(default=5, ge=1, le=20, description="Number of results to return")
+    top_k: int = Field(
+        default=5, ge=1, le=20, description="Number of results to return"
+    )
 
 
 class DocumentResult(BaseModel):
@@ -36,7 +38,9 @@ class SearchResponse(BaseModel):
     """Response model for RAG search."""
 
     query: str = Field(..., description="The original query")
-    documents: list[DocumentResult] = Field(..., description="List of relevant documents")
+    documents: list[DocumentResult] = Field(
+        ..., description="List of relevant documents"
+    )
     count: int = Field(..., description="Number of documents returned")
 
 
