@@ -49,8 +49,10 @@ def init_data_sanitizer(
     return DataSanitizer(config.sanitization_config)
 
 
-# Cache for models dict to avoid recreating on every request
-_models_cache: dict[str, IModel | Embeddings] | None = None
+class _ModelsCache:
+    """Singleton cache for models dict to avoid using global statement."""
+
+    _instance: dict[str, IModel | Embeddings] | None = None
 
 
 def init_models_dict(
@@ -59,12 +61,10 @@ def init_models_dict(
     """
     Initialize models dictionary from config.
     """
-    global _models_cache
-
-    if _models_cache is None:
+    if _ModelsCache._instance is None:
         try:
             model_factory = ModelFactory(config=config)
-            _models_cache = model_factory.create_models()
+            _ModelsCache._instance = model_factory.create_models()
         except Exception as e:
             logger.exception("Failed to initialize models")
             raise HTTPException(
@@ -72,7 +72,7 @@ def init_models_dict(
                 detail=f"Failed to initialize models: {str(e)}",
             ) from e
 
-    return _models_cache
+    return _ModelsCache._instance
 
 
 def init_k8s_client(
