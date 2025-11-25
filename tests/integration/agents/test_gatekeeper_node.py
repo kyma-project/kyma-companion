@@ -89,8 +89,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "pod-related issue without mentioning K8s",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_kind': 'Pod', 'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="My pod keeps restarting with status code 137"),
             ],
@@ -101,8 +100,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "service connectivity issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I can't access my service on port 8080 even though it's running"
@@ -115,8 +113,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "ingress/api gateway issue (kyma related)",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My API Gateway returns 503 errors when I try to access my microservice"
@@ -129,8 +126,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "volume mount issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My container can't write to the mounted volume at /data"
@@ -143,8 +139,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "resource limits issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I'm getting OOMKilled even though I set memory limits to 512Mi"
@@ -157,8 +152,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "configmap/secret issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My application can't see the environment variables I defined in my config"
@@ -171,8 +165,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "serverless function issue (kyma related)",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My function throws a 500 error when triggered by an event"
@@ -185,8 +178,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "networking policy issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="Service A can't communicate with Service B even though they're in the same namespace"
@@ -199,8 +191,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "kubernetes query for persistent volumes",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="What is the role of PersistentVolumes?"),
             ],
@@ -211,8 +202,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "kubernetes query for image pull backoff",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="What is causing the 'ImagePullBackOff' error?"),
             ],
@@ -223,8 +213,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "crd/operator issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="The status condition of my custom resource stays in 'Pending' state"
@@ -237,8 +226,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "api rule issue (kyma specific)",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My API rule isn't exposing my service even though it's been created"
@@ -251,8 +239,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "certificate/tls issue",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="I'm getting certificate validation errors when accessing my service via HTTPS"
@@ -265,8 +252,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "eventing issue (kyma specific)",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="My subscription isn't receiving events from the application"
@@ -279,8 +265,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Kyma resource status check",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(content="Can you check the status of my Kyma services?"),
             ],
@@ -291,8 +276,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Kyma installation query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
                 ),
                 HumanMessage(
                     content="What's the best way to install Kyma on an existing cluster?"
@@ -324,8 +308,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "User asking to retrieve information for logs",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(content="Can you check the logs for my Kyma function?"),
             ],
@@ -337,8 +320,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Out of domain query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="What's the weather like today?"),
             ],
@@ -349,8 +331,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Personal question",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="What's your favorite color?"),
             ],
@@ -365,8 +346,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Mixed query (part technical, part non-technical)",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(
                     content="I'm feeling frustrated today. check my Kyma function"
@@ -379,8 +359,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly reply to greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="Hi"),
             ],
@@ -391,8 +370,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly replies to Hello greeting despite technical context",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'apps/v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(content="Hello"),
             ],
@@ -403,8 +381,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly replies to Hey greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
                 ),
                 HumanMessage(content="Hey"),
             ],
@@ -427,8 +404,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly forward the query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is problem with my deployment?"),
             ],
@@ -439,8 +415,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly forward the query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="how to deploy a kyma function?"),
             ],
@@ -451,8 +426,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly forward the query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my api"),
             ],
@@ -463,8 +437,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "correctly forward the query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my pod"),
             ],
@@ -475,8 +448,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "decline a general non-technical query about Capital of Germany - should not be influenced by system message context",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
@@ -487,8 +459,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "answers a general programming related query",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
@@ -499,8 +470,7 @@ def gatekeeper_correctness_metric(evaluator_model):
             "Query about self capabilities.",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(content="what are your capabilities?"),
             ],
@@ -520,8 +490,7 @@ def gatekeeper_correctness_metric(evaluator_model):
                     "due to a context cancellation."
                 ),
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="Check why pod is failing"),
             ],
@@ -537,7 +506,7 @@ async def test_invoke_gatekeeper_node(
     expected_answer,
     expected_query_forwarding,
     companion_graph,
-    gatekeeper_correctness_metric,
+    goal_accuracy_metric,
 ):
     """
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
@@ -560,7 +529,7 @@ async def test_invoke_gatekeeper_node(
             actual_output=actual_response.direct_response,
             expected_output=expected_answer,
         )
-        assert_test(test_case, [gatekeeper_correctness_metric])
+        assert_test(test_case, [goal_accuracy_metric])
 
 
 @pytest.mark.parametrize(
@@ -570,8 +539,7 @@ async def test_invoke_gatekeeper_node(
             "Programming query should be categorized as Programming",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
@@ -582,8 +550,7 @@ async def test_invoke_gatekeeper_node(
             "Greeting query should be categorized as Greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="Hi"),
             ],
@@ -594,8 +561,7 @@ async def test_invoke_gatekeeper_node(
             "Hello greeting should be categorized as Greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(content="Hello"),
             ],
@@ -606,8 +572,7 @@ async def test_invoke_gatekeeper_node(
             "Hey greeting should be categorized as Greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'prod-namespace'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'prod-namespace'}"
                 ),
                 HumanMessage(content="Hey"),
             ],
@@ -618,8 +583,7 @@ async def test_invoke_gatekeeper_node(
             "Good morning greeting should be categorized as Greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'test'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test'}"
                 ),
                 HumanMessage(content="Good morning"),
             ],
@@ -630,8 +594,7 @@ async def test_invoke_gatekeeper_node(
             "Capabilities query should be categorized as About You",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
                 ),
                 HumanMessage(content="what are your capabilities?"),
             ],
@@ -642,8 +605,7 @@ async def test_invoke_gatekeeper_node(
             "Non-technical query should be categorized as Irrelevant",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
@@ -654,8 +616,7 @@ async def test_invoke_gatekeeper_node(
             "Kyma query should be categorized as Kyma",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my api rule"),
             ],
@@ -666,8 +627,7 @@ async def test_invoke_gatekeeper_node(
             "Kubernetes query should be categorized as Kubernetes",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
+                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
                 ),
                 HumanMessage(content="what is the status of my pod"),
             ],
@@ -956,7 +916,7 @@ async def test_gatekeeper_with_conversation_history(
     expected_answer,
     expected_query_forwarding,
     companion_graph,
-    gatekeeper_correctness_metric,
+    goal_accuracy_metric,
 ):
     """
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
@@ -984,4 +944,4 @@ async def test_gatekeeper_with_conversation_history(
             actual_output=result.direct_response,
             expected_output=expected_answer,
         )
-        assert_test(test_case, [gatekeeper_correctness_metric])
+        assert_test(test_case, [goal_accuracy_metric])
