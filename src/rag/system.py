@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import Protocol, cast
 
 from langchain_core.documents import Document
@@ -16,6 +17,8 @@ from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
 )
+
+from src.rag.document_grounding_retriever import DocumentGroundingRetriever
 
 logger = get_logger(__name__)
 
@@ -43,10 +46,20 @@ class RAGSystem:
             cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME]))
         )
         # setup retriever
-        self.retriever = HanaDBRetriever(
-            embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
-            connection=Hana().get_connction(),
-            table_name=DOCS_TABLE_NAME,
+        # self.retriever = HanaDBRetriever(
+        #     embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
+        #     connection=Hana().get_connction(),
+        #     table_name=DOCS_TABLE_NAME,
+        # )
+
+        self.retriever = DocumentGroundingRetriever(
+            api_url=os.getenv("AICORE_BASE_URL"),
+            client_id=os.getenv("AICORE_CLIENT_ID"),
+            client_secret=os.getenv("AICORE_CLIENT_SECRET"),
+            token_url=os.getenv("AICORE_AUTH_URL"),
+            resource_group="document-grounding",
+            data_repository_type="help.sap.com",
+            filter_id="string",
         )
 
         # setup reranker
