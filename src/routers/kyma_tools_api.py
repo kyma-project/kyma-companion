@@ -9,6 +9,7 @@ All endpoints require Kubernetes authentication headers.
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
 
 from agents.kyma.tools.query import (
@@ -182,7 +183,7 @@ async def get_kyma_resource_version(
 @router.post("/search", response_model=SearchKymaDocResponse)
 async def search_kyma_documentation(
     request: Annotated[SearchKymaDocRequest, Body()],
-    models: Annotated[dict[str, IModel], Depends(init_models_dict)],
+    models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
 ) -> SearchKymaDocResponse:
     """
     Search through Kyma documentation for relevant information.
