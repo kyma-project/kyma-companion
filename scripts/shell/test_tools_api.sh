@@ -41,12 +41,12 @@ echo "=========================================="
 # 1. Health Check
 echo ""
 echo "1. Testing K8s Tools Health Check..."
-curl -s "$BASE_URL/api/k8s-tools/health" | jq '.' || echo "Failed"
+curl -s "$BASE_URL/api/tools/k8s/health" | jq '.' || echo "Failed"
 
 # 2. Query K8s Resources (Deployments)
 echo ""
 echo "2. Testing K8s Query - List Deployments in default namespace..."
-curl -s -X POST "$BASE_URL/api/k8s-tools/query" \
+curl -s -X POST "$BASE_URL/api/tools/k8s/query" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
   -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -58,7 +58,7 @@ echo ""
 echo "3. Testing K8s Pod Logs - Fetch logs from a pod..."
 
 # First, query to get list of pods and extract the first pod name
-PODS_RESPONSE=$(curl -s -X POST "$BASE_URL/api/k8s-tools/query" \
+PODS_RESPONSE=$(curl -s -X POST "$BASE_URL/api/tools/k8s/query" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
   -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -77,7 +77,7 @@ if [ -z "$POD_NAME" ] || [ "$POD_NAME" = "null" ]; then
 else
     echo "Found pod: $POD_NAME"
     echo "Fetching logs..."
-    curl -s -X POST "$BASE_URL/api/k8s-tools/logs" \
+    curl -s -X POST "$BASE_URL/api/tools/k8s/logs/pods" \
       -H "Content-Type: application/json" \
       -H "x-cluster-url: $CLUSTER_URL" \
       -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -88,7 +88,7 @@ fi
 # 4. Get Cluster Overview
 echo ""
 echo "4. Testing K8s Overview - Cluster Level..."
-curl -s -X POST "$BASE_URL/api/k8s-tools/overview" \
+curl -s -X POST "$BASE_URL/api/tools/k8s/overview" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
   -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -104,12 +104,12 @@ echo "=========================================="
 # 1. Health Check
 echo ""
 echo "1. Testing Kyma Tools Health Check..."
-curl -s "$BASE_URL/api/kyma-tools/health" | jq '.' || echo "Failed"
+curl -s "$BASE_URL/api/tools/kyma/health" | jq '.' || echo "Failed"
 
 # 2. Query Kyma Resources (Functions)
 echo ""
 echo "2. Testing Kyma Query - List Functions..."
-curl -s -X POST "$BASE_URL/api/kyma-tools/query" \
+curl -s -X POST "$BASE_URL/api/tools/kyma/query" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
   -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -119,7 +119,7 @@ curl -s -X POST "$BASE_URL/api/kyma-tools/query" \
 # 3. Get Kyma Resource Version
 echo ""
 echo "3. Testing Kyma Resource Version - Function..."
-curl -s -X POST "$BASE_URL/api/kyma-tools/resource-version" \
+curl -s -X POST "$BASE_URL/api/tools/kyma/resource-version" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
   -H "x-cluster-certificate-authority-data: $CLUSTER_CA" \
@@ -129,7 +129,7 @@ curl -s -X POST "$BASE_URL/api/kyma-tools/resource-version" \
 # 4. Search Kyma Documentation
 echo ""
 echo "4. Testing Kyma Documentation Search..."
-curl -s -X POST "$BASE_URL/api/kyma-tools/search" \
+curl -s -X POST "$BASE_URL/api/tools/kyma/search" \
   -H "Content-Type: application/json" \
   -d '{"query": "How to install Kyma?"}' | jq '.' || echo "Failed"
 

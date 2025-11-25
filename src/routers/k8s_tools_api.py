@@ -9,12 +9,19 @@ All endpoints require Kubernetes authentication headers.
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from pydantic import BaseModel, Field
 
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
-from routers.common import API_PREFIX
-from routers.tools_dependencies import HealthResponse, init_k8s_client
+from routers.common import (
+    API_PREFIX,
+    K8sOverviewRequest,
+    K8sOverviewResponse,
+    K8sQueryRequest,
+    K8sQueryResponse,
+    PodLogsRequest,
+    PodLogsResponse,
+    init_k8s_client,
+)
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 
@@ -22,81 +29,11 @@ logger = get_logger(__name__)
 
 
 # ============================================================================
-# Request/Response Models
-# ============================================================================
-
-
-class K8sQueryRequest(BaseModel):
-    """Request model for K8s resource query."""
-
-    uri: str = Field(
-        ...,
-        description="Kubernetes API URI path (e.g., '/api/v1/namespaces/default/pods')",
-        examples=[
-            "/api/v1/namespaces/default/pods",
-            "/apis/apps/v1/namespaces/default/deployments",
-        ],
-    )
-
-
-class K8sQueryResponse(BaseModel):
-    """Response model for K8s resource query."""
-
-    data: dict | list[dict] = Field(..., description="Query result data")
-
-
-class PodLogsRequest(BaseModel):
-    """Request model for fetching pod logs."""
-
-    name: str = Field(..., description="Pod name")
-    namespace: str = Field(..., description="Namespace name")
-    container_name: str = Field(..., description="Container name within the pod")
-    is_terminated: bool = Field(
-        default=False,
-        description="Set to true to fetch logs from previous terminated container",
-    )
-    tail_lines: int = Field(
-        default=10,
-        ge=1,
-        le=1000,
-        description="Number of lines from the end of the logs to show",
-    )
-
-
-class PodLogsResponse(BaseModel):
-    """Response model for pod logs."""
-
-    logs: list[str] = Field(..., description="Pod log lines")
-    pod_name: str = Field(..., description="Pod name")
-    container_name: str = Field(..., description="Container name")
-    line_count: int = Field(..., description="Number of log lines returned")
-
-
-class K8sOverviewRequest(BaseModel):
-    """Request model for K8s cluster/namespace overview."""
-
-    namespace: str = Field(
-        default="",
-        description='Namespace name. Use empty string "" for cluster-level overview',
-    )
-    resource_kind: str = Field(
-        default="cluster",
-        description='Resource kind: "cluster" for cluster overview, "namespace" for namespace overview',
-    )
-
-
-class K8sOverviewResponse(BaseModel):
-    """Response model for K8s overview."""
-
-    context: str = Field(..., description="Contextual information in YAML format")
-
-
-# ============================================================================
 # Router
 # ============================================================================
 
 router = APIRouter(
-    prefix=f"{API_PREFIX}/k8s-tools",
+    prefix=f"{API_PREFIX}/tools/k8s",
     tags=["k8s-tools"],
 )
 
@@ -104,17 +41,6 @@ router = APIRouter(
 # ============================================================================
 # Endpoints
 # ============================================================================
-
-
-@router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """
-    Health check endpoint for the K8s Tools API.
-    """
-    return HealthResponse(
-        status="healthy",
-        message="K8s Tools API is operational",
-    )
 
 
 @router.post("/query", response_model=K8sQueryResponse)
@@ -142,7 +68,7 @@ async def query_k8s_resource(
         ) from e
 
 
-@router.post("/logs", response_model=PodLogsResponse)
+@router.post("/pods/logs", response_model=PodLogsResponse)
 async def get_pod_logs(
     request: Annotated[PodLogsRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
