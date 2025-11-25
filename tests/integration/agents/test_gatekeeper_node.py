@@ -1,7 +1,6 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics.g_eval.g_eval import GEval
-from deepeval.test_case.llm_test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.fixtures.messages import (
@@ -11,27 +10,6 @@ from integration.agents.fixtures.messages import (
     conversation_sample_7,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
-
-
-# Correctness metric for not general queries that needs planning
-@pytest.fixture
-def gatekeeper_correctness_metric(evaluator_model):
-    return GEval(
-        name="Semantic Similarity",
-        evaluation_steps=[
-            """
-            Evaluate whether two answers are semantically similar or convey the same meaning. Extra relevant information is acceptable.
-            Ensure code blocks (YAML, JavaScript, JSON, etc.) are identical in both answers without any changes.
-            """,
-        ],
-        evaluation_params=[
-            LLMTestCaseParams.EXPECTED_OUTPUT,
-            LLMTestCaseParams.ACTUAL_OUTPUT,
-        ],
-        model=evaluator_model,
-        threshold=0.6,
-        verbose_mode=True,
-    )
 
 
 @pytest.mark.parametrize(
