@@ -51,7 +51,9 @@ class TestK8sToolsAPI:
         """Get base URL for K8s Tools API requests."""
         return f"{base_api_url}/api/tools/k8s"
 
-    def test_query_k8s_deployments(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_k8s_deployments(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying K8s deployments in default namespace."""
         logger.info("Testing K8s Query - List Deployments")
 
@@ -66,7 +68,11 @@ class TestK8sToolsAPI:
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried deployments: {len(items)} found")
 
     def test_query_k8s_pods(self, base_url: str, auth_headers: dict[str, str]) -> None:
@@ -84,7 +90,11 @@ class TestK8sToolsAPI:
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried pods: {len(items)} found")
 
     def test_get_pod_logs(self, base_url: str, auth_headers: dict[str, str]) -> None:
@@ -128,9 +138,13 @@ class TestK8sToolsAPI:
         assert "logs" in logs_data
         assert "pod_name" in logs_data
         assert logs_data["pod_name"] == pod_name
-        logger.info(f"Successfully fetched logs: {logs_data.get('line_count', 0)} lines")
+        logger.info(
+            f"Successfully fetched logs: {logs_data.get('line_count', 0)} lines"
+        )
 
-    def test_get_cluster_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_get_cluster_overview(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test getting cluster-level overview."""
         logger.info("Testing K8s Overview - Cluster Level")
 
@@ -147,7 +161,9 @@ class TestK8sToolsAPI:
         assert len(data["context"]) > 0
         logger.info("Successfully retrieved cluster overview")
 
-    def test_get_namespace_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_get_namespace_overview(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test getting namespace-level overview."""
         logger.info("Testing K8s Overview - Namespace Level")
 
@@ -161,7 +177,10 @@ class TestK8sToolsAPI:
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "context" in data
-        logger.info(f"Successfully retrieved namespace overview " f"(length: {len(data['context'])})")
+        logger.info(
+            f"Successfully retrieved namespace overview "
+            f"(length: {len(data['context'])})"
+        )
 
 
 class TestKymaToolsAPI:
@@ -172,7 +191,9 @@ class TestKymaToolsAPI:
         """Get base URL for Kyma Tools API requests."""
         return f"{base_api_url}/api/tools/kyma"
 
-    def test_query_kyma_functions(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_kyma_functions(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying Kyma serverless functions."""
         logger.info("Testing Kyma Query - List Functions")
 
@@ -187,10 +208,16 @@ class TestKymaToolsAPI:
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried functions: {len(items)} found")
 
-    def test_query_kyma_apirules(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_kyma_apirules(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying Kyma API Rules."""
         logger.info("Testing Kyma Query - List APIRules")
 
@@ -205,7 +232,11 @@ class TestKymaToolsAPI:
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried APIRules: {len(items)} found")
 
     @pytest.mark.parametrize(
@@ -271,13 +302,18 @@ class TestKymaToolsAPI:
         assert "query" in data
         assert data["query"] == query
         assert len(data["results"]) > 0
-        logger.info(f"Successfully searched documentation: " f"{len(data['results'])} characters returned")
+        logger.info(
+            f"Successfully searched documentation: "
+            f"{len(data['results'])} characters returned"
+        )
 
 
 class TestToolsAPIErrorHandling:
     """Test suite for Tools API error handling."""
 
-    def test_query_missing_uri_returns_422(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_missing_uri_returns_422(
+        self, base_api_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test that missing required field returns 422."""
         response = requests.post(
             f"{base_api_url}/api/tools/k8s/query",
@@ -311,7 +347,9 @@ class TestToolsAPIErrorHandling:
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-    def test_invalid_resource_kind_returns_error(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
+    def test_invalid_resource_kind_returns_error(
+        self, base_api_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test that invalid resource kind returns error."""
         response = requests.post(
             f"{base_api_url}/api/tools/kyma/resource-version",
