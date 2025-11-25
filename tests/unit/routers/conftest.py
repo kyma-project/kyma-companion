@@ -2,10 +2,13 @@
 Shared fixtures for router unit tests.
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+from routers.common import init_models_dict
 from routers.k8s_tools_api import init_k8s_client as init_k8s_client_k8s
 from routers.kyma_tools_api import init_k8s_client as init_k8s_client_kyma
 from services.k8s import IK8sClient
@@ -116,10 +119,36 @@ def k8s_client_factory():
 @pytest.fixture(scope="function")
 def test_client():
     """
-    Simple test client fixture without K8s client override.
+    Simple test client fixture with mocked models and RAG dependencies.
 
     This fixture is used by tests that don't need K8s cluster access
-    (e.g., search endpoint that only uses models).
+    but need models (e.g., search endpoint).
     """
-    client = TestClient(app)
-    yield client
+    # Create mock models dictionary
+    mock_embedding = Mock()
+    mock_model = Mock()
+
+    mock_models = {
+        "embedding": mock_embedding,
+        "model": mock_model,
+    }
+
+    def get_mock_models():
+        return mock_models
+
+    # Mock RAGSystem to avoid Hana connection
+    with patch("agents.kyma.tools.search.RAGSystem") as mock_rag_class:
+        # Create mock RAG instance
+        mock_rag_instance = Mock()
+        mock_rag_instance.aretrieve = AsyncMock(
+            return_value=[
+                Mock(page_content="Mock Kyma documentation."),
+                Mock(page_content="Another Kyma document."),
+            ]
+        )
+        mock_rag_class.return_value = mock_rag_instance
+
+        # Override the models dependency
+        app.dependency_overrides[init_models_dict] = get_mock_models
+        client = TestClient(app)
+        yield client

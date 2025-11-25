@@ -38,14 +38,9 @@ echo "=========================================="
 echo "K8s Tools API Tests"
 echo "=========================================="
 
-# 1. Health Check
+# 1. Query K8s Resources (Deployments)
 echo ""
-echo "1. Testing K8s Tools Health Check..."
-curl -s "$BASE_URL/api/tools/k8s/health" | jq '.' || echo "Failed"
-
-# 2. Query K8s Resources (Deployments)
-echo ""
-echo "2. Testing K8s Query - List Deployments in default namespace..."
+echo "1. Testing K8s Query - List Deployments in default namespace..."
 curl -s -X POST "$BASE_URL/api/tools/k8s/query" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
@@ -53,9 +48,9 @@ curl -s -X POST "$BASE_URL/api/tools/k8s/query" \
   -H "x-k8s-authorization: $AUTH_TOKEN" \
   -d '{"uri": "/apis/apps/v1/namespaces/default/deployments"}' | jq '.' || echo "Failed"
 
-# 3. Get Pod Logs (requires a pod name - dynamically find first pod)
+# 2. Get Pod Logs (requires a pod name - dynamically find first pod)
 echo ""
-echo "3. Testing K8s Pod Logs - Fetch logs from a pod..."
+echo "2. Testing K8s Pod Logs - Fetch logs from a pod..."
 
 # First, query to get list of pods and extract the first pod name
 PODS_RESPONSE=$(curl -s -X POST "$BASE_URL/api/tools/k8s/query" \
@@ -85,9 +80,9 @@ else
       -d "{\"name\": \"$POD_NAME\", \"namespace\": \"default\", \"tail_lines\": 10}" | jq '.' || echo "Failed"
 fi
 
-# 4. Get Cluster Overview
+# 3. Get Cluster Overview
 echo ""
-echo "4. Testing K8s Overview - Cluster Level..."
+echo "3. Testing K8s Overview - Cluster Level..."
 curl -s -X POST "$BASE_URL/api/tools/k8s/overview" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
@@ -101,14 +96,9 @@ echo "=========================================="
 echo "Kyma Tools API Tests"
 echo "=========================================="
 
-# 1. Health Check
+# 1. Query Kyma Resources (Functions)
 echo ""
-echo "1. Testing Kyma Tools Health Check..."
-curl -s "$BASE_URL/api/tools/kyma/health" | jq '.' || echo "Failed"
-
-# 2. Query Kyma Resources (Functions)
-echo ""
-echo "2. Testing Kyma Query - List Functions..."
+echo "1. Testing Kyma Query - List Functions..."
 curl -s -X POST "$BASE_URL/api/tools/kyma/query" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
@@ -116,9 +106,9 @@ curl -s -X POST "$BASE_URL/api/tools/kyma/query" \
   -H "x-k8s-authorization: $AUTH_TOKEN" \
   -d '{"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"}' | jq '.' || echo "Failed"
 
-# 3. Get Kyma Resource Version
+# 2. Get Kyma Resource Version
 echo ""
-echo "3. Testing Kyma Resource Version - Function..."
+echo "2. Testing Kyma Resource Version - Function..."
 curl -s -X POST "$BASE_URL/api/tools/kyma/resource-version" \
   -H "Content-Type: application/json" \
   -H "x-cluster-url: $CLUSTER_URL" \
@@ -126,9 +116,9 @@ curl -s -X POST "$BASE_URL/api/tools/kyma/resource-version" \
   -H "x-k8s-authorization: $AUTH_TOKEN" \
   -d '{"resource_kind": "Function"}' | jq '.' || echo "Failed"
 
-# 4. Search Kyma Documentation
+# 3. Search Kyma Documentation
 echo ""
-echo "4. Testing Kyma Documentation Search..."
+echo "3. Testing Kyma Documentation Search..."
 curl -s -X POST "$BASE_URL/api/tools/kyma/search" \
   -H "Content-Type: application/json" \
   -d '{"query": "How to install Kyma?"}' | jq '.' || echo "Failed"
