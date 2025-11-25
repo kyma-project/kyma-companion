@@ -138,7 +138,9 @@ async def query_kyma_resource(
 
     try:
         # Use kyma_query_tool from agents/kyma/tools/query.py
-        result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
+        result = await kyma_query_tool.ainvoke(
+            {"uri": request.uri, "k8s_client": k8s_client}
+        )
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
     except Exception as e:
@@ -167,7 +169,9 @@ async def get_kyma_resource_version(
                 "k8s_client": k8s_client,
             }
         )
-        logger.info(f"Successfully retrieved API version for {request.resource_kind}: {api_version}")
+        logger.info(
+            f"Successfully retrieved API version for {request.resource_kind}: {api_version}"
+        )
         return KymaResourceVersionResponse(
             resource_kind=request.resource_kind,
             api_version=api_version,
@@ -176,7 +180,9 @@ async def get_kyma_resource_version(
         logger.exception(f"Error getting resource version: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=(f"Failed to get resource version for '{request.resource_kind}': {str(e)}"),
+            detail=(
+                f"Failed to get resource version for '{request.resource_kind}': {str(e)}"
+            ),
         ) from e
 
 
