@@ -15,16 +15,19 @@ from common.config import Config
 
 logger = logging.getLogger(__name__)
 
+# Minimum status code for client/server errors
+MIN_ERROR_STATUS_CODE = 400
+
 
 # Shared fixtures for all test classes
 @pytest.fixture(scope="module")
-def config():
+def config() -> Config:
     """Load configuration for tests."""
     return Config()
 
 
 @pytest.fixture(scope="module")
-def auth_headers(config):
+def auth_headers(config: Config) -> dict[str, str]:
     """Get authentication headers for API requests."""
     return {
         "Content-Type": "application/json",
@@ -35,7 +38,7 @@ def auth_headers(config):
 
 
 @pytest.fixture(scope="module")
-def base_api_url(config):
+def base_api_url(config: Config) -> str:
     """Get base API URL."""
     return config.companion_api_url
 
@@ -44,11 +47,11 @@ class TestK8sToolsAPI:
     """Test suite for K8s Tools API endpoints."""
 
     @pytest.fixture(scope="class")
-    def base_url(self, base_api_url):
+    def base_url(self, base_api_url: str) -> str:
         """Get base URL for K8s Tools API requests."""
         return f"{base_api_url}/api/tools/k8s"
 
-    def test_query_k8s_deployments(self, base_url, auth_headers):
+    def test_query_k8s_deployments(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test querying K8s deployments in default namespace."""
         logger.info("Testing K8s Query - List Deployments")
 
@@ -66,7 +69,7 @@ class TestK8sToolsAPI:
         items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
         logger.info(f"Successfully queried deployments: {len(items)} found")
 
-    def test_query_k8s_pods(self, base_url, auth_headers):
+    def test_query_k8s_pods(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test querying K8s pods."""
         logger.info("Testing K8s Query - List Pods")
 
@@ -84,7 +87,7 @@ class TestK8sToolsAPI:
         items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
         logger.info(f"Successfully queried pods: {len(items)} found")
 
-    def test_get_pod_logs(self, base_url, auth_headers):
+    def test_get_pod_logs(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test fetching pod logs from first available pod."""
         logger.info("Testing K8s Pod Logs")
 
@@ -127,7 +130,7 @@ class TestK8sToolsAPI:
         assert logs_data["pod_name"] == pod_name
         logger.info(f"Successfully fetched logs: {logs_data.get('line_count', 0)} lines")
 
-    def test_get_cluster_overview(self, base_url, auth_headers):
+    def test_get_cluster_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test getting cluster-level overview."""
         logger.info("Testing K8s Overview - Cluster Level")
 
@@ -144,7 +147,7 @@ class TestK8sToolsAPI:
         assert len(data["context"]) > 0
         logger.info("Successfully retrieved cluster overview")
 
-    def test_get_namespace_overview(self, base_url, auth_headers):
+    def test_get_namespace_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test getting namespace-level overview."""
         logger.info("Testing K8s Overview - Namespace Level")
 
@@ -158,18 +161,18 @@ class TestK8sToolsAPI:
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "context" in data
-        logger.info(f"Successfully retrieved namespace overview (length: {len(data['context'])})")
+        logger.info(f"Successfully retrieved namespace overview " f"(length: {len(data['context'])})")
 
 
 class TestKymaToolsAPI:
     """Test suite for Kyma Tools API endpoints."""
 
     @pytest.fixture(scope="class")
-    def base_url(self, base_api_url):
+    def base_url(self, base_api_url: str) -> str:
         """Get base URL for Kyma Tools API requests."""
         return f"{base_api_url}/api/tools/kyma"
 
-    def test_query_kyma_functions(self, base_url, auth_headers):
+    def test_query_kyma_functions(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test querying Kyma serverless functions."""
         logger.info("Testing Kyma Query - List Functions")
 
@@ -187,7 +190,7 @@ class TestKymaToolsAPI:
         items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
         logger.info(f"Successfully queried functions: {len(items)} found")
 
-    def test_query_kyma_apirules(self, base_url, auth_headers):
+    def test_query_kyma_apirules(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test querying Kyma API Rules."""
         logger.info("Testing Kyma Query - List APIRules")
 
@@ -213,7 +216,13 @@ class TestKymaToolsAPI:
             ("Subscription", "eventing.kyma-project.io/v1alpha2"),
         ],
     )
-    def test_get_resource_version(self, base_url, auth_headers, resource_kind, expected_api_version):
+    def test_get_resource_version(
+        self,
+        base_url: str,
+        auth_headers: dict[str, str],
+        resource_kind: str,
+        expected_api_version: str,
+    ) -> None:
         """Test getting API version for various Kyma resource kinds."""
         logger.info(f"Testing Kyma Resource Version - {resource_kind}")
 
@@ -245,7 +254,7 @@ class TestKymaToolsAPI:
             "How to troubleshoot Kyma Istio module?",
         ],
     )
-    def test_search_kyma_documentation(self, base_url, query):
+    def test_search_kyma_documentation(self, base_url: str, query: str) -> None:
         """Test searching Kyma documentation (no auth required)."""
         logger.info(f"Testing Kyma Documentation Search: '{query}'")
 
@@ -262,13 +271,13 @@ class TestKymaToolsAPI:
         assert "query" in data
         assert data["query"] == query
         assert len(data["results"]) > 0
-        logger.info(f"Successfully searched documentation: {len(data['results'])} characters returned")
+        logger.info(f"Successfully searched documentation: " f"{len(data['results'])} characters returned")
 
 
 class TestToolsAPIErrorHandling:
     """Test suite for Tools API error handling."""
 
-    def test_query_missing_uri_returns_422(self, base_api_url, auth_headers):
+    def test_query_missing_uri_returns_422(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
         """Test that missing required field returns 422."""
         response = requests.post(
             f"{base_api_url}/api/tools/k8s/query",
@@ -279,7 +288,7 @@ class TestToolsAPIErrorHandling:
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-    def test_query_without_auth_returns_error(self, base_api_url):
+    def test_query_without_auth_returns_error(self, base_api_url: str) -> None:
         """Test that query without auth headers returns error."""
         response = requests.post(
             f"{base_api_url}/api/tools/k8s/query",
@@ -289,9 +298,9 @@ class TestToolsAPIErrorHandling:
         )
 
         # Should return error (either 422 or 500 depending on validation)
-        assert response.status_code >= 400
+        assert response.status_code >= MIN_ERROR_STATUS_CODE
 
-    def test_search_missing_query_returns_422(self, base_api_url):
+    def test_search_missing_query_returns_422(self, base_api_url: str) -> None:
         """Test that search without query returns 422."""
         response = requests.post(
             f"{base_api_url}/api/tools/kyma/search",
@@ -302,7 +311,7 @@ class TestToolsAPIErrorHandling:
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-    def test_invalid_resource_kind_returns_error(self, base_api_url, auth_headers):
+    def test_invalid_resource_kind_returns_error(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
         """Test that invalid resource kind returns error."""
         response = requests.post(
             f"{base_api_url}/api/tools/kyma/resource-version",
