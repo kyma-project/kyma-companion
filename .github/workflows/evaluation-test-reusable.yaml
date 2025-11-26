@@ -7,11 +7,11 @@ on:
       IMAGE_NAME:
         required: true
         type: string
-      TEST_REPO_FULLNAME: 
+      TEST_REPO_FULLNAME:
         required: true
         description: "The repository to checkout to acquire the tests, not the kyma-companion image."
         type: string
-      TEST_REF: 
+      TEST_REF:
         required: true
         description: "The ref to checkout to acquire the tests, not the kyma-companion image."
         type: string
@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:      
+        with:
           ref: ${{ inputs.TEST_REF }}
           repository: ${{ inputs.TEST_REPO_FULLNAME }}
 
@@ -172,3 +172,20 @@ jobs:
           kubectl get pod -n ai-system || true
           kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
           kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
+
+      - name: Run API Tests
+        working-directory: tests/blackbox
+        env:
+          LOG_LEVEL: "DEBUG"
+          COMPANION_API_URL: "http://localhost:32000"
+        run: |
+          # config.json already created in previous step
+          echo "Running API tests against Companion at $COMPANION_API_URL"
+          poetry run pytest src/api_tests/ -v --tb=short --junit-xml=api-test-results.xml
+
+      - name: API Tests - Debug information
+        if: failure()
+        working-directory: tests/blackbox
+        run: |
+          echo "API Tests failed. Test results:"
+          cat api-test-results.xml 2>/dev/null || echo "Test results file not found"
