@@ -1,7 +1,6 @@
-import httpx
-from typing import Optional
 import time
 
+import httpx
 from langchain_core.documents import Document
 
 from services.metrics import CustomMetrics
@@ -11,6 +10,8 @@ logger = get_logger(__name__)
 
 
 class DocumentGroundingRetriever:
+    """Retriever for Document Grounding"""
+
     def __init__(
         self,
         api_url: str,
@@ -40,8 +41,8 @@ class DocumentGroundingRetriever:
         self.resource_group = resource_group
         self.data_repository_type = data_repository_type
         self.filter_id = filter_id
-        self._access_token: Optional[str] = None
-        self._token_expiry: Optional[float] = None
+        self._access_token: str | None = None
+        self._token_expiry: float | None = None
 
     async def _get_access_token(self) -> str:
         """Get OAuth access token using client credentials."""

@@ -11,8 +11,8 @@ from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
-from utils.documents import load_documents
 
+from utils.documents import load_documents
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
 

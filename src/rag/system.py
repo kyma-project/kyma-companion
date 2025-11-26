@@ -6,19 +6,15 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel
 
+from rag.document_grounding_retriever import DocumentGroundingRetriever
 from rag.query_generator import QueryGenerator
 from rag.reranker.reranker import LLMReranker
-from rag.retriever import HanaDBRetriever
-from services.hana import Hana
 from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
     DOCS_TABLE_NAME,
-    MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
 )
-
-from src.rag.document_grounding_retriever import DocumentGroundingRetriever
 
 logger = get_logger(__name__)
 
@@ -53,10 +49,10 @@ class RAGSystem:
         # )
 
         self.retriever = DocumentGroundingRetriever(
-            api_url=os.getenv("AICORE_BASE_URL"),
-            client_id=os.getenv("AICORE_CLIENT_ID"),
-            client_secret=os.getenv("AICORE_CLIENT_SECRET"),
-            token_url=os.getenv("AICORE_AUTH_URL"),
+            api_url=str(os.getenv("AICORE_BASE_URL")),
+            client_id=str(os.getenv("AICORE_CLIENT_ID")),
+            client_secret=str(os.getenv("AICORE_CLIENT_SECRET")),
+            token_url=str(os.getenv("AICORE_AUTH_URL")),
             resource_group="document-grounding",
             data_repository_type="help.sap.com",
             filter_id="string",
