@@ -3,8 +3,8 @@ import subprocess
 
 from fetcher.fetcher import DocumentsFetcher
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
-from utils.hana import create_hana_connection
 
+from utils.hana import create_hana_connection
 from utils.logging import get_logger
 from utils.models import (
     create_embedding_factory,

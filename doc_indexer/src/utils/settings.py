@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from decouple import config
+
 from utils.model_config import ModelConfig
 
 project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../")
