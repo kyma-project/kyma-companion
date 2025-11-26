@@ -25,6 +25,8 @@ jobs:
     name: Wait for image build job
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    outputs:
+      pr_ref: ${{ github.event.pull_request.head.ref }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,7 +57,7 @@ jobs:
           python ./scripts/python/wait-for-commit-check/run.py
 
   evaluation:
-    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@${{ github.event.pull_request.head.ref }}
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@${{ needs.wait-for-build.outputs.pr_ref }}
     needs: wait-for-build
     secrets: inherit
     with:
