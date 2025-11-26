@@ -7,7 +7,6 @@ on:
     branches:
       - main
     paths-ignore:
-      - ".github/**"
       - ".reuse/**"
       - "LICENSES/**"
       - "config/**"
@@ -56,7 +55,7 @@ jobs:
           python ./scripts/python/wait-for-commit-check/run.py
 
   evaluation:
-    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@${{ github.event.pull_request.head.ref }}
     needs: wait-for-build
     secrets: inherit
     with:
