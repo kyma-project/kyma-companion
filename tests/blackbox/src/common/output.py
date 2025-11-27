@@ -121,10 +121,13 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
     )
 
     for scenario in retried_scenarios:
-        status_color = "green" if scenario.test_status != TestStatus.FAILED else "red"
+        if scenario.test_status != TestStatus.FAILED:
+            status_text = colored(scenario.test_status.upper(), "green")
+        else:
+            status_text = colored(scenario.test_status.upper(), "red")
         print(
             f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | "
-            f"Final Status: {colored(scenario.test_status.upper(), status_color)}"
+            f"Final Status: {status_text}"
         )
     print()
     return None
