@@ -45,10 +45,19 @@ Only use `search_kyma_doc` if :
 
 ### Important Rule
 Consider Subscription as Kyma Subscription and Function as Kyma Function
-Always use `search_kyma_doc` after `kyma_query_tool` if the identified problem is kyma related. 
-Never use `search_kyma_doc` and answer directly : 
-- if there is no problem 
-- if identified problem is not related to Kyma
+
+After calling `kyma_query_tool`, decide whether to call `search_kyma_doc`:
+
+ALWAYS call `search_kyma_doc` if the response shows:
+- Status conditions with Ready=False or Warning=True
+- Validation errors (e.g., "validation failed", "invalid configuration")
+- Kyma-specific errors in status messages
+
+NEVER call `search_kyma_doc` if:
+- All status conditions show Ready=True with no errors
+- Resource is successfully deployed and healthy
+- Problem is only a programming error (e.g., JavaScript/Python syntax error in function code)
+- Problem is only a Kubernetes infrastructure issue (e.g., ImagePullBackOff, OOMKilled)
 """
 
 KYMA_AGENT_PROMPT = """
