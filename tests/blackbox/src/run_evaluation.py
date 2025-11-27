@@ -65,8 +65,7 @@ def process_scenario_with_retry(
                 "queries_completed": sum(
                     1
                     for q in scenario.queries
-                    if q.test_status
-                    in [TestStatus.COMPLETED, TestStatus.PASSED]
+                    if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
                 ),
             }
         )
