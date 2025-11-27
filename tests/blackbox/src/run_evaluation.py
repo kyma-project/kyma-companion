@@ -24,7 +24,17 @@ def process_scenario_with_retry(
     Process a scenario with retry logic to handle LLM non-determinism.
 
     Retries the entire scenario (all queries) up to config.scenario_retries times
-    if the scenario fails. Each retry uses a fresh conversation.
+    if the scenario fails. Each retry creates a fresh conversation to ensure
+    complete isolation of state between attempts.
+
+    The retry logic tracks query-level pass/fail metrics in attempt_history for
+    observability and debugging purposes. However, retry decisions are based solely
+    on the scenario-level test_status. This is intentional because:
+    1. Partial failures (some queries passed, some failed) still result in
+       TestStatus.FAILED for the scenario, triggering a retry
+    2. The scenario.complete() method sets FAILED if any query fails
+    3. Tracking individual query metrics helps diagnose which specific queries
+       are causing instability across retry attempts
 
     Args:
         scenario: The scenario to process
@@ -41,6 +51,9 @@ def process_scenario_with_retry(
 
         # Reset scenario state for retry (except on first attempt)
         if attempt > 1:
+            # Note: conversation_id is not stored in the scenario object.
+            # Each call to process_scenario() creates a fresh conversation via
+            # initialize_conversation(), ensuring complete isolation between retries.
             scenario.test_status = TestStatus.PENDING
             scenario.test_status_reason = ""
             scenario.initial_questions = []
