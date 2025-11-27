@@ -96,6 +96,9 @@ class Scenario(BaseModel):
     # evaluation
     test_status: TestStatus = TestStatus.PENDING
     test_status_reason: str = ""
+    # retry tracking
+    attempt_number: int = 0
+    attempt_history: list[dict] = []
 
     def complete(self) -> None:
         """Update the test status based on the evaluation result."""

@@ -159,6 +159,7 @@ jobs:
           TEST_DATA_PATH: "./data"
           COMPANION_API_URL: "http://localhost:32000"
           REDIS_URL: "redis://localhost:32100"
+          KC_EVAL_RETRIES: "5"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
