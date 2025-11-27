@@ -1,0 +1,311 @@
+description: The ngnix Deployment is configured to an insufficient amount of memory
+  and will run out of memory.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx
+      namespace: test-deployment-15
+prompts:
+- Why is the Deployment not available?
+assert:
+- type: icontains-any
+  value:
+  - memory
+  - insufficient
+  - container
+  required: true
+  description: 'insufficient_memory: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the container has an insufficient
+    amount of memory.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the container has an insufficient
+    amount of memory
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the container has an insufficient amount of memory
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the container has an insufficient amount
+    of memory
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'insufficient_memory: Semantic validation'
+- type: icontains-any
+  value:
+  - memory
+  - limit
+  required: true
+  description: 'propose_memory_increase: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that either the memory limit or the
+    memory request should be increased.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that either the memory limit
+    or the memory request should be increased
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that either the memory limit or the memory request should
+    be increased but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that either the memory limit or the memory request
+    should be increased
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'propose_memory_increase: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a step-by-step guide.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a step-by-step guide
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a step-by-step guide but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a step-by-step guide
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - memory
+  - error
+  - pod
+  required: false
+  description: 'oom_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod has an oom (out of memory)
+    error.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod has an oom (out
+    of memory) error
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod has an oom (out of memory) error but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod has an oom (out of memory) error
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'oom_error: Semantic validation'
+- type: icontains-any
+  value:
+  - limit
+  - deployment
+  - container
+  required: false
+  description: 'yaml_with_deployment: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'yaml_with_deployment: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides some yaml formatted manifest for a deployment,
+    that contains a container with resource limits and/or resource requests.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides some yaml formatted manifest for
+    a deployment, that contains a container with resource limits and/or resource requests
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes some yaml formatted manifest for a deployment, that contains
+    a container with resource limits and/or resource requests but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include some yaml formatted manifest for a deployment,
+    that contains a container with resource limits and/or resource requests
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'yaml_with_deployment: Semantic validation'
+- type: icontains-any
+  value:
+  - limit
+  - deployment
+  - container
+  required: false
+  description: 'yaml_with_deployment_and_resources: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'yaml_with_deployment_and_resources: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml formatted manifest for
+    a deployment, that contains all required fields and that contains the settings
+    for a container with resource limits and/or resource requests.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml formatted manifest
+    for a deployment, that contains all required fields and that contains the settings
+    for a container with resource limits and/or resource requests
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml formatted manifest for a deployment, that
+    contains all required fields and that contains the settings for a container with
+    resource limits and/or resource requests but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml formatted manifest for a deployment,
+    that contains all required fields and that contains the settings for a container
+    with resource limits and/or resource requests
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'yaml_with_deployment_and_resources: Semantic validation'
+- type: icontains-any
+  value:
+  - nginx
+  - test-deployment-15
+  - limit
+  - deployment
+  - container
+  required: false
+  description: 'fully_deployable_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'fully_deployable_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml formatted manifest for
+    a deployment, with the name set to ''nginx'', the namespace set to ''test-deployment-15'',
+    that contains all required fields and that contains the settings for a container
+    with resource limits and/or resource requests.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml formatted manifest
+    for a deployment, with the name set to ''nginx'', the namespace set to ''test-deployment-15'',
+    that contains all required fields and that contains the settings for a container
+    with resource limits and/or resource requests
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml formatted manifest for a deployment, with
+    the name set to ''nginx'', the namespace set to ''test-deployment-15'', that contains
+    all required fields and that contains the settings for a container with resource
+    limits and/or resource requests but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml formatted manifest for a deployment,
+    with the name set to ''nginx'', the namespace set to ''test-deployment-15'', that
+    contains all required fields and that contains the settings for a container with
+    resource limits and/or resource requests
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'fully_deployable_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/15_nginx_oom/deploy.sh
+  undeploy:
+    script: ./data/test-cases/15_nginx_oom/undeploy.sh

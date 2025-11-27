@@ -1,0 +1,20 @@
+{
+  "name": "kyma-companion-blackbox-tests",
+  "version": "1.0.0",
+  "description": "Blackbox evaluation tests for Kyma Companion using Promptfoo",
+  "private": true,
+  "scripts": {
+    "test": "promptfoo eval",
+    "test:watch": "promptfoo eval --watch",
+    "test:report": "promptfoo view",
+    "test:update-snapshots": "promptfoo eval --update-snapshots"
+  },
+  "devDependencies": {
+    "promptfoo": "^0.90.0",
+    "axios": "^1.7.0",
+    "js-yaml": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

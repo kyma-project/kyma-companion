@@ -1,0 +1,121 @@
+description: Unrelated to existing cluster resources, ask what kyma is.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- What is Kyma?
+assert:
+- type: icontains-any
+  value:
+  - Kubernetes
+  - k8s
+  required: true
+  description: 'mentions_keywords: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response mentions ''kubernetes'' or ''k8s''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately mentions ''kubernetes'' or ''k8s''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions ''kubernetes'' or ''k8s'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mentions ''kubernetes'' or ''k8s''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_keywords: Semantic validation'
+- type: icontains-any
+  value:
+  - managed
+  - fully managed
+  required: true
+  description: 'mentions_keywords: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response mentions ''managed'' or ''fully managed''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately mentions ''managed'' or ''fully managed''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions ''managed'' or ''fully managed'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mentions ''managed'' or ''fully managed''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_keywords: Semantic validation'
+- type: icontains-any
+  value:
+  - Business Technology Platform
+  - BTP
+  required: false
+  description: 'mentions_btp: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response mentions ''business technology platform'' or ''btp''..
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately mentions ''business technology platform''
+    or ''btp''.
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions ''business technology platform'' or ''btp''. but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mentions ''business technology platform'' or ''btp''.
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'mentions_btp: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/19_question_what_is_kyma/deploy.sh
+  undeploy:
+    script: ./data/test-cases/19_question_what_is_kyma/undeploy.sh

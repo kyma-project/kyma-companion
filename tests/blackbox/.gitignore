@@ -1,0 +1,14 @@
+# Node.js
+node_modules/
+package-lock.json
+
+# Promptfoo output
+output/
+.promptfoo-cache/
+
+# Environment variables
+.env
+.env.local
+
+# Snapshots (commit manually after review)
+# snapshots/

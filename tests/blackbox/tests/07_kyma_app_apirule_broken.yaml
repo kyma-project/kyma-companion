@@ -1,0 +1,156 @@
+description: The application uses an APIRule that has two accessStrategies handler,
+  which will lead to an error instead.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: APIRule
+      api_version: gateway.kyma-project.io/v1beta1
+      name: restapi
+      namespace: test-apirule-7
+prompts:
+- Why is the APIRule status showing ERROR?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - apirule
+  required: true
+  description: 'apirule_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the apirule is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the apirule is in an error
+    state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the apirule is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the apirule is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'apirule_error: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the apirule has two accessstrategies
+    but should only have one.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the apirule has two accessstrategies
+    but should only have one
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the apirule has two accessstrategies but should only
+    have one but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the apirule has two accessstrategies but
+    should only have one
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'apirule_with_two_accessStrategies: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a step-by-step guide.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a step-by-step guide
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a step-by-step guide but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a step-by-step guide
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides some yaml formatted manifest for an apirule
+    that only contains one accessstrategy.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides some yaml formatted manifest for
+    an apirule that only contains one accessstrategy
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes some yaml formatted manifest for an apirule that only
+    contains one accessstrategy but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include some yaml formatted manifest for an apirule that
+    only contains one accessstrategy
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/07_kyma_app_apirule_broken/deploy.sh
+  undeploy:
+    script: ./data/test-cases/07_kyma_app_apirule_broken/undeploy.sh

@@ -1,0 +1,36 @@
+# Promptfoo Configuration for Kyma Companion Blackbox Tests
+description: Kyma Companion Blackbox Evaluation Tests
+
+# Test scenarios loaded from individual YAML files
+tests: tests/*.yaml
+
+# Output configuration
+outputPath: ./output
+
+# Model configuration for LLM-based assertions (llm-rubric, etc.)
+providers:
+  - id: azureopenai:chat:gpt-4
+    config:
+      apiHost: ${AZURE_OPENAI_ENDPOINT}
+      apiKey: ${AZURE_OPENAI_API_KEY}
+      deploymentName: ${AZURE_OPENAI_DEPLOYMENT_NAME:-gpt-4}
+      temperature: 0
+      maxTokens: 4000
+
+# Evaluation settings
+evaluateOptions:
+  maxConcurrency: 1  # Sequential execution to prevent race conditions
+  repeat: 1
+  cache: true
+  showProgressBar: true
+
+# Environment variables
+env:
+  COMPANION_API_URL: ${COMPANION_API_URL:-http://localhost:8000}
+  COMPANION_TOKEN: ${COMPANION_TOKEN:-}
+  TEST_CLUSTER_CA_DATA: ${TEST_CLUSTER_CA_DATA:-}
+  TEST_CLUSTER_URL: ${TEST_CLUSTER_URL:-}
+  TEST_CLUSTER_AUTH_TOKEN: ${TEST_CLUSTER_AUTH_TOKEN:-}
+  AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+  AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+  AZURE_OPENAI_DEPLOYMENT_NAME: ${AZURE_OPENAI_DEPLOYMENT_NAME:-gpt-4}
