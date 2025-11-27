@@ -63,3 +63,41 @@ jobs:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
       TEST_REF: ${{ github.event.pull_request.head.ref }}
+
+  promptfoo-validation:
+    name: Promptfoo Test Validation
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Promptfoo dependencies
+        working-directory: tests/blackbox
+        run: npm install
+
+      - name: Validate Promptfoo setup
+        working-directory: tests/blackbox
+        run: bash scripts/validate_setup.sh
+
+      - name: Validate Companion provider
+        working-directory: tests/blackbox
+        run: node scripts/test_provider.js
+
+      - name: Validate all test files
+        working-directory: tests/blackbox
+        run: |
+          echo "Validating all test YAML files..."
+          for test_file in tests/*.yaml; do
+            echo "Validating $test_file..."
+            node scripts/validate_test_yaml.js "$test_file" || exit 1
+          done
+          echo "✅ All test files validated successfully!"
