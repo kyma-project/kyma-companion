@@ -131,40 +131,46 @@ jobs:
         run: |
           kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
 
-      - name: Evaluation Tests Setup - Extract project Python version
-        working-directory: tests/blackbox
-        id: python-version
-        run: |
-          ./../../scripts/shell/extract-python-version.sh
+      # ============================================================
+      # PYTEST EVALUATION TESTS - TEMPORARILY DISABLED
+      # Disabled during Promptfoo migration to focus on new framework
+      # Will be re-enabled or removed after Promptfoo validation
+      # ============================================================
 
-      - name: Evaluation Tests Setup - Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+      # - name: Evaluation Tests Setup - Extract project Python version
+      #   working-directory: tests/blackbox
+      #   id: python-version
+      #   run: |
+      #     ./../../scripts/shell/extract-python-version.sh
 
-      - name: Evaluation Tests Setup - Install Poetry
-        working-directory: tests/blackbox
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      # - name: Evaluation Tests Setup - Install Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Evaluation Tests Setup - Install dependencies
-        working-directory: tests/blackbox
-        run: poetry install
+      # - name: Evaluation Tests Setup - Install Poetry
+      #   working-directory: tests/blackbox
+      #   run: |
+      #     curl -sSL https://install.python-poetry.org | python3 -
+      #     echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Run Evaluation Tests
-        working-directory: tests/blackbox
-        env:
-          LOG_LEVEL: "DEBUG"
-          TEST_DATA_PATH: "./data"
-          COMPANION_API_URL: "http://localhost:32000"
-          REDIS_URL: "redis://localhost:32100"
-          KC_EVAL_RETRIES: "5"
-        run: |
-          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
-          echo "saved config to $CONFIG_PATH!"
-          poetry run python src/run_evaluation.py
+      # - name: Evaluation Tests Setup - Install dependencies
+      #   working-directory: tests/blackbox
+      #   run: poetry install
+
+      # - name: Run Evaluation Tests
+      #   working-directory: tests/blackbox
+      #   env:
+      #     LOG_LEVEL: "DEBUG"
+      #     TEST_DATA_PATH: "./data"
+      #     COMPANION_API_URL: "http://localhost:32000"
+      #     REDIS_URL: "redis://localhost:32100"
+      #     KC_EVAL_RETRIES: "5"
+      #   run: |
+      #     export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+      #     echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+      #     echo "saved config to $CONFIG_PATH!"
+      #     poetry run python src/run_evaluation.py
 
       - name: Promptfoo Tests Setup - Install Node.js
         uses: actions/setup-node@v4
