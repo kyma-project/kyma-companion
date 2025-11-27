@@ -131,7 +131,8 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
             f"Final Status: {status_text}"
         )
     print()
-    return None
+        )
+    print()
 
 
 def print_failed_queries(scenario_list: ScenarioList) -> None:
