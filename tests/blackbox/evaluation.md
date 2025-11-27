@@ -31,7 +31,15 @@ To run the Evaluation tests, follow these steps:
     export CONFIG_PATH=<path_to_config-evaluation.json>
     ```
 
-4. Run the Evaluation tests:
+4. (Optional) Configure retry behavior for failed scenarios:
+
+    ```bash
+    export KC_EVAL_RETRIES=3  # Default: 3 (total number of attempts including initial attempt)
+    ```
+
+    This controls how many times a failed scenario will be retried. Each retry creates a fresh conversation to handle LLM non-determinism. Set to 1 to disable retries.
+
+5. Run the Evaluation tests:
 
     ```bash
    poetry run python src/run_evaluation.py
