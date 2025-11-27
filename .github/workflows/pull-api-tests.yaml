@@ -1,0 +1,92 @@
+name: "API Tests"
+run-name: "API Tests for PR #${{ github.event.number }}"
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - "src/routers/**"
+      - "src/agents/**/tools/**"
+      - "tests/blackbox/src/api_tests/**"
+      - ".github/workflows/pull-api-tests.yaml"
+
+jobs:
+  api-tests:
+    name: Run API tests against live cluster
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'api-tests')
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Extract Python version
+        working-directory: tests/blackbox
+        id: python-version
+        run: |
+          ./../../scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        working-directory: tests/blackbox
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: tests/blackbox
+        run: poetry install
+
+      - name: Start Companion locally
+        run: |
+          poetry install
+          nohup poetry run python -m src.main > companion.log 2>&1 &
+          echo $! > companion.pid
+
+      - name: Wait for Companion readiness
+        run: |
+          echo "Waiting for Companion to be ready..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8000/readyz > /dev/null 2>&1; then
+              echo "Companion is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 2
+          done
+          echo "Companion failed to start"
+          cat companion.log
+          exit 1
+
+      - name: Run API Tests
+        working-directory: tests/blackbox
+        env:
+          LOG_LEVEL: "DEBUG"
+          COMPANION_API_URL: "http://localhost:8000"
+        run: |
+          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "Running API tests..."
+          poetry run pytest src/api_tests/ -v --tb=short --junit-xml=api-test-results.xml
+
+      - name: API Tests - Debug information
+        if: failure()
+        working-directory: tests/blackbox
+        run: |
+          echo "=== API Test Results ==="
+          cat api-test-results.xml 2>/dev/null || echo "Test results file not found"
+          echo ""
+          echo "=== Companion Logs ==="
+          cat ../companion.log 2>/dev/null | tail -100 || echo "Companion log not found"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f companion.pid ]; then
+            kill $(cat companion.pid) 2>/dev/null || true
