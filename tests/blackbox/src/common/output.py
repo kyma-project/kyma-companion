@@ -110,7 +110,8 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
     retried_scenarios = [s for s in scenario_list.items if s.attempt_number > 1]
 
     if len(retried_scenarios) == 0:
-        return None
+    if len(retried_scenarios) == 0:
+        return
 
     print_header("Retry Summary:")
     print(
