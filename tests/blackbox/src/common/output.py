@@ -109,8 +109,7 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
     """Prints summary of scenarios that required retries."""
     retried_scenarios = [s for s in scenario_list.items if s.attempt_number > 1]
 
-    if len(retried_scenarios) == 0:
-    if len(retried_scenarios) == 0:
+    if not retried_scenarios:
         return
 
     print_header("Retry Summary:")
@@ -127,12 +126,9 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
         else:
             status_text = colored(scenario.test_status.upper(), "red")
         print(
-            f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | "
-            f"Final Status: {status_text}"
+            f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | Final Status: {status_text}"
         )
-    print()
-        )
-    print()
+        print()
 
 
 def print_failed_queries(scenario_list: ScenarioList) -> None:

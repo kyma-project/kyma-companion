@@ -112,7 +112,6 @@ def process_scenario_with_retry(
                 f"Scenario {scenario.id} failed after {max_attempts} attempts. "
                 f"Final reason: {scenario.test_status_reason}"
             )
-            )
 
 
 def flush_logs(logger: Logger) -> None:
