@@ -1,0 +1,49 @@
+description: Unrelated to existing cluster resources, ask to compare kyma with k8s
+  environments provided by hyperscalers.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- What is the difference between Kyma and other Kubernetes environments provided by
+  hypescalers?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response points out that kyma provides support for sap services.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that kyma provides support for
+    sap services
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that kyma includes support for sap services but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that kyma include support for sap services
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_keywords: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/25_question_kyma_vs_hyperscalers/deploy.sh
+  undeploy:
+    script: ./data/test-cases/25_question_kyma_vs_hyperscalers/undeploy.sh

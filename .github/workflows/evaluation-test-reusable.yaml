@@ -166,6 +166,33 @@ jobs:
           echo "saved config to $CONFIG_PATH!"
           poetry run python src/run_evaluation.py
 
+      - name: Promptfoo Tests Setup - Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Promptfoo Tests Setup - Install dependencies
+        working-directory: tests/blackbox
+        run: npm install
+
+      - name: Promptfoo Tests - Validate setup
+        working-directory: tests/blackbox
+        run: bash scripts/validate_setup.sh
+
+      - name: Promptfoo Tests - Validate provider
+        working-directory: tests/blackbox
+        run: node scripts/test_provider.js
+
+      - name: Promptfoo Tests - Validate test files
+        working-directory: tests/blackbox
+        run: |
+          echo "Validating all test YAML files..."
+          for test_file in tests/*.yaml; do
+            echo "Validating $test_file..."
+            node scripts/validate_test_yaml.js "$test_file" || exit 1
+          done
+          echo "All test files validated successfully!"
+
       - name: Evaluation Tests - Debug information
         if: failure()
         run: |

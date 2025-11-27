@@ -1,0 +1,96 @@
+description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the
+  PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to
+  remain unbound, leading to issues with the deployment.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx-deployment
+      namespace: test-deployment-4
+prompts:
+- Can you check the PVC?
+assert:
+- type: icontains-any
+  value:
+  - volume
+  - pvc
+  required: true
+  description: 'pvc_pending: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the persistentvolumeclaim (pvc)
+    is in an pending state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the persistentvolumeclaim
+    (pvc) is in an pending state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the persistentvolumeclaim (pvc) is in an pending
+    state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the persistentvolumeclaim (pvc) is in an
+    pending state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pvc_pending: Semantic validation'
+- type: icontains-any
+  value:
+  - issue
+  - volume
+  required: true
+  description: 'potential_pvc_issue: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the issue may be related to persistentvolume
+    (pv).
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the issue may be related
+    to persistentvolume (pv)
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the issue may be related to persistentvolume (pv)
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the issue may be related to persistentvolume
+    (pv)
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'potential_pvc_issue: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/deploy.sh
+  undeploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/undeploy.sh

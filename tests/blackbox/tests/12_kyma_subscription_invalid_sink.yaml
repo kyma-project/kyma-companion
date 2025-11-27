@@ -1,0 +1,191 @@
+description: The Subscription is configured with an invalid sink URL
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Subscription
+      api_version: eventing.kyma-project.io/v1alpha2
+      name: my-sub
+      namespace: test-subscription-12
+prompts:
+- How to fix my subscription?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the subscription is configured
+    with an invalid sink url because it does not end with the required suffix svc.cluster.local.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the subscription is configured
+    with an invalid sink url because it does not end with the required suffix svc.cluster.local
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the subscription is configured with an invalid sink
+    url because it does not end with the required suffix svc.cluster.local but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the subscription is configured with an invalid
+    sink url because it does not end with the required suffix svc.cluster.local
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'subscription_config_error: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides an example of how the sink url should
+    be configured with the suffix svc.cluster.local.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides an example of how the sink url
+    should be configured with the suffix svc.cluster.local
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes an example of how the sink url should be configured with
+    the suffix svc.cluster.local but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include an example of how the sink url should be configured
+    with the suffix svc.cluster.local
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'subscription_correct_sink: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml for the subscription with
+    an example of a valid sink url.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml for the subscription
+    with an example of a valid sink url
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml for the subscription with an example of
+    a valid sink url but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml for the subscription with an example
+    of a valid sink url
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'complete_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml for the subscription with
+    the correct sink url which ends with svc.cluster.local.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml for the subscription
+    with the correct sink url which ends with svc.cluster.local
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml for the subscription with the correct
+    sink url which ends with svc.cluster.local but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml for the subscription with the
+    correct sink url which ends with svc.cluster.local
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'complete_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/12_kyma_subscription_invalid_sink/deploy.sh
+  undeploy:
+    script: ./data/test-cases/12_kyma_subscription_invalid_sink/undeploy.sh

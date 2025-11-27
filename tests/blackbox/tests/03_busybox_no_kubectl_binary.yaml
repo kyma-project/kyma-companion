@@ -1,0 +1,224 @@
+description: The Pod tries to list Pods in the same namespace using kubectl but the
+  image does not contain kubectl.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Pod
+      api_version: v1
+      name: pod-check
+      namespace: test-pod-3
+prompts:
+- Why is the Pod in error state?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - pod
+  required: true
+  description: 'pod_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod is in an error state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_error: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - image
+  required: true
+  description: 'pod_wrong_image: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod uses the wrong image.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod uses the wrong image
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod uses the wrong image but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod uses the wrong image
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_wrong_image: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides the correct image to use with kubectl.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides the correct image to use with kubectl
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes the correct image to use with kubectl but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include the correct image to use with kubectl
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_provide_right_image: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response explains the connection between an image and included
+    binaries.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately explains the connection between an image
+    and included binaries
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response explains the connection between an image and included binaries
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not explains the connection between an image and included
+    binaries
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'pod_image_explanation: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - bitnami/kubectl:latest
+  - image
+  required: false
+  description: 'partial_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml with the correct image
+    ''bitnami/kubectl:latest''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml with the correct
+    image ''bitnami/kubectl:latest''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml with the correct image ''bitnami/kubectl:latest''
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml with the correct image ''bitnami/kubectl:latest''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/03_busybox_no_kubectl_binary/deploy.sh
+  undeploy:
+    script: ./data/test-cases/03_busybox_no_kubectl_binary/undeploy.sh

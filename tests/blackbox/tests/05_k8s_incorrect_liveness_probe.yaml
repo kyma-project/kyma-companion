@@ -1,0 +1,213 @@
+description: The Pod is in an error state because the liveness and readiness probes
+  are incorrectly configured.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx-deployment
+      namespace: test-deployment-5
+prompts:
+- Why is the deployment not getting ready?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - deployment
+  required: true
+  description: 'deployment_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the deployment is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the deployment is in an
+    error state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the deployment is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the deployment is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'deployment_error: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - probe
+  - liveness
+  - readiness
+  required: true
+  description: 'pod_wrong_liveness: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod has not started because
+    the liveness and readiness probes are incorrectly configured.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod has not started
+    because the liveness and readiness probes are incorrectly configured
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod has not started because the liveness and
+    readiness probes are incorrectly configured but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod has not started because the liveness
+    and readiness probes are incorrectly configured
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_wrong_liveness: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - probe
+  - liveness
+  - readiness
+  required: true
+  description: 'pod_provide_right_liveness: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response provides the correct liveness and readiness probes
+    to use with the pod.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides the correct liveness and readiness
+    probes to use with the pod
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes the correct liveness and readiness probes to use with
+    the pod but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include the correct liveness and readiness probes to use
+    with the pod
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_provide_right_liveness: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - '80'
+  - liveness
+  - readiness
+  required: false
+  description: 'partial_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml with the correct liveness
+    and readiness port ''80''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml with the correct
+    liveness and readiness port ''80''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml with the correct liveness and readiness
+    port ''80'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml with the correct liveness and readiness
+    port ''80''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/05_k8s_incorrect_liveness_probe/deploy.sh
+  undeploy:
+    script: ./data/test-cases/05_k8s_incorrect_liveness_probe/undeploy.sh

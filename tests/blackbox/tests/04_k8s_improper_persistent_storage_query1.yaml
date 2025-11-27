@@ -1,0 +1,226 @@
+description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the
+  PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to
+  remain unbound, leading to issues with the deployment.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx-deployment
+      namespace: test-deployment-4
+prompts:
+- Why is the deployment not getting ready?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - deployment
+  required: true
+  description: 'deployment_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the deployment is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the deployment is in an
+    error state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the deployment is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the deployment is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'deployment_error: Semantic validation'
+- type: icontains-any
+  value:
+  - issue
+  - volume
+  required: true
+  description: 'potential_pvc_issue: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the issue may be due to persistentvolumeclaim.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the issue may be due to
+    persistentvolumeclaim
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the issue may be due to persistentvolumeclaim but
+    not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the issue may be due to persistentvolumeclaim
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'potential_pvc_issue: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the access mode configured in persistentvolumeclaim
+    do not match with access mode supported by persistentvolume.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the access mode configured
+    in persistentvolumeclaim do not match with access mode supported by persistentvolume
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the access mode configured in persistentvolumeclaim
+    do not match with access mode supported by persistentvolume but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the access mode configured in persistentvolumeclaim
+    do not match with access mode supported by persistentvolume
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'wrong_pvc_access_mode: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides an explanation on why the deployment is
+    not getting ready.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides an explanation on why the deployment
+    is not getting ready
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes an explanation on why the deployment is not getting ready
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include an explanation on why the deployment is not getting
+    ready
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'pvc_provide_explanation: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml with correct access mode
+    for persistentvolumeclaim.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml with correct access
+    mode for persistentvolumeclaim
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml with correct access mode for persistentvolumeclaim
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml with correct access mode for persistentvolumeclaim
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/deploy.sh
+  undeploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/undeploy.sh

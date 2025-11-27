@@ -1,0 +1,237 @@
+description: The name of the image in the Deployment is misspelled to 'ngix' instead
+  of 'nginx'.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx
+      namespace: test-deployment-16
+prompts:
+- What is causing the Deployment to not have minimum availability?
+assert:
+- type: icontains-any
+  value:
+  - ngix
+  - image
+  required: true
+  description: 'image_not_found: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the image ''ngix'' does not exist.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the image ''ngix'' does
+    not exist
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the image ''ngix'' does not exist but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the image ''ngix'' does not exist
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'image_not_found: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the image name might have a type.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the image name might have
+    a type
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the image name might have a type but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the image name might have a type
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'image_typo: Semantic validation'
+- type: icontains-any
+  value:
+  - nginx
+  - image
+  required: true
+  description: 'should_be_nginx: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the image name should be ''nginx''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the image name should be
+    ''nginx''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the image name should be ''nginx'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the image name should be ''nginx''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'should_be_nginx: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a step-by-step guide.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a step-by-step guide
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a step-by-step guide but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a step-by-step guide
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response contains some yaml formatted deployment manifest
+    with all the required fields.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains some yaml formatted deployment
+    manifest with all the required fields
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains some yaml formatted deployment manifest with all the required
+    fields but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains some yaml formatted deployment manifest with
+    all the required fields
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+- type: icontains-any
+  value:
+  - nginx
+  - nginx
+  - nginx
+  - deployment
+  - image
+  required: false
+  description: 'complete_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'complete_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a yaml formatted deployment manifest,
+    containing all the required fields, and having the image set to ''nginx'', the
+    name set to ''nginx'' and the namespace set to ''nginx''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a yaml formatted deployment manifest,
+    containing all the required fields, and having the image set to ''nginx'', the
+    name set to ''nginx'' and the namespace set to ''nginx''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a yaml formatted deployment manifest, containing all the
+    required fields, and having the image set to ''nginx'', the name set to ''nginx''
+    and the namespace set to ''nginx'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a yaml formatted deployment manifest, containing
+    all the required fields, and having the image set to ''nginx'', the name set to
+    ''nginx'' and the namespace set to ''nginx''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'complete_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/16_nginx_wrong_image/deploy.sh
+  undeploy:
+    script: ./data/test-cases/16_nginx_wrong_image/undeploy.sh

@@ -1,0 +1,252 @@
+description: The Pod of the Serverless Function is not ready because the function
+  is configured with 0 replicas.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Function
+      api_version: serverless.kyma-project.io/v1alpha2
+      name: func1
+      namespace: test-function-11
+prompts:
+- Why is the pod of the serverless Function not ready?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod is not ready.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod is not ready
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod is not ready but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod is not ready
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'function_error: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the function is configured with
+    0 replicas.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the function is configured
+    with 0 replicas
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the function is configured with 0 replicas but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the function is configured with 0 replicas
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'function_no_replicas: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides the correct amount of replicas, which
+    would be 1.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides the correct amount of replicas,
+    which would be 1
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes the correct amount of replicas, which would be 1 but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include the correct amount of replicas, which would be
+    1
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'function_correct_replicas: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response explains the use of functions.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately explains the use of functions
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response explains the use of functions but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not explains the use of functions
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'function_explanation: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml with the correct amount
+    of replicas, which would be 1.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml with the correct
+    amount of replicas, which would be 1
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml with the correct amount of replicas, which
+    would be 1 but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml with the correct amount of replicas,
+    which would be 1
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+- type: icontains-any
+  value:
+  - test-function-11
+  - function
+  required: false
+  description: 'deployable_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'deployable_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml for the function, with
+    the namespace set to ''test-function-11'' and the replicas set to 1.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml for the function,
+    with the namespace set to ''test-function-11'' and the replicas set to 1
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml for the function, with the namespace set
+    to ''test-function-11'' and the replicas set to 1 but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml for the function, with the namespace
+    set to ''test-function-11'' and the replicas set to 1
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'deployable_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/11_kyma_serverless_function_no_replicas/deploy.sh
+  undeploy:
+    script: ./data/test-cases/11_kyma_serverless_function_no_replicas/undeploy.sh

@@ -1,0 +1,236 @@
+description: The application inside the Pod tries to list Pods in the same namespace
+  using kubectl but it does not have the necessary RBAC permissions because the Role
+  is missing.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Pod
+      api_version: v1
+      name: pod-check
+      namespace: test-pod-1
+prompts:
+- Why is the Pod in error state?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - pod
+  required: true
+  description: 'pod_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod is in an error state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_error: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - permission
+  required: true
+  description: 'pod_no_permissions: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod has no permissions.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod has no permissions
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod has no permissions but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod has no permissions
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_no_permissions: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that a solution could be to grant permissions.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that a solution could be to grant
+    permissions
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that a solution could be to grant permissions but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that a solution could be to grant permissions
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'permission_role: Semantic validation'
+- type: icontains-any
+  value:
+  - pod-reader
+  - pod
+  - role
+  required: false
+  description: 'permission_role_missing: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the role ''pod-reader'' is missing
+    or do not exist.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the role ''pod-reader''
+    is missing or do not exist
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the role ''pod-reader'' is missing or do not exist
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the role ''pod-reader'' is missing or do
+    not exist
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'permission_role_missing: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - permission
+  - role
+  required: false
+  description: 'partial_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides at least a partial yaml for the role that
+    grants permission to list pods.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides at least a partial yaml for the
+    role that grants permission to list pods
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes at least a partial yaml for the role that grants permission
+    to list pods but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include at least a partial yaml for the role that grants
+    permission to list pods
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/01_bitnami_role_missing/deploy.sh
+  undeploy:
+    script: ./data/test-cases/01_bitnami_role_missing/undeploy.sh

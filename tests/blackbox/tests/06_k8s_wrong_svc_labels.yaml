@@ -1,0 +1,155 @@
+description: The selector labels of the Service do not match the labels of the Deployment.
+  Therefore, the Service is not routing traffic to the Pods.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Service
+      api_version: v1
+      name: test-service-6
+      namespace: test-service-6
+prompts:
+- Why is my application not reachable?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the labels used in the service
+    selector and the labels on the pods do not match.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the labels used in the service
+    selector and the labels on the pods do not match
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the labels used in the service selector and the labels
+    on the pods do not match but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the labels used in the service selector and
+    the labels on the pods do not match
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'svc_wrong_label: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a detailed explanation of why the service
+    is not routing traffic to the pods.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a detailed explanation of why the
+    service is not routing traffic to the pods
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a detailed explanation of why the service is not routing
+    traffic to the pods but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a detailed explanation of why the service is not
+    routing traffic to the pods
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'svc_provide_explanation: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml with the correct labels
+    for the service.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml with the correct
+    labels for the service
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml with the correct labels for the service
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml with the correct labels for the
+    service
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/06_k8s_wrong_svc_labels/deploy.sh
+  undeploy:
+    script: ./data/test-cases/06_k8s_wrong_svc_labels/undeploy.sh

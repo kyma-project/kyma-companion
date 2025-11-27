@@ -1,0 +1,205 @@
+description: The application inside the Pod tries to list Pods in the same namespace
+  using kubectl but it has the wrong RBAC permissions to watch instead of list.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Pod
+      api_version: v1
+      name: pod-check
+      namespace: test-pod-2
+prompts:
+- Why is the Pod in error state?
+assert:
+- type: icontains-any
+  value:
+  - error
+  - pod
+  required: true
+  description: 'pod_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod is in an error state.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod is in an error state
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod is in an error state but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod is in an error state
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_error: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - permission
+  required: true
+  description: 'pod_wrong_permissions: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the pod has the wrong permissions.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the pod has the wrong permissions
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the pod has the wrong permissions but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the pod has the wrong permissions
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'pod_wrong_permissions: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - permission
+  - role
+  required: false
+  description: 'permission_should_be_watch: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the role gives permission to watch
+    pods but the pod tries to list them.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the role gives permission
+    to watch pods but the pod tries to list them
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the role gives permission to watch pods but the pod
+    tries to list them but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the role gives permission to watch pods but
+    the pod tries to list them
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'permission_should_be_watch: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - pod
+  - permission
+  - role
+  required: false
+  description: 'partial_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml for the role that grants
+    permission to list pods.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml for the role that
+    grants permission to list pods
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml for the role that grants permission to
+    list pods but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml for the role that grants permission
+    to list pods
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/02_bitnami_wrong_rbac_permissions/deploy.sh
+  undeploy:
+    script: ./data/test-cases/02_bitnami_wrong_rbac_permissions/undeploy.sh

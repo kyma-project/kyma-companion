@@ -1,0 +1,46 @@
+description: Unrelated to existing cluster resources, ask about Kyma Modules.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- What modules does Kyma offer and what they do?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response mentions the eventing, serverless and telemetry.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately mentions the eventing, serverless and telemetry
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions the eventing, serverless and telemetry but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mentions the eventing, serverless and telemetry
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_modules: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/22_question_kyma_modules/deploy.sh
+  undeploy:
+    script: ./data/test-cases/22_question_kyma_modules/undeploy.sh

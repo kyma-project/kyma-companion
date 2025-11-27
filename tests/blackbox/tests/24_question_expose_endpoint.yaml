@@ -1,0 +1,51 @@
+description: Unrelated to existing cluster resources, ask how to expose an endpoint
+  in a Kyma cluster.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- How can I expose my endpoint using Kyma?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response propose to use the apirule custom resource and
+    mentions accessstrategies.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately propose to use the apirule custom resource
+    and mentions accessstrategies
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response propose to use the apirule custom resource and mentions accessstrategies
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not propose to use the apirule custom resource and mentions
+    accessstrategies
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_kyewords: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/24_question_expose_endpoint/deploy.sh
+  undeploy:
+    script: ./data/test-cases/24_question_expose_endpoint/undeploy.sh

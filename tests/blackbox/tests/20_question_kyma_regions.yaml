@@ -1,0 +1,55 @@
+description: Unrelated to existing cluster resources, ask at which regions kyma is
+  available.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- at which regions is kyma available?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response mentions centralus us central (ia) for azure, eu-central-1
+    (frankfurt) for aws (amazon web services) and us-east4 (virginia) for gcp (google
+    cloud platform).
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately mentions centralus us central (ia) for azure,
+    eu-central-1 (frankfurt) for aws (amazon web services) and us-east4 (virginia)
+    for gcp (google cloud platform)
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions centralus us central (ia) for azure, eu-central-1 (frankfurt)
+    for aws (amazon web services) and us-east4 (virginia) for gcp (google cloud platform)
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mentions centralus us central (ia) for azure, eu-central-1
+    (frankfurt) for aws (amazon web services) and us-east4 (virginia) for gcp (google
+    cloud platform)
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'mentions_hyperscaler_regions: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/20_question_kyma_regions/deploy.sh
+  undeploy:
+    script: ./data/test-cases/20_question_kyma_regions/undeploy.sh

@@ -1,0 +1,50 @@
+description: Unrelated to existing cluster resources, ask how to add a module.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Cluster
+      api_version: ''
+      name: ''
+      namespace: ''
+prompts:
+- How to add a module?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response provides instructions on how to add modules via
+    the kyma dashboard.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides instructions on how to add modules
+    via the kyma dashboard
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes instructions on how to add modules via the kyma dashboard
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include instructions on how to add modules via the kyma
+    dashboard
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'dashboard: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/21_question_add_module/deploy.sh
+  undeploy:
+    script: ./data/test-cases/21_question_add_module/undeploy.sh

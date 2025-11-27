@@ -1,0 +1,221 @@
+description: The Serverless Function has a syntax error; it calls Dates() instead
+  of Date().
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Function
+      api_version: serverless.kyma-project.io/v1alpha2
+      name: func1
+      namespace: test-function-8
+prompts:
+- What is wrong with the Function's source code?
+assert:
+- type: icontains-any
+  value:
+  - func1
+  - serverless
+  - function
+  required: true
+  description: 'syntax_error: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the serverless function ''func1''
+    calls dates().
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the serverless function
+    ''func1'' calls dates()
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the serverless function ''func1'' calls dates() but
+    not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the serverless function ''func1'' calls dates()
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'syntax_error: Semantic validation'
+- type: icontains-any
+  value:
+  - func1
+  - serverless
+  - function
+  required: true
+  description: 'syntax_fix: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the serverless function ''func1''
+    should call date() instead of dates().
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the serverless function
+    ''func1'' should call date() instead of dates()
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the serverless function ''func1'' should call date()
+    instead of dates() but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the serverless function ''func1'' should
+    call date() instead of dates()
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'syntax_fix: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains step-by-step guidance.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains step-by-step guidance
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains step-by-step guidance but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains step-by-step guidance
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: icontains-any
+  value:
+  - serverless
+  - function
+  required: false
+  description: 'partial_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides some yaml formatted manifest for a serverless
+    function.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides some yaml formatted manifest for
+    a serverless function
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes some yaml formatted manifest for a serverless function
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include some yaml formatted manifest for a serverless
+    function
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+- type: icontains-any
+  value:
+  - func1
+  - test-function-8
+  - Date()
+  - serverless
+  - function
+  required: false
+  description: 'complete_yaml: Must mention relevant keywords'
+- type: contains
+  value: '```'
+  required: false
+  description: 'complete_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml formatted manifest for
+    a serverless function with all required fields, name set to ''func1'', namespace
+    set to ''test-function-8'' and  that calls ''date()''.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml formatted manifest
+    for a serverless function with all required fields, name set to ''func1'', namespace
+    set to ''test-function-8'' and  that calls ''date()''
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml formatted manifest for a serverless function
+    with all required fields, name set to ''func1'', namespace set to ''test-function-8''
+    and  that calls ''date()'' but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml formatted manifest for a serverless
+    function with all required fields, name set to ''func1'', namespace set to ''test-function-8''
+    and  that calls ''date()''
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'complete_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/08_kyma_app_serverless_syntax_err/deploy.sh
+  undeploy:
+    script: ./data/test-cases/08_kyma_app_serverless_syntax_err/undeploy.sh

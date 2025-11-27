@@ -1,0 +1,88 @@
+description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the
+  PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to
+  remain unbound, leading to issues with the deployment.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Deployment
+      api_version: apps/v1
+      name: nginx-deployment
+      namespace: test-deployment-4
+prompts:
+- Can you check the PV?
+assert:
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the persistentvolume (pv) do not
+    support readwritemany.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the persistentvolume (pv)
+    do not support readwritemany
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the persistentvolume (pv) do not support readwritemany
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the persistentvolume (pv) do not support
+    readwritemany
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'potential_pvc_issue: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a step-by-step guide on how to fix the
+    issue.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a step-by-step guide on how to
+    fix the issue
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a step-by-step guide on how to fix the issue but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a step-by-step guide on how to fix the issue
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/deploy.sh
+  undeploy:
+    script: ./data/test-cases/04_k8s_improper_persistent_storage/undeploy.sh

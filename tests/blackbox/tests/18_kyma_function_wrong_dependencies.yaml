@@ -1,0 +1,226 @@
+description: The Function has a wrong dependencies field set.
+providers:
+- id: file://./src/companion_provider.js
+  config:
+    apiUrl: ${COMPANION_API_URL}
+    resource:
+      kind: Function
+      api_version: serverless.kyma-project.io/v1alpha2
+      name: test-function-18
+      namespace: test-function-18
+prompts:
+- What is the problem?
+assert:
+- type: icontains-any
+  value:
+  - issue
+  - kyma
+  - function
+  required: true
+  description: 'identify_issue: Must mention relevant keywords'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the issues is with the dependencies
+    field in the kyma function.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the issues is with the dependencies
+    field in the kyma function
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the issues is with the dependencies field in the
+    kyma function but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the issues is with the dependencies field
+    in the kyma function
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'identify_issue: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response points out that the dependencies field should be
+    a json object.
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately points out that the dependencies field should
+    be a json object
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response mentions that the dependencies field should be a json object but
+    not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not mention that the dependencies field should be a json object
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: true
+  description: 'dependencies_field: Semantic validation'
+- type: javascript
+  value: "// Check for numbered steps or bullet points\n            const hasNumberedSteps\
+    \ = /\\d+\\.\\s/.test(output);\n            const hasBulletPoints = /^\\s*[-*]\\\
+    s/m.test(output);\n            return hasNumberedSteps || hasBulletPoints;"
+  required: false
+  description: 'step_by_step_guide: Should contain structured steps'
+- type: llm-rubric
+  value: 'Evaluate if the response contains a step-by-step guide on how to fix the
+    issue..
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately contains a step-by-step guide on how to
+    fix the issue.
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response contains a step-by-step guide on how to fix the issue. but not
+    clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not contains a step-by-step guide on how to fix the issue.
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'step_by_step_guide: Semantic validation'
+- type: llm-rubric
+  value: 'Evaluate if the response provides an example of a correct dependencies field..
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides an example of a correct dependencies
+    field.
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes an example of a correct dependencies field. but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include an example of a correct dependencies field.
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'example: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'partial_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a partial yaml for the function with the
+    correct dependencies..
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a partial yaml for the function
+    with the correct dependencies.
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a partial yaml for the function with the correct dependencies.
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a partial yaml for the function with the correct
+    dependencies.
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'partial_yaml: Semantic validation'
+- type: contains
+  value: '```'
+  required: false
+  description: 'complete_yaml: Must contain code block'
+- type: llm-rubric
+  value: 'Evaluate if the response provides a complete yaml for the function with
+    the correct dependencies..
+
+
+    Score 1.0 if:
+
+    - The response clearly and accurately provides a complete yaml for the function
+    with the correct dependencies.
+
+    - All relevant information is provided
+
+
+    Score 0.5 if:
+
+    - The response includes a complete yaml for the function with the correct dependencies.
+    but not clearly
+
+    - Some relevant information is missing
+
+
+    Score 0.0 if:
+
+    - The response does not include a complete yaml for the function with the correct
+    dependencies.
+
+    - Incorrect or misleading information
+
+    '
+  threshold: 0.7
+  required: false
+  description: 'complete_yaml: Semantic validation'
+metadata:
+  deploy:
+    script: ./data/test-cases/18_kyma_function_wrong_dependencies/deploy.sh
+  undeploy:
+    script: ./data/test-cases/18_kyma_function_wrong_dependencies/undeploy.sh

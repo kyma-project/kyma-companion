@@ -335,20 +335,52 @@ See `.github/workflows/blackbox-tests.yml` for full configuration.
 
 ## Migration Status
 
-**Phase 1: Proof of Concept** ✅
+**Phase 1: Proof of Concept** ✅ COMPLETE
 - [x] 3 scenarios converted (nginx_oom, what_is_kyma, apirule_broken)
 - [x] Custom Companion provider implemented
 - [x] Conversion script created
+- [x] All 24 scenarios converted (26 test files total)
+- [x] Documentation completed
 
-**Phase 2: Full Migration** (In Progress)
-- [ ] 21 remaining scenarios converted
-- [ ] CI/CD pipeline updated
-- [ ] Team training completed
+**Phase 2: Expectation Refinement** (Planned)
+- [ ] Systematically review and rephrase expectations for clarity
+- [ ] Add more deterministic checks where possible
+- [ ] Increase thresholds for clear criteria
+- [ ] Document expectation writing patterns
 
 **Phase 3: Advanced Features** (Planned)
 - [ ] Embedding-based similarity evaluation
 - [ ] Snapshot/regression testing
 - [ ] LangSmith integration (production monitoring)
+- [ ] CI/CD pipeline integration
+
+## Coexistence with pytest
+
+**Important**: Promptfoo tests currently run **alongside** existing pytest blackbox tests. Both test suites are independent:
+
+- **pytest tests**: Located in `src/evaluation/`, run via `poetry run poe test-blackbox`
+- **Promptfoo tests**: Located in `tests/*.yaml`, run via `npm test`
+
+### Why Keep Both?
+
+During the migration period, both test frameworks coexist to:
+1. **Validate Promptfoo**: Ensure Promptfoo produces reliable results before deprecating pytest
+2. **Gradual migration**: Teams can familiarize themselves with Promptfoo without disruption
+3. **Comparison**: Compare results between frameworks to identify issues
+
+### When to Use Which?
+
+- **Development/Debugging**: Use Promptfoo (faster iteration, better reports)
+- **CI/CD**: Currently uses pytest (will transition to Promptfoo in Phase 3)
+- **Verification**: Run both if you want to double-check results
+
+### Future Plan
+
+Once Promptfoo is validated and stable:
+1. Update CI/CD to use Promptfoo as primary test suite
+2. Run pytest as backup for 1-2 sprints
+3. Archive pytest blackbox tests (keep for reference)
+4. Promptfoo becomes the single source of truth
 
 ## Resources
 
