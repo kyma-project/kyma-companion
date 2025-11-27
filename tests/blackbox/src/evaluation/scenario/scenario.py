@@ -4,7 +4,7 @@ from logging import Logger
 
 import yaml
 from deepeval.evaluate.types import EvaluationResult, TestResult
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import (
@@ -98,7 +98,7 @@ class Scenario(BaseModel):
     test_status_reason: str = ""
     # retry tracking
     attempt_number: int = 0
-    attempt_history: list[dict] = []
+    attempt_history: list[dict] = Field(default_factory=list)
 
     def complete(self) -> None:
         """Update the test status based on the evaluation result."""

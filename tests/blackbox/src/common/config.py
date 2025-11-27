@@ -63,7 +63,7 @@ class Config:
         )  # seconds
         self.scenario_retries = config(
             "KC_EVAL_RETRIES", default=3, cast=int
-        )  # number of retry attempts per scenario
+        )  # total number of attempts per scenario (includes initial attempt)
         self.redis_url = config("REDIS_URL", default="redis://localhost:6379")
 
     def __load_env_from_json(self) -> None:

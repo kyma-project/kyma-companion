@@ -9,7 +9,7 @@ from common.logger import get_logger
 from common.output import print_header, print_test_results
 from evaluation.process_scenario import process_scenario
 from evaluation.scenario.enums import TestStatus
-from evaluation.scenario.scenario import ScenarioList, Scenario
+from evaluation.scenario.scenario import Scenario, ScenarioList
 from evaluation.validator.usage_data import TokenUsageDataValidator
 from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import IValidator
@@ -43,6 +43,7 @@ def process_scenario_with_retry(
         if attempt > 1:
             scenario.test_status = TestStatus.PENDING
             scenario.test_status_reason = ""
+            scenario.initial_questions = []
             for query in scenario.queries:
                 query.test_status = TestStatus.PENDING
                 query.test_status_reason = ""
@@ -57,16 +58,25 @@ def process_scenario_with_retry(
         process_scenario(scenario, config, validator)
 
         # Record attempt history
+        queries_passed = sum(
+            1
+            for q in scenario.queries
+            if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
+        )
+        queries_failed = sum(
+            1 for q in scenario.queries if q.test_status == TestStatus.FAILED
+        )
+        queries_pending = sum(
+            1 for q in scenario.queries if q.test_status == TestStatus.PENDING
+        )
         scenario.attempt_history.append(
             {
                 "attempt": attempt,
                 "status": scenario.test_status.value,
                 "reason": scenario.test_status_reason,
-                "queries_completed": sum(
-                    1
-                    for q in scenario.queries
-                    if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
-                ),
+                "queries_passed": queries_passed,
+                "queries_failed": queries_failed,
+                "queries_pending": queries_pending,
             }
         )
 
