@@ -8,6 +8,11 @@ from deepeval.metrics import (
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from ragas.dataset_schema import MultiTurnSample
+from ragas.integrations.langgraph import convert_to_ragas_messages
+from ragas.messages import ToolCall
+from ragas.metrics._string import NonLLMStringSimilarity
+from ragas.metrics._tool_call_accuracy import ToolCallAccuracy
 
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
@@ -16,6 +21,7 @@ from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 
 AGENT_STEPS_NUMBER = 25
+TOOL_ACCURACY_THRESHOLD = 0.5  # Minimum acceptable tool call accuracy (50%)
 
 
 @pytest.fixture
@@ -45,6 +51,18 @@ def faithfulness_metric(evaluator_model):
         include_reason=True,
         verbose_mode=DEEPEVAL_TESTCASE_VERBOSE,
     )
+
+
+@pytest.fixture
+def tool_accuracy_scorer():
+    """
+    Tool call accuracy metric using ragas ToolCallAccuracy.
+    Uses NonLLMStringSimilarity for deterministic argument comparison.
+    Threshold: 0.5 (50% accuracy required for tool selection).
+    """
+    metric = ToolCallAccuracy()
+    metric.arg_comparison_metric = NonLLMStringSimilarity()
+    return metric
 
 
 @pytest.fixture
@@ -135,10 +153,11 @@ async def test_invoke_chain(
 
 
 @pytest.mark.parametrize(
-    "state,expected_tool_call",
+    "test_name,state,expected_tool_calls",
     [
-        # - Verifies agent makes correct k8s_overview_query_tool call
+        # - Verifies agent makes correct k8s_query_tool call for ImagePullBackOff investigation
         (
+            "Should call k8s_query_tool for ImagePullBackOff investigation",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -165,10 +184,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for pod query
+        # Test case for deployments query
         (
+            "Should call k8s_query_tool for deployments in namespace",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -195,10 +215,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for namespace overview
+        # Test case for namespace issues
         (
+            "Should call k8s_query_tool for namespace issues",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -221,10 +242,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for namespace overview
+        # Test case for checking resources in namespace
         (
+            "Should call k8s_query_tool for checking resources in namespace",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -247,10 +269,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for specific resource query with full details
+        # Test case for specific deployment details
         (
+            "Should call k8s_query_tool for specific deployment details",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -275,10 +298,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for specific resource query with full details
+        # Test case for resource details without specific name
         (
+            "Should call k8s_query_tool for resource details",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -303,10 +327,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for pod status investigation
+        # Test case for pod crash investigation
         (
+            "Should call k8s_query_tool for CrashLoopBackOff investigation",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -333,10 +358,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",  # Might first call k8s_query_tool then fetch_pod_logs_tool
+            [ToolCall(name="k8s_query_tool", args={})],  # Might also call fetch_pod_logs_tool
         ),
-        # Test case for cluster-wide issue
+        # Test case for node issues
         (
+            "Should call k8s_query_tool for node disk pressure check",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -361,10 +387,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for cluster overview query
+        # Test case for cluster overview
         (
+            "Should call k8s_query_tool for cluster overview",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -389,9 +416,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
+        # Test case for checking all cluster resources
         (
+            "Should call k8s_query_tool for all cluster resources",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -416,10 +445,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for namespace overview query
+        # Test case for namespace overview
         (
+            "Should call k8s_query_tool for namespace overview",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -444,10 +474,11 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
-        # Test case for namespace overview query
+        # Test case for checking all namespace resources
         (
+            "Should call k8s_query_tool for all namespace resources",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -472,27 +503,43 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",
+            [ToolCall(name="k8s_query_tool", args={})],
         ),
     ],
 )
 @pytest.mark.asyncio
 async def test_tool_calls(
     k8s_agent,
-    faithfulness_metric,
+    tool_accuracy_scorer,
+    test_name,
     state,
-    expected_tool_call,
+    expected_tool_calls,
 ):
-    # Given: A KubernetesAgent instance and test parameters
+    """
+    Tests that the KubernetesAgent calls the correct tools using ragas ToolCallAccuracy.
 
-    # When: the chain is invoked normally
+    This test uses ragas ToolCallAccuracy metric instead of simple assertion because:
+    1. It provides semantic comparison of tool calls (handles variations in tool usage)
+    2. Uses NonLLMStringSimilarity for deterministic argument comparison
+    3. Allows for additional tool calls beyond the expected ones
+    4. Provides a score (0-1) indicating confidence in tool selection
+
+    Threshold: 0.5 (50% accuracy) allows for some flexibility in tool call sequences.
+    """
+    # Phase 1: Structural assertions (fast failure if basic expectations not met)
     response = await k8s_agent._invoke_chain(state, {})
-    assert isinstance(response, AIMessage)
+    assert isinstance(response, AIMessage), f"{test_name}: Response is not an AIMessage"
+    assert response.tool_calls is not None, f"{test_name}: Expected tool calls but found none"
+    assert len(response.tool_calls) > 0, f"{test_name}: Expected at least one tool call"
 
-    # for tool call cases, verify tool call properties
-    if expected_tool_call:
-        assert response.tool_calls is not None, "Expected tool calls but found none"
-        assert len(response.tool_calls) > 0, "Expected at least one tool call"
-    tool_call = response.tool_calls[0]
-    assert tool_call.get("type") == "tool_call"
-    assert tool_call.get("name") == expected_tool_call
+    # Phase 2: Semantic evaluation using ragas (only if Phase 1 passed)
+    agent_messages = convert_to_ragas_messages([response])
+    test_case_sample = MultiTurnSample(
+        user_input=agent_messages,
+        reference_tool_calls=expected_tool_calls,
+    )
+
+    score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
+    assert score > TOOL_ACCURACY_THRESHOLD, (
+        f"{test_name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
+    )
