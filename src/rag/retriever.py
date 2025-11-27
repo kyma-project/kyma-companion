@@ -2,7 +2,7 @@ import time
 from typing import Protocol
 
 from hdbcli import dbapi
-from langchain_community.vectorstores import HanaDB
+from langchain_hana import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import run_in_executor
