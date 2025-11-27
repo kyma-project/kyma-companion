@@ -2,8 +2,7 @@ name: "API Tests"
 run-name: "API Tests for PR #${{ github.event.number }}"
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, labeled]
+  pull_request:
     paths:
       - "src/routers/**"
       - "src/agents/**/tools/**"
@@ -14,7 +13,6 @@ jobs:
   api-tests:
     name: Run API tests against live cluster
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'api-tests')
     steps:
       - name: Checkout PR code
         uses: actions/checkout@v4
@@ -90,3 +88,4 @@ jobs:
         run: |
           if [ -f companion.pid ]; then
             kill $(cat companion.pid) 2>/dev/null || true
+          fi

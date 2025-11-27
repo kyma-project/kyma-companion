@@ -2,6 +2,7 @@
 Unit tests for routers/common.py shared dependencies and utilities.
 """
 
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import pytest
@@ -28,27 +29,35 @@ class TestInitK8sClient:
             "x_k8s_authorization": "test-token-123",
         }
 
-    def test_init_k8s_client_raises_422_on_validation_error(self, valid_headers, mock_data_sanitizer):
+    def test_init_k8s_client_raises_422_on_validation_error(
+        self, valid_headers, mock_data_sanitizer
+    ):
         """Test that init_k8s_client raises 422 when headers validation fails."""
         with patch("routers.common.K8sAuthHeaders") as mock_auth_class:
             mock_auth = Mock()
-            mock_auth.validate_headers.side_effect = ValueError("Invalid authentication: no credentials provided")
+            mock_auth.validate_headers.side_effect = ValueError(
+                "Invalid authentication: no credentials provided"
+            )
             mock_auth_class.return_value = mock_auth
 
             with pytest.raises(HTTPException) as exc_info:
                 init_k8s_client(
                     x_cluster_url=valid_headers["x_cluster_url"],
-                    x_cluster_certificate_authority_data=valid_headers["x_cluster_certificate_authority_data"],
+                    x_cluster_certificate_authority_data=valid_headers[
+                        "x_cluster_certificate_authority_data"
+                    ],
                     data_sanitizer=mock_data_sanitizer,
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
                     x_client_key_data=None,
                 )
 
-            assert exc_info.value.status_code == 422
+            assert exc_info.value.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
             assert "Invalid authentication" in str(exc_info.value.detail)
 
-    def test_init_k8s_client_raises_400_on_connection_error(self, valid_headers, mock_data_sanitizer):
+    def test_init_k8s_client_raises_400_on_connection_error(
+        self, valid_headers, mock_data_sanitizer
+    ):
         """Test that init_k8s_client raises 400 when K8s client creation fails."""
         with patch("routers.common.K8sClient") as mock_k8s_class:
             mock_k8s_class.side_effect = Exception("Connection refused")
@@ -56,14 +65,16 @@ class TestInitK8sClient:
             with pytest.raises(HTTPException) as exc_info:
                 init_k8s_client(
                     x_cluster_url=valid_headers["x_cluster_url"],
-                    x_cluster_certificate_authority_data=valid_headers["x_cluster_certificate_authority_data"],
+                    x_cluster_certificate_authority_data=valid_headers[
+                        "x_cluster_certificate_authority_data"
+                    ],
                     data_sanitizer=mock_data_sanitizer,
                     x_k8s_authorization=valid_headers["x_k8s_authorization"],
                     x_client_certificate_data=None,
                     x_client_key_data=None,
                 )
 
-            assert exc_info.value.status_code == 400
+            assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
             assert "Failed to connect to the cluster" in exc_info.value.detail
 
 
@@ -110,10 +121,12 @@ class TestInitModelsDict:
         """Test that init_models_dict raises HTTPException when model creation fails."""
         with patch("routers.common.ModelFactory") as mock_factory_class:
             mock_factory = Mock()
-            mock_factory.create_models.side_effect = Exception("Model initialization failed")
+            mock_factory.create_models.side_effect = Exception(
+                "Model initialization failed"
+            )
             mock_factory_class.return_value = mock_factory
 
             with pytest.raises(HTTPException) as exc_info:
                 init_models_dict(mock_config)
 
-            assert exc_info.value.status_code == 500
+            assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
