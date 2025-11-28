@@ -54,15 +54,7 @@ def process_scenario_with_retry(
             # Note: conversation_id is not stored in the scenario object.
             # Each call to process_scenario() creates a fresh conversation via
             # initialize_conversation(), ensuring complete isolation between retries.
-            scenario.test_status = TestStatus.PENDING
-            scenario.test_status_reason = ""
-            scenario.initial_questions = []
-            for query in scenario.queries:
-                query.test_status = TestStatus.PENDING
-                query.test_status_reason = ""
-                query.actual_response = ""
-                query.response_chunks = []
-                query.evaluation_result = None
+            scenario.reset()
 
         # Track attempt number
         scenario.attempt_number = attempt
@@ -71,27 +63,7 @@ def process_scenario_with_retry(
         process_scenario(scenario, config, validator)
 
         # Record attempt history
-        queries_passed = sum(
-            1
-            for q in scenario.queries
-            if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
-        )
-        queries_failed = sum(
-            1 for q in scenario.queries if q.test_status == TestStatus.FAILED
-        )
-        queries_pending = sum(
-            1 for q in scenario.queries if q.test_status == TestStatus.PENDING
-        )
-        scenario.attempt_history.append(
-            {
-                "attempt": attempt,
-                "status": scenario.test_status.value,
-                "reason": scenario.test_status_reason,
-                "queries_passed": queries_passed,
-                "queries_failed": queries_failed,
-                "queries_pending": queries_pending,
-            }
-        )
+        scenario.record_attempt_history(attempt)
 
         # Check if scenario passed
         if scenario.test_status != TestStatus.FAILED:

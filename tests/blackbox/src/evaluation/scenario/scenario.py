@@ -100,6 +100,42 @@ class Scenario(BaseModel):
     attempt_number: int = 0
     attempt_history: list[dict] = Field(default_factory=list)
 
+    def reset(self) -> None:
+        """Reset scenario state for retry attempts."""
+        self.test_status = TestStatus.PENDING
+        self.test_status_reason = ""
+        self.initial_questions = []
+        for query in self.queries:
+            query.test_status = TestStatus.PENDING
+            query.test_status_reason = ""
+            query.actual_response = ""
+            query.response_chunks = []
+            query.evaluation_result = None
+
+    def record_attempt_history(self, attempt: int) -> None:
+        """Record metrics for the current attempt in attempt_history."""
+        queries_passed = sum(
+            1
+            for q in self.queries
+            if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
+        )
+        queries_failed = sum(
+            1 for q in self.queries if q.test_status == TestStatus.FAILED
+        )
+        queries_pending = sum(
+            1 for q in self.queries if q.test_status == TestStatus.PENDING
+        )
+        self.attempt_history.append(
+            {
+                "attempt": attempt,
+                "status": self.test_status.value,
+                "reason": self.test_status_reason,
+                "queries_passed": queries_passed,
+                "queries_failed": queries_failed,
+                "queries_pending": queries_pending,
+            }
+        )
+
     def complete(self) -> None:
         """Update the test status based on the evaluation result."""
         if self.test_status != TestStatus.FAILED:
