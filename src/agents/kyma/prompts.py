@@ -29,10 +29,16 @@ Use the available tool as described in tool description.
 
    `fetch_kyma_resource_version` → `kyma_query_tool` → `search_kyma_doc`
    
-2. else: 
+2. else:
     `kyma_query_tool` → `search_kyma_doc`
-3. If an error occurs with `kyma_query_tool`
-   `kyma_query_tool (error)` → `fetch_kyma_resource_version (retrieve correct resource details)` → `kyma_query_tool (retry)` → `search_kyma_doc`
+
+3. If `kyma_query_tool` returns an error (especially 404 errors):
+   This indicates the API version in the URI is likely incorrect. ALWAYS:
+   - Call `fetch_kyma_resource_version` to get the correct API version
+   - Retry `kyma_query_tool` with the corrected URI
+   - Then call `search_kyma_doc` if problems are found
+
+   `kyma_query_tool (404 or error)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry)` → `search_kyma_doc`
 
 ### For Non Troubleshooting Queries
 
