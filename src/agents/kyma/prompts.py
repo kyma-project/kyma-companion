@@ -32,13 +32,15 @@ Use the available tool as described in tool description.
 2. else:
     `kyma_query_tool` → `search_kyma_doc`
 
-3. If `kyma_query_tool` returns an error (especially 404 errors):
-   This indicates the API version in the URI is likely incorrect. ALWAYS:
+3. If `kyma_query_tool` returns a 404 error on the FIRST attempt:
+   This indicates the API version in the URI is likely incorrect. Retry ONCE:
    - Call `fetch_kyma_resource_version` to get the correct API version
    - Retry `kyma_query_tool` with the corrected URI
    - Then call `search_kyma_doc` if problems are found
 
-   `kyma_query_tool (404 or error)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry)` → `search_kyma_doc`
+   Do NOT retry if the tool has already failed multiple times. Instead, provide troubleshooting guidance.
+
+   `kyma_query_tool (404 first try)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry once)` → `search_kyma_doc`
 
 ### For Non Troubleshooting Queries
 
