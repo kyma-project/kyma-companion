@@ -37,7 +37,7 @@ To run the Evaluation tests, follow these steps:
     export KC_EVAL_RETRIES=3  # Default: 3 (total number of attempts, including the initial attempt)
     ```
 
-    This controls how many times a failed scenario will be retried. Each retry creates a fresh conversation to handle LLM non-determinism. Set to 1 to disable retries.
+    This configuration controls how many times a failed scenario is retried. Each retry initiates a new conversation to handle LLM non-determinism. Set to 1 to disable retries.
 
 5. Run the Evaluation tests:
 
