@@ -31,6 +31,7 @@ class Config:
     max_workers: int
     retry_wait_time: int
     retry_max_wait_time: int
+    scenario_retries: int
     models: list[dict]
 
     def __init__(self) -> None:
@@ -60,6 +61,9 @@ class Config:
         self.retry_max_wait_time = config(
             "RETRY_MAX_WAIT_TIME", default=240, cast=int
         )  # seconds
+        self.scenario_retries = config(
+            "KC_EVAL_RETRIES", default=3, cast=int
+        )  # total number of attempts per scenario (includes initial attempt)
         self.redis_url = config("REDIS_URL", default="redis://localhost:6379")
 
     def __load_env_from_json(self) -> None:
