@@ -23,6 +23,7 @@ app = FastAPI(
 @app.middleware("http")
 async def monitor_http_requests(req: Request, call_next: Any) -> Any:
     """A middleware to monitor HTTP requests."""
+    """This is a test commit"""
     return await CustomMetrics().monitor_http_requests(req, call_next)
 
 
@@ -41,9 +42,7 @@ async def custom_http_exception_handler(
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Exception Handler all exceptions other than HTTPException."""
-    logger.error(
-        "Unhandled exception occurred", exc_info=(type(exc), exc, exc.__traceback__)
-    )
+    logger.error("Unhandled exception occurred", exc_info=(type(exc), exc, exc.__traceback__))
     return JSONResponse(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         content={
