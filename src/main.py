@@ -23,7 +23,6 @@ app = FastAPI(
 @app.middleware("http")
 async def monitor_http_requests(req: Request, call_next: Any) -> Any:
     """A middleware to monitor HTTP requests."""
-    """This is a test commit"""
     return await CustomMetrics().monitor_http_requests(req, call_next)
 
 
