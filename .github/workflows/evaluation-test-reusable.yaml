@@ -165,14 +165,7 @@ jobs:
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "Running API tests against Companion at $COMPANION_API_URL"
-          poetry run pytest src/api_tests/ -v --tb=short --junit-xml=api-test-results.xml
-
-      - name: API Tests - Debug information
-        if: failure()
-        working-directory: tests/blackbox
-        run: |
-          echo "API Tests failed. Test results:"
-          cat api-test-results.xml 2>/dev/null || echo "Test results file not found"
+          poetry run pytest src/api_tests/ -v
 
       - name: Run Evaluation Tests
         if: ${{ inputs.RUN_EVALUATION_TESTS }}
