@@ -15,6 +15,11 @@ on:
         required: true
         description: "The ref to checkout to acquire the tests, not the kyma-companion image."
         type: string
+      RUN_EVALUATION_TESTS:
+        required: false
+        type: boolean
+        default: true
+        description: "Whether to run evaluation tests. Set to false to run only API tests."
 
 # global env variables.
 env:
@@ -152,7 +157,18 @@ jobs:
         working-directory: tests/blackbox
         run: poetry install
 
+      - name: Run API Tests
+        working-directory: tests/blackbox
+        env:
+          LOG_LEVEL: "DEBUG"
+          COMPANION_API_URL: "http://localhost:32000"
+        run: |
+          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          echo "Running API tests against Companion at $COMPANION_API_URL"
+          poetry run pytest src/api_tests/ -v
+
       - name: Run Evaluation Tests
+        if: ${{ inputs.RUN_EVALUATION_TESTS }}
         working-directory: tests/blackbox
         env:
           LOG_LEVEL: "DEBUG"
@@ -167,7 +183,7 @@ jobs:
           poetry run python src/run_evaluation.py
 
       - name: Evaluation Tests - Debug information
-        if: failure()
+        if: failure() && inputs.RUN_EVALUATION_TESTS
         run: |
           kubectl get deploy -n ai-system || true
           kubectl get pod -n ai-system || true
