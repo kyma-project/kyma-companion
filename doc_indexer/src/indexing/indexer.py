@@ -5,9 +5,9 @@ from hdbcli import dbapi
 from indexing.contants import HEADER1
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders.text import TextLoader
-from langchain_community.vectorstores import HanaDB
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_hana import HanaDB
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from utils.logging import get_logger
