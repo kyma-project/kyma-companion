@@ -49,7 +49,6 @@ jobs:
 
   api-tests:
     name: Run API tests
-    if: contains(github.event.pull_request.labels.*.name, 'api-tests')
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     needs: wait-for-build
     secrets: inherit
