@@ -33,7 +33,7 @@ async def custom_http_exception_handler(
     request: Request,
     exc: HTTPException | RequestValidationError | ResponseValidationError,
 ) -> JSONResponse:
-    """Exception Handler for HTTPException."""
+    """An Exception Handler for HTTPException."""
     logger.error("HTTPException", exc_info=(type(exc), exc, exc.__traceback__))
     return handle_http_exception(exc)
 
