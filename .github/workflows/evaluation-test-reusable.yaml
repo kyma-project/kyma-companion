@@ -164,7 +164,8 @@ jobs:
           COMPANION_API_URL: "http://localhost:32000"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "Running API tests against Companion at $COMPANION_API_URL"
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "saved config to $CONFIG_PATH! Running API tests against Companion at $COMPANION_API_URL"
           poetry run pytest src/api_tests/ -v
 
       - name: Run Evaluation Tests
