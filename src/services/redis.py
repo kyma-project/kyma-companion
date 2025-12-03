@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from typing import cast
 
 from redis.asyncio import Redis as AsyncRedis
 
@@ -46,7 +47,9 @@ class Redis(metaclass=SingletonMeta):
             return False
 
         try:
-            if await self.connection.ping():
+            result = self.connection.ping()
+            # Cast to Awaitable since we're using AsyncRedis
+            if await cast("Awaitable[bool]", result):
                 logger.debug("Redis connection is ready.")
                 return True
         except Exception as e:
