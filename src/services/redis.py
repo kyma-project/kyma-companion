@@ -48,7 +48,6 @@ class Redis(metaclass=SingletonMeta):
 
         try:
             result = self.connection.ping()
-            # Cast to Awaitable since we're using AsyncRedis
             if await cast("Awaitable[bool]", result):
                 logger.debug("Redis connection is ready.")
                 return True
