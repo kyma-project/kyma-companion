@@ -1081,14 +1081,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "3.6.7"
+version = "3.7.3"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-3.6.7-py3-none-any.whl", hash = "sha256:46fe72869359a7afb7baa34880300ed3660e9b387dfd3341a461e1d96bc5f021"},
-    {file = "deepeval-3.6.7.tar.gz", hash = "sha256:4bb2266c35d7b2521a1f9def4562236728c9bbbaf373d956fba2e69eb8061f31"},
+    {file = "deepeval-3.7.3-py3-none-any.whl", hash = "sha256:ce9995fb06d8240a0545f570ad33113007b7fe40ddf3e6d15c4023cb91a2bb99"},
+    {file = "deepeval-3.7.3.tar.gz", hash = "sha256:ca1b13a39b2d1158eccb8f940e808417e2fb0b0df44b41fcc8bcb736d48837ea"},
 ]
 
 [package.dependencies]
@@ -1105,14 +1105,14 @@ opentelemetry-api = ">=1.24.0,<2.0.0"
 opentelemetry-exporter-otlp-proto-grpc = ">=1.24.0,<2.0.0"
 opentelemetry-sdk = ">=1.24.0,<2.0.0"
 portalocker = "*"
-posthog = ">=6.3.0,<7.0.0"
+posthog = ">=5.4.0,<6.0.0"
 pydantic = ">=2.11.7,<3.0.0"
 pydantic-settings = ">=2.10.1,<3.0.0"
 pyfiglet = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-repeat = "*"
-pytest-rerunfailures = ">=12.0,<13.0"
+pytest-rerunfailures = "*"
 pytest-xdist = "*"
 python-dotenv = ">=1.1.1,<2.0.0"
 requests = ">=2.31.0,<3.0.0"
@@ -4666,14 +4666,14 @@ tests = ["coverage-conditional-plugin (>=0.9.0)", "portalocker[redis]", "pytest 
 
 [[package]]
 name = "posthog"
-version = "6.7.3"
+version = "5.4.0"
 description = "Integrate PostHog into any python application."
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "posthog-6.7.3-py3-none-any.whl", hash = "sha256:c669d0a43ddd2c34762fdbfd4d89e453430991e7ff9c2baf8e7c36619525d624"},
-    {file = "posthog-6.7.3.tar.gz", hash = "sha256:3d03ab7e6328a2407dcafa5615760bd99a4c20b18b7d548160175634ab53e73c"},
+    {file = "posthog-5.4.0-py3-none-any.whl", hash = "sha256:284dfa302f64353484420b52d4ad81ff5c2c2d1d607c4e2db602ac72761831bd"},
+    {file = "posthog-5.4.0.tar.gz", hash = "sha256:701669261b8d07cdde0276e5bc096b87f9e200e3b9589c5ebff14df658c5893c"},
 ]
 
 [package.dependencies]
@@ -4682,7 +4682,6 @@ distro = ">=1.5.0"
 python-dateutil = ">=2.2"
 requests = ">=2.7,<3.0"
 six = ">=1.5"
-typing-extensions = ">=4.2.0"
 
 [package.extras]
 dev = ["django-stubs", "lxml", "mypy", "mypy-baseline", "packaging", "pre-commit", "pydantic", "ruff", "setuptools", "tomli", "tomli_w", "twine", "types-mock", "types-python-dateutil", "types-requests", "types-setuptools", "types-six", "wheel"]
@@ -5274,20 +5273,20 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.4.2"
+version = "9.0.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["test"]
 files = [
-    {file = "pytest-8.4.2-py3-none-any.whl", hash = "sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79"},
-    {file = "pytest-8.4.2.tar.gz", hash = "sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01"},
+    {file = "pytest-9.0.1-py3-none-any.whl", hash = "sha256:67be0030d194df2dfa7b556f2e56fb3c3315bd5c8822c6951162b92b32ce7dad"},
+    {file = "pytest-9.0.1.tar.gz", hash = "sha256:3e9c069ea73583e255c3b21cf46b8d3c56f6e3a1a8f6da94ccb0fcf57b9d73c8"},
 ]
 
 [package.dependencies]
 colorama = {version = ">=0.4", markers = "sys_platform == \"win32\""}
-iniconfig = ">=1"
-packaging = ">=20"
+iniconfig = ">=1.0.1"
+packaging = ">=22"
 pluggy = ">=1.5,<2"
 pygments = ">=2.7.2"
 
@@ -5312,18 +5311,18 @@ pytest = ">=3.5.0"
 
 [[package]]
 name = "pytest-asyncio"
-version = "1.2.0"
+version = "1.3.0"
 description = "Pytest support for asyncio"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["test"]
 files = [
-    {file = "pytest_asyncio-1.2.0-py3-none-any.whl", hash = "sha256:8e17ae5e46d8e7efe51ab6494dd2010f4ca8dae51652aa3c8d55acf50bfb2e99"},
-    {file = "pytest_asyncio-1.2.0.tar.gz", hash = "sha256:c609a64a2a8768462d0c99811ddb8bd2583c33fd33cf7f21af1c142e824ffb57"},
+    {file = "pytest_asyncio-1.3.0-py3-none-any.whl", hash = "sha256:611e26147c7f77640e6d0a92a38ed17c3e9848063698d5c93d5aa7aa11cebff5"},
+    {file = "pytest_asyncio-1.3.0.tar.gz", hash = "sha256:d7f52f36d231b80ee124cd216ffb19369aa168fc10095013c6b014a34d3ee9e5"},
 ]
 
 [package.dependencies]
-pytest = ">=8.2,<9"
+pytest = ">=8.2,<10"
 typing-extensions = {version = ">=4.12", markers = "python_version < \"3.13\""}
 
 [package.extras]
@@ -5368,14 +5367,14 @@ python-dotenv = ">=0.9.1"
 
 [[package]]
 name = "pytest-mock"
-version = "3.15.0"
+version = "3.15.1"
 description = "Thin-wrapper around the mock package for easier use with pytest"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "pytest_mock-3.15.0-py3-none-any.whl", hash = "sha256:ef2219485fb1bd256b00e7ad7466ce26729b30eadfc7cbcdb4fa9a92ca68db6f"},
-    {file = "pytest_mock-3.15.0.tar.gz", hash = "sha256:ab896bd190316b9d5d87b277569dfcdf718b2d049a2ccff5f7aca279c002a1cf"},
+    {file = "pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d"},
+    {file = "pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f"},
 ]
 
 [package.dependencies]
@@ -5401,19 +5400,19 @@ pytest = "*"
 
 [[package]]
 name = "pytest-rerunfailures"
-version = "12.0"
+version = "16.1"
 description = "pytest plugin to re-run tests to eliminate flaky failures"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.10"
 groups = ["test"]
 files = [
-    {file = "pytest-rerunfailures-12.0.tar.gz", hash = "sha256:784f462fa87fe9bdf781d0027d856b47a4bfe6c12af108f6bd887057a917b48e"},
-    {file = "pytest_rerunfailures-12.0-py3-none-any.whl", hash = "sha256:9a1afd04e21b8177faf08a9bbbf44de7a0fe3fc29f8ddbe83b9684bd5f8f92a9"},
+    {file = "pytest_rerunfailures-16.1-py3-none-any.whl", hash = "sha256:5d11b12c0ca9a1665b5054052fcc1084f8deadd9328962745ef6b04e26382e86"},
+    {file = "pytest_rerunfailures-16.1.tar.gz", hash = "sha256:c38b266db8a808953ebd71ac25c381cb1981a78ff9340a14bcb9f1b9bff1899e"},
 ]
 
 [package.dependencies]
 packaging = ">=17.1"
-pytest = ">=6.2"
+pytest = ">=7.4,<8.2.2 || >8.2.2"
 
 [[package]]
 name = "pytest-sugar"
@@ -8093,4 +8092,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.*"
-content-hash = "fa419f982df9f7a134400510cfc19f271381085e86706418dd49c5901d2405a7"
+content-hash = "ba7ef0871adebd3bfcecf7fe1b7abd3fcbadb9329a143a10e3072772060d823e"
