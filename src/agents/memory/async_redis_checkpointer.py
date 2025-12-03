@@ -197,7 +197,8 @@ def _parse_redis_checkpoint_data(
     }
 
     checkpoint = serde.loads_typed((data[b"type"].decode(), data[b"checkpoint"]))
-    metadata = serde.loads(data[b"metadata"])
+    # In langgraph-checkpoint 3.0, metadata is stored as JSON bytes
+    metadata = json.loads(data[b"metadata"])
     parent_checkpoint_id = data.get(b"parent_checkpoint_id", b"").decode()
     parent_config: RunnableConfig | None = (
         {
@@ -306,7 +307,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         key = _make_redis_checkpoint_key(thread_id, checkpoint_ns, checkpoint_id)
 
         type_, serialized_checkpoint = self.serde.dumps_typed(checkpoint)
-        serialized_metadata = self.serde.dumps(metadata)
+        # In langgraph-checkpoint 3.0, metadata is stored as JSON bytes
+        serialized_metadata = json.dumps(metadata).encode()
         data = {
             "checkpoint": serialized_checkpoint,
             "type": type_,
