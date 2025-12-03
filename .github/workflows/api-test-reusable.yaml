@@ -1,0 +1,164 @@
+name: "API tests"
+run-name: "API tests"
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+      TEST_REPO_FULLNAME:
+        required: true
+        description: "The repository to checkout to acquire the tests, not the kyma-companion image."
+        type: string
+      TEST_REF:
+        required: true
+        description: "The ref to checkout to acquire the tests, not the kyma-companion image."
+        type: string
+
+# global env variables.
+env:
+  DOCKER_TIMEOUT: 30
+  K3D_VERSION: "v5.7.2" # Required K3d version.
+
+jobs:
+  api-tests:
+    name: Run API tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.TEST_REF }}
+          repository: ${{ inputs.TEST_REPO_FULLNAME }}
+
+      - name: K3d Setup - Install Kubectl CLI
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: K3d Setup - Install K3d CLI
+        id: install-k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
+          k3d --version
+          k3d_version=$(k3d --version | cut -d " " -f 3 | head -1 | xargs)
+          if [ "$k3d_version" != "${K3D_VERSION}" ]; then
+            echo "K3d version is not correct. Expected: ${K3D_VERSION}, got: $k3d_version"
+            exit 1
+          fi
+          echo "K3d version is correct: $k3d_version"
+
+      - name: K3d Setup - Provision K3d cluster
+        run: |
+          echo "::group::K3d - Provision"
+          k3d cluster create test-cluster --verbose --agents=1 -p 9080:80@loadbalancer -p 9443:443@loadbalancer -p "32000:32000@agent:0" -p "32100:32100@agent:0"
+          echo "::endgroup::"
+
+      - name: K3d Setup - Verify K3d context
+        run: |
+          echo "::group::K3d - Context"
+          context_name=$(kubectl config current-context)
+          if [ "$context_name" != "k3d-test-cluster" ]; then
+            echo "K3d context is not correct. Expected: k3d-test-cluster, got: $context_name"
+            exit 1
+          fi
+          echo "K3d context is correct"
+          echo "::endgroup::"
+
+      - name: Redis Setup - Deploy Redis using Helm
+        run: |
+          kubectl create namespace redis
+          helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
+          echo "Installing Redis using Helm..."
+          helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
+
+      - name: Redis Setup - Change NodePort
+        run: |
+          kubectl patch service redis-stack -n redis --type='json' -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value": 32100}]'
+          kubectl get svc -n redis redis-stack -o yaml
+
+      - name: Companion Deploy - Create secret
+        env:
+          COMPANION_CONFIG_BASE64: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+        run: |
+          kubectl create namespace ai-system
+          ./scripts/k8s/create-secret.sh
+
+      - name: Companion Deploy - Apply companion manifests
+        run: |
+          kubectl apply -f scripts/k8s/companion-k3d-manifest.yaml
+
+      - name: Companion Deploy - Update image name in Deployment
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+        run: |
+          echo "Updating companion image to ${IMAGE_NAME}..."
+          kubectl -n ai-system set image deployment/companion companion=${IMAGE_NAME}
+
+      - name: Companion Deploy - Wait for deployment
+        run: |
+          kubectl rollout status deployment/companion -n ai-system --timeout=300s
+
+      - name: Companion Deploy - Test reachability through NodePort
+        env:
+          TIMEOUT_SECONDS: 300  # Default timeout (5 minutes)
+          INTERVAL_SECONDS: 10  # Default interval (10 seconds)
+        run: |
+          end_time=$((SECONDS + TIMEOUT_SECONDS))
+          while [ $SECONDS -lt $end_time ]; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:32000/readyz | grep -q 200; then
+              echo "Service is reachable";
+              exit 0;
+            fi
+            echo "Service not reachable yet, retrying in $INTERVAL_SECONDS seconds...";
+            sleep $INTERVAL_SECONDS;
+          done
+          echo "Service did not become reachable within $TIMEOUT_SECONDS seconds";
+          exit 1
+
+      - name: Companion Deploy - Information
+        if: always()
+        run: |
+          kubectl get deploy -n ai-system || true
+          kubectl get pod -n ai-system || true
+          kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
+
+      - name: Companion Deploy - Pod logs
+        if: failure()
+        run: |
+          kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
+
+      - name: API Tests Setup - Extract project Python version
+        working-directory: tests/blackbox
+        id: python-version
+        run: |
+          ./../../scripts/shell/extract-python-version.sh
+
+      - name: API Tests Setup - Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: API Tests Setup - Install Poetry
+        working-directory: tests/blackbox
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: API Tests Setup - Install dependencies
+        working-directory: tests/blackbox
+        run: poetry install
+
+      - name: Run API Tests
+        working-directory: tests/blackbox
+        env:
+          LOG_LEVEL: "DEBUG"
+          COMPANION_API_URL: "http://localhost:32000"
+        run: |
+          export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "saved config to $CONFIG_PATH! Running API tests against Companion at $COMPANION_API_URL"
+          poetry run pytest src/api_tests/ -v
