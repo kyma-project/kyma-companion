@@ -56,8 +56,8 @@ types-pyyaml = "^6.0.12.20250822"
 
 [tool.poetry.group.dev.dependencies]
 black = "25.11.0"
-flake8 = "^7.3.0"
-flake8-bugbear = "^24.12.12"
+flake8 = "7.3.0"
+flake8-bugbear = "25.11.29"
 ipython = "^9.6.0"
 mypy = "^1.18.2"
 poethepoet = "^0.37.0"
