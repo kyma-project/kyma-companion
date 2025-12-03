@@ -18,7 +18,6 @@ on:
 
 # global env variables.
 env:
-  DOCKER_TIMEOUT: 30
   K3D_VERSION: "v5.7.2" # Required K3d version.
 
 jobs:
@@ -33,11 +32,7 @@ jobs:
           repository: ${{ inputs.TEST_REPO_FULLNAME }}
 
       - name: K3d Setup - Install Kubectl CLI
-        run: |
-          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          mv ./kubectl /usr/local/bin/kubectl
-          kubectl version --client
+        uses: azure/setup-kubectl@v4
 
       - name: K3d Setup - Install K3d CLI
         id: install-k3d
@@ -133,20 +128,19 @@ jobs:
 
       - name: API Tests Setup - Extract project Python version
         working-directory: tests/blackbox
-        id: python-version
         run: |
           ./../../scripts/shell/extract-python-version.sh
 
       - name: API Tests Setup - Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: API Tests Setup - Install Poetry
-        working-directory: tests/blackbox
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
       - name: API Tests Setup - Install dependencies
         working-directory: tests/blackbox
@@ -160,5 +154,5 @@ jobs:
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
-          echo "saved config to $CONFIG_PATH! Running API tests against Companion at $COMPANION_API_URL"
+          echo "Config saved. Running API tests against Companion at $COMPANION_API_URL"
           poetry run pytest src/api_tests/ -v
