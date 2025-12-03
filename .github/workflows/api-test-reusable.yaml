@@ -37,7 +37,10 @@ jobs:
       - name: K3d Setup - Install K3d CLI
         id: install-k3d
         run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
+          # Download K3d binary directly instead of using curl | bash
+          curl -sLO "https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64"
+          chmod +x k3d-linux-amd64
+          sudo mv k3d-linux-amd64 /usr/local/bin/k3d
           k3d --version
           k3d_version=$(k3d --version | cut -d " " -f 3 | head -1 | xargs)
           if [ "$k3d_version" != "${K3D_VERSION}" ]; then
@@ -70,9 +73,13 @@ jobs:
           echo "Installing Redis using Helm..."
           helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
-      - name: Redis Setup - Change NodePort
+      - name: Redis Setup - Change to NodePort
         run: |
-          kubectl patch service redis-stack -n redis --type='json' -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value": 32100}]'
+          # Change service type to NodePort and set specific port
+          kubectl patch service redis-stack -n redis --type='json' -p='[
+            {"op": "replace", "path": "/spec/type", "value": "NodePort"},
+            {"op": "replace", "path": "/spec/ports/0/nodePort", "value": 32100}
+          ]'
           kubectl get svc -n redis redis-stack -o yaml
 
       - name: Companion Deploy - Create secret
@@ -154,5 +161,5 @@ jobs:
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
-          echo "Config saved. Running API tests against Companion at $COMPANION_API_URL"
+          echo "Running API tests against Companion at $COMPANION_API_URL"
           poetry run pytest src/api_tests/ -v
