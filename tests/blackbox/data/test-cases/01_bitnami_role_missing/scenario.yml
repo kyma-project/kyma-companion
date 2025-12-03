@@ -1,12 +1,12 @@
-id: test-deployment-1 # format: test-<resource_kind>-<test_id>
-description: The application inside the Deployment tries to list Pods in the same namespace using kubectl but it does not have the necessary RBAC permissions because the Role is missing.
+id: test-pod-1 # format: test-<resource_kind>-<test_id>
+description: The application inside the Pod tries to list Pods in the same namespace using kubectl but it does not have the necessary RBAC permissions because the Role is missing.
 queries:
   - user_query: Why is the Pod in error state?
     resource:
       kind: Deployment
       api_version: apps/v1
       name: kubectl-check
-      namespace: test-deployment-1 # format: test-<resource_kind>-<test_id>
+      namespace: test-pod-1 # format: test-<resource_kind>-<test_id>
     expectations:
       - name: pod_error
         statement: points out that the Pod is in an error state
