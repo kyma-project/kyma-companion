@@ -38,6 +38,7 @@ def print_test_results(
     """Prints the test results."""
     print_header("Test Results:")
     print_results_per_scenario(scenario_list)
+    print_retry_summary(scenario_list)
     print_response_times_summary()
     print_token_usage(total_usage)
     print_header(f"Total time taken by evaluation tests: {time_taken} minutes.")
@@ -63,8 +64,13 @@ def print_response_chunks(chunks: list[ConversationResponseChunk]) -> None:
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
     """Prints the results per scenario."""
     for scenario in scenario_list.items:
+        # Add attempt information if retry was used
+        attempt_info = ""
+        if scenario.attempt_number > 1:
+            attempt_info = f" (Attempt {scenario.attempt_number})"
+
         with gha_utils.group(
-            f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)})"
+            f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)}){attempt_info}"
         ):
             print(colored(f"Description: {scenario.description}", "green"))
 
@@ -97,6 +103,32 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
                 print(
                     f"*** Scenario Status Reason: {colored(scenario.test_status_reason, 'red')}"
                 )
+
+
+def print_retry_summary(scenario_list: ScenarioList) -> None:
+    """Prints summary of scenarios that required retries."""
+    retried_scenarios = [s for s in scenario_list.items if s.attempt_number > 1]
+
+    if not retried_scenarios:
+        return
+
+    print_header("Retry Summary:")
+    print(
+        colored(
+            f"Total scenarios that required retries: {len(retried_scenarios)}",
+            "yellow",
+        )
+    )
+
+    for scenario in retried_scenarios:
+        if scenario.test_status != TestStatus.FAILED:
+            status_text = colored(scenario.test_status.upper(), "green")
+        else:
+            status_text = colored(scenario.test_status.upper(), "red")
+        print(
+            f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | Final Status: {status_text}"
+        )
+        print()
 
 
 def print_failed_queries(scenario_list: ScenarioList) -> None:

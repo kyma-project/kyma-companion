@@ -1,0 +1,59 @@
+name: "API Tests"
+run-name: "API Tests for PR #${{ github.event.number }}"
+
+on:
+  pull_request_target:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+    paths:
+      - "src/routers/**"
+      - "src/agents/**/tools/**"
+      - "tests/blackbox/src/api_tests/**"
+      - ".github/workflows/pull-api-tests.yaml"
+      - ".github/workflows/evaluation-test-reusable.yaml"
+
+jobs:
+  wait-for-build:
+    name: Wait for image build job
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'api-tests')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # Note: 'github.event.pull_request.head.sha' is not same as 'github.sha' on pull requests.
+          GIT_REF: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY_FULL_NAME: "${{ github.repository }}"
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+
+  api-tests:
+    name: Run API tests
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
+    needs: wait-for-build
+    secrets: inherit
+    with:
+      IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
+      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
+      TEST_REF: ${{ github.event.pull_request.head.ref }}
+      RUN_EVALUATION_TESTS: false
