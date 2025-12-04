@@ -37,7 +37,7 @@ async def ainvoke_chain(
             Defaults to None.
 
     Returns:
-        Any: The chain execution results
+        Any: The chain execution results.
     """
     # Convert single value input to dict if needed
     chain_inputs = inputs if isinstance(inputs, dict) else {"input": inputs}
