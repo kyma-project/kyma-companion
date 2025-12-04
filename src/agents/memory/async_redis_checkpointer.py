@@ -264,9 +264,9 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             password=password if password != "" else None,
             ssl=REDIS_SSL_ENABLED,
             ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
-            ssl_include_verify_flags=ssl.VERIFY_DEFAULT if REDIS_SSL_ENABLED else None,
+            ssl_include_verify_flags=[ssl.VERIFY_DEFAULT] if REDIS_SSL_ENABLED else None,
             ssl_exclude_verify_flags=(
-                ssl.VERIFY_X509_STRICT if REDIS_SSL_ENABLED else None
+                [ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None
             ),
         )
         if REDIS_SSL_ENABLED:
