@@ -1,3 +1,4 @@
+import ssl
 from collections.abc import Callable
 
 from redis.asyncio import Redis as AsyncRedis
@@ -88,6 +89,10 @@ def _get_redis_connection() -> AsyncRedis:
         password=str(REDIS_PASSWORD),
         ssl=REDIS_SSL_ENABLED,
         ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
+        ssl_include_verify_flags=ssl.VERIFY_DEFAULT if REDIS_SSL_ENABLED else None,
+        ssl_exclude_verify_flags=(
+            ssl.VERIFY_X509_STRICT if REDIS_SSL_ENABLED else None
+        ),
     )
 
 
