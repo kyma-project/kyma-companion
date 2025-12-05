@@ -32,7 +32,7 @@ poethepoet = "^0.37.0"
 black = "^25.0.0"
 ruff = "^0.13.3"
 mypy = "^1.13.0"
-pytest = "^8.3.3"
+pytest = "^9.0.0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
