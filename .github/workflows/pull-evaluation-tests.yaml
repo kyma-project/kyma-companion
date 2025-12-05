@@ -42,7 +42,6 @@ jobs:
           python ./scripts/python/wait-for-commit-check/run.py
 
   evaluation:
-    if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     needs: wait-for-build
     secrets: inherit
