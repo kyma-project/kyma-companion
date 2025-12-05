@@ -346,6 +346,8 @@ class CompanionGraph:
             )
             gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
 
+        gatekeeper_response.forward_query = False
+
         # return the gatekeeper response.
         return gatekeeper_response
 
