@@ -422,6 +422,31 @@ class TestK8sClient:
     def test_model_dump(self, k8s_client):
         assert k8s_client.model_dump() is None
 
+    def test_lazy_initialization_of_dynamic_client(self):
+        """Test that dynamic_client is lazily initialized on first access."""
+        with patch("services.k8s.K8sClient._create_dynamic_client") as mock_create:
+            mock_dynamic_client = Mock()
+            mock_create.return_value = mock_dynamic_client
+
+            # Create K8sClient instance
+            with patch("services.k8s.K8sClient.__init__", return_value=None):
+                k8s_client = K8sClient()
+                k8s_client._dynamic_client = None  # Simulate lazy initialization state
+                k8s_client._create_dynamic_client = mock_create
+
+                # _create_dynamic_client should NOT be called during initialization
+                mock_create.assert_not_called()
+
+                # First access to dynamic_client property triggers initialization
+                result = k8s_client.dynamic_client
+                mock_create.assert_called_once()
+                assert result == mock_dynamic_client
+
+                # Second access should return cached instance, not call _create_dynamic_client again
+                result2 = k8s_client.dynamic_client
+                assert mock_create.call_count == 1  # Still only called once
+                assert result2 == mock_dynamic_client
+
     @pytest.mark.parametrize(
         "test_description, k8s_headers, expected_result",
         [
@@ -822,7 +847,7 @@ class TestK8sClient:
 
         mock_dynamic_client = Mock()
         mock_dynamic_client.resources.get.return_value.get.return_value = mock_resource
-        k8s_client.dynamic_client = mock_dynamic_client
+        k8s_client._dynamic_client = mock_dynamic_client
 
         # when
         result = k8s_client.list_resources("v1", "Pod", "default")
@@ -859,7 +884,7 @@ class TestK8sClient:
         mock_dynamic_client.resources.get.return_value.get.return_value.to_dict.return_value = (
             raw_data
         )
-        k8s_client.dynamic_client = mock_dynamic_client
+        k8s_client._dynamic_client = mock_dynamic_client
 
         # when
         result = k8s_client.get_resource("v1", "Pod", "test-pod", "default")
@@ -948,7 +973,7 @@ class TestK8sClient:
 
         mock_dynamic_client = Mock()
         mock_dynamic_client.resources.get.return_value.get.return_value = mock_resource
-        k8s_client.dynamic_client = mock_dynamic_client
+        k8s_client._dynamic_client = mock_dynamic_client
 
         # when
         result = k8s_client.list_k8s_events("default")

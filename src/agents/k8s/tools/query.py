@@ -39,10 +39,8 @@ async def k8s_query_tool(
             )
 
         return result
-    except Exception as e:
-        raise Exception(
-            f"failed executing k8s_query_tool with URI: {uri},raised the following error: {e}"
-        ) from e
+    except Exception:
+        raise
 
 
 @tool()
@@ -66,8 +64,5 @@ async def k8s_overview_query_tool(
         result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
 
         return result
-    except Exception as e:
-        raise Exception(
-            f"failed executing k8s_query_tool_with_filter with"
-            f"raised the following error: {e}"
-        ) from e
+    except Exception:
+        raise
