@@ -1,3 +1,4 @@
+import asyncio
 import ssl
 from collections.abc import Callable
 
@@ -47,7 +48,10 @@ class Redis(metaclass=SingletonMeta):
             return False
 
         try:
-            result = await self.connection.ping()
+            ping_result = self.connection.ping()
+            result = (
+                await ping_result if asyncio.iscoroutine(ping_result) else ping_result
+            )
             if result:
                 logger.debug("Redis connection is ready.")
                 return True
