@@ -157,6 +157,34 @@ jobs:
         working-directory: tests/blackbox
         run: poetry install
 
+      - name: Verify Companion Operational
+        env:
+          TIMEOUT_SECONDS: 180
+          INTERVAL_SECONDS: 10
+        run: |
+          echo "Verifying documentation search is operational for tests..."
+
+          end_time=$((SECONDS + TIMEOUT_SECONDS))
+
+          while [ $SECONDS -lt $end_time ]; do
+            # Test Kyma documentation search functionality
+            kyma_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:32000/api/tools/kyma/search \
+              -H "Content-Type: application/json" \
+              -d '{"query": "test"}' || echo "000")
+
+            if [ "$kyma_status" = "200" ]; then
+              echo "✓ Kyma Documentation search is operational (HTTP 200)"
+              echo "✓ Service is fully operational for the tests"
+              exit 0
+            fi
+
+            echo "Service not fully operational yet (Kyma search: $kyma_status, expected: 200)"
+            echo "Retrying in $INTERVAL_SECONDS seconds..."
+            sleep $INTERVAL_SECONDS
+          done
+
+          echo "⚠ Warning: Documentation search did not become operational within $TIMEOUT_SECONDS seconds"
+
       - name: Run API Tests
         working-directory: tests/blackbox
         env:
