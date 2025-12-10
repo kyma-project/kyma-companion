@@ -47,7 +47,7 @@ Only use `search_kyma_doc` if :
 Consider Subscription as Kyma Subscription and Function as Kyma Function
 Always use `search_kyma_doc` after `kyma_query_tool` if the identified problem is kyma related. 
 Never use `search_kyma_doc` and answer directly : 
-- if there is no problem 
+- if there is no problem or errors in the status of the resource.
 - if identified problem is not related to Kyma
 """
 
