@@ -146,19 +146,19 @@ async def test_invoke_chain(
                         content="{'resource_api_version': '', 'resource_namespace': ''}"
                     ),
                     HumanMessage(
-                        content="What is causing the ImagePullBackOff status for many pods?"
+                        content="What is causing the CrashLoopBackOff status for many pods in default namespace?"
                     ),
                 ],
                 subtasks=[
                     {
-                        "description": "What is causing the ImagePullBackOff status for many pods?",
-                        "task_title": "Checking ImagePullBackOff status?",
+                        "description": "What is causing the CrashLoopBackOff status for many pods in default namespace?",
+                        "task_title": "Checking CrashLoopBackOff status?",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is causing the ImagePullBackOff status for many pods?",
-                    task_title="Checking ImagePullBackOff status?",
+                    description="What is causing the CrashLoopBackOff status for many pods in default namespace?",
+                    task_title="Checking CrashLoopBackOff status?",
                     assigned_to="KubernetesAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa

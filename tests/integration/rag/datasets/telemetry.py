@@ -55,14 +55,12 @@ cases = [
     },
     # "fixtures/kyma_docs/telemetry-manager/docs/user/02-logs.md"
     {
-        "input": "what are the prerequisites for Kyma application to enable logging?",
+        "input": "How to configure Kyma application logging?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
-                One of the **rerequisites** for an application to be able to log is:
-
-                * **Log to `stdout` or `stderr`:** Your application must write its log messages to the standard output (`stdout`) or standard error (`stderr`) streams. This is essential because Kubernetes uses these streams to collect and manage container logs.
-                """
+            '# Auditing and Logging Information in Kyma - Application Logs of System Components\nKyma runtime collects application logs provided by the Kyma system components. Those logs reflect regular events that occurred in Kyma runtime and must not include any personal or sensitive data. These are typically system-related activities and operations you can analyze to get more information about performance or to inspect potential problems.\n**Related Information**\n[https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/)\n[Audit Logging in the Cloud Foundry Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f92c86ab11f6474ea5579d839051c334.html)\n[Audit Logging in the Neo Environment](https://help.sap.com/viewer/ea72206b834e4ace9cd834feed6c0e09/Cloud/en-US/02c39712c1064c96b37c1ea5bc9420dc.html)\n[Access Kyma Application Logs](../50-administration-and-ops/access-kyma-application-logs-25180f4.md "Get insights into your applications, microservices, and Functions by viewing the respective logs. To check out real-time logs immediately, use the Kubernetes functionalities - either in Kyma dashboard, or with kubectl.")\n[Collecting Logs](../30-development/collecting-logs-7a5b627.md "With the Telemetry module, you can observe and debug your applications by collecting, processing, and exporting logs. To begin collecting logs, you create a LogPipeline resource. It automatically collects OTLP logs and application logs from the stdout/stderr channel. You can also activate Istio log collection.")'
+            """
         ),
     },
     {
