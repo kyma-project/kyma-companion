@@ -2,14 +2,20 @@ import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from integration.conftest import create_mock_state
+from integration.test_utils import BaseTestCase
 
 
-@pytest.mark.parametrize(
-    "test_description, messages, expected_answer",
-    [
-        # Implicit Kubernetes/Kyma queries that should be forwarded
-        (
-            "user gives good feedback",
+class TestCase(BaseTestCase):
+    def __init__(self, name: str, messages: list, expected_answer: bool):
+        super().__init__(name)
+        self.messages = messages
+        self.expected_answer = expected_answer
+
+
+def create_test_cases():
+    return [
+        TestCase(
+            "Should recognize positive feedback from user",
             [
                 SystemMessage(
                     content=""
@@ -19,9 +25,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        # Additional positive feedback variations
-        (
-            "user expresses gratitude",
+        TestCase(
+            "Should recognize gratitude as positive feedback",
             [
                 SystemMessage(
                     content=""
@@ -31,8 +36,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user confirms solution worked",
+        TestCase(
+            "Should recognize confirmation that solution worked",
             [
                 SystemMessage(
                     content=""
@@ -42,8 +47,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user gives enthusiastic positive feedback",
+        TestCase(
+            "Should recognize enthusiastic positive feedback",
             [
                 SystemMessage(
                     content=""
@@ -53,8 +58,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user gives bad feedback",
+        TestCase(
+            "Should recognize negative feedback about wrong response",
             [
                 SystemMessage(
                     content=""
@@ -64,9 +69,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        # Additional negative feedback variations
-        (
-            "user states solution doesn't work",
+        TestCase(
+            "Should recognize feedback that solution doesn't work",
             [
                 SystemMessage(
                     content=""
@@ -76,8 +80,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user states response is off-topic",
+        TestCase(
+            "Should recognize feedback about off-topic response",
             [
                 SystemMessage(
                     content=""
@@ -87,8 +91,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user finds solution incomplete",
+        TestCase(
+            "Should recognize feedback about incomplete solution",
             [
                 SystemMessage(
                     content=""
@@ -98,9 +102,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        # Neutral/clarifying feedback
-        (
-            "user requests more explanation",
+        TestCase(
+            "Should not treat request for more explanation as feedback",
             [
                 SystemMessage(
                     content=""
@@ -110,8 +113,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        (
-            "user requests more details",
+        TestCase(
+            "Should not treat request for more details as feedback",
             [
                 SystemMessage(
                     content=""
@@ -121,8 +124,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        (
-            "user asks about specific scenario",
+        TestCase(
+            "Should not treat question about specific scenario as feedback",
             [
                 SystemMessage(
                     content=""
@@ -132,9 +135,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # Mixed feedback
-        (
-            "user gives partial positive with request for more info",
+        TestCase(
+            "Should recognize partial positive with info request as feedback",
             [
                 SystemMessage(
                     content=""
@@ -146,8 +148,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user gives neutral response",
+        TestCase(
+            "Should not treat neutral response as feedback",
             [
                 SystemMessage(
                     content=""
@@ -157,9 +159,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # Specific technical feedback
-        (
-            "user points out technical error",
+        TestCase(
+            "Should recognize technical error feedback",
             [
                 SystemMessage(
                     content=""
@@ -169,8 +170,8 @@ from integration.conftest import create_mock_state
             ],
             True,
         ),
-        (
-            "user requests alternative approach",
+        TestCase(
+            "Should not treat request for alternative approach as feedback",
             [
                 SystemMessage(
                     content=""
@@ -182,9 +183,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # Ambiguous feedback
-        (
-            "user gives minimal acknowledgment",
+        TestCase(
+            "Should not treat minimal acknowledgment as feedback",
             [
                 SystemMessage(
                     content=""
@@ -194,8 +194,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        (
-            "user gives brief confirmation",
+        TestCase(
+            "Should not treat brief confirmation as feedback",
             [
                 SystemMessage(
                     content=""
@@ -205,9 +205,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # can you clarify more?
-        (
-            "user asks for clarification",
+        TestCase(
+            "Should not treat clarification request as feedback",
             [
                 SystemMessage(
                     content=""
@@ -217,8 +216,8 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        (
-            "user asks for clarification",
+        TestCase(
+            "Should not treat elaboration request as feedback",
             [
                 SystemMessage(
                     content=""
@@ -228,32 +227,32 @@ from integration.conftest import create_mock_state
             ],
             False,
         ),
-        # give shorter explanation
-        (
-            "user gives shorter explanation",
+        TestCase(
+            "Should not treat format preference request as feedback",
             [
                 SystemMessage(content=""),
                 HumanMessage(content="give me a shorter explanation"),
             ],
             False,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_test_cases())
 @pytest.mark.asyncio
 async def test_invoke_feedback_node(
-    test_description,
-    messages,
-    expected_answer,
+    test_case: TestCase,
     companion_graph,
 ):
     """
     Tests that the invoke_feedback_node feedback classification works as expected.
     """
     # Given: a conversation state with messages
-    state = create_mock_state(messages)
+    state = create_mock_state(test_case.messages)
 
     # When: the feedback node's invoke_feedback_node method is invoked
     actual_response = await companion_graph._invoke_feedback_node(state)
-    assert (
-        actual_response.response == expected_answer
-    ), f"Expected {expected_answer} but got {actual_response.response} for test case: {test_description}"
+    assert actual_response.response == test_case.expected_answer, (
+        f"{test_case.name}: Expected {test_case.expected_answer} "
+        f"but got {actual_response.response}"
+    )

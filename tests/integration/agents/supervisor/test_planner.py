@@ -10,6 +10,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_6,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
+from integration.test_utils import BaseTestCase
 
 
 # Correctness metric for not general queries that needs planning
@@ -37,11 +38,26 @@ def planner_correctness_metric(evaluator_model):
     return callback
 
 
-@pytest.mark.parametrize(
-    "messages, expected_answer, general_query, threshold",
-    [  # Cluster-wide query test cases
-        (
-            # Test case 1: "List everything in my cluster" - should create subtasks for both agents
+class PlannerTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        messages: list,
+        expected_answer: str,
+        general_query: bool,
+        threshold: float,
+    ):
+        super().__init__(name)
+        self.messages = messages
+        self.expected_answer = expected_answer
+        self.general_query = general_query
+        self.threshold = threshold
+
+
+def create_planner_test_cases():
+    return [
+        PlannerTestCase(
+            "Should create subtasks for both agents when listing everything in cluster",
             [
                 SystemMessage(
                     content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
@@ -53,8 +69,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # Test case 1: "List everything in my cluster" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents when checking cluster resources",
             [
                 SystemMessage(
                     content=""
@@ -67,8 +83,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # Test case 1: "check Kubernetes resources" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents for generic resource check",
             [
                 SystemMessage(
                     content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
@@ -80,8 +96,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # Test case 2: "Give me a complete overview" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents for complete resource overview",
             [
                 SystemMessage(
                     content=""
@@ -94,25 +110,26 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents when requesting pods and serverless functions",
             [
                 SystemMessage(
                     content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="show all pods and serverless functions"),
             ],
-            '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"subtasks": [{"description": "show all serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
             '{"description": "show all pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
-        (
-            # Test case 4: "Check all pods" - should only assign to KubernetesAgent
+        PlannerTestCase(
+            "Should assign pod query to Kubernetes agent only",
             [
                 SystemMessage(
-                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
+                    content=""
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="check all pods"),
             ],
@@ -120,64 +137,64 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # Test case 5: "List all services and API rules" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents when requesting services and API rules",
             [
                 SystemMessage(
                     content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="list all services and API rules"),
             ],
-            '{"subtasks": [{"description": "list all Kyma API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
-            '{"description": "list all Kubernetes services", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            '{"subtasks": [{"description": "list all API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "list all services", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
-        (
-            # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents when asking what resources exist",
             [
                 SystemMessage(
                     content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="what resources do I have in my cluster"),
             ],
-            '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
-            '{"description": "what Kubernetes resources do I have across the entire cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            '{"subtasks": [{"description": "what Kyma resources do I have in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "what Kubernetes resources do I have in my cluster", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
-        (
-            # Test case 6: "Show me everything deployed" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents when showing everything deployed",
             [
                 SystemMessage(
                     content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="show me everything deployed"),
             ],
-            '{"subtasks": [{"description": "show me everything Kyma deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
-            '{"description": "show me everything Kubernetes deployed", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            '{"subtasks": [{"description": "show me everything Kyma-related deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "show me everything Kubernetes-related deployed", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
-        (
-            # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
+        PlannerTestCase(
+            "Should create subtasks for both agents for workload and function status",
             [
                 SystemMessage(
                     content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
+                    "{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
                 ),
                 HumanMessage(content="get status of all workloads and functions"),
             ],
-            '{"subtasks": [{"description": "get status of all Kyma functions", "assigned_to": "KymaAgent", "status": "pending"}, '
-            '{"description": "get status of all Kubernetes workloads", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
+            '{"subtasks": [{"description": "get status of all functions", "assigned_to": "KymaAgent", "status": "pending"}, '
+            '{"description": "get status of all workloads", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
             False,
             0.8,
         ),
-        (
-            # tests if a Kyma related query is assigned to the Kyma agent
+        PlannerTestCase(
+            "Should answer general Kyma question directly without subtasks",
             [
                 SystemMessage(
                     content=""
@@ -185,12 +202,12 @@ def planner_correctness_metric(evaluator_model):
                 ),
                 HumanMessage(content="What is Kyma?"),
             ],
-            '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent" , "status" : "pending"}] }',
+            '{"subtasks": [{ "description": "What is Kyma?", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
             0.8,
         ),
-        (
-            # tests if a Kyma related query is assigned to the Kyma agent
+        PlannerTestCase(
+            "Should assign Kyma API Rule query to Kyma agent",
             [
                 SystemMessage(
                     content=""
@@ -202,8 +219,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a Kubernetes related query is assigned to the Kubernetes agent
+        PlannerTestCase(
+            "Should create subtasks for both agents for cluster status query",
             [
                 SystemMessage(
                     content=""
@@ -215,8 +232,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a query related to Kyma and Kubernetes is divided into the correct subtasks for both agents
+        PlannerTestCase(
+            "Should split Kubernetes and Kyma question into separate subtasks",
             [
                 SystemMessage(
                     content=""
@@ -229,8 +246,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
+        PlannerTestCase(
+            "Should split app creation and Kyma deployment into Common and Kyma subtasks",
             [
                 SystemMessage(
                     content=""
@@ -245,8 +262,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
+        PlannerTestCase(
+            "Should split Python app creation and Kyma deployment into Common and Kyma subtasks",
             [
                 SystemMessage(
                     content=""
@@ -261,8 +278,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a complex query related to Kyma is divided correctly into two subtasks for the Kyma agent
+        PlannerTestCase(
+            "Should split complex Kyma query into multiple Kyma agent subtasks",
             [
                 SystemMessage(
                     content=""
@@ -277,8 +294,8 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-        (
-            # tests if a complex query related to Kyma , Kubernetes and some general query divided into three subtasks
+        PlannerTestCase(
+            "Should split complex multi-agent query into Common, Kyma, and Kubernetes subtasks",
             [
                 SystemMessage(
                     content=""
@@ -294,21 +311,20 @@ def planner_correctness_metric(evaluator_model):
             False,
             0.8,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_planner_test_cases())
 @pytest.mark.asyncio
 async def test_invoke_planner(
-    messages,
-    expected_answer,
-    general_query,
-    threshold,
+    test_case: PlannerTestCase,
     companion_graph,
     planner_correctness_metric,
     answer_relevancy_metric,
 ):
     """Tests the supervisor agent's invoke_planner method"""
     # Given: A conversation state with messages
-    state = create_mock_state(messages)
+    state = create_mock_state(test_case.messages)
 
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
@@ -319,25 +335,31 @@ async def test_invoke_planner(
         subtask.pop("task_title", None)
 
     # Then: We evaluate based on query type
-    if not general_query:
-        test_case = LLMTestCase(
-            input=str(messages),
+    if not test_case.general_query:
+        llm_test_case = LLMTestCase(
+            input=str(test_case.messages),
             actual_output=json.dumps(generated_plan),
-            expected_output=expected_answer,
+            expected_output=test_case.expected_answer,
         )
 
-        assert_test(test_case, [planner_correctness_metric(threshold)])
+        assert_test(
+            llm_test_case,
+            [planner_correctness_metric(test_case.threshold)],
+            f"{test_case.name}: Plan should match expected subtask structure",
+        )
     else:
         # For general queries, check answer relevancy where planner directly answers
-        # Then: We evaluate the response using deepeval metrics
-
-        test_case = LLMTestCase(
-            input=messages[-1].content,
+        llm_test_case = LLMTestCase(
+            input=test_case.messages[-1].content,
             actual_output=json.dumps(generated_plan),
-            expected_output=expected_answer,
+            expected_output=test_case.expected_answer,
         )
 
-        assert_test(test_case, [answer_relevancy_metric])
+        assert_test(
+            llm_test_case,
+            [answer_relevancy_metric],
+            f"{test_case.name}: Answer should be relevant to query",
+        )
 
 
 @pytest.fixture
@@ -347,7 +369,6 @@ def planner_conversation_history_metric(evaluator_model):
             name="Conversation History Correctness",
             evaluation_steps=[
                 "Check the actual output that semantically matches expected output and answers the user query.",
-                "Allow the description and task_title to be different, but the semantic meaning should be the same.",
             ],
             evaluation_params=[
                 LLMTestCaseParams.INPUT,
@@ -356,19 +377,32 @@ def planner_conversation_history_metric(evaluator_model):
             ],
             model=evaluator_model,
             threshold=threshold,
-            async_mode=False,
             verbose_mode=True,
         )
 
     return callback
 
 
-@pytest.mark.parametrize(
-    "messages, query, expected_subtasks, threshold",
-    [
-        (
-            # given the conversation, the planner knows that the user wants to expose the function
-            # and assigns the task to the Kyma agent
+class ConversationHistoryTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        messages: list,
+        query: str,
+        expected_subtasks: list,
+        threshold: float,
+    ):
+        super().__init__(name)
+        self.messages = messages
+        self.query = query
+        self.expected_subtasks = expected_subtasks
+        self.threshold = threshold
+
+
+def create_conversation_history_test_cases():
+    return [
+        ConversationHistoryTestCase(
+            "Should use conversation context to understand function exposure request",
             conversation_sample_6,
             "how to expose it?",
             [
@@ -381,9 +415,8 @@ def planner_conversation_history_metric(evaluator_model):
             ],
             0.5,
         ),
-        (
-            # given the conversation, the planner knows that the user wants to convert the function to javascript
-            # and assigns the task to the Kyma agent
+        ConversationHistoryTestCase(
+            "Should use conversation context to understand JavaScript conversion request",
             conversation_sample_6,
             "convert it to javascript",
             [
@@ -396,21 +429,20 @@ def planner_conversation_history_metric(evaluator_model):
             ],
             0.5,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_conversation_history_test_cases())
 @pytest.mark.asyncio
 async def test_planner_with_conversation_history(
-    messages,
-    query,
-    expected_subtasks,
-    threshold,
+    test_case: ConversationHistoryTestCase,
     companion_graph,
     planner_conversation_history_metric,
 ):
     """Tests if the planner properly considers conversation history when planning tasks."""
     # Given: A conversation state with messages
-    all_messages = convert_dict_to_messages(messages)
-    all_messages.append(HumanMessage(content=query))
+    all_messages = convert_dict_to_messages(test_case.messages)
+    all_messages.append(HumanMessage(content=test_case.query))
     state = create_mock_state(all_messages)
 
     # When: The supervisor agent's planner is invoked
@@ -418,14 +450,18 @@ async def test_planner_with_conversation_history(
     # Then: We evaluate the response using deepeval metrics
     assert (
         result.subtasks is not None
-    ), "Expected subtasks to be the same as the expected subtasks"
+    ), f"{test_case.name}: Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
     actual_subtasks = [subtask.model_dump(mode="json") for subtask in result.subtasks]
-    test_case = LLMTestCase(
+    llm_test_case = LLMTestCase(
         input=str(all_messages),
         actual_output=str(actual_subtasks),
-        expected_output=str(expected_subtasks),
+        expected_output=str(test_case.expected_subtasks),
     )
 
-    assert_test(test_case, [planner_conversation_history_metric(threshold)])
+    assert_test(
+        llm_test_case,
+        [planner_conversation_history_metric(test_case.threshold)],
+        f"{test_case.name}: Subtasks should consider conversation history",
+    )

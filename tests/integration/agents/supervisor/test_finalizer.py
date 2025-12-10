@@ -6,13 +6,20 @@ from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.test_common_node import create_mock_state
+from integration.test_utils import BaseTestCase
 
 
-@pytest.mark.parametrize(
-    "test_case, messages, expected_answer",
-    [
-        (
-            "case 1: Finalizer do not answer the question itself",
+class TestCase(BaseTestCase):
+    def __init__(self, name: str, messages: list, expected_answer: str):
+        super().__init__(name)
+        self.messages = messages
+        self.expected_answer = expected_answer
+
+
+def create_test_cases():
+    return [
+        TestCase(
+            "Should not answer when Kyma agent provides completely irrelevant response",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -28,8 +35,8 @@ from integration.agents.test_common_node import create_mock_state
                 """
             ),
         ),
-        (
-            "case 2: Finalizer do not answer the question itself",
+        TestCase(
+            "Should not answer when K8s agent provides completely irrelevant response",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -45,8 +52,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "case 3: Finalizer do not answer the question itself",
+        TestCase(
+            "Should not answer when K8s agent says it needs more steps",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -65,8 +72,8 @@ from integration.agents.test_common_node import create_mock_state
                 """
             ),
         ),
-        (
-            "case 4: Finalizer do not answer the question itself",
+        TestCase(
+            "Should not answer when both agents provide completely irrelevant responses",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -91,8 +98,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "Finalizer answers based on Kyma agent's response",
+        TestCase(
+            "Should synthesize answer from Kyma agent response",
             [
                 SystemMessage(
                     content="{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'resource_namespace': ''}"
@@ -143,8 +150,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "Finalizer answers based on K8S agent's response",
+        TestCase(
+            "Should synthesize answer from K8S agent response",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -173,8 +180,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "Finalizer answers based on K8S and Kyma agents' responses",
+        TestCase(
+            "Should synthesize answer from both K8S and Kyma agents responses",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -190,10 +197,10 @@ from integration.agents.test_common_node import create_mock_state
                 Kubernetes services are:
                 1. **ClusterIP**: Exposes the service on a cluster-internal IP. This type makes the service only
                 reachable from within the cluster. It is the default type of service.
-                2. **NodePort**: Exposes the service on each Node’s IP at a static port (the NodePort). A ClusterIP
-                service, to which the NodePort service routes, is automatically created. You’ll be able to contact the
+                2. **NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). A ClusterIP
+                service, to which the NodePort service routes, is automatically created. You'll be able to contact the
                 NodePort service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.
-                3. **LoadBalancer**: Exposes the service externally using a cloud provider’s load balancer. NodePort and
+                3. **LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. NodePort and
                 ClusterIP services, to which the external load balancer routes, are automatically created.
                 4. **ExternalName**: Maps the service to the contents of the `externalName` field (e.g.,
                 `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
@@ -232,10 +239,10 @@ from integration.agents.test_common_node import create_mock_state
             services are:
             1. **ClusterIP**: Exposes the service on a cluster-internal IP. This type makes the service only reachable
             from within the cluster. It is the default type of service.
-            2. **NodePort**: Exposes the service on each Node’s IP at a static port (the NodePort). A ClusterIP service,
-            to which the NodePort service routes, is automatically created. You’ll be able to contact the NodePort
+            2. **NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). A ClusterIP service,
+            to which the NodePort service routes, is automatically created. You'll be able to contact the NodePort
             service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.
-            3. **LoadBalancer**: Exposes the service externally using a cloud provider’s load balancer. NodePort and
+            3. **LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. NodePort and
             ClusterIP services, to which the external load balancer routes, are automatically created.
             4. **ExternalName**: Maps the service to the contents of the `externalName` field (e.g.,
             `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
@@ -260,8 +267,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "Finalizer answers based on one of the agents' responses if another agent's response is invalid",
+        TestCase(
+            "Should synthesize answer from valid agent when other agent response is invalid",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -287,7 +294,7 @@ from integration.agents.test_common_node import create_mock_state
                 4. **Isolation**: Each function runs in its own isolated environment, ensuring that they do not interfere with each other.
                 Overall, Kyma functions are a powerful way to extend the capabilities of your applications in a cloud-native environment.
                 5. **Easy Deployment**: Functions can be deployed using the Kyma console, CLI, or CI/CD pipelines, making it straightforward to manage and update them.
-                """
+                        """
                     ),
                 ),
             ],
@@ -306,8 +313,8 @@ from integration.agents.test_common_node import create_mock_state
             """
             ),
         ),
-        (
-            "Finalizer answers based on Common and Kyma agent's responses",
+        TestCase(
+            "Should synthesize answer from Common and Kyma agents for multi-step query",
             [
                 SystemMessage(
                     content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
@@ -395,8 +402,8 @@ from integration.agents.test_common_node import create_mock_state
                 """
             ),
         ),
-        (
-            "finalizer answers short query based on Kyma agent's response",
+        TestCase(
+            "Should pass through short answer from Kyma agent",
             [
                 SystemMessage(content="{'resource_namespace': 'test-namespace'}"),
                 HumanMessage(
@@ -409,8 +416,8 @@ from integration.agents.test_common_node import create_mock_state
             ],
             "The latest Istio version included in Kyma is 1.24.1.",
         ),
-        (
-            "finalizer answers query based on kubernetes agent's response",
+        TestCase(
+            "Should format deployment list from Kubernetes agent",
             [
                 SystemMessage(content="{'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="list me deployments in this namespace"),
@@ -465,8 +472,8 @@ from integration.agents.test_common_node import create_mock_state
                 """
             ),
         ),
-        (
-            "Should mention about Joule context when kubenretes agent ask for resource name and namespace",
+        TestCase(
+            "Should mention Joule context when Kubernetes agent needs resource details",
             [
                 SystemMessage(content="{'resource_kind': 'Cluster' }"),
                 HumanMessage(content="Why is my pod in error state?"),
@@ -487,8 +494,8 @@ from integration.agents.test_common_node import create_mock_state
                 """
             ),
         ),
-        (
-            "Should mention about Joule context when kyma agent ask for resource name and namespace",
+        TestCase(
+            "Should mention Joule context when Kyma agent needs Function details",
             [
                 SystemMessage(
                     content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
@@ -500,7 +507,7 @@ from integration.agents.test_common_node import create_mock_state
                     name="KubernetesAgent",
                     content=dedent(
                         """
-                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                         Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                         """
                     ),
@@ -508,32 +515,38 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                 Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                 """
             ),
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_test_cases())
 @pytest.mark.asyncio
 async def test_generate_final_response(
-    test_case, messages, expected_answer, companion_graph, goal_accuracy_metric
+    test_case: TestCase, companion_graph, goal_accuracy_metric
 ):
     """
     Tests that the _generate_final_response method of the Finalizer correctly synthesizes
     the received agent responses or rejects irrelevant responses.
     """
     # Given: A conversation state with messages and an expected answer
-    state = create_mock_state(messages)
+    state = create_mock_state(test_case.messages)
 
     # When: The Finalizer generates a final response
-    assert state.input is not None
-    result = await companion_graph.supervisor_agent._generate_final_response(state)
-    latest_human_message = HumanMessage(content=state.input.query)
-    test_case = LLMTestCase(
-        input=str(latest_human_message),
-        actual_output=result["messages"][0].content,
-        expected_output=expected_answer,
+    result = await companion_graph.ainvoke(state)
+
+    # Then: The response should be evaluated by goal_accuracy_metric
+    llm_test_case = LLMTestCase(
+        input=str(test_case.messages),
+        actual_output=result["messages"][-1].content,
+        expected_output=test_case.expected_answer,
     )
 
-    assert_test(test_case, [goal_accuracy_metric]), test_case
+    assert_test(
+        llm_test_case,
+        [goal_accuracy_metric],
+        f"{test_case.name}: Expected response matching goal accuracy metric",
+    )

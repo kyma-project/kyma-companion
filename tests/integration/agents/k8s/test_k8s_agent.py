@@ -12,6 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
+from integration.test_utils import BaseTestCase
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 
@@ -57,11 +58,28 @@ def k8s_agent(app_models):
     return KubernetesAgent(app_models.get(MAIN_MODEL_NAME))
 
 
-@pytest.mark.parametrize(
-    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
-    [
-        (
-            "Should mention about Joule context in kyma dashboard",
+class InvokeChainTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        state: KubernetesAgentState,
+        retrieval_context: str,
+        expected_result: str,
+        expected_tool_call: str,
+        should_raise: bool,
+    ):
+        super().__init__(name)
+        self.state = state
+        self.retrieval_context = retrieval_context
+        self.expected_result = expected_result
+        self.expected_tool_call = expected_tool_call
+        self.should_raise = should_raise
+
+
+def create_invoke_chain_test_cases():
+    return [
+        InvokeChainTestCase(
+            "Should mention Joule context when pod details are missing",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -90,55 +108,60 @@ def k8s_agent(app_models):
             None,
             False,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_invoke_chain_test_cases())
 @pytest.mark.asyncio
 async def test_invoke_chain(
     k8s_agent,
     correctness_metric,
     faithfulness_metric,
-    test_case,
-    state,
-    retrieval_context,
-    expected_result,
-    expected_tool_call,
-    should_raise,
+    test_case: InvokeChainTestCase,
 ):
-    """
-    Tests that the _invoke_chain method of the KubernetesAgent returns the expected response
-    for the given user query, subtask and tool calls.
-    """
-    # Given: A KubernetesAgent instance and test parameters
+    """Tests the K8S agent's invoke_chain method"""
+    # When: We invoke the agent chain
+    result = await k8s_agent.agent_chain.ainvoke(test_case.state)
 
-    # When: the chain is invoked normally
-    response = await k8s_agent._invoke_chain(state, {})
-    assert isinstance(response, AIMessage), test_case
+    if test_case.should_raise:
+        pytest.fail(f"{test_case.name}: Expected an exception to be raised")
 
-    # Then: Verify the response based on expected behavior
-    if expected_tool_call:
-        # for tool call cases, verify tool call properties
-        assert response.tool_calls is not None, "Expected tool calls but found none"
-        assert len(response.tool_calls) > 0, "Expected at least one tool call"
-        tool_call = response.tool_calls[0]
-        assert tool_call.get("type") == "tool_call"
-        assert tool_call.get("name") == expected_tool_call
-    else:
-        # for content response cases, verify using deepeval metrics
-        test_case = LLMTestCase(
-            input=state.my_task.description,
-            actual_output=response.content,
-            expected_output=expected_result if expected_result else None,
-            retrieval_context=([retrieval_context] if retrieval_context else []),
+    if test_case.expected_result:
+        # Extract the last message content
+        agent_response = result["agent_messages"][-1].content
+
+        # Then: We evaluate the response using correctness and faithfulness
+        llm_test_case = LLMTestCase(
+            input=str(test_case.state.messages[-1].content),
+            actual_output=agent_response,
+            expected_output=test_case.expected_result,
+            retrieval_context=(
+                [test_case.retrieval_context] if test_case.retrieval_context else []
+            ),
         )
-        # evaluate if the gotten response is semantically similar and faithful to the expected response
-        assert_test(test_case, [correctness_metric, faithfulness_metric]), test_case
+        assert_test(
+            llm_test_case,
+            [correctness_metric, faithfulness_metric],
+            f"{test_case.name}: Response should be correct and faithful",
+        )
 
 
-@pytest.mark.parametrize(
-    "state,expected_tool_call",
-    [
-        # - Verifies agent makes correct k8s_overview_query_tool call
-        (
+class ToolCallTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        state: KubernetesAgentState,
+        expected_tool_call: str,
+    ):
+        super().__init__(name)
+        self.state = state
+        self.expected_tool_call = expected_tool_call
+
+
+def create_tool_call_test_cases():
+    return [
+        ToolCallTestCase(
+            "Should call k8s_query_tool for ImagePullBackOff investigation",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -167,8 +190,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for pod query
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for deployments in specific namespace",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -197,8 +220,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for namespace overview
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for namespace issue detection",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -223,8 +246,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for namespace overview
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for checking namespace resources",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -249,8 +272,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for specific resource query with full details
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for specific deployment details by name",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -277,8 +300,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for specific resource query with full details
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for resource details using context",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -305,8 +328,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for pod status investigation
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for pod CrashLoopBackOff investigation",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -333,10 +356,10 @@ async def test_invoke_chain(
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "k8s_query_tool",  # Might first call k8s_query_tool then fetch_pod_logs_tool
+            "k8s_query_tool",
         ),
-        # Test case for cluster-wide issue
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for cluster-wide node disk pressure check",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -363,8 +386,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for cluster overview query
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for cluster overview request",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -391,7 +414,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool when checking all cluster resources",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -418,8 +442,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for namespace overview query
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool for namespace overview request",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -446,8 +470,8 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-        # Test case for namespace overview query
-        (
+        ToolCallTestCase(
+            "Should call k8s_query_tool when checking all namespace resources",
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
@@ -474,25 +498,25 @@ async def test_invoke_chain(
             ),
             "k8s_query_tool",
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_tool_call_test_cases())
 @pytest.mark.asyncio
-async def test_tool_calls(
-    k8s_agent,
-    faithfulness_metric,
-    state,
-    expected_tool_call,
-):
-    # Given: A KubernetesAgent instance and test parameters
+async def test_tool_calls(k8s_agent, test_case: ToolCallTestCase):
+    """Tests that the K8S agent makes correct tool calls"""
+    # When: We invoke the agent chain
+    result = await k8s_agent.agent_chain.ainvoke(test_case.state)
 
-    # When: the chain is invoked normally
-    response = await k8s_agent._invoke_chain(state, {})
-    assert isinstance(response, AIMessage)
+    # Then: Verify the agent called the expected tool
+    agent_last_message = result["agent_messages"][-1]
 
-    # for tool call cases, verify tool call properties
-    if expected_tool_call:
-        assert response.tool_calls is not None, "Expected tool calls but found none"
-        assert len(response.tool_calls) > 0, "Expected at least one tool call"
-    tool_call = response.tool_calls[0]
-    assert tool_call.get("type") == "tool_call"
-    assert tool_call.get("name") == expected_tool_call
+    assert isinstance(
+        agent_last_message, AIMessage
+    ), f"{test_case.name}: Expected AIMessage"
+    assert (
+        agent_last_message.tool_calls
+    ), f"{test_case.name}: Expected tool calls in response"
+    assert (
+        agent_last_message.tool_calls[0]["name"] == test_case.expected_tool_call
+    ), f"{test_case.name}: Expected tool call to {test_case.expected_tool_call}"

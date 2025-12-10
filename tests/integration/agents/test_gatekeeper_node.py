@@ -10,60 +10,83 @@ from integration.agents.fixtures.messages import (
     conversation_sample_7,
 )
 from integration.conftest import convert_dict_to_messages, create_mock_state
+from integration.test_utils import BaseTestCase
 
 
-@pytest.mark.parametrize(
-    "test_description, messages, expected_answer, expected_query_forwarding",
-    [  # Implicit Kubernetes/Kyma queries that should be forwarded
-        (
+class InvokeGatekeeperTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        messages: list,
+        expected_answer: str,
+        expected_query_forwarding: bool,
+    ):
+        super().__init__(name)
+        self.messages = messages
+        self.expected_answer = expected_answer
+        self.expected_query_forwarding = expected_query_forwarding
+
+
+def create_invoke_gatekeeper_test_cases():
+    return [
+        # Implicit Kubernetes/Kyma queries that should be forwarded
+        InvokeGatekeeperTestCase(
             "cluster-scoped kyma api rules query should be forwarded",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="is something wrong with api rules?"),
             ],
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "cluster-scoped kyma serverless query should be forwarded",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="is there any error in serverless?"),
             ],
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "cluster-scoped kyma subscription query should be forwarded",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="is there any error in subscription?"),
             ],
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "cluster-scoped kyma function query should be forwarded",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="is there any error in function?"),
             ],
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "pod-related issue without mentioning K8s",
             [
                 SystemMessage(
@@ -74,7 +97,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "service connectivity issue",
             [
                 SystemMessage(
@@ -87,7 +110,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "ingress/api gateway issue (kyma related)",
             [
                 SystemMessage(
@@ -100,7 +123,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "volume mount issue",
             [
                 SystemMessage(
@@ -113,7 +136,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "resource limits issue",
             [
                 SystemMessage(
@@ -126,7 +149,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "configmap/secret issue",
             [
                 SystemMessage(
@@ -139,7 +162,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "serverless function issue (kyma related)",
             [
                 SystemMessage(
@@ -152,7 +175,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "networking policy issue",
             [
                 SystemMessage(
@@ -165,7 +188,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "kubernetes query for persistent volumes",
             [
                 SystemMessage(
@@ -176,7 +199,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "kubernetes query for image pull backoff",
             [
                 SystemMessage(
@@ -187,7 +210,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "crd/operator issue",
             [
                 SystemMessage(
@@ -200,7 +223,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "api rule issue (kyma specific)",
             [
                 SystemMessage(
@@ -213,7 +236,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "certificate/tls issue",
             [
                 SystemMessage(
@@ -226,7 +249,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "eventing issue (kyma specific)",
             [
                 SystemMessage(
@@ -238,8 +261,9 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             ],
             "",
             True,
-        ),  # TECHNICAL QUERIES THAT SHOULD BE FORWARDED
-        (
+        ),
+        # TECHNICAL QUERIES THAT SHOULD BE FORWARDED
+        InvokeGatekeeperTestCase(
             "Kyma resource status check",
             [
                 SystemMessage(
@@ -250,7 +274,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "Kyma installation query",
             [
                 SystemMessage(
@@ -264,12 +288,14 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             True,
         ),
         # CONVERSATION HISTORY SCENARIOS
-        (
+        InvokeGatekeeperTestCase(
             "Query needing additional info despite history",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="What is Kyma?"),
                 AIMessage(
@@ -282,7 +308,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "User asking to retrieve information for logs",
             [
                 SystemMessage(
@@ -294,7 +320,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             True,
         ),
         # NON-TECHNICAL QUERIES
-        (
+        InvokeGatekeeperTestCase(
             "Out of domain query",
             [
                 SystemMessage(
@@ -305,7 +331,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "Personal question",
             [
                 SystemMessage(
@@ -314,13 +340,13 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
                 HumanMessage(content="What's your favorite color?"),
             ],
             """I don't have personal preferences or favorites, but I'm here to help you with any Kyma or Kubernetes questions you might have!
-            
+
             OR
-            
+
             This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.""",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "Mixed query (part technical, part non-technical)",
             [
                 SystemMessage(
@@ -333,7 +359,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",  # Should be forwarded because of the Kyma technical component
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly reply to greeting",
             [
                 SystemMessage(
@@ -344,7 +370,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "Hello! How can I assist you with Kyma or Kubernetes today?",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly replies to Hello greeting despite technical context",
             [
                 SystemMessage(
@@ -355,7 +381,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "Hello! How can I assist you with Kyma or Kubernetes today?",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly replies to Hey greeting",
             [
                 SystemMessage(
@@ -366,19 +392,18 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "Hello! How can I assist you with Kyma or Kubernetes today?",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly replies to Good morning greeting",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'serverless.kyma-project.io/v1alpha1', 'resource_namespace': 'default'}"
+                    content="{'resource_api_version': 'serverless.kyma-project.io/v1alpha1', 'resource_namespace': 'default'}"
                 ),
                 HumanMessage(content="Good morning"),
             ],
             "Hello! How can I assist you with Kyma or Kubernetes today?",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly forward the query",
             [
                 SystemMessage(
@@ -389,7 +414,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly forward the query",
             [
                 SystemMessage(
@@ -400,7 +425,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly forward the query",
             [
                 SystemMessage(
@@ -411,7 +436,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "correctly forward the query",
             [
                 SystemMessage(
@@ -422,7 +447,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "decline a general non-technical query about Capital of Germany - should not be influenced by system message context",
             [
                 SystemMessage(
@@ -433,7 +458,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "answers a general programming related query",
             [
                 SystemMessage(
@@ -444,7 +469,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             'print("Hello, World!")',
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "Query about self capabilities.",
             [
                 SystemMessage(
@@ -458,7 +483,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "scenario in mind, feel free to share it, and I'll do my best to assist you!",
             False,
         ),
-        (
+        InvokeGatekeeperTestCase(
             "forward user query as user explicitly ask for recheck status",
             [
                 AIMessage(
@@ -475,14 +500,13 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             "",
             True,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_invoke_gatekeeper_test_cases())
 @pytest.mark.asyncio
 async def test_invoke_gatekeeper_node(
-    test_description,
-    messages,
-    expected_answer,
-    expected_query_forwarding,
+    test_case: InvokeGatekeeperTestCase,
     companion_graph,
     goal_accuracy_metric,
 ):
@@ -490,30 +514,45 @@ async def test_invoke_gatekeeper_node(
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """
     # Given: a conversation state with messages
-    state = create_mock_state(messages)
+    state = create_mock_state(test_case.messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
     actual_response = await companion_graph._invoke_gatekeeper_node(state)
 
-    if expected_query_forwarding:
-        assert actual_response.forward_query, "Query should be forwarded"
+    if test_case.expected_query_forwarding:
+        assert (
+            actual_response.forward_query
+        ), f"{test_case.name}: Query should be forwarded"
     else:
         assert (
             not actual_response.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
+        ), f"{test_case.name}: Query should not be forwarded"
         # Then: we evaluate the direct response using deepeval metrics
-        test_case = LLMTestCase(
-            input=messages[-1].content,
+        llm_test_case = LLMTestCase(
+            input=test_case.messages[-1].content,
             actual_output=actual_response.direct_response,
-            expected_output=expected_answer,
+            expected_output=test_case.expected_answer,
         )
-        assert_test(test_case, [goal_accuracy_metric])
+        assert_test(llm_test_case, [goal_accuracy_metric])
 
 
-@pytest.mark.parametrize(
-    "test_description, messages, expected_category, expected_query_forwarding",
-    [
-        (
+class CategorizationTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        messages: list,
+        expected_category: str,
+        expected_query_forwarding: bool,
+    ):
+        super().__init__(name)
+        self.messages = messages
+        self.expected_category = expected_category
+        self.expected_query_forwarding = expected_query_forwarding
+
+
+def create_categorization_test_cases():
+    return [
+        CategorizationTestCase(
             "Programming query should be categorized as Programming",
             [
                 SystemMessage(
@@ -524,7 +563,7 @@ async def test_invoke_gatekeeper_node(
             "Programming",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Greeting query should be categorized as Greeting",
             [
                 SystemMessage(
@@ -535,7 +574,7 @@ async def test_invoke_gatekeeper_node(
             "Greeting",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Hello greeting should be categorized as Greeting",
             [
                 SystemMessage(
@@ -546,7 +585,7 @@ async def test_invoke_gatekeeper_node(
             "Greeting",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Hey greeting should be categorized as Greeting",
             [
                 SystemMessage(
@@ -557,7 +596,7 @@ async def test_invoke_gatekeeper_node(
             "Greeting",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Good morning greeting should be categorized as Greeting",
             [
                 SystemMessage(
@@ -568,7 +607,7 @@ async def test_invoke_gatekeeper_node(
             "Greeting",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Capabilities query should be categorized as About You",
             [
                 SystemMessage(
@@ -579,7 +618,7 @@ async def test_invoke_gatekeeper_node(
             "About You",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Non-technical query should be categorized as Irrelevant",
             [
                 SystemMessage(
@@ -590,7 +629,7 @@ async def test_invoke_gatekeeper_node(
             "Irrelevant",
             False,
         ),
-        (
+        CategorizationTestCase(
             "Kyma query should be categorized as Kyma",
             [
                 SystemMessage(
@@ -601,7 +640,7 @@ async def test_invoke_gatekeeper_node(
             "Kyma",
             True,
         ),
-        (
+        CategorizationTestCase(
             "Kubernetes query should be categorized as Kubernetes",
             [
                 SystemMessage(
@@ -612,12 +651,14 @@ async def test_invoke_gatekeeper_node(
             "Kubernetes",
             True,
         ),
-        (
+        CategorizationTestCase(
             "Kyma vs Cloud Foundry comparison should be categorized as Kyma",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(
                     content="What is the difference between Kyma and Cloud Foundry?"
@@ -626,50 +667,66 @@ async def test_invoke_gatekeeper_node(
             "Kyma",
             True,
         ),
-        (
+        CategorizationTestCase(
             "Kyma vs OpenShift comparison should be categorized as Kyma",
             [
                 SystemMessage(
-                    content=""
-                    "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
+                    content=(
+                        "{'resource_kind': 'Cluster', 'resource_api_version': '', "
+                        "'resource_name': '', 'namespace': ''}"
+                    )
                 ),
                 HumanMessage(content="How does Kyma compare to OpenShift?"),
             ],
             "Kyma",
             True,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_categorization_test_cases())
 @pytest.mark.asyncio
 async def test_gatekeeper_categorization(
-    test_description,
-    messages,
-    expected_category,
-    expected_query_forwarding,
+    test_case: CategorizationTestCase,
     companion_graph,
 ):
     """
     Tests that the invoke_gatekeeper_node method correctly categorizes different types of queries.
     """
     # Given: a conversation state with messages
-    state = create_mock_state(messages)
+    state = create_mock_state(test_case.messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
     actual_response = await companion_graph._invoke_gatekeeper_node(state)
 
     # Then: verify the category is correct
     assert (
-        actual_response.category == expected_category
-    ), f"Expected category '{expected_category}' but got '{actual_response.category}'"
+        actual_response.category == test_case.expected_category
+    ), f"{test_case.name}: Expected category '{test_case.expected_category}' but got '{actual_response.category}'"
     assert (
-        actual_response.forward_query == expected_query_forwarding
-    ), f"Expected forward_query {expected_query_forwarding} but got {actual_response.forward_query}"
+        actual_response.forward_query == test_case.expected_query_forwarding
+    ), f"{test_case.name}: Expected forward_query {test_case.expected_query_forwarding} but got {actual_response.forward_query}"
 
 
-@pytest.mark.parametrize(
-    "test_description, conversation_history, user_query, expected_answer, expected_query_forwarding",
-    [
-        (
+class ConversationHistoryTestCase(BaseTestCase):
+    def __init__(
+        self,
+        name: str,
+        conversation_history: list,
+        user_query: str,
+        expected_answer: str,
+        expected_query_forwarding: bool,
+    ):
+        super().__init__(name)
+        self.conversation_history = conversation_history
+        self.user_query = user_query
+        self.expected_answer = expected_answer
+        self.expected_query_forwarding = expected_query_forwarding
+
+
+def create_conversation_history_test_cases():
+    return [
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_2,
             "what was the issue?",
@@ -679,7 +736,7 @@ async def test_gatekeeper_categorization(
             "which may fail to run correctly in certain environments.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_2,
             "what was wrong?",
@@ -689,7 +746,7 @@ async def test_gatekeeper_categorization(
             "which may fail to run correctly in certain environments.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_2,
             "what was the problem?",
@@ -699,7 +756,7 @@ async def test_gatekeeper_categorization(
             "which may fail to run correctly in certain environments.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_5,
             "what was the cause?",
@@ -710,7 +767,7 @@ async def test_gatekeeper_categorization(
             "You should verify the role and role binding for the service account to ensure it has the required permissions.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_5,
             "what was the reason?",
@@ -721,7 +778,7 @@ async def test_gatekeeper_categorization(
             "You should verify the role and role binding for the service account to ensure it has the required permissions.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "what was the issue?",
@@ -730,49 +787,49 @@ async def test_gatekeeper_categorization(
             "This typo would cause the function to fail when executed, as `Dates` is not a valid JavaScript object. The correct object is `Date`.\n",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "what is the issue with function?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "any problem with function?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "find issue with function?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "any error in tracing pipeline?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_7,
             "anything wrong with api rules?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_2,
             "what is the issue with function?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "answer the question based on the conversation history",
             conversation_sample_2,
             "what is the issue?",  # this is implicitly referring to the conversation history
@@ -780,14 +837,14 @@ async def test_gatekeeper_categorization(
             "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. ",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "forward query as insufficient information in conversation history",
             conversation_sample_6,
             "how to expose it?",
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "conversation history with multiple follow-up questions",
             [
                 {"type": "human", "content": "What is Kyma?"},
@@ -805,7 +862,7 @@ async def test_gatekeeper_categorization(
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "conversation about Kyma with context switching to general programming",
             [
                 {"type": "human", "content": "How do I create a Kyma function?"},
@@ -818,7 +875,7 @@ async def test_gatekeeper_categorization(
             "Promises and async/await are JavaScript features for handling asynchronous operations:\n\n- **Promises** provide a way to handle asynchronous results with `.then()`, `.catch()`, and `.finally()` methods. They can be chained and represent a value that may be available now, later, or never.\n\n- **Async/await** is syntactic sugar built on top of Promises, making asynchronous code look and behave more like synchronous code. The `async` keyword declares that a function returns a Promise, and the `await` keyword pauses execution until that Promise resolves.\n\nWhile Promises often require callback chains, async/await provides a cleaner, more readable syntax for the same operations, especially when dealing with multiple sequential asynchronous tasks.",
             False,
         ),
-        (
+        ConversationHistoryTestCase(
             "conversation with error troubleshooting follow-up",
             [
                 {
@@ -834,7 +891,7 @@ async def test_gatekeeper_categorization(
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "conversation history with ambiguous follow-up that should be forwarded",
             [
                 {
@@ -850,7 +907,7 @@ async def test_gatekeeper_categorization(
             "",
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "conversation with technical answer needed based on previous context",
             [
                 {"type": "human", "content": "What's an APIRule in Kyma?"},
@@ -863,7 +920,7 @@ async def test_gatekeeper_categorization(
             'Here\'s an example of a basic APIRule YAML in Kyma:\n\n```yaml\napiVersion: gateway.kyma-project.io/v1alpha1\nkind: APIRule\nmetadata:\n  name: my-service-api\n  namespace: my-namespace\nspec:\n  gateway: kyma-gateway.kyma-system.svc.cluster.local\n  host: my-service.example.com\n  service:\n    name: my-service\n    port: 8080\n  rules:\n    - path: /.*\n      methods: ["GET", "POST"]\n      accessStrategies:\n        - handler: jwt\n          config:\n            jwksUrls: ["https://oauth2.example.com/.well-known/jwks.json"]\n            trustedIssuers: ["https://oauth2.example.com"]\n```\n\nThis APIRule:\n1. Exposes a service called `my-service` (running on port 8080)\n2. Makes it accessible at the URL `https://my-service.example.com`\n3. Allows GET and POST methods on all paths (indicated by `/.*` regex)\n4. Secures it with JWT authentication\n\nYou can adjust the paths, methods, and authentication strategies according to your needs.',
             True,
         ),
-        (
+        ConversationHistoryTestCase(
             "multi-turn conversation with technical context that requires forwarding",
             [
                 {"type": "human", "content": "How do I check my pod status in Kyma?"},
@@ -884,15 +941,13 @@ async def test_gatekeeper_categorization(
             "",
             True,
         ),
-    ],
-)
+    ]
+
+
+@pytest.mark.parametrize("test_case", create_conversation_history_test_cases())
 @pytest.mark.asyncio
 async def test_gatekeeper_with_conversation_history(
-    test_description,
-    conversation_history,
-    user_query,
-    expected_answer,
-    expected_query_forwarding,
+    test_case: ConversationHistoryTestCase,
     companion_graph,
     goal_accuracy_metric,
 ):
@@ -900,26 +955,24 @@ async def test_gatekeeper_with_conversation_history(
     Tests that the invoke_gatekeeper_node method of CompanionGraph answers general queries as expected.
     """
     # Given: a conversation state with messages
-    all_messages = convert_dict_to_messages(conversation_history)
-    all_messages.append(HumanMessage(content=user_query))
+    all_messages = convert_dict_to_messages(test_case.conversation_history)
+    all_messages.append(HumanMessage(content=test_case.user_query))
     state = create_mock_state(all_messages)
 
     # When: the gatekeeper node's invoke_gatekeeper_node method is invoked
     result = await companion_graph._invoke_gatekeeper_node(state)
 
-    if expected_query_forwarding:
-        assert (
-            result.forward_query
-        ), "Query should be forwarded"  # query should be forwarded
+    if test_case.expected_query_forwarding:
+        assert result.forward_query, f"{test_case.name}: Query should be forwarded"
 
     else:
         assert (
             not result.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
+        ), f"{test_case.name}: Query should not be forwarded"
         # Then: we evaluate the direct response using deepeval metrics
-        test_case = LLMTestCase(
-            input=user_query,
+        llm_test_case = LLMTestCase(
+            input=test_case.user_query,
             actual_output=result.direct_response,
-            expected_output=expected_answer,
+            expected_output=test_case.expected_answer,
         )
-        assert_test(test_case, [goal_accuracy_metric])
+        assert_test(llm_test_case, [goal_accuracy_metric])
