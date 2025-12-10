@@ -779,7 +779,7 @@ class TestK8sClient:
                 aioresponses() as aio_mock_response,
                 pytest.raises(
                     ValueError,
-                    match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
+                    match=f"Failed to execute GET request to the Kubernetes API. URL: abc/test/uri, Error: {error_message}",
                 ),
             ):
                 mock_url = get_url_for_paged_request(
@@ -806,8 +806,8 @@ class TestK8sClient:
                         ),  # First page has no continue token.
                     )
                     payload = {
-                        "items": [{"data": f"page-{i+1}"}],
-                        "metadata": {"continue": f"token-{i+1}"},
+                        "items": [{"data": f"page-{i + 1}"}],
+                        "metadata": {"continue": f"token-{i + 1}"},
                     }
                     aio_mock_response.get(
                         mock_url,

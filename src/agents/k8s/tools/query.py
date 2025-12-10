@@ -32,9 +32,9 @@ async def k8s_query_tool(
     For example, it will always remove the `data` field of a `Secret` object."""
     result = await k8s_client.execute_get_api_request(uri)
     if not isinstance(result, list) and not isinstance(result, dict):
-        raise TypeError(
-            f"k8s_query_tool received unexpected result type for URI: {uri}. "
-            f"Expected list or dict, got {type(result).__name__}"
+        raise Exception(
+            f"failed executing k8s_query_tool with URI: {uri}."
+            f"The result is not a list or dict, but a {type(result)}"
         )
     return result
 
