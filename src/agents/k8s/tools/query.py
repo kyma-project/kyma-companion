@@ -30,17 +30,13 @@ async def k8s_query_tool(
     The URI must follow the format of Kubernetes API.
     The returned data is sanitized to remove any sensitive information.
     For example, it will always remove the `data` field of a `Secret` object."""
-    try:
-        result = await k8s_client.execute_get_api_request(uri)
-        if not isinstance(result, list) and not isinstance(result, dict):
-            raise Exception(
-                f"failed executing k8s_query_tool with URI: {uri}."
-                f"The result is not a list or dict, but a {type(result)}"
-            )
-
-        return result
-    except Exception:
-        raise
+    result = await k8s_client.execute_get_api_request(uri)
+    if not isinstance(result, list) and not isinstance(result, dict):
+        raise TypeError(
+            f"k8s_query_tool received unexpected result type for URI: {uri}. "
+            f"Expected list or dict, got {type(result).__name__}"
+        )
+    return result
 
 
 @tool()
@@ -53,16 +49,11 @@ async def k8s_overview_query_tool(
     To get an overview of cluster - use namespace - "" , resource_kind - "cluster".
     To get an overview of namespace - provide namespace and resource_kind - "namespace".
     """
-    try:
-        message = Message(
-            resource_kind=resource_kind,
-            namespace=namespace,
-            query="",
-            resource_api_version="",
-            resource_name="",
-        )
-        result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
-
-        return result
-    except Exception:
-        raise
+    message = Message(
+        resource_kind=resource_kind,
+        namespace=namespace,
+        query="",
+        resource_api_version="",
+        resource_name="",
+    )
+    return await get_relevant_context_from_k8s_cluster(message, k8s_client)
