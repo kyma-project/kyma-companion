@@ -118,7 +118,7 @@ class TestK8sToolsAPI:
         )
 
         if not ns_items:
-            pytest.skip("No namespaces found in cluster")
+            pytest.skip("No namespaces found in the cluster")
 
         # Try to find pods in each namespace until we find one
         pod_name = None
