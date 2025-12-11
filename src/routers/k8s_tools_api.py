@@ -23,7 +23,7 @@ from routers.common import (
     PodLogsResponse,
     init_k8s_client,
 )
-from services.k8s import IK8sClient
+from services.k8s import IK8sClient, K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -61,12 +61,13 @@ async def query_k8s_resource(
         )
         logger.info(f"K8s query completed successfully for uri={request.uri}")
         return K8sQueryResponse(data=result)
-    except ApiException as e:
-        # Handle Kubernetes API errors with proper HTTP status codes
-        logger.error(f"K8s API error for uri={request.uri}: {e.status} - {e.reason}")
+    except K8sClientError as e:
+        logger.error(
+            f"K8s API error for uri={request.uri}: " f"{e.status_code} - {e.message}"
+        )
         raise HTTPException(
-            status_code=e.status,
-            detail=f"Kubernetes API error: {e.reason}",
+            status_code=e.status_code,
+            detail=f"Kubernetes API error: {e.message}",
         ) from e
     except Exception as e:
         logger.exception(f"Error during K8s query for uri={request.uri}: {str(e)}")

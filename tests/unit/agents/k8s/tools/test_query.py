@@ -51,7 +51,9 @@ def sample_k8s_sanitized_secret():
             sample_k8s_secret(),
             Exception("dummy error 1"),
             None,
-            Exception("Error: Exception('dummy error 1')\n Please fix your mistakes."),
+            Exception(
+                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: dummy error 1\n Please fix your mistakes."
+            ),
         ),
         # Test case: the execute_get_api_request returns not a dict or list.
         (
@@ -60,8 +62,7 @@ def sample_k8s_sanitized_secret():
             None,
             None,
             Exception(
-                'Error: Exception("failed executing k8s_query_tool with URI: v1/secret/my-secret.'
-                "The result is not a list or dict, but a <class 'str'>\")\n Please fix your mistakes."
+                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: The result is not a list or dict, but a <class 'str'>\n Please fix your mistakes."
             ),
         ),
     ],

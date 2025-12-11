@@ -5,7 +5,12 @@ import pytest
 from aioresponses import aioresponses
 
 from services.data_sanitizer import DataSanitizer
-from services.k8s import AuthType, K8sAuthHeaders, K8sClient, get_url_for_paged_request
+from services.k8s import (
+    AuthType,
+    K8sAuthHeaders,
+    K8sClient,
+    get_url_for_paged_request,
+)
 from utils.settings import K8S_API_PAGINATION_MAX_PAGE
 
 
