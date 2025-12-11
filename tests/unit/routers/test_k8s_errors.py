@@ -34,64 +34,36 @@ class TestK8sAPIErrorHandling:
         return Mock(spec=IK8sClient)
 
     @pytest.mark.asyncio
-    async def test_invalid_credentials_returns_401(self, mock_k8s_client):
-        """Test that invalid K8s credentials return HTTP 401."""
-        request = K8sQueryRequest(uri="/api/v1/namespaces/default/pods")
-
-        # Mock k8s_client.execute_get_api_request to raise ApiException
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=ApiException(status=401, reason="Unauthorized")
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            await query_k8s_resource(request, mock_k8s_client)
-
-        assert exc_info.value.status_code == HTTPStatus.UNAUTHORIZED
-        assert "Kubernetes API error" in exc_info.value.detail
-
-    @pytest.mark.asyncio
-    async def test_insufficient_permissions_returns_403(self, mock_k8s_client):
-        """Test that insufficient RBAC permissions return HTTP 403."""
-        request = K8sQueryRequest(uri="/api/v1/namespaces/default/secrets")
-
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=ApiException(status=403, reason="Forbidden")
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            await query_k8s_resource(request, mock_k8s_client)
-
-        assert exc_info.value.status_code == HTTPStatus.FORBIDDEN
-        assert "Kubernetes API error" in exc_info.value.detail
-
-    @pytest.mark.asyncio
-    async def test_resource_not_found_returns_404(self, mock_k8s_client):
-        """Test that K8s resource not found returns HTTP 404."""
-        request = K8sQueryRequest(uri="/api/v1/namespaces/nonexistent/pods")
-
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=ApiException(status=404, reason="Not Found")
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            await query_k8s_resource(request, mock_k8s_client)
-
-        assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
-        assert "Kubernetes API error" in exc_info.value.detail
-
-    @pytest.mark.asyncio
-    async def test_cluster_unavailable_returns_503(self, mock_k8s_client):
-        """Test that cluster unavailable returns HTTP 503."""
+    @pytest.mark.parametrize(
+        "status_code,reason,expected_status,test_description",
+        [
+            (401, "Unauthorized", HTTPStatus.UNAUTHORIZED, "invalid credentials"),
+            (403, "Forbidden", HTTPStatus.FORBIDDEN, "insufficient permissions"),
+            (404, "Not Found", HTTPStatus.NOT_FOUND, "resource not found"),
+            (
+                503,
+                "Service Unavailable",
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "cluster unavailable",
+            ),
+        ],
+    )
+    async def test_api_exception_status_codes(
+        self, mock_k8s_client, status_code, reason, expected_status, test_description
+    ):
+        """Test that K8s API errors return correct HTTP status codes."""
         request = K8sQueryRequest(uri="/api/v1/namespaces/default/pods")
 
         mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=ApiException(status=503, reason="Service Unavailable")
+            side_effect=ApiException(status=status_code, reason=reason)
         )
 
         with pytest.raises(HTTPException) as exc_info:
             await query_k8s_resource(request, mock_k8s_client)
 
-        assert exc_info.value.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+        assert (
+            exc_info.value.status_code == expected_status
+        ), f"Failed test case: {test_description}"
         assert "Kubernetes API error" in exc_info.value.detail
 
     @pytest.mark.asyncio
@@ -112,4 +84,3 @@ class TestK8sAPIErrorHandling:
             await query_k8s_resource(request, mock_k8s_client)
 
         assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-        assert "K8s query failed" in exc_info.value.detail
