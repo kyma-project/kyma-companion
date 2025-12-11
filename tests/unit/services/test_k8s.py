@@ -779,7 +779,7 @@ class TestK8sClient:
                 aioresponses() as aio_mock_response,
                 pytest.raises(
                     ValueError,
-                    match=f"Failed to execute GET request to the Kubernetes API. URL: abc/test/uri, Error: {error_message}",
+                    match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
                 ),
             ):
                 mock_url = get_url_for_paged_request(
