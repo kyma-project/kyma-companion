@@ -204,12 +204,18 @@ class SearchKymaDocRequest(BaseModel):
             "How to troubleshoot Kyma Istio module?",
         ],
     )
+    top_k: int = Field(
+        default=5,
+        description="Number of top documents to return",
+        ge=1,
+        le=50,
+    )
 
 
 class SearchKymaDocResponse(BaseModel):
     """Response model for Kyma documentation search."""
 
-    results: str = Field(..., description="Retrieved documentation content")
+    results: list[str] = Field(..., description="List of retrieved documents")
     query: str = Field(..., description="Original search query")
 
 

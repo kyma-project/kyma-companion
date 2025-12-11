@@ -113,8 +113,8 @@ async def search_kyma_documentation(
     logger.info(f"Search request: query={request.query}")
 
     try:
-        search_tool = SearchKymaDocTool(models=models, top_k=5)
-        results = await search_tool._arun(query=request.query)
+        search_tool = SearchKymaDocTool(models=models, top_k=request.top_k)
+        results = await search_tool.arun_list(query=request.query)
         logger.info(
             f"Search completed successfully, "
             f"returned {len(results)} characters of documentation"
