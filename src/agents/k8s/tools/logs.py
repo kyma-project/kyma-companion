@@ -33,12 +33,6 @@ async def fetch_pod_logs_tool(
 ) -> list[str]:
     """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
     The logs of previous terminated pod will be fetched."""
-    try:
-        return await k8s_client.fetch_pod_logs(
-            name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
-        )
-    except Exception as e:
-        raise Exception(
-            f"failed executing fetch_pod_logs for pod: {name} in namespace: {namespace} with "
-            f"container: {container_name}, raised the following error: {e}"
-        ) from e
+    return await k8s_client.fetch_pod_logs(
+        name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
+    )
