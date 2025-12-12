@@ -350,7 +350,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 ToolCall(
                     name="fetch_kyma_resource_version",
                     args={
-                        "resource_kind": "Function",
+                        "resource_kind": "Subscription",
                     },
                 ),
                 ToolCall(

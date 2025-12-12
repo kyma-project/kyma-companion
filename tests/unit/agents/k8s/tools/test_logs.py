@@ -31,10 +31,7 @@ from services.k8s import IK8sClient
             False,
             Exception("dummy error 1"),
             None,
-            Exception(
-                "Error: Exception('failed executing fetch_pod_logs for pod: my-pod in namespace: my-namespace "
-                "with container: my-container, raised the following error: dummy error 1')\n Please fix your mistakes."
-            ),
+            Exception("Error: Exception('dummy error 1')\n Please fix your mistakes."),
         ),
     ],
 )

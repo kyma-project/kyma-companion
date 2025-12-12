@@ -51,10 +51,7 @@ def sample_k8s_sanitized_secret():
             sample_k8s_secret(),
             Exception("dummy error 1"),
             None,
-            Exception(
-                "Error: Exception('failed executing k8s_query_tool with URI: v1/secret/my-secret,"
-                "raised the following error: dummy error 1')\n Please fix your mistakes."
-            ),
+            Exception("Error: Exception('dummy error 1')\n Please fix your mistakes."),
         ),
         # Test case: the execute_get_api_request returns not a dict or list.
         (
@@ -63,8 +60,7 @@ def sample_k8s_sanitized_secret():
             None,
             None,
             Exception(
-                'Error: Exception("failed executing k8s_query_tool with URI: v1/secret/my-secret,'
-                "raised the following error: failed executing k8s_query_tool with URI: v1/secret/my-secret."
+                'Error: Exception("failed executing k8s_query_tool with URI: v1/secret/my-secret.'
                 "The result is not a list or dict, but a <class 'str'>\")\n Please fix your mistakes."
             ),
         ),
@@ -153,9 +149,7 @@ def sample_namespace_overview():
             Exception("cluster unavailable"),
             None,
             Exception(
-                "Error: Exception('failed executing k8s_query_tool_with_filter withraised the "
-                "following error: cluster unavailable')\n"
-                " Please fix your mistakes."
+                "Error: Exception('cluster unavailable')\n Please fix your mistakes."
             ),
         ),
         # Test case: invalid resource kind
@@ -166,9 +160,7 @@ def sample_namespace_overview():
             Exception("Unsupported resource kind: invalid_kind"),
             None,
             Exception(
-                "Error: Exception('failed executing k8s_query_tool_with_filter withraised the "
-                "following error: Unsupported resource kind: invalid_kind')\n"
-                " Please fix your mistakes."
+                "Error: Exception('Unsupported resource kind: invalid_kind')\n Please fix your mistakes."
             ),
         ),
     ],
