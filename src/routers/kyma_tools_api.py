@@ -5,6 +5,7 @@ This module exposes Kyma agent tools as REST API endpoints by wrapping
 the tools defined in src/agents/kyma/tools.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -26,7 +27,8 @@ from routers.common import (
     init_k8s_client,
     init_models_dict,
 )
-from services.k8s import IK8sClient, K8sClientError
+from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -77,7 +79,7 @@ async def query_kyma_resource(
     except Exception as e:
         logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Kyma query failed: {str(e)}",
         ) from e
 
@@ -117,7 +119,7 @@ async def get_resource_version(
         error_msg = f"Unexpected error fetching resource version: {str(e)}"
         logger.exception(error_msg)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch resource version: {str(e)}",
         ) from e
 
@@ -146,6 +148,6 @@ async def search_kyma_documentation(
     except Exception as e:
         logger.exception(f"Error during documentation search: {str(e)}")
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Documentation search failed: {str(e)}",
         ) from e

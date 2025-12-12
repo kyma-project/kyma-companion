@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from typing import Annotated
 
 from langchain_core.tools import tool
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
@@ -33,6 +35,20 @@ async def fetch_pod_logs_tool(
 ) -> list[str]:
     """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
     The logs of previous terminated pod will be fetched."""
-    return await k8s_client.fetch_pod_logs(
-        name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
-    )
+    try:
+        return await k8s_client.fetch_pod_logs(
+            name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
+        )
+    except Exception as e:
+        # Extract status code if available
+        status_code: int = (
+            e.status
+            if hasattr(e, "status") and isinstance(e.status, int)
+            else HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
+        raise K8sClientError(
+            message=str(e),
+            status_code=status_code,
+            tool_name="fetch_pod_logs_tool",
+        ) from e

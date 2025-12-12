@@ -1,6 +1,6 @@
+from http import HTTPStatus
 from typing import Annotated
 
-from kubernetes.client.exceptions import ApiException
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
@@ -10,7 +10,8 @@ from agents.common.data import Message
 from agents.common.utils import (
     get_relevant_context_from_k8s_cluster,
 )
-from services.k8s import IK8sClient, K8sClientError
+from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 class K8sQueryToolArgs(BaseModel):
@@ -33,30 +34,24 @@ async def k8s_query_tool(
     For example, it will always remove the `data` field of a `Secret` object."""
     try:
         result = await k8s_client.execute_get_api_request(uri)
-        if not isinstance(result, (list, dict)):
-            raise K8sClientError(
-                message=f"Invalid result type: {type(result)}",
-                status_code=500,
-                uri=uri,
-                tool_name="k8s_query_tool",
-            )
         return result
     except K8sClientError as e:
+        # Add tool name if not already set
         if not e.tool_name:
             e.tool_name = "k8s_query_tool"
         raise
-    except ApiException as e:
-        # Preserve ApiException status code in K8sClientError
-        raise K8sClientError(
-            message=str(e),
-            status_code=e.status,
-            uri=uri,
-            tool_name="k8s_query_tool",
-        ) from e
     except Exception as e:
+        # Extract status code if available (e.g., from ApiException)
+        # HTTPStatus members are ints, so we can safely use the value
+        status_code: int = (
+            e.status
+            if hasattr(e, "status") and isinstance(e.status, int)
+            else HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
         raise K8sClientError(
             message=str(e),
-            status_code=getattr(e, "status_code", 500),
+            status_code=status_code,
             uri=uri,
             tool_name="k8s_query_tool",
         ) from e

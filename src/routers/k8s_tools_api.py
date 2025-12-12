@@ -6,6 +6,7 @@ the tools defined in src/agents/k8s/tools.
 All endpoints require Kubernetes authentication headers.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -23,7 +24,8 @@ from routers.common import (
     PodLogsResponse,
     init_k8s_client,
 )
-from services.k8s import IK8sClient, K8sClientError
+from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -72,7 +74,7 @@ async def query_k8s_resource(
     except Exception as e:
         logger.exception(f"Error during K8s query for uri={request.uri}: {str(e)}")
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"K8s query failed: {str(e)}",
         ) from e
 
@@ -128,7 +130,7 @@ async def get_pod_logs(
             f"namespace={request.namespace}: {str(e)}"
         )
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch pod logs: {str(e)}",
         ) from e
 
@@ -177,6 +179,6 @@ async def get_k8s_overview(
             f"resource_kind={request.resource_kind}: {str(e)}"
         )
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to get K8s overview: {str(e)}",
         ) from e

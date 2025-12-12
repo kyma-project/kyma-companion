@@ -13,7 +13,7 @@ from fastapi import HTTPException
 
 from routers.common import K8sQueryRequest
 from routers.k8s_tools_api import query_k8s_resource
-from services.k8s import K8sClientError
+from utils.exceptions import K8sClientError
 
 
 class TestK8sAPIErrorHandling:

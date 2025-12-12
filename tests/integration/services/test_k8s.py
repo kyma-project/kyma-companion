@@ -3,7 +3,8 @@ import os
 import pytest
 
 from services.data_sanitizer import DataSanitizer
-from services.k8s import K8sAuthHeaders, K8sClient, K8sClientError
+from services.k8s import K8sAuthHeaders, K8sClient
+from utils.exceptions import K8sClientError
 
 
 @pytest.fixture

@@ -1,12 +1,13 @@
+from http import HTTPStatus
 from typing import Annotated
 
-from kubernetes.client.exceptions import ApiException
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
-from services.k8s import IK8sClient, K8sClientError
+from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 class KymaQueryToolArgs(BaseModel):
@@ -35,32 +36,24 @@ async def kyma_query_tool(
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
         result = await k8s_client.execute_get_api_request(uri)
-        if not isinstance(result, (list, dict)):
-            raise K8sClientError(
-                message=f"The result is not a list or dict, but a {type(result)}",
-                status_code=500,
-                uri=uri,
-                tool_name="kyma_query_tool",
-            )
         return result
     except K8sClientError as e:
         # Add tool name if not already set
         if not e.tool_name:
             e.tool_name = "kyma_query_tool"
         raise
-    except ApiException as e:
-        # Preserve ApiException status code in K8sClientError
-        raise K8sClientError(
-            message=str(e),
-            status_code=e.status,
-            uri=uri,
-            tool_name="kyma_query_tool",
-        ) from e
     except Exception as e:
-        # Convert other exceptions to K8sClientError
+        # Extract status code if available (e.g., from ApiException)
+        # HTTPStatus members are ints, so we can safely use the value
+        status_code: int = (
+            e.status
+            if hasattr(e, "status") and isinstance(e.status, int)
+            else HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
         raise K8sClientError(
             message=str(e),
-            status_code=getattr(e, "status_code", 500),
+            status_code=status_code,
             uri=uri,
             tool_name="kyma_query_tool",
         ) from e
@@ -95,10 +88,16 @@ def fetch_kyma_resource_version(
         resource_version = k8s_client.get_resource_version(resource_kind)
         return resource_version
     except Exception as e:
-        # Convert exceptions to K8sClientError, preserving status code if available
+        # Extract status code if available (e.g., from ApiException)
+        # HTTPStatus members are ints, so we can safely use the value
+        status_code: int = (
+            e.status
+            if hasattr(e, "status") and isinstance(e.status, int)
+            else HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
         raise K8sClientError(
             message=str(e),
-            status_code=getattr(e, "status", 500),
-            uri="",
+            status_code=status_code,
             tool_name="fetch_kyma_resource_version",
         ) from e
