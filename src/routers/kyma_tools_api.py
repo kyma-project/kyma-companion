@@ -8,7 +8,6 @@ the tools defined in src/agents/kyma/tools.
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from kubernetes.client.exceptions import ApiException
 from langchain_core.embeddings import Embeddings
 
 from agents.kyma.tools.query import (
