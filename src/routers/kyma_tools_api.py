@@ -8,6 +8,7 @@ the tools defined in src/agents/kyma/tools.
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from kubernetes.client.exceptions import ApiException
 from langchain_core.embeddings import Embeddings
 
 from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
@@ -61,6 +62,13 @@ async def query_kyma_resource(
         )
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
+    except ApiException as e:
+        # Handle Kubernetes API errors with proper HTTP status codes
+        logger.error(f"Kyma API error: {e.status} - {e.reason}")
+        raise HTTPException(
+            status_code=e.status,
+            detail=f"Kubernetes API error: {e.reason}",
+        ) from e
     except Exception as e:
         logger.exception(f"Error during Kyma query: {str(e)}")
         raise HTTPException(
@@ -94,6 +102,15 @@ async def get_resource_version(
             resource_kind=request.resource_kind,
             api_version=api_version,
         )
+    except ApiException as e:
+        # Handle Kubernetes API errors with proper HTTP status codes
+        logger.error(
+            f"Kyma API error fetching resource version: {e.status} - {e.reason}"
+        )
+        raise HTTPException(
+            status_code=e.status,
+            detail=f"Kubernetes API error: {e.reason}",
+        ) from e
     except Exception as e:
         logger.exception(f"Error fetching resource version: {str(e)}")
         raise HTTPException(
