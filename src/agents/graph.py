@@ -66,11 +66,11 @@ from services.langfuse import get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
-from utils.models.contants import GPT_41_NANO_MODEL_NAME
 from utils.models.factory import IModel
 from utils.settings import (
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
+    MAIN_MODEL_NANO_NAME,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -183,7 +183,7 @@ class CompanionGraph:
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
         self._feedback_chain = self._create_feedback_chain(
-            cast(IModel, models[GPT_41_NANO_MODEL_NAME])
+            cast(IModel, models[MAIN_MODEL_NANO_NAME])
         )
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
