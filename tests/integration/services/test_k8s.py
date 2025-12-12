@@ -4,6 +4,7 @@ import pytest
 
 from services.data_sanitizer import DataSanitizer
 from services.k8s import K8sAuthHeaders, K8sClient
+from utils.exceptions import K8sClientError
 
 
 @pytest.fixture
@@ -480,7 +481,7 @@ class TestK8sClient:
         self, k8s_client, description, given_namespace, should_exist
     ):
         if not should_exist:
-            with pytest.raises(ValueError):
+            with pytest.raises((ValueError, K8sClientError)):
                 await k8s_client.get_namespace(given_namespace)
             return
 

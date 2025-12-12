@@ -5,13 +5,16 @@ This module exposes Kyma agent tools as REST API endpoints by wrapping
 the tools defined in src/agents/kyma/tools.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from kubernetes.client.exceptions import ApiException
 from langchain_core.embeddings import Embeddings
 
-from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
+from agents.kyma.tools.query import (
+    fetch_kyma_resource_version,
+    kyma_query_tool,
+)
 from agents.kyma.tools.search import SearchKymaDocTool
 from routers.common import (
     API_PREFIX,
@@ -25,6 +28,7 @@ from routers.common import (
     init_models_dict,
 )
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -62,17 +66,20 @@ async def query_kyma_resource(
         )
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
-    except ApiException as e:
-        # Handle Kubernetes API errors with proper HTTP status codes
-        logger.error(f"Kyma API error: {e.status} - {e.reason}")
+    except K8sClientError as e:
+        logger.error(f"Error during Kyma query: {e.message}")
         raise HTTPException(
-            status_code=e.status,
-            detail=f"Kubernetes API error: {e.reason}",
+            status_code=e.status_code,
+            detail={
+                "error": "Kyma query failed:",
+                "message": e.message,
+                "uri": e.uri,
+            },
         ) from e
     except Exception as e:
-        logger.exception(f"Error during Kyma query: {str(e)}")
+        logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Kyma query failed: {str(e)}",
         ) from e
 
@@ -102,19 +109,17 @@ async def get_resource_version(
             resource_kind=request.resource_kind,
             api_version=api_version,
         )
-    except ApiException as e:
-        # Handle Kubernetes API errors with proper HTTP status codes
-        logger.error(
-            f"Kyma API error fetching resource version: {e.status} - {e.reason}"
-        )
+    except K8sClientError as e:
+        logger.error(f"Error fetching resource version: {e.message}")
         raise HTTPException(
-            status_code=e.status,
-            detail=f"Kubernetes API error: {e.reason}",
+            status_code=e.status_code,
+            detail=f"Failed to fetch resource version: {e.message}",
         ) from e
     except Exception as e:
-        logger.exception(f"Error fetching resource version: {str(e)}")
+        error_msg = f"Unexpected error fetching resource version: {str(e)}"
+        logger.exception(error_msg)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch resource version: {str(e)}",
         ) from e
 
@@ -143,6 +148,6 @@ async def search_kyma_documentation(
     except Exception as e:
         logger.exception(f"Error during documentation search: {str(e)}")
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Documentation search failed: {str(e)}",
         ) from e
