@@ -10,7 +10,10 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, HTTPException
 from langchain_core.embeddings import Embeddings
 
-from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
+from agents.kyma.tools.query import (
+    fetch_kyma_resource_version,
+    kyma_query_tool,
+)
 from agents.kyma.tools.search import SearchKymaDocTool
 from routers.common import (
     API_PREFIX,
@@ -65,14 +68,11 @@ async def query_kyma_resource(
         logger.error(f"Error during Kyma query: {e.message}")
         raise HTTPException(
             status_code=e.status_code,
-            detail={"error": "Kyma query failed:", "message": e.message, "uri": e.uri},
-        ) from e
-    except ApiException as e:
-        # Handle Kubernetes API errors
-        logger.error(f"Kyma API error: {e.status} - {e.reason}")
-        raise HTTPException(
-            status_code=e.status_code,
-            detail={"error": "Kyma query failed:", "message": e.message, "uri": e.uri},
+            detail={
+                "error": "Kyma query failed:",
+                "message": e.message,
+                "uri": e.uri,
+            },
         ) from e
     except Exception as e:
         logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
@@ -114,7 +114,8 @@ async def get_resource_version(
             detail=f"Failed to fetch resource version: {e.message}",
         ) from e
     except Exception as e:
-        logger.exception(f"Unexpected error fetching resource version: {str(e)}")
+        error_msg = f"Unexpected error fetching resource version: {str(e)}"
+        logger.exception(error_msg)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch resource version: {str(e)}",
