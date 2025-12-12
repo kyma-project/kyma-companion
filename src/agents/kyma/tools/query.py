@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Annotated
 
 from langchain_core.tools import tool
@@ -35,27 +34,17 @@ async def kyma_query_tool(
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
-        result = await k8s_client.execute_get_api_request(uri)
-        return result
+        return await k8s_client.execute_get_api_request(uri)
     except K8sClientError as e:
         # Add tool name if not already set
         if not e.tool_name:
             e.tool_name = "kyma_query_tool"
         raise
     except Exception as e:
-        # Extract status code if available (e.g., from ApiException)
-        # HTTPStatus members are ints, so we can safely use the value
-        status_code: int = (
-            e.status
-            if hasattr(e, "status") and isinstance(e.status, int)
-            else HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-        raise K8sClientError(
-            message=str(e),
-            status_code=status_code,
-            uri=uri,
+        raise K8sClientError.from_exception(
+            exception=e,
             tool_name="kyma_query_tool",
+            uri=uri,
         ) from e
 
 
@@ -85,19 +74,9 @@ def fetch_kyma_resource_version(
     to be verified or kyma_query_tool returns 404 not found.
     """
     try:
-        resource_version = k8s_client.get_resource_version(resource_kind)
-        return resource_version
+        return k8s_client.get_resource_version(resource_kind)
     except Exception as e:
-        # Extract status code if available (e.g., from ApiException)
-        # HTTPStatus members are ints, so we can safely use the value
-        status_code: int = (
-            e.status
-            if hasattr(e, "status") and isinstance(e.status, int)
-            else HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-        raise K8sClientError(
-            message=str(e),
-            status_code=status_code,
+        raise K8sClientError.from_exception(
+            exception=e,
             tool_name="fetch_kyma_resource_version",
         ) from e

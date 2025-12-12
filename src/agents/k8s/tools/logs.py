@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Annotated
 
 from langchain_core.tools import tool
@@ -40,15 +39,7 @@ async def fetch_pod_logs_tool(
             name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
         )
     except Exception as e:
-        # Extract status code if available
-        status_code: int = (
-            e.status
-            if hasattr(e, "status") and isinstance(e.status, int)
-            else HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-        raise K8sClientError(
-            message=str(e),
-            status_code=status_code,
+        raise K8sClientError.from_exception(
+            exception=e,
             tool_name="fetch_pod_logs_tool",
         ) from e
