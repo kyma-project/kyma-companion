@@ -62,7 +62,7 @@ def sample_k8s_sanitized_secret():
             None,
             None,
             Exception(
-                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: The result is not a list or dict, but a <class 'str'>\n Please fix your mistakes."
+                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: Invalid result type: <class 'str'>\n Please fix your mistakes."
             ),
         ),
     ],

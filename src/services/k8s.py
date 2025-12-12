@@ -420,8 +420,11 @@ class K8sClient:
                 ) as response:
                     # Check if the response status is not OK.
                     if response.status != HTTPStatus.OK:
-                        raise ValueError(
-                            f"Failed to execute GET request to the Kubernetes API. Error: {await response.text()}"
+                        error_text = await response.text()
+                        raise K8sClientError(
+                            message=f"Failed to execute GET request to the Kubernetes API. Error: {error_text}",
+                            status_code=response.status,
+                            uri=base_url,
                         )
 
                     result = await response.json()

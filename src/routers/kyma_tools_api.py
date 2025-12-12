@@ -67,6 +67,13 @@ async def query_kyma_resource(
             status_code=e.status_code,
             detail={"error": "Kyma query failed:", "message": e.message, "uri": e.uri},
         ) from e
+    except ApiException as e:
+        # Handle Kubernetes API errors
+        logger.error(f"Kyma API error: {e.status} - {e.reason}")
+        raise HTTPException(
+            status_code=e.status_code,
+            detail={"error": "Kyma query failed:", "message": e.message, "uri": e.uri},
+        ) from e
     except Exception as e:
         logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
         raise HTTPException(

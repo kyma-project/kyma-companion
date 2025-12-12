@@ -1,5 +1,6 @@
 from typing import Annotated
 
+from kubernetes.client.exceptions import ApiException
 from langchain_core.tools import tool
 from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
@@ -33,13 +34,29 @@ async def k8s_query_tool(
     try:
         result = await k8s_client.execute_get_api_request(uri)
         if not isinstance(result, (list, dict)):
-            raise ValueError(f"The result is not a list or dict, but a {type(result)}")
+            raise K8sClientError(
+                message=f"Invalid result type: {type(result)}",
+                status_code=500,
+                uri=uri,
+                tool_name="k8s_query_tool",
+            )
         return result
-    except Exception as e:
-        # Convert exceptions to K8sClientError, preserving status code if available
+    except K8sClientError as e:
+        if not e.tool_name:
+            e.tool_name = "k8s_query_tool"
+        raise
+    except ApiException as e:
+        # Preserve ApiException status code in K8sClientError
         raise K8sClientError(
             message=str(e),
-            status_code=getattr(e, "status", 500),
+            status_code=e.status,
+            uri=uri,
+            tool_name="k8s_query_tool",
+        ) from e
+    except Exception as e:
+        raise K8sClientError(
+            message=str(e),
+            status_code=getattr(e, "status_code", 500),
             uri=uri,
             tool_name="k8s_query_tool",
         ) from e
