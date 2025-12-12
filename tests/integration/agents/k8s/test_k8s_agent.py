@@ -146,19 +146,19 @@ async def test_invoke_chain(
                         content="{'resource_api_version': '', 'resource_namespace': ''}"
                     ),
                     HumanMessage(
-                        content="What is causing the ImagePullBackOff status for many pods?"
+                        content="What is causing the CrashLoopBackOff status for many pods in default namespace?"
                     ),
                 ],
                 subtasks=[
                     {
-                        "description": "What is causing the ImagePullBackOff status for many pods?",
-                        "task_title": "Checking ImagePullBackOff status?",
+                        "description": "What is causing the CrashLoopBackOff status for many pods in default namespace?",
+                        "task_title": "Checking CrashLoopBackOff status?",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is causing the ImagePullBackOff status for many pods?",
-                    task_title="Checking ImagePullBackOff status?",
+                    description="What is causing the CrashLoopBackOff status for many pods in default namespace?",
+                    task_title="Checking CrashLoopBackOff status?",
                     assigned_to="KubernetesAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
@@ -490,8 +490,9 @@ async def test_tool_calls(
     assert isinstance(response, AIMessage)
 
     # for tool call cases, verify tool call properties
-    assert response.tool_calls is not None, "Expected tool calls but found none"
-    assert len(response.tool_calls) > 0, "Expected at least one tool call"
+    if expected_tool_call:
+        assert response.tool_calls is not None, "Expected tool calls but found none"
+        assert len(response.tool_calls) > 0, "Expected at least one tool call"
     tool_call = response.tool_calls[0]
     assert tool_call.get("type") == "tool_call"
     assert tool_call.get("name") == expected_tool_call

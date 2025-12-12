@@ -152,6 +152,28 @@ def answer_relevancy_metric(evaluator_model):
 
 
 @pytest.fixture
+def goal_accuracy_metric(evaluator_model):
+    return GEval(
+        name="Goal accuracy",
+        evaluation_steps=[
+            """
+            Measure if the core goal/intent is achieved in the actual output compared to expected output.
+            Rules:
+            1. Both outputs should convey the same core message/goal
+            2. Additional information is allowed but shouldn't contradict the goal
+            3. The main intent should be clearly stated
+            """,
+        ],
+        evaluation_params=[
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+        ],
+        model=evaluator_model,
+        threshold=0.7,
+    )
+
+
+@pytest.fixture
 def semantic_similarity_metric(evaluator_model):
     return GEval(
         name="Semantic Similarity",

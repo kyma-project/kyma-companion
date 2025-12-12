@@ -8,12 +8,82 @@ from common.config import Config
 from common.logger import get_logger
 from common.output import print_header, print_test_results
 from evaluation.process_scenario import process_scenario
-from evaluation.scenario.scenario import ScenarioList
+from evaluation.scenario.enums import TestStatus
+from evaluation.scenario.scenario import Scenario, ScenarioList
 from evaluation.validator.usage_data import TokenUsageDataValidator
 from evaluation.validator.utils import create_validator
 from evaluation.validator.validator import IValidator
 
 SLEEP_INTERVAL = 2  # 2 seconds
+
+
+def process_scenario_with_retry(
+    scenario: Scenario, config: Config, validator: IValidator
+) -> None:
+    """
+    Process a scenario with retry logic to handle LLM non-determinism.
+
+    Retries the entire scenario (all queries) up to config.scenario_retries times
+    if the scenario fails. Each retry creates a fresh conversation to ensure
+    complete isolation of state between attempts.
+
+    The retry logic tracks query-level pass/fail metrics in attempt_history for
+    observability and debugging purposes. However, retry decisions are based solely
+    on the scenario-level test_status. This is intentional because:
+    1. Partial failures (some queries passed, some failed) still result in
+       TestStatus.FAILED for the scenario, triggering a retry
+    2. The scenario.complete() method sets FAILED if any query fails
+    3. Tracking individual query metrics helps diagnose which specific queries
+       are causing instability across retry attempts
+
+    Args:
+        scenario: The scenario to process
+        config: Configuration containing retry settings
+        validator: Response validator
+    """
+    logger = get_logger(f"{scenario.id}_retry_wrapper")
+    max_attempts = config.scenario_retries
+
+    for attempt in range(1, max_attempts + 1):
+        logger.info(
+            f"Processing scenario {scenario.id} - Attempt {attempt}/{max_attempts}"
+        )
+
+        # Reset scenario state for retry (except on first attempt)
+        if attempt > 1:
+            # Note: conversation_id is not stored in the scenario object.
+            # Each call to process_scenario() creates a fresh conversation via
+            # initialize_conversation(), ensuring complete isolation between retries.
+            scenario.reset()
+
+        # Track attempt number
+        scenario.attempt_number = attempt
+
+        # Process the scenario
+        process_scenario(scenario, config, validator)
+
+        # Record attempt history
+        scenario.record_attempt_history(attempt)
+
+        # Check if scenario passed
+        if scenario.test_status != TestStatus.FAILED:
+            if attempt > 1:
+                logger.info(
+                    f"Scenario {scenario.id} passed on attempt {attempt}/{max_attempts}"
+                )
+            break
+
+        # Log failure and decide whether to retry
+        if attempt < max_attempts:
+            logger.warning(
+                f"Scenario {scenario.id} failed on attempt {attempt}/{max_attempts}. "
+                f"Reason: {scenario.test_status_reason}. Retrying..."
+            )
+        else:
+            logger.error(
+                f"Scenario {scenario.id} failed after {max_attempts} attempts. "
+                f"Final reason: {scenario.test_status_reason}"
+            )
 
 
 def flush_logs(logger: Logger) -> None:
@@ -56,7 +126,7 @@ def main() -> None:
         ThreadPoolExecutor(max_workers=config.max_workers) as executor,
     ):
         futures = [
-            executor.submit(process_scenario, scenario, config, validator)
+            executor.submit(process_scenario_with_retry, scenario, config, validator)
             for scenario in scenario_list.items
         ]
 

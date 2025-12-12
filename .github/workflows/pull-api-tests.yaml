@@ -1,17 +1,23 @@
-name: "Evaluation tests"
-run-name: "Evaluation tests"
+name: "API Tests"
+run-name: "API Tests for PR #${{ github.event.number }}"
 
 on:
   pull_request_target:
     types: [labeled, opened, synchronize, reopened, ready_for_review]
     branches:
       - main
+    paths:
+      - "src/routers/**"
+      - "src/agents/**/tools/**"
+      - "tests/blackbox/src/api_tests/**"
+      - ".github/workflows/pull-api-tests.yaml"
+      - ".github/workflows/evaluation-test-reusable.yaml"
 
 jobs:
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    if: contains(github.event.pull_request.labels.*.name, 'api-tests')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,7 +47,8 @@ jobs:
         run: |
           python ./scripts/python/wait-for-commit-check/run.py
 
-  evaluation:
+  api-tests:
+    name: Run API tests
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
     needs: wait-for-build
     secrets: inherit
@@ -49,3 +56,4 @@ jobs:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
       TEST_REF: ${{ github.event.pull_request.head.ref }}
+      RUN_EVALUATION_TESTS: false

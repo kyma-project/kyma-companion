@@ -224,7 +224,7 @@ class K8sClient:
     ca_temp_filename: str = ""
     client_cert_temp_filename: str = ""
     client_key_temp_filename: str = ""
-    dynamic_client: dynamic.DynamicClient
+    _dynamic_client: dynamic.DynamicClient | None
     data_sanitizer: IDataSanitizer | None
     api_client: Any
 
@@ -274,7 +274,8 @@ class K8sClient:
                 keyfile=self.client_key_temp_filename,
             )
 
-        self.dynamic_client = self._create_dynamic_client()
+        # Delay dynamic_client creation until first use
+        self._dynamic_client = None
 
         self.data_sanitizer = data_sanitizer
 
@@ -301,6 +302,13 @@ class K8sClient:
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         return self.k8s_auth_headers.x_cluster_url
+
+    @property
+    def dynamic_client(self) -> dynamic.DynamicClient:
+        """Lazy initialization of dynamic client. Creates the client on first access."""
+        if self._dynamic_client is None:
+            self._dynamic_client = self._create_dynamic_client()
+        return self._dynamic_client
 
     def model_dump(self) -> None:
         """Dump the model. It should not return any critical information because it is called by checkpointer
