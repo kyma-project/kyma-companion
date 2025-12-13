@@ -3,9 +3,9 @@ description: The application inside the Pod tries to list Pods in the same names
 queries:
   - user_query: Why is the Pod in error state?
     resource:
-      kind: Pod
-      api_version: v1
-      name: pod-check
+      kind: Deployment
+      api_version: apps/v1
+      name: kubectl-check
       namespace: test-pod-2 # format: test-<resource_kind>-<test_id>
     expectations:
       - name: pod_error

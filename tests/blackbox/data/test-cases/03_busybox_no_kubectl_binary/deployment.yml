@@ -39,23 +39,30 @@ roleRef:
   name: pod-reader
   apiGroup: rbac.authorization.k8s.io
 ---
-# Pod that uses the ServiceAccount to access cluster resources
+# Deployment that uses the ServiceAccount to access cluster resources
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: pod-check
+  name: kubectl-check
   namespace: test-pod-3
 spec:
-  serviceAccountName: pod-reader-sa
-  containers:
-  - name: busybox
-    image: busybox
-    command: ["sh", "-c", "kubectl get pods"]
-    args: []
-    env:
-    - name: KUBERNETES_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-  restartPolicy: Never
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubectl-check
+  template:
+    metadata:
+      labels:
+        app: kubectl-check
+    spec:
+      serviceAccountName: pod-reader-sa
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sh", "-c", "kubectl get pods"]
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
