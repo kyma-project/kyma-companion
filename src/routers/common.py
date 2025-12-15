@@ -2,6 +2,7 @@
 Common models, constants, and dependencies shared across routers.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
@@ -259,7 +260,7 @@ def init_models_dict(
         except Exception as e:
             logger.exception("Failed to initialize models")
             raise HTTPException(
-                status_code=500,
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize models: {str(e)}",
             ) from e
 
