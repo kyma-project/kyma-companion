@@ -52,7 +52,7 @@ pytest-xdist = "^3.8.0"
 pyyaml = "^6.0.2"
 ragas = "^0.3.6"
 termcolor = "^3.1.0"
-types-pyyaml = "^6.0.12.20250822"
+types-pyyaml = "^6.0.12.20250915"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
