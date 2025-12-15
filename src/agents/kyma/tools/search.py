@@ -35,7 +35,7 @@ class SearchKymaDocTool(BaseTool):
 
     # the following fields are not part of the schema, but are used internally
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
-    top_k: int | None = Field(default=5, exclude=True)
+    top_k: int | None = Field(default=DEFAULT_TOP_K, exclude=True)
 
     def __init__(
         self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K
