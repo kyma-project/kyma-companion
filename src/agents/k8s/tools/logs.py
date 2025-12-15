@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
@@ -33,6 +34,12 @@ async def fetch_pod_logs_tool(
 ) -> list[str]:
     """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
     The logs of previous terminated pod will be fetched."""
-    return await k8s_client.fetch_pod_logs(
-        name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
-    )
+    try:
+        return await k8s_client.fetch_pod_logs(
+            name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
+        )
+    except Exception as e:
+        raise K8sClientError.from_exception(
+            exception=e,
+            tool_name="fetch_pod_logs_tool",
+        ) from e
