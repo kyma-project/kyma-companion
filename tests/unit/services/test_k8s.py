@@ -5,7 +5,13 @@ import pytest
 from aioresponses import aioresponses
 
 from services.data_sanitizer import DataSanitizer
-from services.k8s import AuthType, K8sAuthHeaders, K8sClient, get_url_for_paged_request
+from services.k8s import (
+    AuthType,
+    K8sAuthHeaders,
+    K8sClient,
+    K8sClientError,
+    get_url_for_paged_request,
+)
 from utils.settings import K8S_API_PAGINATION_MAX_PAGE
 
 
@@ -778,7 +784,7 @@ class TestK8sClient:
             with (
                 aioresponses() as aio_mock_response,
                 pytest.raises(
-                    ValueError,
+                    K8sClientError,
                     match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
                 ),
             ):
