@@ -158,7 +158,7 @@ async def init_conversation(
     except Exception as e:
         logger.error(e)
         raise HTTPException(
-            status_code=500,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"{str(e)}, Request data: {message.model_dump_json()}",
         ) from e
 
@@ -210,7 +210,9 @@ async def followup_questions(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
 
 
 @router.post("/{conversation_id}/messages")
