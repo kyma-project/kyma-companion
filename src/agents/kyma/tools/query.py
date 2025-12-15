@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 class KymaQueryToolArgs(BaseModel):
@@ -33,17 +34,17 @@ async def kyma_query_tool(
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
     - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
     try:
-        result = await k8s_client.execute_get_api_request(uri)
-        if not isinstance(result, list) and not isinstance(result, dict):
-            raise Exception(
-                f"failed executing kyma_query_tool with URI: {uri}."
-                f"The result is not a list or dict, but a {type(result)}"
-            )
-
-        return result
+        return await k8s_client.execute_get_api_request(uri)
+    except K8sClientError as e:
+        # Add tool name if not already set
+        if not e.tool_name:
+            e.tool_name = "kyma_query_tool"
+        raise
     except Exception as e:
-        raise Exception(
-            f"failed executing kyma_query_tool with URI: {uri},raised the following error: {e}"
+        raise K8sClientError.from_exception(
+            exception=e,
+            tool_name="kyma_query_tool",
+            uri=uri,
         ) from e
 
 
@@ -73,10 +74,9 @@ def fetch_kyma_resource_version(
     to be verified or kyma_query_tool returns 404 not found.
     """
     try:
-        resource_version = k8s_client.get_resource_version(resource_kind)
-        return resource_version
+        return k8s_client.get_resource_version(resource_kind)
     except Exception as e:
-        raise Exception(
-            f"failed executing fetch_kyma_resource_version with resource_kind: {resource_kind},"
-            f" raised the following error: {e}"
+        raise K8sClientError.from_exception(
+            exception=e,
+            tool_name="fetch_kyma_resource_version",
         ) from e
