@@ -364,6 +364,102 @@ class TestAsyncRedisSaver:
             assert result.checkpoint == checkpoint_data["checkpoint"]
             assert result.metadata == checkpoint_data["metadata"]
 
+    async def test_aget_tuple_backward_compatibility_legacy_metadata(
+        self, async_redis_saver, fake_async_redis
+    ):
+        """Test that checkpoints with legacy JSON metadata (without metadata_type) can still be read."""
+        # Setup: Create a checkpoint in the old format (without metadata_type field)
+        config = {
+            "configurable": {
+                "thread_id": "thread-legacy",
+                "checkpoint_ns": "ns1",
+                "checkpoint_id": "chk-legacy",
+            }
+        }
+        checkpoint = create_checkpoint("chk-legacy")
+        metadata = create_metadata(1)
+
+        # Manually store checkpoint data in the old format (using JSON for metadata)
+        key = _make_redis_checkpoint_key("thread-legacy", "ns1", "chk-legacy")
+        type_, serialized_checkpoint = async_redis_saver.serde.dumps_typed(checkpoint)
+        # Old format: metadata stored as JSON bytes (no metadata_type field)
+        serialized_metadata = json.dumps(metadata).encode()
+        data = {
+            "checkpoint": serialized_checkpoint,
+            "type": type_,
+            "checkpoint_id": "chk-legacy",
+            "metadata": serialized_metadata,
+            # Note: no metadata_type field (legacy format)
+            "parent_checkpoint_id": "",
+        }
+        await fake_async_redis.hset(key, mapping=data)
+
+        # Test: Retrieve the checkpoint and verify backward compatibility
+        result = await async_redis_saver.aget_tuple(config)
+
+        # Verify: Should successfully read legacy checkpoint
+        assert result is not None
+        assert result.checkpoint == checkpoint
+        assert result.metadata == metadata
+
+    async def test_alist_backward_compatibility_legacy_metadata(
+        self, async_redis_saver, fake_async_redis
+    ):
+        """Test that alist can handle checkpoints with legacy JSON metadata (without metadata_type)."""
+        # Setup: Create two checkpoints - one new format, one legacy format
+        thread_id = "thread-alist-legacy"
+        checkpoint_ns = "ns1"
+
+        # New format checkpoint
+        config_new = {
+            "configurable": {
+                "thread_id": thread_id,
+                "checkpoint_ns": checkpoint_ns,
+                "checkpoint_id": "chk-new",
+            }
+        }
+        checkpoint_new = create_checkpoint("chk-new")
+        metadata_new = create_metadata(1)
+        await async_redis_saver.aput(config_new, checkpoint_new, metadata_new, {})
+
+        # Legacy format checkpoint
+        checkpoint_legacy = create_checkpoint("chk-legacy")
+        metadata_legacy = create_metadata(2)
+        key_legacy = _make_redis_checkpoint_key(thread_id, checkpoint_ns, "chk-legacy")
+        type_, serialized_checkpoint = async_redis_saver.serde.dumps_typed(
+            checkpoint_legacy
+        )
+        serialized_metadata = json.dumps(metadata_legacy).encode()
+        data = {
+            "checkpoint": serialized_checkpoint,
+            "type": type_,
+            "checkpoint_id": "chk-legacy",
+            "metadata": serialized_metadata,
+            # Note: no metadata_type field (legacy format)
+            "parent_checkpoint_id": "",
+        }
+        await fake_async_redis.hset(key_legacy, mapping=data)
+
+        # Test: List all checkpoints
+        config_list = {
+            "configurable": {"thread_id": thread_id, "checkpoint_ns": checkpoint_ns}
+        }
+        results = [result async for result in async_redis_saver.alist(config_list)]
+
+        # Verify: Both checkpoints should be retrieved correctly
+        expected_checkpoint_count = 2
+        assert len(results) == expected_checkpoint_count
+        checkpoint_ids = {r.checkpoint["id"] for r in results}
+        assert "chk-new" in checkpoint_ids
+        assert "chk-legacy" in checkpoint_ids
+
+        # Verify metadata for both
+        for result in results:
+            if result.checkpoint["id"] == "chk-new":
+                assert result.metadata == metadata_new
+            elif result.checkpoint["id"] == "chk-legacy":
+                assert result.metadata == metadata_legacy
+
     @pytest.mark.parametrize(
         "thread_id, checkpoint_ns, checkpoint_id, writes_data, expected_count",
         [

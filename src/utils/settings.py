@@ -82,6 +82,7 @@ MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
 MAIN_EMBEDDING_MODEL_NAME = config(
     "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
 )
+MAIN_MODEL_NANO_NAME = config("MAIN_MODEL_NANO_NAME", default="gpt-4.1-nano")
 LLM_REQUEST_TIMEOUT_SECONDS = config(
     "LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int
 )
