@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from rag.system import Query, RAGSystem
 from utils.models.factory import IModel
 
-DEFAULT_TOP_K: int = 4
+DEFAULT_TOP_K: int = 5
 
 
 class SearchKymaDocArgs(BaseModel):
