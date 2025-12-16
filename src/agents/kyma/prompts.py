@@ -36,13 +36,14 @@ Use the available tool as described in tool description.
 
 3. **If `kyma_query_tool` fails with 404 or version-related errors:**
    - MUST call `fetch_kyma_resource_version` to get the correct API version
-   - MUST retry `kyma_query_tool` with the correct version
-   - Do NOT stop after the first failure
-   - Complete flow: `kyma_query_tool (error)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry with correct version)` → `search_kyma_doc` (if resource has errors)
+   - MUST retry `kyma_query_tool` with the correct version (retry ONCE per resource)
+   - Do NOT retry the same resource more than ONCE with version correction - if the second attempt fails, proceed to provide an answer based on available information
+   - Complete flow: `kyma_query_tool (error)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry with correct version)` → `search_kyma_doc` (if resource has errors) OR provide answer if resource not found
+   - Note: You can still use `kyma_query_tool` for different resources or in response to new user queries
 
 4. **If the provided resource_api_version might be incorrect:**
    - Either validate it first with `fetch_kyma_resource_version`, OR
-   - Try the provided version and recover using step 3 if it fails
+   - Try the provided version and recover using step 3 if it fails (one version-correction retry per resource)
 
 ### For Non Troubleshooting Queries
 
