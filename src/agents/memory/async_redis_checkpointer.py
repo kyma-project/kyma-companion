@@ -198,7 +198,14 @@ def _parse_redis_checkpoint_data(
     }
 
     checkpoint = serde.loads_typed((data[b"type"].decode(), data[b"checkpoint"]))
-    metadata = serde.loads(data[b"metadata"])
+    # Handle backward compatibility: old checkpoints use JSON, new ones use typed serialization
+    if b"metadata_type" in data:
+        metadata = serde.loads_typed(
+            (data[b"metadata_type"].decode(), data[b"metadata"])
+        )
+    else:
+        # Legacy format: metadata stored as JSON bytes
+        metadata = json.loads(data[b"metadata"])
     parent_checkpoint_id = data.get(b"parent_checkpoint_id", b"").decode()
     parent_config: RunnableConfig | None = (
         {
@@ -313,12 +320,13 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         key = _make_redis_checkpoint_key(thread_id, checkpoint_ns, checkpoint_id)
 
         type_, serialized_checkpoint = self.serde.dumps_typed(checkpoint)
-        serialized_metadata = self.serde.dumps(metadata)
+        metadata_type, serialized_metadata = self.serde.dumps_typed(metadata)
         data = {
             "checkpoint": serialized_checkpoint,
             "type": type_,
             "checkpoint_id": checkpoint_id,
             "metadata": serialized_metadata,
+            "metadata_type": metadata_type,
             "parent_checkpoint_id": (
                 parent_checkpoint_id if parent_checkpoint_id else ""
             ),
