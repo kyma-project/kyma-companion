@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from rag.system import Query, RAGSystem
 from utils.models.factory import IModel
 
+DEFAULT_TOP_K: int = 5
+
 
 class SearchKymaDocArgs(BaseModel):
     """Arguments for the search_kyma_doc tool."""
@@ -33,9 +35,11 @@ class SearchKymaDocTool(BaseTool):
 
     # the following fields are not part of the schema, but are used internally
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
-    top_k: int | None = Field(default=5, exclude=True)
+    top_k: int | None = Field(default=DEFAULT_TOP_K, exclude=True)
 
-    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = 4):
+    def __init__(
+        self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K
+    ):
         super().__init__()
         self.rag_system = RAGSystem(models)
         self.top_k = top_k
@@ -48,13 +52,20 @@ class SearchKymaDocTool(BaseTool):
         return ""
 
     async def _arun(self, query: str) -> str:
-        """Async implementation of the search through Kyma documentation."""
-        # For now, just call the sync version
-        query_obj = Query(text=query)
-        relevant_docs = await self.rag_system.aretrieve(query_obj)
-        docs_content = "\n\n -- next document -- \n\n".join(
-            doc.page_content for doc in relevant_docs if doc.page_content.strip()
+        """Async implementation of the search through Kyma documentation. Returns concatenated content."""
+        contents = await self.arun_list(query)
+        combined = "\n\n -- next document -- \n\n".join(
+            content for content in contents if content.strip()
         )
-        if not docs_content.strip():
+        if not combined.strip():
             return "No relevant documentation found."
-        return docs_content
+        return combined
+
+    async def arun_list(self, query: str) -> list[str]:
+        """Async implementation of the search through Kyma documentation. Returns list of document contents."""
+        query_obj = Query(text=query)
+        relevant_docs = await self.rag_system.aretrieve(
+            query_obj,
+            top_k=self.top_k if self.top_k is not None else DEFAULT_TOP_K,
+        )
+        return [doc.page_content for doc in relevant_docs if doc.page_content.strip()]
