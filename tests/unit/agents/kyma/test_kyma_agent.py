@@ -113,3 +113,95 @@ async def test_arun(mock_models, mock_documents, expected_output):
         instance.rag_system.aretrieve.assert_called_once()
         called_query = instance.rag_system.aretrieve.call_args[0][0]
         assert called_query.text == "test query"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "mock_documents,expected_output,top_k",
+    [
+        # Single document case with default top_k
+        ([MockDocument("Single document content")], ["Single document content"], 4),
+        # Multiple documents case
+        (
+            [MockDocument("First doc"), MockDocument("Second doc")],
+            ["First doc", "Second doc"],
+            4,
+        ),
+        # Three documents case
+        (
+            [MockDocument("Doc 1"), MockDocument("Doc 2"), MockDocument("Doc 3")],
+            ["Doc 1", "Doc 2", "Doc 3"],
+            4,
+        ),
+        # Empty documents list - should return empty list
+        ([], [], 4),
+        # Documents with empty content - should be filtered out
+        ([MockDocument("")], [], 4),
+        # Documents with only whitespace - should be filtered out
+        ([MockDocument("   "), MockDocument("\n\n")], [], 4),
+        # Mixed content: some empty, some with content
+        (
+            [
+                MockDocument("Valid content"),
+                MockDocument(""),
+                MockDocument("Another valid"),
+            ],
+            ["Valid content", "Another valid"],
+            4,
+        ),
+        # Documents with special characters
+        (
+            [
+                MockDocument("Content with special chars: !@#$"),
+                MockDocument("Unicode: αβγ"),
+            ],
+            ["Content with special chars: !@#$", "Unicode: αβγ"],
+            4,
+        ),
+        # Documents with newlines
+        (
+            [MockDocument("Multi\nline\ncontent"), MockDocument("Another\ndocument")],
+            ["Multi\nline\ncontent", "Another\ndocument"],
+            4,
+        ),
+        # Mixed: whitespace and valid content
+        (
+            [MockDocument("   "), MockDocument("Valid"), MockDocument("\t\n")],
+            ["Valid"],
+            4,
+        ),
+        # Test with custom top_k=5
+        (
+            [MockDocument(f"Doc {i}") for i in range(5)],
+            [f"Doc {i}" for i in range(5)],
+            5,
+        ),
+        # Test with custom top_k=10
+        (
+            [MockDocument(f"Doc {i}") for i in range(10)],
+            [f"Doc {i}" for i in range(10)],
+            10,
+        ),
+        # Test with minimum top_k=1
+        ([MockDocument("Single doc")], ["Single doc"], 1),
+    ],
+)
+async def test_arun_list(mock_models, mock_documents, expected_output, top_k):
+    """Test arun_list method with different document scenarios and top_k values"""
+
+    mock_rag_system = Mock(spec=RAGSystem)
+    with patch("agents.kyma.tools.search.RAGSystem", return_value=mock_rag_system):
+        instance = SearchKymaDocTool(mock_models, top_k=top_k)
+        instance.rag_system.aretrieve.return_value = mock_documents
+
+        result = await instance.arun_list("test query")
+
+        # Assert the output matches expected result
+        assert result == expected_output
+
+        # Verify aretrieve was called with correct Query object and top_k
+        instance.rag_system.aretrieve.assert_called_once()
+        called_query = instance.rag_system.aretrieve.call_args[0][0]
+        assert called_query.text == "test query"
+        call_kwargs = instance.rag_system.aretrieve.call_args[1]
+        assert call_kwargs["top_k"] == top_k

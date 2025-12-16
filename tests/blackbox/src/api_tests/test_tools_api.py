@@ -331,7 +331,54 @@ class TestKymaToolsAPI:
         assert len(data["results"]) > 0
         logger.info(
             f"Successfully searched documentation: "
-            f"{len(data['results'])} characters returned"
+            f"{len(data['results'])} documents returned"
+        )
+
+    @pytest.mark.parametrize(
+        "top_k,query",
+        [
+            (None, "How to install Kyma?"),  # Test default top_k
+            (1, "How to install Kyma?"),
+            (3, "What is an APIRule?"),
+            (5, "How to troubleshoot Kyma?"),
+            (10, "Kyma serverless functions"),
+        ],
+    )
+    def test_search_with_top_k_parameter(
+        self, base_url: str, top_k: int | None, query: str
+    ) -> None:
+        """Test searching Kyma documentation with custom and default top_k parameter."""
+        if top_k is None:
+            logger.info(
+                f"Testing Kyma Documentation Search with default top_k: '{query}'"
+            )
+            request_json = {"query": query}
+            expected_max = 5  # Default value
+        else:
+            logger.info(
+                f"Testing Kyma Documentation Search with top_k={top_k}: '{query}'"
+            )
+            request_json = {"query": query, "top_k": top_k}
+            expected_max = top_k
+
+        response = requests.post(
+            f"{base_url}/search",
+            json=request_json,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert "results" in data
+        assert "query" in data
+        assert data["query"] == query
+        assert isinstance(data["results"], list)
+        # Verify we get at most expected_max documents (may be less if fewer available)
+        assert len(data["results"]) <= expected_max
+        logger.info(
+            f"Successfully searched documentation with top_k={top_k or 'default'}: "
+            f"{len(data['results'])} documents returned"
         )
 
 
