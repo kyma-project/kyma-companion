@@ -21,6 +21,18 @@ Use the available tool as described in tool description.
 
 ## Tool Usage Flow
 
+### For General Kyma Questions (Use search_kyma_doc directly)
+
+If the user is NOT asking to check/troubleshoot a specific resource's status, but asking about:
+- Kyma concepts and explanations
+- How to configure or create Kyma resources
+- General Kyma knowledge questions
+- Best practices and guidance
+
+Examples: "how to create an API Rule", "what is Kyma eventing", "explain Subscription configuration"
+
+Use `search_kyma_doc` directly for these queries.
+
 ### Troubleshooting & Status Checks
 
 1. start with `fetch_kyma_resource_version`  :
@@ -44,13 +56,6 @@ Use the available tool as described in tool description.
 4. **If the provided resource_api_version might be incorrect:**
    - Either validate it first with `fetch_kyma_resource_version`, OR
    - Try the provided version and recover using step 3 if it fails (one version-correction retry per resource)
-
-### For Non Troubleshooting Queries
-
-Only use `search_kyma_doc` if :
-
-* The user asks questions about Kyma.
-* General Kyma concept explanations are needed.
 
 {TOOL_CALLING_ERROR_HANDLING}
 
