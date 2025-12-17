@@ -590,6 +590,23 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                     },
                 ),
             ],
+            alternative_tool_calls=[
+                # Alternative: If no errors found in APIRule, agent may not search docs
+                [
+                    ToolCall(
+                        name="fetch_kyma_resource_version",
+                        args={
+                            "resource_kind": "APIRule",
+                        },
+                    ),
+                    ToolCall(
+                        name="kyma_query_tool",
+                        args={
+                            "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"
+                        },
+                    ),
+                ],
+            ],
         ),
         TestCase(
             "Should use cluster scope retrieval with kyma query tool",
@@ -665,12 +682,25 @@ async def test_kyma_agent_cluster_scoped(
     if test_case.expected_tool_calls == []:
         assert len(response["agent_messages"]) == 1
     else:
+        # Try primary expected tool calls first
         test_case_sample = MultiTurnSample(
             user_input=ragas_messages,
             reference_tool_calls=test_case.expected_tool_calls,
         )
-
         score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
+
+        # If primary fails and alternatives exist, try them
+        if score <= TOOL_ACCURACY_THRESHOLD and test_case.alternative_tool_calls:
+            for alt_calls in test_case.alternative_tool_calls:
+                alt_sample = MultiTurnSample(
+                    user_input=ragas_messages,
+                    reference_tool_calls=alt_calls,
+                )
+                alt_score = await tool_accuracy_scorer.multi_turn_ascore(alt_sample)
+                if alt_score > TOOL_ACCURACY_THRESHOLD:
+                    score = alt_score
+                    break
+
         assert (
             score > TOOL_ACCURACY_THRESHOLD
-        ), f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+        ), f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"

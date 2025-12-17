@@ -89,6 +89,11 @@ def app_models(init_config):
         ),
     }
 
+    # Set temperature=0 for deterministic test behavior
+    for model_name in [MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME, MAIN_MODEL_NANO_NAME]:
+        if hasattr(models[model_name], "llm"):
+            models[model_name].llm.temperature = 0.0
+
     if integration_test_mini_evaluator_model_name not in models:
         models[integration_test_mini_evaluator_model_name] = model_factory.create_model(
             integration_test_mini_evaluator_model_name
