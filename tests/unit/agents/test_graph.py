@@ -17,12 +17,12 @@ from agents.common.state import (
 from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
-from utils.models.contants import GPT_41_NANO_MODEL_NAME
 from utils.models.factory import IModel
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
+    MAIN_MODEL_NANO_NAME,
 )
 
 
@@ -40,7 +40,7 @@ def mock_models():
     return {
         MAIN_MODEL_MINI_NAME: main_model_mini,
         MAIN_MODEL_NAME: main_model,
-        GPT_41_NANO_MODEL_NAME: MagicMock(spec=IModel),
+        MAIN_MODEL_NANO_NAME: MagicMock(spec=IModel),
         MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 

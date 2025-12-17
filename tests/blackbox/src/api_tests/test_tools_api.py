@@ -98,35 +98,61 @@ class TestK8sToolsAPI:
         logger.info(f"Successfully queried pods: {len(items)} found")
 
     def test_get_pod_logs(self, base_url: str, auth_headers: dict[str, str]) -> None:
-        """Test fetching pod logs from first available pod."""
+        """Test fetching pod logs from first available pod in any namespace."""
         logger.info("Testing K8s Pod Logs")
 
-        # First, query to get list of pods
-        pods_response = requests.post(
+        # First, get list of all namespaces
+        namespaces_response = requests.post(
             f"{base_url}/query",
-            json={"uri": "/api/v1/namespaces/default/pods"},
+            json={"uri": "/api/v1/namespaces"},
             headers=auth_headers,
             timeout=30,
         )
 
-        assert pods_response.status_code == HTTPStatus.OK
-        pods_data = pods_response.json()
+        assert namespaces_response.status_code == HTTPStatus.OK
+        namespaces_data = namespaces_response.json()
+        ns_items = (
+            namespaces_data["data"].get("items", [])
+            if isinstance(namespaces_data.get("data"), dict)
+            else namespaces_data.get("data", [])
+        )
 
-        # Handle both dict and list response formats
-        data = pods_data.get("data", {})
-        items = data.get("items", []) if isinstance(data, dict) else data
-        if not items:
-            pytest.skip("No pods found in default namespace")
+        if not ns_items:
+            pytest.skip("No namespaces found in the cluster")
 
-        pod_name = items[0]["metadata"]["name"]
-        logger.info(f"Found pod: {pod_name}")
+        # Try to find pods in each namespace until we find one
+        pod_name = None
+        pod_namespace = None
+
+        for ns in ns_items:
+            namespace = ns["metadata"]["name"]
+            pods_response = requests.post(
+                f"{base_url}/query",
+                json={"uri": f"/api/v1/namespaces/{namespace}/pods"},
+                headers=auth_headers,
+                timeout=30,
+            )
+
+            if pods_response.status_code == HTTPStatus.OK:
+                pods_data = pods_response.json()
+                data = pods_data.get("data", {})
+                items = data.get("items", []) if isinstance(data, dict) else data
+
+                if items:
+                    pod_name = items[0]["metadata"]["name"]
+                    pod_namespace = namespace
+                    logger.info(f"Found pod: {pod_name} in namespace: {pod_namespace}")
+                    break
+
+        if not pod_name:
+            pytest.skip("No pods found in any namespace")
 
         # Fetch logs
         logs_response = requests.post(
-            f"{base_url}/logs/pods",
+            f"{base_url}/pods/logs",
             json={
                 "name": pod_name,
-                "namespace": "default",
+                "namespace": pod_namespace,
                 "tail_lines": 10,
             },
             headers=auth_headers,
@@ -139,7 +165,8 @@ class TestK8sToolsAPI:
         assert "pod_name" in logs_data
         assert logs_data["pod_name"] == pod_name
         logger.info(
-            f"Successfully fetched logs: {logs_data.get('line_count', 0)} lines"
+            f"Successfully fetched logs from {pod_namespace}/{pod_name}: "
+            f"{logs_data.get('line_count', 0)} lines"
         )
 
     def test_get_cluster_overview(
@@ -304,7 +331,54 @@ class TestKymaToolsAPI:
         assert len(data["results"]) > 0
         logger.info(
             f"Successfully searched documentation: "
-            f"{len(data['results'])} characters returned"
+            f"{len(data['results'])} documents returned"
+        )
+
+    @pytest.mark.parametrize(
+        "top_k,query",
+        [
+            (None, "How to install Kyma?"),  # Test default top_k
+            (1, "How to install Kyma?"),
+            (3, "What is an APIRule?"),
+            (5, "How to troubleshoot Kyma?"),
+            (10, "Kyma serverless functions"),
+        ],
+    )
+    def test_search_with_top_k_parameter(
+        self, base_url: str, top_k: int | None, query: str
+    ) -> None:
+        """Test searching Kyma documentation with custom and default top_k parameter."""
+        if top_k is None:
+            logger.info(
+                f"Testing Kyma Documentation Search with default top_k: '{query}'"
+            )
+            request_json = {"query": query}
+            expected_max = 5  # Default value
+        else:
+            logger.info(
+                f"Testing Kyma Documentation Search with top_k={top_k}: '{query}'"
+            )
+            request_json = {"query": query, "top_k": top_k}
+            expected_max = top_k
+
+        response = requests.post(
+            f"{base_url}/search",
+            json=request_json,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert "results" in data
+        assert "query" in data
+        assert data["query"] == query
+        assert isinstance(data["results"], list)
+        # Verify we get at most expected_max documents (may be less if fewer available)
+        assert len(data["results"]) <= expected_max
+        logger.info(
+            f"Successfully searched documentation with top_k={top_k or 'default'}: "
+            f"{len(data['results'])} documents returned"
         )
 
 

@@ -11,11 +11,11 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.12.*"
+requires-python = "==3.13.*"
 dependencies = [
   "aiohttp (>=3.12.15,<4.0.0)",
   "cryptography (>=45.0.6,<45.1.0)",
-  "fastapi[standard] (>=0.123.5,<0.124.0)",
+  "fastapi[standard] (>=0.124.4,<0.125.0)",
   "hdbcli (>=2.24.26,<3.0.0)",
   "kubernetes (>=33.1.0,<33.2.0)",
   "langchain-hana (>=0.3.2,<0.4.0)",
@@ -25,7 +25,7 @@ dependencies = [
   "prometheus-client (>=0.23.1,<0.24.0)",
   "pyjwt (>=2.10.1,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "redis (>=6.4.0,<6.5.0)",
+  "redis (>=7.0.0,<7.1.1)",
   "sap-ai-sdk-gen[all] (>=5.5.0,<6.0.0)",
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
@@ -50,7 +50,7 @@ pytest-rerunfailures = ">=12.0,<13.0"
 pytest-sugar = "^1.1.1"
 pytest-xdist = "^3.8.0"
 pyyaml = "^6.0.2"
-ragas = "^0.3.6"
+ragas = "^0.4.0"
 termcolor = "^3.1.0"
 types-pyyaml = "^6.0.12.20250822"
 

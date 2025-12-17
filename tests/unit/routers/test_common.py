@@ -55,28 +55,6 @@ class TestInitK8sClient:
             assert exc_info.value.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
             assert "Invalid authentication" in str(exc_info.value.detail)
 
-    def test_init_k8s_client_raises_400_on_connection_error(
-        self, valid_headers, mock_data_sanitizer
-    ):
-        """Test that init_k8s_client raises 400 when K8s client creation fails."""
-        with patch("routers.common.K8sClient") as mock_k8s_class:
-            mock_k8s_class.side_effect = Exception("Connection refused")
-
-            with pytest.raises(HTTPException) as exc_info:
-                init_k8s_client(
-                    x_cluster_url=valid_headers["x_cluster_url"],
-                    x_cluster_certificate_authority_data=valid_headers[
-                        "x_cluster_certificate_authority_data"
-                    ],
-                    data_sanitizer=mock_data_sanitizer,
-                    x_k8s_authorization=valid_headers["x_k8s_authorization"],
-                    x_client_certificate_data=None,
-                    x_client_key_data=None,
-                )
-
-            assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
-            assert "Failed to connect to the cluster" in exc_info.value.detail
-
 
 class TestInitModelsDict:
     """Tests for init_models_dict dependency (caching behavior)."""

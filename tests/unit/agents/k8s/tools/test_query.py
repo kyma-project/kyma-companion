@@ -8,6 +8,7 @@ from langgraph.prebuilt import ToolNode
 from agents.common.data import Message
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 def sample_k8s_secret():
@@ -52,20 +53,22 @@ def sample_k8s_sanitized_secret():
             Exception("dummy error 1"),
             None,
             Exception(
-                "Error: Exception('failed executing k8s_query_tool with URI: v1/secret/my-secret,"
-                "raised the following error: dummy error 1')\n Please fix your mistakes."
+                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: dummy error 1\n Please fix your mistakes."
             ),
         ),
-        # Test case: the execute_get_api_request returns not a dict or list.
+        # Test case: the execute_get_api_request raises K8sClientError for invalid type.
         (
             "v1/secret/my-secret",
-            "not a dict or list",
             None,
+            K8sClientError(
+                message="Invalid result type: <class 'str'>",
+                status_code=500,
+                uri="v1/secret/my-secret",
+            ),
             None,
             Exception(
-                'Error: Exception("failed executing k8s_query_tool with URI: v1/secret/my-secret,'
-                "raised the following error: failed executing k8s_query_tool with URI: v1/secret/my-secret."
-                "The result is not a list or dict, but a <class 'str'>\")\n Please fix your mistakes."
+                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,"
+                "raised the following error: Invalid result type: <class 'str'>\n Please fix your mistakes."
             ),
         ),
     ],
@@ -153,9 +156,7 @@ def sample_namespace_overview():
             Exception("cluster unavailable"),
             None,
             Exception(
-                "Error: Exception('failed executing k8s_query_tool_with_filter withraised the "
-                "following error: cluster unavailable')\n"
-                " Please fix your mistakes."
+                "Error: Exception('cluster unavailable')\n Please fix your mistakes."
             ),
         ),
         # Test case: invalid resource kind
@@ -166,9 +167,7 @@ def sample_namespace_overview():
             Exception("Unsupported resource kind: invalid_kind"),
             None,
             Exception(
-                "Error: Exception('failed executing k8s_query_tool_with_filter withraised the "
-                "following error: Unsupported resource kind: invalid_kind')\n"
-                " Please fix your mistakes."
+                "Error: Exception('Unsupported resource kind: invalid_kind')\n Please fix your mistakes."
             ),
         ),
     ],

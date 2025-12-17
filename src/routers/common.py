@@ -2,6 +2,7 @@
 Common models, constants, and dependencies shared across routers.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
@@ -204,12 +205,18 @@ class SearchKymaDocRequest(BaseModel):
             "How to troubleshoot Kyma Istio module?",
         ],
     )
+    top_k: int = Field(
+        default=5,
+        description="Number of top documents to return",
+        ge=1,
+        le=50,
+    )
 
 
 class SearchKymaDocResponse(BaseModel):
     """Response model for Kyma documentation search."""
 
-    results: str = Field(..., description="Retrieved documentation content")
+    results: list[str] = Field(..., description="List of retrieved documents")
     query: str = Field(..., description="Original search query")
 
 
@@ -253,7 +260,7 @@ def init_models_dict(
         except Exception as e:
             logger.exception("Failed to initialize models")
             raise HTTPException(
-                status_code=500,
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=f"Failed to initialize models: {str(e)}",
             ) from e
 
@@ -292,14 +299,10 @@ def init_k8s_client(
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
 
-    try:
-        return K8sClient(
-            k8s_auth_headers=k8s_auth_headers,
-            data_sanitizer=data_sanitizer,
-        )
-    except Exception as e:
-        logger.error(f"Failed to initialize K8s client: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to connect to the cluster: {str(e)}",
-        ) from e
+    # Note: K8sClient initialization doesn't immediately validate connection
+    # Connection validation is deferred until first API call (lazy initialization)
+    # This allows authentication errors to be caught by route handlers
+    return K8sClient(
+        k8s_auth_headers=k8s_auth_headers,
+        data_sanitizer=data_sanitizer,
+    )

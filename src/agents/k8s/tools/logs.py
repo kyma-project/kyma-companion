@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
@@ -38,7 +39,7 @@ async def fetch_pod_logs_tool(
             name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
         )
     except Exception as e:
-        raise Exception(
-            f"failed executing fetch_pod_logs for pod: {name} in namespace: {namespace} with "
-            f"container: {container_name}, raised the following error: {e}"
+        raise K8sClientError.from_exception(
+            exception=e,
+            tool_name="fetch_pod_logs_tool",
         ) from e

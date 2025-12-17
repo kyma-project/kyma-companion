@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
+from utils.exceptions import K8sClientError
 from utils.settings import (
     ALLOWED_K8S_DOMAINS,
     K8S_API_PAGINATION_LIMIT,
@@ -21,7 +22,6 @@ from utils.settings import (
 )
 
 logger = logging.get_logger(__name__)
-
 
 GROUP_VERSION_SEPARATOR = "/"
 GROUP_VERSION_PARTS_COUNT = 2
@@ -224,7 +224,7 @@ class K8sClient:
     ca_temp_filename: str = ""
     client_cert_temp_filename: str = ""
     client_key_temp_filename: str = ""
-    dynamic_client: dynamic.DynamicClient
+    _dynamic_client: dynamic.DynamicClient | None
     data_sanitizer: IDataSanitizer | None
     api_client: Any
 
@@ -274,7 +274,8 @@ class K8sClient:
                 keyfile=self.client_key_temp_filename,
             )
 
-        self.dynamic_client = self._create_dynamic_client()
+        # Delay dynamic_client creation until first use
+        self._dynamic_client = None
 
         self.data_sanitizer = data_sanitizer
 
@@ -301,6 +302,13 @@ class K8sClient:
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         return self.k8s_auth_headers.x_cluster_url
+
+    @property
+    def dynamic_client(self) -> dynamic.DynamicClient:
+        """Lazy initialization of dynamic client. Creates the client on first access."""
+        if self._dynamic_client is None:
+            self._dynamic_client = self._create_dynamic_client()
+        return self._dynamic_client
 
     def model_dump(self) -> None:
         """Dump the model. It should not return any critical information because it is called by checkpointer
@@ -371,8 +379,11 @@ class K8sClient:
                 ) as response:
                     # Check if the response status is not OK.
                     if response.status != HTTPStatus.OK:
-                        raise ValueError(
-                            f"Failed to execute GET request to the Kubernetes API. Error: {await response.text()}"
+                        error_text = await response.text()
+                        raise K8sClientError(
+                            message=f"Failed to execute GET request to the Kubernetes API. Error: {error_text}",
+                            status_code=response.status,
+                            uri=base_url,
                         )
 
                     result = await response.json()
@@ -393,6 +404,14 @@ class K8sClient:
         logger.debug(f"Executing GET request to {base_url}")
         result = await self._paginated_api_request(base_url)
         logger.debug(f"Completed Executing GET request to {base_url}")
+
+        # Validate result type
+        if not isinstance(result, (list, dict)):
+            raise K8sClientError(
+                message=f"Invalid result type: {type(result)}",
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                uri=uri,
+            )
 
         if self.data_sanitizer:
             result = self.data_sanitizer.sanitize(result)

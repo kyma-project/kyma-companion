@@ -6,9 +6,11 @@ the tools defined in src/agents/k8s/tools.
 All endpoints require Kubernetes authentication headers.
 """
 
+from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from kubernetes.client.exceptions import ApiException
 
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
@@ -23,6 +25,7 @@ from routers.common import (
     init_k8s_client,
 )
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -60,10 +63,18 @@ async def query_k8s_resource(
         )
         logger.info(f"K8s query completed successfully for uri={request.uri}")
         return K8sQueryResponse(data=result)
-    except Exception as e:
-        logger.exception(f"Error during K8s query: {str(e)}")
+    except K8sClientError as e:
+        logger.error(
+            f"K8s API error for uri={request.uri}: " f"{e.status_code} - {e.message}"
+        )
         raise HTTPException(
-            status_code=500,
+            status_code=e.status_code,
+            detail=f"Kubernetes API error: {e.message}",
+        ) from e
+    except Exception as e:
+        logger.exception(f"Error during K8s query for uri={request.uri}: {str(e)}")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"K8s query failed: {str(e)}",
         ) from e
 
@@ -103,10 +114,23 @@ async def get_pod_logs(
             container_name=request.container_name,
             line_count=len(logs),
         )
-    except Exception as e:
-        logger.exception(f"Error fetching pod logs: {str(e)}")
+    except ApiException as e:
+        # Handle Kubernetes API errors with proper HTTP status codes
+        logger.error(
+            f"K8s API error fetching logs for pod={request.name}, "
+            f"namespace={request.namespace}: {e.status} - {e.reason}"
+        )
         raise HTTPException(
-            status_code=500,
+            status_code=e.status,
+            detail=f"Kubernetes API error: {e.reason}",
+        ) from e
+    except Exception as e:
+        logger.exception(
+            f"Error fetching logs for pod={request.name}, "
+            f"namespace={request.namespace}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch pod logs: {str(e)}",
         ) from e
 
@@ -139,9 +163,22 @@ async def get_k8s_overview(
         )
 
         return K8sOverviewResponse(context=context)
-    except Exception as e:
-        logger.exception(f"Error getting K8s overview: {str(e)}")
+    except ApiException as e:
+        # Handle Kubernetes API errors with proper HTTP status codes
+        logger.error(
+            f"K8s API error for namespace={request.namespace}, "
+            f"resource_kind={request.resource_kind}: {e.status} - {e.reason}"
+        )
         raise HTTPException(
-            status_code=500,
+            status_code=e.status,
+            detail=f"Kubernetes API error: {e.reason}",
+        ) from e
+    except Exception as e:
+        logger.exception(
+            f"Error getting overview for namespace={request.namespace}, "
+            f"resource_kind={request.resource_kind}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to get K8s overview: {str(e)}",
         ) from e
