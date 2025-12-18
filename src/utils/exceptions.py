@@ -45,7 +45,6 @@ class K8sClientError(Exception):
             if hasattr(exception, attr):
                 try:
                     status = getattr(exception, attr)
-                    # Try to convert to int
                     code = int(status)
                     # Validate it's a reasonable HTTP status code
                     if _MIN_HTTP_STATUS_CODE <= code <= _MAX_HTTP_STATUS_CODE:
