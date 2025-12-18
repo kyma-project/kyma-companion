@@ -1,5 +1,10 @@
 from http import HTTPStatus
 
+# HTTP status code validation range
+# Covers standard codes (100-511) and common non-standard codes up to 599
+_MIN_HTTP_STATUS_CODE = 100  # HTTPStatus.CONTINUE
+_MAX_HTTP_STATUS_CODE = 599  # Extended range for non-standard codes
+
 
 class K8sClientError(Exception):
     """
@@ -33,15 +38,22 @@ class K8sClientError(Exception):
         Create K8sClientError from an exception,
         extracting status code if available.
         """
-        # Extract status code if available (e.g., from ApiException)
-        # ApiException.status can be either an int or a string
         status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
-        if hasattr(exception, "status"):
-            status = exception.status
-            if isinstance(status, int) or (
-                isinstance(status, str) and status.isdigit()
-            ):
-                status_code = int(status)
+
+        # Try to extract status code from various possible attributes
+        for attr in ("status", "status_code", "code"):
+            if hasattr(exception, attr):
+                try:
+                    status = getattr(exception, attr)
+                    # Try to convert to int
+                    code = int(status)
+                    # Validate it's a reasonable HTTP status code
+                    if _MIN_HTTP_STATUS_CODE <= code <= _MAX_HTTP_STATUS_CODE:
+                        status_code = code
+                        break
+                except (ValueError, TypeError, AttributeError):
+                    # Invalid or inaccessible status value, try next attribute
+                    continue
 
         return cls(
             message=str(exception),
