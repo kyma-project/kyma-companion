@@ -36,23 +36,27 @@ class K8sClientError(Exception):
     ) -> "K8sClientError":
         """
         Create K8sClientError from an exception,
-        extracting status code if available.
+        extracting status code only from known Kubernetes exception types.
+
+        Only Kubernetes ApiException status codes are extracted to ensure
+        reliability and avoid misinterpreting custom exception status attributes.
+        All other exceptions default to 500 Internal Server Error.
         """
         status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
 
-        # Try to extract status code from various possible attributes
-        for attr in ("status", "status_code", "code"):
-            if hasattr(exception, attr):
-                try:
-                    status = getattr(exception, attr)
-                    code = int(status)
-                    # Validate it's a reasonable HTTP status code
-                    if _MIN_HTTP_STATUS_CODE <= code <= _MAX_HTTP_STATUS_CODE:
-                        status_code = code
-                        break
-                except (ValueError, TypeError, AttributeError):
-                    # Invalid or inaccessible status value, try next attribute
-                    continue
+        if (
+            hasattr(exception, "__class__")
+            and exception.__class__.__name__ == "ApiException"
+            and hasattr(exception, "status")
+        ):
+            try:
+                code = int(exception.status)
+                # Validate it's a reasonable HTTP status code
+                if _MIN_HTTP_STATUS_CODE <= code <= _MAX_HTTP_STATUS_CODE:
+                    status_code = code
+            except (ValueError, TypeError):
+                # Invalid status value, fall back to default 500
+                pass
 
         return cls(
             message=str(exception),
