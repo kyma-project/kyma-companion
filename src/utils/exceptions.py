@@ -44,10 +44,12 @@ class K8sClientError(Exception):
         """
         status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
 
+        # Only extract status from Kubernetes ApiException that comes from HTTP response
         if (
             hasattr(exception, "__class__")
             and exception.__class__.__name__ == "ApiException"
             and hasattr(exception, "status")
+            and hasattr(exception, "http_resp")
         ):
             try:
                 code = int(exception.status)
