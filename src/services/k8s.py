@@ -584,9 +584,12 @@ class K8sClient:
         ):
             # Check if the response status is not OK.
             if response.status != HTTPStatus.OK:
-                raise ValueError(
-                    f"Failed to fetch logs for pod {name} in namespace {namespace} "
-                    f"with container {container_name}. Error: {await response.text()}"
+                error_text = await response.text()
+                raise K8sClientError(
+                    message=f"Failed to fetch logs for pod {name} in namespace {namespace} "
+                    f"with container {container_name}. Error: {error_text}",
+                    status_code=response.status,
+                    uri=uri,
                 )
 
             logs = []
