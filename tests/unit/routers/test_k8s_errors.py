@@ -6,15 +6,15 @@ to correct HTTP status codes after the lazy initialization.
 """
 
 from http import HTTPStatus
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException
-from kubernetes.client.exceptions import ApiException
 
 from routers.common import K8sQueryRequest
 from routers.k8s_tools_api import query_k8s_resource
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 class TestK8sAPIErrorHandling:
@@ -54,33 +54,39 @@ class TestK8sAPIErrorHandling:
         """Test that K8s API errors return correct HTTP status codes."""
         request = K8sQueryRequest(uri="/api/v1/namespaces/default/pods")
 
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=ApiException(status=status_code, reason=reason)
-        )
+        # Mock k8s_query_tool to raise K8sClientError with the status code
+        with patch("routers.k8s_tools_api.k8s_query_tool") as mock_tool:
+            mock_tool.ainvoke = AsyncMock(
+                side_effect=K8sClientError(
+                    message=f"Kubernetes API error: {reason}",
+                    status_code=status_code,
+                    uri=request.uri,
+                    tool_name="k8s_query_tool",
+                )
+            )
 
-        with pytest.raises(HTTPException) as exc_info:
-            await query_k8s_resource(request, mock_k8s_client)
+            with pytest.raises(HTTPException) as exc_info:
+                await query_k8s_resource(request, mock_k8s_client)
 
-        assert (
-            exc_info.value.status_code == expected_status
-        ), f"Failed test case: {test_description}"
-        assert "Kubernetes API error" in exc_info.value.detail
+            assert (
+                exc_info.value.status_code == expected_status
+            ), f"Failed test case: {test_description}"
+            assert "Kubernetes" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_non_k8s_exception_returns_500(self, mock_k8s_client):
         """Test that non-K8s exceptions return HTTP 500.
 
-        Non-ApiException errors (network timeout, internal errors) should
+        Non-K8sClientError errors (unexpected exceptions) should
         return 500 since they don't have HTTP status codes.
         """
         request = K8sQueryRequest(uri="/api/v1/namespaces/default/pods")
 
-        # Mock a non-ApiException error (e.g., network timeout)
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=Exception("Connection timeout")
-        )
+        # Mock k8s_query_tool to raise a non-K8sClientError
+        with patch("routers.k8s_tools_api.k8s_query_tool") as mock_tool:
+            mock_tool.ainvoke = AsyncMock(side_effect=Exception("Connection timeout"))
 
-        with pytest.raises(HTTPException) as exc_info:
-            await query_k8s_resource(request, mock_k8s_client)
+            with pytest.raises(HTTPException) as exc_info:
+                await query_k8s_resource(request, mock_k8s_client)
 
-        assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+            assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
