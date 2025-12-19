@@ -10,7 +10,6 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from kubernetes.client.exceptions import ApiException
 
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
@@ -114,15 +113,14 @@ async def get_pod_logs(
             container_name=request.container_name,
             line_count=len(logs),
         )
-    except ApiException as e:
-        # Handle Kubernetes API errors with proper HTTP status codes
+    except K8sClientError as e:
         logger.error(
-            f"K8s API error fetching logs for pod={request.name}, "
-            f"namespace={request.namespace}: {e.status} - {e.reason}"
+            f"K8s error fetching logs for pod={request.name}, "
+            f"namespace={request.namespace}: {e.status_code} - {e.message}"
         )
         raise HTTPException(
-            status_code=e.status,
-            detail=f"Kubernetes API error: {e.reason}",
+            status_code=e.status_code,
+            detail=f"Kubernetes error: {e.message}",
         ) from e
     except Exception as e:
         logger.exception(
@@ -163,15 +161,14 @@ async def get_k8s_overview(
         )
 
         return K8sOverviewResponse(context=context)
-    except ApiException as e:
-        # Handle Kubernetes API errors with proper HTTP status codes
+    except K8sClientError as e:
         logger.error(
-            f"K8s API error for namespace={request.namespace}, "
-            f"resource_kind={request.resource_kind}: {e.status} - {e.reason}"
+            f"K8s error for namespace={request.namespace}, "
+            f"resource_kind={request.resource_kind}: {e.status_code} - {e.message}"
         )
         raise HTTPException(
-            status_code=e.status,
-            detail=f"Kubernetes API error: {e.reason}",
+            status_code=e.status_code,
+            detail=f"Kubernetes error: {e.message}",
         ) from e
     except Exception as e:
         logger.exception(

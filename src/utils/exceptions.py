@@ -1,5 +1,10 @@
 from http import HTTPStatus
 
+# HTTP status code validation range
+# Covers standard codes (100-511) and common non-standard codes up to 599
+_MIN_HTTP_STATUS_CODE = 100  # HTTPStatus.CONTINUE
+_MAX_HTTP_STATUS_CODE = 599  # Extended range for non-standard codes
+
 
 class K8sClientError(Exception):
     """
@@ -31,17 +36,29 @@ class K8sClientError(Exception):
     ) -> "K8sClientError":
         """
         Create K8sClientError from an exception,
-        extracting status code if available.
+        extracting status code only from known Kubernetes exception types.
+
+        Only Kubernetes ApiException status codes are extracted to ensure
+        reliability and avoid misinterpreting custom exception status attributes.
+        All other exceptions default to 500 Internal Server Error.
         """
-        # Extract status code if available (e.g., from ApiException)
-        # ApiException.status can be either an int or a string
         status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
-        if hasattr(exception, "status"):
-            status = exception.status
-            if isinstance(status, int) or (
-                isinstance(status, str) and status.isdigit()
-            ):
-                status_code = int(status)
+
+        # Only extract status from Kubernetes ApiException that comes from HTTP response
+        if (
+            hasattr(exception, "__class__")
+            and exception.__class__.__name__ == "ApiException"
+            and hasattr(exception, "status")
+            and hasattr(exception, "http_resp")
+        ):
+            try:
+                code = int(exception.status)
+                # Validate it's a reasonable HTTP status code
+                if _MIN_HTTP_STATUS_CODE <= code <= _MAX_HTTP_STATUS_CODE:
+                    status_code = code
+            except (ValueError, TypeError):
+                # Invalid status value, fall back to default 500
+                pass
 
         return cls(
             message=str(exception),
