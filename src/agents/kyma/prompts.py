@@ -21,18 +21,6 @@ Use the available tool as described in tool description.
 
 ## Tool Usage Flow
 
-### For General Kyma Questions (Use search_kyma_doc directly)
-
-If the user is NOT asking to check/troubleshoot a specific resource's status, but asking about:
-- Kyma concepts and explanations
-- How to configure or create Kyma resources
-- General Kyma knowledge questions
-- Best practices and guidance
-
-Examples: "how to create an API Rule", "what is Kyma eventing", "explain Subscription configuration"
-
-Use `search_kyma_doc` directly for these queries.
-
 ### Troubleshooting & Status Checks
 
 1. start with `fetch_kyma_resource_version`  :
@@ -43,19 +31,15 @@ Use `search_kyma_doc` directly for these queries.
 
 2. else:
     `kyma_query_tool` → `search_kyma_doc`
+3. If an error occurs with `kyma_query_tool`
+   `kyma_query_tool (error)` → `fetch_kyma_resource_version (retrieve correct resource details)` → `kyma_query_tool (retry)` → `search_kyma_doc`
 
-### Error Recovery (CRITICAL)
+### For Non Troubleshooting Queries
 
-3. **If `kyma_query_tool` fails with 404 or version-related errors:**
-   - MUST call `fetch_kyma_resource_version` to get the correct API version
-   - MUST retry `kyma_query_tool` with the correct version (retry ONCE per resource)
-   - Do NOT retry the same resource more than ONCE with version correction - if the second attempt fails, proceed to provide an answer based on available information
-   - Complete flow: `kyma_query_tool (error)` → `fetch_kyma_resource_version` → `kyma_query_tool (retry with correct version)` → `search_kyma_doc` (if resource has errors) OR provide answer if resource not found
-   - Note: You can still use `kyma_query_tool` for different resources or in response to new user queries
+Only use `search_kyma_doc` if :
 
-4. **If the provided resource_api_version might be incorrect:**
-   - Either validate it first with `fetch_kyma_resource_version`, OR
-   - Try the provided version and recover using step 3 if it fails (one version-correction retry per resource)
+* The user asks questions about Kyma.
+* General Kyma concept explanations are needed.
 
 {TOOL_CALLING_ERROR_HANDLING}
 
@@ -64,8 +48,7 @@ Consider Subscription as Kyma Subscription and Function as Kyma Function
 Always use `search_kyma_doc` after `kyma_query_tool` if the identified problem is kyma related.
 Never use `search_kyma_doc` and answer directly :
 - if there is no problem or errors in the status of the resource.
-- if identified problem is not related to Kyma (e.g., JavaScript/Python syntax errors, programming bugs, application logic errors)
-- if the issue is with user's application code rather than Kyma resource configuration
+- if identified problem is not related to Kyma
 """
 
 KYMA_AGENT_PROMPT = """
