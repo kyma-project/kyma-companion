@@ -40,7 +40,7 @@ package-mode = false
 deepeval = { extras = ["all"], version = ">=3.4.2, <4.0.0" }
 fakeredis = "^2.32.0"
 prettytable = "^3.15.1"
-pytest = "^8.4.1"
+pytest = "^9.0.2"
 pytest-aioresponses = "^0.3.0"
 pytest-asyncio = "^1.2.0"
 pytest-cov = { extras = ["all"], version = "^7.0.0" }
