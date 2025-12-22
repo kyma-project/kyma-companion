@@ -21,10 +21,10 @@ def tool_response_summarization_metric(evaluator_model):
         model=evaluator_model,
         threshold=0.5,
         evaluation_steps=[
-            "Determine whether the generated summary contains all the information found expected summary. ",
-            "Do not penalize if generated summary contain more information which is not relevant to user query",
-            "Verify that the summary has details relevant to the user query.",
-            "Evaluate whether the summary maintains proper flow and readability when joining multiple chunk summaries.",
+            "Determine whether the generated summary contains all the information found in the expected summary.",
+            "Do not penalize the generated summary if it contains additional information that is not relevant to the user query.",
+            "Verify that the summary includes details relevant to the user query.",
+            "Evaluate whether the summary maintains proper flow and readability when combining multiple chunk summaries.",
         ],
         evaluation_params=[
             LLMTestCaseParams.INPUT,
