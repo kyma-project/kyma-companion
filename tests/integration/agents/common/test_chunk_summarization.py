@@ -57,7 +57,7 @@ TEST_CASES = [
     SummarizationTestCase(
         name="Should list all pods with their status",
         tool_response=sample_pods_tool_response,
-        user_query="List all pods in the cluster and there status",
+        user_query="List all pods in the cluster and their status",
         nums_of_chunks=2,
         expected_summary="""
         Found 2 pods in cert-manager namespace:
