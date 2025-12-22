@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from ragas.dataset_schema import SingleTurnSample
@@ -24,23 +26,16 @@ AGENT_STEPS_NUMBER = 25
 GOAL_ACCURACY_THRESHOLD = 7
 
 
-# Test data definitions
-class TestCase:
-    def __init__(
-        self,
-        name: str,
-        state: KymaAgentState,
-        expected_tool_calls: list[ToolCall] = None,
-        expected_response: str = None,
-        expected_goal: str = None,
-        should_raise: bool = False,
-    ):
-        self.name = name
-        self.state = state
-        self.expected_tool_calls = expected_tool_calls
-        self.expected_response = expected_response
-        self.expected_goal = expected_goal
-        self.should_raise = should_raise
+@dataclass
+class KymaAgentTestCase:
+    """Test case for Kyma agent goal accuracy testing."""
+
+    name: str
+    state: KymaAgentState
+    expected_tool_calls: list[ToolCall] = None
+    expected_response: str = None
+    expected_goal: str = None
+    should_raise: bool = False
 
 
 def create_k8s_client():
@@ -129,7 +124,7 @@ async def call_kyma_agent(kyma_agent, state):
 def create_test_cases(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
-        TestCase(
+        KymaAgentTestCase(
             "Should find javascript Dates syntax error in Kyma function",
             state=create_basic_state(
                 task_description="What is wrong with function?",
@@ -144,7 +139,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="There is a syntax error in the JavaScript code. Date must be used instead of Dates.",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about Kyma resources status",
             state=create_basic_state(
                 task_description="what is the status of all Kyma resources?",
@@ -155,7 +150,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
             state=create_basic_state(
                 task_description="check all Kyma resources",
@@ -166,7 +161,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about Kyma resources health",
             state=create_basic_state(
                 task_description="are all Kyma resources healthy?",
@@ -177,7 +172,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
             state=create_basic_state(
                 task_description="is there anything wrong with Kyma resources?",
@@ -190,7 +185,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about showing all Kyma resources",
             state=create_basic_state(
                 task_description="show me all Kyma resources",
@@ -201,7 +196,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
             state=create_basic_state(
                 task_description="what is wrong with Kyma?",
@@ -212,7 +207,7 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
-        TestCase(
+        KymaAgentTestCase(
             "Should ask more information from user for queries about Kyma cluster state",
             state=create_basic_state(
                 task_description="show me the state of Kyma cluster",
@@ -226,9 +221,14 @@ def create_test_cases(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases(create_k8s_client()))
+TEST_CASES = create_test_cases(create_k8s_client())
+
+
+@pytest.mark.parametrize("test_case", TEST_CASES, ids=[tc.name for tc in TEST_CASES])
 @pytest.mark.asyncio
-async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: TestCase):
+async def test_kyma_agent(
+    kyma_agent, goal_accuracy_metric, test_case: KymaAgentTestCase
+):
     """
     Simplified test for KymaAgent _invoke_chain method.
     Tests content response scenarios.
