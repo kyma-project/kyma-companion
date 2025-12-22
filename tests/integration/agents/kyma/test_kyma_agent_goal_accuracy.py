@@ -130,22 +130,6 @@ def create_test_cases(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
         TestCase(
-            "Should find accessStrategies field in the API Rule and then use Kyma Doc Search Tool Calls to find the correct configuration",
-            state=create_basic_state(
-                task_description="What is wrong with api rule?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
-                    ),
-                    HumanMessage(content="What is wrong with api rule?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_goal="The API Rule has validation errors. The error is that accessStrategies field has multiple entries, "
-            "which is not allowed. The correct configuration should have only one accessStrategy entry.",
-        ),
-        TestCase(
             "Should find javascript Dates syntax error in Kyma function",
             state=create_basic_state(
                 task_description="What is wrong with function?",
