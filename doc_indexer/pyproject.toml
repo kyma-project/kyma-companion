@@ -28,7 +28,7 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-poethepoet = "^0.38.0"
+poethepoet = "^0.39.0"
 black = "^25.0.0"
 ruff = "^0.14.0"
 mypy = "^1.13.0"
