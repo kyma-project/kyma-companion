@@ -5025,14 +5025,14 @@ testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poethepoet"
-version = "0.38.0"
+version = "0.39.0"
 description = "A task runner that works well with poetry and uv."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "poethepoet-0.38.0-py3-none-any.whl", hash = "sha256:214bd9fcb348ff3dfd1466579d67e0c02242451a7044aced1a79641adef9cad0"},
-    {file = "poethepoet-0.38.0.tar.gz", hash = "sha256:aeeb2f0a2cf0d3afa833976eff3ac7b8f5e472ae64171824900d79d3c68163c7"},
+    {file = "poethepoet-0.39.0-py3-none-any.whl", hash = "sha256:2865b04230df0fb43b6fb4f739c975b19be03d6db18f0ab760b3fb5c56b50b5c"},
+    {file = "poethepoet-0.39.0.tar.gz", hash = "sha256:85f279ffaf2a58ba31db2048ab897740d4db839233c3f28740cf0517b3367710"},
 ]
 
 [package.dependencies]
@@ -6208,14 +6208,14 @@ files = [
 
 [[package]]
 name = "ragas"
-version = "0.4.1"
+version = "0.4.2"
 description = "Evaluation framework for RAG and LLM applications"
 optional = false
 python-versions = ">=3.9"
 groups = ["test"]
 files = [
-    {file = "ragas-0.4.1-py3-none-any.whl", hash = "sha256:afcf36542087d0e0ef5898d7da04f20fb69eb215c326529a5c4b3d54a1fe4305"},
-    {file = "ragas-0.4.1.tar.gz", hash = "sha256:eda2603269c5c8021166ef56328b68ed88af15c4205a3e31b759233fd7ffc720"},
+    {file = "ragas-0.4.2-py3-none-any.whl", hash = "sha256:faab4d7736f076d1a09e0324e054600724b9357cae74006807a7932ebca9210f"},
+    {file = "ragas-0.4.2.tar.gz", hash = "sha256:bafc74abeedb914fc63d6229fd78240160595c09dabf469fdf2e0cde0a17a413"},
 ]
 
 [package.dependencies]
@@ -6240,6 +6240,7 @@ tqdm = "*"
 typer = "*"
 
 [package.extras]
+ag-ui = ["ag-ui-protocol (>=0.1.9)", "httpx (>=0.27.0)"]
 ai-frameworks = ["haystack-ai"]
 all = ["GitPython", "datacompy", "llama_index", "nltk", "pandas", "r2r", "rapidfuzz", "rouge_score", "sacrebleu", "sentence-transformers", "transformers"]
 dev-minimal = ["build (>=1.3.0)", "nbmake", "pre-commit (>=4.3.0)", "pyright (>=1.1.403)", "pytest", "pytest-asyncio", "pytest-xdist[psutil]", "ruff"]
@@ -8831,4 +8832,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "55f348a2cf38db5b78c7200cea4e7936742299aad33aab61b637f65685843473"
+content-hash = "5a49e76bda98e2f99898212e3a9000d00cd6477c0a73fa434b91c4cb5b0c3998"
