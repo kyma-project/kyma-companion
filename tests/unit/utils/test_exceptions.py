@@ -57,7 +57,7 @@ class TestParseK8sErrorResponse:
     def test_parse_k8s_error_response(self, error_text, expected_result):
         """Test parsing K8s error responses with various input formats."""
         result = parse_k8s_error_response(error_text)
-        assert result == expected_result
+        assert result == expected_result, f"Failed for input: {error_text[:80]}"
 
 
 class TestK8sClientError:
@@ -332,6 +332,10 @@ class TestK8sClientError:
         error = K8sClientError.from_exception(**kwargs)
 
         # Assertions
-        assert error.status_code == expected_status
-        assert expected_message_check(error.message)
+        assert (
+            error.status_code == expected_status
+        ), f"Failed for exception_type: {exception_type}"
+        assert expected_message_check(
+            error.message
+        ), f"Message check failed for {exception_type}. Got: '{error.message}'"
         assert error.tool_name == tool_name
