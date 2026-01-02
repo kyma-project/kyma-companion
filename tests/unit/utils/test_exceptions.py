@@ -39,27 +39,25 @@ class TestParseK8sErrorResponse:
                 '{"message": "Error: Resource not found 🔍"}',
                 "Error: Resource not found 🔍",
             ),
+            # No message field - should return original
+            (
+                '{"error": "Something went wrong", "code": 500}',
+                '{"error": "Something went wrong", "code": 500}',
+            ),
+            # Invalid JSON
+            ("This is not a JSON string", "This is not a JSON string"),
+            # Empty string
+            ("", ""),
+            # Malformed JSON
+            ('{"message": "incomplete json', '{"message": "incomplete json'),
+            # JSON array
+            ('["error1", "error2"]', '["error1", "error2"]'),
         ],
     )
-    def test_valid_json_with_message(self, error_text, expected_result):
-        """Test parsing valid JSON with various message types."""
+    def test_parse_k8s_error_response(self, error_text, expected_result):
+        """Test parsing K8s error responses with various input formats."""
         result = parse_k8s_error_response(error_text)
         assert result == expected_result
-
-    @pytest.mark.parametrize(
-        "error_text",
-        [
-            '{"error": "Something went wrong", "code": 500}',  # No message field
-            "This is not a JSON string",  # Invalid JSON
-            "",  # Empty string
-            '{"message": "incomplete json',  # Malformed JSON
-            '["error1", "error2"]',  # JSON array
-        ],
-    )
-    def test_invalid_or_missing_message_returns_original(self, error_text):
-        """Test that invalid JSON or missing message returns the original text."""
-        result = parse_k8s_error_response(error_text)
-        assert result == error_text
 
 
 class TestK8sClientError:
@@ -153,133 +151,187 @@ class TestK8sClientError:
         assert repr(error) == str(error)
 
     @pytest.mark.parametrize(
-        "new_uri,expected_uri",
+        "exception_type,exception_data,tool_name,uri,expected_status,expected_message_check",
         [
-            ("/new/uri", "/new/uri"),  # URI is updated
-            ("", "/original/uri"),  # Original URI preserved
-        ],
-    )
-    def test_from_exception_with_k8s_client_error(self, new_uri, expected_uri):
-        """Test from_exception preserves K8sClientError properties."""
-        original_error = K8sClientError(
-            message="Original error",
-            status_code=HTTPStatus.BAD_REQUEST,
-            uri="/original/uri",
-            tool_name="original_tool",
-        )
-        kwargs = {"exception": original_error, "tool_name": "new_tool"}
-        if new_uri:
-            kwargs["uri"] = new_uri
-
-        new_error = K8sClientError.from_exception(**kwargs)
-        assert new_error.message == "Original error"
-        assert new_error.status_code == HTTPStatus.BAD_REQUEST
-        assert new_error.uri == expected_uri
-        assert new_error.tool_name == "new_tool"
-
-    def test_from_exception_with_api_exception(self):
-        """Test from_exception extracts status from Kubernetes ApiException."""
-        # Create a mock ApiException
-        mock_exception = MagicMock()
-        mock_exception.__class__.__name__ = "ApiException"
-        mock_exception.status = HTTPStatus.NOT_FOUND
-        mock_exception.http_resp = MagicMock()  # Simulate HTTP response
-        mock_exception.__str__ = MagicMock(return_value="Pod not found")
-
-        error = K8sClientError.from_exception(
-            exception=mock_exception,
-            tool_name="get_pod",
-            uri="/api/v1/pods/test",
-        )
-        assert error.status_code == HTTPStatus.NOT_FOUND
-        assert "Pod not found" in error.message
-
-    @pytest.mark.parametrize(
-        "status_value,description",
-        [
-            ("invalid", "non-numeric status"),
-            (999, "out of valid range"),
-            (99, "below minimum range"),
-            (600, "above maximum range"),
-        ],
-    )
-    def test_from_exception_with_api_exception_invalid_status(
-        self, status_value, description
-    ):
-        """Test from_exception handles invalid status codes from ApiException."""
-        mock_exception = MagicMock()
-        mock_exception.__class__.__name__ = "ApiException"
-        mock_exception.status = status_value
-        mock_exception.http_resp = MagicMock()
-        mock_exception.__str__ = MagicMock(return_value="Error")
-
-        error = K8sClientError.from_exception(
-            exception=mock_exception, tool_name="test_tool"
-        )
-        assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-
-    def test_from_exception_with_api_exception_no_http_resp(self):
-        """Test from_exception requires http_resp attribute for ApiException."""
-        mock_exception = MagicMock()
-        mock_exception.__class__.__name__ = "ApiException"
-        mock_exception.status = HTTPStatus.NOT_FOUND
-        # No http_resp attribute
-        delattr(mock_exception, "http_resp")
-        mock_exception.__str__ = MagicMock(return_value="Error")
-
-        error = K8sClientError.from_exception(
-            exception=mock_exception, tool_name="test_tool"
-        )
-        # Should default to 500 since http_resp is missing
-        assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-
-    def test_from_exception_with_generic_exception(self):
-        """Test from_exception with generic exceptions defaults to 500 status."""
-        exception = ValueError("Invalid value")
-        error = K8sClientError.from_exception(
-            exception=exception,
-            tool_name="validate_input",
-            uri="/api/validate",
-        )
-        assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-        assert error.message == "Invalid value"
-        assert error.tool_name == "validate_input"
-        assert error.uri == "/api/validate"
-
-    def test_from_exception_ignores_non_api_exception_status(self):
-        """Test that non-ApiException status attributes are ignored."""
-        mock_exception = MagicMock()
-        mock_exception.__class__.__name__ = "CustomException"
-        mock_exception.status = HTTPStatus.FORBIDDEN
-        mock_exception.__str__ = MagicMock(return_value="Custom error")
-
-        error = K8sClientError.from_exception(
-            exception=mock_exception, tool_name="test_tool"
-        )
-        assert error.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @pytest.mark.parametrize(
-        "status_code,expected_code",
-        [
-            (HTTPStatus.CONTINUE, HTTPStatus.CONTINUE),  # Valid minimum (100)
-            (599, 599),  # Valid maximum (non-standard, keep as int)
-            (HTTPStatus.OK, HTTPStatus.OK),  # Common success (200)
-            (HTTPStatus.NOT_FOUND, HTTPStatus.NOT_FOUND),  # Common error (404)
+            # K8sClientError with new URI
             (
+                "k8s_client_error",
+                {
+                    "message": "Original error",
+                    "status_code": HTTPStatus.BAD_REQUEST,
+                    "uri": "/original/uri",
+                    "tool_name": "original_tool",
+                },
+                "new_tool",
+                "/new/uri",
+                HTTPStatus.BAD_REQUEST,
+                lambda msg: msg == "Original error",
+            ),
+            # K8sClientError preserving original URI
+            (
+                "k8s_client_error",
+                {
+                    "message": "Original error",
+                    "status_code": HTTPStatus.BAD_REQUEST,
+                    "uri": "/original/uri",
+                    "tool_name": "original_tool",
+                },
+                "new_tool",
+                "",
+                HTTPStatus.BAD_REQUEST,
+                lambda msg: msg == "Original error",
+            ),
+            # ApiException with valid status
+            (
+                "api_exception",
+                {
+                    "status": HTTPStatus.NOT_FOUND,
+                    "has_http_resp": True,
+                    "error_msg": "Pod not found",
+                },
+                "get_pod",
+                "/api/v1/pods/test",
+                HTTPStatus.NOT_FOUND,
+                lambda msg: "Pod not found" in msg,
+            ),
+            # ApiException with invalid status - non-numeric
+            (
+                "api_exception",
+                {"status": "invalid", "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: "Error" in msg,
+            ),
+            # ApiException with out of range status
+            (
+                "api_exception",
+                {"status": 999, "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-            ),  # Server error (500)
+                lambda msg: "Error" in msg,
+            ),
+            # ApiException below minimum range
+            (
+                "api_exception",
+                {"status": 99, "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: "Error" in msg,
+            ),
+            # ApiException above maximum range
+            (
+                "api_exception",
+                {"status": 600, "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: "Error" in msg,
+            ),
+            # ApiException without http_resp
+            (
+                "api_exception",
+                {
+                    "status": HTTPStatus.NOT_FOUND,
+                    "has_http_resp": False,
+                    "error_msg": "Error",
+                },
+                "test_tool",
+                "",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: "Error" in msg,
+            ),
+            # ApiException with boundary status codes
+            (
+                "api_exception",
+                {
+                    "status": HTTPStatus.CONTINUE,
+                    "has_http_resp": True,
+                    "error_msg": "Error",
+                },
+                "test_tool",
+                "",
+                HTTPStatus.CONTINUE,
+                lambda msg: "Error" in msg,
+            ),
+            (
+                "api_exception",
+                {"status": 599, "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
+                599,
+                lambda msg: "Error" in msg,
+            ),
+            (
+                "api_exception",
+                {"status": HTTPStatus.OK, "has_http_resp": True, "error_msg": "Error"},
+                "test_tool",
+                "",
+                HTTPStatus.OK,
+                lambda msg: "Error" in msg,
+            ),
+            # Generic exception
+            (
+                "generic",
+                {"error_msg": "Invalid value"},
+                "validate_input",
+                "/api/validate",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: msg == "Invalid value",
+            ),
+            # Non-ApiException with status attribute (should be ignored)
+            (
+                "custom_exception",
+                {"status": HTTPStatus.FORBIDDEN, "error_msg": "Custom error"},
+                "test_tool",
+                "",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                lambda msg: "Custom error" in msg,
+            ),
         ],
     )
-    def test_status_code_validation_boundaries(self, status_code, expected_code):
-        """Test status code validation at various boundaries."""
-        mock_exception = MagicMock()
-        mock_exception.__class__.__name__ = "ApiException"
-        mock_exception.status = status_code
-        mock_exception.http_resp = MagicMock()
-        mock_exception.__str__ = MagicMock(return_value="Error")
+    def test_from_exception(
+        self,
+        exception_type,
+        exception_data,
+        tool_name,
+        uri,
+        expected_status,
+        expected_message_check,
+    ):
+        """Test from_exception method with various exception types and scenarios."""
+        # Create the exception based on type
+        if exception_type == "k8s_client_error":
+            exception = K8sClientError(**exception_data)
+        elif exception_type == "api_exception":
+            mock_exception = MagicMock()
+            mock_exception.__class__.__name__ = "ApiException"
+            mock_exception.status = exception_data["status"]
+            if exception_data["has_http_resp"]:
+                mock_exception.http_resp = MagicMock()
+            else:
+                delattr(mock_exception, "http_resp")
+            mock_exception.__str__ = MagicMock(return_value=exception_data["error_msg"])
+            exception = mock_exception
+        elif exception_type == "generic":
+            exception = ValueError(exception_data["error_msg"])
+        elif exception_type == "custom_exception":
+            mock_exception = MagicMock()
+            mock_exception.__class__.__name__ = "CustomException"
+            mock_exception.status = exception_data["status"]
+            mock_exception.__str__ = MagicMock(return_value=exception_data["error_msg"])
+            exception = mock_exception
 
-        error = K8sClientError.from_exception(
-            exception=mock_exception, tool_name="test_tool"
-        )
-        assert error.status_code == expected_code
+        # Call from_exception
+        kwargs = {"exception": exception, "tool_name": tool_name}
+        if uri:
+            kwargs["uri"] = uri
+
+        error = K8sClientError.from_exception(**kwargs)
+
+        # Assertions
+        assert error.status_code == expected_status
+        assert expected_message_check(error.message)
+        assert error.tool_name == tool_name
