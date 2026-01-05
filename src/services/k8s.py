@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
-from utils.exceptions import K8sClientError
+from utils.exceptions import K8sClientError, parse_k8s_error_response
 from utils.settings import (
     ALLOWED_K8S_DOMAINS,
     K8S_API_PAGINATION_LIMIT,
@@ -380,8 +380,9 @@ class K8sClient:
                     # Check if the response status is not OK.
                     if response.status != HTTPStatus.OK:
                         error_text = await response.text()
+                        error_message = parse_k8s_error_response(error_text)
                         raise K8sClientError(
-                            message=f"Failed to execute GET request to the Kubernetes API. Error: {error_text}",
+                            message=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
                             status_code=response.status,
                             uri=base_url,
                         )
@@ -585,9 +586,10 @@ class K8sClient:
             # Check if the response status is not OK.
             if response.status != HTTPStatus.OK:
                 error_text = await response.text()
+                error_message = parse_k8s_error_response(error_text)
                 raise K8sClientError(
                     message=f"Failed to fetch logs for pod {name} in namespace {namespace} "
-                    f"with container {container_name}. Error: {error_text}",
+                    f"with container {container_name}. Error: {error_message}",
                     status_code=response.status,
                     uri=uri,
                 )

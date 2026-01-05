@@ -92,9 +92,29 @@ class TestK8sAPIErrorHandling:
     @pytest.mark.parametrize(
         "status_code,reason,expected_status,test_description",
         [
+            (400, "Bad Request", HTTPStatus.BAD_REQUEST, "invalid request format"),
             (401, "Unauthorized", HTTPStatus.UNAUTHORIZED, "invalid credentials"),
             (403, "Forbidden", HTTPStatus.FORBIDDEN, "insufficient permissions"),
             (404, "Not Found", HTTPStatus.NOT_FOUND, "resource not found"),
+            (409, "Conflict", HTTPStatus.CONFLICT, "resource already exists"),
+            (
+                422,
+                "Unprocessable Entity",
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+                "validation failed",
+            ),
+            (
+                429,
+                "Too Many Requests",
+                HTTPStatus.TOO_MANY_REQUESTS,
+                "rate limit exceeded",
+            ),
+            (
+                500,
+                "Internal Server Error",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "server error",
+            ),
             (
                 503,
                 "Service Unavailable",

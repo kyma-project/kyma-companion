@@ -1,9 +1,22 @@
+import json
 from http import HTTPStatus
 
 # HTTP status code validation range
 # Covers standard codes (100-511) and common non-standard codes up to 599
 _MIN_HTTP_STATUS_CODE = 100  # HTTPStatus.CONTINUE
 _MAX_HTTP_STATUS_CODE = 599  # Extended range for non-standard codes
+
+
+def parse_k8s_error_response(error_text: str) -> str:
+    """
+    Parse Kubernetes API error response and extract human-readable message.
+    """
+    try:
+        error_json = json.loads(error_text)
+        return str(error_json.get("message", error_text))
+    except (json.JSONDecodeError, AttributeError, KeyError, TypeError):
+        # If parsing fails for any reason, return the original text
+        return error_text
 
 
 class K8sClientError(Exception):
@@ -42,6 +55,15 @@ class K8sClientError(Exception):
         reliability and avoid misinterpreting custom exception status attributes.
         All other exceptions default to 500 Internal Server Error.
         """
+        # If the exception is already a K8sClientError, preserve its status code and message
+        if isinstance(exception, cls):
+            return cls(
+                message=exception.message,
+                status_code=exception.status_code,
+                uri=uri or exception.uri,
+                tool_name=tool_name,
+            )
+
         status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR
 
         # Only extract status from Kubernetes ApiException that comes from HTTP response

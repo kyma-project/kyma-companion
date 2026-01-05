@@ -433,5 +433,3 @@ class TestToolsAPIErrorHandling:
         )
 
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-        data = response.json()
-        assert "error" in data

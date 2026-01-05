@@ -12,6 +12,7 @@ from routers.k8s_tools_api import router as k8s_tools_router
 from routers.kyma_tools_api import router as kyma_tools_router
 from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -60,6 +61,12 @@ def handle_http_exception(
     exc_detail: Any = []
     if isinstance(exc, HTTPException):
         status = exc.status_code
+        # Preserve detailed error messages from K8sClientError
+        if isinstance(exc.__cause__, K8sClientError):
+            return JSONResponse(
+                status_code=status,
+                content={"detail": exc.detail},
+            )
     elif isinstance(exc, RequestValidationError | ResponseValidationError):
         status = HTTPStatus.UNPROCESSABLE_ENTITY
         exc_detail = exc.errors()
