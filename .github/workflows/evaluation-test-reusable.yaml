@@ -19,7 +19,11 @@ on:
         required: false
         type: boolean
         default: true
-        description: "Whether to run evaluation tests. Set to false to run only API tests."
+      K3S_IMAGE:
+        required: false
+        type: string
+        default: ""
+
 
 # global env variables.
 env:
@@ -59,7 +63,27 @@ jobs:
       - name: K3d Setup - Provision K3d cluster
         run: |
           echo "::group::K3d - Provision"
-          k3d cluster create test-cluster --verbose --agents=1 -p 9080:80@loadbalancer -p 9443:443@loadbalancer -p "32000:32000@agent:0" -p "32100:32100@agent:0"
+
+          # Base k3d command
+          CMD="k3d cluster create test-cluster \
+            --verbose \
+            --agents=1 \
+            -p 9080:80@loadbalancer \
+            -p 9443:443@loadbalancer \
+            -p 32000:32000@agent:0 \
+            -p 32100:32100@agent:0"
+
+          # Conditionally add --image if K3S_IMAGE is set
+          if [ -n "${K3S_IMAGE}" ]; then
+            CMD="$CMD --image ${K3S_IMAGE}"
+            echo "Using pinned k3s image: ${K3S_IMAGE}"
+          else
+            echo "Using default k3s image (k3d default)"
+          fi
+
+          # Run the command
+          eval "$CMD"
+
           echo "::endgroup::"
 
       - name: K3d Setup - Verify K3d context
