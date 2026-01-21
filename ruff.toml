@@ -1,5 +1,5 @@
 # Linting configuration for Ruff
-target-version = "py312"
+target-version = "py313"
 # Set the maximum line length to 100.
 line-length = 120
 # Set the indentation width to 4.
@@ -84,4 +84,8 @@ max-complexity = 10 # sets the maximum allowed complexity for function to 10
 
 [lint.pylint]
 max-statements = 50 # keeping functions and methods short and focused (aiming for under 50 lines)
+
+[format]
+quote-style = "double"
+indent-style = "space"
 

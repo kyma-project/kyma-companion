@@ -55,9 +55,6 @@ termcolor = "^3.1.0"
 types-pyyaml = "^6.0.12.20250822"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
-flake8 = "^7.3.0"
-flake8-bugbear = "^24.12.12"
 ipython = "^9.6.0"
 mypy = "^1.18.2"
 poethepoet = "^0.40.0"
@@ -76,9 +73,9 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.poe.tasks]
 lint = "ruff check ."
 typecheck = "mypy . --pretty"
-format = "black . --check"
+format = "ruff format . --check"
 codecheck = ["lint", "typecheck", "format"]
-format-fix = "black ."
+format-fix = "ruff format ."
 lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]
 test = "pytest -n 2 -v tests/unit"
