@@ -15,7 +15,6 @@ on:
 jobs:
   evaluation:
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
-    needs: wait-for-build
     secrets: inherit
     with:
       IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
