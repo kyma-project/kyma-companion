@@ -99,11 +99,8 @@ jobs:
           echo "::endgroup::"
           
           echo "::group::Kubernetes Versions"
-          echo "kubectl client version:"
-          kubectl version --client --short
-      
-          echo "Kubernetes server version:"
-          kubectl version --short
+          echo "Kubernetes version:"
+          kubectl version 
           echo "::endgroup::"
 
       - name: Redis Setup - Deploy Redis using Helm
