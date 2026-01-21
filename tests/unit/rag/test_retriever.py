@@ -119,40 +119,26 @@ class TestHanaDBRetriever:
             if before_failure_metric_value is None:
                 before_failure_metric_value = 0
             # Setup mock to raise exception
-            mock_hanavectordb.return_value.asimilarity_search.side_effect = (
-                expected_error
-            )
+            mock_hanavectordb.return_value.asimilarity_search.side_effect = expected_error
             # When/Then
             with pytest.raises(type(expected_error)) as exc_info:
                 await retriever.aretrieve(query, top_k)
             assert str(exc_info.value) == str(expected_error)
-            mock_logger.exception.assert_called_once_with(
-                f"Error retrieving documents for query: {query}"
-            )
+            mock_logger.exception.assert_called_once_with(f"Error retrieving documents for query: {query}")
             # check metric.
-            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
-                metric_name, {"is_success": "False"}
-            )
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "False"})
             assert after_failure_metric_value > before_failure_metric_value
         else:
-            before_success_metric_value = CustomMetrics().registry.get_sample_value(
-                metric_name, {"is_success": "True"}
-            )
+            before_success_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "True"})
             if before_success_metric_value is None:
                 before_success_metric_value = 0
             # Setup mock to return expected documents
-            mock_hanavectordb.return_value.asimilarity_search.return_value = (
-                expected_docs
-            )
+            mock_hanavectordb.return_value.asimilarity_search.return_value = expected_docs
             # When
             result = await retriever.aretrieve(query, top_k)
             # Then
             assert result == expected_docs
-            mock_hanavectordb.return_value.asimilarity_search.assert_called_once_with(
-                query, k=top_k
-            )
+            mock_hanavectordb.return_value.asimilarity_search.assert_called_once_with(query, k=top_k)
             # check metric.
-            after_success_metric_value = CustomMetrics().registry.get_sample_value(
-                metric_name, {"is_success": "True"}
-            )
+            after_success_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "True"})
             assert after_success_metric_value > before_success_metric_value

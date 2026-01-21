@@ -12,20 +12,12 @@ class TestHana:
         [
             (
                 "Connection ready",
-                MagicMock(
-                    return_value=MagicMock(
-                        spec=IHanaConnection, isconnected=MagicMock(return_value=True)
-                    )
-                ),
+                MagicMock(return_value=MagicMock(spec=IHanaConnection, isconnected=MagicMock(return_value=True))),
                 True,
             ),
             (
                 "Connection not ready",
-                MagicMock(
-                    return_value=MagicMock(
-                        spec=IHanaConnection, isconnected=MagicMock(return_value=False)
-                    )
-                ),
+                MagicMock(return_value=MagicMock(spec=IHanaConnection, isconnected=MagicMock(return_value=False))),
                 False,
             ),
             (
@@ -33,9 +25,7 @@ class TestHana:
                 MagicMock(
                     return_value=MagicMock(
                         spec=IHanaConnection,
-                        isconnected=MagicMock(
-                            side_effect=Exception("Connection error")
-                        ),
+                        isconnected=MagicMock(side_effect=Exception("Connection error")),
                     )
                 ),
                 False,

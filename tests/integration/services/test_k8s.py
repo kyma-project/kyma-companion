@@ -104,13 +104,9 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_list_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace
-    ):
+    def test_list_resource(self, k8s_client, given_api_version, given_kind, given_namespace):
         # when
-        result = k8s_client.list_resources(
-            api_version=given_api_version, kind=given_kind, namespace=given_namespace
-        )
+        result = k8s_client.list_resources(api_version=given_api_version, kind=given_kind, namespace=given_namespace)
 
         # then
         # the return type should be a list.
@@ -166,9 +162,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace, given_name
-    ):
+    def test_get_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
         # when
         result = k8s_client.get_resource(
             api_version=given_api_version,
@@ -228,9 +222,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_describe_resource(
-        self, k8s_client, given_api_version, given_kind, given_namespace, given_name
-    ):
+    def test_describe_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
         # when
         result = k8s_client.describe_resource(
             api_version=given_api_version,
@@ -349,13 +341,9 @@ class TestK8sClient:
             ("Function", "test-function-8", "func1"),
         ],
     )
-    def test_list_k8s_events_for_resource(
-        self, k8s_client, given_kind, given_namespace, given_name
-    ):
+    def test_list_k8s_events_for_resource(self, k8s_client, given_kind, given_namespace, given_name):
         # when
-        result = k8s_client.list_k8s_events_for_resource(
-            kind=given_kind, namespace=given_namespace, name=given_name
-        )
+        result = k8s_client.list_k8s_events_for_resource(kind=given_kind, namespace=given_namespace, name=given_name)
 
         # then
         # the return type should be a list.
@@ -380,29 +368,19 @@ class TestK8sClient:
             ),
         ],
     )
-    async def test_fetch_pod_logs(
-        self, k8s_client, name, namespace, container_name, is_terminated, tail_limit
-    ):
+    async def test_fetch_pod_logs(self, k8s_client, name, namespace, container_name, is_terminated, tail_limit):
         # given
         # find complete pod name as pod names are dynamic.
-        pods = k8s_client.list_resources(
-            api_version="v1", kind="Pod", namespace=namespace
-        )
+        pods = k8s_client.list_resources(api_version="v1", kind="Pod", namespace=namespace)
         # find the first pod with name starting with given name.
         pod_name = next(
-            (
-                pod["metadata"]["name"]
-                for pod in pods
-                if pod["metadata"]["name"].startswith(name)
-            ),
+            (pod["metadata"]["name"] for pod in pods if pod["metadata"]["name"].startswith(name)),
             None,
         )
         assert pod_name is not None
 
         # when
-        result = await k8s_client.fetch_pod_logs(
-            pod_name, namespace, container_name, is_terminated, tail_limit
-        )
+        result = await k8s_client.fetch_pod_logs(pod_name, namespace, container_name, is_terminated, tail_limit)
 
         # then
         # the return type should be a list.
@@ -477,9 +455,7 @@ class TestK8sClient:
             ),
         ],
     )
-    async def test_get_namespace(
-        self, k8s_client, description, given_namespace, should_exist
-    ):
+    async def test_get_namespace(self, k8s_client, description, given_namespace, should_exist):
         if not should_exist:
             with pytest.raises((ValueError, K8sClientError)):
                 await k8s_client.get_namespace(given_namespace)

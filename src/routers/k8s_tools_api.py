@@ -57,15 +57,11 @@ async def query_k8s_resource(
 
     try:
         # Use k8s_query_tool from agents/k8s/tools/query.py
-        result = await k8s_query_tool.ainvoke(
-            {"uri": request.uri, "k8s_client": k8s_client}
-        )
+        result = await k8s_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
         logger.info(f"K8s query completed successfully for uri={request.uri}")
         return K8sQueryResponse(data=result)
     except K8sClientError as e:
-        logger.error(
-            f"K8s API error for uri={request.uri}: " f"{e.status_code} - {e.message}"
-        )
+        logger.error(f"K8s API error for uri={request.uri}: {e.status_code} - {e.message}")
         raise HTTPException(
             status_code=e.status_code,
             detail=f"Kubernetes API error: {e.message}",
@@ -103,9 +99,7 @@ async def get_pod_logs(
             }
         )
 
-        logger.info(
-            f"Successfully fetched {len(logs)} log lines for pod={request.name}"
-        )
+        logger.info(f"Successfully fetched {len(logs)} log lines for pod={request.name}")
 
         return PodLogsResponse(
             logs=logs,
@@ -123,10 +117,7 @@ async def get_pod_logs(
             detail=f"Kubernetes error: {e.message}",
         ) from e
     except Exception as e:
-        logger.exception(
-            f"Error fetching logs for pod={request.name}, "
-            f"namespace={request.namespace}: {str(e)}"
-        )
+        logger.exception(f"Error fetching logs for pod={request.name}, namespace={request.namespace}: {str(e)}")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch pod logs: {str(e)}",
@@ -141,10 +132,7 @@ async def get_k8s_overview(
     """
     Get an overview of the Kubernetes cluster or namespace.
     """
-    logger.info(
-        f"K8s overview request: namespace={request.namespace}, "
-        f"resource_kind={request.resource_kind}"
-    )
+    logger.info(f"K8s overview request: namespace={request.namespace}, resource_kind={request.resource_kind}")
 
     try:
         # Use k8s_overview_query_tool from agents/k8s/tools/query.py
@@ -156,9 +144,7 @@ async def get_k8s_overview(
             }
         )
 
-        logger.info(
-            f"Successfully retrieved overview for namespace={request.namespace}"
-        )
+        logger.info(f"Successfully retrieved overview for namespace={request.namespace}")
 
         return K8sOverviewResponse(context=context)
     except K8sClientError as e:
@@ -172,8 +158,7 @@ async def get_k8s_overview(
         ) from e
     except Exception as e:
         logger.exception(
-            f"Error getting overview for namespace={request.namespace}, "
-            f"resource_kind={request.resource_kind}: {str(e)}"
+            f"Error getting overview for namespace={request.namespace}, resource_kind={request.resource_kind}: {str(e)}"
         )
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,

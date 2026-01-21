@@ -22,9 +22,7 @@ class IInitialQuestionsHandler(Protocol):
         """Generates initial questions given a context with cluster data."""
         ...
 
-    async def fetch_relevant_data_from_k8s_cluster(
-        self, message: Message, k8s_client: IK8sClient
-    ) -> str:
+    async def fetch_relevant_data_from_k8s_cluster(self, message: Message, k8s_client: IK8sClient) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
         ...
 
@@ -73,9 +71,7 @@ class InitialQuestionsHandler:
             self._tokenizer = tokenizer or tiktoken.encoding_for_model(self._model.name)
         except KeyError:
             # Fallback to a compatible encoding for unrecognized model names
-            logger.warning(
-                f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding"
-            )
+            logger.warning(f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding")
             self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
@@ -101,11 +97,7 @@ class InitialQuestionsHandler:
         # Format prompt and send to llm.
         return self._chain.invoke({"context": context})  # type: ignore
 
-    async def fetch_relevant_data_from_k8s_cluster(
-        self, message: Message, k8s_client: IK8sClient
-    ) -> str:
+    async def fetch_relevant_data_from_k8s_cluster(self, message: Message, k8s_client: IK8sClient) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
-        return await get_relevant_context_from_k8s_cluster(
-            message=message, k8s_client=k8s_client
-        )
+        return await get_relevant_context_from_k8s_cluster(message=message, k8s_client=k8s_client)

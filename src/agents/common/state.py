@@ -94,9 +94,7 @@ class GatekeeperResponse(BaseModel):
     ]
 
     category: Annotated[
-        Literal[
-            "Kyma", "Kubernetes", "Programming", "About You", "Greeting", "Irrelevant"
-        ],
+        Literal["Kyma", "Kubernetes", "Programming", "About You", "Greeting", "Irrelevant"],
         Field(
             description="""
             Classifies 'user query or intent' into the following categories:
@@ -252,9 +250,7 @@ class UserInput(BaseModel):
 class Plan(BaseModel):
     """Plan to follow in future"""
 
-    subtasks: list[SubTask] | None = Field(
-        description="different subtasks for user query, should be in sorted order"
-    )
+    subtasks: list[SubTask] | None = Field(description="different subtasks for user query, should be in sorted order")
 
 
 class GraphInput(BaseModel):
@@ -306,13 +302,7 @@ class CompanionState(BaseModel):
                 add_messages(
                     SystemMessage(content=self.messages_summary),
                     cast(
-                        list[
-                            BaseMessage
-                            | list[str]
-                            | tuple[str, str]
-                            | str
-                            | dict[str, Any]
-                        ],
+                        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]],
                         self.messages,
                     ),
                 )
@@ -345,13 +335,7 @@ class BaseAgentState(BaseModel):
                 add_messages(
                     SystemMessage(content=self.agent_messages_summary),
                     cast(
-                        list[
-                            BaseMessage
-                            | list[str]
-                            | tuple[str, str]
-                            | str
-                            | dict[str, Any]
-                        ],
+                        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]],
                         self.agent_messages,
                     ),
                 )

@@ -74,9 +74,7 @@ def sample_k8s_sanitized_secret():
     ],
 )
 @pytest.mark.asyncio
-async def test_k8s_query_tool(
-    given_uri, given_object, given_exception, expected_object, expected_error
-):
+async def test_k8s_query_tool(given_uri, given_object, given_exception, expected_object, expected_error):
     # Given
     tool_node = ToolNode([k8s_query_tool])
     k8s_client = AsyncMock(spec=IK8sClient)
@@ -155,9 +153,7 @@ def sample_namespace_overview():
             None,
             Exception("cluster unavailable"),
             None,
-            Exception(
-                "Error: Exception('cluster unavailable')\n Please fix your mistakes."
-            ),
+            Exception("Error: Exception('cluster unavailable')\n Please fix your mistakes."),
         ),
         # Test case: invalid resource kind
         (
@@ -166,9 +162,7 @@ def sample_namespace_overview():
             None,
             Exception("Unsupported resource kind: invalid_kind"),
             None,
-            Exception(
-                "Error: Exception('Unsupported resource kind: invalid_kind')\n Please fix your mistakes."
-            ),
+            Exception("Error: Exception('Unsupported resource kind: invalid_kind')\n Please fix your mistakes."),
         ),
     ],
 )

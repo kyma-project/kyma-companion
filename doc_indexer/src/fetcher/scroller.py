@@ -36,17 +36,13 @@ class Scroller:
         """Check if the file should be excluded."""
         if self.source.exclude_files is None:
             raise ValueError("exclude_files is None.")
-        return any(
-            fnmatch.fnmatch(file_path, pattern) for pattern in self.source.exclude_files
-        )
+        return any(fnmatch.fnmatch(file_path, pattern) for pattern in self.source.exclude_files)
 
     def _should_include_file(self, file_path: str) -> bool:
         """Check if the file should be included."""
         if self.source.include_files is None:
             raise ValueError("include_files is None.")
-        return any(
-            fnmatch.fnmatch(file_path, pattern) for pattern in self.source.include_files
-        )
+        return any(fnmatch.fnmatch(file_path, pattern) for pattern in self.source.include_files)
 
     def scroll(self) -> None:
         """Scroll through the files and save the required files."""
@@ -57,17 +53,11 @@ class Scroller:
 
                 # skip if file type is not allowed.
                 if file_name.split(".")[-1] not in self.source.filter_file_types:
-                    logger.debug(
-                        f"skipping file {file_path} because file type not allowed."
-                    )
+                    logger.debug(f"skipping file {file_path} because file type not allowed.")
                     continue
 
-                if self.source.exclude_files is not None and self._should_exclude_file(
-                    file_path
-                ):
-                    logger.debug(
-                        f"skipping file {file_path} because file is in exclude_files list."
-                    )
+                if self.source.exclude_files is not None and self._should_exclude_file(file_path):
+                    logger.debug(f"skipping file {file_path} because file is in exclude_files list.")
                     continue
 
                 # if include_files is None, then we include all the files.
@@ -76,8 +66,6 @@ class Scroller:
                     if self._should_include_file(file_path):
                         self._save_file(relative_dir, file_name)
                     else:
-                        logger.debug(
-                            f"skipping file {file_path} because file is not in include_files list."
-                        )
+                        logger.debug(f"skipping file {file_path} because file is not in include_files list.")
                 else:
                     self._save_file(relative_dir, file_name)

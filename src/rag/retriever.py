@@ -63,9 +63,7 @@ class IRetriever(Protocol):
 class HanaDBRetriever:
     """HANA DB Retriever."""
 
-    def __init__(
-        self, embedding: Embeddings, connection: dbapi.Connection, table_name: str
-    ):
+    def __init__(self, embedding: Embeddings, connection: dbapi.Connection, table_name: str):
         self.db = HanaVectorDB(
             connection=connection,
             embedding=embedding,
@@ -78,13 +76,9 @@ class HanaDBRetriever:
         try:
             docs = await self.db.asimilarity_search(query, k=top_k)
             # record latency.
-            await CustomMetrics().record_hanadb_latency(
-                time.perf_counter() - start_time, True
-            )
+            await CustomMetrics().record_hanadb_latency(time.perf_counter() - start_time, True)
         except Exception as e:
             logger.exception(f"Error retrieving documents for query: {query}")
-            await CustomMetrics().record_hanadb_latency(
-                time.perf_counter() - start_time, False
-            )
+            await CustomMetrics().record_hanadb_latency(time.perf_counter() - start_time, False)
             raise e
         return docs

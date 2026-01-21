@@ -92,19 +92,11 @@ class K8sClientError(Exception):
     def _format_message(self) -> str:
         """Format error message to match original format exactly."""
         if self.tool_name and self.uri:
-            return (
-                f"failed executing {self.tool_name} with URI: {self.uri},"
-                f"raised the following error: {self.message}"
-            )
+            return f"failed executing {self.tool_name} with URI: {self.uri},raised the following error: {self.message}"
         elif self.tool_name:
-            return (
-                f"failed executing {self.tool_name}, "
-                f"raised the following error: {self.message}"
-            )
+            return f"failed executing {self.tool_name}, raised the following error: {self.message}"
         elif self.uri:
-            return (
-                f"with URI: {self.uri}, " f"raised the following error: {self.message}"
-            )
+            return f"with URI: {self.uri}, raised the following error: {self.message}"
         else:
             return self.message
 

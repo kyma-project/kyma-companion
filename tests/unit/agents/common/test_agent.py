@@ -332,9 +332,7 @@ class TestBaseAgent:
     ):
         agent = mock_agent()
         agent.tool_response_summarization = Mock()
-        agent.tool_response_summarization.summarize_tool_response = AsyncMock(
-            return_value="Summarized tool response"
-        )
+        agent.tool_response_summarization.summarize_tool_response = AsyncMock(return_value="Summarized tool response")
 
         monkeypatch.setattr(
             "agents.common.agent.compute_string_token_count",
@@ -369,9 +367,7 @@ class TestBaseAgent:
         if expected_message_content is not None:
             for message in given_state.agent_messages:
                 if isinstance(message, ToolMessage):
-                    assert (
-                        message.content == expected_message_content
-                    ), f"Failed message content check: {test_case}"
+                    assert message.content == expected_message_content, f"Failed message content check: {test_case}"
 
     # Test case for when number of chunks exceeds the limit
     @pytest.mark.asyncio
@@ -415,9 +411,7 @@ class TestBaseAgent:
         )
         monkeypatch.setattr("agents.common.agent.TOTAL_CHUNKS_LIMIT", chunks_limit)
 
-        with pytest.raises(
-            Exception, match="Total number of chunks exceeds TOTAL_CHUNKS_LIMIT"
-        ):
+        with pytest.raises(Exception, match="Total number of chunks exceeds TOTAL_CHUNKS_LIMIT"):
             await agent._summarize_tool_response(given_state, {})
 
     def test_build_graph(self):
@@ -552,9 +546,7 @@ class TestBaseAgent:
             ),
         ],
     )
-    def test_subtask_selector_node(
-        self, given_state: BaseAgentState, expected_output: dict
-    ):
+    def test_subtask_selector_node(self, given_state: BaseAgentState, expected_output: dict):
         # Given
         agent = mock_agent()
 
@@ -755,9 +747,7 @@ class TestBaseAgent:
                             additional_kwargs={"owner": "KubernetesAgent"},
                             tool_calls=[
                                 {
-                                    "args": {
-                                        "uri": "/api/v1/namespaces/default/secrets/test-user1-admin"
-                                    },
+                                    "args": {"uri": "/api/v1/namespaces/default/secrets/test-user1-admin"},
                                     "id": "call_JZM1Sbccr9nQ49KLT21qG4W6",
                                     "name": "k8s_query_tool",
                                     "type": "tool_call",

@@ -23,9 +23,7 @@ class LLMProbe(metaclass=SingletonMeta):
     _models: dict[str, IModel | Embeddings]
     _model_states: dict[str, bool]
 
-    def __init__(
-        self, model_factory: Callable[[], dict[str, IModel | Embeddings]] | None = None
-    ) -> None:
+    def __init__(self, model_factory: Callable[[], dict[str, IModel | Embeddings]] | None = None) -> None:
         """
         Initialize the LLMReadinessProbe.
 
@@ -82,11 +80,7 @@ class LLMProbe(metaclass=SingletonMeta):
                     f"This should only be done once. If you see this log message multiple "
                     f"times, please open a bug report."
                 )
-                response = (
-                    model.invoke("Test.")
-                    if isinstance(model, IModel)
-                    else model.embed_query("Test.")
-                )
+                response = model.invoke("Test.") if isinstance(model, IModel) else model.embed_query("Test.")
                 # If we got a response, we will store the state of the corresponding model.
                 self._model_states[name] = bool(response)
                 if response:
@@ -149,9 +143,7 @@ class UsageTrackerProbe(metaclass=SingletonMeta):
     def increase_failure_count(self) -> None:
         """Increases the failure count by 1."""
         self._failure_count += 1
-        logger.warning(
-            f"failure counter for Usage Tracker Probe increased to {self._failure_count}"
-        )
+        logger.warning(f"failure counter for Usage Tracker Probe increased to {self._failure_count}")
 
     def is_healthy(self) -> bool:
         """Checks if the failure count is snaller than the threshold."""

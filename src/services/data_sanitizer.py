@@ -108,20 +108,14 @@ class DataSanitizer(metaclass=SingletonMeta):
             return self._sanitize_raw_string_data(data)
         elif isinstance(data, list):
             return [
-                (
-                    self._sanitize_raw_string_data(obj)
-                    if isinstance(obj, str)
-                    else self._sanitize_object(obj)
-                )
+                (self._sanitize_raw_string_data(obj) if isinstance(obj, str) else self._sanitize_object(obj))
                 for obj in data
             ]
         elif isinstance(data, dict):
             return self._sanitize_object(data)
         raise ValueError("Data must be a string or list or dictionary.")
 
-    def _sanitize_raw_string_data(
-        self, raw_text: str, replacement_text: str = "{{REDACTED}}"
-    ) -> str:
+    def _sanitize_raw_string_data(self, raw_text: str, replacement_text: str = "{{REDACTED}}") -> str:
         """
         Sanitize raw string data by replacing personal information and credentials.
         """
@@ -131,9 +125,7 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         # Second pass: Apply custom credential patterns
         for pattern in self.config.regex_patterns:
-            sanitized_text = re.sub(
-                pattern, replacement_text, sanitized_text, flags=re.IGNORECASE
-            )
+            sanitized_text = re.sub(pattern, replacement_text, sanitized_text, flags=re.IGNORECASE)
 
         return str(sanitized_text)
 
@@ -153,9 +145,7 @@ class DataSanitizer(metaclass=SingletonMeta):
                 return self._sanitize_secret(obj)
             elif obj["kind"] in (self.config.resources_to_sanitize or []):
                 if "items" in obj:
-                    obj["items"] = [
-                        self._sanitize_workload(item) for item in obj["items"]
-                    ]
+                    obj["items"] = [self._sanitize_workload(item) for item in obj["items"]]
                     return obj
                 else:
                     return self._sanitize_workload(obj)
@@ -229,24 +219,15 @@ class DataSanitizer(metaclass=SingletonMeta):
 
         for key, value in data.items():
             # Check if the key should be excluded from sanitization
-            if (
-                self.config.sensitive_field_to_exclude
-                and key in self.config.sensitive_field_to_exclude
-            ):
+            if self.config.sensitive_field_to_exclude and key in self.config.sensitive_field_to_exclude:
                 result[key] = value
             # Check if the key indicates sensitive data
-            elif any(
-                sensitive in key.lower()
-                for sensitive in self.config.sensitive_field_names
-            ):
+            elif any(sensitive in key.lower() for sensitive in self.config.sensitive_field_names):
                 result[key] = REDACTED_VALUE
             elif isinstance(value, dict):
                 result[key] = self._sanitize_dict(value)
             elif isinstance(value, list):
-                result[key] = [
-                    (self._sanitize_dict(item) if isinstance(item, dict) else item)
-                    for item in value
-                ]
+                result[key] = [(self._sanitize_dict(item) if isinstance(item, dict) else item) for item in value]
             else:
                 result[key] = value
 
@@ -264,13 +245,8 @@ class DataSanitizer(metaclass=SingletonMeta):
     def _remove_last_applied_configuration(data: dict) -> dict:
         """Remove kubectl.kubernetes.io/last-applied-configuration annotation if it exists."""
         if "metadata" in data and "annotations" in data["metadata"]:
-            if (
-                "kubectl.kubernetes.io/last-applied-configuration"
-                in data["metadata"]["annotations"]
-            ):
-                del data["metadata"]["annotations"][
-                    "kubectl.kubernetes.io/last-applied-configuration"
-                ]
+            if "kubectl.kubernetes.io/last-applied-configuration" in data["metadata"]["annotations"]:
+                del data["metadata"]["annotations"]["kubectl.kubernetes.io/last-applied-configuration"]
             # Remove empty annotations dict if it's the last annotation
             if not data["metadata"]["annotations"]:
                 del data["metadata"]["annotations"]

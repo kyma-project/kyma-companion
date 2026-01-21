@@ -13,9 +13,7 @@ from integration.agents.test_common_node import create_mock_state
     [
         (
             [
-                HumanMessage(
-                    content="Tell me about web security best practices and testing"
-                ),
+                HumanMessage(content="Tell me about web security best practices and testing"),
                 AIMessage(
                     name="Common",
                     content=dedent(
@@ -68,9 +66,7 @@ from integration.agents.test_common_node import create_mock_state
         # Mixed content - should filter security content but preserve legitimate information
         (
             [
-                HumanMessage(
-                    content="Tell me about web security best practices and testing"
-                ),
+                HumanMessage(content="Tell me about web security best practices and testing"),
                 AIMessage(
                     name="Common",
                     content=dedent(
@@ -204,9 +200,7 @@ from integration.agents.test_common_node import create_mock_state
     ],
 )
 @pytest.mark.asyncio
-async def test_generate_final_response(
-    messages, expected_answer, companion_graph, security_metric
-):
+async def test_generate_final_response(messages, expected_answer, companion_graph, security_metric):
     """
     Tests that the _generate_final_response method of the Finalizer correctly synthesizes
     the received agent responses or rejects irrelevant responses.
@@ -216,9 +210,7 @@ async def test_generate_final_response(
 
     # When: The Finalizer generates a final response
     result = await companion_graph.supervisor_agent._generate_final_response(state)
-    latest_human_message = next(
-        msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage)
-    )
+    latest_human_message = next(msg.content for msg in reversed(messages) if isinstance(msg, HumanMessage))
     test_case = LLMTestCase(
         input=str(latest_human_message),
         actual_output=result["messages"][0].content,

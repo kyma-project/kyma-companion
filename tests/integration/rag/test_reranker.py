@@ -246,9 +246,7 @@ async def test_chain_ainvoke(
     # Prepare
     base_path = os.path.dirname(os.path.abspath(__file__))
     given_docs_full_path = os.path.join(base_path, given_docs_path)
-    expected_docs_full_paths = [
-        str(os.path.join(base_path, path)) for path in expected_docs_paths
-    ]
+    expected_docs_full_paths = [str(os.path.join(base_path, path)) for path in expected_docs_paths]
 
     # Given
     given_docs = load_docs_in_path(given_docs_full_path, ".md")
@@ -279,9 +277,7 @@ async def test_chain_ainvoke(
     actual_docs_titles = get_docs_titles(actual_docs)
     expected_docs_titles = get_docs_titles(expected_docs)
     # Assert that the expected documents are in the actual list of documents.
-    assert set(expected_docs_titles).issubset(
-        set(actual_docs_titles)
-    ), "Expected documents not found in actual output"
+    assert set(expected_docs_titles).issubset(set(actual_docs_titles)), "Expected documents not found in actual output"
     # Assert that the contextual precision is above the threshold.
     assert_test(test_case, [contextual_precision(threshold)])
 

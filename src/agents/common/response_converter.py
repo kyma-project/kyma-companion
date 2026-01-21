@@ -53,14 +53,10 @@ class ResponseConverter:
         """
 
         # Find all YAML blocks marked for new resources
-        new_yaml_blocks = re.findall(
-            self.new_yaml_pattern, finalizer_response, re.DOTALL
-        )
+        new_yaml_blocks = re.findall(self.new_yaml_pattern, finalizer_response, re.DOTALL)
 
         # Find all YAML blocks marked for updating existing resources
-        update_yaml_blocks = re.findall(
-            self.update_yaml_pattern, finalizer_response, re.DOTALL
-        )
+        update_yaml_blocks = re.findall(self.update_yaml_pattern, finalizer_response, re.DOTALL)
 
         return new_yaml_blocks, update_yaml_blocks
 
@@ -89,17 +85,13 @@ class ResponseConverter:
                 parsed_yaml = yaml.safe_load(yaml_config)
 
         except Exception as e:
-            logger.exception(
-                f"Error while parsing the yaml : {yaml_config}, Exception - {e}"
-            )
+            logger.exception(f"Error while parsing the yaml : {yaml_config}, Exception - {e}")
 
             return None
 
         return parsed_yaml
 
-    async def _generate_resource_link(
-        self, yaml_config: dict[str, Any], link_type: str
-    ) -> str | None:
+    async def _generate_resource_link(self, yaml_config: dict[str, Any], link_type: str) -> str | None:
         """
         Generate resource link based on YAML metadata and link type.
 
@@ -117,9 +109,7 @@ class ResponseConverter:
             deployment_name = yaml_config["metadata"]["name"]
             resource_type = yaml_config["kind"]
         except Exception:
-            logger.exception(
-                f"Error in generating link, skipping generating link for yaml: {yaml_config}"
-            )
+            logger.exception(f"Error in generating link, skipping generating link for yaml: {yaml_config}")
             return None
 
         # check if namespace exists.
@@ -128,9 +118,7 @@ class ResponseConverter:
             if await self.k8s_client.get_namespace(namespace):
                 namespace_exists = True
         except Exception:
-            logger.warning(
-                f"Namespace {namespace} does not exist, skipping generating link for yaml: {yaml_config}"
-            )
+            logger.warning(f"Namespace {namespace} does not exist, skipping generating link for yaml: {yaml_config}")
 
         # Generate appropriate link based on type
         if link_type == NEW_YAML:
@@ -140,9 +128,7 @@ class ResponseConverter:
             return f"/namespaces/{namespace}/{resource_type}/{deployment_name}"
         return None
 
-    def _create_html_nested_yaml(
-        self, yaml_config: str, resource_link: str, link_type: str
-    ) -> str:
+    def _create_html_nested_yaml(self, yaml_config: str, resource_link: str, link_type: str) -> str:
         """
         Create HTML structure containing YAML content and resource link.
 
@@ -200,19 +186,13 @@ class ResponseConverter:
             return match.group(0)
 
         # Select appropriate pattern based on YAML type
-        yaml_pattern = (
-            self.new_yaml_pattern if yaml_type == NEW_YAML else self.update_yaml_pattern
-        )
+        yaml_pattern = self.new_yaml_pattern if yaml_type == NEW_YAML else self.update_yaml_pattern
 
         # Perform the replacement
-        converted_response = re.sub(
-            yaml_pattern, replace_func, finalizer_response, flags=re.DOTALL
-        )
+        converted_response = re.sub(yaml_pattern, replace_func, finalizer_response, flags=re.DOTALL)
         return converted_response
 
-    async def _create_replacement_list(
-        self, yaml_list: list[str], yaml_type: str
-    ) -> list[str]:
+    async def _create_replacement_list(self, yaml_list: list[str], yaml_type: str) -> list[str]:
         """
         Process list of YAML configs and create corresponding HTML replacements.
 
@@ -238,9 +218,7 @@ class ResponseConverter:
 
             if generated_link:
                 # Create HTML if link generation successful
-                html_string = self._create_html_nested_yaml(
-                    yaml_config_string, generated_link, yaml_type
-                )
+                html_string = self._create_html_nested_yaml(yaml_config_string, generated_link, yaml_type)
                 replacement_list.append(html_string)
             else:
                 # Keep original if link generation fails
@@ -265,20 +243,12 @@ class ResponseConverter:
 
             if new_yaml_list or update_yaml_list:
                 # Process new resource YAML configs
-                replacement_list = await self._create_replacement_list(
-                    new_yaml_list, NEW_YAML
-                )
-                finalizer_response = self._replace_yaml_with_html(
-                    finalizer_response, replacement_list, NEW_YAML
-                )
+                replacement_list = await self._create_replacement_list(new_yaml_list, NEW_YAML)
+                finalizer_response = self._replace_yaml_with_html(finalizer_response, replacement_list, NEW_YAML)
 
                 # Process update resource YAML configs
-                replacement_list = await self._create_replacement_list(
-                    update_yaml_list, UPDATE_YAML
-                )
-                finalizer_response = self._replace_yaml_with_html(
-                    finalizer_response, replacement_list, UPDATE_YAML
-                )
+                replacement_list = await self._create_replacement_list(update_yaml_list, UPDATE_YAML)
+                finalizer_response = self._replace_yaml_with_html(finalizer_response, replacement_list, UPDATE_YAML)
 
         except Exception:
             logger.exception("Error in converting final response")

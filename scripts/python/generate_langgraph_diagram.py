@@ -51,17 +51,13 @@ config = get_config()
 model_factory = ModelFactory(config=config)
 models = model_factory.create_models()
 
-memory = AsyncRedisSaver.from_conn_info(
-    host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER, password=REDIS_PASSWORD
-)
+memory = AsyncRedisSaver.from_conn_info(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB_NUMBER, password=REDIS_PASSWORD)
 graph = CompanionGraph(models, memory)
 
 print("Generating graph diagram for the companion graph...")
 try:
     png_bytes = Image(
-        graph.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
-        )
+        graph.graph.get_graph().draw_mermaid_png(draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0)
     )
     # store the image in a file
     with open("companion.png", "wb") as f:
@@ -74,9 +70,7 @@ print("Generating graph diagram for the kyma agent...")
 kyma_agent = KymaAgent(models)
 try:
     png_bytes = Image(
-        kyma_agent.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
-        )
+        kyma_agent.graph.get_graph().draw_mermaid_png(draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0)
     )
     # store the image in a file
     with open("kyma_agent.png", "wb") as f:
@@ -90,9 +84,7 @@ print("Generating graph diagram for the k8s agent...")
 k8s_agent = KubernetesAgent(models[MAIN_MODEL_NAME])
 try:
     png_bytes = Image(
-        k8s_agent.graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0
-        )
+        k8s_agent.graph.get_graph().draw_mermaid_png(draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0)
     )
     # store the image in a file
     with open("k8s_agent.png", "wb") as f:

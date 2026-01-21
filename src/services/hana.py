@@ -25,13 +25,9 @@ class Hana(metaclass=SingletonMeta):
 
     connection: dbapi.Connection | None = None
 
-    def __init__(
-        self, connection_factory: Callable[[], dbapi.Connection] | None = None
-    ) -> None:
+    def __init__(self, connection_factory: Callable[[], dbapi.Connection] | None = None) -> None:
         try:
-            self.connection = (
-                connection_factory() if connection_factory else _get_hana_connection()
-            )
+            self.connection = connection_factory() if connection_factory else _get_hana_connection()
         except dbapi.Error as e:
             logger.error(f"Connection to Hana Cloud failed: {e}")
             self.connection = None

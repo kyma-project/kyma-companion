@@ -149,9 +149,7 @@ class SupervisorAgent:
                 MessagesPlaceholder(variable_name="messages"),
                 ("system", PLANNER_STEP_INSTRUCTIONS),
             ]
-        ).partial(
-            kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON
-        )
+        ).partial(kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON)
         return self.planner_prompt | model.llm.with_structured_output(Plan, method="function_calling")  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:
@@ -194,9 +192,7 @@ class SupervisorAgent:
 
             # return the plan with the subtasks to be dispatched by the Router
             return create_node_output(
-                message=AIMessage(
-                    content="", name=PLANNER
-                ),  # This is needed to identify the planner
+                message=AIMessage(content="", name=PLANNER),  # This is needed to identify the planner
                 next=ROUTER,
                 subtasks=plan.subtasks,
             )
@@ -265,20 +261,14 @@ class SupervisorAgent:
             NEXT: END,
         }
 
-    async def _get_converted_final_response(
-        self, state: SupervisorState
-    ) -> dict[str, Any]:
+    async def _get_converted_final_response(self, state: SupervisorState) -> dict[str, Any]:
         """Convert the generated final response"""
         try:
             final_response = await self._generate_final_response(state)
             logger.debug("Response conversion node started")
             if state.k8s_client is None:
-                raise ValueError(
-                    "K8s client is not initialized in the SupervisorState."
-                )
-            return await ResponseConverter(state.k8s_client).convert_final_response(
-                final_response
-            )
+                raise ValueError("K8s client is not initialized in the SupervisorState.")
+            return await ResponseConverter(state.k8s_client).convert_final_response(final_response)
         except Exception:
             logger.exception("Error in generating final response")
             return {

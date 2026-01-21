@@ -77,9 +77,7 @@ def to_sequence_messages(
         if isinstance(message, BaseMessage):
             result.append(message)
         else:
-            raise ValueError(
-                f"Unsupported message type: {type(message)} in to_sequence_messages"
-            )
+            raise ValueError(f"Unsupported message type: {type(message)} in to_sequence_messages")
     return result
 
 
@@ -109,10 +107,7 @@ def get_user_identifier_from_token(token: str) -> str:
             return generate_sha256_hash(str(payload[JWT_TOKEN_SUB]))
         elif JWT_TOKEN_EMAIL in payload and payload[JWT_TOKEN_EMAIL] != "":
             return generate_sha256_hash(str(payload[JWT_TOKEN_EMAIL]))
-        elif (
-            JWT_TOKEN_SERVICE_ACCOUNT in payload
-            and payload[JWT_TOKEN_SERVICE_ACCOUNT] != ""
-        ):
+        elif JWT_TOKEN_SERVICE_ACCOUNT in payload and payload[JWT_TOKEN_SERVICE_ACCOUNT] != "":
             return generate_sha256_hash(str(payload[JWT_TOKEN_SERVICE_ACCOUNT]))
         raise ValueError("Invalid token: User identifier not found in token")
     except Exception as e:
@@ -122,17 +117,13 @@ def get_user_identifier_from_token(token: str) -> str:
 def get_user_identifier_from_client_certificate(client_certificate_data: bytes) -> str:
     """Get the user identifier from the client certificate. The output is a SHA256 hash of the user identifier."""
     try:
-        cert = x509.load_pem_x509_certificate(
-            client_certificate_data, default_backend()
-        )
+        cert = x509.load_pem_x509_certificate(client_certificate_data, default_backend())
         # check if the Common Name (CN) is present in the subject.
         for name in cert.subject:
             if name.oid._name in CN_KEYS and name.value != "":
                 return generate_sha256_hash(str(name.value))
         if str(cert.serial_number) != "":
             return generate_sha256_hash(str(cert.serial_number))
-        raise ValueError(
-            "Invalid client certificate: User identifier not found in certificate"
-        )
+        raise ValueError("Invalid client certificate: User identifier not found in certificate")
     except Exception as e:
         raise ValueError("Failed to get user identifier from client certificate") from e

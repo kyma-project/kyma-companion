@@ -25,13 +25,7 @@ class TestLLMReadinessProbe:
             ),
             (
                 "Single ready IModel",
-                MagicMock(
-                    return_value={
-                        "model1": MagicMock(
-                            spec=IModel, invoke=MagicMock(return_value=True)
-                        )
-                    }
-                ),
+                MagicMock(return_value={"model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True))}),
                 True,
                 True,
                 {"model1": True},
@@ -39,11 +33,7 @@ class TestLLMReadinessProbe:
             (
                 "Single not ready IEmbeddings",
                 MagicMock(
-                    return_value={
-                        "embedding1": MagicMock(
-                            spec=Embeddings, embed_query=MagicMock(return_value=None)
-                        )
-                    }
+                    return_value={"embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None))}
                 ),
                 True,
                 False,
@@ -53,12 +43,8 @@ class TestLLMReadinessProbe:
                 "Mixed readiness models",
                 MagicMock(
                     return_value={
-                        "model1": MagicMock(
-                            spec=IModel, invoke=MagicMock(return_value=True)
-                        ),
-                        "embedding1": MagicMock(
-                            spec=Embeddings, embed_query=MagicMock(return_value=None)
-                        ),
+                        "model1": MagicMock(spec=IModel, invoke=MagicMock(return_value=True)),
+                        "embedding1": MagicMock(spec=Embeddings, embed_query=MagicMock(return_value=None)),
                     }
                 ),
                 True,
@@ -134,9 +120,7 @@ class TestLLMReadinessProbe:
         # The model should have a state recorded in the probe.
         assert model_name in probe._model_states, "The model should have a state"
         # The recorded state should match the model's state.
-        assert (
-            probe._model_states.get(model_name) == model_state
-        ), "The model state should be 'True'"
+        assert probe._model_states.get(model_name) == model_state, "The model state should be 'True'"
 
         # When:
         # Call `are_llms_ready` again.
@@ -148,9 +132,7 @@ class TestLLMReadinessProbe:
         # The model's state should still be recorded in the probe.
         assert model_name in probe._model_states, "The model should have a state"
         # The recorded state should still match the model's state.
-        assert (
-            probe._model_states.get(model_name) == model_state
-        ), "The model state should be 'True'"
+        assert probe._model_states.get(model_name) == model_state, "The model state should be 'True'"
         # The model's `invoke` method should have been called only once.
         model.invoke.assert_called_once()
 

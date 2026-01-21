@@ -46,10 +46,7 @@ class TestQueryGenerator:
         # Then
         chain_steps_number = 3  # PromptTemplate | Model | OutputParser
         assert len(generator.prompt.messages) == chain_steps_number
-        assert (
-            generator.prompt.messages[0].prompt.template
-            == QUERY_GENERATOR_PROMPT_TEMPLATE
-        )
+        assert generator.prompt.messages[0].prompt.template == QUERY_GENERATOR_PROMPT_TEMPLATE
         assert generator.prompt.messages[1].prompt.template == "Original query: {query}"
 
     def test_create_chain(self, mock_model, mock_llm):
@@ -86,9 +83,7 @@ class TestQueryGenerator:
         ],
     )
     @pytest.mark.asyncio
-    async def test_agenerate_queries(
-        self, mock_model, mock_llm, query, chain_output, expected_output, error
-    ):
+    async def test_agenerate_queries(self, mock_model, mock_llm, query, chain_output, expected_output, error):
         """Test agenerate_queries method."""
         # Given
         mock_chain = AsyncMock()

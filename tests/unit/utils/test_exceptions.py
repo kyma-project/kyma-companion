@@ -136,8 +136,7 @@ class TestK8sClientError:
                 "Invalid request",
                 "",
                 "/api/v1/namespaces/default/pods",
-                "with URI: /api/v1/namespaces/default/pods, "
-                "raised the following error: Invalid request",
+                "with URI: /api/v1/namespaces/default/pods, raised the following error: Invalid request",
             ),
             # Only message
             ("Generic error", "", "", "Generic error"),
@@ -332,10 +331,8 @@ class TestK8sClientError:
         error = K8sClientError.from_exception(**kwargs)
 
         # Assertions
-        assert (
-            error.status_code == expected_status
-        ), f"Failed for exception_type: {exception_type}"
-        assert expected_message_check(
-            error.message
-        ), f"Message check failed for {exception_type}. Got: '{error.message}'"
+        assert error.status_code == expected_status, f"Failed for exception_type: {exception_type}"
+        assert expected_message_check(error.message), (
+            f"Message check failed for {exception_type}. Got: '{error.message}'"
+        )
         assert error.tool_name == tool_name

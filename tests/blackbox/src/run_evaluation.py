@@ -17,9 +17,7 @@ from evaluation.validator.validator import IValidator
 SLEEP_INTERVAL = 2  # 2 seconds
 
 
-def process_scenario_with_retry(
-    scenario: Scenario, config: Config, validator: IValidator
-) -> None:
+def process_scenario_with_retry(scenario: Scenario, config: Config, validator: IValidator) -> None:
     """
     Process a scenario with retry logic to handle LLM non-determinism.
 
@@ -45,9 +43,7 @@ def process_scenario_with_retry(
     max_attempts = config.scenario_retries
 
     for attempt in range(1, max_attempts + 1):
-        logger.info(
-            f"Processing scenario {scenario.id} - Attempt {attempt}/{max_attempts}"
-        )
+        logger.info(f"Processing scenario {scenario.id} - Attempt {attempt}/{max_attempts}")
 
         # Reset scenario state for retry (except on first attempt)
         if attempt > 1:
@@ -68,9 +64,7 @@ def process_scenario_with_retry(
         # Check if scenario passed
         if scenario.test_status != TestStatus.FAILED:
             if attempt > 1:
-                logger.info(
-                    f"Scenario {scenario.id} passed on attempt {attempt}/{max_attempts}"
-                )
+                logger.info(f"Scenario {scenario.id} passed on attempt {attempt}/{max_attempts}")
             break
 
         # Log failure and decide whether to retry
@@ -106,9 +100,7 @@ def main() -> None:
 
     # load all the scenarios from the namespace scoped test data path.
     scenario_list = ScenarioList()
-    scenario_list.load_all_namespace_scope_scenarios(
-        config.namespace_scoped_test_data_path, logger
-    )
+    scenario_list.load_all_namespace_scope_scenarios(config.namespace_scoped_test_data_path, logger)
 
     # initialize the response validator.
     validator: IValidator = create_validator(config)
@@ -153,9 +145,7 @@ def main() -> None:
     # print out the results.
     print_test_results(scenario_list, total_usage, time_taken)
 
-    print_header(
-        "NOTE: The evaluation tests will only be marked as failed if any of the critical expectations fail."
-    )
+    print_header("NOTE: The evaluation tests will only be marked as failed if any of the critical expectations fail.")
 
     # flush all the logs.
     flush_logs(logger)

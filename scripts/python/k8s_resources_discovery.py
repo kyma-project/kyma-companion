@@ -74,9 +74,7 @@ def save_all_groups_with_resources(k8s_client: K8sClient, file_path: Path) -> No
     groups.insert(0, core_api_group)
 
     # validate the data structure.
-    api_resources: list[ApiResourceGroup] = [
-        ApiResourceGroup.model_validate(g) for g in groups
-    ]
+    api_resources: list[ApiResourceGroup] = [ApiResourceGroup.model_validate(g) for g in groups]
 
     with open(file_path, "w") as f:
         json.dump(api_resources, f, indent=4, default=pydantic_encoder)

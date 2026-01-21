@@ -27,19 +27,11 @@ def after_log(retry_state: RetryCallState) -> None:
     Args:
         retry_state (RetryCallState): Current state of the retry operation
     """
-    module_name = (
-        retry_state.fn.__module__
-        if retry_state.fn and retry_state.fn.__module__
-        else "tenancy.retry"
-    )
-    func_name = (
-        retry_state.fn.__name__
-        if retry_state.fn and retry_state.fn.__name__
-        else "None"
-    )
+    module_name = retry_state.fn.__module__ if retry_state.fn and retry_state.fn.__module__ else "tenancy.retry"
+    func_name = retry_state.fn.__name__ if retry_state.fn and retry_state.fn.__name__ else "None"
     logger = get_logger(f"{module_name}.{func_name}")
     # Log at INFO level for the first attempt, and WARNING for subsequent attempts
     if retry_state.attempt_number < 1:
-        logger.info(f"Attempt { retry_state.attempt_number }")
+        logger.info(f"Attempt {retry_state.attempt_number}")
     else:
-        logger.warning(f"Attempt { retry_state.attempt_number }")
+        logger.warning(f"Attempt {retry_state.attempt_number}")

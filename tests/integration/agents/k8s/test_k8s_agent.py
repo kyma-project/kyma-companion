@@ -142,9 +142,7 @@ async def test_invoke_chain(
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': '', 'resource_namespace': ''}"
-                    ),
+                    SystemMessage(content="{'resource_api_version': '', 'resource_namespace': ''}"),
                     HumanMessage(
                         content="What is causing the CrashLoopBackOff status for many pods in default namespace?"
                     ),
@@ -175,9 +173,7 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'v1', 'resource_namespace': 'default', 'resource_kind': 'Pod'}"
                     ),
-                    HumanMessage(
-                        content="What deployments exist in the 'kube-system' namespace?"
-                    ),
+                    HumanMessage(content="What deployments exist in the 'kube-system' namespace?"),
                 ],
                 subtasks=[
                     {
@@ -313,9 +309,7 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'v1', 'resource_namespace': 'monitoring', 'resource_kind': 'Pod'}"
                     ),
-                    HumanMessage(
-                        content="Why is my prometheus pod in CrashLoopBackOff?"
-                    ),
+                    HumanMessage(content="Why is my prometheus pod in CrashLoopBackOff?"),
                 ],
                 subtasks=[
                     {
@@ -340,9 +334,7 @@ async def test_invoke_chain(
             KubernetesAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': '', 'resource_namespace': ''}"
-                    ),
+                    SystemMessage(content="{'resource_api_version': '', 'resource_namespace': ''}"),
                     HumanMessage(content="Are there any nodes with disk pressure?"),
                 ],
                 subtasks=[

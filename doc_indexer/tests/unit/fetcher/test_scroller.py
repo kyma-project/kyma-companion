@@ -34,9 +34,7 @@ def fixtures_path(root_tests_path) -> str:
 
 @pytest.fixture()
 def mock_os_walk(root_tests_path):
-    with open(
-        os.path.join(root_tests_path, "unit/fetcher", "sample_os_walk_output.json")
-    ) as file:
+    with open(os.path.join(root_tests_path, "unit/fetcher", "sample_os_walk_output.json")) as file:
         data = json.load(file)
     with patch("os.walk") as mock:
         mock.return_value = data
@@ -48,9 +46,7 @@ class TestScroller:
         # given
         given_dir_path = "test/dir_path"
         given_output_dir = "test/output_dir"
-        given_source = DocumentsSource(
-            name="test_scroller", source_type="Github", url="https://test.scroller"
-        )
+        given_source = DocumentsSource(name="test_scroller", source_type="Github", url="https://test.scroller")
 
         # when
         scroller = Scroller(given_dir_path, given_output_dir, given_source)
@@ -76,17 +72,13 @@ class TestScroller:
 
         # the file should not exist in output directory before method call.
         given_output_dir = os.path.join(new_tmp_dir, "output")
-        output_file_path = os.path.join(
-            given_output_dir, given_file_dir, given_file_name
-        )
+        output_file_path = os.path.join(given_output_dir, given_file_dir, given_file_name)
         assert not os.path.exists(output_file_path)
 
         scroller = Scroller(
             dir_path=new_tmp_dir,
             output_dir=given_output_dir,
-            source=DocumentsSource(
-                name="test_scroller", source_type="Github", url="https://test.scroller"
-            ),
+            source=DocumentsSource(name="test_scroller", source_type="Github", url="https://test.scroller"),
         )
         # when
         scroller._save_file(given_file_dir, given_file_name)

@@ -43,9 +43,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 1: "List everything in my cluster" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
-                ),
+                SystemMessage(content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"),
                 HumanMessage(content="list everything in my cluster"),
             ],
             '{"subtasks": [{"description": "list everything Kyma-related in my cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -56,10 +54,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 1: "List everything in my cluster" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'production'}"),
                 HumanMessage(content="check resources in the cluster"),
             ],
             '{"subtasks": [{"description": "check Kyma resources in the cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -70,9 +65,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 1: "check Kubernetes resources" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
-                ),
+                SystemMessage(content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"),
                 HumanMessage(content="check resources"),
             ],
             '{"subtasks": [{"description": "check Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -83,10 +76,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 2: "Give me a complete overview" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="give me a complete overview of my resources"),
             ],
             '{"subtasks": [{"description": "give me a complete overview of Kyma resources", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -97,10 +87,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 3: "Show all pods and serverless functions" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="show all pods and serverless functions"),
             ],
             '{"subtasks": [{"description": "show all Kyma serverless functions", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -111,9 +98,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 4: "Check all pods" - should only assign to KubernetesAgent
             [
-                SystemMessage(
-                    content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"
-                ),
+                SystemMessage(content="{'resource_kind': 'Cluster', 'resource_scope': 'cluster'}"),
                 HumanMessage(content="check all pods"),
             ],
             '{"subtasks": [{"description": "check all pods", "assigned_to": "KubernetesAgent", "status": "pending"}]}',
@@ -123,10 +108,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 5: "List all services and API rules" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="list all services and API rules"),
             ],
             '{"subtasks": [{"description": "list all Kyma API rules", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -137,10 +119,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 5: "What resources do I have across the entire cluster" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="what resources do I have in my cluster"),
             ],
             '{"subtasks": [{"description": "what Kyma resources do I have across the entire cluster", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -151,10 +130,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 6: "Show me everything deployed" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'production'}"),
                 HumanMessage(content="show me everything deployed"),
             ],
             '{"subtasks": [{"description": "show me everything Kyma deployed", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -165,10 +141,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # Test case 7: "Get status of all workloads and functions" - should create subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="get status of all workloads and functions"),
             ],
             '{"subtasks": [{"description": "get status of all Kyma functions", "assigned_to": "KymaAgent", "status": "pending"}, '
@@ -179,10 +152,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a Kyma related query is assigned to the Kyma agent
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is Kyma?"),
             ],
             '{"subtasks": [{"description": "What is Kyma?", "assigned_to": "KymaAgent" , "status" : "pending"}] }',
@@ -192,10 +162,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a Kyma related query is assigned to the Kyma agent
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is Kyma API Rule?"),
             ],
             '{"subtasks": [{ "description": "What is Kyma API Rule?", "assigned_to": "KymaAgent", "status" : "pending"}] }',
@@ -205,10 +172,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a Kubernetes related query is assigned to the Kubernetes agent
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my cluster?"),
             ],
             '{"subtasks": [{"description": "what is the status of my cluster?", "assigned_to": "KubernetesAgent", "status" : "pending"},{"description": "what is the status of my cluster?", "assigned_to": "KymaAgent", "status" : "pending"}] }',
@@ -218,10 +182,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a query related to Kyma and Kubernetes is divided into the correct subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is Kubernetes and Explain Kyma function"),
             ],
             '{"subtasks": [{ "description": "What is Kubernetes",  "assigned_to": "KubernetesAgent","status" : "pending"},'
@@ -232,13 +193,8 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(
-                    content="Create a hello world app and deploy it with Kyma?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
+                HumanMessage(content="Create a hello world app and deploy it with Kyma?"),
             ],
             '{ "subtasks": [{"description": "Create a hello world app", "assigned_to": "Common", "status" : "pending"},'
             '{"description": "deploy the app with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
@@ -248,13 +204,8 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(
-                    content="Create a hello world app with python and deploy it with Kyma?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
+                HumanMessage(content="Create a hello world app with python and deploy it with Kyma?"),
             ],
             '{ "subtasks": [{ "description": "Create a hello world app with python", "assigned_to": "Common", "status" : "pending"},'
             '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
@@ -264,13 +215,8 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a complex query related to Kyma is divided correctly into two subtasks for the Kyma agent
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
-                HumanMessage(
-                    content="how to enable eventing module and create a subscription for my app?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
+                HumanMessage(content="how to enable eventing module and create a subscription for my app?"),
             ],
             '{ "subtasks": [{"description": "How to enable eventing module?", "assigned_to": "KymaAgent", "status" : "pending"},'
             '{"description": "How to create a subscription for my app?", "assigned_to": "KymaAgent", "status" :"pending"}]}',
@@ -280,10 +226,7 @@ def planner_correctness_metric(evaluator_model):
         (
             # tests if a complex query related to Kyma , Kubernetes and some general query divided into three subtasks
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(
                     content="How to create a Python app that performs Discounted Cash Flow (DCF) calculations? How to create a Kyma function? How to create a k8s service for this function?"
                 ),
@@ -416,9 +359,7 @@ async def test_planner_with_conversation_history(
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
     # Then: We evaluate the response using deepeval metrics
-    assert (
-        result.subtasks is not None
-    ), "Expected subtasks to be the same as the expected subtasks"
+    assert result.subtasks is not None, "Expected subtasks to be the same as the expected subtasks"
 
     # verify that the subtasks are the same as the expected subtasks
     actual_subtasks = [subtask.model_dump(mode="json") for subtask in result.subtasks]

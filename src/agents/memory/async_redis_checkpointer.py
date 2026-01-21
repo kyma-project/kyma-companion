@@ -45,9 +45,7 @@ class IUsageMemory(Protocol):
         """Write LLM usage data to Redis. Return the key."""
         ...
 
-    async def adelete_expired_llm_usage_records(
-        self, cluster_id: str, ttl: int
-    ) -> None:
+    async def adelete_expired_llm_usage_records(self, cluster_id: str, ttl: int) -> None:
         """Delete expired LLM usage records."""
         ...
 
@@ -59,16 +57,12 @@ class IUsageMemory(Protocol):
 # Utilities shared by both RedisSaver and AsyncRedisSaver
 
 
-def _make_redis_checkpoint_key(
-    thread_id: str, checkpoint_ns: str, checkpoint_id: str
-) -> str:
+def _make_redis_checkpoint_key(thread_id: str, checkpoint_ns: str, checkpoint_id: str) -> str:
     """Create a Redis key for storing checkpoint data.
 
     Returns a Redis key string in the format "checkpoint$thread_id$namespace$checkpoint_id".
     """
-    return REDIS_KEY_SEPARATOR.join(
-        ["checkpoint", thread_id, checkpoint_ns, checkpoint_id]
-    )
+    return REDIS_KEY_SEPARATOR.join(["checkpoint", thread_id, checkpoint_ns, checkpoint_id])
 
 
 def _make_redis_checkpoint_writes_key(
@@ -83,13 +77,9 @@ def _make_redis_checkpoint_writes_key(
     Returns a Redis key string in the format "writes$thread_id$namespace$checkpoint_id$task_id$idx".
     """
     if idx is None:
-        return REDIS_KEY_SEPARATOR.join(
-            ["writes", thread_id, checkpoint_ns, checkpoint_id, task_id]
-        )
+        return REDIS_KEY_SEPARATOR.join(["writes", thread_id, checkpoint_ns, checkpoint_id, task_id])
 
-    return REDIS_KEY_SEPARATOR.join(
-        ["writes", thread_id, checkpoint_ns, checkpoint_id, task_id, str(idx)]
-    )
+    return REDIS_KEY_SEPARATOR.join(["writes", thread_id, checkpoint_ns, checkpoint_id, task_id, str(idx)])
 
 
 def _parse_redis_checkpoint_key(redis_key: str) -> dict:
@@ -97,9 +87,7 @@ def _parse_redis_checkpoint_key(redis_key: str) -> dict:
 
     Returns a dictionary containing the parsed checkpoint data.
     """
-    namespace, thread_id, checkpoint_ns, checkpoint_id = redis_key.split(
-        REDIS_KEY_SEPARATOR
-    )
+    namespace, thread_id, checkpoint_ns, checkpoint_id = redis_key.split(REDIS_KEY_SEPARATOR)
     if namespace != "checkpoint":
         raise ValueError("Expected checkpoint key to start with 'checkpoint'")
 
@@ -115,9 +103,7 @@ def _parse_redis_checkpoint_writes_key(redis_key: str) -> dict:
 
     Returns a dictionary containing the parsed checkpoint writes data.
     """
-    namespace, thread_id, checkpoint_ns, checkpoint_id, task_id, idx = redis_key.split(
-        REDIS_KEY_SEPARATOR
-    )
+    namespace, thread_id, checkpoint_ns, checkpoint_id, task_id, idx = redis_key.split(REDIS_KEY_SEPARATOR)
     if namespace != "writes":
         raise ValueError("Expected checkpoint key to start with 'checkpoint'")
 
@@ -135,9 +121,7 @@ def _safe_decode(key: str | bytes) -> str:
     return key.decode() if isinstance(key, bytes) else key
 
 
-def _filter_keys(
-    keys: list[str | bytes], before: RunnableConfig | None, limit: int | None
-) -> list[str | bytes]:
+def _filter_keys(keys: list[str | bytes], before: RunnableConfig | None, limit: int | None) -> list[str | bytes]:
     """
     Filter and sort Redis keys based on optional criteria.
     Returns list of filtered and sorted Redis keys.
@@ -146,8 +130,7 @@ def _filter_keys(
         keys = [
             k
             for k in keys
-            if _parse_redis_checkpoint_key(_safe_decode(k))["checkpoint_id"]
-            < before["configurable"]["checkpoint_id"]
+            if _parse_redis_checkpoint_key(_safe_decode(k))["checkpoint_id"] < before["configurable"]["checkpoint_id"]
         ]
 
     keys = sorted(
@@ -160,9 +143,7 @@ def _filter_keys(
     return keys
 
 
-def _load_writes(
-    serde: SerializerProtocol, task_id_to_data: dict[tuple[str, str], dict]
-) -> list[PendingWrite]:
+def _load_writes(serde: SerializerProtocol, task_id_to_data: dict[tuple[str, str], dict]) -> list[PendingWrite]:
     """Deserialize pending writes."""
     writes = [
         (
@@ -200,9 +181,7 @@ def _parse_redis_checkpoint_data(
     checkpoint = serde.loads_typed((data[b"type"].decode(), data[b"checkpoint"]))
     # Handle backward compatibility: old checkpoints use JSON, new ones use typed serialization
     if b"metadata_type" in data:
-        metadata = serde.loads_typed(
-            (data[b"metadata_type"].decode(), data[b"metadata"])
-        )
+        metadata = serde.loads_typed((data[b"metadata_type"].decode(), data[b"metadata"]))
     else:
         # Legacy format: metadata stored as JSON bytes
         metadata = json.loads(data[b"metadata"])
@@ -257,9 +236,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         self.conn = conn
 
     @classmethod
-    def from_conn_info(
-        cls, *, host: str, port: int, db: int, password: str
-    ) -> "AsyncRedisSaver":
+    def from_conn_info(cls, *, host: str, port: int, db: int, password: str) -> "AsyncRedisSaver":
         """Create a new AsyncRedisSaver with the given connection info.
 
         This is a synchronous method that will fail fast if Redis connection cannot be established.
@@ -271,12 +248,8 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             password=password if password != "" else None,
             ssl=REDIS_SSL_ENABLED,
             ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
-            ssl_include_verify_flags=(
-                [ssl.VERIFY_DEFAULT] if REDIS_SSL_ENABLED else None
-            ),
-            ssl_exclude_verify_flags=(
-                [ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None
-            ),
+            ssl_include_verify_flags=([ssl.VERIFY_DEFAULT] if REDIS_SSL_ENABLED else None),
+            ssl_exclude_verify_flags=([ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None),
         )
         if REDIS_SSL_ENABLED:
             logger.info("Redis connection established with SSL.")
@@ -327,9 +300,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             "checkpoint_id": checkpoint_id,
             "metadata": serialized_metadata,
             "metadata_type": metadata_type,
-            "parent_checkpoint_id": (
-                parent_checkpoint_id if parent_checkpoint_id else ""
-            ),
+            "parent_checkpoint_id": (parent_checkpoint_id if parent_checkpoint_id else ""),
         }
 
         await self._redis_call(self.conn.hset(key, mapping=data))
@@ -403,24 +374,15 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         checkpoint_id = get_checkpoint_id(config)
         checkpoint_ns = config["configurable"].get("checkpoint_ns", "")
 
-        checkpoint_key = await self._aget_checkpoint_key(
-            self.conn, thread_id, checkpoint_ns, checkpoint_id
-        )
+        checkpoint_key = await self._aget_checkpoint_key(self.conn, thread_id, checkpoint_ns, checkpoint_id)
         if not checkpoint_key:
             return None
         checkpoint_data = await self._redis_call(self.conn.hgetall(checkpoint_key))
 
         # load pending writes
-        checkpoint_id = (
-            checkpoint_id
-            or _parse_redis_checkpoint_key(checkpoint_key)["checkpoint_id"]
-        )
-        pending_writes = await self._aload_pending_writes(
-            thread_id, checkpoint_ns, checkpoint_id
-        )
-        return _parse_redis_checkpoint_data(
-            self.serde, checkpoint_key, checkpoint_data, pending_writes=pending_writes
-        )
+        checkpoint_id = checkpoint_id or _parse_redis_checkpoint_key(checkpoint_key)["checkpoint_id"]
+        pending_writes = await self._aload_pending_writes(thread_id, checkpoint_ns, checkpoint_id)
+        return _parse_redis_checkpoint_data(self.serde, checkpoint_key, checkpoint_data, pending_writes=pending_writes)
 
     async def alist(
         self,
@@ -429,7 +391,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         filter: dict[str, Any] | None = None,
         before: RunnableConfig | None = None,
         limit: int | None = None,
-    ) -> AsyncGenerator[CheckpointTuple, None]:
+    ) -> AsyncGenerator[CheckpointTuple]:
         """List checkpoints from Redis asynchronously.
 
         This method retrieves a list of checkpoint tuples from Redis based
@@ -454,33 +416,21 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         for key in keys:
             data = await self._redis_call(self.conn.hgetall(_safe_decode(key)))
             if data and b"checkpoint" in data and b"metadata" in data:
-                checkpoint_id = _parse_redis_checkpoint_key(_safe_decode(key))[
-                    "checkpoint_id"
-                ]
-                pending_writes = await self._aload_pending_writes(
-                    thread_id, checkpoint_ns, checkpoint_id
-                )
+                checkpoint_id = _parse_redis_checkpoint_key(_safe_decode(key))["checkpoint_id"]
+                pending_writes = await self._aload_pending_writes(thread_id, checkpoint_ns, checkpoint_id)
                 if result := _parse_redis_checkpoint_data(
                     self.serde, key.decode(), data, pending_writes=pending_writes
                 ):
                     yield result
 
-    async def _aload_pending_writes(
-        self, thread_id: str, checkpoint_ns: str, checkpoint_id: str
-    ) -> list[PendingWrite]:
-        writes_key = _make_redis_checkpoint_writes_key(
-            thread_id, checkpoint_ns, checkpoint_id, "*", None
-        )
+    async def _aload_pending_writes(self, thread_id: str, checkpoint_ns: str, checkpoint_id: str) -> list[PendingWrite]:
+        writes_key = _make_redis_checkpoint_writes_key(thread_id, checkpoint_ns, checkpoint_id, "*", None)
         matching_keys = await self.conn.keys(pattern=writes_key)
-        parsed_keys = [
-            _parse_redis_checkpoint_writes_key(key.decode()) for key in matching_keys
-        ]
+        parsed_keys = [_parse_redis_checkpoint_writes_key(key.decode()) for key in matching_keys]
         pending_writes = _load_writes(
             self.serde,
             {
-                (parsed_key["task_id"], parsed_key["idx"]): await self._redis_call(
-                    self.conn.hgetall(key)
-                )
+                (parsed_key["task_id"], parsed_key["idx"]): await self._redis_call(self.conn.hgetall(key))
                 for key, parsed_key in sorted(
                     zip(matching_keys, parsed_keys, strict=False),
                     key=lambda x: x[1]["idx"],
@@ -500,9 +450,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         if checkpoint_id:
             return _make_redis_checkpoint_key(thread_id, checkpoint_ns, checkpoint_id)
 
-        all_keys = await conn.keys(
-            _make_redis_checkpoint_key(thread_id, checkpoint_ns, "*")
-        )
+        all_keys = await conn.keys(_make_redis_checkpoint_key(thread_id, checkpoint_ns, "*"))
         if not all_keys:
             return None
 
@@ -521,9 +469,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
             await self.conn.set(key, json.dumps(data))
         return key
 
-    async def adelete_expired_llm_usage_records(
-        self, cluster_id: str, ttl: int
-    ) -> None:
+    async def adelete_expired_llm_usage_records(self, cluster_id: str, ttl: int) -> None:
         """Delete expired LLM usage records."""
         keys = await self.conn.keys(_get_llm_usage_key_filter(cluster_id))
         keys_to_delete = []

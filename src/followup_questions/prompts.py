@@ -39,4 +39,4 @@ The only thing you return are the questions, without any numbering, each seperat
 The provided conversation history is:
 
 {history}
-"""  # noqa: E501
+"""

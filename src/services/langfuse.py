@@ -121,9 +121,7 @@ class LangfuseService(metaclass=SingletonMeta):
                 return data
             # If data is a GraphInput, sanitize the messages in reverse order for better readability.
             if isinstance(data, GraphInput):
-                output = "\n".join(
-                    [str(msg.content) for msg in reversed(data.messages)]
-                )
+                output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
                 return self.data_scrubber.clean(output if output else REDACTED)
             # If data is a string, sanitize it directly.
             elif isinstance(data, str):
@@ -136,11 +134,7 @@ class LangfuseService(metaclass=SingletonMeta):
                 return data
             elif isinstance(data, dict) and "content" in data and "role" in data:
                 # If data is a dictionary with role and content, sanitize the content.
-                data["content"] = (
-                    self.data_scrubber.clean(data["content"])
-                    if data["role"] != "tool"
-                    else REDACTED
-                )
+                data["content"] = self.data_scrubber.clean(data["content"]) if data["role"] != "tool" else REDACTED
                 return data
             elif isinstance(data, dict):
                 for key, value in data.items():

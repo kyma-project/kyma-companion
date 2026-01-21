@@ -16,9 +16,7 @@ def mock_config():
         models=[
             ModelConfig(name=MAIN_MODEL_NAME, deployment_id="dep1", temperature=0),
             ModelConfig(name=MAIN_MODEL_MINI_NAME, deployment_id="dep2", temperature=0),
-            ModelConfig(
-                name=MAIN_EMBEDDING_MODEL_NAME, deployment_id="dep3", temperature=0
-            ),
+            ModelConfig(name=MAIN_EMBEDDING_MODEL_NAME, deployment_id="dep3", temperature=0),
             ModelConfig(name="unsupported_model", deployment_id="dep4", temperature=0),
         ]
     )

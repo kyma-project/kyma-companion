@@ -201,8 +201,4 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
             and all(response.llms.values())
         )
     if isinstance(response, ReadinessModel):
-        return (
-            response.is_redis_initialized
-            and response.is_hana_initialized
-            and response.are_models_initialized
-        )
+        return response.is_redis_initialized and response.is_hana_initialized and response.are_models_initialized

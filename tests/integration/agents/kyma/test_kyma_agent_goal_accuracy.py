@@ -177,9 +177,7 @@ def create_test_cases(k8s_client: IK8sClient):
             state=create_basic_state(
                 task_description="is there anything wrong with Kyma resources?",
                 messages=[
-                    HumanMessage(
-                        content="is there anything wrong with Kyma resources?"
-                    ),
+                    HumanMessage(content="is there anything wrong with Kyma resources?"),
                 ],
                 k8s_client=k8s_client,
             ),
@@ -226,9 +224,7 @@ TEST_CASES = create_test_cases(create_k8s_client())
 
 @pytest.mark.parametrize("test_case", TEST_CASES, ids=[tc.name for tc in TEST_CASES])
 @pytest.mark.asyncio
-async def test_kyma_agent(
-    kyma_agent, goal_accuracy_metric, test_case: KymaAgentTestCase
-):
+async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgentTestCase):
     """
     Simplified test for KymaAgent _invoke_chain method.
     Tests content response scenarios.

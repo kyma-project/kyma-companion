@@ -49,4 +49,4 @@ Return results as a valid JSON array.
 5. Include brief reasoning for transparency and debugging
 6. Ensure scores reflect true utility for answering the specific queries
 </instructions>
-"""  # noqa: E501
+"""

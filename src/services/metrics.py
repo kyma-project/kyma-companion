@@ -17,9 +17,7 @@ from utils.singleton_meta import SingletonMeta
 
 METRICS_KEY_PREFIX = "kyma_companion"
 REQUEST_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_http_request_latency_seconds"
-USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY = (
-    f"{METRICS_KEY_PREFIX}_usage_tracker_publish_failure_count"
-)
+USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY = f"{METRICS_KEY_PREFIX}_usage_tracker_publish_failure_count"
 LANGGRAPH_ERROR_METRIC_KEY = f"{METRICS_KEY_PREFIX}_langgraph_error_count"
 HANADB_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_tcp_hanadb_latency_seconds"
 LLM_LATENCY_METRIC_KEY = f"{METRICS_KEY_PREFIX}_llm_latency_seconds"
@@ -108,16 +106,14 @@ class CustomMetrics(metaclass=SingletonMeta):
         except Exception as e:
             # record metric and then throw exception.
             req_duration = time.perf_counter() - start_time
-            self.request_latency.labels(
-                method=method, status=HTTPStatus.INTERNAL_SERVER_ERROR, path=path
-            ).observe(req_duration)
+            self.request_latency.labels(method=method, status=HTTPStatus.INTERNAL_SERVER_ERROR, path=path).observe(
+                req_duration
+            )
             raise e
 
         # record metric.
         req_duration = time.perf_counter() - start_time
-        self.request_latency.labels(
-            method=method, status=response.status_code, path=path
-        ).observe(req_duration)
+        self.request_latency.labels(method=method, status=response.status_code, path=path).observe(req_duration)
 
         # continue request handling.
         return response

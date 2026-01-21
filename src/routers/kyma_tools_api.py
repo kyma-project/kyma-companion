@@ -61,9 +61,7 @@ async def query_kyma_resource(
     logger.info(f"Kyma query request: uri={request.uri}")
 
     try:
-        result = await kyma_query_tool.ainvoke(
-            {"uri": request.uri, "k8s_client": k8s_client}
-        )
+        result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
     except K8sClientError as e:
@@ -101,10 +99,7 @@ async def get_resource_version(
                 "k8s_client": k8s_client,
             }
         )
-        logger.info(
-            f"Resource version lookup successful: "
-            f"kind={request.resource_kind}, version={api_version}"
-        )
+        logger.info(f"Resource version lookup successful: kind={request.resource_kind}, version={api_version}")
         return KymaResourceVersionResponse(
             resource_kind=request.resource_kind,
             api_version=api_version,
@@ -137,9 +132,7 @@ async def search_kyma_documentation(
     try:
         search_tool = SearchKymaDocTool(models=models, top_k=request.top_k)
         results = await search_tool.arun_list(query=request.query)
-        logger.info(
-            f"Search completed successfully, " f"returned {len(results)} documents"
-        )
+        logger.info(f"Search completed successfully, returned {len(results)} documents")
         return SearchKymaDocResponse(
             results=results,
             query=request.query,

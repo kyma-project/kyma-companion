@@ -8,9 +8,7 @@ from utils.models.openai import OpenAIModel
 
 @pytest.fixture
 def openai_model(mock_get_proxy_client):
-    config = ModelConfig(
-        name="gpt-4", deployment_id="deployment-123", temperature=0.7, type="openai"
-    )
+    config = ModelConfig(name="gpt-4", deployment_id="deployment-123", temperature=0.7, type="openai")
     with patch("utils.models.openai.ChatOpenAI") as mock_chat_openai:
         model = OpenAIModel(config, mock_get_proxy_client)
         model._llm = mock_chat_openai.return_value

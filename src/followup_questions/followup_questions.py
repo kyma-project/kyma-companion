@@ -57,9 +57,7 @@ class FollowUpQuestionsHandler:
             self._tokenizer = tokenizer or tiktoken.encoding_for_model(self._model.name)
         except KeyError:
             # Fallback to a compatible encoding for unrecognized model names
-            logger.warning(
-                f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding"
-            )
+            logger.warning(f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding")
             self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def generate_questions(self, messages: list[BaseMessage]) -> list[str]:

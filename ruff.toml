@@ -1,76 +1,78 @@
 # Linting configuration for Ruff
-target-version = "py312"
-# Set the maximum line length to 100.
+target-version = "py313"
+# Set the maximum line length to 120.
 line-length = 120
 # Set the indentation width to 4.
 indent-width = 4
 
 src = ["src", "tests", "scripts"]
+exclude = ["doc_indexer", "tests/blackbox"]
 
 [lint]
 # Add the `line-too-long` rule to the enforced rule set.
 select = [
-    # pycodestyle
-    "E",
-    # Pyflakes
-    "F",
-    # Enables the pep8-naming rules, which include checks for proper naming conventions in Python
-    "N",
-    # pyupgrade
-    "UP",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # flake8-pie
-    "PIE",
-    # isort
-    "I",
-    # docstring
-    # "D100", # Missing docstring in public module
-    "D101", # Missing docstring in public class
-    "D102", # Missing docstring in public method
-    "D103", # Missing docstring in public function
-    #    "D105", # Missing docstring in magic method
-    #    "D106", # Missing docstring in public nested class
-    #    "D107", # Missing docstring in __init__
-    "PLW0602", # global variable not assigned a value
-    "PLW0603", # checks for the use of the global statement,
-    "ANN001", # Missing type annotation for function argument
-    "ANN002", # Missing type annotation for *args
-    "ANN003", # Missing type annotation for **kwargs
-    "ANN201", # Missing return type annotation for public function
-    "ANN202", # Missing return type annotation for private function
-    # "ANN204", # Missing return type annotation for special method, e.g. constructor
-    "ANN205", # Missing return type annotation for staticmethod
-    "ANN206", # Missing return type annotation for classmethod
-    "C901", # checks for functions with a high McCabe complexity.
-    "C400", #Unnecessary generator (rewrite as a list comprehension)
-    "C401", # Unnecessary generator (rewrite as a set comprehension)
-    "C402", # Unnecessary generator (rewrite as a dict comprehension)
-    "C403", # Unnecessary list comprehension (rewrite as a set comprehension)
-    "C404", # Unnecessary list comprehension (rewrite as a dict comprehension)
-    "C416", # Unnecessary comprehension (rewrite using list(), set(), or dict())
-    "C417", # Unnecessary map usage (rewrite using a generator expression)
-    "PLR2004", # magic value used in comparison, consider replacing {value} with a constant variable
-    "PLR0915", # keeping functions and methods short and focused
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # Enables the pep8-naming rules, which include checks for proper naming conventions in Python
+  "N",
+  # pyupgrade
+  "UP",
+  # flake8-bugbear
+  "B",
+  # flake8-simplify
+  "SIM",
+  # flake8-pie
+  "PIE",
+  # isort
+  "I",
+  # docstring
+  # "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public method
+  "D103", # Missing docstring in public function
+  #    "D105", # Missing docstring in magic method
+  #    "D106", # Missing docstring in public nested class
+  #    "D107", # Missing docstring in __init__
+  "PLW0602", # global variable not assigned a value
+  "PLW0603", # checks for the use of the global statement,
+  "ANN001",  # Missing type annotation for function argument
+  "ANN002",  # Missing type annotation for *args
+  "ANN003",  # Missing type annotation for **kwargs
+  "ANN201",  # Missing return type annotation for public function
+  "ANN202",  # Missing return type annotation for private function
+  # "ANN204", # Missing return type annotation for special method, e.g. constructor
+  "ANN205",  # Missing return type annotation for staticmethod
+  "ANN206",  # Missing return type annotation for classmethod
+  "C901",    # checks for functions with a high McCabe complexity.
+  "C400",    #Unnecessary generator (rewrite as a list comprehension)
+  "C401",    # Unnecessary generator (rewrite as a set comprehension)
+  "C402",    # Unnecessary generator (rewrite as a dict comprehension)
+  "C403",    # Unnecessary list comprehension (rewrite as a set comprehension)
+  "C404",    # Unnecessary list comprehension (rewrite as a dict comprehension)
+  "C416",    # Unnecessary comprehension (rewrite using list(), set(), or dict())
+  "C417",    # Unnecessary map usage (rewrite using a generator expression)
+  "PLR2004", # magic value used in comparison, consider replacing {value} with a constant variable
+  "PLR0915", # keeping functions and methods short and focused
 ]
 
 [lint.per-file-ignores]
 "tests/*" = [
-    "D", # Ignore all docstring rules for files in the "tests" directory
-    "ANN001", # Missing type annotation for function argument
-    "ANN002", # Missing type annotation for *args
-    "ANN003", # Missing type annotation for **kwargs
-    "ANN201", # Missing return type annotation for public function
-    "ANN202", # Missing return type annotation for private function
-    "ANN204", # Missing return type annotation for special method
-    "ANN205", # Missing return type annotation for staticmethod
-    "ANN206", # Missing return type annotation for classmethod
-    "E501", # Ignore line too long errors
+  "D",      # Ignore all docstring rules for files in the "tests" directory
+  "ANN001", # Missing type annotation for function argument
+  "ANN002", # Missing type annotation for *args
+  "ANN003", # Missing type annotation for **kwargs
+  "ANN201", # Missing return type annotation for public function
+  "ANN202", # Missing return type annotation for private function
+  "ANN204", # Missing return type annotation for special method
+  "ANN205", # Missing return type annotation for staticmethod
+  "ANN206", # Missing return type annotation for classmethod
+  "E501",   # Ignore line too long errors
 ]
-# ignore line too long for prompts.py files
-"prompts.py" = ["E501"]
+# ignore line too long for prompt files
+"**/prompts.py" = ["E501"]
+"**/prompt.py" = ["E501"]
 
 
 extend-safe-fixes = ["F601"]
@@ -85,3 +87,6 @@ max-complexity = 10 # sets the maximum allowed complexity for function to 10
 [lint.pylint]
 max-statements = 50 # keeping functions and methods short and focused (aiming for under 50 lines)
 
+[format]
+quote-style = "double"
+indent-style = "space"
