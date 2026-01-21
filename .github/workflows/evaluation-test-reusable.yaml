@@ -29,7 +29,7 @@ on:
 # global env variables.
 env:
   DOCKER_TIMEOUT: 30
-  K3D_VERSION: "v5.7.2" # Required K3d version.
+  K3D_VERSION: "v5.8.3" # Required K3d version.
 
 jobs:
   evaluation-tests:
