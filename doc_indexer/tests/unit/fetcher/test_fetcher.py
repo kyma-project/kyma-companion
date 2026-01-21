@@ -109,9 +109,7 @@ class TestDocumentsFetcher:
         # should have cloned the repo.
         clone_repo_mock.assert_called_once_with(fetcher.sources[0].url, given_tmp_dir)
         # should have created the module directory for output.
-        makedirs_mock.assert_called_once_with(
-            os.path.join(given_output_dir, fetcher.sources[0].name), exist_ok=True
-        )
+        makedirs_mock.assert_called_once_with(os.path.join(given_output_dir, fetcher.sources[0].name), exist_ok=True)
         # should have created the scroller object and called the scroll method.
         assert scroller_mock.call_count == 1
         scroller_mock.return_value.scroll.assert_called_once()

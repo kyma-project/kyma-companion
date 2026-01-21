@@ -84,9 +84,7 @@ def app_models(init_config):
         MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
         MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
         MAIN_MODEL_NANO_NAME: model_factory.create_model(MAIN_MODEL_NANO_NAME),
-        MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(
-            MAIN_EMBEDDING_MODEL_NAME
-        ),
+        MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(MAIN_EMBEDDING_MODEL_NAME),
     }
 
     # Set temperature=0 for deterministic test behavior
@@ -151,9 +149,7 @@ def companion_graph(app_models, start_fake_redis):
 
 @pytest.fixture
 def answer_relevancy_metric(evaluator_model):
-    return AnswerRelevancyMetric(
-        threshold=0.6, model=evaluator_model, include_reason=True
-    )
+    return AnswerRelevancyMetric(threshold=0.6, model=evaluator_model, include_reason=True)
 
 
 @pytest.fixture
@@ -249,15 +245,11 @@ def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> Compani
         subtasks = []
 
     # find the last human message and use its content as user query.
-    last_human_message = next(
-        (msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None
-    )
+    last_human_message = next((msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None)
 
     # if no human message is found, use the last message's content.
     user_input = UserInput(
-        query=(
-            last_human_message.content if last_human_message else messages[-1].content
-        ),
+        query=(last_human_message.content if last_human_message else messages[-1].content),
         resource_kind=None,
         resource_api_version=None,
         resource_name=None,

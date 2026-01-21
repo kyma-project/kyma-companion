@@ -39,13 +39,9 @@ def contextual_relevancy_metric(evaluator_model):
 def evaluation_metrics(evaluator_model, contextual_relevancy_metric):
     # test the reranking of the retrieved documents
     # calculates how much retrieved context aligns with the expected output
-    contextual_recall = ContextualRecallMetric(
-        threshold=0.5, model=evaluator_model, include_reason=True
-    )
+    contextual_recall = ContextualRecallMetric(threshold=0.5, model=evaluator_model, include_reason=True)
 
-    faithfulness = FaithfulnessMetric(
-        threshold=0.7, model=evaluator_model, include_reason=True
-    )
+    faithfulness = FaithfulnessMetric(threshold=0.7, model=evaluator_model, include_reason=True)
     return [
         contextual_recall,
         contextual_relevancy_metric,

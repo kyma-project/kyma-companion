@@ -33,9 +33,7 @@ class MockService(IService):
     def __init__(self, expected_error=None):
         self.expected_error = expected_error
 
-    async def new_conversation(
-        self, k8s_client: IK8sClient, message: Message
-    ) -> list[str]:
+    async def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         if self.expected_error:
             raise self.expected_error
         return ["Test question 1", "Test question 2", "Test question 3"]
@@ -50,14 +48,9 @@ class MockService(IService):
         ]
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
-        return (
-            user_identifier
-            != "87a5e00b7c0b4287fea96bbeabc05fdfdaacba5346b606366be40fbf3046cc9a"
-        )
+        return user_identifier != "87a5e00b7c0b4287fea96bbeabc05fdfdaacba5346b606366be40fbf3046cc9a"
 
-    async def is_usage_limit_exceeded(
-        self, cluster_id: str
-    ) -> UsageExceedReport | None:
+    async def is_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
         if cluster_id == "EXCEEDED":
             return UsageExceedReport(
@@ -70,7 +63,7 @@ class MockService(IService):
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient
-    ) -> AsyncGenerator[bytes, None]:
+    ) -> AsyncGenerator[bytes]:
         if self.expected_error:
             raise self.expected_error
         if message.resource_kind == UNKNOWN:
@@ -140,9 +133,7 @@ class MockK8sClient:
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         return []
 
-    def list_k8s_events_for_resource(
-        self, kind: str, name: str, namespace: str
-    ) -> list[dict]:
+    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         return []
 
     def fetch_pod_logs(
@@ -262,9 +253,7 @@ def client_factory():
         ),
         (
             {
-                "x-k8s-authorization": jwt.encode(
-                    {"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"
-                ),
+                "x-k8s-authorization": jwt.encode({"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"),
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
@@ -430,9 +419,7 @@ def test_messages_endpoint(
         "status": str(expected_output["status_code"]),
         "path": "/api/conversations/{conversation_id}/messages",
     }
-    before_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     if before_metric_value is None:
         before_metric_value = 0.0
 
@@ -446,9 +433,7 @@ def test_messages_endpoint(
     assert response.status_code == expected_output["status_code"]
     assert response.headers["content-type"] == expected_output["content-type"]
 
-    after_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     assert after_metric_value > before_metric_value
 
     if expected_output["status_code"] == HTTPStatus.UNPROCESSABLE_ENTITY:
@@ -461,13 +446,8 @@ def test_messages_endpoint(
         or expected_output["status_code"] == HTTPStatus.BAD_REQUEST
     ):
         # return for failure test cases
-        if (
-            "expected_error_msg" in expected_output
-            and expected_output["expected_error_msg"]
-        ):
-            assert (
-                expected_output["expected_error_msg"].lower() in response.text.lower()
-            )
+        if "expected_error_msg" in expected_output and expected_output["expected_error_msg"]:
+            assert expected_output["expected_error_msg"].lower() in response.text.lower()
 
         return
 
@@ -478,20 +458,17 @@ def test_messages_endpoint(
 
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
-        b'"To create an API Rule in Kyma to expose a service externally", "tasks": []}, "error": null}}\n'
-        in content
+        b'"To create an API Rule in Kyma to expose a service externally", "tasks": []}, "error": null}}\n' in content
     )
     assert (
         b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"content": '
-        b'"To create a kubernetes deployment", "tasks": []}, "error": null}}\n'
-        in content
+        b'"To create a kubernetes deployment", "tasks": []}, "error": null}}\n' in content
     )
     assert (
         b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content'
         b'": "To create an API Rule in Kyma to expose a service externally", "tasks": '
         b'[]}, "error": null}}\n{"event": "agent_action", "data": {"agent": "KubernetesAgent", "an'
-        b'swer": {"content": "To create a kubernetes deployment", "tasks": []}, "error": null}}\n'
-        in content
+        b'swer": {"content": "To create a kubernetes deployment", "tasks": []}, "error": null}}\n' in content
     )
 
 
@@ -705,9 +682,7 @@ def test_init_conversation(
         "status": str(expected_output["status_code"]),
         "path": "/api/conversations/",
     }
-    before_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     if before_metric_value is None:
         before_metric_value = 0.0
 
@@ -723,16 +698,11 @@ def test_init_conversation(
 
     response_body = json.loads(response.content)
 
-    after_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     assert after_metric_value > before_metric_value
 
     if expected_output["status_code"] == HTTPStatus.OK:
-        assert (
-            response_body["initial_questions"]
-            == expected_output["body"]["initial_questions"]
-        )
+        assert response_body["initial_questions"] == expected_output["body"]["initial_questions"]
         assert response_body["conversation_id"] != ""
         assert response.headers["session-id"] != ""
     else:
@@ -806,9 +776,7 @@ def test_init_conversation(
         (
             # should return error when user is not authorized.
             {
-                "x-k8s-authorization": jwt.encode(
-                    {"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"
-                ),
+                "x-k8s-authorization": jwt.encode({"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"),
                 "x-cluster-url": "https://api.k8s.example.com",
                 "x-cluster-certificate-authority-data": "non-empty-ca-data",
             },
@@ -925,10 +893,7 @@ def test_init_conversation(
                 "body": {
                     "detail": [
                         {
-                            "ctx": {
-                                "error": "invalid length: expected length 32 for simple "
-                                "format, found 6"
-                            },
+                            "ctx": {"error": "invalid length: expected length 32 for simple format, found 6"},
                             "input": "abcdef",
                             "loc": ["path", "conversation_id"],
                             "msg": "Input should be a valid UUID, invalid length: expected "
@@ -961,9 +926,7 @@ def test_followup_questions(
         "status": str(expected_output["status_code"]),
         "path": "/api/conversations/{conversation_id}/questions",
     }
-    before_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     if before_metric_value is None:
         before_metric_value = 0.0
 
@@ -977,9 +940,7 @@ def test_followup_questions(
     assert response.status_code == expected_output["status_code"]
     assert response.headers["content-type"] == expected_output["content-type"]
 
-    after_metric_value = CustomMetrics().registry.get_sample_value(
-        metric_name, metric_labels
-    )
+    after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
     assert after_metric_value > before_metric_value
 
     response_body = json.loads(response.content)
@@ -1013,18 +974,14 @@ def test_followup_questions(
 async def test_check_token_usage(cluster_url, usage_report, expected_exception):
     # Mock the conversation_service
     mock_conversation_service = Mock()
-    mock_conversation_service.is_usage_limit_exceeded = AsyncMock(
-        return_value=usage_report
-    )
+    mock_conversation_service.is_usage_limit_exceeded = AsyncMock(return_value=usage_report)
 
     if expected_exception:
         with pytest.raises(expected_exception):
             await check_token_usage(cluster_url, mock_conversation_service)
     else:
         await check_token_usage(cluster_url, mock_conversation_service)
-        mock_conversation_service.is_usage_limit_exceeded.assert_called_once_with(
-            "k8s-id"
-        )
+        mock_conversation_service.is_usage_limit_exceeded.assert_called_once_with("k8s-id")
 
 
 @pytest.mark.asyncio
@@ -1062,16 +1019,10 @@ async def test_authorize_user(
     # when / then
     if expected_exception or not is_authorized:
         with pytest.raises(expected_exception):
-            await authorize_user(
-                conversation_id, user_identifier, mock_conversation_service
-            )
+            await authorize_user(conversation_id, user_identifier, mock_conversation_service)
     else:
-        await authorize_user(
-            conversation_id, user_identifier, mock_conversation_service
-        )
-        mock_conversation_service.authorize_user.assert_called_once_with(
-            conversation_id, user_identifier
-        )
+        await authorize_user(conversation_id, user_identifier, mock_conversation_service)
+        mock_conversation_service.authorize_user.assert_called_once_with(conversation_id, user_identifier)
 
 
 @pytest.mark.parametrize(
@@ -1163,9 +1114,7 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
         resource_related_to=None,
     )
 
-    with patch(
-        "routers.conversations.compute_string_token_count"
-    ) as mock_token_counter:
+    with patch("routers.conversations.compute_string_token_count") as mock_token_counter:
         mock_token_counter.return_value = mock_token_count
 
         if should_raise_exception:
@@ -1173,8 +1122,6 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
                 enforce_query_token_limit(message)
 
             assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
-            assert (
-                exc_info.value.detail == "Input Query exceeds the allowed token limit."
-            )
+            assert exc_info.value.detail == "Input Query exceeds the allowed token limit."
         else:
             enforce_query_token_limit(message)  # Should not raise

@@ -37,9 +37,7 @@ class SearchKymaDocTool(BaseTool):
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
     top_k: int | None = Field(default=DEFAULT_TOP_K, exclude=True)
 
-    def __init__(
-        self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K
-    ):
+    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K):
         super().__init__()
         self.rag_system = RAGSystem(models)
         self.top_k = top_k
@@ -54,9 +52,7 @@ class SearchKymaDocTool(BaseTool):
     async def _arun(self, query: str) -> str:
         """Async implementation of the search through Kyma documentation. Returns concatenated content."""
         contents = await self.arun_list(query)
-        combined = "\n\n -- next document -- \n\n".join(
-            content for content in contents if content.strip()
-        )
+        combined = "\n\n -- next document -- \n\n".join(content for content in contents if content.strip())
         if not combined.strip():
             return "No relevant documentation found."
         return combined

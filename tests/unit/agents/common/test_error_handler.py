@@ -40,9 +40,7 @@ class TestErrorHandlerDecorators:
             ),
         ],
     )
-    def test_sync_error_handlers(
-        self, decorator, test_case, input_value, expected_result
-    ):
+    def test_sync_error_handlers(self, decorator, test_case, input_value, expected_result):
         """Test synchronous error handler decorators with various scenarios."""
 
         if decorator == tool_parsing_error_handler:

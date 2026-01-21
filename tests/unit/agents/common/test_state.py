@@ -39,9 +39,7 @@ class TestSubTask:
             ),
         ],
     )
-    def test_complete(
-        self, description, task_title, assigned_to, status, result, expected_status
-    ):
+    def test_complete(self, description, task_title, assigned_to, status, result, expected_status):
         subtask = SubTask(
             description=description,
             task_title=task_title,
@@ -132,9 +130,7 @@ class TestAgentState:
             ),
         ],
     )
-    def test_get_agent_messages_including_summary(
-        self, messages, messages_summary, expected
-    ):
+    def test_get_agent_messages_including_summary(self, messages, messages_summary, expected):
         # given
         state = BaseAgentState(
             messages=[],

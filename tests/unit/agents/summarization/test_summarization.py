@@ -165,9 +165,7 @@ class TestSummarization:
             ),
         ],
     )
-    def test_filter_messages_by_token_limit(
-        self, messages, token_lower_limit, expected_filtered_messages
-    ):
+    def test_filter_messages_by_token_limit(self, messages, token_lower_limit, expected_filtered_messages):
         model = Mock()
         model.llm = Mock()
         summarization = MessageSummarizer(
@@ -251,18 +249,10 @@ class TestSummarization:
             # Test case 1: Successful summarization exceeding the token limit.
             (
                 [
-                    HumanMessage(
-                        id="1", content="This is the first message. It is very long."
-                    ),
-                    AIMessage(
-                        id="2", content="This is the second message. It is very long."
-                    ),
-                    HumanMessage(
-                        id="3", content="This is the third message. It is very long."
-                    ),
-                    AIMessage(
-                        id="4", content="This is the fourth message. It is very long."
-                    ),
+                    HumanMessage(id="1", content="This is the first message. It is very long."),
+                    AIMessage(id="2", content="This is the second message. It is very long."),
+                    HumanMessage(id="3", content="This is the third message. It is very long."),
+                    AIMessage(id="4", content="This is the fourth message. It is very long."),
                 ],
                 "Previous summary",
                 20,
@@ -282,18 +272,10 @@ class TestSummarization:
             # Test case 2: Failed summarization with fallback
             (
                 [
-                    HumanMessage(
-                        id="1", content="This is the first message. It is very long."
-                    ),
-                    AIMessage(
-                        id="2", content="This is the second message. It is very long."
-                    ),
-                    HumanMessage(
-                        id="3", content="This is the third message. It is very long."
-                    ),
-                    AIMessage(
-                        id="4", content="This is the fourth message. It is very long."
-                    ),
+                    HumanMessage(id="1", content="This is the first message. It is very long."),
+                    AIMessage(id="2", content="This is the second message. It is very long."),
+                    HumanMessage(id="3", content="This is the third message. It is very long."),
+                    AIMessage(id="4", content="This is the fourth message. It is very long."),
                 ],
                 "Previous summary",
                 20,
@@ -309,9 +291,7 @@ class TestSummarization:
             (
                 [
                     SystemMessage(id="1", content="System message"),
-                    HumanMessage(
-                        id="2", content="A longer text input to test the summary."
-                    ),
+                    HumanMessage(id="2", content="A longer text input to test the summary."),
                 ],
                 "",
                 100,
@@ -344,17 +324,13 @@ class TestSummarization:
         if error:
             summarization._chain.ainvoke = AsyncMock(side_effect=error)
         else:
-            summarization._chain.ainvoke = AsyncMock(
-                return_value=AIMessage(content="summary content")
-            )
+            summarization._chain.ainvoke = AsyncMock(return_value=AIMessage(content="summary content"))
 
         class TestState(BaseModel):
             messages: list
             messages_summary: str
 
-        state = TestState(
-            messages=state_messages, messages_summary=state_messages_summary
-        )
+        state = TestState(messages=state_messages, messages_summary=state_messages_summary)
 
         result = await summarization.summarization_node(state, {})
         assert result == expected_result

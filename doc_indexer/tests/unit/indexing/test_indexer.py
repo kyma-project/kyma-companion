@@ -203,9 +203,7 @@ def test_load_documents(
         (
             "Multiple batches",
             None,
-            [
-                Document(page_content=f"# Header {i}\nContent") for i in range(6)
-            ],  # Assuming CHUNKS_BATCH_SIZE is 5
+            [Document(page_content=f"# Header {i}\nContent") for i in range(6)],  # Assuming CHUNKS_BATCH_SIZE is 5
             [Document(page_content=f"# Header {i}\nContent") for i in range(6)],
         ),
     ],
@@ -220,9 +218,7 @@ def test_index_batches(
 ) -> None:
     with (
         patch.object(indexer, "_load_documents", return_value=loaded_docs),
-        patch(
-            "indexing.indexer.create_chunks", return_value=expected_chunks
-        ) as mock_create_chunks,
+        patch("indexing.indexer.create_chunks", return_value=expected_chunks) as mock_create_chunks,
         patch("indexing.indexer.CHUNKS_BATCH_SIZE", 5),
         patch("time.sleep") as mock_sleep,
         patch.object(indexer, "_copy_table") as mock_copy_table,
@@ -240,10 +236,7 @@ def test_index_batches(
         # Calculate the expected number of batches.
         num_chunks = len(expected_chunks)
         batch_size = 5  # from the mocked CHUNKS_BATCH_SIZE
-        expected_batches = [
-            expected_chunks[i : i + batch_size]
-            for i in range(0, num_chunks, batch_size)
-        ]
+        expected_batches = [expected_chunks[i : i + batch_size] for i in range(0, num_chunks, batch_size)]
 
         # Verify that add_documents was called for each batch.
         assert indexer.db.add_documents.call_count == len(expected_batches)
@@ -256,9 +249,7 @@ def test_index_batches(
             mock_sleep.assert_has_calls([call(3)] * (len(expected_batches) - 1))
 
         # Verify that _copy_table was called to backup the table.
-        mock_copy_table.assert_called_once_with(
-            TABLE_NAME, BACKUP_TABLE_NAME, only_warn_if_table_inexistent=True
-        )
+        mock_copy_table.assert_called_once_with(TABLE_NAME, BACKUP_TABLE_NAME, only_warn_if_table_inexistent=True)
 
         # Verify that db.delete was called to clear the original table.
         indexer.db.delete.assert_called_once_with(filter={})
@@ -289,12 +280,8 @@ def test_index_db_delete_error_triggers_restore(indexer, mock_hana_db):
 
     # Then:
     # Ensure that methods to restore backup in the except block were called.
-    indexer._drop_table.assert_called_once_with(
-        TABLE_NAME, only_warn_if_table_inexistent=True
-    )
-    indexer._rename_table.assert_called_once_with(
-        BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistent=True
-    )
+    indexer._drop_table.assert_called_once_with(TABLE_NAME, only_warn_if_table_inexistent=True)
+    indexer._rename_table.assert_called_once_with(BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistent=True)
 
 
 def test_index_index_chunks_in_batches_error_triggers_restore(indexer, mock_hana_db):
@@ -322,9 +309,5 @@ def test_index_index_chunks_in_batches_error_triggers_restore(indexer, mock_hana
 
     # Then:
     # Ensure that methods to restore backup in the except block were called.
-    indexer._drop_table.assert_called_once_with(
-        TABLE_NAME, only_warn_if_table_inexistent=True
-    )
-    indexer._rename_table.assert_called_once_with(
-        BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistent=True
-    )
+    indexer._drop_table.assert_called_once_with(TABLE_NAME, only_warn_if_table_inexistent=True)
+    indexer._rename_table.assert_called_once_with(BACKUP_TABLE_NAME, TABLE_NAME, only_warn_if_table_inexistent=True)

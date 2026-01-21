@@ -36,9 +36,7 @@ def create_embedding_factory(
 
 
 # OpenAI Embeddings
-def openai_embedding_creator(
-    deployment_id: str, proxy_client: BaseProxyClient
-) -> Embeddings:
+def openai_embedding_creator(deployment_id: str, proxy_client: BaseProxyClient) -> Embeddings:
     """Create an OpenAI embedding model."""
     try:
         time.sleep(1)  # Sleep to avoid rate limiting

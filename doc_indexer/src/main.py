@@ -52,24 +52,18 @@ def run_indexer() -> None:
     create_embedding = create_embedding_factory(openai_embedding_creator)
     embeddings_model = create_embedding(embedding_model.deployment_id)
     # setup connection to Hana Cloud DB
-    hana_conn = create_hana_connection(
-        DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
-    )
+    hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
     if not hana_conn:
         logger.error("Failed to connect to the database. Exiting.")
         raise
 
-    indexer = AdaptiveSplitMarkdownIndexer(
-        DOCS_PATH, embeddings_model, hana_conn, DOCS_TABLE_NAME
-    )
+    indexer = AdaptiveSplitMarkdownIndexer(DOCS_PATH, embeddings_model, hana_conn, DOCS_TABLE_NAME)
     indexer.index()
 
 
 if __name__ == "__main__":
     # read command line argument.
-    parser = argparse.ArgumentParser(
-        description="Kyma Documentation Fetcher and Indexer."
-    )
+    parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
     parser.add_argument("task", choices=["index", "fetch"])
     args = parser.parse_args()
 

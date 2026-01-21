@@ -68,9 +68,7 @@ class TestK8sAuthHeaders:
             ),
         ],
     )
-    def test_get_decoded_certificate_authority_data(
-        self, given_ca_data, expected_result
-    ):
+    def test_get_decoded_certificate_authority_data(self, given_ca_data, expected_result):
         # given
         k8s_headers = K8sAuthHeaders(
             x_cluster_url="https://api.example.com",
@@ -104,9 +102,7 @@ class TestK8sAuthHeaders:
             ),
         ],
     )
-    def test_get_decoded_client_certificate_data(
-        self, given_client_cert_data, expected_result, expected_error
-    ):
+    def test_get_decoded_client_certificate_data(self, given_client_cert_data, expected_result, expected_error):
         # given
         k8s_headers = K8sAuthHeaders(
             x_cluster_url="https://api.example.com",
@@ -139,9 +135,7 @@ class TestK8sAuthHeaders:
             ),
         ],
     )
-    def test_get_decoded_client_key_data(
-        self, given_client_key_data, expected_result, expected_exception
-    ):
+    def test_get_decoded_client_key_data(self, given_client_key_data, expected_result, expected_exception):
         # given
         k8s_headers = K8sAuthHeaders(
             x_cluster_url="https://api.example.com",
@@ -318,9 +312,7 @@ class TestK8sAuthHeaders:
             ),
         ],
     )
-    def test_validate_headers(
-        self, description: str, k8s_headers: K8sAuthHeaders, expected_error_msg: str
-    ):
+    def test_validate_headers(self, description: str, k8s_headers: K8sAuthHeaders, expected_error_msg: str):
         # given
         if expected_error_msg is not None:
             with pytest.raises(ValueError) as e:
@@ -487,9 +479,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_auth_headers(
-        self, k8s_client, test_description, k8s_headers, expected_result
-    ):
+    def test_get_auth_headers(self, k8s_client, test_description, k8s_headers, expected_result):
         # given
         k8s_client.k8s_auth_headers = k8s_headers
 
@@ -556,11 +546,7 @@ class TestK8sClient:
         [
             (
                 "should sanitize items when sanitizer is set for paginated list response",
-                Mock(
-                    sanitize=Mock(
-                        side_effect=[[{"sanitized": "data1"}, {"sanitized": "data2"}]]
-                    )
-                ),
+                Mock(sanitize=Mock(side_effect=[[{"sanitized": "data1"}, {"sanitized": "data2"}]])),
                 [
                     {"items": [{"raw": "data1"}], "metadata": {"continue": "token123"}},
                     {"items": [{"raw": "data2"}], "metadata": {}},
@@ -693,9 +679,7 @@ class TestK8sClient:
         k8s_client.ca_temp_filename = "test-ca-file"
         k8s_client.data_sanitizer = data_sanitizer
 
-        monkeypatch.setattr(
-            "services.k8s.K8S_API_PAGINATION_MAX_PAGE", len(raw_data_pages) + 1
-        )
+        monkeypatch.setattr("services.k8s.K8S_API_PAGINATION_MAX_PAGE", len(raw_data_pages) + 1)
 
         with aioresponses() as aio_mock_response:
             # Create response mocks based on pagination flow
@@ -707,11 +691,7 @@ class TestK8sClient:
                 #   - For page 0: continue_token = None (first request has no continue token)
                 #   - For page 1: Gets continue token from raw_data_pages[0]["metadata"]["continue"]
                 #   - For page 2: Gets continue token from raw_data_pages[1]["metadata"]["continue"]
-                continue_token = (
-                    None
-                    if i - 1 < 0
-                    else raw_data_pages[i - 1].get("metadata", {}).get("continue", None)
-                )
+                continue_token = None if i - 1 < 0 else raw_data_pages[i - 1].get("metadata", {}).get("continue", None)
                 mock_url = get_url_for_paged_request(
                     f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri",
                     continue_token,
@@ -788,9 +768,7 @@ class TestK8sClient:
                     match=f"Failed to execute GET request to the Kubernetes API. Error: {error_message}",
                 ),
             ):
-                mock_url = get_url_for_paged_request(
-                    f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", ""
-                )
+                mock_url = get_url_for_paged_request(f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri", "")
                 aio_mock_response.get(
                     mock_url,
                     body=error_message,
@@ -807,9 +785,7 @@ class TestK8sClient:
                 for i in range(pages_to_exceed_limit):
                     mock_url = get_url_for_paged_request(
                         f"{k8s_client.k8s_auth_headers.x_cluster_url}/test/uri",
-                        (
-                            f"token-{i}" if i != 0 else ""
-                        ),  # First page has no continue token.
+                        (f"token-{i}" if i != 0 else ""),  # First page has no continue token.
                     )
                     payload = {
                         "items": [{"data": f"page-{i + 1}"}],
@@ -840,9 +816,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_list_resources(
-        self, k8s_client, test_description, data_sanitizer, raw_data, expected_result
-    ):
+    def test_list_resources(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
@@ -880,16 +854,12 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_resource(
-        self, k8s_client, test_description, data_sanitizer, raw_data, expected_result
-    ):
+    def test_get_resource(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
         mock_dynamic_client = Mock()
-        mock_dynamic_client.resources.get.return_value.get.return_value.to_dict.return_value = (
-            raw_data
-        )
+        mock_dynamic_client.resources.get.return_value.get.return_value.to_dict.return_value = raw_data
         k8s_client._dynamic_client = mock_dynamic_client
 
         # when
@@ -934,9 +904,7 @@ class TestK8sClient:
         # Mock get_resource and list_k8s_events_for_resource
         with (
             patch.object(k8s_client, "get_resource") as mock_get_resource,
-            patch.object(
-                k8s_client, "list_k8s_events_for_resource"
-            ) as mock_list_events,
+            patch.object(k8s_client, "list_k8s_events_for_resource") as mock_list_events,
         ):
             mock_get_resource.return_value = raw_data
             mock_list_events.return_value = raw_events
@@ -966,9 +934,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_list_k8s_events(
-        self, k8s_client, test_description, data_sanitizer, raw_data, expected_result
-    ):
+    def test_list_k8s_events(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
@@ -1006,14 +972,10 @@ class TestK8sClient:
             ),
         ],
     )
-    async def test_get_group_version(
-        self, mock_init, test_description, group_version, expected_uri
-    ):
+    async def test_get_group_version(self, mock_init, test_description, group_version, expected_uri):
         # given
         k8s_client = K8sClient(k8s_auth_headers=None, data_sanitizer=None)
-        with patch(
-            "services.k8s.K8sClient.execute_get_api_request"
-        ) as mock_execute_get_api_request:
+        with patch("services.k8s.K8sClient.execute_get_api_request") as mock_execute_get_api_request:
             mock_execute_get_api_request.return_value = {}
 
             # when
@@ -1021,9 +983,7 @@ class TestK8sClient:
 
             # then
             assert result == {}
-            mock_execute_get_api_request.assert_called_once_with(
-                expected_uri
-            ), test_description
+            mock_execute_get_api_request.assert_called_once_with(expected_uri), test_description
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1134,9 +1094,7 @@ class TestK8sClient:
             (["   ", "\t\n", ""], ["", "", ""]),
         ],
     )
-    async def test_fetch_pod_logs(
-        self, k8s_client, mock_response_lines, expected_sanitized_logs
-    ):
+    async def test_fetch_pod_logs(self, k8s_client, mock_response_lines, expected_sanitized_logs):
         """
         Test the functionality in fetch_pod_logs method.
         """
@@ -1153,7 +1111,9 @@ class TestK8sClient:
 
         with aioresponses() as aio_mock_response:
             # Mock the API call to fetch pod logs.
-            mock_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            mock_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
             aio_mock_response.get(
                 mock_url,
                 body="\n".join(mock_response_lines),

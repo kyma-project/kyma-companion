@@ -64,9 +64,7 @@ class K8sAuthHeaders(BaseModel):
     def is_cluster_url_allowed(self) -> bool:
         """Check if the cluster URL is allowed based on the allowed domains."""
         if len(self.allowed_domains) == 0:
-            logger.warning(
-                "ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation."
-            )
+            logger.warning("ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation.")
             return True
 
         try:
@@ -82,9 +80,7 @@ class K8sAuthHeaders(BaseModel):
                 for allowed_domain in self.allowed_domains
             )
         except Exception as e:
-            raise ValueError(
-                f"Failed to check if cluster_url: {self.x_cluster_url}  is allowed"
-            ) from e
+            raise ValueError(f"Failed to check if cluster_url: {self.x_cluster_url}  is allowed") from e
 
     def get_auth_type(self) -> AuthType:
         """Get the authentication type."""
@@ -171,9 +167,7 @@ class IK8sClient(Protocol):
         """List all Kubernetes warning events."""
         ...
 
-    def list_k8s_events_for_resource(
-        self, kind: str, name: str, namespace: str
-    ) -> list[dict]:
+    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         """List all Kubernetes events for a specific resource."""
         ...
 
@@ -229,9 +223,7 @@ class K8sClient:
     api_client: Any
 
     @staticmethod
-    def new(
-        k8s_auth_headers: K8sAuthHeaders, data_sanitizer: IDataSanitizer | None = None
-    ) -> IK8sClient:
+    def new(k8s_auth_headers: K8sAuthHeaders, data_sanitizer: IDataSanitizer | None = None) -> IK8sClient:
         """Create a new instance of the K8sClient class."""
         return K8sClient(
             k8s_auth_headers=k8s_auth_headers,
@@ -247,27 +239,19 @@ class K8sClient:
         self.k8s_auth_headers = k8s_auth_headers
 
         with tempfile.NamedTemporaryFile(delete=False) as ca_file:
-            ca_file.write(
-                self.k8s_auth_headers.get_decoded_certificate_authority_data()
-            )
+            ca_file.write(self.k8s_auth_headers.get_decoded_certificate_authority_data())
         self.ca_temp_filename = ca_file.name
-        self.client_ssl_context = ssl.create_default_context(
-            cafile=self.ca_temp_filename
-        )
+        self.client_ssl_context = ssl.create_default_context(cafile=self.ca_temp_filename)
 
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             # Write the client certificate data to a temporary file.
             with tempfile.NamedTemporaryFile(delete=False) as client_cert_file:
-                client_cert_file.write(
-                    self.k8s_auth_headers.get_decoded_client_certificate_data()
-                )
+                client_cert_file.write(self.k8s_auth_headers.get_decoded_client_certificate_data())
             self.client_cert_temp_filename = client_cert_file.name
 
             # Write the client key data to a temporary file.
             with tempfile.NamedTemporaryFile(delete=False) as client_key_file:
-                client_key_file.write(
-                    self.k8s_auth_headers.get_decoded_client_key_data()
-                )
+                client_key_file.write(self.k8s_auth_headers.get_decoded_client_key_data())
             self.client_key_temp_filename = client_key_file.name
             self.client_ssl_context.load_cert_chain(
                 certfile=self.client_cert_temp_filename,
@@ -342,13 +326,8 @@ class K8sClient:
             "Content-Type": "application/json",
         }
 
-        if (
-            self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN
-            and self.k8s_auth_headers.x_k8s_authorization
-        ):
-            headers["Authorization"] = (
-                "Bearer " + self.k8s_auth_headers.x_k8s_authorization
-            )
+        if self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN and self.k8s_auth_headers.x_k8s_authorization:
+            headers["Authorization"] = "Bearer " + self.k8s_auth_headers.x_k8s_authorization
         return headers
 
     async def _paginated_api_request(self, base_url: str) -> dict | list[dict]:
@@ -374,9 +353,7 @@ class K8sClient:
 
                 # fetch the next batch of items.
                 next_url = get_url_for_paged_request(base_url, continue_token)
-                async with session.get(
-                    url=next_url, ssl=self.client_ssl_context
-                ) as response:
+                async with session.get(url=next_url, ssl=self.client_ssl_context) as response:
                     # Check if the response status is not OK.
                     if response.status != HTTPStatus.OK:
                         error_text = await response.text()
@@ -421,9 +398,7 @@ class K8sClient:
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
         Provide empty string for namespace to list resources in all namespaces."""
-        result = self.dynamic_client.resources.get(
-            api_version=api_version, kind=kind
-        ).get(namespace=namespace)
+        result = self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(namespace=namespace)
 
         # convert objects to dictionaries.
         items = [item.to_dict() for item in result.items]
@@ -512,11 +487,7 @@ class K8sClient:
         # filter pods by status and convert object to dictionary.
         items = []
         for pod in all_pods:
-            if (
-                "status" not in pod
-                or "phase" not in pod["status"]
-                or pod["status"]["phase"] != "Running"
-            ):
+            if "status" not in pod or "phase" not in pod["status"] or pod["status"]["phase"] != "Running":
                 items.append(pod)
         return items
 
@@ -528,9 +499,7 @@ class K8sClient:
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
 
-        result = self.dynamic_client.resources.get(api_version="v1", kind="Event").get(
-            namespace=namespace
-        )
+        result = self.dynamic_client.resources.get(api_version="v1", kind="Event").get(namespace=namespace)
 
         # convert objects to dictionaries and return.
         events = [event.to_dict() for event in result.items]
@@ -540,23 +509,14 @@ class K8sClient:
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
-        return [
-            event
-            for event in self.list_k8s_events(namespace)
-            if event["type"] == "Warning"
-        ]
+        return [event for event in self.list_k8s_events(namespace) if event["type"] == "Warning"]
 
-    def list_k8s_events_for_resource(
-        self, kind: str, name: str, namespace: str
-    ) -> list[dict]:
+    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         """List all Kubernetes events for a specific resource. Provide empty string for namespace to list all events."""
         events = self.list_k8s_events(namespace)
         result = []
         for event in events:
-            if (
-                event["involvedObject"]["kind"] == kind
-                and event["involvedObject"]["name"] == name
-            ):
+            if event["involvedObject"]["kind"] == kind and event["involvedObject"]["name"] == name:
                 result.append(event)
 
         return result
@@ -628,9 +588,7 @@ class K8sClient:
         parts_count = len(group_version.split(GROUP_VERSION_SEPARATOR))
 
         if group_version == "" or parts_count > GROUP_VERSION_PARTS_COUNT:
-            raise ValueError(
-                f"Invalid groupVersion: {group_version}. Expected format: v1 or <group>/<version>."
-            )
+            raise ValueError(f"Invalid groupVersion: {group_version}. Expected format: v1 or <group>/<version>.")
 
         # for Core API group, the endpoint is "api/v1", for others "apis/<group>/<version>".
         uri = f"api/{group_version}"

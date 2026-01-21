@@ -123,9 +123,7 @@ class TestOverviewEndpoint:
             ("kube-system", "namespace"),
         ],
     )
-    def test_overview_with_valid_params(
-        self, k8s_client_factory, namespace, resource_kind
-    ):
+    def test_overview_with_valid_params(self, k8s_client_factory, namespace, resource_kind):
         """Test overview endpoint with various valid parameters."""
         client = k8s_client_factory()
         headers = get_sample_headers()

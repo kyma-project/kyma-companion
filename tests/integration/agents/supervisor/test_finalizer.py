@@ -14,9 +14,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "case 1: Finalizer do not answer the question itself",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="Describe Kyma in detail"),
                 AIMessage(name="KymaAgent", content="It is a color of fish."),
             ],
@@ -31,9 +29,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "case 2: Finalizer do not answer the question itself",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(name="KubernetesAgent", content="The sky is blue."),
             ],
@@ -48,9 +44,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "case 3: Finalizer do not answer the question itself",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(
                     name="KubernetesAgent",
@@ -68,12 +62,8 @@ from integration.agents.test_common_node import create_mock_state
         (
             "case 4: Finalizer do not answer the question itself",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
+                HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content="The sun emits light.",
@@ -146,9 +136,7 @@ from integration.agents.test_common_node import create_mock_state
         (
             "Finalizer answers based on K8S agent's response",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="What is k8s?"),
                 AIMessage(
                     name="KubernetesAgent",
@@ -176,12 +164,8 @@ from integration.agents.test_common_node import create_mock_state
         (
             "Finalizer answers based on K8S and Kyma agents' responses",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(
-                    content="what are the types of a k8s service? what is a kyma function?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
+                HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content=dedent(
@@ -263,12 +247,8 @@ from integration.agents.test_common_node import create_mock_state
         (
             "Finalizer answers based on one of the agents' responses if another agent's response is invalid",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(
-                    content="what is k8s stateful set and what is a kyma function?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
+                HumanMessage(content="what is k8s stateful set and what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content="The sun emits light.",
@@ -309,12 +289,8 @@ from integration.agents.test_common_node import create_mock_state
         (
             "Finalizer answers based on Common and Kyma agent's responses",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"
-                ),
-                HumanMessage(
-                    content="write hello world nodejs script. Show me how to deploy it as a Kyma function."
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
+                HumanMessage(content="write hello world nodejs script. Show me how to deploy it as a Kyma function."),
                 AIMessage(
                     name="Common",
                     content=dedent(
@@ -399,9 +375,7 @@ from integration.agents.test_common_node import create_mock_state
             "finalizer answers short query based on Kyma agent's response",
             [
                 SystemMessage(content="{'resource_namespace': 'test-namespace'}"),
-                HumanMessage(
-                    content="what is the latest istio version included in Kyma?"
-                ),
+                HumanMessage(content="what is the latest istio version included in Kyma?"),
                 AIMessage(
                     name="KymaAgent",
                     content="The latest Istio version included in Kyma is 1.24.1.",
@@ -493,9 +467,7 @@ from integration.agents.test_common_node import create_mock_state
                 SystemMessage(
                     content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
                 ),
-                HumanMessage(
-                    content="Why is the pod of the serverless Function not ready?"
-                ),
+                HumanMessage(content="Why is the pod of the serverless Function not ready?"),
                 AIMessage(
                     name="KubernetesAgent",
                     content=dedent(
@@ -516,9 +488,7 @@ from integration.agents.test_common_node import create_mock_state
     ],
 )
 @pytest.mark.asyncio
-async def test_generate_final_response(
-    test_case, messages, expected_answer, companion_graph, goal_accuracy_metric
-):
+async def test_generate_final_response(test_case, messages, expected_answer, companion_graph, goal_accuracy_metric):
     """
     Tests that the _generate_final_response method of the Finalizer correctly synthesizes
     the received agent responses or rejects irrelevant responses.

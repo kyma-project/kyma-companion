@@ -77,12 +77,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "service connectivity issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="I can't access my service on port 8080 even though it's running"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="I can't access my service on port 8080 even though it's running"),
             ],
             "",
             True,
@@ -90,12 +86,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "ingress/api gateway issue (kyma related)",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My API Gateway returns 503 errors when I try to access my microservice"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My API Gateway returns 503 errors when I try to access my microservice"),
             ],
             "",
             True,
@@ -103,12 +95,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "volume mount issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My container can't write to the mounted volume at /data"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My container can't write to the mounted volume at /data"),
             ],
             "",
             True,
@@ -116,12 +104,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "resource limits issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="I'm getting OOMKilled even though I set memory limits to 512Mi"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="I'm getting OOMKilled even though I set memory limits to 512Mi"),
             ],
             "",
             True,
@@ -129,12 +113,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "configmap/secret issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My application can't see the environment variables I defined in my config"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My application can't see the environment variables I defined in my config"),
             ],
             "",
             True,
@@ -142,12 +122,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "serverless function issue (kyma related)",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My function throws a 500 error when triggered by an event"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My function throws a 500 error when triggered by an event"),
             ],
             "",
             True,
@@ -155,9 +131,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "networking policy issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
                 HumanMessage(
                     content="Service A can't communicate with Service B even though they're in the same namespace"
                 ),
@@ -168,9 +142,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "kubernetes query for persistent volumes",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
                 HumanMessage(content="What is the role of PersistentVolumes?"),
             ],
             "",
@@ -179,9 +151,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "kubernetes query for image pull backoff",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
                 HumanMessage(content="What is causing the 'ImagePullBackOff' error?"),
             ],
             "",
@@ -190,12 +160,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "crd/operator issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="The status condition of my custom resource stays in 'Pending' state"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="The status condition of my custom resource stays in 'Pending' state"),
             ],
             "",
             True,
@@ -203,12 +169,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "api rule issue (kyma specific)",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My API rule isn't exposing my service even though it's been created"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My API rule isn't exposing my service even though it's been created"),
             ],
             "",
             True,
@@ -216,12 +178,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "certificate/tls issue",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="I'm getting certificate validation errors when accessing my service via HTTPS"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="I'm getting certificate validation errors when accessing my service via HTTPS"),
             ],
             "",
             True,
@@ -229,12 +187,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "eventing issue (kyma specific)",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="My subscription isn't receiving events from the application"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="My subscription isn't receiving events from the application"),
             ],
             "",
             True,
@@ -242,9 +196,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Kyma resource status check",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
                 HumanMessage(content="Can you check the status of my Kyma services?"),
             ],
             "",
@@ -253,12 +205,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Kyma installation query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"
-                ),
-                HumanMessage(
-                    content="What's the best way to install Kyma on an existing cluster?"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'sample-ns'}"),
+                HumanMessage(content="What's the best way to install Kyma on an existing cluster?"),
             ],
             "",
             True,
@@ -275,9 +223,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
                 AIMessage(
                     content="Kyma is an open-source project that extends Kubernetes with application connectivity and serverless computing capabilities."
                 ),
-                HumanMessage(
-                    content="How do I troubleshoot a failing Kyma installation?"
-                ),
+                HumanMessage(content="How do I troubleshoot a failing Kyma installation?"),
             ],
             "",
             True,
@@ -285,9 +231,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "User asking to retrieve information for logs",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"),
                 HumanMessage(content="Can you check the logs for my Kyma function?"),
             ],
             "",
@@ -297,9 +241,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Out of domain query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="What's the weather like today?"),
             ],
             "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
@@ -308,9 +250,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Personal question",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="What's your favorite color?"),
             ],
             """I don't have personal preferences or favorites, but I'm here to help you with any Kyma or Kubernetes questions you might have!
@@ -323,12 +263,8 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Mixed query (part technical, part non-technical)",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
-                HumanMessage(
-                    content="I'm feeling frustrated today. check my Kyma function"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"),
+                HumanMessage(content="I'm feeling frustrated today. check my Kyma function"),
             ],
             "",  # Should be forwarded because of the Kyma technical component
             True,
@@ -336,9 +272,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly reply to greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="Hi"),
             ],
             "Hello! How can I assist you with Kyma or Kubernetes today?",
@@ -347,9 +281,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly replies to Hello greeting despite technical context",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'kyma-system'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'kyma-system'}"),
                 HumanMessage(content="Hello"),
             ],
             "Hello! How can I assist you with Kyma or Kubernetes today?",
@@ -358,9 +290,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly replies to Hey greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'production'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'production'}"),
                 HumanMessage(content="Hey"),
             ],
             "Hello! How can I assist you with Kyma or Kubernetes today?",
@@ -381,9 +311,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly forward the query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is problem with my deployment?"),
             ],
             "",
@@ -392,9 +320,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly forward the query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="how to deploy a kyma function?"),
             ],
             "",
@@ -403,9 +329,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly forward the query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my api"),
             ],
             "",
@@ -414,9 +338,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "correctly forward the query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my pod"),
             ],
             "",
@@ -425,9 +347,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "decline a general non-technical query about Capital of Germany - should not be influenced by system message context",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
             "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
@@ -436,9 +356,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "answers a general programming related query",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
             'print("Hello, World!")',
@@ -447,9 +365,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
         (
             "Query about self capabilities.",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"),
                 HumanMessage(content="what are your capabilities?"),
             ],
             "I can help with various queries related to Kyma and Kubernetes, such as troubleshooting issues, "
@@ -467,9 +383,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
                     " with the message indicating a failure to create the containerd task "
                     "due to a context cancellation."
                 ),
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="Check why pod is failing"),
             ],
             "",
@@ -498,9 +412,7 @@ async def test_invoke_gatekeeper_node(
     if expected_query_forwarding:
         assert actual_response.forward_query, "Query should be forwarded"
     else:
-        assert (
-            not actual_response.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
+        assert not actual_response.forward_query, "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
         test_case = LLMTestCase(
             input=messages[-1].content,
@@ -516,9 +428,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Programming query should be categorized as Programming",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
             "Programming",
@@ -527,9 +437,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Greeting query should be categorized as Greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="Hi"),
             ],
             "Greeting",
@@ -538,9 +446,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Hello greeting should be categorized as Greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"),
                 HumanMessage(content="Hello"),
             ],
             "Greeting",
@@ -549,9 +455,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Hey greeting should be categorized as Greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'prod-namespace'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'prod-namespace'}"),
                 HumanMessage(content="Hey"),
             ],
             "Greeting",
@@ -560,9 +464,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Good morning greeting should be categorized as Greeting",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'test'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test'}"),
                 HumanMessage(content="Good morning"),
             ],
             "Greeting",
@@ -571,9 +473,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Capabilities query should be categorized as About You",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'kyma-system'}"),
                 HumanMessage(content="what are your capabilities?"),
             ],
             "About You",
@@ -582,9 +482,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Non-technical query should be categorized as Irrelevant",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
             "Irrelevant",
@@ -593,9 +491,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Kyma query should be categorized as Kyma",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my api rule"),
             ],
             "Kyma",
@@ -604,9 +500,7 @@ async def test_invoke_gatekeeper_node(
         (
             "Kubernetes query should be categorized as Kubernetes",
             [
-                SystemMessage(
-                    content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my pod"),
             ],
             "Kubernetes",
@@ -619,9 +513,7 @@ async def test_invoke_gatekeeper_node(
                     content=""
                     "{'resource_kind': 'Cluster', 'resource_api_version': '', 'resource_name': '', 'namespace': ''}"
                 ),
-                HumanMessage(
-                    content="What is the difference between Kyma and Cloud Foundry?"
-                ),
+                HumanMessage(content="What is the difference between Kyma and Cloud Foundry?"),
             ],
             "Kyma",
             True,
@@ -658,12 +550,12 @@ async def test_gatekeeper_categorization(
     actual_response = await companion_graph._invoke_gatekeeper_node(state)
 
     # Then: verify the category is correct
-    assert (
-        actual_response.category == expected_category
-    ), f"Expected category '{expected_category}' but got '{actual_response.category}'"
-    assert (
-        actual_response.forward_query == expected_query_forwarding
-    ), f"Expected forward_query {expected_query_forwarding} but got {actual_response.forward_query}"
+    assert actual_response.category == expected_category, (
+        f"Expected category '{expected_category}' but got '{actual_response.category}'"
+    )
+    assert actual_response.forward_query == expected_query_forwarding, (
+        f"Expected forward_query {expected_query_forwarding} but got {actual_response.forward_query}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -908,14 +800,10 @@ async def test_gatekeeper_with_conversation_history(
     result = await companion_graph._invoke_gatekeeper_node(state)
 
     if expected_query_forwarding:
-        assert (
-            result.forward_query
-        ), "Query should be forwarded"  # query should be forwarded
+        assert result.forward_query, "Query should be forwarded"  # query should be forwarded
 
     else:
-        assert (
-            not result.forward_query
-        ), "Query should not be forwarded"  # query should not be forwarded
+        assert not result.forward_query, "Query should not be forwarded"  # query should not be forwarded
         # Then: we evaluate the direct response using deepeval metrics
         test_case = LLMTestCase(
             input=user_query,

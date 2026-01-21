@@ -367,9 +367,7 @@ class TestDataSanitizer:
     def test_data_structures_and_pii(self, test_data, expected_results, error):
         """Test sanitization of various data structures and PII data."""
         if error:
-            with pytest.raises(
-                error, match="Data must be a string or list or dictionary."
-            ):
+            with pytest.raises(error, match="Data must be a string or list or dictionary."):
                 self.data_sanitizer.sanitize(test_data)
         else:
             sanitized = self.data_sanitizer.sanitize(test_data)
@@ -739,9 +737,7 @@ class TestDataSanitizer:
                                 "containers": [
                                     {
                                         "name": "app",
-                                        "env": [
-                                            {"name": "SECRET_KEY", "value": "secret"}
-                                        ],
+                                        "env": [{"name": "SECRET_KEY", "value": "secret"}],
                                     },
                                 ]
                             }
@@ -781,9 +777,7 @@ class TestDataSanitizer:
                                 "containers": [
                                     {
                                         "name": "app",
-                                        "env": [
-                                            {"name": "SECRET_KEY", "value": "secret"}
-                                        ],
+                                        "env": [{"name": "SECRET_KEY", "value": "secret"}],
                                     }
                                 ]
                             },
@@ -873,11 +867,7 @@ class TestDataSanitizer:
                         "gateway": "kyma-system/kyma-gateway",
                         "rules": [
                             {
-                                "jwt": {
-                                    "authentications": [
-                                        {"issuer": "issuer", "jwksUri": "jwksUri"}
-                                    ]
-                                },
+                                "jwt": {"authentications": [{"issuer": "issuer", "jwksUri": "jwksUri"}]},
                                 "methods": ["GET"],
                                 "path": "/*",
                             }
@@ -950,9 +940,7 @@ class TestDataSanitizer:
                     "apiVersion": "operator.kyma-project.io/v1alpha1",
                     "kind": "Serverless",
                     "metadata": {
-                        "finalizers": [
-                            "serverless-operator.kyma-project.io/deletion-hook"
-                        ],
+                        "finalizers": ["serverless-operator.kyma-project.io/deletion-hook"],
                         "name": "default",
                     },
                     "namespace": "kyma-system",
@@ -987,9 +975,7 @@ class TestDataSanitizer:
                     "apiVersion": "operator.kyma-project.io/v1alpha1",
                     "kind": "Serverless",
                     "metadata": {
-                        "finalizers": [
-                            "serverless-operator.kyma-project.io/deletion-hook"
-                        ],
+                        "finalizers": ["serverless-operator.kyma-project.io/deletion-hook"],
                         "name": "default",
                     },
                     "namespace": "kyma-system",
@@ -1295,13 +1281,9 @@ class TestDataSanitizer:
             ),
         ],
     )
-    def test_sanitize_raw_string_data(
-        self, input_text, expected_contains, test_description
-    ):
+    def test_sanitize_raw_string_data(self, input_text, expected_contains, test_description):
         """Test _sanitize_raw_string_data with various input patterns."""
 
         result = self.data_sanitizer.sanitize(input_text)
 
-        assert (
-            result == expected_contains
-        ), f"Failed {test_description}: Expected '{expected_contains}', got '{result}'"
+        assert result == expected_contains, f"Failed {test_description}: Expected '{expected_contains}', got '{result}'"

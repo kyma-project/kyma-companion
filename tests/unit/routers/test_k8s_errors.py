@@ -77,9 +77,7 @@ class TestK8sAPIErrorHandling:
                 "tool_path": "routers.k8s_tools_api.k8s_overview_query_tool",
                 "tool_name": "k8s_overview_query_tool",
                 "handler": get_k8s_overview,
-                "request": K8sOverviewRequest(
-                    namespace="default", resource_kind="cluster"
-                ),
+                "request": K8sOverviewRequest(namespace="default", resource_kind="cluster"),
                 "tool_input": lambda req, client: {
                     "namespace": req.namespace,
                     "resource_kind": req.resource_kind,
@@ -147,15 +145,13 @@ class TestK8sAPIErrorHandling:
                 with pytest.raises(HTTPException) as exc_info:
                     await config["handler"](config["request"], mock_k8s_client)
 
-                assert (
-                    exc_info.value.status_code == expected_status
-                ), f"Failed test case for {config['name']} endpoint: {test_description}"
+                assert exc_info.value.status_code == expected_status, (
+                    f"Failed test case for {config['name']} endpoint: {test_description}"
+                )
                 assert "Kubernetes" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_non_k8s_exception_returns_500(
-        self, mock_k8s_client, endpoint_configs
-    ):
+    async def test_non_k8s_exception_returns_500(self, mock_k8s_client, endpoint_configs):
         """Test that non-K8s exceptions return HTTP 500 across all endpoints.
 
         Non-K8sClientError errors (unexpected exceptions) should
@@ -163,13 +159,11 @@ class TestK8sAPIErrorHandling:
         """
         for config in endpoint_configs:
             with patch(config["tool_path"]) as mock_tool:
-                mock_tool.ainvoke = AsyncMock(
-                    side_effect=Exception("Connection timeout")
-                )
+                mock_tool.ainvoke = AsyncMock(side_effect=Exception("Connection timeout"))
 
                 with pytest.raises(HTTPException) as exc_info:
                     await config["handler"](config["request"], mock_k8s_client)
 
-                assert (
-                    exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-                ), f"Failed test case for {config['name']} endpoint"
+                assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, (
+                    f"Failed test case for {config['name']} endpoint"
+                )

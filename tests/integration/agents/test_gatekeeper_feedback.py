@@ -140,9 +140,7 @@ from integration.conftest import create_mock_state
                     content=""
                     "{'resource_kind': 'Namespace', 'resource_api_version': 'v1', 'resource_name': '', 'namespace': ''}"
                 ),
-                HumanMessage(
-                    content="This is helpful but I need more information about security aspects."
-                ),
+                HumanMessage(content="This is helpful but I need more information about security aspects."),
             ],
             True,
         ),
@@ -176,9 +174,7 @@ from integration.conftest import create_mock_state
                     content=""
                     "{'resource_kind': 'HorizontalPodAutoscaler', 'resource_api_version': 'autoscaling/v2', 'resource_name': '', 'namespace': ''}"
                 ),
-                HumanMessage(
-                    content="Is there a different way to achieve this without using HPA?"
-                ),
+                HumanMessage(content="Is there a different way to achieve this without using HPA?"),
             ],
             False,
         ),
@@ -254,6 +250,6 @@ async def test_invoke_feedback_node(
 
     # When: the feedback node's invoke_feedback_node method is invoked
     actual_response = await companion_graph._invoke_feedback_node(state)
-    assert (
-        actual_response.response == expected_answer
-    ), f"Expected {expected_answer} but got {actual_response.response} for test case: {test_description}"
+    assert actual_response.response == expected_answer, (
+        f"Expected {expected_answer} but got {actual_response.response} for test case: {test_description}"
+    )

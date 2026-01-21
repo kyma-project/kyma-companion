@@ -71,12 +71,8 @@ def filter_valid_messages(
         if isinstance(message, AIMessage) and message.tool_calls:
             # check if the next messages are tool calls as requested by AIMessage.
             tool_call_count = len(message.tool_calls)
-            next_messages = messages[
-                i + 1 : i + 1 + tool_call_count
-            ]  # +1 because the index starts from zero.
-            if len(next_messages) == tool_call_count and all(
-                isinstance(msg, ToolMessage) for msg in next_messages
-            ):
+            next_messages = messages[i + 1 : i + 1 + tool_call_count]  # +1 because the index starts from zero.
+            if len(next_messages) == tool_call_count and all(isinstance(msg, ToolMessage) for msg in next_messages):
                 # Append the AIMessage and its corresponding ToolMessages.
                 filtered.append(message)
                 filtered.extend(next_messages)
@@ -117,9 +113,7 @@ def compute_string_token_count(text: str, model_type: str) -> int:
     try:
         encoding = tiktoken.encoding_for_model(model_type)
     except KeyError:
-        logger.warning(
-            f"Model '{model_type}' not recognized by tiktoken, using cl100k_base encoding"
-        )
+        logger.warning(f"Model '{model_type}' not recognized by tiktoken, using cl100k_base encoding")
         # "cl100k_base" is used by the tiktoken library for many OpenAI models.
         encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(text=text))
@@ -127,9 +121,7 @@ def compute_string_token_count(text: str, model_type: str) -> int:
 
 def compute_messages_token_count(msgs: Messages, model_type: str) -> int:
     """Returns the token count of the messages."""
-    tokens_per_msg = (
-        compute_string_token_count(str(msg.content), model_type) for msg in msgs
-    )
+    tokens_per_msg = (compute_string_token_count(str(msg.content), model_type) for msg in msgs)
     return sum(tokens_per_msg)
 
 
@@ -157,9 +149,7 @@ def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
     return None
 
 
-async def get_relevant_context_from_k8s_cluster(
-    message: Message, k8s_client: IK8sClient
-) -> str:
+async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK8sClient) -> str:
     """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
     logger.debug("Fetching relevant data from k8s cluster")
@@ -176,9 +166,7 @@ async def get_relevant_context_from_k8s_cluster(
         # Get an overview of the cluster
         # by fetching all not running pods, all K8s Nodes metrics,
         # and all K8s events with warning type.
-        logger.info(
-            "Fetching all not running Pods, Node metrics, and K8s Events with warning type"
-        )
+        logger.info("Fetching all not running Pods, Node metrics, and K8s Events with warning type")
         pods = yaml.dump_all(k8s_client.list_not_running_pods(namespace=namespace))
         metrics = yaml.dump_all(await k8s_client.list_nodes_metrics())
         events = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
@@ -194,9 +182,7 @@ async def get_relevant_context_from_k8s_cluster(
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
         # Describe a specific resource. Not-namespaced resources need the namespace
         # field to be empty. Finally, get all events related to given resource.
-        logger.info(
-            f"Fetching all entities of Kind {kind} with API version {api_version}"
-        )
+        logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
         resources = yaml.dump(
             k8s_client.describe_resource(
                 api_version=api_version,

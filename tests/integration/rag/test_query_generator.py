@@ -75,9 +75,7 @@ def query_generator(app_models):
     ],
 )
 @pytest.mark.asyncio
-async def test_generate_queries(
-    input_query, expected_queries, query_generator, correctness_metric
-):
+async def test_generate_queries(input_query, expected_queries, query_generator, correctness_metric):
     """Test query generation with different types of queries."""
     # When: the query generator's generate_queries method is invoked
     response = await query_generator.agenerate_queries(input_query)

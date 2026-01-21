@@ -39,9 +39,7 @@ class RAGSystem:
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
-        self.query_generator = QueryGenerator(
-            cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME]))
-        )
+        self.query_generator = QueryGenerator(cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME])))
         # setup retriever
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
@@ -64,9 +62,7 @@ class RAGSystem:
         all_queries = [query.text] + alternative_queries.queries
 
         # retrieve documents for all queries concurrently
-        all_docs = await asyncio.gather(
-            *(self.retriever.aretrieve(q) for q in all_queries)
-        )
+        all_docs = await asyncio.gather(*(self.retriever.aretrieve(q) for q in all_queries))
 
         # rerank documents
         reranked_docs = await self.reranker.arerank(

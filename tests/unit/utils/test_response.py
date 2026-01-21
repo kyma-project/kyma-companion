@@ -475,15 +475,11 @@ def test_prepare_chunk_response_all_skipping_scenarios(
 
         if expected_skip:
             # Should return None (skipped)
-            assert (
-                result is None
-            ), f"Expected {description} to be skipped, but got result: {result}"
+            assert result is None, f"Expected {description} to be skipped, but got result: {result}"
 
         else:
             # Should return a valid response
-            assert (
-                result is not None
-            ), f"Expected {description} to return result, but got None"
+            assert result is not None, f"Expected {description} to return result, but got None"
 
             # Decode and verify response structure
             result_dict = json.loads(result.decode())

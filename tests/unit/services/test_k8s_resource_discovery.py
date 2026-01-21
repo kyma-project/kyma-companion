@@ -97,10 +97,7 @@ class TestK8sResourceDiscovery:
         ],
     )
     def test_get_resource_related_to(self, group_version, kind, expected_result):
-        assert (
-            K8sResourceDiscovery.get_resource_related_to(group_version, kind)
-            == expected_result
-        )
+        assert K8sResourceDiscovery.get_resource_related_to(group_version, kind) == expected_result
 
     def test_initialize(self):
         # Initialize the K8sResourceDiscovery class
@@ -172,9 +169,7 @@ class TestK8sResourceDiscovery:
             ),
         ],
     )
-    def test_find_resource_kind(
-        self, description, resource_kind, resources, expected_name
-    ):
+    def test_find_resource_kind(self, description, resource_kind, resources, expected_name):
         k8s_client = Mock(spec=IK8sClient)
         discovery = K8sResourceDiscovery(k8s_client)
         result = discovery._find_resource_kind(resource_kind, resources)
@@ -230,9 +225,7 @@ class TestK8sResourceDiscovery:
             ),
         ],
     )
-    def test_get_resource_kind_static(
-        self, description, group_version, kind, expected_name, expect_error
-    ):
+    def test_get_resource_kind_static(self, description, group_version, kind, expected_name, expect_error):
         # given
         k8s_client = Mock(spec=IK8sClient)
         discovery = K8sResourceDiscovery(k8s_client)

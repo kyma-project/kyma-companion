@@ -106,9 +106,7 @@ class BaseAgent:
             messages_key=AGENT_MESSAGES,
             messages_summary_key=AGENT_MESSAGES_SUMMARY,
         )
-        self.tool_response_summarization: IToolResponseSummarizer = (
-            ToolResponseSummarizer(model=model)
-        )
+        self.tool_response_summarization: IToolResponseSummarizer = ToolResponseSummarizer(model=model)
         self.chain = self._create_chain(agent_prompt)
         self.graph = self._build_graph(state_class)
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
@@ -131,10 +129,7 @@ class BaseAgent:
 
         # find subtasks assigned to this agent and not completed.
         for subtask in state.subtasks:
-            if (
-                subtask.assigned_to == self.name
-                and subtask.status == SubTaskStatus.PENDING
-            ):
+            if subtask.assigned_to == self.name and subtask.status == SubTaskStatus.PENDING:
                 return {
                     MY_TASK: subtask,
                 }
@@ -163,9 +158,7 @@ class BaseAgent:
         filter_valid_messages_list = filter_valid_messages(input_messages)
         if tool_summarized_response:
             filter_valid_messages_list.append(
-                AIMessage(
-                    content="Summarized Tool Response - " + tool_summarized_response
-                )
+                AIMessage(content="Summarized Tool Response - " + tool_summarized_response)
             )
         # invoke the chain.
         response = await ainvoke_chain(
@@ -203,9 +196,7 @@ class BaseAgent:
             nums_of_chunks=num_chunks,
         )
 
-    async def _summarize_tool_response(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> str:
+    async def _summarize_tool_response(self, state: BaseAgentState, config: RunnableConfig) -> str:
         """
         Summarize tool responses if they exceed the token limit.
 
@@ -248,10 +239,7 @@ class BaseAgent:
 
         # Validate chunk limit
         if num_chunks > TOTAL_CHUNKS_LIMIT:
-            logger.error(
-                f"Tool response requires {num_chunks} chunks, "
-                f"which exceeds the limit of {TOTAL_CHUNKS_LIMIT}"
-            )
+            logger.error(f"Tool response requires {num_chunks} chunks, which exceeds the limit of {TOTAL_CHUNKS_LIMIT}")
             raise TotalChunksLimitExceededError()
 
         # Perform summarization using decorated method
@@ -289,9 +277,7 @@ class BaseAgent:
         error handling logic for the summarization process.
         """
         try:
-            summarized_tool_response = await self._summarize_tool_response(
-                state, config
-            )
+            summarized_tool_response = await self._summarize_tool_response(state, config)
             return summarized_tool_response, None
         except TotalChunksLimitExceededError:
             logger.exception("Error while summarizing the tool response.")
@@ -330,9 +316,7 @@ class BaseAgent:
         if state.my_task:
             state.my_task.status = SubTaskStatus.ERROR
 
-        logger.error(
-            f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}."
-        )
+        logger.error(f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}.")
         return {
             AGENT_MESSAGES: [
                 AIMessage(
@@ -370,9 +354,7 @@ class BaseAgent:
             }
             return None, error_response
 
-    async def _model_node(
-        self, state: BaseAgentState, config: RunnableConfig
-    ) -> dict[str, Any]:
+    async def _model_node(self, state: BaseAgentState, config: RunnableConfig) -> dict[str, Any]:
         # if the recursive limit is reached, return a message.
         if state.remaining_steps <= AGENT_STEPS_NUMBER:
             return self._handle_recursive_limit_error(state)
@@ -380,25 +362,19 @@ class BaseAgent:
         # if the last message is a tool message, summarize the tool response if needed.
         summarized_tool_response = ""
         if state.agent_messages and isinstance(state.agent_messages[-1], ToolMessage):
-            summarized_tool_response, error_response = (
-                await self._summarize_tool_response_with_error_handling(state, config)
+            summarized_tool_response, error_response = await self._summarize_tool_response_with_error_handling(
+                state, config
             )
             if error_response:
                 return error_response
 
-        response, error_response = await self._invoke_chain_with_error_handling(
-            state, config, summarized_tool_response
-        )
+        response, error_response = await self._invoke_chain_with_error_handling(state, config, summarized_tool_response)
         if error_response:
             return error_response
 
         # if the recursive limit is reached and the response is a tool call, return a message.
         # 'is_last_step' is a boolean that is True if the recursive limit is reached.
-        if (
-            state.is_last_step
-            and isinstance(response, AIMessage)
-            and response.tool_calls
-        ):
+        if state.is_last_step and isinstance(response, AIMessage) and response.tool_calls:
             return {
                 AGENT_MESSAGES: [
                     AIMessage(
@@ -429,7 +405,6 @@ class BaseAgent:
             and state.agent_messages[-1]
             and hasattr(state.agent_messages[-1], "content")
         ):
-
             current_content = state.agent_messages[-1].content or ""
             state.agent_messages[-1].content = agent_pre_message + current_content
 
@@ -452,9 +427,7 @@ class BaseAgent:
         # Define nodes with async awareness
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
-        workflow.add_node(
-            "tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES)
-        )
+        workflow.add_node("tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES))
         workflow.add_node("finalizer", self._finalizer_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 

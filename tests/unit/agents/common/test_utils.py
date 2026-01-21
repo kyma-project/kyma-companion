@@ -168,9 +168,7 @@ def test_filter_messages_default_parameter():
         ),
     ],
 )
-def test_subtask_selector_edge(
-    is_last_step: bool, my_task: SubTask | None, expected_output: str
-):
+def test_subtask_selector_edge(is_last_step: bool, my_task: SubTask | None, expected_output: str):
     k8s_client = MagicMock()
     k8s_client.mock_add_spec(IK8sClient)
 
@@ -558,9 +556,7 @@ def test_filter_valid_messages(test_description, input_messages, expected_output
         ),
     ],
 )
-def test_get_resource_context_message(
-    description: str, user_input: UserInput, expected_message
-):
+def test_get_resource_context_message(description: str, user_input: UserInput, expected_message):
     result = get_resource_context_message(user_input)
     if expected_message is None:
         assert result is None, description

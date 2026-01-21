@@ -24,9 +24,7 @@ class K8sQueryToolArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=K8sQueryToolArgs)
-async def k8s_query_tool(
-    uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
-) -> dict | list[dict]:
+async def k8s_query_tool(uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]) -> dict | list[dict]:
     """Query the state of objects in Kubernetes using the provided URI.
     The URI must follow the format of Kubernetes API.
     The returned data is sanitized to remove any sensitive information.

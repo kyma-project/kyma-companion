@@ -32,14 +32,10 @@ def test_apply_token_limit():
 
     mock_model = Mock()
     mock_model.name.return_value = given_model_name
-    given_handler = InitialQuestionsHandler(
-        model=mock_model, template=given_template, tokenizer=tokenizer
-    )
+    given_handler = InitialQuestionsHandler(model=mock_model, template=given_template, tokenizer=tokenizer)
 
     # When:
-    result = given_handler.apply_token_limit(
-        text=given_context, token_limit=given_limit
-    )
+    result = given_handler.apply_token_limit(text=given_context, token_limit=given_limit)
 
     # Then:
     assert len(tokenizer.encode(result)) == wanted_token_count
@@ -140,17 +136,13 @@ def mock_k8s_client():
         ),
     ],
 )
-async def test_fetch_relevant_data_from_k8s_cluster(
-    message, expected_calls, mock_k8s_client
-):
+async def test_fetch_relevant_data_from_k8s_cluster(message, expected_calls, mock_k8s_client):
     # Given:
     mock_model = Mock()
     handler = InitialQuestionsHandler(model=mock_model)
 
     # When:
-    result = await handler.fetch_relevant_data_from_k8s_cluster(
-        message, mock_k8s_client
-    )
+    result = await handler.fetch_relevant_data_from_k8s_cluster(message, mock_k8s_client)
 
     # Then:
     for call in expected_calls:

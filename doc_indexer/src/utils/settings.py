@@ -13,9 +13,7 @@ MODELS_CONFIGS_KEY = "MODELS_CONFIGS"
 
 def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
-    default_config_path = (
-        Path(__file__).parent.parent.parent.parent / "config" / "config.json"
-    )
+    default_config_path = Path(__file__).parent.parent.parent.parent / "config" / "config.json"
     config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
     try:
         # Load the configuration from the given path and set the environment variables.
@@ -52,9 +50,7 @@ load_env_from_json()
 
 
 LOG_LEVEL = str(config("LOG_LEVEL", default="INFO"))
-EMBEDDING_MODEL_NAME = str(
-    config("EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
-)
+EMBEDDING_MODEL_NAME = str(config("EMBEDDING_MODEL_NAME", default="text-embedding-3-large"))
 
 TMP_DIR = str(config("TMP_DIR", default=os.path.join(project_root, "tmp")))
 DOCS_SOURCES_FILE_PATH = str(

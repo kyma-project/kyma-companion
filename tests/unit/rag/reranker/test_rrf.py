@@ -93,9 +93,7 @@ def test_get_relevant_documents(
     expected_docs_list,
 ):
     # When
-    actual_docs_list = get_relevant_documents(
-        docs_list=given_docs_list, limit=given_limit
-    )
+    actual_docs_list = get_relevant_documents(docs_list=given_docs_list, limit=given_limit)
 
     # Then
     assert actual_docs_list == expected_docs_list

@@ -124,13 +124,9 @@ class TestToolResponseSummarizer:
             ]
         )
 
-        result = await summarizer.summarize_tool_response(
-            tool_response, user_query, config, nums_of_chunks
-        )
+        result = await summarizer.summarize_tool_response(tool_response, user_query, config, nums_of_chunks)
 
-        summarizer._create_chunks_from_list.assert_called_once_with(
-            tool_response, nums_of_chunks
-        )
+        summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
 
         assert mock_ainvoke_chain.call_count == nums_of_chunks
 
@@ -162,12 +158,8 @@ class TestToolResponseSummarizer:
         summarizer._create_chunks_from_list = Mock(return_value=[])
 
         # when
-        result = await summarizer.summarize_tool_response(
-            tool_response, user_query, config, nums_of_chunks
-        )
+        result = await summarizer.summarize_tool_response(tool_response, user_query, config, nums_of_chunks)
 
         # then
-        summarizer._create_chunks_from_list.assert_called_once_with(
-            tool_response, nums_of_chunks
-        )
+        summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
         assert result == ""

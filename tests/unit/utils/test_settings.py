@@ -57,7 +57,6 @@ def test_load_env_from_json(json_content, expected_env_variables):
         patch.object(Path, "open", mock_open(read_data=json_content)),
         patch.object(Path, "is_file", return_value=bool(json_content)),
     ):
-
         if expected_env_variables is None:
             # Then: Expect an exception for malformed JSON
             with pytest.raises(JSONDecodeError):

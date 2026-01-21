@@ -44,9 +44,7 @@ def conversation_service(app_models, companion_graph):
         conversation_service = ConversationService()
         conversation_service._companion_graph = companion_graph
         conversation_service._model_mini = model_mini
-        conversation_service._followup_questions_handler = FollowUpQuestionsHandler(
-            model=model_mini
-        )
+        conversation_service._followup_questions_handler = FollowUpQuestionsHandler(model=model_mini)
 
     async def mock_aget_state(config):
         con_id = config["configurable"]["thread_id"]
@@ -90,10 +88,7 @@ def conversation_service(app_models, companion_graph):
             ),
         ],
         [
-            SystemMessage(
-                content=""
-                "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-            ),
+            SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
             HumanMessage(content="why is the pod failing?"),
             AIMessage(
                 content="The `nginx` container in the `nginx-5dbddc77dd-t5fm2` pod is experiencing a "
@@ -105,9 +100,7 @@ def conversation_service(app_models, companion_graph):
     ],
 )
 @pytest.mark.asyncio
-async def test_followup_questions(
-    messages, conversation_service, followup_correctness_metric
-):
+async def test_followup_questions(messages, conversation_service, followup_correctness_metric):
     # Given: a conversation state with messages
     given_latest_state = StateSnapshot(
         values={

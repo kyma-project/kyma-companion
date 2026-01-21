@@ -125,17 +125,15 @@ class TestKymaAPIErrorHandling:
                 with pytest.raises(HTTPException) as exc_info:
                     await config["handler"](config["request"], mock_k8s_client)
 
-                assert (
-                    exc_info.value.status_code == expected_status
-                ), f"Failed test case for {config['name']} endpoint: {test_description}"
+                assert exc_info.value.status_code == expected_status, (
+                    f"Failed test case for {config['name']} endpoint: {test_description}"
+                )
                 # Note: Kyma endpoints have different detail formats
                 # query endpoint uses dict, resource-version uses string
                 assert exc_info.value.detail is not None
 
     @pytest.mark.asyncio
-    async def test_non_k8s_exception_returns_500(
-        self, mock_k8s_client, endpoint_configs
-    ):
+    async def test_non_k8s_exception_returns_500(self, mock_k8s_client, endpoint_configs):
         """Test that non-K8s exceptions return HTTP 500 across Kyma endpoints.
 
         Non-K8sClientError errors (unexpected exceptions) should
@@ -153,6 +151,6 @@ class TestKymaAPIErrorHandling:
                 with pytest.raises(HTTPException) as exc_info:
                     await config["handler"](config["request"], mock_k8s_client)
 
-                assert (
-                    exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-                ), f"Failed test case for {config['name']} endpoint"
+                assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, (
+                    f"Failed test case for {config['name']} endpoint"
+                )

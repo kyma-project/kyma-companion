@@ -12,10 +12,7 @@ from integration.conftest import create_mock_state
         (
             # tests that the Common node corretly answers a general non-technical query
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is the capital of Germany?"),
             ],
             "Berlin",
@@ -23,10 +20,7 @@ from integration.conftest import create_mock_state
         (
             # tests that the Common node correctly answers a general programming related query
             [
-                SystemMessage(
-                    content=""
-                    "{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"
-                ),
+                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
             'Here is a simple "Hello, World!" program in Python: `print("Hello, World!")`',
@@ -34,9 +28,7 @@ from integration.conftest import create_mock_state
     ],
 )
 @pytest.mark.asyncio
-async def test_invoke_common_node(
-    messages, expected_answer, companion_graph, answer_relevancy_metric
-):
+async def test_invoke_common_node(messages, expected_answer, companion_graph, answer_relevancy_metric):
     """
     Tests that the invoke_common_node method of CompanionGraph answers general queries as expected.
     """

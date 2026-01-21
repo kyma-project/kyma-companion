@@ -32,9 +32,7 @@ class TestFollowUpQuestionsHandler:
 
         # when
         # initialize FollowUpQuestionsHandler instance.
-        given_handler = FollowUpQuestionsHandler(
-            model=mock_model, template=None, tokenizer=None
-        )
+        given_handler = FollowUpQuestionsHandler(model=mock_model, template=None, tokenizer=None)
 
         # then
         assert given_handler._model == mock_model
@@ -52,9 +50,7 @@ class TestFollowUpQuestionsHandler:
         """Test generate_questions method."""
         # given
         # initialize FollowUpQuestionsHandler instance.
-        given_handler = FollowUpQuestionsHandler(
-            model=None, template=None, tokenizer=None
-        )
+        given_handler = FollowUpQuestionsHandler(model=None, template=None, tokenizer=None)
 
         # define mock for _get_filtered_history method.
         filtered_history = dummy_conversation_history[:2]
@@ -70,12 +66,8 @@ class TestFollowUpQuestionsHandler:
 
         # then
         assert got_questions == dummy_questions
-        given_handler._get_filtered_history.assert_called_once_with(
-            dummy_conversation_history
-        )
-        given_handler._chain.invoke.assert_called_once_with(
-            {"history": filtered_history}
-        )
+        given_handler._get_filtered_history.assert_called_once_with(dummy_conversation_history)
+        given_handler._chain.invoke.assert_called_once_with({"history": filtered_history})
 
     @patch(
         "followup_questions.followup_questions.FollowUpQuestionsHandler.__init__",
@@ -142,14 +134,10 @@ class TestFollowUpQuestionsHandler:
         mock_model.name.return_value = given_model_name
 
         # initialize FollowUpQuestionsHandler instance.
-        given_handler = FollowUpQuestionsHandler(
-            model=mock_model, template=None, tokenizer=None
-        )
+        given_handler = FollowUpQuestionsHandler(model=mock_model, template=None, tokenizer=None)
         given_handler._token_limit = given_token_limit
         given_handler._message_limit = given_message_limit
-        given_handler._get_prompt_template_token_count = Mock(
-            return_value=given_prompt_template_token_count
-        )
+        given_handler._get_prompt_template_token_count = Mock(return_value=given_prompt_template_token_count)
 
         if expected_error is not None:
             # when
@@ -160,8 +148,6 @@ class TestFollowUpQuestionsHandler:
             assert str(exc_info.value) == str(expected_error)
         else:
             # when
-            got_history = given_handler._get_filtered_history(
-                dummy_conversation_history
-            )
+            got_history = given_handler._get_filtered_history(dummy_conversation_history)
             # then
             assert got_history == expected_history

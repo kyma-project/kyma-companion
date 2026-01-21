@@ -141,7 +141,6 @@ def test_extract_first_title(given_text: str, wanted_title: str | None):
 
 
 class TestAdaptiveSplitMarkdownIndexer:
-
     @pytest.mark.parametrize(
         "given_docs,wanted_results",
         [
@@ -225,9 +224,7 @@ class TestAdaptiveSplitMarkdownIndexer:
             ),
         ],
     )
-    def test_process_document_titles(
-        self, given_docs, wanted_results, mock_embedding, mock_connection, mock_hana_db
-    ):
+    def test_process_document_titles(self, given_docs, wanted_results, mock_embedding, mock_connection, mock_hana_db):
         indexer = AdaptiveSplitMarkdownIndexer(
             docs_path="",
             embedding=mock_embedding,
@@ -247,9 +244,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                 assert processed_docs[i].page_content == expected["content"]
 
             if "content_startswith" in expected:
-                assert processed_docs[i].page_content.startswith(
-                    expected["content_startswith"]
-                )
+                assert processed_docs[i].page_content.startswith(expected["content_startswith"])
 
             if "content_contains" in expected:
                 for content in expected["content_contains"]:
@@ -335,10 +330,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                     ),
                     Document(
                         page_content=(
-                            "## Subtitle 1\n"
-                            "Subtitle content for testing ...\n"
-                            "### Subsubtitle 1\n"
-                            "Subsubtitle conten"
+                            "## Subtitle 1\nSubtitle content for testing ...\n### Subsubtitle 1\nSubsubtitle conten"
                         ),
                         metadata={
                             "source": "test2.md",
@@ -416,9 +408,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                         },
                     ),
                     Document(
-                        page_content=(
-                            "## Subtitle 1\n" "Subtitle content for testing ..."
-                        ),
+                        page_content=("## Subtitle 1\nSubtitle content for testing ..."),
                         metadata={
                             "source": "test3.md",
                             "title": "Title 1 - Subtitle 1",
@@ -575,9 +565,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                         },
                     ),
                     Document(
-                        page_content=(
-                            "## Subtitle 1\n" "Subtitle content for testing ..."
-                        ),
+                        page_content=("## Subtitle 1\nSubtitle content for testing ..."),
                         metadata={
                             "source": "test2.md",
                             "title": "Title 1 - Subtitle 1",

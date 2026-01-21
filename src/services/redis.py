@@ -27,13 +27,9 @@ class Redis(metaclass=SingletonMeta):
 
     connection: AsyncRedis | None = None
 
-    def __init__(
-        self, connection_factory: Callable[[], AsyncRedis] | None = None
-    ) -> None:
+    def __init__(self, connection_factory: Callable[[], AsyncRedis] | None = None) -> None:
         try:
-            self.connection = (
-                connection_factory() if connection_factory else _get_redis_connection()
-            )
+            self.connection = connection_factory() if connection_factory else _get_redis_connection()
         except Exception as e:
             logger.error(f"Error with Redis connection: {e}")
             self.connection = None
@@ -90,9 +86,7 @@ def _get_redis_connection() -> AsyncRedis:
         ssl=REDIS_SSL_ENABLED,
         ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
         ssl_include_verify_flags=([ssl.VERIFY_DEFAULT] if REDIS_SSL_ENABLED else None),
-        ssl_exclude_verify_flags=(
-            [ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None
-        ),
+        ssl_exclude_verify_flags=([ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None),
     )
 
 

@@ -77,10 +77,7 @@ class Query(BaseModel):
         if result.metrics_data is None:
             return False
         for test_metric in result.metrics_data:
-            if (
-                test_metric.name.startswith(REQUIRED_METRIC_PREFIX)
-                and not test_metric.success
-            ):
+            if test_metric.name.startswith(REQUIRED_METRIC_PREFIX) and not test_metric.success:
                 return False
         return True
 
@@ -114,17 +111,9 @@ class Scenario(BaseModel):
 
     def record_attempt_history(self, attempt: int) -> None:
         """Record metrics for the current attempt in attempt_history."""
-        queries_passed = sum(
-            1
-            for q in self.queries
-            if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED]
-        )
-        queries_failed = sum(
-            1 for q in self.queries if q.test_status == TestStatus.FAILED
-        )
-        queries_pending = sum(
-            1 for q in self.queries if q.test_status == TestStatus.PENDING
-        )
+        queries_passed = sum(1 for q in self.queries if q.test_status in [TestStatus.COMPLETED, TestStatus.PASSED])
+        queries_failed = sum(1 for q in self.queries if q.test_status == TestStatus.FAILED)
+        queries_pending = sum(1 for q in self.queries if q.test_status == TestStatus.PENDING)
         self.attempt_history.append(
             {
                 "attempt": attempt,
@@ -176,9 +165,7 @@ class ScenarioList(BaseModel):
                 with open(scenario_file) as file:
                     scenario_yaml = yaml.load(file, Loader=yaml.FullLoader)
             except Exception as exception:
-                raise Exception(
-                    f"Error reading scenario file: {scenario_file}"
-                ) from exception
+                raise Exception(f"Error reading scenario file: {scenario_file}") from exception
 
             try:
                 json_str = json.dumps(scenario_yaml)
@@ -187,9 +174,7 @@ class ScenarioList(BaseModel):
                 # add the scenario to the list.
                 self.add(scenario)
             except Exception as exception:
-                raise Exception(
-                    f"Error parsing scenario file: {scenario_file}"
-                ) from exception
+                raise Exception(f"Error parsing scenario file: {scenario_file}") from exception
 
         logger.info(f"Total scenarios loaded: {len(self.items)}")
 

@@ -43,13 +43,9 @@ class CompanionClient:
             "Content-Type": "application/json",
         }
 
-    def fetch_initial_questions(
-        self, payload: ConversationPayload, logger: Logger
-    ) -> InitialQuestionsResponse:
+    def fetch_initial_questions(self, payload: ConversationPayload, logger: Logger) -> InitialQuestionsResponse:
         """Calls the Companion API to get the initial questions."""
-        logger.debug(
-            f"querying Companion: {self.config.companion_api_url} for initial questions..."
-        )
+        logger.debug(f"querying Companion: {self.config.companion_api_url} for initial questions...")
 
         req_session = requests.Session()
         start_time = time.time()
@@ -59,14 +55,10 @@ class CompanionClient:
             headers=self.__get_headers(),
         )
         if response.status_code != HTTPStatus.OK:
-            raise ValueError(
-                f"failed to get response (status: {response.status_code}). Response: {response.text}"
-            )
+            raise ValueError(f"failed to get response (status: {response.status_code}). Response: {response.text}")
 
         # record the response time.
-        Metrics.get_instance().record_init_conversation_response_time(
-            time.time() - start_time
-        )
+        Metrics.get_instance().record_init_conversation_response_time(time.time() - start_time)
 
         # Check if the response structure is valid, and then return the response.
         return InitialQuestionsResponse.model_validate_json(response.content)
@@ -81,9 +73,7 @@ class CompanionClient:
         uri = f"{self.config.companion_api_url}/api/conversations/{conversation_id}/messages"
         req_session = requests.Session()
         start_time = time.time()
-        response = req_session.post(
-            uri, json.dumps(payload.model_dump()), headers=headers, stream=True
-        )
+        response = req_session.post(uri, json.dumps(payload.model_dump()), headers=headers, stream=True)
         if response.status_code != HTTPStatus.OK:
             raise ValueError(
                 f"failed to get response from the utils API (status: {response.status_code}). Response: {response.text}"
@@ -92,9 +82,7 @@ class CompanionClient:
         answer, chunks = self.__extract_final_response(response)
 
         # record the response time.
-        Metrics.get_instance().record_conversation_response_time(
-            time.time() - start_time
-        )
+        Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
 
         return ConversationResponse.model_validate_json(
             json.dumps(

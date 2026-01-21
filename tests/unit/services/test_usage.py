@@ -28,16 +28,12 @@ class TestUsageTrackerCallback:
         self,
     ):
         # Given
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=Mock
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=Mock)
         run_id = uuid4()
         assert usage_tracker_callback.llm_start_times == {}
 
         # When
-        await usage_tracker_callback.on_llm_start(
-            serialized={}, prompts=[], run_id=run_id
-        )
+        await usage_tracker_callback.on_llm_start(serialized={}, prompts=[], run_id=run_id)
 
         # Then
         assert run_id in usage_tracker_callback.llm_start_times
@@ -72,27 +68,19 @@ class TestUsageTrackerCallback:
             ),
         ],
     )
-    async def test_on_llm_end(
-        self, test_description, llm_output, expected_exception, expected_call_args
-    ):
+    async def test_on_llm_end(self, test_description, llm_output, expected_exception, expected_call_args):
         # Given
         mock_probe = Mock(spec=IUsageTrackerProbe)
         mock_memory = Mock()
         mock_memory.awrite_llm_usage = AsyncMock()
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=mock_memory, probe=mock_probe
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=mock_memory, probe=mock_probe)
         response = Mock()
         response.llm_output = llm_output
         response.generations = []
         failure_metric_name = f"{USAGE_TRACKER_PUBLISH_FAILURE_METRIC_KEY}_total"
-        before_failure_metric_value = CustomMetrics().registry.get_sample_value(
-            failure_metric_name
-        )
+        before_failure_metric_value = CustomMetrics().registry.get_sample_value(failure_metric_name)
         llm_latency_metric_name = f"{LLM_LATENCY_METRIC_KEY}_count"
-        before_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(
-            llm_latency_metric_name
-        )
+        before_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(llm_latency_metric_name)
 
         # When / Then
         if expected_exception:
@@ -103,9 +91,7 @@ class TestUsageTrackerCallback:
                 await usage_tracker_callback.on_llm_end(response, run_id=uuid4())
 
             # the metric should be increased.
-            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
-                failure_metric_name
-            )
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(failure_metric_name)
             assert after_failure_metric_value > before_failure_metric_value
             # The probe's failure count should have been increased.
             mock_probe.increase_failure_count.assert_called_once()
@@ -118,17 +104,13 @@ class TestUsageTrackerCallback:
                 "test_cluster", expected_call_args, usage_tracker_callback.ttl
             )
             # the metric should not be increased.
-            after_failure_metric_value = CustomMetrics().registry.get_sample_value(
-                failure_metric_name
-            )
+            after_failure_metric_value = CustomMetrics().registry.get_sample_value(failure_metric_name)
             assert after_failure_metric_value == before_failure_metric_value
             # The probe's failure count should have been resetted.
             mock_probe.reset_failure_count.assert_called_once()
 
         # the LLM latency metric should be increased.
-        after_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(
-            llm_latency_metric_name
-        )
+        after_llm_latency_metric_value = CustomMetrics().registry.get_sample_value(llm_latency_metric_name)
         assert after_llm_latency_metric_value > before_llm_latency_metric_value
 
     @pytest.mark.asyncio
@@ -136,14 +118,10 @@ class TestUsageTrackerCallback:
         self,
     ):
         # given
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=Mock()
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=Mock())
         metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
         labels = {"error_type": LangGraphErrorType.LLM_ERROR.value}
-        before_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         if before_metric_value is None:
             before_metric_value = 0
 
@@ -152,9 +130,7 @@ class TestUsageTrackerCallback:
 
         # then
         # the metric should be increased.
-        after_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         assert after_metric_value > before_metric_value
 
     @pytest.mark.asyncio
@@ -162,14 +138,10 @@ class TestUsageTrackerCallback:
         self,
     ):
         # given
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=Mock()
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=Mock())
         metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
         labels = {"error_type": LangGraphErrorType.RETRIEVER_ERROR.value}
-        before_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         if before_metric_value is None:
             before_metric_value = 0
 
@@ -178,9 +150,7 @@ class TestUsageTrackerCallback:
 
         # then
         # the metric should be increased.
-        after_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         assert after_metric_value > before_metric_value
 
     @pytest.mark.asyncio
@@ -188,14 +158,10 @@ class TestUsageTrackerCallback:
         self,
     ):
         # given
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=Mock()
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=Mock())
         metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
         labels = {"error_type": LangGraphErrorType.CHAIN_ERROR.value}
-        before_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         if before_metric_value is None:
             before_metric_value = 0
 
@@ -204,9 +170,7 @@ class TestUsageTrackerCallback:
 
         # then
         # the metric should be increased.
-        after_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         assert after_metric_value > before_metric_value
 
     @pytest.mark.asyncio
@@ -214,14 +178,10 @@ class TestUsageTrackerCallback:
         self,
     ):
         # given
-        usage_tracker_callback = UsageTrackerCallback(
-            cluster_id="test_cluster", memory=Mock()
-        )
+        usage_tracker_callback = UsageTrackerCallback(cluster_id="test_cluster", memory=Mock())
         metric_name = f"{LANGGRAPH_ERROR_METRIC_KEY}_total"
         labels = {"error_type": LangGraphErrorType.TOOL_ERROR.value}
-        before_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         if before_metric_value is None:
             before_metric_value = 0
 
@@ -230,9 +190,7 @@ class TestUsageTrackerCallback:
 
         # then
         # the metric should be increased.
-        after_metric_value = CustomMetrics().registry.get_sample_value(
-            metric_name, labels
-        )
+        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         assert after_metric_value > before_metric_value
 
 
@@ -242,18 +200,14 @@ class TestUsageTracker:
         # Given
         mock_memory = Mock()
         mock_memory.adelete_expired_llm_usage_records = AsyncMock()
-        usage_tracker = UsageTracker(
-            memory=mock_memory, token_limit=1000, reset_interval_sec=3600
-        )
+        usage_tracker = UsageTracker(memory=mock_memory, token_limit=1000, reset_interval_sec=3600)
         cluster_id = "test_cluster"
 
         # When
         await usage_tracker.adelete_expired_records(cluster_id)
 
         # Then
-        mock_memory.adelete_expired_llm_usage_records.assert_called_once_with(
-            cluster_id, 3600
-        )
+        mock_memory.adelete_expired_llm_usage_records.assert_called_once_with(cluster_id, 3600)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -304,9 +258,7 @@ class TestUsageTracker:
             ),
         ],
     )
-    async def test_is_usage_limit_exceeded(
-        self, test_description, token_limit, usage_records, expected_report
-    ):
+    async def test_is_usage_limit_exceeded(self, test_description, token_limit, usage_records, expected_report):
         # Given
         reset_interval_sec = 600
         mock_memory = Mock()
@@ -330,21 +282,14 @@ class TestUsageTracker:
         # we will check the reset_seconds_left separately.
         expected_report.reset_seconds_left = report.reset_seconds_left
         assert report == expected_report
-        mock_memory.alist_llm_usage_records.assert_called_once_with(
-            "test_cluster", reset_interval_sec
-        )
+        mock_memory.alist_llm_usage_records.assert_called_once_with("test_cluster", reset_interval_sec)
 
         # check the reset_seconds_left.
         latest_record = max(usage_records, key=lambda record: record["epoch"])
-        expected_reset_seconds_left = int(
-            float(reset_interval_sec) - (time.time() - latest_record["epoch"])
-        )
+        expected_reset_seconds_left = int(float(reset_interval_sec) - (time.time() - latest_record["epoch"]))
         # reset_seconds_left can be off by 5 second due to dynamic time.time().
         accepted_offset = 5
-        assert (
-            abs(report.reset_seconds_left - expected_reset_seconds_left)
-            <= accepted_offset
-        )
+        assert abs(report.reset_seconds_left - expected_reset_seconds_left) <= accepted_offset
 
 
 @pytest.mark.parametrize(

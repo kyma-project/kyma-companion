@@ -37,9 +37,7 @@ class Metrics:
         minimum = 0.0
 
         if len(self.init_conversation_response_times_sec) != 0:
-            average = sum(self.init_conversation_response_times_sec) / len(
-                self.init_conversation_response_times_sec
-            )
+            average = sum(self.init_conversation_response_times_sec) / len(self.init_conversation_response_times_sec)
             maximum = max(self.init_conversation_response_times_sec)
             minimum = min(self.init_conversation_response_times_sec)
 
@@ -56,9 +54,7 @@ class Metrics:
         minimum = 0.0
 
         if len(self.conversation_response_times_sec) != 0:
-            average = sum(self.conversation_response_times_sec) / len(
-                self.conversation_response_times_sec
-            )
+            average = sum(self.conversation_response_times_sec) / len(self.conversation_response_times_sec)
             maximum = max(self.conversation_response_times_sec)
             minimum = min(self.conversation_response_times_sec)
 

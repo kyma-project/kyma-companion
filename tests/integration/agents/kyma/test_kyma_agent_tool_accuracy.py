@@ -85,9 +85,7 @@ class TestCase:
         name: str,
         state: KymaAgentState,
         expected_tool_calls: list[ToolCall] = None,
-        alternative_tool_calls: list[
-            list[ToolCall]
-        ] = None,  # Allow multiple valid sequences
+        alternative_tool_calls: list[list[ToolCall]] = None,  # Allow multiple valid sequences
         expected_response: str = None,
         retrieval_context: str = None,
         should_raise: bool = False,
@@ -160,13 +158,9 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case", create_test_cases_kyma_knowledge(create_k8s_client())
-)
+@pytest.mark.parametrize("test_case", create_test_cases_kyma_knowledge(create_k8s_client()))
 @pytest.mark.asyncio
-async def test_kyma_agent_kyma_knowledge(
-    kyma_agent, tool_accuracy_scorer, test_case: TestCase
-):
+async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
     agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
 
@@ -176,9 +170,9 @@ async def test_kyma_agent_kyma_knowledge(
     )
 
     score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
-    assert (
-        score > TOOL_ACCURACY_THRESHOLD
-    ), f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    assert score > TOOL_ACCURACY_THRESHOLD, (
+        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    )
 
 
 def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
@@ -317,9 +311,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 # kyma_query_tool call fails as 'gateway.kyma-project.io/v2' is not available in the cluster
                 ToolCall(
                     name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"
-                    },
+                    args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
                 ),
                 # after kyma_query_tool call fails, fetch_kyma_resource_version tool call is used for correct version
                 ToolCall(
@@ -330,15 +322,11 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 ),
                 ToolCall(
                     name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"
-                    },
+                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
                 ),
                 ToolCall(
                     name="search_kyma_doc",
-                    args={
-                        "query": "APIRule validation errors allow no_auth access strategy combination"
-                    },
+                    args={"query": "APIRule validation errors allow no_auth access strategy combination"},
                 ),
             ],
         ),
@@ -359,16 +347,12 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
                 ToolCall(
                     name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules/restapi"
-                    },
+                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules/restapi"},
                 ),
                 # should search kyma doc as there is Kyma APIRule access strategies error
                 ToolCall(
                     name="search_kyma_doc",
-                    args={
-                        "query": "APIRule validation error allow no_auth access strategy combination"
-                    },
+                    args={"query": "APIRule validation error allow no_auth access strategy combination"},
                 ),
             ],
         ),
@@ -477,9 +461,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                         content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi', 'resource_scope': 'namespaced'}"
                     ),
-                    HumanMessage(
-                        content="What is wrong with function in namespace test-function-18?"
-                    ),
+                    HumanMessage(content="What is wrong with function in namespace test-function-18?"),
                 ],
                 k8s_client=k8s_client,
             ),
@@ -523,13 +505,9 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case", create_test_cases_namespace_scoped(create_k8s_client())
-)
+@pytest.mark.parametrize("test_case", create_test_cases_namespace_scoped(create_k8s_client()))
 @pytest.mark.asyncio
-async def test_kyma_agent_namespace_scoped(
-    kyma_agent, tool_accuracy_scorer, test_case: TestCase
-):
+async def test_kyma_agent_namespace_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
     agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
 
@@ -552,9 +530,9 @@ async def test_kyma_agent_namespace_scoped(
                 score = alt_score
                 break
 
-    assert (
-        score > TOOL_ACCURACY_THRESHOLD
-    ), f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
+    assert score > TOOL_ACCURACY_THRESHOLD, (
+        f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
+    )
 
 
 def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
@@ -579,15 +557,11 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ),
                 ToolCall(
                     name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"
-                    },
+                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
                 ),
                 ToolCall(
                     name="search_kyma_doc",
-                    args={
-                        "query": "APIRule validation error allow no_auth access strategy combination"
-                    },
+                    args={"query": "APIRule validation error allow no_auth access strategy combination"},
                 ),
             ],
             alternative_tool_calls=[
@@ -601,9 +575,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                     ),
                     ToolCall(
                         name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"
-                        },
+                        args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
                     ),
                 ],
             ],
@@ -630,9 +602,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ),
                 ToolCall(
                     name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"
-                    },
+                    args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
                 ),
             ],
         ),
@@ -669,13 +639,9 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case", create_test_cases_cluster_scoped(create_k8s_client())
-)
+@pytest.mark.parametrize("test_case", create_test_cases_cluster_scoped(create_k8s_client()))
 @pytest.mark.asyncio
-async def test_kyma_agent_cluster_scoped(
-    kyma_agent, tool_accuracy_scorer, test_case: TestCase
-):
+async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
     ragas_messages = convert_to_ragas_messages(response["agent_messages"])
 
@@ -701,6 +667,6 @@ async def test_kyma_agent_cluster_scoped(
                     score = alt_score
                     break
 
-        assert (
-            score > TOOL_ACCURACY_THRESHOLD
-        ), f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
+        assert score > TOOL_ACCURACY_THRESHOLD, (
+            f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
+        )

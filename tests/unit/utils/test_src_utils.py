@@ -139,14 +139,10 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
         ),
     ],
 )
-def test_get_user_identifier_from_token(
-    test_description, token_payload, expected_result, expected_exception
-):
+def test_get_user_identifier_from_token(test_description, token_payload, expected_result, expected_exception):
     token = jwt.encode(token_payload, "secret", algorithm="HS256")
     if expected_exception:
-        with pytest.raises(
-            expected_exception, match="Failed to get user identifier from token"
-        ):
+        with pytest.raises(expected_exception, match="Failed to get user identifier from token"):
             get_user_identifier_from_token(token)
     else:
         user_identifier = get_user_identifier_from_token(token)
@@ -156,9 +152,7 @@ def test_get_user_identifier_from_token(
 # Sample PEM certificates for testing
 def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
     # Generate a private key
-    private_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048, backend=default_backend()
-    )
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
 
     issuer = x509.Name(
         [
@@ -182,9 +176,7 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
         .public_key(private_key.public_key())
         .serial_number(int(serial_number))
         .not_valid_before(datetime.datetime.now(datetime.UTC))
-        .not_valid_after(
-            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365)
-        )
+        .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365))
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256(), default_backend())
     )
@@ -227,10 +219,7 @@ def test_get_user_identifier_from_client_certificate(
         with pytest.raises(ValueError):
             get_user_identifier_from_client_certificate(client_certificate_data)
     else:
-        assert (
-            get_user_identifier_from_client_certificate(client_certificate_data)
-            == expected_user_identifier
-        )
+        assert get_user_identifier_from_client_certificate(client_certificate_data) == expected_user_identifier
 
 
 @pytest.mark.parametrize(
@@ -280,9 +269,7 @@ def test_get_user_identifier_from_client_certificate(
         ),
     ],
 )
-def test_to_sequence_messages(
-    test_description, input_data, expected_output, expected_exception
-):
+def test_to_sequence_messages(test_description, input_data, expected_output, expected_exception):
     if expected_exception:
         with pytest.raises(expected_exception, match="Unsupported message type"):
             to_sequence_messages(input_data)

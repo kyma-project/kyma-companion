@@ -45,9 +45,7 @@ class ToolResponseSummarizer:
 
         return agent_prompt | self.model.llm
 
-    def _create_chunks_from_list(
-        self, tool_response: list[Any], nums_of_chunks: int
-    ) -> list[Document]:
+    def _create_chunks_from_list(self, tool_response: list[Any], nums_of_chunks: int) -> list[Document]:
         """Split a list of K8s items into a specific number of Document chunks"""
 
         chunk_size = ceil(len(tool_response) / nums_of_chunks)
@@ -105,9 +103,7 @@ class ToolResponseSummarizer:
                 config=config,
             )
 
-            logger.info(
-                f"Tool Response chunk {i + 1}/{len(chunks)} summarized successfully"
-            )
+            logger.info(f"Tool Response chunk {i + 1}/{len(chunks)} summarized successfully")
             chunk_summary.append(response)
 
         # Join all chunk summaries

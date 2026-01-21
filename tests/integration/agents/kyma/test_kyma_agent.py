@@ -86,9 +86,7 @@ def kyma_agent(app_models):
                     SystemMessage(
                         content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
                     ),
-                    HumanMessage(
-                        content="Why is the pod of the serverless Function not ready?"
-                    ),
+                    HumanMessage(content="Why is the pod of the serverless Function not ready?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -96,9 +94,7 @@ def kyma_agent(app_models):
                                 "id": "tool_call_id_1",
                                 "type": "tool_call",
                                 "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"
-                                },
+                                "args": {"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
                             },
                         ],
                     ),
@@ -359,12 +355,8 @@ def kyma_agent(app_models):
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="{'resource_namespace': 'kyma-serverless-function-no-replicas'}"
-                    ),
-                    HumanMessage(
-                        content="Why is the pod of the serverless Function not ready?"
-                    ),
+                    SystemMessage(content="{'resource_namespace': 'kyma-serverless-function-no-replicas'}"),
+                    HumanMessage(content="Why is the pod of the serverless Function not ready?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -535,9 +527,7 @@ def kyma_agent(app_models):
                                 "id": "tool_call_id_5",
                                 "type": "tool_call",
                                 "name": "search_kyma_doc",
-                                "args": {
-                                    "query": "Node.js serverless functions best practices deployment"
-                                },
+                                "args": {"query": "Node.js serverless functions best practices deployment"},
                             }
                         ],
                     ),
@@ -582,9 +572,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{}"),
-                    HumanMessage(
-                        content="How do I implement rate limiting in Kyma API Gateway?"
-                    ),
+                    HumanMessage(content="How do I implement rate limiting in Kyma API Gateway?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -592,9 +580,7 @@ def kyma_agent(app_models):
                                 "id": "tool_call_id_6",
                                 "type": "tool_call",
                                 "name": "search_kyma_doc",
-                                "args": {
-                                    "query": "API Gateway rate limiting configuration"
-                                },
+                                "args": {"query": "API Gateway rate limiting configuration"},
                             }
                         ],
                     ),
@@ -831,9 +817,7 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{'resource_namespace': 'sample-ns'}"),
-                    HumanMessage(
-                        content="how to create an application with Kyma and register external service"
-                    ),
+                    HumanMessage(content="how to create an application with Kyma and register external service"),
                 ],
                 subtasks=[
                     {
@@ -869,9 +853,7 @@ async def test_invoke_chain(
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'sample-ns'}"
-                    ),
+                    SystemMessage(content="The user query is related to: {'resource_namespace': 'sample-ns'}"),
                     HumanMessage(content="how to enable a Kyma module?"),
                 ],
                 subtasks=[
@@ -902,9 +884,7 @@ async def test_invoke_chain(
             KymaAgentState(
                 agent_messages=[],
                 messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_namespace': 'sample-ns'}"
-                    ),
+                    SystemMessage(content="The user query is related to: {'resource_namespace': 'sample-ns'}"),
                     HumanMessage(content="show how to create an API Rule"),
                 ],
                 subtasks=[

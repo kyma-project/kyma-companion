@@ -32,9 +32,7 @@ def colored_status(status: TestStatus) -> str:
     return colored(status.upper(), "red")
 
 
-def print_test_results(
-    scenario_list: ScenarioList, total_usage: int, time_taken: float
-) -> None:
+def print_test_results(scenario_list: ScenarioList, total_usage: int, time_taken: float) -> None:
     """Prints the test results."""
     print_header("Test Results:")
     print_results_per_scenario(scenario_list)
@@ -80,9 +78,7 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
 
             # for each query print the evaluation results.
             for query in scenario.queries:
-                print_header(
-                    f"** Scenario ID: {scenario.id}, Query: {query.user_query}"
-                )
+                print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
 
                 # print the response chunks.
                 print_response_chunks(query.response_chunks)
@@ -94,15 +90,11 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
 
                 # print the failure reason for the query.
                 if query.test_status_reason != "":
-                    print(
-                        f"*** Query Status Reason: {colored(query.test_status_reason, 'red')}"
-                    )
+                    print(f"*** Query Status Reason: {colored(query.test_status_reason, 'red')}")
 
             # print failure reason for the scenario.
             if scenario.test_status_reason != "":
-                print(
-                    f"*** Scenario Status Reason: {colored(scenario.test_status_reason, 'red')}"
-                )
+                print(f"*** Scenario Status Reason: {colored(scenario.test_status_reason, 'red')}")
 
 
 def print_retry_summary(scenario_list: ScenarioList) -> None:
@@ -125,9 +117,7 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
             status_text = colored(scenario.test_status.upper(), "green")
         else:
             status_text = colored(scenario.test_status.upper(), "red")
-        print(
-            f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | Final Status: {status_text}"
-        )
+        print(f"  - Scenario ID: {scenario.id} | Attempts: {scenario.attempt_number} | Final Status: {status_text}")
         print()
 
 
@@ -137,9 +127,7 @@ def print_failed_queries(scenario_list: ScenarioList) -> None:
     for scenario in scenario_list.items:
         for query in scenario.queries:
             if query.test_status == TestStatus.FAILED:
-                failed_queries.append(
-                    f"Scenario ID: {scenario.id}, Query: {query.user_query}"
-                )
+                failed_queries.append(f"Scenario ID: {scenario.id}, Query: {query.user_query}")
 
     if len(failed_queries) == 0:
         return None
@@ -152,9 +140,7 @@ def print_failed_queries(scenario_list: ScenarioList) -> None:
 
 def print_overall_results(scenario_list: ScenarioList) -> None:
     """Prints the overall results."""
-    print_header(
-        f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%"
-    )
+    print_header(f"Overall success score across all expectations: {scenario_list.get_overall_success_rate()}%")
 
 
 def print_response_times_summary() -> None:

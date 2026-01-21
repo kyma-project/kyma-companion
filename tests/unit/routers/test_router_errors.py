@@ -65,7 +65,7 @@ class TestK8sAPIErrorHandling:
             with pytest.raises(HTTPException) as exc_info:
                 await query_k8s_resource(request, None)  # k8s_client not used
 
-            assert (
-                exc_info.value.status_code == expected_status
-            ), f"Failed: {test_description} - expected {expected_status}, got {exc_info.value.status_code}"
+            assert exc_info.value.status_code == expected_status, (
+                f"Failed: {test_description} - expected {expected_status}, got {exc_info.value.status_code}"
+            )
             assert "error" in exc_info.value.detail.lower()

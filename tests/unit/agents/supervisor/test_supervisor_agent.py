@@ -31,9 +31,7 @@ def mock_models():
 class TestSupervisorAgent:
     @pytest.fixture
     def supervisor_agent(self, mock_models):
-        agent = SupervisorAgent(
-            models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER]
-        )
+        agent = SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])
         return agent
 
     @pytest.mark.parametrize(
@@ -266,9 +264,7 @@ class TestSupervisorAgent:
 
         mock_final_response_chain = AsyncMock()
         if final_response_content is not None:
-            mock_final_response_chain.ainvoke.return_value.content = (
-                final_response_content
-            )
+            mock_final_response_chain.ainvoke.return_value.content = final_response_content
 
         with patch.object(
             supervisor_agent,
@@ -388,20 +384,14 @@ class TestSupervisorAgent:
         expected_error,
     ):
         # Mock _invoke_planner instead of _planner_chain
-        with patch.object(
-            supervisor_agent, "_invoke_planner", new_callable=AsyncMock
-        ) as mock_invoke_planner:
+        with patch.object(supervisor_agent, "_invoke_planner", new_callable=AsyncMock) as mock_invoke_planner:
             if expected_error:
                 mock_invoke_planner.side_effect = Exception(expected_error)
             else:
-                mock_invoke_planner.return_value = Plan.model_validate_json(
-                    mock_plan_content
-                )
+                mock_invoke_planner.return_value = Plan.model_validate_json(mock_plan_content)
 
             state = SupervisorState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)
-            assert (
-                result["messages"][-1].name == "Planner"
-            ), "Last message name should be 'Planner'"
+            assert result["messages"][-1].name == "Planner", "Last message name should be 'Planner'"
             assert result == expected_output, test_case
             mock_invoke_planner.assert_called_once_with(state)

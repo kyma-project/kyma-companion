@@ -28,14 +28,10 @@ def embedding_model():
 @pytest.fixture(scope="session")
 def hana_conn():
     # setup connection to Hana Cloud DB
-    hana_conn = create_hana_connection(
-        DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
-    )
+    hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
     if not hana_conn:
         if DATABASE_URL == "" or DATABASE_USER == "" or DATABASE_PASSWORD == "":
-            raise ValueError(
-                "Failed to create Hana DB connection. Some configuration values are missing."
-            )
+            raise ValueError("Failed to create Hana DB connection. Some configuration values are missing.")
         raise ValueError("Failed to create Hana DB connection.")
     yield hana_conn
     hana_conn.close()
@@ -147,6 +143,6 @@ def test_index(
         for chunk in expected_chunks:
             assert chunk in stored_chunks, f"Expected chunk not found: {chunk}"
 
-        assert len(stored_chunks) == len(
-            expected_chunks
-        ), f"Number of chunks mismatch. Expected {len(expected_chunks)}, but got {len(stored_chunks)}"
+        assert len(stored_chunks) == len(expected_chunks), (
+            f"Number of chunks mismatch. Expected {len(expected_chunks)}, but got {len(stored_chunks)}"
+        )

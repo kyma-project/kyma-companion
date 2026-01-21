@@ -45,9 +45,7 @@ class TestLLMReranker:
         reranker = LLMReranker(model=mock_model)
 
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        expected_chain = prompt | mock_model.llm.with_structured_output(
-            DocumentRelevancyScores
-        )
+        expected_chain = prompt | mock_model.llm.with_structured_output(DocumentRelevancyScores)
 
         # Then
         assert reranker is not None
@@ -227,21 +225,14 @@ class TestLLMReranker:
             ),
         ],
     )
-    async def test_chain_ainvoke(
-        self, monkeypatch, description, docs, limit, scores, threshold, expected_docs
-    ):
+    async def test_chain_ainvoke(self, monkeypatch, description, docs, limit, scores, threshold, expected_docs):
         # Patch RAG_RELEVANCY_SCORE_THRESHOLD
-        monkeypatch.setattr(
-            "rag.reranker.reranker.RAG_RELEVANCY_SCORE_THRESHOLD", threshold
-        )
+        monkeypatch.setattr("rag.reranker.reranker.RAG_RELEVANCY_SCORE_THRESHOLD", threshold)
 
         # Patch ainvoke_chain to return a DocumentRelevancyScores with the given scores
         async def fake_ainvoke_chain(chain, input_dict):
             return DocumentRelevancyScores(
-                documents=[
-                    DocumentRelevancyScore(id=doc_id, score=score)
-                    for doc_id, score in scores
-                ]
+                documents=[DocumentRelevancyScore(id=doc_id, score=score) for doc_id, score in scores]
             )
 
         monkeypatch.setattr("rag.reranker.reranker.ainvoke_chain", fake_ainvoke_chain)
@@ -261,9 +252,7 @@ class TestLLMReranker:
         assert got_docs == expected_docs, description
         for doc in got_docs:
             if doc.id:
-                assert not doc.id.startswith(
-                    TMP_DOC_ID_PREFIX
-                ), "Temporary Document ID should have been removed."
+                assert not doc.id.startswith(TMP_DOC_ID_PREFIX), "Temporary Document ID should have been removed."
 
 
 @pytest.mark.parametrize(

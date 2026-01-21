@@ -53,7 +53,5 @@ def test_clone_repo(
     # Then
     if given_dir_exists:
         mock_os_path_exists.assert_called_once_with(expected_repo_path)
-    mock_subprocess_run.assert_called_once_with(
-        ["git", "clone", given_repo_url, expected_repo_path]
-    )
+    mock_subprocess_run.assert_called_once_with(["git", "clone", given_repo_url, expected_repo_path])
     assert repo_path == expected_repo_path

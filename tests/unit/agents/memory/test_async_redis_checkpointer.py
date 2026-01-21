@@ -159,10 +159,7 @@ class TestAsyncRedisSaver:
         stored_data = await fake_async_redis.hgetall(key)
         assert stored_data[b"channel"] == expected_data["channel"].encode()
         # The value is stored with type information by dumps_typed
-        assert (
-            stored_data[b"value"]
-            == async_redis_saver.serde.dumps_typed(expected_data["value"])[1]
-        )
+        assert stored_data[b"value"] == async_redis_saver.serde.dumps_typed(expected_data["value"])[1]
 
     @pytest.mark.parametrize(
         "config, checkpoint_data, ttl",
@@ -207,7 +204,6 @@ class TestAsyncRedisSaver:
         checkpoint_data,
         ttl,
     ):
-
         await async_redis_saver.aput(
             config,
             checkpoint_data["checkpoint"],
@@ -286,10 +282,7 @@ class TestAsyncRedisSaver:
         # Check if the data is stored correctly
         stored_data = await fake_async_redis.hgetall(key)
         assert stored_data[b"channel"] == expected_data["channel"].encode()
-        assert (
-            stored_data[b"value"]
-            == async_redis_saver.serde.dumps_typed(expected_data["value"])[1]
-        )
+        assert stored_data[b"value"] == async_redis_saver.serde.dumps_typed(expected_data["value"])[1]
 
         # Wait for the TTL to expire
         await asyncio.sleep(ttl + 2)  # Adding 2 second to ensure TTL has expired
@@ -364,9 +357,7 @@ class TestAsyncRedisSaver:
             assert result.checkpoint == checkpoint_data["checkpoint"]
             assert result.metadata == checkpoint_data["metadata"]
 
-    async def test_aget_tuple_backward_compatibility_legacy_metadata(
-        self, async_redis_saver, fake_async_redis
-    ):
+    async def test_aget_tuple_backward_compatibility_legacy_metadata(self, async_redis_saver, fake_async_redis):
         """Test that checkpoints with legacy JSON metadata (without metadata_type) can still be read."""
         # Setup: Create a checkpoint in the old format (without metadata_type field)
         config = {
@@ -402,9 +393,7 @@ class TestAsyncRedisSaver:
         assert result.checkpoint == checkpoint
         assert result.metadata == metadata
 
-    async def test_alist_backward_compatibility_legacy_metadata(
-        self, async_redis_saver, fake_async_redis
-    ):
+    async def test_alist_backward_compatibility_legacy_metadata(self, async_redis_saver, fake_async_redis):
         """Test that alist can handle checkpoints with legacy JSON metadata (without metadata_type)."""
         # Setup: Create two checkpoints - one new format, one legacy format
         thread_id = "thread-alist-legacy"
@@ -426,9 +415,7 @@ class TestAsyncRedisSaver:
         checkpoint_legacy = create_checkpoint("chk-legacy")
         metadata_legacy = create_metadata(2)
         key_legacy = _make_redis_checkpoint_key(thread_id, checkpoint_ns, "chk-legacy")
-        type_, serialized_checkpoint = async_redis_saver.serde.dumps_typed(
-            checkpoint_legacy
-        )
+        type_, serialized_checkpoint = async_redis_saver.serde.dumps_typed(checkpoint_legacy)
         serialized_metadata = json.dumps(metadata_legacy).encode()
         data = {
             "checkpoint": serialized_checkpoint,
@@ -441,9 +428,7 @@ class TestAsyncRedisSaver:
         await fake_async_redis.hset(key_legacy, mapping=data)
 
         # Test: List all checkpoints
-        config_list = {
-            "configurable": {"thread_id": thread_id, "checkpoint_ns": checkpoint_ns}
-        }
+        config_list = {"configurable": {"thread_id": thread_id, "checkpoint_ns": checkpoint_ns}}
         results = [result async for result in async_redis_saver.alist(config_list)]
 
         # Verify: Both checkpoints should be retrieved correctly
@@ -521,9 +506,7 @@ class TestAsyncRedisSaver:
             )
 
         # Load and verify writes
-        result = await async_redis_saver._aload_pending_writes(
-            thread_id, checkpoint_ns, checkpoint_id
-        )
+        result = await async_redis_saver._aload_pending_writes(thread_id, checkpoint_ns, checkpoint_id)
         assert len(result) == expected_count
 
         if expected_count > 0:
@@ -540,9 +523,7 @@ class TestAsyncRedisSaver:
             ("123", {"usage": 300}, 5),
         ],
     )
-    async def test_awrite_llm_usage(
-        self, async_redis_saver, fake_async_redis, cluster_id, data, ttl
-    ):
+    async def test_awrite_llm_usage(self, async_redis_saver, fake_async_redis, cluster_id, data, ttl):
         # when
         key = await async_redis_saver.awrite_llm_usage(cluster_id, data, ttl)
 
@@ -555,9 +536,7 @@ class TestAsyncRedisSaver:
             ttl_value = await fake_async_redis.ttl(key)
             assert ttl_value > 0
 
-    async def test_adelete_expired_llm_usage_records(
-        self, async_redis_saver, fake_async_redis
-    ):
+    async def test_adelete_expired_llm_usage_records(self, async_redis_saver, fake_async_redis):
         # given
         num_of_records = 3
         cluster_id = f"cluster_usage_record_deletion_test1_{time.time()}"
@@ -584,14 +563,10 @@ class TestAsyncRedisSaver:
 
         # then
         # Check the remaining keys in Redis
-        remaining_keys = await fake_async_redis.keys(
-            _get_llm_usage_key_filter(cluster_id)
-        )
+        remaining_keys = await fake_async_redis.keys(_get_llm_usage_key_filter(cluster_id))
         assert len(remaining_keys) == num_of_records
         for key in remaining_keys:
-            assert (
-                _extract_time_from_llm_usage_key(_safe_decode(key)) > time.time() - ttl
-            )
+            assert _extract_time_from_llm_usage_key(_safe_decode(key)) > time.time() - ttl
 
     async def test_alist_llm_usage_records(self, async_redis_saver, fake_async_redis):
         # given
@@ -602,24 +577,18 @@ class TestAsyncRedisSaver:
         # insert 3 records with different cluster_id (as noise).
         ttl = 3
         for _ in range(num_of_records):
-            await async_redis_saver.awrite_llm_usage(
-                cluster_id2, {"epoch": time.time()}
-            )
+            await async_redis_saver.awrite_llm_usage(cluster_id2, {"epoch": time.time()})
 
         # insert 3 records.
         for _ in range(num_of_records):
-            await async_redis_saver.awrite_llm_usage(
-                cluster_id1, {"epoch": time.time()}
-            )
+            await async_redis_saver.awrite_llm_usage(cluster_id1, {"epoch": time.time()})
 
         # simulate waiting for the TTL.
         await asyncio.sleep(ttl + 2)  # Adding 2 second to ensure TTL has expired
 
         # insert 3 records with large ttl.
         for _ in range(num_of_records):
-            await async_redis_saver.awrite_llm_usage(
-                cluster_id1, {"epoch": time.time()}
-            )
+            await async_redis_saver.awrite_llm_usage(cluster_id1, {"epoch": time.time()})
 
         # when
         records = await async_redis_saver.alist_llm_usage_records(cluster_id1, ttl)
@@ -643,9 +612,7 @@ class TestUtilityFunctions:
         key = _make_redis_checkpoint_writes_key("thread1", "ns1", "chk1", "task1", 0)
         assert key == "writes$thread1$ns1$chk1$task1$0"
 
-        key_no_idx = _make_redis_checkpoint_writes_key(
-            "thread1", "ns1", "chk1", "task1", None
-        )
+        key_no_idx = _make_redis_checkpoint_writes_key("thread1", "ns1", "chk1", "task1", None)
         assert key_no_idx == "writes$thread1$ns1$chk1$task1"
 
     def test_parse_redis_checkpoint_key(self):

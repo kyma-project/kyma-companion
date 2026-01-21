@@ -73,9 +73,7 @@ def enforce_query_token_limit(
     token_count = compute_string_token_count(message.model_dump_json(), MAIN_MODEL_NAME)
     logger.info(f"Input Query Token count is {token_count}")
     if token_count > MAX_TOKEN_LIMIT_INPUT_QUERY:
-        raise HTTPException(
-            status_code=400, detail="Input Query exceeds the allowed token limit."
-        )
+        raise HTTPException(status_code=400, detail="Input Query exceeds the allowed token limit.")
 
 
 router = APIRouter(
@@ -99,9 +97,7 @@ async def init_conversation(
 ) -> JSONResponse:
     """Endpoint to initialize a conversation with Kyma Companion and generates initial questions."""
 
-    logger.info(
-        f"Initializing new conversation. Request data: {message.model_dump_json()}"
-    )
+    logger.info(f"Initializing new conversation. Request data: {message.model_dump_json()}")
 
     # Validate if all the required K8s headers are provided.
     k8s_auth_headers = K8sAuthHeaders(
@@ -127,9 +123,7 @@ async def init_conversation(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(
-            status_code=400, detail=f"failed to connect to the cluster: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -148,9 +142,7 @@ async def init_conversation(
         )
 
         # Return response with session_id in the header.
-        response = InitialQuestionsResponse(
-            initial_questions=questions, conversation_id=session_id
-        )
+        response = InitialQuestionsResponse(initial_questions=questions, conversation_id=session_id)
         return JSONResponse(
             content=jsonable_encoder(response),
             headers={SESSION_ID_HEADER: session_id},
@@ -197,9 +189,7 @@ async def followup_questions(
 
     try:
         # Create follow-up questions.
-        questions = await conversation_service.handle_followup_questions(
-            conversation_id=str(conversation_id)
-        )
+        questions = await conversation_service.handle_followup_questions(conversation_id=str(conversation_id))
 
         # Return response.
         response = FollowUpQuestionsResponse(
@@ -210,16 +200,12 @@ async def followup_questions(
         )
     except Exception as e:
         logger.error(e)
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.post("/{conversation_id}/messages")
 async def messages(
-    conversation_id: Annotated[
-        UUID, Path(title="The ID of the conversation to continue")
-    ],
+    conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
     x_cluster_url: Annotated[str, Header()],
     x_cluster_certificate_authority_data: Annotated[str, Header()],
@@ -232,9 +218,7 @@ async def messages(
 ) -> StreamingResponse:
     """Endpoint to send a message to the Kyma companion"""
 
-    logger.info(
-        f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}"
-    )
+    logger.info(f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
 
     # Validate if all the required K8s headers are provided.
     k8s_auth_headers = K8sAuthHeaders(
@@ -247,15 +231,11 @@ async def messages(
     try:
         k8s_auth_headers.validate_headers()
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
     message.user_identifier = extract_user_identifier(k8s_auth_headers)
-    await authorize_user(
-        str(conversation_id), message.user_identifier, conversation_service
-    )
+    await authorize_user(str(conversation_id), message.user_identifier, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -275,9 +255,7 @@ async def messages(
     # Validate the k8s resource context.
     if not message.is_cluster_overview_query():
         try:
-            resource_kind_details = await K8sResourceDiscovery(
-                k8s_client
-            ).get_resource_kind(
+            resource_kind_details = await K8sResourceDiscovery(k8s_client).get_resource_kind(
                 str(message.resource_api_version), str(message.resource_kind)
             )
             # Add details to the message.
@@ -293,9 +271,7 @@ async def messages(
     return StreamingResponse(
         (
             chunk_response + b"\n"
-            async for chunk in conversation_service.handle_request(
-                str(conversation_id), message, k8s_client
-            )
+            async for chunk in conversation_service.handle_request(str(conversation_id), message, k8s_client)
             for chunk_response in (prepare_chunk_response(chunk),)
             if chunk_response is not None
         ),
@@ -331,9 +307,7 @@ def extract_user_identifier(
     user_identifier = ""
     if k8s_auth_headers.x_k8s_authorization is not None:
         try:
-            user_identifier = get_user_identifier_from_token(
-                k8s_auth_headers.x_k8s_authorization
-            )
+            user_identifier = get_user_identifier_from_token(k8s_auth_headers.x_k8s_authorization)
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=401, detail="Invalid token") from e
@@ -344,9 +318,7 @@ def extract_user_identifier(
             )
         except Exception as e:
             logger.error(e)
-            raise HTTPException(
-                status_code=401, detail="Invalid client certificate"
-            ) from e
+            raise HTTPException(status_code=401, detail="Invalid client certificate") from e
 
     if user_identifier == "":
         raise HTTPException(
@@ -366,6 +338,4 @@ async def authorize_user(
     """Authorize the user to access the conversation."""
 
     if not await conversation_service.authorize_user(conversation_id, user_identifier):
-        raise HTTPException(
-            status_code=403, detail="User not authorized to access the conversation"
-        )
+        raise HTTPException(status_code=403, detail="User not authorized to access the conversation")

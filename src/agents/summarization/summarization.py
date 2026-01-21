@@ -69,17 +69,13 @@ class MessageSummarizer:
         """Returns the token count of the messages."""
         return compute_messages_token_count(messages, self._tokenizer_model_name)
 
-    def filter_messages_by_token_limit(
-        self, messages: list[BaseMessage]
-    ) -> list[BaseMessage]:
+    def filter_messages_by_token_limit(self, messages: list[BaseMessage]) -> list[BaseMessage]:
         """Returns the messages that can be kept within the token limit."""
         filtered_messages: list[BaseMessage] = []
         # iterate the messages in reverse order and keep message if token limit is not exceeded.
         tokens = 0
         for msg in reversed(messages):
-            tokens += compute_string_token_count(
-                str(msg.content), self._tokenizer_model_name
-            )
+            tokens += compute_string_token_count(str(msg.content), self._tokenizer_model_name)
             if tokens > self._token_lower_limit:
                 break
             filtered_messages.insert(0, copy.deepcopy(msg))
@@ -91,9 +87,7 @@ class MessageSummarizer:
                 return filtered_messages[i:]
         return filtered_messages
 
-    async def get_summary(
-        self, messages: list[BaseMessage], config: RunnableConfig
-    ) -> str:
+    async def get_summary(self, messages: list[BaseMessage], config: RunnableConfig) -> str:
         """Returns the summary of the messages."""
 
         if len(messages) == 0:
@@ -107,9 +101,7 @@ class MessageSummarizer:
         logger.debug("Messages summary completed")
         return f"Summary of previous chat:\n {res.content}"
 
-    async def summarization_node(
-        self, state: BaseModel, config: RunnableConfig
-    ) -> dict[str, Any]:
+    async def summarization_node(self, state: BaseModel, config: RunnableConfig) -> dict[str, Any]:
         """Summarization node to summarize the conversation."""
         logger.debug("Summarization node started")
         state_messages = getattr(state, self._messages_key)
@@ -119,9 +111,7 @@ class MessageSummarizer:
         all_messages = state_messages
         if state_messages_summary != "":
             # if there is a summary, prepend it to the messages.
-            all_messages = [
-                SystemMessage(content=state_messages_summary)
-            ] + state_messages
+            all_messages = [SystemMessage(content=state_messages_summary)] + state_messages
 
         token_count = self.get_messages_token_count(all_messages)
         if token_count <= self.get_token_upper_limit():
@@ -131,9 +121,7 @@ class MessageSummarizer:
             }
 
         # filter out messages that can be kept within the token limit.
-        latest_messages_within_token_limit = self.filter_messages_by_token_limit(
-            all_messages
-        )
+        latest_messages_within_token_limit = self.filter_messages_by_token_limit(all_messages)
 
         if len(latest_messages_within_token_limit) == len(all_messages):
             return {

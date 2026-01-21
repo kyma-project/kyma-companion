@@ -28,11 +28,7 @@ class TestRedis:
             ),
             (
                 "Connection fails with exception",
-                MagicMock(
-                    return_value=MagicMock(
-                        ping=AsyncMock(side_effect=Exception("Connection error"))
-                    )
-                ),
+                MagicMock(return_value=MagicMock(ping=AsyncMock(side_effect=Exception("Connection error")))),
                 False,
             ),
             (
@@ -43,9 +39,7 @@ class TestRedis:
         ],
     )
     @pytest.mark.asyncio
-    async def test_is_connection_operational(
-        self, test_case, connection_factory, expected
-    ):
+    async def test_is_connection_operational(self, test_case, connection_factory, expected):
         """
         Test the `is_connection_operational` method with various scenarios.
 

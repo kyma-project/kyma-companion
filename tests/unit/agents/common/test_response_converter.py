@@ -325,9 +325,7 @@ def test_parse_yamls(response_converter, description, yaml_content, expected_res
     ],
 )
 @pytest.mark.asyncio
-async def test_generate_resource_link(
-    response_converter, description, yaml_config, link_type, expected_link
-):
+async def test_generate_resource_link(response_converter, description, yaml_config, link_type, expected_link):
     result = await response_converter._generate_resource_link(yaml_config, link_type)
     assert result == expected_link
 
@@ -358,9 +356,7 @@ def test_create_html_nested_yaml(
     link_type,
     expected_contents,
 ):
-    html = response_converter._create_html_nested_yaml(
-        yaml_content, resource_link, link_type
-    )
+    html = response_converter._create_html_nested_yaml(yaml_content, resource_link, link_type)
     for content in expected_contents:
         assert content in html
 
@@ -391,15 +387,11 @@ def test_create_html_nested_yaml(
         ),
     ],
 )
-def test_yaml_without_yaml_marker(
-    response_converter, yaml_config, resource_link, link_type, expected_yaml_in_output
-):
+def test_yaml_without_yaml_marker(response_converter, yaml_config, resource_link, link_type, expected_yaml_in_output):
     """Test _create_html_nested_yaml with various input combinations"""
 
     # Act
-    result = response_converter._create_html_nested_yaml(
-        yaml_config, resource_link, link_type
-    )
+    result = response_converter._create_html_nested_yaml(yaml_config, resource_link, link_type)
 
     # Assert
     assert isinstance(result, str)
@@ -423,9 +415,7 @@ def test_yaml_without_yaml_marker(
 def test_yaml_marker_detection(response_converter, yaml_config, should_add_markers):
     """Test YAML marker detection and addition logic"""
 
-    result = response_converter._create_html_nested_yaml(
-        yaml_config, "https://example.com", "New"
-    )
+    result = response_converter._create_html_nested_yaml(yaml_config, "https://example.com", "New")
 
     if should_add_markers:
         # Should contain the added markers
@@ -487,12 +477,8 @@ def test_yaml_marker_detection(response_converter, yaml_config, should_add_marke
         "empty_replacement_list",
     ],
 )
-def test_replace_yaml_with_html(
-    response_converter, finalizer_response, replacement_html_list, yaml_type, expected
-):
-    result = response_converter._replace_yaml_with_html(
-        finalizer_response, replacement_html_list.copy(), yaml_type
-    )
+def test_replace_yaml_with_html(response_converter, finalizer_response, replacement_html_list, yaml_type, expected):
+    result = response_converter._replace_yaml_with_html(finalizer_response, replacement_html_list.copy(), yaml_type)
     # Normalize whitespace for comparison
     assert " ".join(result.split()) == " ".join(expected.split())
 
@@ -541,9 +527,7 @@ def test_replace_yaml_with_html(
     ids=["single_valid_yaml", "mixed_valid_invalid", "empty_list"],
 )
 @pytest.mark.asyncio
-async def test_create_replacement_list(
-    response_converter, yaml_list, yaml_type, expected
-):
+async def test_create_replacement_list(response_converter, yaml_list, yaml_type, expected):
     result = await response_converter._create_replacement_list(yaml_list, yaml_type)
 
     # Compare lengths
@@ -721,11 +705,7 @@ async def test_create_replacement_list(
     ],
 )
 @pytest.mark.asyncio
-async def test_convert_final_response(
-    response_converter, state_content, expected_content
-):
+async def test_convert_final_response(response_converter, state_content, expected_content):
     state = {"messages": [AIMessage(content=state_content, name=FINALIZER)]}
     result = await response_converter.convert_final_response(state)
-    assert " ".join(result[MESSAGES][0].content.split()) == " ".join(
-        expected_content.split()
-    )
+    assert " ".join(result[MESSAGES][0].content.split()) == " ".join(expected_content.split())

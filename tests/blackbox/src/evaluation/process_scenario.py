@@ -30,9 +30,7 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
     companion_client = CompanionClient(config)
 
     # get the initial questions and conversation id for the scenario.
-    conversation_id = initialize_conversation(
-        companion_client, config, logger, scenario
-    )
+    conversation_id = initialize_conversation(companion_client, config, logger, scenario)
     if not conversation_id:
         # If we fail to initialize the conversation,
         # the scenario is marked as failed and we can return.
@@ -41,9 +39,7 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
     # For each query in the scenario, we need to get the response from the Companion API.
     for query in scenario.queries:
         # Get Companion responses for the user query of the scenario.
-        if not get_companion_responses(
-            companion_client, config, logger, query, scenario, conversation_id
-        ):
+        if not get_companion_responses(companion_client, config, logger, query, scenario, conversation_id):
             # If we fail to get the response,
             # the scenario is marked as failed and we can return.
             return
@@ -85,8 +81,8 @@ def initialize_conversation(
     while retry_wait_time <= config.retry_max_wait_time:
         try:
             logger.debug("getting response from the initial conversations endpoint...")
-            init_questions_response: InitialQuestionsResponse = (
-                companion_client.fetch_initial_questions(payload, logger)
+            init_questions_response: InitialQuestionsResponse = companion_client.fetch_initial_questions(
+                payload, logger
             )
             scenario.initial_questions = init_questions_response.initial_questions
             return init_questions_response.conversation_id
@@ -106,8 +102,7 @@ def initialize_conversation(
     else:
         scenario.test_status = TestStatus.FAILED
         scenario.test_status_reason = (
-            "failed to call initialize conversation endpoint after multiple retries. "
-            f"{companion_error}"
+            f"failed to call initialize conversation endpoint after multiple retries. {companion_error}"
         )
         logger.error(
             f"skipping scenario because failed to call initialize conversation endpoint "
@@ -136,19 +131,15 @@ def get_companion_responses(
         query=query.user_query,
     )
 
-    logger.debug(
-        f"Getting response from companion for scenario: {scenario.id}, query: {query.user_query}"
-    )
+    logger.debug(f"Getting response from companion for scenario: {scenario.id}, query: {query.user_query}")
 
     # We retry multiple times to handle transient errors.
     retry_wait_time = config.retry_wait_time
     companion_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            conversation_response: ConversationResponse = (
-                companion_client.get_companion_response(
-                    conversation_id, payload, logger
-                )
+            conversation_response: ConversationResponse = companion_client.get_companion_response(
+                conversation_id, payload, logger
             )
             query.actual_response = conversation_response.answer
             query.response_chunks = conversation_response.chunks
@@ -168,9 +159,7 @@ def get_companion_responses(
     # If we run out of retries, we set the scenario status to failed.
     else:
         query.test_status = TestStatus.FAILED
-        query.test_status_reason = (
-            f"failed to get response from the companion API. {companion_error}"
-        )
+        query.test_status_reason = f"failed to get response from the companion API. {companion_error}"
         logger.error(
             f"skipping scenario {scenario.id} because failed to get response from the "
             f"companion API for scenario: {scenario.id}, query: {query.user_query}.\nError: {companion_error}"
@@ -197,9 +186,7 @@ def evaluate_query(
     validation_error = None
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            logger.debug(
-                f"validating expectations for scenario: {scenario.id}, query: {query.user_query}"
-            )
+            logger.debug(f"validating expectations for scenario: {scenario.id}, query: {query.user_query}")
             query.evaluation_result = validator.get_deepeval_evaluate(query)
             break
 

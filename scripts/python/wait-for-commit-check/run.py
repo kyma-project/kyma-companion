@@ -99,9 +99,7 @@ def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
     response = requests.get(url, headers=req_headers)
 
     if response.status_code != HTTP_OK:
-        raise Exception(
-            f"API call failed. Status code: {response.status_code}, {response.text}"
-        )
+        raise Exception(f"API call failed. Status code: {response.status_code}, {response.text}")
     return response.json()
 
 
@@ -127,8 +125,7 @@ def main() -> None:
     start_time = time.time()  # seconds
     while True:
         print(
-            "********************************************"
-            "********************************************",
+            "****************************************************************************************",
             flush=True,
         )
         # Sleep for `interval`.
@@ -138,9 +135,7 @@ def main() -> None:
         # check if timeout has reached.
         elapsed_time = time.time() - start_time
         print(
-            "Elapsed time: {} secs (timeout: {} secs)".format(
-                elapsed_time, inputs["timeout"]
-            ),
+            "Elapsed time: {} secs (timeout: {} secs)".format(elapsed_time, inputs["timeout"]),
             flush=True,
         )
         if elapsed_time > inputs["timeout"]:
@@ -148,29 +143,21 @@ def main() -> None:
             exit(1)
 
         # fetch check runs from GitHub.
-        check_runs = fetch_check_runs(
-            inputs["repository_full_name"], inputs["git_ref"], inputs["token"]
-        )
+        check_runs = fetch_check_runs(inputs["repository_full_name"], inputs["git_ref"], inputs["token"])
 
         # extract the latest check run (because there may be multiple runs by same name).
-        latest_check_run = get_latest_check_run(
-            inputs["git_check_run_name"], check_runs["check_runs"]
-        )
+        latest_check_run = get_latest_check_run(inputs["git_check_run_name"], check_runs["check_runs"])
         if latest_check_run is None:
             print("Check run not found. Waiting...", flush=True)
             continue
 
         # print details of the latest check run.
         print(
-            "Found Check run: {} ({})".format(
-                latest_check_run["name"], latest_check_run["html_url"]
-            ),
+            "Found Check run: {} ({})".format(latest_check_run["name"], latest_check_run["html_url"]),
             flush=True,
         )
         print("Check run Head-SHA: {}".format(latest_check_run["head_sha"]), flush=True)
-        print(
-            "Check run start-at: {}".format(latest_check_run["started_at"]), flush=True
-        )
+        print("Check run start-at: {}".format(latest_check_run["started_at"]), flush=True)
         print("Check run status: {}".format(latest_check_run["status"]), flush=True)
         print(
             "Check run conclusion: {}".format(latest_check_run["conclusion"]),
