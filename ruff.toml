@@ -6,6 +6,7 @@ line-length = 120
 indent-width = 4
 
 src = ["src", "tests", "scripts"]
+exclude = ["doc_indexer", "tests/blackbox"]
 
 [lint]
 # Add the `line-too-long` rule to the enforced rule set.
