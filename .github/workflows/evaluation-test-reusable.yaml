@@ -97,6 +97,14 @@ jobs:
           fi
           echo "K3d context is correct"
           echo "::endgroup::"
+          
+          echo "::group::Kubernetes Versions"
+          echo "kubectl client version:"
+          kubectl version --client --short
+      
+          echo "Kubernetes server version:"
+          kubectl version --short
+          echo "::endgroup::"
 
       - name: Redis Setup - Deploy Redis using Helm
         run: |

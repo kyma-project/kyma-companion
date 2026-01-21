@@ -1,5 +1,5 @@
-name: "Evaluation tests"
-run-name: "Evaluation tests"
+name: "Run Evaluation tests"
+run-name: "Run Evaluation tests"
 
 on:
   workflow_dispatch:
