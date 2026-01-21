@@ -1,0 +1,23 @@
+name: "Run Evaluation tests"
+run-name: "Run Evaluation tests"
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_NAME:
+        description: "Docker image to use for tests"
+        required: true
+      K3S_IMAGE:
+        description: "Optional: k3s image to pin (e.g., rancher/k3s:v1.28.5-k3s1). Leave empty for k3d default."
+        required: false
+        default: ""
+
+jobs:
+  evaluation:
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
+    secrets: inherit
+    with:
+      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+      TEST_REPO_FULLNAME: ${{ github.repository }}
+      TEST_REF: main
+      K3S_IMAGE: ${{ inputs.K3S_IMAGE }}
