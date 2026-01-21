@@ -13,14 +13,14 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = "==3.13.*"
 dependencies = [
-  "hdbcli (>=2.22.29,<3.0.0)",
-  "python-decouple (>=3.8,<4.0.0)",
   "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
-  "python-dotenv (>=1.0.1,<2.0.0)",
-  "unstructured (>=0.18.0,<0.19.0)",
+  "hdbcli (>=2.22.29,<3.0.0)",
+  "langchain-hana (>=0.3.2,<0.4.0)",
   "markdown (>=3.7,<4.0.0)",
   "pydantic (>=2.9.2,<3.0.0)",
-  "langchain-hana (>=0.3.2,<0.4.0)",
+  "python-decouple (>=3.8,<4.0.0)",
+  "python-dotenv (>=1.0.1,<2.0.0)",
+  "unstructured (>=0.18.0,<0.19.0)"
 ]
 
 [tool.poetry]
@@ -28,10 +28,10 @@ packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-poethepoet = "^0.39.0"
-ruff = "^0.14.0"
 mypy = "^1.13.0"
+poethepoet = "^0.39.0"
 pytest = "^9.0.0"
+ruff = "^0.14.0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
