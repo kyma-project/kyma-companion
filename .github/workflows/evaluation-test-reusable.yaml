@@ -76,7 +76,7 @@ jobs:
 
           # Conditionally add --image if K3S_IMAGE is set
           if [ -n "${K3S_IMAGE}" ]; then
-            CMD="$CMD --image ${K3S_IMAGE}"
+            CMD="$CMD --image=${K3S_IMAGE}"
             echo "Using pinned k3s image: ${K3S_IMAGE}"
           else
             echo "Using default k3s image (k3d default)"
