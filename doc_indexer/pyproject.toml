@@ -29,7 +29,6 @@ package-mode = false
 
 [tool.poetry.group.test.dependencies]
 poethepoet = "^0.39.0"
-black = "^25.0.0"
 ruff = "^0.14.0"
 mypy = "^1.13.0"
 pytest = "^9.0.0"
@@ -41,12 +40,15 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.poe.tasks]
-format = "black . --check"
+format = "ruff format . --check"
 lint = "ruff check ."
 lint-fix = "ruff check . --fix"
-format-fix = "black ."
+format-fix = "ruff format ."
+code-fix = ["format-fix", "lint-fix"]
 typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit"
 test-integration = "pytest tests/integration"
 test = ["test-unit", "test-integration"]
+sort = "poetry sort"
+pre-commit-check = ["sort", "code-fix", "codecheck", "test"]
