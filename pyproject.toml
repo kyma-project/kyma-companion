@@ -39,28 +39,28 @@ package-mode = false
 [tool.poetry.group.test.dependencies]
 deepeval = { extras = ["all"], version = ">=3.4.2, <4.0.0" }
 fakeredis = "^2.33.0"
-prettytable = "^3.15.1"
+prettytable = "^3.17.0"
 pytest = ">=9.0,<10.0"
 pytest-aioresponses = "^0.3.0"
-pytest-asyncio = "^1.2.0"
+pytest-asyncio = "^1.3.0"
 pytest-cov = { extras = ["all"], version = "^7.0.0" }
 pytest-dotenv = "^0.5.2"
-pytest-mock = "^3.15.0"
+pytest-mock = "^3.15.1"
 pytest-rerunfailures = ">=12.0,<17.0"
 pytest-sugar = "^1.1.1"
 pytest-xdist = "^3.8.0"
-pyyaml = "^6.0.2"
-ragas = "^0.4.1"
-termcolor = "^3.1.0"
-types-pyyaml = "^6.0.12.20250822"
+pyyaml = "^6.0.3"
+ragas = "^0.4.3"
+termcolor = "^3.3.0"
+types-pyyaml = "^6.0.12.20250915"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^9.6.0"
-mypy = "^1.18.2"
+ipython = "^9.9.0"
+mypy = "^1.19.1"
 poethepoet = "^0.40.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.14.0"
-types-requests = "^2.32.4.20250913"
+ruff = "^0.14.14"
+types-requests = "^2.32.4.20260107"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
