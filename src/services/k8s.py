@@ -12,7 +12,7 @@ import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
-from services.data_sanitizer import DataSanitizer, IDataSanitizer
+from services.data_sanitizer import IDataSanitizer
 from utils import logging
 from utils.exceptions import K8sClientError, parse_k8s_error_response
 from utils.settings import (
