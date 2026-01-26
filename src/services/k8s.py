@@ -12,7 +12,7 @@ import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel
 
-from services.data_sanitizer import IDataSanitizer
+from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from utils import logging
 from utils.exceptions import K8sClientError, parse_k8s_error_response
 from utils.settings import (
@@ -199,6 +199,10 @@ class IK8sClient(Protocol):
 
     async def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
+        ...
+
+    def get_data_sanitizer(self) -> IDataSanitizer | None:
+        """Return the data sanitizer instance"""
         ...
 
 
@@ -603,3 +607,7 @@ class K8sClient:
                 f"Expected a dictionary, but got {type(result)}."
             )
         return result
+
+    def get_data_sanitizer(self) -> IDataSanitizer | None:
+        """Get the data sanitizer."""
+        return self.data_sanitizer
