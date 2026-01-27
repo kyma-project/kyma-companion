@@ -5,6 +5,7 @@ import tiktoken
 
 from agents.common.data import Message
 from initial_questions.inital_questions import InitialQuestionsHandler
+from services.data_sanitizer import DataSanitizer
 
 KEY = "key"
 LIST_NOT_RUNNING_PODS = "list_not_running_pods"
@@ -87,6 +88,7 @@ def mock_k8s_client():
     ]
     mock.get_resource.return_value = {KEY: GET_RESOURCE}
     mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE}
+    mock.get_data_sanitizer.return_value = None
     return mock
 
 

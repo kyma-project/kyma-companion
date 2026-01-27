@@ -1,6 +1,8 @@
 import datetime
 import re
+from unittest.mock import Mock, AsyncMock
 
+from agents.common.data import Message
 import jwt
 import pytest
 from cryptography import x509
@@ -11,6 +13,9 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
 from langchain_core.messages import HumanMessage
 
+from agents.common.utils import get_relevant_context_from_k8s_cluster
+from services.data_sanitizer import DataSanitizer
+from services.k8s import IK8sClient
 from utils import utils
 from utils.utils import (
     JWT_TOKEN_EMAIL,
@@ -304,3 +309,238 @@ def test_to_sequence_messages(test_description, input_data, expected_output, exp
 )
 def test_generate_sha256_hash(input_data, expected_hash):
     assert generate_sha256_hash(input_data) == expected_hash
+
+
+@pytest.fixture
+def mock_k8s_client():
+    """Create a mock K8s client"""
+    client = Mock(spec=IK8sClient)
+    client.get_data_sanitizer.return_value = DataSanitizer()
+    client.list_not_running_pods = Mock(return_value=[])
+    client.list_nodes_metrics = AsyncMock(return_value=[])
+    client.list_k8s_warning_events = Mock(return_value=[])
+    client.describe_resource = Mock(return_value={})
+    client.list_k8s_events_for_resource = Mock(return_value=[])
+    return client
+
+
+@pytest.mark.parametrize(
+    "input_context,expected_patterns",
+    [
+        # Test password sanitization
+        (
+                "database_config:\n  password: super_secret_123\n  host: localhost",
+                ["password={{REDACTED}}", "super_secret_123"]
+        ),
+        # Test API key sanitization
+        (
+                "api_key: abc123xyz789\nservice: my-service",
+                ["api_key={{REDACTED}}", "abc123xyz789"]
+        ),
+        # Test secret key sanitization
+        (
+                "secret-key=mysecretvalue\nanother_field=value",
+                ["secret_key={{REDACTED}}", "mysecretvalue"]
+        ),
+        # Test access token sanitization
+        (
+                "access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\nuser: admin",
+                ["access_token={{REDACTED}}", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"]
+        ),
+        # Test Bearer token sanitization
+        (
+                "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+                ["Bearer {{REDACTED}}", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"]
+        ),
+        # Test Basic auth sanitization
+        (
+                "Authorization: Basic dXNlcjpwYXNzd29yZA==",
+                ["Authorization: Basic {{REDACTED}}", "dXNlcjpwYXNzd29yZA=="]
+        ),
+        # Test username sanitization
+        (
+                "username: admin_user\npassword: secret",
+                ["username={{REDACTED}}", "password={{REDACTED}}"]
+        ),
+        # Test user_name sanitization
+        (
+                "user_name=john.doe\nemail=test@example.com",
+                ["user_name={{REDACTED}}", "john.doe"]
+        ),
+        # Test multiple credentials in same context
+        (
+                "password: pass123\napi_key: key456\nsecret_key: secret789",
+                ["password={{REDACTED}}", "api_key={{REDACTED}}", "secret_key={{REDACTED}}"]
+        ),
+        # Test case insensitivity
+        (
+                "PASSWORD: MyPassword\nAPI_KEY: MyApiKey",
+                ["password={{REDACTED}}", "api_key={{REDACTED}}"]
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_cluster_overview_sanitization(
+        mock_k8s_client, input_context, expected_patterns
+):
+    """Test sanitization for cluster overview scenario"""
+    # Setup
+    message = Message(
+                query="test",
+                namespace="",
+                resource_kind="test-kind",
+                resource_name="test-name",
+                resource_api_version="v1",
+            )
+    mock_k8s_client.list_not_running_pods.return_value = [{"data": input_context}]
+
+    # Execute
+    result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
+
+    # Verify sanitization occurred
+    assert mock_k8s_client.get_data_sanitizer.called
+
+
+    # Verify sensitive data is redacted
+    assert "{{REDACTED}}" in result
+    for pattern in expected_patterns[1:]:  # Skip the REDACTED pattern
+        assert pattern not in result, f"Sensitive data '{pattern}' should be redacted"
+
+
+@pytest.mark.parametrize(
+    "input_context,expected_patterns",
+    [
+        # Test YAML formatted secrets
+        (
+                """
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: my-secret
+                data:
+                  password: cGFzc3dvcmQxMjM=
+                  api_key: YXBpa2V5NDU2
+                """,
+                ["password={{REDACTED}}", "api_key={{REDACTED}}"]
+        ),
+        # Test environment variables
+        (
+                """
+                env:
+                  - name: DB_PASSWORD
+                    value: db_pass_123
+                  - name: API_KEY
+                    value: api_key_456
+                """,
+                ["password={{REDACTED}}", "api_key={{REDACTED}}"]
+        ),
+        # Test configmap with credentials (bad practice but happens)
+        (
+                """
+                kind: ConfigMap
+                data:
+                  config.yaml: |
+                    username: service_account
+                    secret-key: my_secret_value
+                """,
+                ["username={{REDACTED}}", "secret_key={{REDACTED}}"]
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_namespace_overview_sanitization(
+        mock_k8s_client, input_context, expected_patterns
+):
+    """Test sanitization for namespace overview scenario"""
+    # Setup
+    message = Message(
+                query="test",
+                namespace="",
+                resource_kind="test-kind",
+                resource_name="test-name",
+                resource_api_version="v1",
+            )
+    mock_k8s_client.list_k8s_warning_events.return_value = [{"message": input_context}]
+
+    # Execute
+    result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
+
+    # Verify
+    assert mock_k8s_client.get_data_sanitizer.called
+    assert "{{REDACTED}}" in result
+
+
+@pytest.mark.parametrize(
+    "resource_data,event_data,expected_redactions",
+    [
+        # Test pod with secrets
+        (
+                {
+                    "spec": {
+                        "containers": [{
+                            "env": [
+                                {"name": "PASSWORD", "value": "secret123"}
+                            ]
+                        }]
+                    }
+                },
+                [{"message": "api-key: xyz789"}],
+                ["secret123", "xyz789"]
+        ),
+        # Test service with auth headers
+        (
+                {
+                    "metadata": {
+                        "annotations": {
+                            "auth": "Bearer my_token_here"
+                        }
+                    }
+                },
+                [],
+                ["my_token_here"]
+        ),
+        # Test deployment with multiple secrets
+        (
+                {
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "containers": [{
+                                    "env": [
+                                        {"name": "DB_PASSWORD", "value": "dbpass"},
+                                        {"name": "API_KEY", "value": "apikey123"},
+                                        {"name": "SECRET_KEY", "value": "secretkey456"}
+                                    ]
+                                }]
+                            }
+                        }
+                    }
+                },
+                [],
+                ["dbpass", "apikey123", "secretkey456"]
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_resource_description_sanitization(
+        mock_k8s_client, resource_data, event_data, expected_redactions
+):
+    """Test sanitization for specific resource description"""
+    # Setup
+    message = Message(
+                query="test",
+                namespace="",
+                resource_kind="test-kind",
+                resource_name="test-name",
+                resource_api_version="v1",
+            )
+    mock_k8s_client.describe_resource.return_value = resource_data
+    mock_k8s_client.list_k8s_events_for_resource.return_value = event_data
+
+    # Execute
+    result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
+
+    # Verify
+    assert mock_k8s_client.get_data_sanitizer.called
+    for sensitive_value in expected_redactions:
+        assert sensitive_value not in result, f"Sensitive data '{sensitive_value}' should be redacted"
