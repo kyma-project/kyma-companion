@@ -5,7 +5,6 @@ import tiktoken
 
 from agents.common.data import Message
 from initial_questions.inital_questions import InitialQuestionsHandler
-from services.data_sanitizer import DataSanitizer
 
 KEY = "key"
 LIST_NOT_RUNNING_PODS = "list_not_running_pods"
