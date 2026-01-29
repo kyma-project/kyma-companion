@@ -201,6 +201,10 @@ class IK8sClient(Protocol):
         """Get the group version of the Kubernetes API."""
         ...
 
+    def get_data_sanitizer(self) -> IDataSanitizer | None:
+        """Return the data sanitizer instance"""
+        ...
+
 
 def get_url_for_paged_request(base_url: str, continue_token: str) -> str:
     """Construct the URL for paginated requests."""
@@ -603,3 +607,7 @@ class K8sClient:
                 f"Expected a dictionary, but got {type(result)}."
             )
         return result
+
+    def get_data_sanitizer(self) -> IDataSanitizer | None:
+        """Get the data sanitizer."""
+        return self.data_sanitizer

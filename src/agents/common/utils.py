@@ -203,6 +203,9 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
 
     else:
         raise Exception("Invalid message provided.")
+    data_sanitizer = k8s_client.get_data_sanitizer()
+    if data_sanitizer:
+        context = str(data_sanitizer.sanitize(context))
 
     return context
 
