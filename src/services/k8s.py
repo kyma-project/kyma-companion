@@ -543,6 +543,9 @@ class K8sClient:
         # Pre-check pod state to provide better error messages and determine optimal strategy
         pod_state_info = self._check_pod_state(name, namespace, container_name)
 
+        # Track original value to preserve fallback logic
+        original_is_terminated = is_terminated
+
         # If pod is not ready and we haven't explicitly requested terminated logs,
         # check if we should fetch previous logs instead
         if not is_terminated and pod_state_info.get("should_use_previous", False):
@@ -557,7 +560,7 @@ class K8sClient:
             return await self._fetch_pod_logs_internal(name, namespace, container_name, is_terminated, tail_limit)
         except K8sClientError as e:
             # If not already trying to fetch previous logs, attempt fallback
-            if not is_terminated and self._should_fallback_to_previous(e):
+            if not original_is_terminated and self._should_fallback_to_previous(e):
                 try:
                     return await self._fetch_pod_logs_internal(name, namespace, container_name, True, tail_limit)
                 except K8sClientError:
@@ -597,7 +600,7 @@ class K8sClient:
                         reason = waiting.get("reason", "Waiting")
 
                         # For CrashLoopBackOff, fetch previous logs
-                        if reason in ("CrashLoopBackOff", "Error", "ErrImagePull", "ImagePullBackOff"):
+                        if reason in ("CrashLoopBackOff", "Error", "ImagePullBackOff"):
                             return {
                                 "state": "waiting",
                                 "should_use_previous": True,
@@ -674,14 +677,13 @@ class K8sClient:
         if error.status_code == HTTPStatus.BAD_REQUEST:
             # Only fallback on 400 if the error is specifically about the container state
             container_state_indicators = [
-                "container",
                 "terminated",
                 "crashloopbackoff",
                 "waiting",
             ]
             # Container must be present AND at least one state indicator to avoid false positives
             return "container" in error_message and any(
-                indicator in error_message for indicator in container_state_indicators[1:]
+                indicator in error_message for indicator in container_state_indicators
             )
 
         return False
