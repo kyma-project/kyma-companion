@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import copy
 import os
@@ -11,6 +12,12 @@ from urllib.parse import urlparse
 import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
@@ -571,6 +578,19 @@ class K8sClient:
 
         return any(indicator in error_message for indicator in fallback_indicators)
 
+    def _is_retryable_error(self, error: K8sClientError) -> bool:
+        """Determine if an error is retryable (transient failures)."""
+        # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
+        if error.status_code in (
+            HTTPStatus.TOO_MANY_REQUESTS,
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.GATEWAY_TIMEOUT,
+        ):
+            return True
+        return False
+
     async def _fetch_pod_logs_internal(
         self,
         name: str,
@@ -579,7 +599,58 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Internal method to fetch pod logs with specified parameters."""
+        """Internal method to fetch pod logs with specified parameters.
+
+        Retries up to 3 times with exponential backoff (1s, 2s, 4s) on retryable errors
+        (network timeouts, rate limiting, 5xx errors).
+        """
+        max_attempts = 3
+        last_exception = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return await self._fetch_pod_logs_no_retry(
+                    name, namespace, container_name, is_terminated, tail_limit
+                )
+            except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
+                last_exception = e
+
+                # Check if we should retry
+                should_retry = False
+                if isinstance(e, K8sClientError):
+                    should_retry = self._is_retryable_error(e)
+                else:
+                    # Retry network/timeout errors
+                    should_retry = True
+
+                # If this is the last attempt or error is not retryable, raise it
+                if attempt >= max_attempts or not should_retry:
+                    raise
+
+                # Calculate exponential backoff: 1s, 2s, 4s
+                wait_time = min(2 ** (attempt - 1), 8)
+                logger.warning(
+                    f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
+                    f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
+                )
+
+                # Wait before retry
+                await asyncio.sleep(wait_time)
+
+        # This should never be reached, but just in case
+        if last_exception:
+            raise last_exception
+        raise K8sClientError(message="Failed to fetch pod logs after retries")
+
+    async def _fetch_pod_logs_no_retry(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch pod logs without retry logic (used internally by _fetch_pod_logs_internal)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:
