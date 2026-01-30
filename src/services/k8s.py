@@ -634,7 +634,7 @@ class K8sClient:
                 "reason": "Container status not found",
             }
 
-        except Exception as e:
+        except (K8sClientError, KeyError, TypeError, AttributeError) as e:
             # If we can't check the pod state, log and continue with normal flow
             logger.warning(f"Failed to check pod state for {name}/{container_name}: {e}")
             return {
@@ -679,8 +679,8 @@ class K8sClient:
                 "crashloopbackoff",
                 "waiting",
             ]
-            # All indicators must be present to avoid false positives
-            return all(indicator in error_message for indicator in ["container"]) and any(
+            # Container must be present AND at least one state indicator to avoid false positives
+            return "container" in error_message and any(
                 indicator in error_message for indicator in container_state_indicators[1:]
             )
 
@@ -715,10 +715,14 @@ class K8sClient:
         for attempt in range(1, max_attempts + 1):
             try:
                 return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
-            except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
+            except (K8sClientError, aiohttp.ClientError, TimeoutError) as e:
                 # Check if we should retry
                 # Retry network/timeout errors, or K8sClientError if retryable
-                should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
+                should_retry = (
+                    self._is_retryable_error(e)
+                    if isinstance(e, K8sClientError)
+                    else isinstance(e, (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError))
+                )
 
                 # If this is the last attempt or error is not retryable, raise it
                 if attempt >= max_attempts or not should_retry:
@@ -734,9 +738,9 @@ class K8sClient:
                 # Wait before retry
                 await asyncio.sleep(wait_time)
 
-        # This line should never be reached (loop always returns or raises)
-        # but is needed for type checker
-        raise K8sClientError(message="Failed to fetch pod logs: all retry attempts exhausted")
+        # This line is logically unreachable (loop always returns or raises)
+        # but mypy requires it to prove all code paths return
+        raise AssertionError("Unreachable code")  # pragma: no cover
 
     async def _fetch_pod_logs_no_retry(
         self,

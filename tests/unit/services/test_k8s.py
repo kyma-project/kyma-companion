@@ -1574,8 +1574,12 @@ class TestK8sClient:
                 assert result == success_logs
 
     @pytest.mark.asyncio
-    async def test_fetch_pod_logs_precheck_failure_continues_normally(self, k8s_client):
-        """Test that if pod state pre-check fails, log fetching continues normally."""
+    async def test_fetch_pod_logs_handles_precheck_exception_gracefully(self, k8s_client):
+        """Test that log fetching succeeds despite precheck failure.
+
+        When the pod state precheck raises an exception, it should be caught and logged
+        as a warning, allowing log fetching to proceed normally.
+        """
         k8s_client.api_server = "https://api.example.com"
         k8s_client.k8s_auth_headers = K8sAuthHeaders(
             x_cluster_url=k8s_client.api_server,
