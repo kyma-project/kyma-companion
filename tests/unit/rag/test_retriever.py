@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from hdbcli import dbapi
@@ -142,3 +142,30 @@ class TestHanaDBRetriever:
             # check metric.
             after_success_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "True"})
             assert after_success_metric_value > before_success_metric_value
+
+    @pytest.mark.asyncio
+    async def test_aretrieve_marks_unhealthy_on_error(
+        self, mock_embeddings, mock_connection, mock_hanavectordb, mock_logger
+    ):
+        """Test that aretrieve marks connection unhealthy on database errors."""
+        # Given
+        retriever = HanaDBRetriever(
+            embedding=mock_embeddings,
+            connection=mock_connection,
+            table_name="test_table",
+        )
+        mock_hanavectordb.return_value.asimilarity_search.side_effect = dbapi.Error(
+            414, "user is forced to change password"
+        )
+
+        # Mock the Hana singleton
+        with patch("rag.retriever.Hana") as mock_hana_class:
+            mock_hana_instance = MagicMock()
+            mock_hana_class.return_value = mock_hana_instance
+
+            # When
+            with pytest.raises(dbapi.Error):
+                await retriever.aretrieve("test query", 5)
+
+            # Then
+            mock_hana_instance.mark_unhealthy.assert_called_once()

@@ -7,6 +7,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import run_in_executor
 from langchain_hana import HanaDB
 
+from services.hana import Hana
 from services.metrics import CustomMetrics
 from utils.logging import get_logger
 
@@ -80,5 +81,7 @@ class HanaDBRetriever:
         except Exception as e:
             logger.exception(f"Error retrieving documents for query: {query}")
             await CustomMetrics().record_hanadb_latency(time.perf_counter() - start_time, False)
+            # Mark connection as unhealthy on database errors
+            Hana().mark_unhealthy()
             raise e
         return docs

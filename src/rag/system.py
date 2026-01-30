@@ -40,12 +40,20 @@ class RAGSystem:
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
         self.query_generator = QueryGenerator(cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME])))
+
         # setup retriever
-        self.retriever = HanaDBRetriever(
-            embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
-            connection=Hana().get_connction(),
-            table_name=DOCS_TABLE_NAME,
-        )
+        hana = Hana()
+        try:
+            connection = hana.get_connction()
+            self.retriever = HanaDBRetriever(
+                embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
+                connection=connection,
+                table_name=DOCS_TABLE_NAME,
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize HANA retriever: {e}")
+            hana.mark_unhealthy()
+            raise
 
         # setup reranker
         self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI_NAME]))

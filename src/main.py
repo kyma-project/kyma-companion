@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from http import HTTPStatus
 from typing import Any
 
@@ -11,13 +13,30 @@ from routers.conversations import router as conversations_router
 from routers.k8s_tools_api import router as k8s_tools_router
 from routers.kyma_tools_api import router as kyma_tools_router
 from routers.probes import router as probes_router
+from services.hana import get_hana
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Manage application lifespan events."""
+    # Startup: start background health check
+    hana = get_hana()
+    hana.start_health_check()
+    logger.info("Application startup complete")
+    yield
+    # Shutdown: stop background health check
+    await hana.stop_health_check()
+    logger.info("Application shutdown complete")
+
+
 app = FastAPI(
     title="Joule",
+    lifespan=lifespan,
 )
 
 

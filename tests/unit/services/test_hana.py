@@ -11,24 +11,9 @@ class TestHana:
         "test_case, connection_factory, expected",
         [
             (
-                "Connection ready",
-                MagicMock(return_value=MagicMock(spec=IHanaConnection, isconnected=MagicMock(return_value=True))),
+                "Connection created successfully",
+                MagicMock(return_value=MagicMock()),
                 True,
-            ),
-            (
-                "Connection not ready",
-                MagicMock(return_value=MagicMock(spec=IHanaConnection, isconnected=MagicMock(return_value=False))),
-                False,
-            ),
-            (
-                "Connection fails with exception",
-                MagicMock(
-                    return_value=MagicMock(
-                        spec=IHanaConnection,
-                        isconnected=MagicMock(side_effect=Exception("Connection error")),
-                    )
-                ),
-                False,
             ),
             (
                 "Factory fails with exception",
@@ -42,8 +27,9 @@ class TestHana:
         """
         Test the `is_connection_operational` method with various scenarios.
 
-        This test verifies that the method correctly determines Hana readiness
-        based on the connection state, `isconnected` result, and exceptions.
+        This test verifies that the method returns the health status which is
+        initially set based on whether connection creation succeeded.
+        Background health checks will update this status during runtime.
         """
         # When:
         hana = Hana(connection_factory)
@@ -53,6 +39,72 @@ class TestHana:
         assert result == expected, f"Failed test case: {test_case}"
 
         # Clean up by resetting the instance.
+        hana._reset_for_tests()
+
+    @pytest.mark.asyncio
+    async def test_health_check_success(self):
+        """Test that health check passes when connection can execute queries."""
+        # Given: Connection that can execute queries
+        mock_cursor = MagicMock()
+        mock_cursor.execute = MagicMock()
+        mock_cursor.fetchone = MagicMock(return_value=(1,))
+        mock_cursor.close = MagicMock()
+
+        mock_connection = MagicMock()
+        mock_connection.cursor = MagicMock(return_value=mock_cursor)
+
+        connection_factory = MagicMock(return_value=mock_connection)
+
+        # When:
+        hana = Hana(connection_factory)
+        result = await hana._execute_health_check()
+
+        # Then:
+        assert result is True
+        mock_cursor.execute.assert_called_once_with("SELECT 1 FROM DUMMY")
+
+        # Clean up
+        hana._reset_for_tests()
+
+    @pytest.mark.asyncio
+    async def test_health_check_fails_on_query_error(self):
+        """Test that health check fails when query execution throws error."""
+        # Given: Connection that throws error on execute
+        mock_cursor = MagicMock()
+        mock_cursor.execute = MagicMock(side_effect=Exception("Password expired"))
+
+        mock_connection = MagicMock()
+        mock_connection.cursor = MagicMock(return_value=mock_cursor)
+
+        connection_factory = MagicMock(return_value=mock_connection)
+
+        # When:
+        hana = Hana(connection_factory)
+        result = await hana._execute_health_check()
+
+        # Then:
+        assert result is False
+
+        # Clean up
+        hana._reset_for_tests()
+
+    def test_mark_unhealthy(self):
+        """Test that mark_unhealthy sets health status to False."""
+        # Given: Healthy connection
+        mock_connection = MagicMock()
+        connection_factory = MagicMock(return_value=mock_connection)
+
+        hana = Hana(connection_factory)
+        hana._health_status = True
+
+        # When:
+        hana.mark_unhealthy()
+
+        # Then:
+        assert hana._health_status is False
+        assert hana.is_connection_operational() is False
+
+        # Clean up
         hana._reset_for_tests()
 
     @pytest.mark.parametrize(
