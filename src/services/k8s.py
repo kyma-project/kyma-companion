@@ -649,7 +649,7 @@ class K8sClient:
     def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
         """Determine if we should fallback to previous container logs based on the error.
 
-        Only fallbacks for specific errors that indicate the current container is unavailable
+        Only falls back for specific errors that indicate the current container is unavailable
         but previous logs might exist (e.g., container crashed, restarted, or not yet started).
         """
         error_message = error.message.lower()
