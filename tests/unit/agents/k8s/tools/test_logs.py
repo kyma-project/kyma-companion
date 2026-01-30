@@ -7,6 +7,7 @@ from langgraph.prebuilt import ToolNode
 
 from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT, fetch_pod_logs_tool
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 
 
 @pytest.mark.parametrize(
@@ -98,3 +99,5 @@ async def test_fetch_pod_logs_tool(
     elif expected_logs:
         got_obj = json.loads(result["messages"][0].content)
         assert got_obj == expected_logs
+
+

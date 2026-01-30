@@ -533,7 +533,53 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
+        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
+
+        If fetching current logs fails, automatically falls back to previous terminated container logs.
+        """
+        # Try fetching logs with the requested configuration
+        try:
+            return await self._fetch_pod_logs_internal(
+                name, namespace, container_name, is_terminated, tail_limit
+            )
+        except K8sClientError as e:
+            # If not already trying to fetch previous logs, attempt fallback
+            if not is_terminated and self._should_fallback_to_previous(e):
+                try:
+                    return await self._fetch_pod_logs_internal(
+                        name, namespace, container_name, True, tail_limit
+                    )
+                except K8sClientError:
+                    # If fallback also fails, raise the original error
+                    raise e from None
+            raise
+
+    def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
+        """Determine if we should fallback to previous container logs based on the error."""
+        error_message = error.message.lower()
+
+        # Fallback conditions: container not found, not ready, or pod issues
+        fallback_indicators = [
+            "container",
+            "not found",
+            "waiting to start",
+            "crashloopbackoff",
+            "error",
+            "terminated",
+            "pod",
+        ]
+
+        return any(indicator in error_message for indicator in fallback_indicators)
+
+    async def _fetch_pod_logs_internal(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Internal method to fetch pod logs with specified parameters."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:

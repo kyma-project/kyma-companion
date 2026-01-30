@@ -1131,3 +1131,162 @@ class TestK8sClient:
 
             # then
             assert result == expected_sanitized_logs
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "first_call_error_status, first_call_error_msg, second_call_logs, expected_logs",
+        [
+            # Test case: fallback to previous after container not found error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "container my-container not found in pod test-pod"}',
+                ["previous log line 1", "previous log line 2"],
+                ["previous log line 1", "previous log line 2"],
+            ),
+            # Test case: fallback after CrashLoopBackOff
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod is in CrashLoopBackOff state"}',
+                ["crash log 1", "crash log 2"],
+                ["crash log 1", "crash log 2"],
+            ),
+            # Test case: fallback after pod terminated error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod has terminated"}',
+                ["terminated log 1"],
+                ["terminated log 1"],
+            ),
+        ],
+    )
+    async def test_fetch_pod_logs_fallback_to_previous(
+        self, k8s_client, first_call_error_status, first_call_error_msg, second_call_logs, expected_logs
+    ):
+        """Test that fetch_pod_logs automatically falls back to previous logs on certain errors."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            # First call (without previous=true) fails
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=first_call_error_msg,
+                status=first_call_error_status,
+            )
+
+            # Second call (with previous=true) succeeds
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body="\n".join(second_call_logs),
+                status=HTTPStatus.OK,
+            )
+
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                is_terminated=False,
+                tail_limit=100,
+            )
+
+            # then
+            assert result == expected_logs
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_no_fallback_when_already_terminated(self, k8s_client):
+        """Test that we don't fallback when is_terminated is already True."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            # Call with is_terminated=True fails
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            error_message = '{"message": "no previous container logs available"}'
+            aio_mock_response.get(
+                previous_logs_url,
+                body=error_message,
+                status=HTTPStatus.NOT_FOUND,
+            )
+
+            # when/then: should raise error without fallback
+            with pytest.raises(K8sClientError, match="no previous container logs available"):
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    is_terminated=True,
+                    tail_limit=100,
+                )
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_fallback_fails_returns_original_error(self, k8s_client):
+        """Test that if fallback also fails, we return the original error."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        original_error_msg = '{"message": "container not ready"}'
+        fallback_error_msg = '{"message": "no previous container"}'
+
+        with aioresponses() as aio_mock_response:
+            # First call fails
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=original_error_msg,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+
+            # Second call (fallback) also fails
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body=fallback_error_msg,
+                status=HTTPStatus.NOT_FOUND,
+            )
+
+            # when/then: should raise original error
+            with pytest.raises(K8sClientError, match="container not ready"):
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    is_terminated=False,
+                    tail_limit=100,
+                )
