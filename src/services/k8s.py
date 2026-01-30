@@ -2,6 +2,7 @@ import asyncio
 import base64
 import copy
 import os
+import re
 import ssl
 import tempfile
 from enum import Enum
@@ -540,7 +541,7 @@ class K8sClient:
         terminated container logs if current logs are unavailable.
         """
         # Pre-check pod state to provide better error messages and determine optimal strategy
-        pod_state_info = await self._check_pod_state(name, namespace, container_name)
+        pod_state_info = self._check_pod_state(name, namespace, container_name)
 
         # If pod is not ready and we haven't explicitly requested terminated logs,
         # check if we should fetch previous logs instead
@@ -564,7 +565,7 @@ class K8sClient:
                     raise e from None
             raise
 
-    async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
+    def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
         """Check pod state to determine the best strategy for fetching logs.
 
         Returns a dict with:
@@ -643,21 +644,47 @@ class K8sClient:
             }
 
     def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
-        """Determine if we should fallback to previous container logs based on the error."""
+        """Determine if we should fallback to previous container logs based on the error.
+
+        Only fallbacks for specific errors that indicate the current container is unavailable
+        but previous logs might exist (e.g., container crashed, restarted, or not yet started).
+        """
         error_message = error.message.lower()
 
-        # Fallback conditions: container not found, not ready, or pod issues
-        fallback_indicators = [
-            "container",
-            "not found",
-            "waiting to start",
-            "crashloopbackoff",
-            "error",
-            "terminated",
-            "pod",
+        # Specific K8s API error patterns that indicate previous logs might be available
+        # Note: These patterns are checked against the full error message which includes
+        # "Failed to fetch logs for pod {name} in namespace {namespace} with container {container}. Error: {k8s_error}"
+        fallback_patterns = [
+            r"container.*is waiting to start",  # Container not started yet
+            r"container.*not found in pod",  # Container doesn't exist in pod (not pod not found!)
+            r"container.*in crashloopbackoff",  # Container is crash looping
+            r"previous terminated container",  # Explicitly about terminated container
+            r"container has not been created",  # Container creation pending
+            r"container.*is in waiting state",  # Container waiting
+            r"back-off.*container",  # CrashLoopBackOff variations
         ]
 
-        return any(indicator in error_message for indicator in fallback_indicators)
+        # Check for specific patterns
+        for pattern in fallback_patterns:
+            if re.search(pattern, error_message):
+                return True
+
+        # Also check for 400 Bad Request status code with specific container-related errors
+        # (but not other 4xx errors like 401 Unauthorized, 403 Forbidden, 404 Pod Not Found)
+        if error.status_code == HTTPStatus.BAD_REQUEST:
+            # Only fallback on 400 if the error is specifically about the container state
+            container_state_indicators = [
+                "container",
+                "terminated",
+                "crashloopbackoff",
+                "waiting",
+            ]
+            # All indicators must be present to avoid false positives
+            return all(indicator in error_message for indicator in ["container"]) and any(
+                indicator in error_message for indicator in container_state_indicators[1:]
+            )
+
+        return False
 
     def _is_retryable_error(self, error: K8sClientError) -> bool:
         """Determine if an error is retryable (transient failures)."""
@@ -684,14 +711,11 @@ class K8sClient:
         (network timeouts, rate limiting, 5xx errors).
         """
         max_attempts = 3
-        last_exception = None
 
         for attempt in range(1, max_attempts + 1):
             try:
                 return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
-                last_exception = e
-
                 # Check if we should retry
                 # Retry network/timeout errors, or K8sClientError if retryable
                 should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
@@ -710,10 +734,9 @@ class K8sClient:
                 # Wait before retry
                 await asyncio.sleep(wait_time)
 
-        # This should never be reached, but just in case
-        if last_exception:
-            raise last_exception
-        raise K8sClientError(message="Failed to fetch pod logs after retries")
+        # This line should never be reached (loop always returns or raises)
+        # but is needed for type checker
+        raise K8sClientError(message="Failed to fetch pod logs: all retry attempts exhausted")
 
     async def _fetch_pod_logs_no_retry(
         self,

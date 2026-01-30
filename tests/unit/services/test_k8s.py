@@ -1146,14 +1146,14 @@ class TestK8sClient:
             # Test case: fallback after CrashLoopBackOff
             (
                 HTTPStatus.BAD_REQUEST,
-                '{"message": "pod is in CrashLoopBackOff state"}',
+                '{"message": "container my-container in CrashLoopBackOff"}',
                 ["crash log 1", "crash log 2"],
                 ["crash log 1", "crash log 2"],
             ),
-            # Test case: fallback after pod terminated error
+            # Test case: fallback after container terminated with specific 400 error
             (
                 HTTPStatus.BAD_REQUEST,
-                '{"message": "pod has terminated"}',
+                '{"message": "container my-container terminated unexpectedly"}',
                 ["terminated log 1"],
                 ["terminated log 1"],
             ),
@@ -1414,17 +1414,11 @@ class TestK8sClient:
 
         with aioresponses() as aio_mock_response:
             url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
-            fallback_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100&previous=true"
 
             # All 3 attempts fail on current logs
             aio_mock_response.get(url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
             aio_mock_response.get(url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
             aio_mock_response.get(url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
-
-            # All 3 attempts fail on fallback logs as well
-            aio_mock_response.get(fallback_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
-            aio_mock_response.get(fallback_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
-            aio_mock_response.get(fallback_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
 
             # when/then
             with pytest.raises(K8sClientError, match="service unavailable"):
@@ -1436,10 +1430,10 @@ class TestK8sClient:
                     tail_limit=100,
                 )
 
-            # Should have retried twice per attempt (current + fallback)
-            # First try: 2 retries + fallback with 2 retries = 4 sleep calls
-            expected_total_retries = 4
-            assert mock_sleep.call_count == expected_total_retries
+            # Should have retried twice (after first and second failures)
+            # 503 errors don't trigger fallback with improved logic
+            expected_retries = 2
+            assert mock_sleep.call_count == expected_retries
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1612,3 +1606,75 @@ class TestK8sClient:
 
                 # then
                 assert result == success_logs
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "error_status, error_message, is_retryable",
+        [
+            # Authentication error - should NOT fallback, NOT retryable
+            (HTTPStatus.UNAUTHORIZED, '{"message": "authentication error when accessing pod logs"}', False),
+            # Authorization error - should NOT fallback, NOT retryable
+            (HTTPStatus.FORBIDDEN, '{"message": "forbidden: user cannot access container logs"}', False),
+            # Resource issue - should NOT fallback, NOT retryable
+            (HTTPStatus.BAD_REQUEST, '{"message": "insufficient resources to schedule pod"}', False),
+            # Generic pod not found - should NOT fallback, NOT retryable
+            (HTTPStatus.NOT_FOUND, '{"message": "pod test-pod not found in namespace default"}', False),
+            # API server error - should NOT fallback, but IS retryable (5xx)
+            (HTTPStatus.INTERNAL_SERVER_ERROR, '{"message": "error processing request"}', True),
+        ],
+    )
+    async def test_fetch_pod_logs_no_fallback_for_non_container_errors(
+        self, k8s_client, error_status, error_message, is_retryable, monkeypatch
+    ):
+        """Test that fallback does NOT trigger for errors unrelated to container state."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock _check_pod_state to return a simple running state
+        with (
+            patch.object(
+                k8s_client,
+                "_check_pod_state",
+                return_value={"state": "running", "should_use_previous": False, "reason": "Running"},
+            ),
+            aioresponses() as aio_mock_response,
+        ):
+            url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+
+            if is_retryable:
+                # For retryable errors (5xx), mock 3 attempts
+                aio_mock_response.get(url, body=error_message, status=error_status)
+                aio_mock_response.get(url, body=error_message, status=error_status)
+                aio_mock_response.get(url, body=error_message, status=error_status)
+                expected_requests = 3
+            else:
+                # For non-retryable errors, only 1 attempt
+                aio_mock_response.get(url, body=error_message, status=error_status)
+                expected_requests = 1
+
+            # when/then: Should raise error WITHOUT attempting fallback
+            with pytest.raises(K8sClientError):
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    is_terminated=False,
+                    tail_limit=100,
+                )
+
+            # Verify correct number of requests (retry but no fallback)
+            # aio_mock_response.requests is a dict where keys are (method, url) tuples
+            # and values are lists of RequestCall objects
+            total_requests = sum(len(calls) for calls in aio_mock_response.requests.values())
+            assert total_requests == expected_requests
