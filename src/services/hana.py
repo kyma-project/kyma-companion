@@ -29,13 +29,14 @@ class Hana(metaclass=SingletonMeta):
     by executing a test query.
     """
 
-    connection: dbapi.Connection | None = None
-    _health_status: bool = False
-    _health_check_task: asyncio.Task | None = None
-    _retry_delay: int = 1  # Start at 1 second
-    _max_retry_delay: int = 60  # Cap at 60 seconds
-
     def __init__(self, connection_factory: Callable[[], dbapi.Connection] | None = None) -> None:
+        # Initialize instance attributes
+        self.connection: dbapi.Connection | None = None
+        self._health_status: bool = False
+        self._health_check_task: asyncio.Task | None = None
+        self._retry_delay: int = 1  # Start at 1 second
+        self._max_retry_delay: int = 60  # Cap at 60 seconds
+
         try:
             self.connection = connection_factory() if connection_factory else _get_hana_connection()
             self._health_status = bool(self.connection)
@@ -122,14 +123,17 @@ class Hana(metaclass=SingletonMeta):
 
     def _sync_health_check(self) -> bool:
         """Synchronous health check that executes a test query."""
+        cursor = None
         try:
             cursor = self.connection.cursor()
             cursor.execute("SELECT 1 FROM DUMMY")
             cursor.fetchone()
-            cursor.close()
             return True
         except Exception:
             return False
+        finally:
+            if cursor:
+                cursor.close()
 
     @classmethod
     def _reset_for_tests(cls) -> None:
@@ -142,10 +146,6 @@ class Hana(metaclass=SingletonMeta):
         Only use for testing purpose.
         """
         SingletonMeta.reset_instance(cls)
-        cls.connection = None
-        cls._health_status = False
-        cls._health_check_task = None
-        cls._retry_delay = 1
 
     def get_connction(self) -> dbapi.Connection:
         """
