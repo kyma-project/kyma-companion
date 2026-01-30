@@ -542,8 +542,21 @@ class K8sClient:
     ) -> list[str]:
         """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
 
-        If fetching current logs fails, automatically falls back to previous terminated container logs.
+        Pre-checks pod state before fetching logs and automatically falls back to previous
+        terminated container logs if current logs are unavailable.
         """
+        # Pre-check pod state to provide better error messages and determine optimal strategy
+        pod_state_info = await self._check_pod_state(name, namespace, container_name)
+
+        # If pod is not ready and we haven't explicitly requested terminated logs,
+        # check if we should fetch previous logs instead
+        if not is_terminated and pod_state_info.get("should_use_previous", False):
+            logger.info(
+                f"Pod {name} container {container_name} is in state "
+                f"{pod_state_info.get('state', 'unknown')}. Fetching previous logs."
+            )
+            is_terminated = True
+
         # Try fetching logs with the requested configuration
         try:
             return await self._fetch_pod_logs_internal(
@@ -560,6 +573,86 @@ class K8sClient:
                     # If fallback also fails, raise the original error
                     raise e from None
             raise
+
+    async def _check_pod_state(
+        self, name: str, namespace: str, container_name: str
+    ) -> dict[str, Any]:
+        """Check pod state to determine the best strategy for fetching logs.
+
+        Returns a dict with:
+        - state: Current container state (running, waiting, terminated, unknown)
+        - should_use_previous: Whether to fetch previous container logs
+        - reason: Human-readable reason for the state
+        """
+        try:
+            pod = self.get_resource("v1", "Pod", name, namespace)
+            container_statuses = pod.get("status", {}).get("containerStatuses", [])
+
+            for container_status in container_statuses:
+                if container_status.get("name") == container_name:
+                    state_info = container_status.get("state", {})
+
+                    # Check terminated state
+                    if "terminated" in state_info:
+                        terminated = state_info["terminated"]
+                        reason = terminated.get("reason", "Terminated")
+                        return {
+                            "state": "terminated",
+                            "should_use_previous": False,  # Already terminated, current = previous
+                            "reason": reason,
+                        }
+
+                    # Check waiting state
+                    if "waiting" in state_info:
+                        waiting = state_info["waiting"]
+                        reason = waiting.get("reason", "Waiting")
+
+                        # For CrashLoopBackOff, fetch previous logs
+                        if reason in ("CrashLoopBackOff", "Error", "ErrImagePull", "ImagePullBackOff"):
+                            return {
+                                "state": "waiting",
+                                "should_use_previous": True,
+                                "reason": reason,
+                            }
+
+                        return {
+                            "state": "waiting",
+                            "should_use_previous": False,
+                            "reason": reason,
+                        }
+
+                    # Check running state
+                    if "running" in state_info:
+                        # Check if there was a previous restart
+                        restart_count = container_status.get("restartCount", 0)
+                        if restart_count > 0:
+                            return {
+                                "state": "running",
+                                "should_use_previous": False,  # Running now, but previous logs available
+                                "reason": f"Running (restarted {restart_count} times)",
+                            }
+
+                        return {
+                            "state": "running",
+                            "should_use_previous": False,
+                            "reason": "Running",
+                        }
+
+            # Container not found in status
+            return {
+                "state": "unknown",
+                "should_use_previous": False,
+                "reason": "Container status not found",
+            }
+
+        except Exception as e:
+            # If we can't check the pod state, log and continue with normal flow
+            logger.warning(f"Failed to check pod state for {name}/{container_name}: {e}")
+            return {
+                "state": "unknown",
+                "should_use_previous": False,
+                "reason": str(e),
+            }
 
     def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
         """Determine if we should fallback to previous container logs based on the error."""

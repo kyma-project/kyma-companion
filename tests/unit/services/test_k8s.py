@@ -1436,3 +1436,172 @@ class TestK8sClient:
             # Should have retried twice per attempt (current + fallback)
             # First try: 2 retries + fallback with 2 retries = 4 sleep calls
             assert mock_sleep.call_count == 4
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "pod_status, expected_should_use_previous, expected_state",
+        [
+            # Test case: Pod with CrashLoopBackOff should use previous logs
+            (
+                {
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "app",
+                                "state": {
+                                    "waiting": {"reason": "CrashLoopBackOff", "message": "Back-off restarting failed container"}
+                                },
+                                "restartCount": 5,
+                            }
+                        ]
+                    }
+                },
+                True,
+                "waiting",
+            ),
+            # Test case: Running pod should not use previous logs
+            (
+                {
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "app",
+                                "state": {"running": {"startedAt": "2023-01-01T00:00:00Z"}},
+                                "restartCount": 0,
+                            }
+                        ]
+                    }
+                },
+                False,
+                "running",
+            ),
+            # Test case: Terminated pod
+            (
+                {
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "app",
+                                "state": {"terminated": {"reason": "Completed", "exitCode": 0}},
+                                "restartCount": 0,
+                            }
+                        ]
+                    }
+                },
+                False,
+                "terminated",
+            ),
+            # Test case: Pod in ImagePullBackOff should use previous logs
+            (
+                {
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "app",
+                                "state": {"waiting": {"reason": "ImagePullBackOff", "message": "Failed to pull image"}},
+                                "restartCount": 0,
+                            }
+                        ]
+                    }
+                },
+                True,
+                "waiting",
+            ),
+            # Test case: Pod in ContainerCreating should not use previous logs
+            (
+                {
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "app",
+                                "state": {"waiting": {"reason": "ContainerCreating"}},
+                                "restartCount": 0,
+                            }
+                        ]
+                    }
+                },
+                False,
+                "waiting",
+            ),
+        ],
+    )
+    async def test_fetch_pod_logs_with_pod_state_precheck(
+        self, k8s_client, pod_status, expected_should_use_previous, expected_state
+    ):
+        """Test that pod state pre-check determines the correct log fetching strategy."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock get_resource to return pod status
+        with patch.object(k8s_client, "get_resource", return_value=pod_status):
+            success_logs = ["log line 1", "log line 2"]
+
+            with aioresponses() as aio_mock_response:
+                # Determine which URL will be called based on pod state
+                if expected_should_use_previous:
+                    # Should fetch previous logs
+                    url = (
+                        f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                        "?container=app&tailLines=100&previous=true"
+                    )
+                else:
+                    # Should fetch current logs
+                    url = (
+                        f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                        "?container=app&tailLines=100"
+                    )
+
+                aio_mock_response.get(url, body="\n".join(success_logs), status=HTTPStatus.OK)
+
+                # when
+                result = await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    is_terminated=False,  # Not explicitly requesting terminated logs
+                    tail_limit=100,
+                )
+
+                # then
+                assert result == success_logs
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_precheck_failure_continues_normally(self, k8s_client):
+        """Test that if pod state pre-check fails, log fetching continues normally."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock get_resource to raise an exception
+        with patch.object(k8s_client, "get_resource", side_effect=K8sClientError("Pod not found", 404)):
+            success_logs = ["log line 1", "log line 2"]
+
+            with aioresponses() as aio_mock_response:
+                # Should still attempt to fetch current logs
+                url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+                aio_mock_response.get(url, body="\n".join(success_logs), status=HTTPStatus.OK)
+
+                # when
+                result = await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    is_terminated=False,
+                    tail_limit=100,
+                )
+
+                # then
+                assert result == success_logs
