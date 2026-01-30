@@ -590,7 +590,7 @@ class K8sClient:
                         reason = terminated.get("reason", "Terminated")
                         return {
                             "state": "terminated",
-                            "should_use_previous": False,  # Already terminated, current = previous
+                            "should_use_previous": False,  # Already terminated, fetch current terminated logs
                             "reason": reason,
                         }
 
@@ -600,7 +600,7 @@ class K8sClient:
                         reason = waiting.get("reason", "Waiting")
 
                         # For CrashLoopBackOff, fetch previous logs
-                        if reason in ("CrashLoopBackOff", "Error", "ImagePullBackOff"):
+                        if reason in ("CrashLoopBackOff", "ImagePullBackOff"):
                             return {
                                 "state": "waiting",
                                 "should_use_previous": True,
@@ -659,7 +659,7 @@ class K8sClient:
         # "Failed to fetch logs for pod {name} in namespace {namespace} with container {container}. Error: {k8s_error}"
         fallback_patterns = [
             r"container.*is waiting to start",  # Container not started yet
-            r"container.*not found in pod",  # Container doesn't exist in pod (not pod not found!)
+            r"container.*not found in pod",  # Container doesn't exist in pod spec (check container name)
             r"container.*in crashloopbackoff",  # Container is crash looping
             r"previous terminated container",  # Explicitly about terminated container
             r"container has not been created",  # Container creation pending
@@ -709,7 +709,7 @@ class K8sClient:
     ) -> list[str]:
         """Internal method to fetch pod logs with specified parameters.
 
-        Retries up to 3 times with exponential backoff (1s, 2s, 4s) on retryable errors
+        Retries up to 3 times with exponential backoff (1s, 2s) on retryable errors
         (network timeouts, rate limiting, 5xx errors).
         """
         max_attempts = 3
@@ -717,21 +717,21 @@ class K8sClient:
         for attempt in range(1, max_attempts + 1):
             try:
                 return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
-            except (K8sClientError, aiohttp.ClientError, TimeoutError) as e:
+            except (TimeoutError, K8sClientError, aiohttp.ClientError) as e:
                 # Check if we should retry
                 # Retry network/timeout errors, or K8sClientError if retryable
                 should_retry = (
                     self._is_retryable_error(e)
                     if isinstance(e, K8sClientError)
-                    else isinstance(e, (aiohttp.ClientError, TimeoutError, asyncio.TimeoutError))
+                    else isinstance(e, (aiohttp.ClientError, asyncio.TimeoutError))
                 )
 
                 # If this is the last attempt or error is not retryable, raise it
                 if attempt >= max_attempts or not should_retry:
                     raise
 
-                # Calculate exponential backoff: 1s, 2s, 4s
-                wait_time = min(2 ** (attempt - 1), 8)
+                # Calculate exponential backoff: 1s, 2s
+                wait_time = 2 ** (attempt - 1)
                 logger.warning(
                     f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
                     f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
