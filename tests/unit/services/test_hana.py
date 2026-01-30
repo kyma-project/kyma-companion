@@ -69,8 +69,9 @@ class TestHana:
         if expected or "execute" in cursor_behavior:
             mock_cursor.execute.assert_called_once_with("SELECT 1 FROM DUMMY")
 
-        # Verify cursor was closed
-        mock_cursor.close.assert_called_once()
+        # Verify cursor was closed (only if connection exists)
+        if "execute" in cursor_behavior or "fetchone" in cursor_behavior:
+            mock_cursor.close.assert_called_once()
 
         # Clean up by resetting the instance.
         hana._reset_for_tests()

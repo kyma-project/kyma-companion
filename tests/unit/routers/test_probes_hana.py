@@ -63,7 +63,8 @@ class TestProbesHana:
         assert response.status_code == HTTP_200_OK
         assert response.json()["is_hana_healthy"] is True
         mock_cursor.execute.assert_called_with("SELECT 1 FROM DUMMY")
-        mock_cursor.close.assert_called()
+        mock_cursor.fetchone.assert_called_once()
+        mock_cursor.close.assert_called_once()
 
     def test_healthz_returns_503_when_query_fails(self):
         """Test that the healthz probe returns HTTP 503 when the database connection is broken.
