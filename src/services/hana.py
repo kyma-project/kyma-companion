@@ -37,7 +37,10 @@ class Hana(metaclass=SingletonMeta):
 
     def is_connection_operational(self) -> bool:
         """
-        Check if the HANA database is ready.
+        Check if the HANA database is ready by executing a test query.
+
+        This validates not just network connectivity but also authentication
+        and query execution permissions.
 
         Returns:
             bool: True if HANA is ready, False otherwise.
@@ -46,15 +49,19 @@ class Hana(metaclass=SingletonMeta):
             logger.warning("HANA DB connection is not initialized.")
             return False
 
+        cursor = None
         try:
-            if self.connection.isconnected():
-                logger.debug("HANA DB connection is ready.")
-                return True
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT 1 FROM DUMMY")
+            cursor.fetchone()
+            logger.debug("HANA DB connection is ready.")
+            return True
         except Exception as e:
             logger.error(f"Error while connecting to HANA DB: {e}")
             return False
-        logger.info("HANA DB connection is not ready.")
-        return False
+        finally:
+            if cursor:
+                cursor.close()
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""
