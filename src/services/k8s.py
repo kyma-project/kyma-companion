@@ -12,12 +12,6 @@ from urllib.parse import urlparse
 import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from services.data_sanitizer import IDataSanitizer
 from utils import logging
@@ -559,24 +553,18 @@ class K8sClient:
 
         # Try fetching logs with the requested configuration
         try:
-            return await self._fetch_pod_logs_internal(
-                name, namespace, container_name, is_terminated, tail_limit
-            )
+            return await self._fetch_pod_logs_internal(name, namespace, container_name, is_terminated, tail_limit)
         except K8sClientError as e:
             # If not already trying to fetch previous logs, attempt fallback
             if not is_terminated and self._should_fallback_to_previous(e):
                 try:
-                    return await self._fetch_pod_logs_internal(
-                        name, namespace, container_name, True, tail_limit
-                    )
+                    return await self._fetch_pod_logs_internal(name, namespace, container_name, True, tail_limit)
                 except K8sClientError:
                     # If fallback also fails, raise the original error
                     raise e from None
             raise
 
-    async def _check_pod_state(
-        self, name: str, namespace: str, container_name: str
-    ) -> dict[str, Any]:
+    async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
         """Check pod state to determine the best strategy for fetching logs.
 
         Returns a dict with:
@@ -674,15 +662,13 @@ class K8sClient:
     def _is_retryable_error(self, error: K8sClientError) -> bool:
         """Determine if an error is retryable (transient failures)."""
         # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
-        if error.status_code in (
+        return error.status_code in (
             HTTPStatus.TOO_MANY_REQUESTS,
             HTTPStatus.INTERNAL_SERVER_ERROR,
             HTTPStatus.BAD_GATEWAY,
             HTTPStatus.SERVICE_UNAVAILABLE,
             HTTPStatus.GATEWAY_TIMEOUT,
-        ):
-            return True
-        return False
+        )
 
     async def _fetch_pod_logs_internal(
         self,
@@ -702,19 +688,13 @@ class K8sClient:
 
         for attempt in range(1, max_attempts + 1):
             try:
-                return await self._fetch_pod_logs_no_retry(
-                    name, namespace, container_name, is_terminated, tail_limit
-                )
+                return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
                 last_exception = e
 
                 # Check if we should retry
-                should_retry = False
-                if isinstance(e, K8sClientError):
-                    should_retry = self._is_retryable_error(e)
-                else:
-                    # Retry network/timeout errors
-                    should_retry = True
+                # Retry network/timeout errors, or K8sClientError if retryable
+                should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
 
                 # If this is the last attempt or error is not retryable, raise it
                 if attempt >= max_attempts or not should_retry:

@@ -1344,10 +1344,13 @@ class TestK8sClient:
             # then
             assert result == success_logs
             # Should have slept twice (after first and second failures)
-            assert mock_sleep.call_count == 2
+            expected_retry_count = 2
+            assert mock_sleep.call_count == expected_retry_count
             # Verify exponential backoff: 1s, 2s
-            assert mock_sleep.call_args_list[0][0][0] == 1
-            assert mock_sleep.call_args_list[1][0][0] == 2
+            expected_first_wait = 1
+            expected_second_wait = 2
+            assert mock_sleep.call_args_list[0][0][0] == expected_first_wait
+            assert mock_sleep.call_args_list[1][0][0] == expected_second_wait
 
     @pytest.mark.asyncio
     async def test_fetch_pod_logs_no_retry_on_non_retryable_errors(self, k8s_client, monkeypatch):
@@ -1435,7 +1438,8 @@ class TestK8sClient:
 
             # Should have retried twice per attempt (current + fallback)
             # First try: 2 retries + fallback with 2 retries = 4 sleep calls
-            assert mock_sleep.call_count == 4
+            expected_total_retries = 4
+            assert mock_sleep.call_count == expected_total_retries
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1449,7 +1453,10 @@ class TestK8sClient:
                             {
                                 "name": "app",
                                 "state": {
-                                    "waiting": {"reason": "CrashLoopBackOff", "message": "Back-off restarting failed container"}
+                                    "waiting": {
+                                        "reason": "CrashLoopBackOff",
+                                        "message": "Back-off restarting failed container",
+                                    }
                                 },
                                 "restartCount": 5,
                             }
