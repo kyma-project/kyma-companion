@@ -545,40 +545,90 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
+        """Fetch logs of Kubernetes Pod with automatic retry and fallback.
 
-        Pre-checks pod state before fetching logs and automatically falls back to previous
-        terminated container logs if current logs are unavailable.
+        Flow:
+        1. Determine strategy: Should we fetch current or previous logs?
+        2. Try fetching with automatic fallback to previous logs on certain errors
         """
-        # Track original value to preserve fallback logic
-        original_is_terminated = is_terminated
+        # Step 1: Determine which logs to fetch based on pod state
+        fetch_previous = await self._should_fetch_previous_logs(
+            name, namespace, container_name, is_terminated
+        )
 
-        # Only pre-check pod state if not explicitly requesting terminated logs
-        # This avoids unnecessary API calls when user intent is clear
-        if not is_terminated:
-            pod_state_info = await self._check_pod_state(name, namespace, container_name)
+        # Step 2: Fetch logs with automatic fallback if needed
+        return await self._fetch_with_fallback(
+            name=name,
+            namespace=namespace,
+            container_name=container_name,
+            fetch_previous=fetch_previous,
+            allow_fallback=(not is_terminated),
+            tail_limit=tail_limit,
+        )
 
-            # If pod is not ready, check if we should fetch previous logs instead
-            if pod_state_info.get("should_use_previous", False):
-                logger.info(
-                    f"Pod {name} container {container_name} is in state "
-                    f"{pod_state_info.get('state', 'unknown')}. Fetching previous logs."
-                )
-                is_terminated = True
+    async def _should_fetch_previous_logs(
+        self, name: str, namespace: str, container_name: str, is_terminated: bool
+    ) -> bool:
+        """Determine if we should fetch previous terminated container logs.
 
-        # Try fetching logs with the requested configuration
+        Returns True if:
+        - User explicitly requested terminated logs (is_terminated=True)
+        - Pre-check indicates container is in a state where previous logs should be fetched
+        """
+        if is_terminated:
+            return True
+
+        # Check pod state to determine if previous logs should be fetched
+        pod_state_info = await self._check_pod_state(name, namespace, container_name)
+
+        if pod_state_info.get("should_use_previous", False):
+            logger.info(
+                f"Pod {name} container {container_name} is in state "
+                f"{pod_state_info.get('state', 'unknown')}. Will fetch previous logs."
+            )
+            return True
+
+        return False
+
+    async def _fetch_with_fallback(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        fetch_previous: bool,
+        allow_fallback: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch logs with automatic fallback to previous logs on certain errors.
+
+        Flow:
+        1. First attempt: Fetch logs as determined by strategy
+        2. On error: If eligible, fallback to previous terminated container logs
+        3. If fallback fails: Raise the original error
+        """
+        # First attempt: Fetch with the determined strategy
         try:
-            return await self._fetch_pod_logs_internal(name, namespace, container_name, is_terminated, tail_limit)
+            return await self._fetch_pod_logs_internal(
+                name, namespace, container_name, fetch_previous, tail_limit
+            )
         except K8sClientError as e:
-            # If not already trying to fetch previous logs, attempt fallback
-            if not original_is_terminated and self._should_fallback_to_previous(e):
+            # Second attempt: Fallback to previous logs if conditions are met
+            if allow_fallback and not fetch_previous and self._should_fallback_to_previous(e):
+                logger.info(
+                    f"First attempt failed for pod {name} container {container_name}. "
+                    f"Attempting fallback to previous logs."
+                )
                 try:
-                    return await self._fetch_pod_logs_internal(name, namespace, container_name, True, tail_limit)
+                    return await self._fetch_pod_logs_internal(
+                        name, namespace, container_name, is_terminated=True, tail_limit=tail_limit
+                    )
                 except K8sClientError:
-                    # If fallback also fails, re-raise the original error
-                    # We don't use `raise` alone here as it would raise the fallback exception
-                    pass
-            # Re-raise the original error (either no fallback attempted or fallback failed)
+                    # Fallback failed, will raise original error below
+                    logger.warning(
+                        f"Fallback to previous logs also failed for pod {name} container {container_name}"
+                    )
+
+            # Either no fallback attempted or fallback failed - raise original error
             raise
 
     async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
