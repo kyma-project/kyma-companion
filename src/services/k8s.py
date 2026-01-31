@@ -727,17 +727,23 @@ class K8sClient:
         for attempt in range(1, max_attempts + 1):
             try:
                 return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
-            except (TimeoutError, K8sClientError, aiohttp.ClientError) as e:
-                # Check if we should retry
-                # Retry network/timeout errors, or K8sClientError if retryable
-                should_retry = (
-                    self._is_retryable_error(e)
-                    if isinstance(e, K8sClientError)
-                    else isinstance(e, (aiohttp.ClientError, asyncio.TimeoutError))
+            except K8sClientError as e:
+                # Only retry K8sClientError if it's retryable (429, 5xx)
+                if attempt >= max_attempts or not self._is_retryable_error(e):
+                    raise
+
+                # Calculate exponential backoff: 1s, 2s
+                wait_time = 2 ** (attempt - 1)
+                logger.warning(
+                    f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
+                    f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
                 )
 
-                # If this is the last attempt or error is not retryable, raise it
-                if attempt >= max_attempts or not should_retry:
+                # Wait before retry
+                await asyncio.sleep(wait_time)
+            except (TimeoutError, aiohttp.ServerTimeoutError, aiohttp.ServerDisconnectedError) as e:
+                # Only retry transient network errors
+                if attempt >= max_attempts:
                     raise
 
                 # Calculate exponential backoff: 1s, 2s
