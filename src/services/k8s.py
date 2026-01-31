@@ -550,20 +550,21 @@ class K8sClient:
         Pre-checks pod state before fetching logs and automatically falls back to previous
         terminated container logs if current logs are unavailable.
         """
-        # Pre-check pod state to provide better error messages and determine optimal strategy
-        pod_state_info = await self._check_pod_state(name, namespace, container_name)
-
         # Track original value to preserve fallback logic
         original_is_terminated = is_terminated
 
-        # If pod is not ready and we haven't explicitly requested terminated logs,
-        # check if we should fetch previous logs instead
-        if not is_terminated and pod_state_info.get("should_use_previous", False):
-            logger.info(
-                f"Pod {name} container {container_name} is in state "
-                f"{pod_state_info.get('state', 'unknown')}. Fetching previous logs."
-            )
-            is_terminated = True
+        # Only pre-check pod state if not explicitly requesting terminated logs
+        # This avoids unnecessary API calls when user intent is clear
+        if not is_terminated:
+            pod_state_info = await self._check_pod_state(name, namespace, container_name)
+
+            # If pod is not ready, check if we should fetch previous logs instead
+            if pod_state_info.get("should_use_previous", False):
+                logger.info(
+                    f"Pod {name} container {container_name} is in state "
+                    f"{pod_state_info.get('state', 'unknown')}. Fetching previous logs."
+                )
+                is_terminated = True
 
         # Try fetching logs with the requested configuration
         try:
@@ -574,8 +575,10 @@ class K8sClient:
                 try:
                     return await self._fetch_pod_logs_internal(name, namespace, container_name, True, tail_limit)
                 except K8sClientError:
-                    # If fallback also fails, raise the original error
-                    raise e from None
+                    # If fallback also fails, re-raise the original error
+                    # We don't use `raise` alone here as it would raise the fallback exception
+                    pass
+            # Re-raise the original error (either no fallback attempted or fallback failed)
             raise
 
     async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
@@ -665,8 +668,10 @@ class K8sClient:
         error_message = error.message.lower()
 
         # Specific K8s API error patterns that indicate previous logs might be available
-        # Note: These patterns are checked against the full error message which includes
-        # "Failed to fetch logs for pod {name} in namespace {namespace} with container {container}. Error: {k8s_error}"
+        # Note: Patterns are checked against the full error message:
+        # "Failed to fetch logs for pod {name} in namespace {namespace}
+        #  with container {container_name}. Error: {error_message}"
+        # The patterns match against the {error_message} portion from the Kubernetes API
         fallback_patterns = [
             r"container.*is waiting to start",  # Container not started yet
             r"container.*not found in pod",  # Container doesn't exist in pod spec (check container name)
