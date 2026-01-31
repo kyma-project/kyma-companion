@@ -837,6 +837,7 @@ class TestK8sClient:
             data_sanitizer.sanitize.assert_called_once_with(raw_data)
         assert result == expected_result
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data, expected_result",
         [
@@ -854,22 +855,30 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_resource(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
+    async def test_get_resource(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
-        mock_dynamic_client = Mock()
-        mock_dynamic_client.resources.get.return_value.get.return_value.to_dict.return_value = raw_data
-        k8s_client._dynamic_client = mock_dynamic_client
+        # Mock execute_get_api_request to return the expected result
+        # (execute_get_api_request handles sanitization internally)
+        with patch.object(k8s_client, "execute_get_api_request", new_callable=AsyncMock) as mock_execute:
+            mock_execute.return_value = expected_result
 
-        # when
-        result = k8s_client.get_resource("v1", "Pod", "test-pod", "default")
+            # Mock dynamic client to provide resource info
+            mock_resource = Mock()
+            mock_resource.namespaced = True
+            mock_resource.name = "pods"
+            mock_dynamic_client = Mock()
+            mock_dynamic_client.resources.get.return_value = mock_resource
+            k8s_client._dynamic_client = mock_dynamic_client
 
-        # then
-        if data_sanitizer:
-            data_sanitizer.sanitize.assert_called_once_with(raw_data)
-        assert result == expected_result
+            # when
+            result = await k8s_client.get_resource("v1", "Pod", "test-pod", "default")
 
+            # then
+            assert result == expected_result
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, data_sanitizer, raw_data, raw_events, expected_result",
         [
@@ -889,7 +898,7 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_describe_resource(
+    async def test_describe_resource(
         self,
         k8s_client,
         test_description,
@@ -903,14 +912,14 @@ class TestK8sClient:
 
         # Mock get_resource and list_k8s_events_for_resource
         with (
-            patch.object(k8s_client, "get_resource") as mock_get_resource,
+            patch.object(k8s_client, "get_resource", new_callable=AsyncMock) as mock_get_resource,
             patch.object(k8s_client, "list_k8s_events_for_resource") as mock_list_events,
         ):
             mock_get_resource.return_value = raw_data
             mock_list_events.return_value = raw_events
 
             # when
-            result = k8s_client.describe_resource("v1", "Pod", "test-pod", "default")
+            result = await k8s_client.describe_resource("v1", "Pod", "test-pod", "default")
 
         # then
         if data_sanitizer:
@@ -1541,7 +1550,7 @@ class TestK8sClient:
         k8s_client.data_sanitizer = None
 
         # Mock get_resource to return pod status
-        with patch.object(k8s_client, "get_resource", return_value=pod_status):
+        with patch.object(k8s_client, "get_resource", new_callable=AsyncMock, return_value=pod_status):
             success_logs = ["log line 1", "log line 2"]
 
             with aioresponses() as aio_mock_response:
@@ -1591,7 +1600,9 @@ class TestK8sClient:
         k8s_client.data_sanitizer = None
 
         # Mock get_resource to raise an exception
-        with patch.object(k8s_client, "get_resource", side_effect=K8sClientError("Pod not found", 404)):
+        with patch.object(
+            k8s_client, "get_resource", new_callable=AsyncMock, side_effect=K8sClientError("Pod not found", 404)
+        ):
             success_logs = ["log line 1", "log line 2"]
 
             with aioresponses() as aio_mock_response:

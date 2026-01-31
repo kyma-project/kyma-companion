@@ -129,7 +129,7 @@ class IK8sClient(Protocol):
         """List resources of a specific kind in a namespace."""
         ...
 
-    def get_resource(
+    async def get_resource(
         self,
         api_version: str,
         kind: str,
@@ -143,7 +143,7 @@ class IK8sClient(Protocol):
         """Get the resource version for a given kind."""
         ...
 
-    def describe_resource(
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -412,7 +412,7 @@ class K8sClient:
             return self.data_sanitizer.sanitize(items)  # type: ignore
         return items
 
-    def get_resource(
+    async def get_resource(
         self,
         api_version: str,
         kind: str,
@@ -420,14 +420,24 @@ class K8sClient:
         namespace: str,
     ) -> dict:
         """Get a specific resource by name in a namespace."""
-        resource = (
-            self.dynamic_client.resources.get(api_version=api_version, kind=kind)
-            .get(name=name, namespace=namespace)
-            .to_dict()
-        )
-        if self.data_sanitizer:
-            return cast(dict, self.data_sanitizer.sanitize(resource))
-        return resource  # type: ignore
+        # Construct API path based on resource type
+        # For core API (v1), use "api/v1"
+        # For other APIs, use "apis/{api_version}"
+        api_prefix = "api/v1" if api_version == "v1" else f"apis/{api_version}"
+
+        # Get resource info to determine if it's namespaced
+        resource_client = self.dynamic_client.resources.get(api_version=api_version, kind=kind)
+
+        # Build URI
+        if resource_client.namespaced:
+            uri = f"{api_prefix}/namespaces/{namespace}/{resource_client.name}/{name}"
+        else:
+            uri = f"{api_prefix}/{resource_client.name}/{name}"
+
+        result = await self.execute_get_api_request(uri)
+
+        # execute_get_api_request already handles sanitization
+        return cast(dict, result)
 
     def get_resource_version(self, kind: str) -> str:
         """Get the resource version for a given kind.
@@ -460,7 +470,7 @@ class K8sClient:
             logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
             raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
 
-    def describe_resource(
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -468,7 +478,7 @@ class K8sClient:
         namespace: str,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
-        resource = self.get_resource(api_version, kind, name, namespace)
+        resource = await self.get_resource(api_version, kind, name, namespace)
 
         # clone the object because we cannot modify the original object.
         result = copy.deepcopy(resource)
@@ -541,7 +551,7 @@ class K8sClient:
         terminated container logs if current logs are unavailable.
         """
         # Pre-check pod state to provide better error messages and determine optimal strategy
-        pod_state_info = self._check_pod_state(name, namespace, container_name)
+        pod_state_info = await self._check_pod_state(name, namespace, container_name)
 
         # Track original value to preserve fallback logic
         original_is_terminated = is_terminated
@@ -568,7 +578,7 @@ class K8sClient:
                     raise e from None
             raise
 
-    def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
+    async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
         """Check pod state to determine the best strategy for fetching logs.
 
         Returns a dict with:
@@ -577,7 +587,7 @@ class K8sClient:
         - reason: Human-readable reason for the state
         """
         try:
-            pod = self.get_resource("v1", "Pod", name, namespace)
+            pod = await self.get_resource("v1", "Pod", name, namespace)
             container_statuses = pod.get("status", {}).get("containerStatuses", [])
 
             for container_status in container_statuses:

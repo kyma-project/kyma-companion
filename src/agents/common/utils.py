@@ -134,7 +134,7 @@ def should_continue(state: BaseModel) -> str:
     return CONTINUE
 
 
-def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
+async def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
     """Get the resource context message based on the user input."""
     if user_input.resource_kind == UNKNOWN:
         return SystemMessage(
@@ -184,7 +184,7 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         # field to be empty. Finally, get all events related to given resource.
         logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
         resources = yaml.dump(
-            k8s_client.describe_resource(
+            await k8s_client.describe_resource(
                 api_version=api_version,
                 kind=kind,
                 name=name,

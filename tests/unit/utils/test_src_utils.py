@@ -454,7 +454,7 @@ async def test_resource_description_sanitization(mock_k8s_client, resource_data,
         resource_name="test-name",
         resource_api_version="v1",
     )
-    mock_k8s_client.describe_resource.return_value = resource_data
+    mock_k8s_client.describe_resource = AsyncMock(return_value=resource_data)
     mock_k8s_client.list_k8s_events_for_resource.return_value = event_data
 
     # Execute
