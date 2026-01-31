@@ -1,6 +1,8 @@
+import asyncio
 import base64
 import copy
 import os
+import re
 import ssl
 import tempfile
 from enum import Enum
@@ -127,7 +129,7 @@ class IK8sClient(Protocol):
         """List resources of a specific kind in a namespace."""
         ...
 
-    def get_resource(
+    async def get_resource(
         self,
         api_version: str,
         kind: str,
@@ -141,7 +143,7 @@ class IK8sClient(Protocol):
         """Get the resource version for a given kind."""
         ...
 
-    def describe_resource(
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -410,7 +412,7 @@ class K8sClient:
             return self.data_sanitizer.sanitize(items)  # type: ignore
         return items
 
-    def get_resource(
+    async def get_resource(
         self,
         api_version: str,
         kind: str,
@@ -418,14 +420,24 @@ class K8sClient:
         namespace: str,
     ) -> dict:
         """Get a specific resource by name in a namespace."""
-        resource = (
-            self.dynamic_client.resources.get(api_version=api_version, kind=kind)
-            .get(name=name, namespace=namespace)
-            .to_dict()
-        )
-        if self.data_sanitizer:
-            return cast(dict, self.data_sanitizer.sanitize(resource))
-        return resource  # type: ignore
+        # Construct API path based on resource type
+        # For core API (v1), use "api/v1"
+        # For other APIs, use "apis/{api_version}"
+        api_prefix = "api/v1" if api_version == "v1" else f"apis/{api_version}"
+
+        # Get resource info to determine if it's namespaced
+        resource_client = self.dynamic_client.resources.get(api_version=api_version, kind=kind)
+
+        # Build URI
+        if resource_client.namespaced:
+            uri = f"{api_prefix}/namespaces/{namespace}/{resource_client.name}/{name}"
+        else:
+            uri = f"{api_prefix}/{resource_client.name}/{name}"
+
+        result = await self.execute_get_api_request(uri)
+
+        # execute_get_api_request already handles sanitization
+        return cast(dict, result)
 
     def get_resource_version(self, kind: str) -> str:
         """Get the resource version for a given kind.
@@ -458,7 +470,7 @@ class K8sClient:
             logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
             raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
 
-    def describe_resource(
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -466,7 +478,7 @@ class K8sClient:
         namespace: str,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
-        resource = self.get_resource(api_version, kind, name, namespace)
+        resource = await self.get_resource(api_version, kind, name, namespace)
 
         # clone the object because we cannot modify the original object.
         result = copy.deepcopy(resource)
@@ -533,7 +545,230 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
+        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
+
+        Pre-checks pod state before fetching logs and automatically falls back to previous
+        terminated container logs if current logs are unavailable.
+        """
+        # Pre-check pod state to provide better error messages and determine optimal strategy
+        pod_state_info = await self._check_pod_state(name, namespace, container_name)
+
+        # Track original value to preserve fallback logic
+        original_is_terminated = is_terminated
+
+        # If pod is not ready and we haven't explicitly requested terminated logs,
+        # check if we should fetch previous logs instead
+        if not is_terminated and pod_state_info.get("should_use_previous", False):
+            logger.info(
+                f"Pod {name} container {container_name} is in state "
+                f"{pod_state_info.get('state', 'unknown')}. Fetching previous logs."
+            )
+            is_terminated = True
+
+        # Try fetching logs with the requested configuration
+        try:
+            return await self._fetch_pod_logs_internal(name, namespace, container_name, is_terminated, tail_limit)
+        except K8sClientError as e:
+            # If not already trying to fetch previous logs, attempt fallback
+            if not original_is_terminated and self._should_fallback_to_previous(e):
+                try:
+                    return await self._fetch_pod_logs_internal(name, namespace, container_name, True, tail_limit)
+                except K8sClientError:
+                    # If fallback also fails, raise the original error
+                    raise e from None
+            raise
+
+    async def _check_pod_state(self, name: str, namespace: str, container_name: str) -> dict[str, Any]:
+        """Check pod state to determine the best strategy for fetching logs.
+
+        Returns a dict with:
+        - state: Current container state (running, waiting, terminated, unknown)
+        - should_use_previous: Whether to fetch previous container logs
+        - reason: Human-readable reason for the state
+        """
+        try:
+            pod = await self.get_resource("v1", "Pod", name, namespace)
+            container_statuses = pod.get("status", {}).get("containerStatuses", [])
+
+            for container_status in container_statuses:
+                if container_status.get("name") == container_name:
+                    state_info = container_status.get("state", {})
+
+                    # Check terminated state
+                    if "terminated" in state_info:
+                        terminated = state_info["terminated"]
+                        reason = terminated.get("reason", "Terminated")
+                        return {
+                            "state": "terminated",
+                            "should_use_previous": False,  # Already terminated, fetch current terminated logs
+                            "reason": reason,
+                        }
+
+                    # Check waiting state
+                    if "waiting" in state_info:
+                        waiting = state_info["waiting"]
+                        reason = waiting.get("reason", "Waiting")
+
+                        # For CrashLoopBackOff, fetch previous logs
+                        if reason in ("CrashLoopBackOff", "ImagePullBackOff"):
+                            return {
+                                "state": "waiting",
+                                "should_use_previous": True,
+                                "reason": reason,
+                            }
+
+                        return {
+                            "state": "waiting",
+                            "should_use_previous": False,
+                            "reason": reason,
+                        }
+
+                    # Check running state
+                    if "running" in state_info:
+                        # Check if there was a previous restart
+                        restart_count = container_status.get("restartCount", 0)
+                        if restart_count > 0:
+                            return {
+                                "state": "running",
+                                "should_use_previous": False,  # Running now, but previous logs available
+                                "reason": f"Running (restarted {restart_count} times)",
+                            }
+
+                        return {
+                            "state": "running",
+                            "should_use_previous": False,
+                            "reason": "Running",
+                        }
+
+            # Container not found in status
+            return {
+                "state": "unknown",
+                "should_use_previous": False,
+                "reason": "Container status not found",
+            }
+
+        except (K8sClientError, KeyError, TypeError, AttributeError) as e:
+            # If we can't check the pod state, log and continue with normal flow
+            logger.warning(f"Failed to check pod state for {name}/{container_name}: {e}")
+            return {
+                "state": "unknown",
+                "should_use_previous": False,
+                "reason": str(e),
+            }
+
+    def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
+        """Determine if we should fallback to previous container logs based on the error.
+
+        Only falls back for specific errors that indicate the current container is unavailable
+        but previous logs might exist (e.g., container crashed, restarted, or not yet started).
+        """
+        error_message = error.message.lower()
+
+        # Specific K8s API error patterns that indicate previous logs might be available
+        # Note: These patterns are checked against the full error message which includes
+        # "Failed to fetch logs for pod {name} in namespace {namespace} with container {container}. Error: {k8s_error}"
+        fallback_patterns = [
+            r"container.*is waiting to start",  # Container not started yet
+            r"container.*not found in pod",  # Container doesn't exist in pod spec (check container name)
+            r"container.*in crashloopbackoff",  # Container is crash looping
+            r"previous terminated container",  # Explicitly about terminated container
+            r"container has not been created",  # Container creation pending
+            r"container.*is in waiting state",  # Container waiting
+            r"back-off.*container",  # CrashLoopBackOff variations
+        ]
+
+        # Check for specific patterns
+        for pattern in fallback_patterns:
+            if re.search(pattern, error_message):
+                return True
+
+        # Also check for 400 Bad Request status code with specific container-related errors
+        # (but not other 4xx errors like 401 Unauthorized, 403 Forbidden, 404 Pod Not Found)
+        if error.status_code == HTTPStatus.BAD_REQUEST:
+            # Only fallback on 400 if the error is specifically about the container state
+            container_state_indicators = [
+                "terminated",
+                "crashloopbackoff",
+                "waiting",
+            ]
+            # Container must be present AND at least one state indicator to avoid false positives
+            return "container" in error_message and any(
+                indicator in error_message for indicator in container_state_indicators
+            )
+
+        return False
+
+    def _is_retryable_error(self, error: K8sClientError) -> bool:
+        """Determine if an error is retryable (transient failures)."""
+        # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
+        return error.status_code in (
+            HTTPStatus.TOO_MANY_REQUESTS,
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.GATEWAY_TIMEOUT,
+        )
+
+    async def _fetch_pod_logs_internal(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Internal method to fetch pod logs with specified parameters.
+
+        Retries up to 3 times with exponential backoff (1s, 2s) on retryable errors
+        (network timeouts, rate limiting, 5xx errors).
+        """
+        max_attempts = 3
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
+            except K8sClientError as e:
+                # Only retry K8sClientError if it's retryable (429, 5xx)
+                if attempt >= max_attempts or not self._is_retryable_error(e):
+                    raise
+
+                # Calculate exponential backoff: 1s, 2s
+                wait_time = 2 ** (attempt - 1)
+                logger.warning(
+                    f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
+                    f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
+                )
+
+                # Wait before retry
+                await asyncio.sleep(wait_time)
+            except (TimeoutError, aiohttp.ServerTimeoutError, aiohttp.ServerDisconnectedError) as e:
+                # Only retry transient network errors
+                if attempt >= max_attempts:
+                    raise
+
+                # Calculate exponential backoff: 1s, 2s
+                wait_time = 2 ** (attempt - 1)
+                logger.warning(
+                    f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
+                    f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
+                )
+
+                # Wait before retry
+                await asyncio.sleep(wait_time)
+
+        # This line is logically unreachable (loop always returns or raises)
+        # but mypy requires it to prove all code paths return
+        raise AssertionError("Unreachable code")  # pragma: no cover
+
+    async def _fetch_pod_logs_no_retry(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch pod logs without retry logic (used internally by _fetch_pod_logs_internal)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:

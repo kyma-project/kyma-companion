@@ -426,7 +426,7 @@ class CompanionGraph:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
         messages: list[BaseMessage] = [HumanMessage(content=message.query)]
-        resource_context_message = get_resource_context_message(user_input)
+        resource_context_message = await get_resource_context_message(user_input)
         if resource_context_message:
             messages.insert(
                 0,

@@ -521,6 +521,7 @@ def test_filter_valid_messages(test_description, input_messages, expected_output
     assert result == expected_output, test_description
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "description, user_input,expected_message",
     [
@@ -556,8 +557,8 @@ def test_filter_valid_messages(test_description, input_messages, expected_output
         ),
     ],
 )
-def test_get_resource_context_message(description: str, user_input: UserInput, expected_message):
-    result = get_resource_context_message(user_input)
+async def test_get_resource_context_message(description: str, user_input: UserInput, expected_message):
+    result = await get_resource_context_message(user_input)
     if expected_message is None:
         assert result is None, description
     else:
