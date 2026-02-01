@@ -552,9 +552,7 @@ class K8sClient:
         2. Try fetching with automatic fallback to previous logs on certain errors
         """
         # Step 1: Determine which logs to fetch based on pod state
-        fetch_previous = await self._should_fetch_previous_logs(
-            name, namespace, container_name, is_terminated
-        )
+        fetch_previous = await self._should_fetch_previous_logs(name, namespace, container_name, is_terminated)
 
         # Step 2: Fetch logs with automatic fallback if needed
         return await self._fetch_with_fallback(
@@ -608,9 +606,7 @@ class K8sClient:
         """
         # First attempt: Fetch with the determined strategy
         try:
-            return await self._fetch_pod_logs_internal(
-                name, namespace, container_name, fetch_previous, tail_limit
-            )
+            return await self._fetch_pod_logs_internal(name, namespace, container_name, fetch_previous, tail_limit)
         except K8sClientError as e:
             # Second attempt: Fallback to previous logs if conditions are met
             if allow_fallback and not fetch_previous and self._should_fallback_to_previous(e):
@@ -624,9 +620,7 @@ class K8sClient:
                     )
                 except K8sClientError:
                     # Fallback failed, will raise original error below
-                    logger.warning(
-                        f"Fallback to previous logs also failed for pod {name} container {container_name}"
-                    )
+                    logger.warning(f"Fallback to previous logs also failed for pod {name} container {container_name}")
 
             # Either no fallback attempted or fallback failed - raise original error
             raise
