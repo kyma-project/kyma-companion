@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from aioresponses import aioresponses
@@ -1110,14 +1110,27 @@ class TestK8sClient:
         k8s_client.data_sanitizer = DataSanitizer()
 
         with aioresponses() as aio_mock_response:
-            # Mock the API call to fetch pod logs.
-            mock_url = (
+            # Mock both current and previous logs (new behavior: fetch both in parallel)
+            current_url = (
                 f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
             )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Mock current logs (success)
             aio_mock_response.get(
-                mock_url,
+                current_url,
                 body="\n".join(mock_response_lines),
                 status=HTTPStatus.OK,
+            )
+
+            # Mock previous logs (not available - common case)
+            aio_mock_response.get(
+                previous_url,
+                body='{"message": "previous terminated container \\"app\\" in pod \\"test-pod\\" not found"}',
+                status=HTTPStatus.BAD_REQUEST,
             )
 
             # when
@@ -1125,9 +1138,621 @@ class TestK8sClient:
                 name="test-pod",
                 namespace="default",
                 container_name="app",
-                is_terminated=False,
                 tail_limit=100,
             )
 
             # then
-            assert result == expected_sanitized_logs
+            # New format: shows both current and previous log sections with status
+            result_str = "\n".join(result)
+
+            # Should show current logs successfully
+            assert "# Current logs: Successfully fetched" in result_str
+            assert all(line in result_str for line in expected_sanitized_logs)
+
+            # Should show previous logs not available
+            assert "# Previous logs: Not available" in result_str
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "first_call_error_status, first_call_error_msg, second_call_logs, expected_logs",
+        [
+            # Test case: fallback to previous after container not found error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "container my-container not found in pod test-pod"}',
+                ["previous log line 1", "previous log line 2"],
+                ["previous log line 1", "previous log line 2"],
+            ),
+            # Test case: fallback after CrashLoopBackOff
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod is in CrashLoopBackOff state"}',
+                ["crash log 1", "crash log 2"],
+                ["crash log 1", "crash log 2"],
+            ),
+            # Test case: fallback after pod terminated error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod has terminated"}',
+                ["terminated log 1"],
+                ["terminated log 1"],
+            ),
+        ],
+    )
+    async def test_fetch_pod_logs_both_current_and_previous(
+        self, k8s_client, first_call_error_status, first_call_error_msg, second_call_logs, expected_logs
+    ):
+        """Test that fetch_pod_logs fetches both current and previous logs in parallel."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            # Current logs fail
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=first_call_error_msg,
+                status=first_call_error_status,
+            )
+
+            # Previous logs succeed
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body="\n".join(second_call_logs),
+                status=HTTPStatus.OK,
+            )
+
+            # Mock diagnostic context gathering - will be shown inline when current logs fail
+            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Container is in CrashLoopBackOff state")
+
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then
+            result_str = "\n".join(result)
+
+            # Should show current logs not available with diagnostic info
+            assert "# Current logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Container is in CrashLoopBackOff state" in result_str
+
+            # Should show previous logs successfully
+            assert "# Previous logs: Successfully fetched" in result_str
+            assert all(line in result_str for line in expected_logs)
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_both_fail_with_diagnostics(self, k8s_client):
+        """Test that when both current and previous logs fail, we get diagnostics."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        current_error_msg = '{"message": "container not ready"}'
+        previous_error_msg = '{"message": "no previous container"}'
+
+        with aioresponses() as aio_mock_response:
+            # Current logs fail
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=current_error_msg,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+
+            # Previous logs also fail
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body=previous_error_msg,
+                status=HTTPStatus.NOT_FOUND,
+            )
+
+            # Mock the diagnostic context gathering methods
+            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Pod diagnostic info here")
+
+            # when: should return diagnostic info instead of raising
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Pod diagnostic info here" in result_str
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "retryable_status, error_message",
+        [
+            (HTTPStatus.TOO_MANY_REQUESTS, '{"message": "rate limit exceeded"}'),
+            (HTTPStatus.INTERNAL_SERVER_ERROR, '{"message": "internal server error"}'),
+            (HTTPStatus.BAD_GATEWAY, '{"message": "bad gateway"}'),
+            (HTTPStatus.SERVICE_UNAVAILABLE, '{"message": "service unavailable"}'),
+            (HTTPStatus.GATEWAY_TIMEOUT, '{"message": "gateway timeout"}'),
+        ],
+    )
+    async def test_fetch_pod_logs_retry_on_retryable_errors(
+        self, k8s_client, retryable_status, error_message, monkeypatch
+    ):
+        """Test that fetch_pod_logs retries on retryable errors (5xx, 429)."""
+        # Mock asyncio.sleep to avoid waiting in tests
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        success_logs = ["log line 1", "log line 2"]
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Current logs: First two attempts fail with retryable error, third succeeds
+            aio_mock_response.get(current_url, body=error_message, status=retryable_status)
+            aio_mock_response.get(current_url, body=error_message, status=retryable_status)
+            aio_mock_response.get(current_url, body="\n".join(success_logs), status=HTTPStatus.OK)
+
+            # Previous logs: Not available (common case)
+            aio_mock_response.get(
+                previous_url,
+                body='{"message": "no previous container"}',
+                status=HTTPStatus.BAD_REQUEST,
+            )
+
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then
+            result_str = "\n".join(result)
+            # Current logs should succeed after retries
+            assert "# Current logs: Successfully fetched" in result_str
+            assert all(line in result_str for line in success_logs)
+
+            # Should have slept twice (after first and second failures)
+            assert mock_sleep.call_count == 2  # noqa: PLR2004
+            # Verify exponential backoff: 1s, 2s
+            assert mock_sleep.call_args_list[0][0][0] == 1  # noqa: PLR2004
+            assert mock_sleep.call_args_list[1][0][0] == 2  # noqa: PLR2004
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_no_retry_on_non_retryable_errors(self, k8s_client, monkeypatch):
+        """Test that fetch_pod_logs does NOT retry on non-retryable errors (4xx except 429)."""
+        # Mock asyncio.sleep to verify it's not called
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        error_message = '{"message": "pod not found"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Both current and previous fail with non-retryable 404 error
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+
+            # when: should return diagnostic info instead of raising
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Diagnostic info" in result_str
+
+            # Should NOT have retried on either call (no sleep calls)
+            mock_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_max_retries_exceeded(self, k8s_client, monkeypatch):
+        """Test that fetch_pod_logs returns diagnostics after max retries."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        error_message = '{"message": "service unavailable"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Current logs: all three attempts fail
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+
+            # Previous logs: all three attempts also fail
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+
+            # when: should return diagnostic info after max retries
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Failed to fetch" in result_str  # 503 error shows "Failed to fetch"
+            assert "# Diagnostic Information:" in result_str
+            assert "Diagnostic info" in result_str
+
+            # Should have slept 4 times total (2 for current retries + 2 for previous retries)
+            assert mock_sleep.call_count == 4  # noqa: PLR2004
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "error_status, error_message, is_retryable",
+        [
+            # Authentication error - should NOT fallback, NOT retryable
+            (HTTPStatus.UNAUTHORIZED, '{"message": "authentication error when accessing pod logs"}', False),
+            # Authorization error - should NOT fallback, NOT retryable
+            (HTTPStatus.FORBIDDEN, '{"message": "forbidden: user cannot access container logs"}', False),
+            # Resource issue - should NOT fallback, NOT retryable
+            (HTTPStatus.BAD_REQUEST, '{"message": "insufficient resources to schedule pod"}', False),
+            # Generic pod not found - should NOT fallback, NOT retryable
+            (HTTPStatus.NOT_FOUND, '{"message": "pod test-pod not found in namespace default"}', False),
+            # API server error - should NOT fallback, but IS retryable (5xx)
+            (HTTPStatus.INTERNAL_SERVER_ERROR, '{"message": "error processing request"}', True),
+        ],
+    )
+    async def test_fetch_pod_logs_no_fallback_for_non_container_errors(
+        self, k8s_client, error_status, error_message, is_retryable, monkeypatch
+    ):
+        """Test that fallback does NOT trigger for errors unrelated to container state."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            if is_retryable:
+                # For retryable errors (5xx), mock 3 attempts for both current and previous
+                for _ in range(3):
+                    aio_mock_response.get(current_url, body=error_message, status=error_status)
+                    aio_mock_response.get(previous_url, body=error_message, status=error_status)
+            else:
+                # For non-retryable errors, only 1 attempt for both
+                aio_mock_response.get(current_url, body=error_message, status=error_status)
+                aio_mock_response.get(previous_url, body=error_message, status=error_status)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+
+            # when: Should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            # Previous logs status depends on error code
+            if error_status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                assert "# Previous logs: Not available (container has not been restarted)" in result_str
+            else:
+                assert "# Previous logs: Failed to fetch" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Diagnostic info" in result_str
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_includes_diagnostic_context_on_failure(self, k8s_client, monkeypatch):
+        """Test that diagnostic context (events, status) is included when logs fail."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock pod events
+        mock_events = [
+            {
+                "reason": "Failed",
+                "message": "Back-off restarting failed container",
+                "count": 5,
+            },
+            {
+                "reason": "Killing",
+                "message": "Stopping container app",
+                "count": 1,
+            },
+        ]
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
+
+        # Mock pod description
+        mock_pod_description = {
+            "status": {
+                "containerStatuses": [
+                    {
+                        "name": "app",
+                        "state": {
+                            "waiting": {
+                                "reason": "CrashLoopBackOff",
+                                "message": "container failed to start",
+                            }
+                        },
+                        "restartCount": 5,
+                        "lastState": {
+                            "terminated": {
+                                "reason": "Error",
+                                "exitCode": 1,
+                            }
+                        },
+                    }
+                ]
+            }
+        }
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+
+        error_message = '{"message": "container app is in CrashLoopBackOff state"}'
+
+        with aioresponses() as aio_mock_response:
+            # Both current and previous logs fail
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            previous_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100&previous=true"
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # when: should return diagnostic context
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic context is included
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Recent Pod Events:" in result_str
+            assert "Back-off restarting failed container" in result_str
+            assert "Container 'app' Status:" in result_str
+            assert "State: Waiting" in result_str
+            assert "Reason: CrashLoopBackOff" in result_str
+            assert "Restart Count: 5" in result_str
+            assert "Last Termination Reason: Error" in result_str
+            assert "Last Exit Code: 1" in result_str
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_diagnostic_context_with_failed_init_containers(self, k8s_client, monkeypatch):
+        """Test diagnostic context includes failed init containers."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock pod events (empty for this test)
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+
+        # Mock pod description with failed init container
+        mock_pod_description = {
+            "status": {
+                "containerStatuses": [
+                    {
+                        "name": "app",
+                        "state": {"waiting": {"reason": "PodInitializing"}},
+                        "restartCount": 0,
+                    }
+                ],
+                "initContainerStatuses": [
+                    {
+                        "name": "init-db",
+                        "ready": False,
+                        "state": {
+                            "terminated": {
+                                "reason": "Error",
+                                "exitCode": 2,
+                            }
+                        },
+                    }
+                ],
+            }
+        }
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+
+        error_message = '{"message": "container is waiting to start"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            previous_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100&previous=true"
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # when: should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify init container info is included
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "Init Containers (Failed):" in result_str
+            assert "init-db" in result_str
+            assert "Terminated (Error, exit code: 2)" in result_str
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_diagnostic_context_handles_missing_data(self, k8s_client, monkeypatch):
+        """Test diagnostic context handles cases where events/status are unavailable."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock empty/missing data
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=None))
+
+        error_message = '{"message": "pod not found"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Both fail
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+
+            # when: should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: should still have diagnostic section, even if empty
+            result_str = "\n".join(result)
+            assert "# Current logs: Not available" in result_str
+            assert "# Previous logs: Not available" in result_str
+            assert "# Diagnostic Information:" in result_str
+            assert "No recent pod events found." in result_str

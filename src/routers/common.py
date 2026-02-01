@@ -105,10 +105,6 @@ class PodLogsRequest(BaseModel):
     name: str = Field(..., description="Pod name")
     namespace: str = Field(..., description="Namespace name")
     container_name: str = Field(default="", description="Container name within the pod")
-    is_terminated: bool = Field(
-        default=False,
-        description="Set to true to fetch logs from previous terminated container",
-    )
     tail_lines: int = Field(
         default=10,
         ge=1,

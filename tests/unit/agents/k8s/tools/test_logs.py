@@ -10,15 +10,13 @@ from services.k8s import IK8sClient
 
 
 @pytest.mark.parametrize(
-    "given_name, given_namespace, given_container_name, "
-    "given_is_terminated, given_error, expected_logs, expected_error",
+    "given_name, given_namespace, given_container_name, given_error, expected_logs, expected_error",
     [
         # Test case: successful query for logs.
         (
             "my-pod",
             "my-namespace",
             "my-container",
-            False,
             None,
             ["line 1", "line 2", "line 3"],
             None,
@@ -28,7 +26,6 @@ from services.k8s import IK8sClient
             "my-pod",
             "my-namespace",
             "my-container",
-            False,
             Exception("dummy error 1"),
             None,
             Exception(
@@ -43,7 +40,6 @@ async def test_fetch_pod_logs_tool(
     given_name,
     given_namespace,
     given_container_name,
-    given_is_terminated,
     given_error,
     expected_logs,
     expected_error,
@@ -70,7 +66,6 @@ async def test_fetch_pod_logs_tool(
                                 "name": given_name,
                                 "namespace": given_namespace,
                                 "container_name": given_container_name,
-                                "is_terminated": given_is_terminated,
                             },
                             "id": "id1",
                             "type": "tool_call",
@@ -87,7 +82,6 @@ async def test_fetch_pod_logs_tool(
         given_name,
         given_namespace,
         given_container_name,
-        given_is_terminated,
         POD_LOGS_TAIL_LINES_LIMIT,
     )
     # check the response.

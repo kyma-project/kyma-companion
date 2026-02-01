@@ -83,8 +83,7 @@ async def get_pod_logs(
     Fetch logs from a Kubernetes pod container.
     """
     logger.info(
-        f"Pod logs request: pod={request.name}, namespace={request.namespace}, "
-        f"container={request.container_name}, terminated={request.is_terminated}"
+        f"Pod logs request: pod={request.name}, namespace={request.namespace}, container={request.container_name}"
     )
 
     try:
@@ -94,7 +93,6 @@ async def get_pod_logs(
                 "name": request.name,
                 "namespace": request.namespace,
                 "container_name": request.container_name,
-                "is_terminated": request.is_terminated,
                 "k8s_client": k8s_client,
             }
         )

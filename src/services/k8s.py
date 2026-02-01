@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import copy
 import os
@@ -13,6 +14,13 @@ from kubernetes import client, dynamic
 from pydantic import BaseModel
 
 from services.data_sanitizer import IDataSanitizer
+from services.k8s_constants import (
+    FALLBACK_ERROR_PATTERNS,
+    ContainerStateReason,
+    ContainerStateType,
+    LogSource,
+    PodPhase,
+)
 from utils import logging
 from utils.exceptions import K8sClientError, parse_k8s_error_response
 from utils.settings import (
@@ -176,7 +184,6 @@ class IK8sClient(Protocol):
         name: str,
         namespace: str,
         container_name: str,
-        is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
         """Fetch logs of Kubernetes Pod."""
@@ -491,7 +498,7 @@ class K8sClient:
         # filter pods by status and convert object to dictionary.
         items = []
         for pod in all_pods:
-            if "status" not in pod or "phase" not in pod["status"] or pod["status"]["phase"] != "Running":
+            if "status" not in pod or "phase" not in pod["status"] or pod["status"]["phase"] != PodPhase.RUNNING:
                 items.append(pod)
         return items
 
@@ -530,10 +537,295 @@ class K8sClient:
         name: str,
         namespace: str,
         container_name: str,
+        tail_limit: int,
+    ) -> list[str]:
+        """Fetch logs of Kubernetes Pod - attempts both current and previous logs.
+
+        Strategy:
+        1. Try fetching both current AND previous logs in parallel
+        2. If we got any logs, return them with status headers
+        3. If we got no logs, return diagnostic context or "resource not found"
+
+        Always returns list[str], never raises errors.
+        """
+        # Step 1: Try fetching both current and previous logs in parallel
+        current_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, False, tail_limit))
+        previous_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, True, tail_limit))
+
+        current_logs, current_error = await current_task
+        previous_logs, previous_error = await previous_task
+
+        # Step 2: Format results and add diagnostics if current logs failed
+        result_lines = []
+
+        # Current logs section
+        if current_logs is not None:
+            result_lines.append(f"# {LogSource.CURRENT.capitalize()} logs: Successfully fetched")
+            result_lines.append("")
+            result_lines.extend(current_logs)
+        else:
+            # Current logs failed - show status and add diagnostics
+            result_lines.append(f"# {LogSource.CURRENT.capitalize()} logs: Not available")
+            result_lines.append("")
+
+            # Add diagnostic context to explain why current logs failed
+            diagnostic_context = await self._gather_pod_diagnostic_context(name, namespace, container_name)
+            if (
+                diagnostic_context
+                and isinstance(diagnostic_context, str)
+                and "Failed to gather some diagnostic information" not in diagnostic_context
+            ):
+                result_lines.append("# Diagnostic Information:")
+                result_lines.append("")
+                for line in diagnostic_context.split("\n"):
+                    result_lines.append(line)
+            else:
+                # Resource doesn't exist
+                result_lines.append("# Resource Not Found:")
+                result_lines.append("")
+                result_lines.append(f"Pod '{name}' not found in namespace '{namespace}'.")
+                result_lines.append("")
+                result_lines.append("Please check:")
+                result_lines.append("- Pod name is correct")
+                result_lines.append("- Namespace is correct")
+                result_lines.append("- Pod exists in the cluster")
+
+        # Add separator
+        result_lines.append("")
+
+        # Previous logs section
+        if previous_logs is not None:
+            result_lines.append(f"# {LogSource.PREVIOUS.capitalize()} logs: Successfully fetched")
+            result_lines.append("")
+            result_lines.extend(previous_logs)
+        else:
+            # Previous logs not available - this is often expected
+            if isinstance(previous_error, K8sClientError):
+                if previous_error.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                    result_lines.append(
+                        f"# {LogSource.PREVIOUS.capitalize()} logs: Not available (container has not been restarted)"
+                    )
+                else:
+                    result_lines.append(f"# {LogSource.PREVIOUS.capitalize()} logs: Failed to fetch")
+            else:
+                result_lines.append(f"# {LogSource.PREVIOUS.capitalize()} logs: Failed to fetch")
+
+        return result_lines
+
+    async def _gather_pod_diagnostic_context(self, name: str, namespace: str, container_name: str) -> str:
+        """Gather diagnostic context when pod logs are unavailable.
+
+        Collects information to help troubleshoot why logs failed:
+        - Pod events (most useful for understanding failures)
+        - Container status (state, restart count)
+        - Init container status (if applicable)
+        """
+        context_parts = []
+
+        try:
+            # 1. Pod Events - Most important diagnostic information
+            event_info = self._format_pod_events(name, namespace)
+            context_parts.append(event_info)
+
+            # 2. Pod Description - Container and Init Container Status
+            pod_description = self.describe_resource(api_version="v1", kind="Pod", name=name, namespace=namespace)
+            if pod_description:
+                # Container Status
+                container_info = self._format_container_status(pod_description, container_name)
+                if container_info:
+                    context_parts.append(container_info)
+
+                # Init Container Status
+                init_container_info = self._format_init_container_status(pod_description)
+                if init_container_info:
+                    context_parts.append(init_container_info)
+
+        except Exception as e:
+            # Don't let diagnostic gathering fail the whole operation
+            context_parts.append(f"\nNote: Failed to gather some diagnostic information: {e}")
+
+        return "\n".join(context_parts) if context_parts else "No diagnostic information available."
+
+    def _format_pod_events(self, name: str, namespace: str) -> str:
+        """Format pod events for diagnostic output."""
+        events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
+        if not events:
+            return "No recent pod events found."
+
+        lines = ["Recent Pod Events:"]
+        # Show last 5 events, most recent first
+        for event in events[-5:][::-1]:
+            reason = event.get("reason", "Unknown")
+            message = event.get("message", "")
+            count = event.get("count", 1)
+            event_line = f"  [{reason}]"
+            if count > 1:
+                event_line += f" (x{count})"
+            event_line += f" {message}"
+            lines.append(event_line)
+
+        return "\n".join(lines)
+
+    def _format_container_status(self, pod_description: dict, container_name: str) -> str | None:
+        """Format container status information for diagnostic output."""
+        container_statuses = pod_description.get("status", {}).get("containerStatuses", [])
+        container_status = next(
+            (cs for cs in container_statuses if cs.get("name") == container_name),
+            None,
+        )
+
+        if not container_status:
+            return None
+
+        lines = [f"\nContainer '{container_name}' Status:"]
+
+        # State information
+        state = container_status.get("state", {})
+        if ContainerStateType.WAITING.value in state:
+            waiting = state[ContainerStateType.WAITING.value]
+            lines.append("  State: Waiting")
+            lines.append(f"  Reason: {waiting.get('reason', 'Unknown')}")
+            if waiting.get("message"):
+                lines.append(f"  Message: {waiting.get('message')}")
+        elif ContainerStateType.TERMINATED.value in state:
+            terminated = state[ContainerStateType.TERMINATED.value]
+            lines.append("  State: Terminated")
+            lines.append(f"  Reason: {terminated.get('reason', 'Unknown')}")
+            lines.append(f"  Exit Code: {terminated.get('exitCode', 'Unknown')}")
+            if terminated.get("message"):
+                lines.append(f"  Message: {terminated.get('message')}")
+        elif ContainerStateType.RUNNING.value in state:
+            lines.append("  State: Running")
+
+        # Restart count
+        restart_count = container_status.get("restartCount", 0)
+        lines.append(f"  Restart Count: {restart_count}")
+
+        # Last termination state if available
+        last_state = container_status.get("lastState", {})
+        if ContainerStateType.TERMINATED.value in last_state:
+            terminated = last_state[ContainerStateType.TERMINATED.value]
+            lines.append(f"  Last Termination Reason: {terminated.get('reason', 'Unknown')}")
+            lines.append(f"  Last Exit Code: {terminated.get('exitCode', 'Unknown')}")
+
+        return "\n".join(lines)
+
+    def _format_init_container_status(self, pod_description: dict) -> str | None:
+        """Format init container status information for diagnostic output."""
+        init_container_statuses = pod_description.get("status", {}).get("initContainerStatuses", [])
+        if not init_container_statuses:
+            return None
+
+        failed_init = [ics for ics in init_container_statuses if not ics.get("ready", False)]
+        if not failed_init:
+            return None
+
+        lines = ["\nInit Containers (Failed):"]
+        for ics in failed_init:
+            init_name = ics.get("name", "unknown")
+            state = ics.get("state", {})
+            if ContainerStateType.WAITING.value in state:
+                reason = state[ContainerStateType.WAITING.value].get("reason", "Unknown")
+                lines.append(f"  - {init_name}: Waiting ({reason})")
+            elif ContainerStateType.TERMINATED.value in state:
+                reason = state[ContainerStateType.TERMINATED.value].get("reason", "Unknown")
+                exit_code = state[ContainerStateType.TERMINATED.value].get("exitCode", "Unknown")
+                lines.append(f"  - {init_name}: Terminated ({reason}, exit code: {exit_code})")
+
+        return "\n".join(lines)
+
+    def _extract_failure_reason(self, error: K8sClientError) -> str:
+        """Extract a concise, user-friendly reason from the error message."""
+        error_message = error.message.lower()
+
+        # Common patterns and their user-friendly descriptions
+        if "crashloopbackoff" in error_message or "crash loop back off" in error_message:
+            return f"container is in {ContainerStateReason.CRASH_LOOP_BACK_OFF} state"
+        if "container not found" in error_message:
+            return "container not found"
+        if "container is waiting to start" in error_message or "waiting to start" in error_message:
+            return "container is waiting to start"
+        if "container is terminated" in error_message or "container has been terminated" in error_message:
+            return "container has terminated"
+        if "pod has terminated" in error_message or "pod has been terminated" in error_message:
+            return "pod has terminated"
+
+        # Default: use a generic message
+        return "container is not ready"
+
+    def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
+        """Determine if we should fallback to previous container logs based on the error.
+
+        Only fallback for container-specific state issues, not general API errors.
+        """
+        error_message = error.message.lower()
+        return any(indicator in error_message for indicator in FALLBACK_ERROR_PATTERNS)
+
+    def _is_retryable_error(self, error: K8sClientError) -> bool:
+        """Determine if an error is retryable (transient failures)."""
+        # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
+        return error.status_code in (
+            HTTPStatus.TOO_MANY_REQUESTS,
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.GATEWAY_TIMEOUT,
+        )
+
+    async def _try_fetch_logs(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        is_terminated: bool,
+        tail_limit: int,
+    ) -> tuple[list[str] | None, Exception | None]:
+        """Try to fetch pod logs with automatic retry on transient errors.
+
+        Returns:
+            On success: (logs, None)
+            On failure: (None, exception)
+
+        Retries up to 3 times with exponential backoff (1s, 2s, 4s) on retryable errors
+        (network timeouts, rate limiting, 5xx errors).
+        """
+        max_attempts = 3
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                logs = await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
+                return (logs, None)  # Success
+            except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
+                # Check if we should retry
+                # Retry network/timeout errors, or K8sClientError if it's retryable
+                should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
+
+                # If this is the last attempt or error is not retryable, return the error
+                if attempt >= max_attempts or not should_retry:
+                    return (None, e)
+
+                # Calculate exponential backoff: 1s, 2s, 4s
+                wait_time = min(2 ** (attempt - 1), 8)
+                logger.warning(
+                    f"Retrying fetch_pod_logs for pod {name} due to {type(e).__name__}: {e}. "
+                    f"Attempt {attempt}/{max_attempts}. Waiting {wait_time}s..."
+                )
+
+                # Wait before retry
+                await asyncio.sleep(wait_time)
+
+        # This line should never be reached, but satisfies type checker
+        return (None, K8sClientError(message=f"Failed to fetch pod logs for {name} after {max_attempts} attempts"))
+
+    async def _fetch_pod_logs_no_retry(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running."""
+        """Fetch pod logs without retry logic (used internally by _fetch_pod_logs_internal)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:

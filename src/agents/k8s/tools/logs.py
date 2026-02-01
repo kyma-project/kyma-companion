@@ -17,7 +17,6 @@ class FetchPodLogsArgs(BaseModel):
     name: str
     namespace: str
     container_name: str
-    is_terminated: bool
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 
     # Model configuration for Pydantic.
@@ -29,15 +28,12 @@ async def fetch_pod_logs_tool(
     name: str,
     namespace: str,
     container_name: str,
-    is_terminated: bool,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
 ) -> list[str]:
-    """Fetch logs of Kubernetes Pod. Provide is_terminated as true if the pod is not running.
-    The logs of previous terminated pod will be fetched."""
+    """Fetch logs of Kubernetes Pod. Always fetches both current and previous logs,
+    showing the status of each with clear headers."""
     try:
-        return await k8s_client.fetch_pod_logs(
-            name, namespace, container_name, is_terminated, POD_LOGS_TAIL_LINES_LIMIT
-        )
+        return await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,
