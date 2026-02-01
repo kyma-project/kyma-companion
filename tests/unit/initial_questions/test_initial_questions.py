@@ -85,7 +85,9 @@ def mock_k8s_client():
         {KEY: LIST_K8S_EVENTS_FOR_RESOURCE},
         MOCK_DICT,
     ]
+    mock.get_resource = AsyncMock()
     mock.get_resource.return_value = {KEY: GET_RESOURCE}
+    mock.describe_resource = AsyncMock()
     mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE}
     mock.get_data_sanitizer.return_value = None
     return mock
@@ -138,13 +140,13 @@ def mock_k8s_client():
     ],
 )
 async def test_fetch_relevant_data_from_k8s_cluster(message, expected_calls, mock_k8s_client):
-    # Given:
+    # Given: Initial questions handler with mocked K8s client
     mock_model = Mock()
     handler = InitialQuestionsHandler(model=mock_model)
 
-    # When:
+    # When: Fetching relevant K8s data based on message context
     result = await handler.fetch_relevant_data_from_k8s_cluster(message, mock_k8s_client)
 
-    # Then:
+    # Then: Result contains expected K8s API call data
     for call in expected_calls:
         assert call in result

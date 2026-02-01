@@ -319,7 +319,7 @@ def mock_k8s_client():
     client.list_not_running_pods = Mock(return_value=[])
     client.list_nodes_metrics = AsyncMock(return_value=[])
     client.list_k8s_warning_events = Mock(return_value=[])
-    client.describe_resource = Mock(return_value={})
+    client.describe_resource = AsyncMock(return_value={})
     client.list_k8s_events_for_resource = Mock(return_value=[])
     return client
 
@@ -364,7 +364,7 @@ def mock_k8s_client():
 @pytest.mark.asyncio
 async def test_cluster_overview_sanitization(mock_k8s_client, input_context, expected_patterns):
     """Test sanitization for cluster overview scenario"""
-    # Setup
+    # Given: Cluster overview message with sensitive data in pod context
     message = Message(
         query="test",
         namespace="",
@@ -374,13 +374,12 @@ async def test_cluster_overview_sanitization(mock_k8s_client, input_context, exp
     )
     mock_k8s_client.list_not_running_pods.return_value = [{"data": input_context}]
 
-    # Execute
+    # When: Fetching relevant K8s cluster context
     result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
 
-    # Verify sanitization occurred
+    # Then: Sensitive data is redacted and sanitization occurred
     assert mock_k8s_client.get_data_sanitizer.called
 
-    # Verify sensitive data is redacted
     assert "{{REDACTED}}" in result
     for pattern in expected_patterns[1:]:  # Skip the REDACTED pattern
         assert pattern not in result, f"Sensitive data '{pattern}' should be redacted"
@@ -418,7 +417,7 @@ async def test_cluster_overview_sanitization(mock_k8s_client, input_context, exp
 @pytest.mark.asyncio
 async def test_namespace_overview_sanitization(mock_k8s_client, input_context, expected_patterns):
     """Test sanitization for namespace overview scenario"""
-    # Setup
+    # Given: Namespace overview message with sensitive data in events
     message = Message(
         query="test",
         namespace="default",
@@ -428,10 +427,10 @@ async def test_namespace_overview_sanitization(mock_k8s_client, input_context, e
     )
     mock_k8s_client.list_k8s_warning_events.return_value = [{"message": input_context}]
 
-    # Execute
+    # When: Fetching relevant K8s namespace context
     result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
 
-    # Verify
+    # Then: Sensitive data is redacted and sanitization occurred
     assert mock_k8s_client.get_data_sanitizer.called
     assert "{{REDACTED}}" in result
 
@@ -446,7 +445,7 @@ async def test_namespace_overview_sanitization(mock_k8s_client, input_context, e
 @pytest.mark.asyncio
 async def test_resource_description_sanitization(mock_k8s_client, resource_data, event_data, expected_redactions):
     """Test sanitization for specific resource description"""
-    # Setup
+    # Given: Resource description message with sensitive data in annotations
     message = Message(
         query="test",
         namespace="",
@@ -457,10 +456,10 @@ async def test_resource_description_sanitization(mock_k8s_client, resource_data,
     mock_k8s_client.describe_resource.return_value = resource_data
     mock_k8s_client.list_k8s_events_for_resource.return_value = event_data
 
-    # Execute
+    # When: Fetching relevant K8s resource context
     result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
 
-    # Verify
+    # Then: Sensitive values are redacted and sanitization occurred
     assert mock_k8s_client.get_data_sanitizer.called
     for sensitive_value in expected_redactions:
         assert sensitive_value not in result, f"Sensitive data '{sensitive_value}' should be redacted"

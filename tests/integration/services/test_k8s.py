@@ -162,17 +162,17 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
-        # when
-        result = k8s_client.get_resource(
+    @pytest.mark.asyncio
+    async def test_get_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
+        # When: Fetching a resource from the K8s cluster
+        result = await k8s_client.get_resource(
             api_version=given_api_version,
             kind=given_kind,
             namespace=given_namespace,
             name=given_name,
         )
 
-        # then
-        # the return type should be a dict.
+        # Then: Returns a dict with correct resource metadata and sanitized secrets
         assert isinstance(result, dict)
 
         assert result["kind"] == given_kind
@@ -222,17 +222,17 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_describe_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
-        # when
-        result = k8s_client.describe_resource(
+    @pytest.mark.asyncio
+    async def test_describe_resource(self, k8s_client, given_api_version, given_kind, given_namespace, given_name):
+        # When: Describing a resource from the K8s cluster (includes events)
+        result = await k8s_client.describe_resource(
             api_version=given_api_version,
             kind=given_kind,
             namespace=given_namespace,
             name=given_name,
         )
 
-        # then
-        # the return type should be a dict.
+        # Then: Returns a dict with resource metadata, sanitized secrets, and events list
         assert isinstance(result, dict)
 
         assert result["kind"] == given_kind
