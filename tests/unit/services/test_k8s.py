@@ -867,13 +867,16 @@ class TestK8sClient:
         mock_dynamic_client.resources.get.return_value = mock_resource
         k8s_client._dynamic_client = mock_dynamic_client
 
-        # Mock execute_get_api_request to return the sanitized/expected result
-        # (execute_get_api_request handles sanitization internally)
-        with patch.object(k8s_client, "execute_get_api_request", new_callable=AsyncMock, return_value=expected_result):
+        # Mock execute_get_api_request to return the expected result
+        with patch.object(
+            k8s_client, "execute_get_api_request", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_execute:
             # When: Getting a resource by name
             result = await k8s_client.get_resource("v1", "Pod", "test-pod", "default")
 
-            # Then: Result matches expected output (sanitized or raw based on data_sanitizer setting)
+            # Then: Correct URI is constructed and passed to execute_get_api_request
+            mock_execute.assert_called_once_with("api/v1/namespaces/default/pods/test-pod")
+            # And: Result matches expected output
             assert result == expected_result
 
     @pytest.mark.parametrize(

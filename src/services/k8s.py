@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import copy
 import os
@@ -424,7 +425,8 @@ class K8sClient:
         api_prefix = "api/v1" if api_version == "v1" else f"apis/{api_version}"
 
         # Get resource info to determine if it's namespaced
-        resource_client = self.dynamic_client.resources.get(api_version=api_version, kind=kind)
+        # Use asyncio.to_thread to avoid blocking the event loop with synchronous dynamic client call
+        resource_client = await asyncio.to_thread(self.dynamic_client.resources.get, api_version=api_version, kind=kind)
 
         # Build URI
         if resource_client.namespaced:
