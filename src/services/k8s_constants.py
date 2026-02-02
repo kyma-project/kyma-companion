@@ -27,49 +27,12 @@ class ContainerStateType(str, Enum):
     TERMINATED = "terminated"
 
 
-class ContainerStateReason(str, Enum):
-    """Common reasons for container states.
-
-    Note: These are not exhaustive - Kubernetes can have custom reasons.
-    These are the most common ones we handle in our code.
-    """
-
-    # Waiting state reasons
-    CRASH_LOOP_BACK_OFF = "CrashLoopBackOff"
-    IMAGE_PULL_BACK_OFF = "ImagePullBackOff"
-    ERR_IMAGE_PULL = "ErrImagePull"
-    CONTAINER_CREATING = "ContainerCreating"
-    POD_INITIALIZING = "PodInitializing"
-
-    # Terminated state reasons
-    ERROR = "Error"
-    COMPLETED = "Completed"
-    OOM_KILLED = "OOMKilled"
-    CONTAINER_CANNOT_RUN = "ContainerCannotRun"
-
-
 class LogSource(str, Enum):
     """Source of pod logs - current or previous container."""
 
     CURRENT = "current"
     PREVIOUS = "previous"
 
-
-# Error message patterns for fallback detection
-# These are substrings that indicate we should try fetching previous logs
-FALLBACK_ERROR_PATTERNS = [
-    "container is waiting to start",
-    "container is in waiting state",
-    "container not found",
-    "container is terminated",
-    "container has been terminated",
-    "crashloopbackoff",
-    "crash loop back off",
-    "waiting to start",
-    "pod has been terminated",
-    "pod has terminated",
-    "previous terminated container",
-]
 
 # HTTP status codes for retry logic (already available in http.HTTPStatus, but documenting here)
 # RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504]  # Handled by HTTPStatus enum

@@ -15,8 +15,6 @@ from pydantic import BaseModel
 
 from services.data_sanitizer import IDataSanitizer
 from services.k8s_constants import (
-    FALLBACK_ERROR_PATTERNS,
-    ContainerStateReason,
     ContainerStateType,
     LogSource,
     PodPhase,
@@ -733,33 +731,6 @@ class K8sClient:
                 lines.append(f"  - {init_name}: Terminated ({reason}, exit code: {exit_code})")
 
         return "\n".join(lines)
-
-    def _extract_failure_reason(self, error: K8sClientError) -> str:
-        """Extract a concise, user-friendly reason from the error message."""
-        error_message = error.message.lower()
-
-        # Common patterns and their user-friendly descriptions
-        if "crashloopbackoff" in error_message or "crash loop back off" in error_message:
-            return f"container is in {ContainerStateReason.CRASH_LOOP_BACK_OFF} state"
-        if "container not found" in error_message:
-            return "container not found"
-        if "container is waiting to start" in error_message or "waiting to start" in error_message:
-            return "container is waiting to start"
-        if "container is terminated" in error_message or "container has been terminated" in error_message:
-            return "container has terminated"
-        if "pod has terminated" in error_message or "pod has been terminated" in error_message:
-            return "pod has terminated"
-
-        # Default: use a generic message
-        return "container is not ready"
-
-    def _should_fallback_to_previous(self, error: K8sClientError) -> bool:
-        """Determine if we should fallback to previous container logs based on the error.
-
-        Only fallback for container-specific state issues, not general API errors.
-        """
-        error_message = error.message.lower()
-        return any(indicator in error_message for indicator in FALLBACK_ERROR_PATTERNS)
 
     def _is_retryable_error(self, error: K8sClientError) -> bool:
         """Determine if an error is retryable (transient failures)."""
