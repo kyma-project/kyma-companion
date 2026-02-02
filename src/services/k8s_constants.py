@@ -73,27 +73,3 @@ FALLBACK_ERROR_PATTERNS = [
 
 # HTTP status codes for retry logic (already available in http.HTTPStatus, but documenting here)
 # RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504]  # Handled by HTTPStatus enum
-
-
-# Diagnostic display constants
-class DiagnosticLabel(str, Enum):
-    """Labels used in diagnostic output."""
-
-    POD_EVENTS_HEADER = "Recent Pod Events:"
-    NO_EVENTS = "No recent pod events found."
-    CONTAINER_STATUS_HEADER = "Container '{container}' Status:"
-    INIT_CONTAINERS_HEADER = "Init Containers (Failed):"
-    STATE_LABEL = "State"
-    REASON_LABEL = "Reason"
-    MESSAGE_LABEL = "Message"
-    EXIT_CODE_LABEL = "Exit Code"
-    RESTART_COUNT_LABEL = "Restart Count"
-    LAST_TERMINATION_REASON_LABEL = "Last Termination Reason"
-    LAST_EXIT_CODE_LABEL = "Last Exit Code"
-
-
-# Log header templates
-LOG_HEADER_CURRENT = "# Showing current logs for container '{container}'"
-LOG_HEADER_PREVIOUS = "# Showing previous logs for container '{container}'"
-LOG_HEADER_FALLBACK = "# Could not fetch current logs: {reason}"
-LOG_HEADER_FALLBACK_SUBTITLE = "# Showing previous logs for container '{container}'"

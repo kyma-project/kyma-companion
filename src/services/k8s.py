@@ -825,7 +825,7 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch pod logs without retry logic (used internally by _fetch_pod_logs_internal)."""
+        """Fetch pod logs without retry logic (base implementation called by _try_fetch_logs)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:
