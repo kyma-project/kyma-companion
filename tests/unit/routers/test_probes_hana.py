@@ -44,9 +44,10 @@ class TestProbesHana:
         """
         # Given: Hana connection that can execute queries successfully
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute = MagicMock()
         mock_cursor.fetchone = MagicMock(return_value=(1,))
-        mock_cursor.close = MagicMock()
 
         mock_connection = MagicMock()
         mock_connection.cursor = MagicMock(return_value=mock_cursor)
@@ -65,7 +66,7 @@ class TestProbesHana:
         assert response.json()["is_hana_healthy"] is True
         mock_cursor.execute.assert_called_with("SELECT 1 FROM DUMMY")
         mock_cursor.fetchone.assert_called_once()
-        mock_cursor.close.assert_called_once()
+        mock_cursor.__exit__.assert_called_once()
 
     def test_healthz_returns_503_when_query_fails(self):
         """Test that the healthz probe returns HTTP 503 when the database connection is broken.
@@ -75,6 +76,8 @@ class TestProbesHana:
         """
         # Given: Hana connection that fails query execution
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute = MagicMock(side_effect=Exception("Connection lost"))
 
         mock_connection = MagicMock()
@@ -102,6 +105,8 @@ class TestProbesHana:
         """
         # Given: Hana connection that fails with password expiry error
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute = MagicMock(side_effect=dbapi.Error(414, "user is forced to change password"))
 
         mock_connection = MagicMock()
@@ -149,6 +154,8 @@ class TestProbesHana:
         """
         # Given: Hana connection
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute = MagicMock()
         mock_cursor.fetchone = MagicMock(return_value=(1,))
 
@@ -191,6 +198,8 @@ class TestProbesHana:
         """
         # Given: Hana connection that fails on fetchone
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute = MagicMock()
         mock_cursor.fetchone = MagicMock(side_effect=Exception("Fetch failed"))
 
@@ -206,6 +215,6 @@ class TestProbesHana:
         # When: Call health probe
         response = client.get("/healthz")
 
-        # Then: Cursor was closed despite error
+        # Then: Cursor context manager exited despite error
         assert response.status_code == HTTP_503_SERVICE_UNAVAILABLE
-        mock_cursor.close.assert_called_once()
+        mock_cursor.__exit__.assert_called_once()

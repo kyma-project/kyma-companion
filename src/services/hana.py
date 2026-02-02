@@ -64,11 +64,10 @@ class Hana(metaclass=SingletonMeta):
             self._last_health_state = False
             return False
 
-        cursor = None
         try:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT 1 FROM DUMMY")
-            cursor.fetchone()
+            with self.connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM DUMMY")
+                cursor.fetchone()
             logger.debug("HANA DB connection is ready.")
             self._last_health_check = now
             self._last_health_state = True
@@ -78,9 +77,6 @@ class Hana(metaclass=SingletonMeta):
             self._last_health_check = now
             self._last_health_state = False
             return False
-        finally:
-            if cursor:
-                cursor.close()
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""

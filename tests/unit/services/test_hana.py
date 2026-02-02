@@ -40,8 +40,10 @@ class TestHana:
         This test verifies that the method correctly determines Hana readiness
         by executing a SELECT query and handling various error scenarios.
         """
-        # Given: Mock connection with cursor
+        # Given: Mock connection with cursor that supports context manager
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
 
         if "execute" in cursor_behavior:
             if isinstance(cursor_behavior["execute"], Exception):
@@ -70,9 +72,10 @@ class TestHana:
         if expected or "execute" in cursor_behavior:
             mock_cursor.execute.assert_called_once_with("SELECT 1 FROM DUMMY")
 
-        # Verify cursor was closed (only if connection exists)
+        # Verify context manager was used (cursor enters and exits)
         if "execute" in cursor_behavior or "fetchone" in cursor_behavior:
-            mock_cursor.close.assert_called_once()
+            mock_cursor.__enter__.assert_called_once()
+            mock_cursor.__exit__.assert_called_once()
 
         # Clean up by resetting the instance.
         hana._reset_for_tests()
@@ -162,8 +165,10 @@ class TestHana:
         This test verifies that the health check result is cached and reused
         within the configured TTL, avoiding unnecessary database queries.
         """
-        # Given: Mock connection with cursor
+        # Given: Mock connection with cursor that supports context manager
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute.return_value = None
         mock_cursor.fetchone.return_value = (1,)
 
@@ -205,8 +210,10 @@ class TestHana:
         This ensures that failed health checks are also cached to avoid
         hammering the database with repeated failing queries.
         """
-        # Given: Mock connection that fails
+        # Given: Mock connection that fails with context manager support
         mock_cursor = MagicMock()
+        mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+        mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_cursor.execute.side_effect = Exception("Connection error")
 
         mock_connection = MagicMock()
