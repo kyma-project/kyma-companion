@@ -1,6 +1,7 @@
 """Tests for probe endpoints interaction with Hana query execution."""
 
-from unittest.mock import AsyncMock, MagicMock
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 from hdbcli import dbapi
@@ -140,11 +141,11 @@ class TestProbesHana:
         assert response.status_code == HTTP_503_SERVICE_UNAVAILABLE
         assert response.json()["is_hana_healthy"] is False
 
-    def test_healthz_executes_query_on_every_call(self):
-        """Test that the healthz probe executes a fresh query on every invocation.
+    def test_healthz_caches_result_within_ttl(self):
+        """Test that the healthz probe caches results within the TTL window.
 
-        This verifies there is no caching of the health status, ensuring that database
-        issues are detected immediately on the next probe call rather than being masked by stale data.
+        This verifies that the health status is cached to avoid excessive database queries,
+        while still ensuring that the cache expires after the configured TTL.
         """
         # Given: Hana connection
         mock_cursor = MagicMock()
@@ -160,13 +161,27 @@ class TestProbesHana:
         self._setup_healthy_dependencies()
         client = TestClient(app)
 
-        # When: Call health probe multiple times
-        expected_amount_calls = 3
-        for _ in range(expected_amount_calls):
-            client.get("/healthz")
+        # Mock time to control cache expiration
+        base_time = datetime(2024, 1, 1, 12, 0, 0)
+        expected_query_count_after_cache_expiry = 2
+        with patch("services.hana.datetime") as mock_datetime:
+            # First call - should execute query
+            mock_datetime.now.return_value = base_time
+            response1 = client.get("/healthz")
+            assert response1.status_code == HTTP_200_OK
+            assert mock_cursor.execute.call_count == 1
 
-        # Then: Query executed once per probe call
-        assert mock_cursor.execute.call_count == expected_amount_calls
+            # Second call within TTL - should use cache
+            mock_datetime.now.return_value = base_time + timedelta(seconds=60)
+            response2 = client.get("/healthz")
+            assert response2.status_code == HTTP_200_OK
+            assert mock_cursor.execute.call_count == 1  # Still 1, cache was used
+
+            # Third call after TTL expires - should execute query again
+            mock_datetime.now.return_value = base_time + timedelta(seconds=301)
+            response3 = client.get("/healthz")
+            assert response3.status_code == HTTP_200_OK
+            assert mock_cursor.execute.call_count == expected_query_count_after_cache_expiry
 
     def test_healthz_closes_cursor_even_on_failure(self):
         """Test that the database cursor is properly closed even when query execution fails.

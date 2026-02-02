@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 import pytest
 from hdbcli import dbapi
@@ -153,3 +154,81 @@ class TestHana:
         assert hana1 != hana2
 
         hana2._reset_for_tests()
+
+    def test_health_check_caching(self):
+        """
+        Test that is_connection_operational caches results within TTL.
+
+        This test verifies that the health check result is cached and reused
+        within the configured TTL, avoiding unnecessary database queries.
+        """
+        # Given: Mock connection with cursor
+        mock_cursor = MagicMock()
+        mock_cursor.execute.return_value = None
+        mock_cursor.fetchone.return_value = (1,)
+
+        mock_connection = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        connection_factory = MagicMock(return_value=mock_connection)
+
+        hana = Hana(connection_factory)
+
+        # When & Then:
+        base_time = datetime(2024, 1, 1, 12, 0, 0)
+        expected_query_count_after_cache_expiry = 2
+        with patch("services.hana.datetime") as mock_datetime:
+            # First call - should execute query
+            mock_datetime.now.return_value = base_time
+            result1 = hana.is_connection_operational()
+            assert result1 is True
+            assert mock_cursor.execute.call_count == 1
+
+            # Second call within TTL - should use cache
+            mock_datetime.now.return_value = base_time + timedelta(seconds=60)
+            result2 = hana.is_connection_operational()
+            assert result2 is True
+            assert mock_cursor.execute.call_count == 1  # Still 1, cache was used
+
+            # Third call after TTL expires - should execute query again
+            mock_datetime.now.return_value = base_time + timedelta(seconds=301)
+            result3 = hana.is_connection_operational()
+            assert result3 is True
+            assert mock_cursor.execute.call_count == expected_query_count_after_cache_expiry
+
+        # Clean up
+        hana._reset_for_tests()
+
+    def test_health_check_caches_failure_state(self):
+        """
+        Test that is_connection_operational caches failure state as well.
+
+        This ensures that failed health checks are also cached to avoid
+        hammering the database with repeated failing queries.
+        """
+        # Given: Mock connection that fails
+        mock_cursor = MagicMock()
+        mock_cursor.execute.side_effect = Exception("Connection error")
+
+        mock_connection = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        connection_factory = MagicMock(return_value=mock_connection)
+
+        hana = Hana(connection_factory)
+
+        # When & Then:
+        base_time = datetime(2024, 1, 1, 12, 0, 0)
+        with patch("services.hana.datetime") as mock_datetime:
+            # First call - should execute query and fail
+            mock_datetime.now.return_value = base_time
+            result1 = hana.is_connection_operational()
+            assert result1 is False
+            assert mock_cursor.execute.call_count == 1
+
+            # Second call within TTL - should use cached failure state
+            mock_datetime.now.return_value = base_time + timedelta(seconds=60)
+            result2 = hana.is_connection_operational()
+            assert result2 is False
+            assert mock_cursor.execute.call_count == 1  # Still 1, cache was used
+
+        # Clean up
+        hana._reset_for_tests()

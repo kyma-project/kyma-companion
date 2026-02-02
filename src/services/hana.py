@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import datetime, timedelta
 
 from hdbcli import dbapi
 
@@ -8,6 +9,7 @@ from utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
+    HANA_HEALTH_CHECK_CACHE_TTL_SECONDS,
 )
 from utils.singleton_meta import SingletonMeta
 
@@ -24,6 +26,9 @@ class Hana(metaclass=SingletonMeta):
     """
 
     connection: dbapi.Connection | None = None
+    _last_health_check: datetime | None = None
+    _last_health_state: bool = False
+    _health_check_ttl: timedelta = timedelta(seconds=HANA_HEALTH_CHECK_CACHE_TTL_SECONDS)
 
     def __init__(self, connection_factory: Callable[[], dbapi.Connection] | None = None) -> None:
         try:
@@ -40,13 +45,23 @@ class Hana(metaclass=SingletonMeta):
         Check if the HANA database is ready by executing a test query.
 
         This validates not just network connectivity but also authentication
-        and query execution permissions.
+        and query execution permissions. The result is cached for 5 minutes
+        to avoid excessive database queries.
 
         Returns:
             bool: True if HANA is ready, False otherwise.
         """
+        # Return cached state if last check was within TTL
+        now = datetime.now()
+        if self._last_health_check and (now - self._last_health_check) < self._health_check_ttl:
+            logger.debug(f"Returning cached HANA health state: {self._last_health_state}")
+            return self._last_health_state
+
+        # Perform actual health check
         if not self.connection:
             logger.warning("HANA DB connection is not initialized.")
+            self._last_health_check = now
+            self._last_health_state = False
             return False
 
         cursor = None
@@ -55,9 +70,13 @@ class Hana(metaclass=SingletonMeta):
             cursor.execute("SELECT 1 FROM DUMMY")
             cursor.fetchone()
             logger.debug("HANA DB connection is ready.")
+            self._last_health_check = now
+            self._last_health_state = True
             return True
         except Exception as e:
             logger.error(f"Error while connecting to HANA DB: {e}")
+            self._last_health_check = now
+            self._last_health_state = False
             return False
         finally:
             if cursor:
@@ -79,6 +98,8 @@ class Hana(metaclass=SingletonMeta):
         """
         SingletonMeta.reset_instance(cls)
         cls.connection = None
+        cls._last_health_check = None
+        cls._last_health_state = False
 
     def get_connction(self) -> dbapi.Connection:
         """
