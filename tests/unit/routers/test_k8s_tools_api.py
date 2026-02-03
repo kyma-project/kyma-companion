@@ -72,8 +72,9 @@ class TestLogsEndpoint:
         assert response.status_code == HTTPStatus.OK
         response_data = response.json()
         assert "logs" in response_data
-        assert isinstance(response_data["logs"], list)
-        assert len(response_data["logs"]) > 0
+        assert isinstance(response_data["logs"], dict)
+        assert "current_pod" in response_data["logs"]
+        assert "previous_pod" in response_data["logs"]
 
     def test_logs_with_container_name(self, k8s_client_factory):
         """Test fetching logs with specific container name."""

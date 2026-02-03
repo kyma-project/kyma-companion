@@ -12,6 +12,7 @@ from routers.common import init_models_dict
 from routers.k8s_tools_api import init_k8s_client as init_k8s_client_k8s
 from routers.kyma_tools_api import init_k8s_client as init_k8s_client_kyma
 from services.k8s import IK8sClient
+from services.k8s_models import PodLogs, PodLogsResult
 
 # Sample test data
 SAMPLE_BEARER_TOKEN = "test-token-123"
@@ -66,12 +67,16 @@ class MockK8sClient(IK8sClient):
         name: str,
         namespace: str,
         container_name: str = "",
-        is_terminated: bool = False,
         tail_limit: int = 100,
-    ) -> list[str]:
+    ) -> PodLogsResult:
         if self.should_fail:
             raise Exception("Failed to fetch logs")
-        return ["Log line 1", "Log line 2", "Log line 3"]
+        return PodLogsResult(
+            logs=PodLogs(
+                current_pod="Log line 1\nLog line 2\nLog line 3",
+                previous_pod="Not available (container has not been restarted)",
+            )
+        )
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
         return []

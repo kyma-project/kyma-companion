@@ -88,7 +88,7 @@ async def get_pod_logs(
 
     try:
         # Use fetch_pod_logs_tool from agents/k8s/tools/logs.py
-        logs = await fetch_pod_logs_tool.ainvoke(
+        result = await fetch_pod_logs_tool.ainvoke(
             {
                 "name": request.name,
                 "namespace": request.namespace,
@@ -97,13 +97,18 @@ async def get_pod_logs(
             }
         )
 
-        logger.info(f"Successfully fetched {len(logs)} log lines for pod={request.name}")
+        logger.info(f"Successfully fetched logs for pod={request.name}")
+
+        # Tool returns dict (serialized Pydantic model), reconstruct for response
+        from services.k8s_models import PodLogsResult
+
+        pod_logs_result = PodLogsResult.model_validate(result)
 
         return PodLogsResponse(
-            logs=logs,
+            logs=pod_logs_result.logs,
+            diagnostic_context=pod_logs_result.diagnostic_context,
             pod_name=request.name,
             container_name=request.container_name,
-            line_count=len(logs),
         )
     except K8sClientError as e:
         logger.error(

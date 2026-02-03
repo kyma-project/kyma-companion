@@ -10,15 +10,22 @@ from services.k8s import IK8sClient
 
 
 @pytest.mark.parametrize(
-    "given_name, given_namespace, given_container_name, given_error, expected_logs, expected_error",
+    "given_name, given_namespace, given_container_name, given_error, expected_logs_dict, expected_error",
     [
         # Test case: successful query for logs.
+        # Note: expected_logs_dict should match the serialized output (model_dump())
         (
             "my-pod",
             "my-namespace",
             "my-container",
             None,
-            ["line 1", "line 2", "line 3"],
+            {
+                "logs": {
+                    "current_pod": "line 1\nline 2\nline 3",
+                    "previous_pod": "Not available (container has not been restarted)",
+                },
+                "diagnostic_context": None,
+            },
             None,
         ),
         # Test case: exception raised during the query for logs.
@@ -41,7 +48,7 @@ async def test_fetch_pod_logs_tool(
     given_namespace,
     given_container_name,
     given_error,
-    expected_logs,
+    expected_logs_dict,
     expected_error,
 ):
     # Given
@@ -50,7 +57,16 @@ async def test_fetch_pod_logs_tool(
     if given_error:
         k8s_client.fetch_pod_logs.side_effect = given_error
     else:
-        k8s_client.fetch_pod_logs.return_value = expected_logs
+        # Mock should return a PodLogsResult Pydantic model, not a dict
+        from services.k8s_models import PodLogs, PodLogsResult
+
+        k8s_client.fetch_pod_logs.return_value = PodLogsResult(
+            logs=PodLogs(
+                current_pod=expected_logs_dict["logs"]["current_pod"],
+                previous_pod=expected_logs_dict["logs"]["previous_pod"],
+            ),
+            diagnostic_context=expected_logs_dict["diagnostic_context"],
+        )
 
     # When: invoke the tool.
     result = await tool_node.ainvoke(
@@ -89,6 +105,7 @@ async def test_fetch_pod_logs_tool(
         got_err_msg = result["messages"][0].content
         expected_err_msg = str(expected_error)
         assert got_err_msg == expected_err_msg
-    elif expected_logs:
+    elif expected_logs_dict:
+        # The tool node serializes Pydantic models to JSON
         got_obj = json.loads(result["messages"][0].content)
-        assert got_obj == expected_logs
+        assert got_obj == expected_logs_dict

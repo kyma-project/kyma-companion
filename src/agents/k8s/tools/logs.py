@@ -29,11 +29,13 @@ async def fetch_pod_logs_tool(
     namespace: str,
     container_name: str,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
-) -> list[str]:
-    """Fetch logs of Kubernetes Pod. Always fetches both current and previous logs,
-    showing the status of each with clear headers."""
+) -> dict:
+    """Fetch logs of Kubernetes Pod. Returns structured response with current and previous logs,
+    plus diagnostic context if current logs are unavailable."""
     try:
-        return await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
+        result = await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
+        # Serialize Pydantic model to dict for langchain tool compatibility
+        return result.model_dump(mode="json", by_alias=True)
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,

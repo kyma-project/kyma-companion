@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
+from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
@@ -116,10 +117,16 @@ class PodLogsRequest(BaseModel):
 class PodLogsResponse(BaseModel):
     """Response model for pod logs."""
 
-    logs: list[str] = Field(..., description="Pod log lines")
+    logs: PodLogs = Field(
+        ...,
+        description="Pod logs with current_pod and previous_pod",
+    )
+    diagnostic_context: PodLogsDiagnosticContext | None = Field(
+        default=None,
+        description="Optional diagnostic information when current pod logs are unavailable",
+    )
     pod_name: str = Field(..., description="Pod name")
     container_name: str = Field(..., description="Container name")
-    line_count: int = Field(..., description="Number of log lines returned")
 
 
 class K8sOverviewRequest(BaseModel):

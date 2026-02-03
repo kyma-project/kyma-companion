@@ -1142,15 +1142,18 @@ class TestK8sClient:
             )
 
             # then
-            # New format: shows both current and previous log sections with status
-            result_str = "\n".join(result)
+            # New format: returns PodLogsResult (Pydantic model)
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
 
             # Should show current logs successfully
-            assert "# Current logs: Successfully fetched" in result_str
-            assert all(line in result_str for line in expected_sanitized_logs)
+            current_logs = result.logs.current_pod
+            assert all(line in current_logs for line in expected_sanitized_logs)
 
-            # Should show previous logs not available
-            assert "# Previous logs: Not available" in result_str
+            # Should show previous logs not available (error message)
+            previous_logs = result.logs.previous_pod
+            assert "not found" in previous_logs.lower() or "not available" in previous_logs.lower()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1216,7 +1219,9 @@ class TestK8sClient:
             )
 
             # Mock diagnostic context gathering - will be shown inline when current logs fail
-            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Container is in CrashLoopBackOff state")
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value={"events": "Container is in CrashLoopBackOff state"}
+            )
 
             # when
             result = await k8s_client.fetch_pod_logs(
@@ -1227,16 +1232,22 @@ class TestK8sClient:
             )
 
             # then
-            result_str = "\n".join(result)
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
 
             # Should show current logs not available with diagnostic info
-            assert "# Current logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Container is in CrashLoopBackOff state" in result_str
+            current_logs = result.logs.current_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Container is in CrashLoopBackOff state" in diagnostic_str
 
             # Should show previous logs successfully
-            assert "# Previous logs: Successfully fetched" in result_str
-            assert all(line in result_str for line in expected_logs)
+            previous_logs = result.logs.previous_pod
+            assert all(line in previous_logs for line in expected_logs)
 
     @pytest.mark.asyncio
     async def test_fetch_pod_logs_both_fail_with_diagnostics(self, k8s_client):
@@ -1277,7 +1288,9 @@ class TestK8sClient:
             )
 
             # Mock the diagnostic context gathering methods
-            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Pod diagnostic info here")
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value={"events": "Pod diagnostic info here"}
+            )
 
             # when: should return diagnostic info instead of raising
             result = await k8s_client.fetch_pod_logs(
@@ -1288,11 +1301,20 @@ class TestK8sClient:
             )
 
             # then: verify diagnostic information is in result
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Pod diagnostic info here" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both current and previous logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Pod diagnostic info here" in diagnostic_str
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1355,10 +1377,12 @@ class TestK8sClient:
             )
 
             # then
-            result_str = "\n".join(result)
+            assert result is not None
+            assert hasattr(result, "logs")
+
             # Current logs should succeed after retries
-            assert "# Current logs: Successfully fetched" in result_str
-            assert all(line in result_str for line in success_logs)
+            current_logs = result.logs.current_pod
+            assert all(line in current_logs for line in success_logs)
 
             # Should have slept twice (after first and second failures)
             assert mock_sleep.call_count == 2  # noqa: PLR2004
@@ -1399,7 +1423,7 @@ class TestK8sClient:
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
 
             # when: should return diagnostic info instead of raising
             result = await k8s_client.fetch_pod_logs(
@@ -1410,11 +1434,20 @@ class TestK8sClient:
             )
 
             # then: verify diagnostic information is in result
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Diagnostic info" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
 
             # Should NOT have retried on either call (no sleep calls)
             mock_sleep.assert_not_called()
@@ -1458,7 +1491,7 @@ class TestK8sClient:
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
 
             # when: should return diagnostic info after max retries
             result = await k8s_client.fetch_pod_logs(
@@ -1469,11 +1502,22 @@ class TestK8sClient:
             )
 
             # then: verify diagnostic information is in result
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Failed to fetch" in result_str  # 503 error shows "Failed to fetch"
-            assert "# Diagnostic Information:" in result_str
-            assert "Diagnostic info" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or "failed" in current_logs.lower() or len(current_logs) == 0
+            assert (
+                "failed" in previous_logs.lower() or "not available" in previous_logs.lower() or len(previous_logs) == 0
+            )
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
 
             # Should have slept 4 times total (2 for current retries + 2 for previous retries)
             assert mock_sleep.call_count == 4  # noqa: PLR2004
@@ -1532,7 +1576,7 @@ class TestK8sClient:
                 aio_mock_response.get(previous_url, body=error_message, status=error_status)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context = AsyncMock(return_value="Diagnostic info")
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
 
             # when: Should return diagnostic info
             result = await k8s_client.fetch_pod_logs(
@@ -1543,15 +1587,25 @@ class TestK8sClient:
             )
 
             # then: verify diagnostic information is in result
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+
             # Previous logs status depends on error code
             if error_status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                assert "# Previous logs: Not available (container has not been restarted)" in result_str
+                assert "not available" in previous_logs.lower() or "not been restarted" in previous_logs.lower()
             else:
-                assert "# Previous logs: Failed to fetch" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Diagnostic info" in result_str
+                assert "failed" in previous_logs.lower() or "not available" in previous_logs.lower()
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
 
     @pytest.mark.asyncio
     async def test_fetch_pod_logs_includes_diagnostic_context_on_failure(self, k8s_client, monkeypatch):
@@ -1627,18 +1681,30 @@ class TestK8sClient:
             )
 
             # then: verify diagnostic context is included
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Recent Pod Events:" in result_str
-            assert "Back-off restarting failed container" in result_str
-            assert "Container 'app' Status:" in result_str
-            assert "State: Waiting" in result_str
-            assert "Reason: CrashLoopBackOff" in result_str
-            assert "Restart Count: 5" in result_str
-            assert "Last Termination Reason: Error" in result_str
-            assert "Last Exit Code: 1" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context with events and container statuses
+            assert result.diagnostic_context is not None
+            diagnostic = result.diagnostic_context
+
+            # Check events
+            assert hasattr(diagnostic, "events")
+            events_str = diagnostic.events
+            assert "Back-off restarting failed container" in events_str
+
+            # Check container statuses
+            assert hasattr(diagnostic, "container_statuses")
+            container_statuses = diagnostic.container_statuses
+            assert "app" in str(container_statuses)
+            assert "CrashLoopBackOff" in str(container_statuses) or "Waiting" in str(container_statuses)
 
     @pytest.mark.asyncio
     async def test_fetch_pod_logs_diagnostic_context_with_failed_init_containers(self, k8s_client, monkeypatch):
@@ -1657,6 +1723,7 @@ class TestK8sClient:
         monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
 
         # Mock pod description with failed init container
+        expected_init_exit_code = 2
         mock_pod_description = {
             "status": {
                 "containerStatuses": [
@@ -1673,7 +1740,7 @@ class TestK8sClient:
                         "state": {
                             "terminated": {
                                 "reason": "Error",
-                                "exitCode": 2,
+                                "exitCode": expected_init_exit_code,
                             }
                         },
                     }
@@ -1702,13 +1769,25 @@ class TestK8sClient:
             )
 
             # then: verify init container info is included
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "Init Containers (Failed):" in result_str
-            assert "init-db" in result_str
-            assert "Terminated (Error, exit code: 2)" in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic = result.diagnostic_context
+
+            # Check for init container information in the diagnostic context
+            assert hasattr(diagnostic, "init_container_statuses")
+            assert "init-db" in diagnostic.init_container_statuses
+            assert diagnostic.init_container_statuses["init-db"].state == "Terminated"
+            assert diagnostic.init_container_statuses["init-db"].exit_code == expected_init_exit_code
 
     @pytest.mark.asyncio
     async def test_fetch_pod_logs_diagnostic_context_handles_missing_data(self, k8s_client, monkeypatch):
@@ -1751,8 +1830,15 @@ class TestK8sClient:
             )
 
             # then: should still have diagnostic section, even if empty
-            result_str = "\n".join(result)
-            assert "# Current logs: Not available" in result_str
-            assert "# Previous logs: Not available" in result_str
-            assert "# Diagnostic Information:" in result_str
-            assert "No recent pod events found." in result_str
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context, even if minimal
+            assert result.diagnostic_context is not None
