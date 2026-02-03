@@ -153,7 +153,7 @@ class TestErrorHandling:
 
         response = client.post(
             "/api/tools/k8s/query",
-            data="invalid json",
+            content="invalid json",
             headers=headers,
         )
 
