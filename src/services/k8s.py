@@ -854,18 +854,28 @@ class K8sClient:
         return "\n".join(lines)
 
     def _is_retryable_error(self, error: Exception) -> bool:
-        """Determine if an error is retryable (transient failures)."""
-        # Only K8sClientError has status_code attribute
-        if not isinstance(error, K8sClientError):
-            return False
-        # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
-        return error.status_code in (
-            HTTPStatus.TOO_MANY_REQUESTS,
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            HTTPStatus.BAD_GATEWAY,
-            HTTPStatus.SERVICE_UNAVAILABLE,
-            HTTPStatus.GATEWAY_TIMEOUT,
-        )
+        """Determine if an error is retryable (transient failures).
+
+        Returns True for:
+        - K8sClientError with retryable status codes (5xx, 429)
+        - Network errors (aiohttp.ClientError, TimeoutError, OSError)
+
+        Returns False for:
+        - K8sClientError with non-retryable status codes (4xx except 429)
+        """
+        # For K8sClientError, check status code
+        if isinstance(error, K8sClientError):
+            return error.status_code in (
+                HTTPStatus.TOO_MANY_REQUESTS,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                HTTPStatus.BAD_GATEWAY,
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                HTTPStatus.GATEWAY_TIMEOUT,
+            )
+
+        # Network/timeout errors are generally transient and worth retrying
+        # These are: aiohttp.ClientError, TimeoutError, OSError
+        return True
 
     def _is_auth_error(self, error: Exception) -> bool:
         """Determine if an error is an authentication or authorization error.
@@ -905,9 +915,8 @@ class K8sClient:
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
                 last_exception = e
 
-                # Check if we should retry
-                # Retry network/timeout errors, or K8sClientError if it's retryable
-                should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
+                # Check if we should retry (method handles both K8s and network errors)
+                should_retry = self._is_retryable_error(e)
 
                 # If this is the last attempt or error is not retryable, stop retrying
                 if attempt >= max_attempts or not should_retry:
