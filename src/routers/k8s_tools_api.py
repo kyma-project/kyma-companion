@@ -74,7 +74,7 @@ async def query_k8s_resource(
         ) from e
 
 
-@router.post("/pods/logs", response_model=PodLogsResponse)
+@router.post("/pods/logs", response_model=PodLogsResponse, response_model_exclude_none=True)
 async def get_pod_logs(
     request: Annotated[PodLogsRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
