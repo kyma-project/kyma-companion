@@ -639,40 +639,6 @@ class K8sClient:
             init_container_statuses=init_container_statuses,
         )
 
-    async def _gather_pod_diagnostic_context(self, name: str, namespace: str, container_name: str) -> str:
-        """Gather diagnostic context when pod logs are unavailable.
-
-        Collects information to help troubleshoot why logs failed:
-        - Pod events (most useful for understanding failures)
-        - Container status (state, restart count)
-        - Init container status (if applicable)
-        """
-        context_parts = []
-
-        try:
-            # 1. Pod Events - Most important diagnostic information
-            event_info = self._format_pod_events(name, namespace)
-            context_parts.append(event_info)
-
-            # 2. Pod Description - Container and Init Container Status
-            pod_description = self.describe_resource(api_version="v1", kind="Pod", name=name, namespace=namespace)
-            if pod_description:
-                # Container Status
-                container_info = self._format_container_status(pod_description, container_name)
-                if container_info:
-                    context_parts.append(container_info)
-
-                # Init Container Status
-                init_container_info = self._format_init_container_status(pod_description)
-                if init_container_info:
-                    context_parts.append(init_container_info)
-
-        except Exception as e:
-            # Don't let diagnostic gathering fail the whole operation
-            context_parts.append(f"\nNote: Failed to gather some diagnostic information: {e}")
-
-        return "\n".join(context_parts) if context_parts else "No diagnostic information available."
-
     def _format_pod_events(self, name: str, namespace: str) -> str:
         """Format pod events for diagnostic output."""
         events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
@@ -767,7 +733,7 @@ class K8sClient:
                 last_exit_code=last_exit_code,
             )
 
-        return result if result else None
+        return result
 
     def _format_container_status(self, pod_description: dict, container_name: str) -> str | None:
         """Format container status information for diagnostic output."""
@@ -860,7 +826,7 @@ class K8sClient:
                 restart_count=restart_count,
             )
 
-        return result if result else None
+        return result
 
     def _format_init_container_status(self, pod_description: dict) -> str | None:
         """Format init container status information for diagnostic output."""
@@ -915,19 +881,22 @@ class K8sClient:
         (network timeouts, rate limiting, 5xx errors).
         """
         max_attempts = 3
+        last_exception = None
 
         for attempt in range(1, max_attempts + 1):
             try:
                 logs = await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
                 return (logs, None)  # Success
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
+                last_exception = e
+
                 # Check if we should retry
                 # Retry network/timeout errors, or K8sClientError if it's retryable
                 should_retry = self._is_retryable_error(e) if isinstance(e, K8sClientError) else True
 
-                # If this is the last attempt or error is not retryable, return the error
+                # If this is the last attempt or error is not retryable, stop retrying
                 if attempt >= max_attempts or not should_retry:
-                    return (None, e)
+                    break
 
                 # Calculate exponential backoff: 1s, 2s, 4s
                 wait_time = min(2 ** (attempt - 1), 8)
@@ -939,8 +908,8 @@ class K8sClient:
                 # Wait before retry
                 await asyncio.sleep(wait_time)
 
-        # This line should never be reached, but satisfies type checker
-        return (None, K8sClientError(message=f"Failed to fetch pod logs for {name} after {max_attempts} attempts"))
+        # All retries exhausted or error not retryable
+        return (None, last_exception)
 
     async def _fetch_pod_logs_no_retry(
         self,
@@ -950,7 +919,7 @@ class K8sClient:
         is_terminated: bool,
         tail_limit: int,
     ) -> list[str]:
-        """Fetch pod logs without retry logic (base implementation called by _try_fetch_logs)."""
+        """Fetch pod logs without retry logic (used internally by _try_fetch_logs)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
         # if the pod is terminated, then fetch the logs of last Pod.
         if is_terminated:
