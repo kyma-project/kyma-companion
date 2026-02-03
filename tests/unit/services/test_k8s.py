@@ -1524,12 +1524,63 @@ class TestK8sClient:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
+        "error_status, error_message",
+        [
+            # Authentication error - should raise immediately
+            (HTTPStatus.UNAUTHORIZED, '{"message": "authentication error when accessing pod logs"}'),
+            # Authorization error - should raise immediately
+            (HTTPStatus.FORBIDDEN, '{"message": "forbidden: user cannot access container logs"}'),
+        ],
+    )
+    async def test_fetch_pod_logs_raises_auth_errors_immediately(
+        self, k8s_client, error_status, error_message, monkeypatch
+    ):
+        """Test that authentication/authorization errors (401/403) are raised immediately, not returned in result."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # For auth errors, only 1 attempt for both (not retryable)
+            aio_mock_response.get(current_url, body=error_message, status=error_status)
+            aio_mock_response.get(previous_url, body=error_message, status=error_status)
+
+            # when: Should raise K8sClientError
+            with pytest.raises(K8sClientError) as exc_info:
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    tail_limit=100,
+                )
+
+            # then: verify error has correct status code
+            assert exc_info.value.status_code == error_status
+            # Should not retry auth errors
+            assert mock_sleep.call_count == 0
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
         "error_status, error_message, is_retryable",
         [
-            # Authentication error - should NOT fallback, NOT retryable
-            (HTTPStatus.UNAUTHORIZED, '{"message": "authentication error when accessing pod logs"}', False),
-            # Authorization error - should NOT fallback, NOT retryable
-            (HTTPStatus.FORBIDDEN, '{"message": "forbidden: user cannot access container logs"}', False),
             # Resource issue - should NOT fallback, NOT retryable
             (HTTPStatus.BAD_REQUEST, '{"message": "insufficient resources to schedule pod"}', False),
             # Generic pod not found - should NOT fallback, NOT retryable

@@ -552,6 +552,9 @@ class K8sClient:
 
         Returns:
             PodLogsResult with logs and optional diagnostic_context
+
+        Raises:
+            K8sClientError: For authentication (401) or authorization (403) errors
         """
         # Step 1: Try fetching both current and previous logs in parallel
         current_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, False, tail_limit))
@@ -560,7 +563,15 @@ class K8sClient:
         current_logs, current_error = await current_task
         previous_logs, previous_error = await previous_task
 
-        # Step 2: Build structured response
+        # Step 2: Check for authentication/authorization errors - these should fail fast
+        # Check current logs error first as it's more critical
+        if current_error is not None and self._is_auth_error(current_error):
+            raise current_error
+        # Also check previous logs error in case current succeeded but previous failed due to auth
+        if previous_error is not None and self._is_auth_error(previous_error):
+            raise previous_error
+
+        # Step 3: Build structured response
         current_pod_logs: str
         previous_pod_logs: str
         diagnostic_context: PodLogsDiagnosticContext | None = None
@@ -862,6 +873,17 @@ class K8sClient:
             HTTPStatus.SERVICE_UNAVAILABLE,
             HTTPStatus.GATEWAY_TIMEOUT,
         )
+
+    def _is_auth_error(self, error: Exception) -> bool:
+        """Determine if an error is an authentication or authorization error.
+
+        These errors should fail fast and not be treated as partial failures,
+        as they indicate a fundamental access issue that cannot be resolved
+        by retries or fetching alternative resources.
+        """
+        if isinstance(error, K8sClientError):
+            return error.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+        return False
 
     async def _try_fetch_logs(
         self,

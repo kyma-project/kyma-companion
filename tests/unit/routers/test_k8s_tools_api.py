@@ -112,6 +112,28 @@ class TestLogsEndpoint:
 
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
 
+    @pytest.mark.parametrize(
+        "auth_error_status",
+        [HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN],
+    )
+    def test_logs_raises_auth_errors_immediately(self, k8s_client_factory, auth_error_status):
+        """Test that authentication/authorization errors (401/403) are returned with correct status."""
+        client = k8s_client_factory(should_fail=True, fail_with_status=auth_error_status)
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        # Auth errors should be returned with their original status code
+        assert response.status_code == auth_error_status
+
 
 class TestOverviewEndpoint:
     """Test cases for K8s cluster overview endpoint."""
