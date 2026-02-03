@@ -626,23 +626,26 @@ class K8sClient:
         container_statuses: dict[str, ContainerStatus] | None = None
         init_container_statuses: dict[str, InitContainerStatus] | None = None
 
+        # 1. Try to get pod events - these persist even after pod deletion
         try:
-            # 1. Pod Events - formatted text (last N events based on tail_limit)
             events = self._format_pod_events_for_diagnostic(name, namespace, tail_limit)
+        except Exception:
+            events = "No pod events available"
 
-            # Try to get pod description
+        # 2. Try to get pod description and statuses - these only work if pod still exists
+        try:
             pod_description = self.describe_resource(api_version="v1", kind="Pod", name=name, namespace=namespace)
 
             if pod_description:
-                # 2. Container Statuses - structured models
+                # Container Statuses - structured models
                 container_statuses = self._format_container_statuses_structured(pod_description)
 
-                # 3. Init Container Statuses - structured models
+                # Init Container Statuses - structured models
                 init_container_statuses = self._format_init_container_statuses_structured(pod_description)
 
         except Exception:
-            # Pod doesn't exist or can't be accessed - still return minimal context
-            events = "No pod events available (pod may not exist)"
+            # Pod doesn't exist or can't be accessed - events may still be available
+            pass
 
         return PodLogsDiagnosticContext(
             events=events,
@@ -650,35 +653,22 @@ class K8sClient:
             init_container_statuses=init_container_statuses,
         )
 
-    def _format_pod_events(self, name: str, namespace: str) -> str:
-        """Format pod events for diagnostic output."""
-        events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
-        if not events:
-            return "No recent pod events found."
-
-        lines = ["Recent Pod Events:"]
-        # Show last 5 events, most recent first
-        for event in events[-5:][::-1]:
-            reason = event.get("reason", "Unknown")
-            message = event.get("message", "")
-            count = event.get("count", 1)
-            event_line = f"  [{reason}]"
-            if count > 1:
-                event_line += f" (x{count})"
-            event_line += f" {message}"
-            lines.append(event_line)
-
-        return "\n".join(lines)
-
     def _format_pod_events_for_diagnostic(self, name: str, namespace: str, tail_limit: int) -> str:
-        """Format pod events for diagnostic output with configurable limit."""
+        """Format pod events for diagnostic output.
+
+        Shows recent pod events to help diagnose why logs are unavailable.
+        The number of events shown is capped at a reasonable limit to avoid overwhelming output,
+        even if tail_limit for logs is large.
+        """
         events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
         if not events:
             return "No recent pod events found."
 
         lines = ["Recent Pod Events:"]
-        # Show last N events based on tail_limit, most recent first
-        for event in events[-tail_limit:][::-1]:
+        # Show last N events, most recent first
+        # Cap at 10 events to avoid excessive output even if tail_limit is large
+        event_limit = min(tail_limit, 10)
+        for event in events[-event_limit:][::-1]:
             reason = event.get("reason", "Unknown")
             message = event.get("message", "")
             count = event.get("count", 1)
@@ -863,8 +853,11 @@ class K8sClient:
 
         return "\n".join(lines)
 
-    def _is_retryable_error(self, error: K8sClientError) -> bool:
+    def _is_retryable_error(self, error: Exception) -> bool:
         """Determine if an error is retryable (transient failures)."""
+        # Only K8sClientError has status_code attribute
+        if not isinstance(error, K8sClientError):
+            return False
         # Retry on 5xx server errors, 429 rate limiting, and 503 service unavailable
         return error.status_code in (
             HTTPStatus.TOO_MANY_REQUESTS,

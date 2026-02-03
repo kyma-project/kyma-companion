@@ -1519,7 +1519,7 @@ class TestK8sClient:
             diagnostic_str = str(result.diagnostic_context)
             assert "Diagnostic info" in diagnostic_str
 
-            # Should have slept 4 times total (2 for current retries + 2 for previous retries)
+            # Should have slept 4 times total (2 for current retries + 2 for previous retries, running in parallel)
             assert mock_sleep.call_count == 4  # noqa: PLR2004
 
     @pytest.mark.asyncio
