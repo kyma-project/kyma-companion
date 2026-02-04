@@ -1686,7 +1686,7 @@ class TestK8sClient:
         ]
         monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
 
-        # Mock pod description
+        # Mock pod description (must include events since describe_resource now returns them)
         mock_pod_description = {
             "status": {
                 "containerStatuses": [
@@ -1707,7 +1707,8 @@ class TestK8sClient:
                         },
                     }
                 ]
-            }
+            },
+            "events": mock_events,
         }
         monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
 
@@ -1771,9 +1772,10 @@ class TestK8sClient:
         k8s_client.data_sanitizer = None
 
         # Mock pod events (empty for this test)
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+        mock_events = []
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
 
-        # Mock pod description with failed init container
+        # Mock pod description with failed init container (must include events)
         expected_init_exit_code = 2
         mock_pod_description = {
             "status": {
@@ -1796,7 +1798,8 @@ class TestK8sClient:
                         },
                     }
                 ],
-            }
+            },
+            "events": mock_events,
         }
         monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
 
@@ -1902,74 +1905,59 @@ class TestFormatPodEventsForDiagnostic:
     async def test_no_events(self, monkeypatch):
         """Test formatting when no events are available."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-        # then
-        assert result == "No recent pod events found."
+            # then
+            assert result == "No recent pod events found."
 
     @pytest.mark.asyncio
     async def test_single_event(self, monkeypatch):
         """Test formatting with a single event."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        events = [
-            {
-                "reason": "Started",
-                "message": "Started container app",
-                "count": 1,
-            }
-        ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "Started",
+                    "message": "Started container app",
+                    "count": 1,
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-        # then
-        assert "Recent Pod Events:" in result
-        assert "[Started] Started container app" in result
+            # then
+            assert "Recent Pod Events:" in result
+            assert "[Started] Started container app" in result
 
     @pytest.mark.asyncio
     async def test_event_with_count_greater_than_one(self, monkeypatch):
         """Test formatting when event has count > 1."""
         # given
         expected_event_count = 5
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        events = [
-            {
-                "reason": "BackOff",
-                "message": "Back-off restarting failed container",
-                "count": expected_event_count,
-            }
-        ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "BackOff",
+                    "message": "Back-off restarting failed container",
+                    "count": expected_event_count,
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-        # then
-        assert f"[BackOff] (x{expected_event_count}) Back-off restarting failed container" in result
+            # then
+            assert f"[BackOff] (x{expected_event_count}) Back-off restarting failed container" in result
 
     @pytest.mark.asyncio
     async def test_event_limit_capped_at_ten(self, monkeypatch):
@@ -1983,36 +1971,31 @@ class TestFormatPodEventsForDiagnostic:
         expected_oldest_hidden_event_index = 9
         expected_newest_hidden_event_index = 0
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        events = [
-            {
-                "reason": f"Event{i}",
-                "message": f"Message {i}",
-                "count": 1,
-            }
-            for i in range(expected_total_events)
-        ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
 
-        # then
-        lines = result.split("\n")
-        assert len(lines) == expected_line_count
-        assert lines[0] == "Recent Pod Events:"
-        # Most recent events should be shown
-        assert f"[Event{expected_newest_shown_event_index}]" in result
-        assert f"[Event{expected_oldest_shown_event_index}]" in result
-        # Older events should not be shown
-        assert f"[Event{expected_oldest_hidden_event_index}]" not in result
-        assert f"[Event{expected_newest_hidden_event_index}]" not in result
+            # then
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            assert lines[0] == "Recent Pod Events:"
+            # Most recent events should be shown
+            assert f"[Event{expected_newest_shown_event_index}]" in result
+            assert f"[Event{expected_oldest_shown_event_index}]" in result
+            # Older events should not be shown
+            assert f"[Event{expected_oldest_hidden_event_index}]" not in result
+            assert f"[Event{expected_newest_hidden_event_index}]" not in result
 
     @pytest.mark.asyncio
     async def test_event_limit_respects_tail_limit(self, monkeypatch):
@@ -2026,57 +2009,47 @@ class TestFormatPodEventsForDiagnostic:
         expected_oldest_shown_event_index = 7
         expected_hidden_event_index = 6
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        events = [
-            {
-                "reason": f"Event{i}",
-                "message": f"Message {i}",
-                "count": 1,
-            }
-            for i in range(expected_total_events)
-        ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
 
-        # then
-        lines = result.split("\n")
-        assert len(lines) == expected_line_count
-        assert f"[Event{expected_newest_event_index}]" in result
-        assert f"[Event{expected_middle_event_index}]" in result
-        assert f"[Event{expected_oldest_shown_event_index}]" in result
-        assert f"[Event{expected_hidden_event_index}]" not in result
+            # then
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            assert f"[Event{expected_newest_event_index}]" in result
+            assert f"[Event{expected_middle_event_index}]" in result
+            assert f"[Event{expected_oldest_shown_event_index}]" in result
+            assert f"[Event{expected_hidden_event_index}]" not in result
 
     @pytest.mark.asyncio
     async def test_missing_event_fields(self, monkeypatch):
         """Test formatting handles missing event fields gracefully."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        events = [
-            {
-                # Missing reason, message, and count
-            }
-        ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    # Missing reason, message, and count
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-        # when
-        result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+            # when
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-        # then
-        assert "[Unknown]" in result
+            # then
+            assert "[Unknown]" in result
 
 
 class TestFormatContainerStatusesStructured:
@@ -2086,13 +2059,8 @@ class TestFormatContainerStatusesStructured:
     async def test_no_container_statuses(self):
         """Test when pod has no container statuses."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
         pod_description = {"status": {}}
 
         # when
@@ -2105,13 +2073,8 @@ class TestFormatContainerStatusesStructured:
     async def test_container_waiting_state(self):
         """Test container in waiting state."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
         pod_description = {
             "status": {
                 "containerStatuses": [
@@ -2148,75 +2111,65 @@ class TestFormatContainerStatusesStructured:
         expected_exit_code = 1
         expected_restart_count = 3
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "containerStatuses": [
-                    {
-                        "name": "app",
-                        "state": {
-                            "terminated": {
-                                "reason": "Error",
-                                "message": "container exited with error",
-                                "exitCode": expected_exit_code,
-                            }
-                        },
-                        "restartCount": expected_restart_count,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {
+                                "terminated": {
+                                    "reason": "Error",
+                                    "message": "container exited with error",
+                                    "exitCode": expected_exit_code,
+                                }
+                            },
+                            "restartCount": expected_restart_count,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "app" in result
-        assert result["app"].state == "Terminated"
-        assert result["app"].reason == "Error"
-        assert result["app"].message == "container exited with error"
-        assert result["app"].exit_code == expected_exit_code
-        assert result["app"].restart_count == expected_restart_count
+            # then
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Terminated"
+            assert result["app"].reason == "Error"
+            assert result["app"].message == "container exited with error"
+            assert result["app"].exit_code == expected_exit_code
+            assert result["app"].restart_count == expected_restart_count
 
     @pytest.mark.asyncio
     async def test_container_running_state(self):
         """Test container in running state."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "containerStatuses": [
-                    {
-                        "name": "app",
-                        "state": {"running": {}},
-                        "restartCount": 0,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "app" in result
-        assert result["app"].state == "Running"
-        assert result["app"].reason is None
-        assert result["app"].restart_count == 0
+            # then
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Running"
+            assert result["app"].reason is None
+            assert result["app"].restart_count == 0
 
     @pytest.mark.asyncio
     async def test_container_with_last_termination_state(self):
@@ -2225,41 +2178,36 @@ class TestFormatContainerStatusesStructured:
         expected_restart_count = 2
         expected_oom_exit_code = 137
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "containerStatuses": [
-                    {
-                        "name": "app",
-                        "state": {"running": {}},
-                        "restartCount": expected_restart_count,
-                        "lastState": {
-                            "terminated": {
-                                "reason": "OOMKilled",
-                                "exitCode": expected_oom_exit_code,
-                            }
-                        },
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": expected_restart_count,
+                            "lastState": {
+                                "terminated": {
+                                    "reason": "OOMKilled",
+                                    "exitCode": expected_oom_exit_code,
+                                }
+                            },
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "app" in result
-        assert result["app"].state == "Running"
-        assert result["app"].restart_count == expected_restart_count
-        assert result["app"].last_termination_reason == "OOMKilled"
-        assert result["app"].last_exit_code == expected_oom_exit_code
+            # then
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Running"
+            assert result["app"].restart_count == expected_restart_count
+            assert result["app"].last_termination_reason == "OOMKilled"
+            assert result["app"].last_exit_code == expected_oom_exit_code
 
     @pytest.mark.asyncio
     async def test_multiple_containers(self):
@@ -2268,75 +2216,65 @@ class TestFormatContainerStatusesStructured:
         expected_container_count = 2
         expected_sidecar_restart_count = 5
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "containerStatuses": [
-                    {
-                        "name": "app",
-                        "state": {"running": {}},
-                        "restartCount": 0,
-                    },
-                    {
-                        "name": "sidecar",
-                        "state": {
-                            "waiting": {
-                                "reason": "CrashLoopBackOff",
-                            }
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": 0,
                         },
-                        "restartCount": expected_sidecar_restart_count,
-                    },
-                ]
+                        {
+                            "name": "sidecar",
+                            "state": {
+                                "waiting": {
+                                    "reason": "CrashLoopBackOff",
+                                }
+                            },
+                            "restartCount": expected_sidecar_restart_count,
+                        },
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert len(result) == expected_container_count
-        assert "app" in result
-        assert "sidecar" in result
-        assert result["app"].state == "Running"
-        assert result["sidecar"].state == "Waiting"
-        assert result["sidecar"].reason == "CrashLoopBackOff"
+            # then
+            assert result is not None
+            assert len(result) == expected_container_count
+            assert "app" in result
+            assert "sidecar" in result
+            assert result["app"].state == "Running"
+            assert result["sidecar"].state == "Waiting"
+            assert result["sidecar"].reason == "CrashLoopBackOff"
 
     @pytest.mark.asyncio
     async def test_missing_container_name(self):
         """Test container with missing name defaults to 'unknown'."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "containerStatuses": [
-                    {
-                        # Missing name
-                        "state": {"running": {}},
-                        "restartCount": 0,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            # Missing name
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "unknown" in result
+            # then
+            assert result is not None
+            assert "unknown" in result
 
 
 class TestFormatInitContainerStatusesStructured:
@@ -2346,20 +2284,15 @@ class TestFormatInitContainerStatusesStructured:
     async def test_no_init_container_statuses(self):
         """Test when pod has no init container statuses."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {"status": {}}
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {"status": {}}
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is None
+            # then
+            assert result is None
 
     @pytest.mark.asyncio
     async def test_init_container_waiting_state(self):
@@ -2367,116 +2300,101 @@ class TestFormatInitContainerStatusesStructured:
         # given
         expected_restart_count = 3
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "initContainerStatuses": [
-                    {
-                        "name": "init-db",
-                        "ready": False,
-                        "state": {
-                            "waiting": {
-                                "reason": "CrashLoopBackOff",
-                                "message": "back-off 20s restarting failed container",
-                            }
-                        },
-                        "restartCount": expected_restart_count,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": False,
+                            "state": {
+                                "waiting": {
+                                    "reason": "CrashLoopBackOff",
+                                    "message": "back-off 20s restarting failed container",
+                                }
+                            },
+                            "restartCount": expected_restart_count,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "init-db" in result
-        assert result["init-db"].ready is False
-        assert result["init-db"].state == "Waiting"
-        assert result["init-db"].reason == "CrashLoopBackOff"
-        assert result["init-db"].message == "back-off 20s restarting failed container"
-        assert result["init-db"].restart_count == expected_restart_count
+            # then
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is False
+            assert result["init-db"].state == "Waiting"
+            assert result["init-db"].reason == "CrashLoopBackOff"
+            assert result["init-db"].message == "back-off 20s restarting failed container"
+            assert result["init-db"].restart_count == expected_restart_count
 
     @pytest.mark.asyncio
     async def test_init_container_terminated_state(self):
         """Test init container in terminated state."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "initContainerStatuses": [
-                    {
-                        "name": "init-db",
-                        "ready": True,
-                        "state": {
-                            "terminated": {
-                                "reason": "Completed",
-                                "exitCode": 0,
-                            }
-                        },
-                        "restartCount": 0,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": True,
+                            "state": {
+                                "terminated": {
+                                    "reason": "Completed",
+                                    "exitCode": 0,
+                                }
+                            },
+                            "restartCount": 0,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "init-db" in result
-        assert result["init-db"].ready is True
-        assert result["init-db"].state == "Terminated"
-        assert result["init-db"].reason == "Completed"
-        assert result["init-db"].exit_code == 0
+            # then
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is True
+            assert result["init-db"].state == "Terminated"
+            assert result["init-db"].reason == "Completed"
+            assert result["init-db"].exit_code == 0
 
     @pytest.mark.asyncio
     async def test_init_container_running_state(self):
         """Test init container in running state."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "initContainerStatuses": [
-                    {
-                        "name": "init-db",
-                        "ready": False,
-                        "state": {"running": {}},
-                        "restartCount": 0,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": False,
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "init-db" in result
-        assert result["init-db"].ready is False
-        assert result["init-db"].state == "Running"
-        assert result["init-db"].reason is None
+            # then
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is False
+            assert result["init-db"].state == "Running"
+            assert result["init-db"].reason is None
 
     @pytest.mark.asyncio
     async def test_multiple_init_containers(self):
@@ -2485,72 +2403,62 @@ class TestFormatInitContainerStatusesStructured:
         expected_init_container_count = 2
         expected_cache_restart_count = 2
 
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "initContainerStatuses": [
-                    {
-                        "name": "init-db",
-                        "ready": True,
-                        "state": {"terminated": {"reason": "Completed", "exitCode": 0}},
-                        "restartCount": 0,
-                    },
-                    {
-                        "name": "init-cache",
-                        "ready": False,
-                        "state": {"waiting": {"reason": "CrashLoopBackOff"}},
-                        "restartCount": expected_cache_restart_count,
-                    },
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": True,
+                            "state": {"terminated": {"reason": "Completed", "exitCode": 0}},
+                            "restartCount": 0,
+                        },
+                        {
+                            "name": "init-cache",
+                            "ready": False,
+                            "state": {"waiting": {"reason": "CrashLoopBackOff"}},
+                            "restartCount": expected_cache_restart_count,
+                        },
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert len(result) == expected_init_container_count
-        assert "init-db" in result
-        assert "init-cache" in result
-        assert result["init-db"].ready is True
-        assert result["init-db"].state == "Terminated"
-        assert result["init-cache"].ready is False
-        assert result["init-cache"].state == "Waiting"
+            # then
+            assert result is not None
+            assert len(result) == expected_init_container_count
+            assert "init-db" in result
+            assert "init-cache" in result
+            assert result["init-db"].ready is True
+            assert result["init-db"].state == "Terminated"
+            assert result["init-cache"].ready is False
+            assert result["init-cache"].state == "Waiting"
 
     @pytest.mark.asyncio
     async def test_missing_init_container_name(self):
         """Test init container with missing name defaults to 'unknown'."""
         # given
-        k8s_client = K8sClient(
-            api_server="https://localhost:6443",
-            auth_type=AuthType.X_K8S_AUTHORIZATION,
-            x_k8s_authorization="test-token",
-            x_client_certificate_data=None,
-            x_client_key_data=None,
-        )
-        pod_description = {
-            "status": {
-                "initContainerStatuses": [
-                    {
-                        # Missing name
-                        "ready": False,
-                        "state": {"running": {}},
-                        "restartCount": 0,
-                    }
-                ]
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            # Missing name
+                            "ready": False,
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
             }
-        }
 
-        # when
-        result = k8s_client._format_init_container_statuses_structured(pod_description)
+            # when
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-        # then
-        assert result is not None
-        assert "unknown" in result
+            # then
+            assert result is not None
+            assert "unknown" in result

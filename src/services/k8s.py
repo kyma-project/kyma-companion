@@ -229,6 +229,17 @@ def get_url_for_paged_request(base_url: str, continue_token: str) -> str:
 class K8sClient:
     """Client to interact with the Kubernetes API."""
 
+    # HTTP status codes that indicate transient failures worth retrying
+    RETRYABLE_HTTP_STATUS_CODES = frozenset(
+        {
+            HTTPStatus.TOO_MANY_REQUESTS,  # 429 - Rate limiting
+            HTTPStatus.INTERNAL_SERVER_ERROR,  # 500
+            HTTPStatus.BAD_GATEWAY,  # 502
+            HTTPStatus.SERVICE_UNAVAILABLE,  # 503
+            HTTPStatus.GATEWAY_TIMEOUT,  # 504
+        }
+    )
+
     k8s_auth_headers: K8sAuthHeaders
     ca_temp_filename: str = ""
     client_cert_temp_filename: str = ""
@@ -626,26 +637,29 @@ class K8sClient:
         container_statuses: dict[str, ContainerStatus] | None = None
         init_container_statuses: dict[str, InitContainerStatus] | None = None
 
-        # 1. Try to get pod events - these persist even after pod deletion
-        try:
-            events = self._format_pod_events_for_diagnostic(name, namespace, tail_limit)
-        except Exception:
-            events = "No pod events available"
-
-        # 2. Try to get pod description and statuses - these only work if pod still exists
+        # Try to get pod description (which includes events) and statuses
         try:
             pod_description = self.describe_resource(api_version="v1", kind="Pod", name=name, namespace=namespace)
 
             if pod_description:
+                # Extract and format events from pod description
+                pod_events = pod_description.get("events", [])
+                events = self._format_events_for_diagnostic(pod_events, tail_limit)
+
                 # Container Statuses - structured models
                 container_statuses = self._format_container_statuses_structured(pod_description)
 
                 # Init Container Statuses - structured models
                 init_container_statuses = self._format_init_container_statuses_structured(pod_description)
+            else:
+                events = "No pod events available"
 
         except Exception:
-            # Pod doesn't exist or can't be accessed - events may still be available
-            pass
+            # Pod doesn't exist or can't be accessed - try to get events directly
+            try:
+                events = self._format_pod_events_for_diagnostic(name, namespace, tail_limit)
+            except Exception:
+                events = "No pod events available"
 
         return PodLogsDiagnosticContext(
             events=events,
@@ -653,14 +667,53 @@ class K8sClient:
             init_container_statuses=init_container_statuses,
         )
 
-    def _format_pod_events_for_diagnostic(self, name: str, namespace: str, tail_limit: int) -> str:
-        """Format pod events for diagnostic output.
+    def _parse_container_state(
+        self, state: dict
+    ) -> tuple[str, str | None, str | None, int | None]:
+        """Parse container state information.
 
-        Shows recent pod events to help diagnose why logs are unavailable.
+        Args:
+            state: Container state dictionary from Kubernetes API
+
+        Returns:
+            Tuple of (state_string, reason, message, exit_code)
+            - state_string: "Waiting", "Terminated", "Running", or "Unknown"
+            - reason: State reason (None if not applicable)
+            - message: State message (None if not available)
+            - exit_code: Exit code for terminated containers (None otherwise)
+        """
+        state_str = "Unknown"
+        reason = None
+        message = None
+        exit_code = None
+
+        if ContainerStateType.WAITING.value in state:
+            waiting = state[ContainerStateType.WAITING.value]
+            state_str = "Waiting"
+            reason = waiting.get("reason")
+            message = waiting.get("message")
+        elif ContainerStateType.TERMINATED.value in state:
+            terminated = state[ContainerStateType.TERMINATED.value]
+            state_str = "Terminated"
+            reason = terminated.get("reason")
+            message = terminated.get("message")
+            exit_code = terminated.get("exitCode")
+        elif ContainerStateType.RUNNING.value in state:
+            state_str = "Running"
+
+        return state_str, reason, message, exit_code
+
+    def _format_events_for_diagnostic(self, events: list[dict], tail_limit: int) -> str:
+        """Format a list of events for diagnostic output.
+
+        Args:
+            events: List of event dictionaries to format
+            tail_limit: Maximum number of log lines requested (used to cap event count)
+
+        Shows recent events to help diagnose why logs are unavailable.
         The number of events shown is capped at a reasonable limit to avoid overwhelming output,
         even if tail_limit for logs is large.
         """
-        events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
         if not events:
             return "No recent pod events found."
 
@@ -680,6 +733,16 @@ class K8sClient:
 
         return "\n".join(lines)
 
+    def _format_pod_events_for_diagnostic(self, name: str, namespace: str, tail_limit: int) -> str:
+        """Format pod events for diagnostic output by fetching them first.
+
+        Shows recent pod events to help diagnose why logs are unavailable.
+        The number of events shown is capped at a reasonable limit to avoid overwhelming output,
+        even if tail_limit for logs is large.
+        """
+        events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
+        return self._format_events_for_diagnostic(events, tail_limit)
+
     def _format_container_statuses_structured(self, pod_description: dict) -> dict[str, ContainerStatus] | None:
         """Format all container statuses as Pydantic models for diagnostic output."""
         container_statuses = pod_description.get("status", {}).get("containerStatuses", [])
@@ -691,26 +754,9 @@ class K8sClient:
         for container_status in container_statuses:
             container_name = container_status.get("name", "unknown")
 
-            # State information
+            # Parse state information
             state = container_status.get("state", {})
-            state_str = "Unknown"
-            reason = None
-            message = None
-            exit_code = None
-
-            if ContainerStateType.WAITING.value in state:
-                waiting = state[ContainerStateType.WAITING.value]
-                state_str = "Waiting"
-                reason = waiting.get("reason")
-                message = waiting.get("message")
-            elif ContainerStateType.TERMINATED.value in state:
-                terminated = state[ContainerStateType.TERMINATED.value]
-                state_str = "Terminated"
-                reason = terminated.get("reason")
-                message = terminated.get("message")
-                exit_code = terminated.get("exitCode")
-            elif ContainerStateType.RUNNING.value in state:
-                state_str = "Running"
+            state_str, reason, message, exit_code = self._parse_container_state(state)
 
             # Restart count
             restart_count = container_status.get("restartCount", 0)
@@ -736,50 +782,6 @@ class K8sClient:
 
         return result
 
-    def _format_container_status(self, pod_description: dict, container_name: str) -> str | None:
-        """Format container status information for diagnostic output."""
-        container_statuses = pod_description.get("status", {}).get("containerStatuses", [])
-        container_status = next(
-            (cs for cs in container_statuses if cs.get("name") == container_name),
-            None,
-        )
-
-        if not container_status:
-            return None
-
-        lines = [f"\nContainer '{container_name}' Status:"]
-
-        # State information
-        state = container_status.get("state", {})
-        if ContainerStateType.WAITING.value in state:
-            waiting = state[ContainerStateType.WAITING.value]
-            lines.append("  State: Waiting")
-            lines.append(f"  Reason: {waiting.get('reason', 'Unknown')}")
-            if waiting.get("message"):
-                lines.append(f"  Message: {waiting.get('message')}")
-        elif ContainerStateType.TERMINATED.value in state:
-            terminated = state[ContainerStateType.TERMINATED.value]
-            lines.append("  State: Terminated")
-            lines.append(f"  Reason: {terminated.get('reason', 'Unknown')}")
-            lines.append(f"  Exit Code: {terminated.get('exitCode', 'Unknown')}")
-            if terminated.get("message"):
-                lines.append(f"  Message: {terminated.get('message')}")
-        elif ContainerStateType.RUNNING.value in state:
-            lines.append("  State: Running")
-
-        # Restart count
-        restart_count = container_status.get("restartCount", 0)
-        lines.append(f"  Restart Count: {restart_count}")
-
-        # Last termination state if available
-        last_state = container_status.get("lastState", {})
-        if ContainerStateType.TERMINATED.value in last_state:
-            terminated = last_state[ContainerStateType.TERMINATED.value]
-            lines.append(f"  Last Termination Reason: {terminated.get('reason', 'Unknown')}")
-            lines.append(f"  Last Exit Code: {terminated.get('exitCode', 'Unknown')}")
-
-        return "\n".join(lines)
-
     def _format_init_container_statuses_structured(
         self, pod_description: dict
     ) -> dict[str, InitContainerStatus] | None:
@@ -794,26 +796,9 @@ class K8sClient:
             init_name = init_status.get("name", "unknown")
             ready = init_status.get("ready", False)
 
-            # State information
+            # Parse state information
             state = init_status.get("state", {})
-            state_str = "Unknown"
-            reason = None
-            message = None
-            exit_code = None
-
-            if ContainerStateType.WAITING.value in state:
-                waiting = state[ContainerStateType.WAITING.value]
-                state_str = "Waiting"
-                reason = waiting.get("reason")
-                message = waiting.get("message")
-            elif ContainerStateType.TERMINATED.value in state:
-                terminated = state[ContainerStateType.TERMINATED.value]
-                state_str = "Terminated"
-                reason = terminated.get("reason")
-                message = terminated.get("message")
-                exit_code = terminated.get("exitCode")
-            elif ContainerStateType.RUNNING.value in state:
-                state_str = "Running"
+            state_str, reason, message, exit_code = self._parse_container_state(state)
 
             # Restart count
             restart_count = init_status.get("restartCount", 0)
@@ -829,30 +814,6 @@ class K8sClient:
 
         return result
 
-    def _format_init_container_status(self, pod_description: dict) -> str | None:
-        """Format init container status information for diagnostic output."""
-        init_container_statuses = pod_description.get("status", {}).get("initContainerStatuses", [])
-        if not init_container_statuses:
-            return None
-
-        failed_init = [ics for ics in init_container_statuses if not ics.get("ready", False)]
-        if not failed_init:
-            return None
-
-        lines = ["\nInit Containers (Failed):"]
-        for ics in failed_init:
-            init_name = ics.get("name", "unknown")
-            state = ics.get("state", {})
-            if ContainerStateType.WAITING.value in state:
-                reason = state[ContainerStateType.WAITING.value].get("reason", "Unknown")
-                lines.append(f"  - {init_name}: Waiting ({reason})")
-            elif ContainerStateType.TERMINATED.value in state:
-                reason = state[ContainerStateType.TERMINATED.value].get("reason", "Unknown")
-                exit_code = state[ContainerStateType.TERMINATED.value].get("exitCode", "Unknown")
-                lines.append(f"  - {init_name}: Terminated ({reason}, exit code: {exit_code})")
-
-        return "\n".join(lines)
-
     def _is_retryable_error(self, error: Exception) -> bool:
         """Determine if an error is retryable (transient failures).
 
@@ -865,13 +826,7 @@ class K8sClient:
         """
         # For K8sClientError, check status code
         if isinstance(error, K8sClientError):
-            return error.status_code in (
-                HTTPStatus.TOO_MANY_REQUESTS,
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                HTTPStatus.BAD_GATEWAY,
-                HTTPStatus.SERVICE_UNAVAILABLE,
-                HTTPStatus.GATEWAY_TIMEOUT,
-            )
+            return error.status_code in self.RETRYABLE_HTTP_STATUS_CODES
 
         # Network/timeout errors are generally transient and worth retrying
         # These are: aiohttp.ClientError, TimeoutError, OSError
