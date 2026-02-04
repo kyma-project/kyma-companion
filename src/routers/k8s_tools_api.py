@@ -24,6 +24,7 @@ from routers.common import (
     init_k8s_client,
 )
 from services.k8s import IK8sClient
+from services.k8s_models import PodLogsResult
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
@@ -99,8 +100,6 @@ async def get_pod_logs(
         logger.info(f"Successfully fetched logs for pod={request.name}")
 
         # Tool returns dict (serialized Pydantic model), reconstruct for response
-        from services.k8s_models import PodLogsResult
-
         pod_logs_result = PodLogsResult.model_validate(result)
 
         return PodLogsResponse(
