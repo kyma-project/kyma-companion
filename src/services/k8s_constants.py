@@ -32,7 +32,3 @@ class LogSource(str, Enum):
 
     CURRENT = "current"
     PREVIOUS = "previous"
-
-
-# HTTP status codes for retry logic (already available in http.HTTPStatus, but documenting here)
-# RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504]  # Handled by HTTPStatus enum

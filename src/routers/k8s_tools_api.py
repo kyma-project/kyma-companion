@@ -87,7 +87,6 @@ async def get_pod_logs(
     )
 
     try:
-        # Use fetch_pod_logs_tool from agents/k8s/tools/logs.py
         result = await fetch_pod_logs_tool.ainvoke(
             {
                 "name": request.name,
