@@ -16,6 +16,8 @@ from pydantic import BaseModel
 from services.data_sanitizer import IDataSanitizer
 from services.k8s_constants import (
     ContainerStateType,
+    K8sApiFields,
+    K8sResourceKind,
     PodPhase,
 )
 from services.k8s_models import (
@@ -494,9 +496,9 @@ class K8sClient:
         result = copy.deepcopy(resource)
 
         # get events for the resource.
-        result["events"] = self.list_k8s_events_for_resource(kind, name, namespace)
-        for event in result["events"]:
-            del event["involvedObject"]
+        result[K8sApiFields.EVENTS] = self.list_k8s_events_for_resource(kind, name, namespace)
+        for event in result[K8sApiFields.EVENTS]:
+            del event[K8sApiFields.INVOLVED_OBJECT]
 
         if self.data_sanitizer:
             return self.data_sanitizer.sanitize(result)  # type: ignore
@@ -507,13 +509,17 @@ class K8sClient:
         Provide empty string for namespace to list all pods."""
         all_pods = self.list_resources(
             api_version="v1",
-            kind="Pod",
+            kind=K8sResourceKind.POD,
             namespace=namespace,
         )
         # filter pods by status and convert object to dictionary.
         items = []
         for pod in all_pods:
-            if "status" not in pod or "phase" not in pod["status"] or pod["status"]["phase"] != PodPhase.RUNNING:
+            if (
+                K8sApiFields.STATUS not in pod
+                or K8sApiFields.PHASE not in pod[K8sApiFields.STATUS]
+                or pod[K8sApiFields.STATUS][K8sApiFields.PHASE] != PodPhase.RUNNING
+            ):
                 items.append(pod)
         return items
 
@@ -525,7 +531,9 @@ class K8sClient:
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
 
-        result = self.dynamic_client.resources.get(api_version="v1", kind="Event").get(namespace=namespace)
+        result = self.dynamic_client.resources.get(api_version="v1", kind=K8sResourceKind.EVENT).get(
+            namespace=namespace
+        )
 
         # convert objects to dictionaries and return.
         events = [event.to_dict() for event in result.items]
@@ -542,7 +550,10 @@ class K8sClient:
         events = self.list_k8s_events(namespace)
         result = []
         for event in events:
-            if event["involvedObject"]["kind"] == kind and event["involvedObject"]["name"] == name:
+            if (
+                event[K8sApiFields.INVOLVED_OBJECT][K8sApiFields.KIND] == kind
+                and event[K8sApiFields.INVOLVED_OBJECT][K8sApiFields.NAME] == name
+            ):
                 result.append(event)
 
         return result
@@ -639,11 +650,13 @@ class K8sClient:
 
         # Try to get pod description (which includes events) and statuses
         try:
-            pod_description = self.describe_resource(api_version="v1", kind="Pod", name=name, namespace=namespace)
+            pod_description = self.describe_resource(
+                api_version="v1", kind=K8sResourceKind.POD, name=name, namespace=namespace
+            )
 
             if pod_description:
-                # Extract and format events from pod description
-                pod_events = pod_description.get("events", [])
+                # Format events from pod description
+                pod_events = pod_description.get(K8sApiFields.EVENTS, [])
                 events = self._format_events_for_diagnostic(pod_events, tail_limit)
 
                 # Container Statuses - structured models
@@ -667,9 +680,7 @@ class K8sClient:
             init_container_statuses=init_container_statuses,
         )
 
-    def _parse_container_state(
-        self, state: dict
-    ) -> tuple[str, str | None, str | None, int | None]:
+    def _parse_container_state(self, state: dict) -> tuple[str, str | None, str | None, int | None]:
         """Parse container state information.
 
         Args:
@@ -682,24 +693,24 @@ class K8sClient:
             - message: State message (None if not available)
             - exit_code: Exit code for terminated containers (None otherwise)
         """
-        state_str = "Unknown"
+        state_str = PodPhase.UNKNOWN.value
         reason = None
         message = None
         exit_code = None
 
         if ContainerStateType.WAITING.value in state:
             waiting = state[ContainerStateType.WAITING.value]
-            state_str = "Waiting"
-            reason = waiting.get("reason")
-            message = waiting.get("message")
+            state_str = ContainerStateType.WAITING.value.capitalize()
+            reason = waiting.get(K8sApiFields.REASON)
+            message = waiting.get(K8sApiFields.MESSAGE)
         elif ContainerStateType.TERMINATED.value in state:
             terminated = state[ContainerStateType.TERMINATED.value]
-            state_str = "Terminated"
-            reason = terminated.get("reason")
-            message = terminated.get("message")
-            exit_code = terminated.get("exitCode")
+            state_str = ContainerStateType.TERMINATED.value.capitalize()
+            reason = terminated.get(K8sApiFields.REASON)
+            message = terminated.get(K8sApiFields.MESSAGE)
+            exit_code = terminated.get(K8sApiFields.EXIT_CODE)
         elif ContainerStateType.RUNNING.value in state:
-            state_str = "Running"
+            state_str = ContainerStateType.RUNNING.value.capitalize()
 
         return state_str, reason, message, exit_code
 
@@ -722,9 +733,9 @@ class K8sClient:
         # Cap at 10 events to avoid excessive output even if tail_limit is large
         event_limit = min(tail_limit, 10)
         for event in events[-event_limit:][::-1]:
-            reason = event.get("reason", "Unknown")
-            message = event.get("message", "")
-            count = event.get("count", 1)
+            reason = event.get(K8sApiFields.REASON, "Unknown")
+            message = event.get(K8sApiFields.MESSAGE, "")
+            count = event.get(K8sApiFields.COUNT, 1)
             event_line = f"  [{reason}]"
             if count > 1:
                 event_line += f" (x{count})"
@@ -740,35 +751,35 @@ class K8sClient:
         The number of events shown is capped at a reasonable limit to avoid overwhelming output,
         even if tail_limit for logs is large.
         """
-        events = self.list_k8s_events_for_resource(kind="Pod", name=name, namespace=namespace)
+        events = self.list_k8s_events_for_resource(kind=K8sResourceKind.POD, name=name, namespace=namespace)
         return self._format_events_for_diagnostic(events, tail_limit)
 
     def _format_container_statuses_structured(self, pod_description: dict) -> dict[str, ContainerStatus] | None:
         """Format all container statuses as Pydantic models for diagnostic output."""
-        container_statuses = pod_description.get("status", {}).get("containerStatuses", [])
+        container_statuses = pod_description.get(K8sApiFields.STATUS, {}).get(K8sApiFields.CONTAINER_STATUSES, [])
         if not container_statuses:
             return None
 
         result: dict[str, ContainerStatus] = {}
 
         for container_status in container_statuses:
-            container_name = container_status.get("name", "unknown")
+            container_name = container_status.get(K8sApiFields.NAME, "unknown")
 
             # Parse state information
-            state = container_status.get("state", {})
+            state = container_status.get(K8sApiFields.STATE, {})
             state_str, reason, message, exit_code = self._parse_container_state(state)
 
             # Restart count
-            restart_count = container_status.get("restartCount", 0)
+            restart_count = container_status.get(K8sApiFields.RESTART_COUNT, 0)
 
             # Last termination state if available
             last_termination_reason = None
             last_exit_code = None
-            last_state = container_status.get("lastState", {})
+            last_state = container_status.get(K8sApiFields.LAST_STATE, {})
             if ContainerStateType.TERMINATED.value in last_state:
                 terminated = last_state[ContainerStateType.TERMINATED.value]
-                last_termination_reason = terminated.get("reason")
-                last_exit_code = terminated.get("exitCode")
+                last_termination_reason = terminated.get(K8sApiFields.REASON)
+                last_exit_code = terminated.get(K8sApiFields.EXIT_CODE)
 
             result[container_name] = ContainerStatus(
                 state=state_str,
@@ -786,22 +797,24 @@ class K8sClient:
         self, pod_description: dict
     ) -> dict[str, InitContainerStatus] | None:
         """Format init container statuses as Pydantic models for diagnostic output."""
-        init_container_statuses = pod_description.get("status", {}).get("initContainerStatuses", [])
+        init_container_statuses = pod_description.get(K8sApiFields.STATUS, {}).get(
+            K8sApiFields.INIT_CONTAINER_STATUSES, []
+        )
         if not init_container_statuses:
             return None
 
         result: dict[str, InitContainerStatus] = {}
 
         for init_status in init_container_statuses:
-            init_name = init_status.get("name", "unknown")
-            ready = init_status.get("ready", False)
+            init_name = init_status.get(K8sApiFields.NAME, "unknown")
+            ready = init_status.get(K8sApiFields.READY, False)
 
             # Parse state information
-            state = init_status.get("state", {})
+            state = init_status.get(K8sApiFields.STATE, {})
             state_str, reason, message, exit_code = self._parse_container_state(state)
 
             # Restart count
-            restart_count = init_status.get("restartCount", 0)
+            restart_count = init_status.get(K8sApiFields.RESTART_COUNT, 0)
 
             result[init_name] = InitContainerStatus(
                 ready=ready,
