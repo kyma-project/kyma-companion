@@ -136,15 +136,22 @@ class MockK8sClient:
     def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         return []
 
-    def fetch_pod_logs(
+    async def fetch_pod_logs(
         self,
         name: str,
         namespace: str,
-        container_name: str,
-        is_terminated: bool,
-        tail_limit: int,
-    ) -> list[str]:
-        return []
+        container_name: str = "",
+        tail_limit: int = 100,
+    ):
+        from services.k8s_models import PodLogs, PodLogsResult
+
+        return PodLogsResult(
+            logs=PodLogs(
+                current_pod="",
+                previous_pod="Not available",
+            ),
+            diagnostic_context=None,
+        )
 
     def get_group_version(self, group_version: str) -> dict:
         return {}

@@ -356,19 +356,18 @@ class TestK8sClient:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "name,namespace,container_name,is_terminated,tail_limit",
+        "name,namespace,container_name,tail_limit",
         [
             # Test case: should be able to get logs of a running pod.
             (
                 "eventing-manager-",
                 "kyma-system",
                 "manager",
-                False,
                 5,
             ),
         ],
     )
-    async def test_fetch_pod_logs(self, k8s_client, name, namespace, container_name, is_terminated, tail_limit):
+    async def test_fetch_pod_logs(self, k8s_client, name, namespace, container_name, tail_limit):
         # given
         # find complete pod name as pod names are dynamic.
         pods = k8s_client.list_resources(api_version="v1", kind="Pod", namespace=namespace)
@@ -380,15 +379,21 @@ class TestK8sClient:
         assert pod_name is not None
 
         # when
-        result = await k8s_client.fetch_pod_logs(pod_name, namespace, container_name, is_terminated, tail_limit)
+        result = await k8s_client.fetch_pod_logs(pod_name, namespace, container_name, tail_limit)
 
         # then
-        # the return type should be a list.
-        assert isinstance(result, list)
-        assert 0 < len(result) <= tail_limit
-        for item in result:
-            assert isinstance(item, str)
-            assert item != ""
+        # the return type should be PodLogsResult (Pydantic model).
+        assert result is not None
+        assert hasattr(result, "logs")
+        assert hasattr(result.logs, "current_pod")
+        assert hasattr(result.logs, "previous_pod")
+
+        # Current logs should be a string
+        assert isinstance(result.logs.current_pod, str)
+        assert result.logs.current_pod != ""
+
+        # Previous logs might not be available for running pods
+        assert isinstance(result.logs.previous_pod, str)
 
     @pytest.mark.parametrize(
         "given_kind, expected_api_version",

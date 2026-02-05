@@ -152,11 +152,12 @@ class TestK8sToolsAPI:
         assert logs_response.status_code == HTTPStatus.OK
         logs_data = logs_response.json()
         assert "logs" in logs_data
+        assert isinstance(logs_data["logs"], dict)
+        assert "current_pod" in logs_data["logs"]
+        assert "previous_pod" in logs_data["logs"]
         assert "pod_name" in logs_data
         assert logs_data["pod_name"] == pod_name
-        logger.info(
-            f"Successfully fetched logs from {pod_namespace}/{pod_name}: {logs_data.get('line_count', 0)} lines"
-        )
+        logger.info(f"Successfully fetched logs from {pod_namespace}/{pod_name}")
 
     def test_get_cluster_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
         """Test getting cluster-level overview."""

@@ -150,6 +150,10 @@ class TestUsageTrackerProbe:
         """
         Test that the `increase_failure_count` method increments the failure count by 1.
         """
+        # Clean up before creating the instance:
+        probe = get_usage_tracker_probe()
+        probe._reset_for_tests()
+
         # Given:
         expected_count = 1
         probe = get_usage_tracker_probe()
@@ -167,6 +171,10 @@ class TestUsageTrackerProbe:
         """
         Test that the `reset_failure_count` method resets the failure count to 0.
         """
+        # Clean up before creating the instance:
+        probe = get_usage_tracker_probe()
+        probe._reset_for_tests()
+
         # Given:
         expected_count = 0
         probe = UsageTrackerProbe(100, 100)
@@ -201,6 +209,10 @@ class TestUsageTrackerProbe:
         Verifies that the method correctly determines healthiness based on the
         failure count and threshold.
         """
+        # Clean up before creating the instance:
+        probe = get_usage_tracker_probe()
+        probe._reset_for_tests()
+
         # Given:
         probe = UsageTrackerProbe(threshold, count)
 

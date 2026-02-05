@@ -12,6 +12,8 @@ from routers.common import init_models_dict
 from routers.k8s_tools_api import init_k8s_client as init_k8s_client_k8s
 from routers.kyma_tools_api import init_k8s_client as init_k8s_client_kyma
 from services.k8s import IK8sClient
+from services.k8s_models import PodLogs, PodLogsResult
+from utils.exceptions import K8sClientError
 
 # Sample test data
 SAMPLE_BEARER_TOKEN = "test-token-123"
@@ -31,8 +33,9 @@ def get_sample_headers() -> dict[str, str]:
 class MockK8sClient(IK8sClient):
     """Mock implementation of K8s client for testing."""
 
-    def __init__(self, should_fail: bool = False):
+    def __init__(self, should_fail: bool = False, fail_with_status: int = 500):
         self.should_fail = should_fail
+        self.fail_with_status = fail_with_status
         self._resource_versions = {
             "Function": "serverless.kyma-project.io/v1alpha2",
             "APIRule": "gateway.kyma-project.io/v1beta1",
@@ -46,7 +49,11 @@ class MockK8sClient(IK8sClient):
 
     async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         if self.should_fail:
-            raise Exception("K8s API request failed")
+            raise K8sClientError(
+                message="K8s API request failed",
+                status_code=self.fail_with_status,
+                uri=uri,
+            )
         if "pods" in uri:
             return {
                 "items": [
@@ -66,12 +73,20 @@ class MockK8sClient(IK8sClient):
         name: str,
         namespace: str,
         container_name: str = "",
-        is_terminated: bool = False,
         tail_limit: int = 100,
-    ) -> list[str]:
+    ) -> PodLogsResult:
         if self.should_fail:
-            raise Exception("Failed to fetch logs")
-        return ["Log line 1", "Log line 2", "Log line 3"]
+            raise K8sClientError(
+                message="Failed to fetch logs",
+                status_code=self.fail_with_status,
+                uri=f"/api/v1/namespaces/{namespace}/pods/{name}/log",
+            )
+        return PodLogsResult(
+            logs=PodLogs(
+                current_pod="Log line 1\nLog line 2\nLog line 3",
+                previous_pod="Not available (container has not been restarted)",
+            )
+        )
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
         return []
@@ -100,8 +115,8 @@ def k8s_client_factory():
     cluster interactions with different behaviors (e.g., success, failure).
     """
 
-    def _create_client(should_fail: bool = False):
-        mock_k8s_client = MockK8sClient(should_fail=should_fail)
+    def _create_client(should_fail: bool = False, fail_with_status: int = 500):
+        mock_k8s_client = MockK8sClient(should_fail=should_fail, fail_with_status=fail_with_status)
 
         def get_mock_k8s_client():
             return mock_k8s_client
