@@ -171,7 +171,7 @@ class TestErrorHandling:
 
         response = client.post(
             "/api/tools/kyma/query",
-            data="invalid json",
+            content="invalid json",
             headers=headers,
         )
 

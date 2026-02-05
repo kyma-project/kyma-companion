@@ -2,7 +2,7 @@ import time
 from typing import Protocol
 
 from hdbcli import dbapi
-from indexing.contants import HEADER1
+from indexing.constants import HEADER1
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders.text import TextLoader
 from langchain_core.documents import Document
