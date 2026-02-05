@@ -1898,27 +1898,324 @@ class TestK8sClient:
             assert result.diagnostic_context is not None
 
 
+class TestParseContainerState:
+    """Test _parse_container_state helper method."""
+
+    @pytest.mark.asyncio
+    async def test_waiting_state_with_reason_and_message(self):
+        """Test parsing waiting state with reason and message."""
+        # Given: Container in waiting state with reason and message
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "waiting": {
+                    "reason": "CrashLoopBackOff",
+                    "message": "back-off 5m0s restarting failed container",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns waiting state with all fields
+            assert state_str == "Waiting"
+            assert reason == "CrashLoopBackOff"
+            assert message == "back-off 5m0s restarting failed container"
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_terminated_state_with_all_fields(self):
+        """Test parsing terminated state with reason, message, and exit code."""
+        # Given: Container in terminated state with all fields
+        expected_exit_code = 137
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "terminated": {
+                    "reason": "OOMKilled",
+                    "message": "Container exceeded memory limit",
+                    "exitCode": expected_exit_code,
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns terminated with reason, message, and exit code
+            assert state_str == "Terminated"
+            assert reason == "OOMKilled"
+            assert message == "Container exceeded memory limit"
+            assert exit_code == expected_exit_code
+
+    @pytest.mark.asyncio
+    async def test_running_state(self):
+        """Test parsing running state."""
+        # Given: Container in running state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {"running": {}}
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns running with no additional details
+            assert state_str == "Running"
+            assert reason is None
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_unknown_state_empty_dict(self):
+        """Test parsing unknown/empty state."""
+        # Given: Empty container state dictionary
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {}
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns unknown with no details
+            assert state_str == "Unknown"
+            assert reason is None
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_waiting_state_missing_message(self):
+        """Test parsing waiting state when message is missing."""
+        # Given: Container waiting with reason but no message
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "waiting": {
+                    "reason": "ImagePullBackOff",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns waiting with reason and no message
+            assert state_str == "Waiting"
+            assert reason == "ImagePullBackOff"
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_terminated_state_missing_optional_fields(self):
+        """Test parsing terminated state when optional fields are missing."""
+        # Given: Container terminated with minimal fields
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "terminated": {
+                    "reason": "Error",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns terminated with reason only
+            assert state_str == "Terminated"
+            assert reason == "Error"
+            assert message is None
+            assert exit_code is None
+
+
+class TestFormatEventsForDiagnostic:
+    """Test _format_events_for_diagnostic helper method."""
+
+    @pytest.mark.asyncio
+    async def test_empty_event_list(self):
+        """Test formatting with empty event list."""
+        # Given: Empty event list
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = []
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns no events found message
+            assert result == "No recent pod events found."
+
+    @pytest.mark.asyncio
+    async def test_single_event_formatting(self):
+        """Test formatting a single event."""
+        # Given: Single event with count of 1
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "Started",
+                    "message": "Started container app",
+                    "count": 1,
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event without count display
+            assert "Recent Pod Events:" in result
+            assert "[Started] Started container app" in result
+            assert "(x1)" not in result  # Count of 1 should not be shown
+
+    @pytest.mark.asyncio
+    async def test_event_with_high_count(self):
+        """Test formatting event with count > 1."""
+        # Given: Event with count greater than 1
+        expected_count = 15
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "BackOff",
+                    "message": "Back-off restarting failed container",
+                    "count": expected_count,
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event with count displayed
+            assert f"[BackOff] (x{expected_count}) Back-off restarting failed container" in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_caps_at_ten(self):
+        """Test that event display is capped at 10 even with large tail_limit."""
+        # Given: 20 events with large tail limit
+        expected_total_events = 20
+        expected_line_count = 11  # header + 10 events
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            tail_limit = 1000
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns only 10 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            # Most recent events should be shown (last 10, reversed)
+            assert "[Event19]" in result
+            assert "[Event10]" in result
+            # Older events should not be shown
+            assert "[Event9]" not in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_respects_tail_limit_when_small(self):
+        """Test that event limit respects tail_limit when it's less than 10."""
+        # Given: 10 events with small tail limit
+        expected_total_events = 10
+        expected_tail_limit = 3
+        expected_line_count = 4  # header + 3 events
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+
+            # When: Format events with tail limit of 3
+            result = k8s_client._format_events_for_diagnostic(events, expected_tail_limit)
+
+            # Then: Returns only 3 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            # Should show last 3 events
+            assert "[Event9]" in result
+            assert "[Event8]" in result
+            assert "[Event7]" in result
+            assert "[Event6]" not in result
+
+    @pytest.mark.asyncio
+    async def test_event_with_missing_fields(self):
+        """Test formatting event with missing reason, message, and count."""
+        # Given: Event with all fields missing
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    # Missing all fields
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event with default values
+            assert "[Unknown]" in result  # Default reason
+            assert "Recent Pod Events:" in result
+
+    @pytest.mark.asyncio
+    async def test_multiple_events_shown_in_reverse_order(self):
+        """Test that events are displayed in reverse chronological order (most recent first)."""
+        # Given: Multiple events in chronological order
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {"reason": "Event1", "message": "Message 1", "count": 1},
+                {"reason": "Event2", "message": "Message 2", "count": 1},
+                {"reason": "Event3", "message": "Message 3", "count": 1},
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns events in reverse order
+            lines = result.split("\n")
+            # Check that Event3 (most recent) appears before Event1 (oldest)
+            event3_index = next(i for i, line in enumerate(lines) if "Event3" in line)
+            event1_index = next(i for i, line in enumerate(lines) if "Event1" in line)
+            assert event3_index < event1_index
+
+
 class TestFormatPodEventsForDiagnostic:
     """Test _format_pod_events_for_diagnostic method."""
 
     @pytest.mark.asyncio
     async def test_no_events(self, monkeypatch):
         """Test formatting when no events are available."""
-        # given
+        # Given: No events available for pod
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
 
-            # when
+            # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-            # then
+            # Then: Returns no events found message
             assert result == "No recent pod events found."
 
     @pytest.mark.asyncio
     async def test_single_event(self, monkeypatch):
         """Test formatting with a single event."""
-        # given
+        # Given: Pod with single event
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             events = [
@@ -1930,17 +2227,17 @@ class TestFormatPodEventsForDiagnostic:
             ]
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-            # when
+            # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-            # then
+            # Then: Returns formatted single event
             assert "Recent Pod Events:" in result
             assert "[Started] Started container app" in result
 
     @pytest.mark.asyncio
     async def test_event_with_count_greater_than_one(self, monkeypatch):
         """Test formatting when event has count > 1."""
-        # given
+        # Given: Pod event with count greater than 1
         expected_event_count = 5
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
@@ -1953,16 +2250,16 @@ class TestFormatPodEventsForDiagnostic:
             ]
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-            # when
+            # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-            # then
+            # Then: Returns event with count displayed
             assert f"[BackOff] (x{expected_event_count}) Back-off restarting failed container" in result
 
     @pytest.mark.asyncio
     async def test_event_limit_capped_at_ten(self, monkeypatch):
         """Test that event limit is capped at 10 even with large tail_limit."""
-        # given
+        # Given: 20 pod events with large tail limit
         expected_total_events = 20
         expected_line_count = 11  # header + 10 events
         expected_tail_limit = 1000
@@ -1983,10 +2280,10 @@ class TestFormatPodEventsForDiagnostic:
             ]
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-            # when
+            # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
 
-            # then
+            # Then: Returns only 10 most recent events
             lines = result.split("\n")
             assert len(lines) == expected_line_count
             assert lines[0] == "Recent Pod Events:"
@@ -2000,7 +2297,7 @@ class TestFormatPodEventsForDiagnostic:
     @pytest.mark.asyncio
     async def test_event_limit_respects_tail_limit(self, monkeypatch):
         """Test that event limit respects tail_limit when it's less than 10."""
-        # given
+        # Given: 10 pod events with small tail limit
         expected_total_events = 10
         expected_tail_limit = 3
         expected_line_count = 4  # header + 3 events
@@ -2021,10 +2318,10 @@ class TestFormatPodEventsForDiagnostic:
             ]
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-            # when
+            # When: Format pod events with tail limit of 3
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
 
-            # then
+            # Then: Returns only 3 most recent events
             lines = result.split("\n")
             assert len(lines) == expected_line_count
             assert f"[Event{expected_newest_event_index}]" in result
@@ -2035,7 +2332,7 @@ class TestFormatPodEventsForDiagnostic:
     @pytest.mark.asyncio
     async def test_missing_event_fields(self, monkeypatch):
         """Test formatting handles missing event fields gracefully."""
-        # given
+        # Given: Pod event with missing fields
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             events = [
@@ -2045,10 +2342,10 @@ class TestFormatPodEventsForDiagnostic:
             ]
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
 
-            # when
+            # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
 
-            # then
+            # Then: Returns event with default values
             assert "[Unknown]" in result
 
 
@@ -2058,21 +2355,21 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_no_container_statuses(self):
         """Test when pod has no container statuses."""
-        # given
+        # Given: Pod with no container statuses
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
         pod_description = {"status": {}}
 
-        # when
+        # When: Format container statuses structured
         result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
+        # Then: Returns None
         assert result is None
 
     @pytest.mark.asyncio
     async def test_container_waiting_state(self):
         """Test container in waiting state."""
-        # given
+        # Given: Container in waiting state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
         pod_description = {
@@ -2092,10 +2389,10 @@ class TestFormatContainerStatusesStructured:
             }
         }
 
-        # when
+        # When: Format container statuses structured
         result = k8s_client._format_container_statuses_structured(pod_description)
 
-        # then
+        # Then: Returns structured waiting status with details
         assert result is not None
         assert "app" in result
         assert result["app"].state == "Waiting"
@@ -2107,7 +2404,7 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_container_terminated_state(self):
         """Test container in terminated state."""
-        # given
+        # Given: Container in terminated state
         expected_exit_code = 1
         expected_restart_count = 3
 
@@ -2131,10 +2428,10 @@ class TestFormatContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format container statuses structured
             result = k8s_client._format_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns structured terminated status with exit code
             assert result is not None
             assert "app" in result
             assert result["app"].state == "Terminated"
@@ -2146,7 +2443,7 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_container_running_state(self):
         """Test container in running state."""
-        # given
+        # Given: Container in running state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {
@@ -2161,10 +2458,10 @@ class TestFormatContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format container statuses structured
             result = k8s_client._format_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns structured running status
             assert result is not None
             assert "app" in result
             assert result["app"].state == "Running"
@@ -2174,7 +2471,7 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_container_with_last_termination_state(self):
         """Test container with last termination state."""
-        # given
+        # Given: Container with previous termination history
         expected_restart_count = 2
         expected_oom_exit_code = 137
 
@@ -2198,10 +2495,10 @@ class TestFormatContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format container statuses structured
             result = k8s_client._format_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns status with last termination details
             assert result is not None
             assert "app" in result
             assert result["app"].state == "Running"
@@ -2212,7 +2509,7 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_multiple_containers(self):
         """Test pod with multiple containers."""
-        # given
+        # Given: Pod with multiple containers
         expected_container_count = 2
         expected_sidecar_restart_count = 5
 
@@ -2239,10 +2536,10 @@ class TestFormatContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format container statuses structured
             result = k8s_client._format_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns status for each container
             assert result is not None
             assert len(result) == expected_container_count
             assert "app" in result
@@ -2254,7 +2551,7 @@ class TestFormatContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_missing_container_name(self):
         """Test container with missing name defaults to 'unknown'."""
-        # given
+        # Given: Container status with missing name
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {
@@ -2269,10 +2566,10 @@ class TestFormatContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format container statuses structured
             result = k8s_client._format_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns status with unknown as name
             assert result is not None
             assert "unknown" in result
 
@@ -2283,21 +2580,21 @@ class TestFormatInitContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_no_init_container_statuses(self):
         """Test when pod has no init container statuses."""
-        # given
+        # Given: Pod with no init container statuses
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {"status": {}}
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns None
             assert result is None
 
     @pytest.mark.asyncio
     async def test_init_container_waiting_state(self):
         """Test init container in waiting state."""
-        # given
+        # Given: Init container in waiting state
         expected_restart_count = 3
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
@@ -2320,10 +2617,10 @@ class TestFormatInitContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns structured waiting status with details
             assert result is not None
             assert "init-db" in result
             assert result["init-db"].ready is False
@@ -2335,7 +2632,7 @@ class TestFormatInitContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_init_container_terminated_state(self):
         """Test init container in terminated state."""
-        # given
+        # Given: Init container in terminated state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {
@@ -2356,10 +2653,10 @@ class TestFormatInitContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns structured terminated status with exit code
             assert result is not None
             assert "init-db" in result
             assert result["init-db"].ready is True
@@ -2370,7 +2667,7 @@ class TestFormatInitContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_init_container_running_state(self):
         """Test init container in running state."""
-        # given
+        # Given: Init container in running state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {
@@ -2386,10 +2683,10 @@ class TestFormatInitContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns structured running status
             assert result is not None
             assert "init-db" in result
             assert result["init-db"].ready is False
@@ -2399,7 +2696,7 @@ class TestFormatInitContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_multiple_init_containers(self):
         """Test pod with multiple init containers."""
-        # given
+        # Given: Pod with multiple init containers
         expected_init_container_count = 2
         expected_cache_restart_count = 2
 
@@ -2424,10 +2721,10 @@ class TestFormatInitContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns status for each init container
             assert result is not None
             assert len(result) == expected_init_container_count
             assert "init-db" in result
@@ -2440,7 +2737,7 @@ class TestFormatInitContainerStatusesStructured:
     @pytest.mark.asyncio
     async def test_missing_init_container_name(self):
         """Test init container with missing name defaults to 'unknown'."""
-        # given
+        # Given: Init container status with missing name
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             pod_description = {
@@ -2456,9 +2753,9 @@ class TestFormatInitContainerStatusesStructured:
                 }
             }
 
-            # when
+            # When: Format init container statuses structured
             result = k8s_client._format_init_container_statuses_structured(pod_description)
 
-            # then
+            # Then: Returns status with unknown as name
             assert result is not None
             assert "unknown" in result
