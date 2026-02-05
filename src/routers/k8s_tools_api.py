@@ -24,6 +24,7 @@ from routers.common import (
     init_k8s_client,
 )
 from services.k8s import IK8sClient
+from services.k8s_models import PodLogsResult
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
@@ -74,7 +75,7 @@ async def query_k8s_resource(
         ) from e
 
 
-@router.post("/pods/logs", response_model=PodLogsResponse)
+@router.post("/pods/logs", response_model=PodLogsResponse, response_model_exclude_none=True)
 async def get_pod_logs(
     request: Annotated[PodLogsRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
@@ -83,29 +84,29 @@ async def get_pod_logs(
     Fetch logs from a Kubernetes pod container.
     """
     logger.info(
-        f"Pod logs request: pod={request.name}, namespace={request.namespace}, "
-        f"container={request.container_name}, terminated={request.is_terminated}"
+        f"Pod logs request: pod={request.name}, namespace={request.namespace}, container={request.container_name}"
     )
 
     try:
-        # Use fetch_pod_logs_tool from agents/k8s/tools/logs.py
-        logs = await fetch_pod_logs_tool.ainvoke(
+        result = await fetch_pod_logs_tool.ainvoke(
             {
                 "name": request.name,
                 "namespace": request.namespace,
                 "container_name": request.container_name,
-                "is_terminated": request.is_terminated,
                 "k8s_client": k8s_client,
             }
         )
 
-        logger.info(f"Successfully fetched {len(logs)} log lines for pod={request.name}")
+        logger.info(f"Successfully fetched logs for pod={request.name}")
+
+        # Tool returns dict (serialized Pydantic model), reconstruct for response
+        pod_logs_result = PodLogsResult.model_validate(result)
 
         return PodLogsResponse(
-            logs=logs,
+            logs=pod_logs_result.logs,
+            diagnostic_context=pod_logs_result.diagnostic_context,
             pod_name=request.name,
             container_name=request.container_name,
-            line_count=len(logs),
         )
     except K8sClientError as e:
         logger.error(

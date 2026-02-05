@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from aioresponses import aioresponses
@@ -1110,14 +1110,27 @@ class TestK8sClient:
         k8s_client.data_sanitizer = DataSanitizer()
 
         with aioresponses() as aio_mock_response:
-            # Mock the API call to fetch pod logs.
-            mock_url = (
+            # Mock both current and previous logs (new behavior: fetch both in parallel)
+            current_url = (
                 f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
             )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Mock current logs (success)
             aio_mock_response.get(
-                mock_url,
+                current_url,
                 body="\n".join(mock_response_lines),
                 status=HTTPStatus.OK,
+            )
+
+            # Mock previous logs (not available - common case)
+            aio_mock_response.get(
+                previous_url,
+                body='{"message": "previous terminated container \\"app\\" in pod \\"test-pod\\" not found"}',
+                status=HTTPStatus.BAD_REQUEST,
             )
 
             # when
@@ -1125,9 +1138,1624 @@ class TestK8sClient:
                 name="test-pod",
                 namespace="default",
                 container_name="app",
-                is_terminated=False,
                 tail_limit=100,
             )
 
             # then
-            assert result == expected_sanitized_logs
+            # New format: returns PodLogsResult (Pydantic model)
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Should show current logs successfully
+            current_logs = result.logs.current_pod
+            assert all(line in current_logs for line in expected_sanitized_logs)
+
+            # Should show previous logs not available (error message)
+            previous_logs = result.logs.previous_pod
+            assert "not found" in previous_logs.lower() or "not available" in previous_logs.lower()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "first_call_error_status, first_call_error_msg, second_call_logs, expected_logs",
+        [
+            # Test case: fallback to previous after container not found error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "container my-container not found in pod test-pod"}',
+                ["previous log line 1", "previous log line 2"],
+                ["previous log line 1", "previous log line 2"],
+            ),
+            # Test case: fallback after CrashLoopBackOff
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod is in CrashLoopBackOff state"}',
+                ["crash log 1", "crash log 2"],
+                ["crash log 1", "crash log 2"],
+            ),
+            # Test case: fallback after pod terminated error
+            (
+                HTTPStatus.BAD_REQUEST,
+                '{"message": "pod has terminated"}',
+                ["terminated log 1"],
+                ["terminated log 1"],
+            ),
+        ],
+    )
+    async def test_fetch_pod_logs_both_current_and_previous(
+        self, k8s_client, first_call_error_status, first_call_error_msg, second_call_logs, expected_logs
+    ):
+        """Test that fetch_pod_logs fetches both current and previous logs in parallel."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            # Current logs fail
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=first_call_error_msg,
+                status=first_call_error_status,
+            )
+
+            # Previous logs succeed
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body="\n".join(second_call_logs),
+                status=HTTPStatus.OK,
+            )
+
+            # Mock diagnostic context gathering - will be shown inline when current logs fail
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value={"events": "Container is in CrashLoopBackOff state"}
+            )
+
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Should show current logs not available with diagnostic info
+            current_logs = result.logs.current_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Container is in CrashLoopBackOff state" in diagnostic_str
+
+            # Should show previous logs successfully
+            previous_logs = result.logs.previous_pod
+            assert all(line in previous_logs for line in expected_logs)
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_both_fail_with_diagnostics(self, k8s_client):
+        """Test that when both current and previous logs fail, we get diagnostics."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        current_error_msg = '{"message": "container not ready"}'
+        previous_error_msg = '{"message": "no previous container"}'
+
+        with aioresponses() as aio_mock_response:
+            # Current logs fail
+            current_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(
+                current_logs_url,
+                body=current_error_msg,
+                status=HTTPStatus.BAD_REQUEST,
+            )
+
+            # Previous logs also fail
+            previous_logs_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(
+                previous_logs_url,
+                body=previous_error_msg,
+                status=HTTPStatus.NOT_FOUND,
+            )
+
+            # Mock the diagnostic context gathering methods
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value={"events": "Pod diagnostic info here"}
+            )
+
+            # when: should return diagnostic info instead of raising
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both current and previous logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Pod diagnostic info here" in diagnostic_str
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "retryable_status, error_message",
+        [
+            (HTTPStatus.TOO_MANY_REQUESTS, '{"message": "rate limit exceeded"}'),
+            (HTTPStatus.INTERNAL_SERVER_ERROR, '{"message": "internal server error"}'),
+            (HTTPStatus.BAD_GATEWAY, '{"message": "bad gateway"}'),
+            (HTTPStatus.SERVICE_UNAVAILABLE, '{"message": "service unavailable"}'),
+            (HTTPStatus.GATEWAY_TIMEOUT, '{"message": "gateway timeout"}'),
+        ],
+    )
+    async def test_fetch_pod_logs_retry_on_retryable_errors(
+        self, k8s_client, retryable_status, error_message, monkeypatch
+    ):
+        """Test that fetch_pod_logs retries on retryable errors (5xx, 429)."""
+        # Mock asyncio.sleep to avoid waiting in tests
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        success_logs = ["log line 1", "log line 2"]
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Current logs: First two attempts fail with retryable error, third succeeds
+            aio_mock_response.get(current_url, body=error_message, status=retryable_status)
+            aio_mock_response.get(current_url, body=error_message, status=retryable_status)
+            aio_mock_response.get(current_url, body="\n".join(success_logs), status=HTTPStatus.OK)
+
+            # Previous logs: Not available (common case)
+            aio_mock_response.get(
+                previous_url,
+                body='{"message": "no previous container"}',
+                status=HTTPStatus.BAD_REQUEST,
+            )
+
+            # when
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then
+            assert result is not None
+            assert hasattr(result, "logs")
+
+            # Current logs should succeed after retries
+            current_logs = result.logs.current_pod
+            assert all(line in current_logs for line in success_logs)
+
+            # Should have slept twice (after first and second failures)
+            assert mock_sleep.call_count == 2  # noqa: PLR2004
+            # Verify exponential backoff: 1s, 2s
+            assert mock_sleep.call_args_list[0][0][0] == 1  # noqa: PLR2004
+            assert mock_sleep.call_args_list[1][0][0] == 2  # noqa: PLR2004
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_no_retry_on_non_retryable_errors(self, k8s_client, monkeypatch):
+        """Test that fetch_pod_logs does NOT retry on non-retryable errors (4xx except 429)."""
+        # Mock asyncio.sleep to verify it's not called
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        error_message = '{"message": "pod not found"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Both current and previous fail with non-retryable 404 error
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+
+            # when: should return diagnostic info instead of raising
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
+
+            # Should NOT have retried on either call (no sleep calls)
+            mock_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_max_retries_exceeded(self, k8s_client, monkeypatch):
+        """Test that fetch_pod_logs returns diagnostics after max retries."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        error_message = '{"message": "service unavailable"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Current logs: all three attempts fail
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+
+            # Previous logs: all three attempts also fail
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+
+            # when: should return diagnostic info after max retries
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or "failed" in current_logs.lower() or len(current_logs) == 0
+            assert (
+                "failed" in previous_logs.lower() or "not available" in previous_logs.lower() or len(previous_logs) == 0
+            )
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
+
+            # Should have slept 4 times total (2 for current retries + 2 for previous retries, running in parallel)
+            assert mock_sleep.call_count == 4  # noqa: PLR2004
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "error_status, error_message",
+        [
+            # Authentication error - should raise immediately
+            (HTTPStatus.UNAUTHORIZED, '{"message": "authentication error when accessing pod logs"}'),
+            # Authorization error - should raise immediately
+            (HTTPStatus.FORBIDDEN, '{"message": "forbidden: user cannot access container logs"}'),
+        ],
+    )
+    async def test_fetch_pod_logs_raises_auth_errors_immediately(
+        self, k8s_client, error_status, error_message, monkeypatch
+    ):
+        """Test that authentication/authorization errors (401/403) are raised immediately, not returned in result."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # For auth errors, only 1 attempt for both (not retryable)
+            aio_mock_response.get(current_url, body=error_message, status=error_status)
+            aio_mock_response.get(previous_url, body=error_message, status=error_status)
+
+            # when: Should raise K8sClientError
+            with pytest.raises(K8sClientError) as exc_info:
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    tail_limit=100,
+                )
+
+            # then: verify error has correct status code
+            assert exc_info.value.status_code == error_status
+            # Should not retry auth errors
+            assert mock_sleep.call_count == 0
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "error_status, error_message, is_retryable",
+        [
+            # Resource issue - should NOT fallback, NOT retryable
+            (HTTPStatus.BAD_REQUEST, '{"message": "insufficient resources to schedule pod"}', False),
+            # Generic pod not found - should NOT fallback, NOT retryable
+            (HTTPStatus.NOT_FOUND, '{"message": "pod test-pod not found in namespace default"}', False),
+            # API server error - should NOT fallback, but IS retryable (5xx)
+            (HTTPStatus.INTERNAL_SERVER_ERROR, '{"message": "error processing request"}', True),
+        ],
+    )
+    async def test_fetch_pod_logs_no_fallback_for_non_container_errors(
+        self, k8s_client, error_status, error_message, is_retryable, monkeypatch
+    ):
+        """Test that fallback does NOT trigger for errors unrelated to container state."""
+        # Mock asyncio.sleep to avoid waiting
+        mock_sleep = AsyncMock()
+        monkeypatch.setattr("asyncio.sleep", mock_sleep)
+
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            if is_retryable:
+                # For retryable errors (5xx), mock 3 attempts for both current and previous
+                for _ in range(3):
+                    aio_mock_response.get(current_url, body=error_message, status=error_status)
+                    aio_mock_response.get(previous_url, body=error_message, status=error_status)
+            else:
+                # For non-retryable errors, only 1 attempt for both
+                aio_mock_response.get(current_url, body=error_message, status=error_status)
+                aio_mock_response.get(previous_url, body=error_message, status=error_status)
+
+            # Mock diagnostic context gathering
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+
+            # when: Should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic information is in result
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+
+            # Previous logs status depends on error code
+            if error_status in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                assert "not available" in previous_logs.lower() or "not been restarted" in previous_logs.lower()
+            else:
+                assert "failed" in previous_logs.lower() or "not available" in previous_logs.lower()
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic_str = str(result.diagnostic_context)
+            assert "Diagnostic info" in diagnostic_str
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_includes_diagnostic_context_on_failure(self, k8s_client, monkeypatch):
+        """Test that diagnostic context (events, status) is included when logs fail."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock pod events
+        mock_events = [
+            {
+                "reason": "Failed",
+                "message": "Back-off restarting failed container",
+                "count": 5,
+            },
+            {
+                "reason": "Killing",
+                "message": "Stopping container app",
+                "count": 1,
+            },
+        ]
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
+
+        # Mock pod description (must include events since describe_resource now returns them)
+        mock_pod_description = {
+            "status": {
+                "containerStatuses": [
+                    {
+                        "name": "app",
+                        "state": {
+                            "waiting": {
+                                "reason": "CrashLoopBackOff",
+                                "message": "container failed to start",
+                            }
+                        },
+                        "restartCount": 5,
+                        "lastState": {
+                            "terminated": {
+                                "reason": "Error",
+                                "exitCode": 1,
+                            }
+                        },
+                    }
+                ]
+            },
+            "events": mock_events,
+        }
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+
+        error_message = '{"message": "container app is in CrashLoopBackOff state"}'
+
+        with aioresponses() as aio_mock_response:
+            # Both current and previous logs fail
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            previous_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100&previous=true"
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # when: should return diagnostic context
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify diagnostic context is included
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context with events and container statuses
+            assert result.diagnostic_context is not None
+            diagnostic = result.diagnostic_context
+
+            # Check events
+            assert hasattr(diagnostic, "events")
+            events_str = diagnostic.events
+            assert "Back-off restarting failed container" in events_str
+
+            # Check container statuses
+            assert hasattr(diagnostic, "container_statuses")
+            container_statuses = diagnostic.container_statuses
+            assert "app" in str(container_statuses)
+            assert "CrashLoopBackOff" in str(container_statuses) or "Waiting" in str(container_statuses)
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_diagnostic_context_with_failed_init_containers(self, k8s_client, monkeypatch):
+        """Test diagnostic context includes failed init containers."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock pod events (empty for this test)
+        mock_events = []
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
+
+        # Mock pod description with failed init container (must include events)
+        expected_init_exit_code = 2
+        mock_pod_description = {
+            "status": {
+                "containerStatuses": [
+                    {
+                        "name": "app",
+                        "state": {"waiting": {"reason": "PodInitializing"}},
+                        "restartCount": 0,
+                    }
+                ],
+                "initContainerStatuses": [
+                    {
+                        "name": "init-db",
+                        "ready": False,
+                        "state": {
+                            "terminated": {
+                                "reason": "Error",
+                                "exitCode": expected_init_exit_code,
+                            }
+                        },
+                    }
+                ],
+            },
+            "events": mock_events,
+        }
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+
+        error_message = '{"message": "container is waiting to start"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            previous_url = f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100&previous=true"
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # when: should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: verify init container info is included
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context
+            assert result.diagnostic_context is not None
+            diagnostic = result.diagnostic_context
+
+            # Check for init container information in the diagnostic context
+            assert hasattr(diagnostic, "init_container_statuses")
+            assert "init-db" in diagnostic.init_container_statuses
+            assert diagnostic.init_container_statuses["init-db"].state == "Terminated"
+            assert diagnostic.init_container_statuses["init-db"].exit_code == expected_init_exit_code
+
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_diagnostic_context_handles_missing_data(self, k8s_client, monkeypatch):
+        """Test diagnostic context handles cases where events/status are unavailable."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        # Mock empty/missing data
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=None))
+
+        error_message = '{"message": "pod not found"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=app&tailLines=100"
+            )
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=app&tailLines=100&previous=true"
+            )
+
+            # Both fail
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
+
+            # when: should return diagnostic info
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="app",
+                tail_limit=100,
+            )
+
+            # then: should still have diagnostic section, even if empty
+            assert result is not None
+            assert hasattr(result, "logs")
+            assert hasattr(result, "diagnostic_context")
+
+            # Both logs should be error messages or empty
+            current_logs = result.logs.current_pod
+            previous_logs = result.logs.previous_pod
+            assert "not available" in current_logs.lower() or len(current_logs) == 0
+            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
+
+            # Should have diagnostic context, even if minimal
+            assert result.diagnostic_context is not None
+
+
+class TestParseContainerState:
+    """Test _parse_container_state helper method."""
+
+    @pytest.mark.asyncio
+    async def test_waiting_state_with_reason_and_message(self):
+        """Test parsing waiting state with reason and message."""
+        # Given: Container in waiting state with reason and message
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "waiting": {
+                    "reason": "CrashLoopBackOff",
+                    "message": "back-off 5m0s restarting failed container",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns waiting state with all fields
+            assert state_str == "Waiting"
+            assert reason == "CrashLoopBackOff"
+            assert message == "back-off 5m0s restarting failed container"
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_terminated_state_with_all_fields(self):
+        """Test parsing terminated state with reason, message, and exit code."""
+        # Given: Container in terminated state with all fields
+        expected_exit_code = 137
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "terminated": {
+                    "reason": "OOMKilled",
+                    "message": "Container exceeded memory limit",
+                    "exitCode": expected_exit_code,
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns terminated with reason, message, and exit code
+            assert state_str == "Terminated"
+            assert reason == "OOMKilled"
+            assert message == "Container exceeded memory limit"
+            assert exit_code == expected_exit_code
+
+    @pytest.mark.asyncio
+    async def test_running_state(self):
+        """Test parsing running state."""
+        # Given: Container in running state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {"running": {}}
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns running with no additional details
+            assert state_str == "Running"
+            assert reason is None
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_unknown_state_empty_dict(self):
+        """Test parsing unknown/empty state."""
+        # Given: Empty container state dictionary
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {}
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns unknown with no details
+            assert state_str == "Unknown"
+            assert reason is None
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_waiting_state_missing_message(self):
+        """Test parsing waiting state when message is missing."""
+        # Given: Container waiting with reason but no message
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "waiting": {
+                    "reason": "ImagePullBackOff",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns waiting with reason and no message
+            assert state_str == "Waiting"
+            assert reason == "ImagePullBackOff"
+            assert message is None
+            assert exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_terminated_state_missing_optional_fields(self):
+        """Test parsing terminated state when optional fields are missing."""
+        # Given: Container terminated with minimal fields
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            state = {
+                "terminated": {
+                    "reason": "Error",
+                }
+            }
+
+            # When: Parse the container state
+            state_str, reason, message, exit_code = k8s_client._parse_container_state(state)
+
+            # Then: Returns terminated with reason only
+            assert state_str == "Terminated"
+            assert reason == "Error"
+            assert message is None
+            assert exit_code is None
+
+
+class TestFormatEventsForDiagnostic:
+    """Test _format_events_for_diagnostic helper method."""
+
+    @pytest.mark.asyncio
+    async def test_empty_event_list(self):
+        """Test formatting with empty event list."""
+        # Given: Empty event list
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = []
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns no events found message
+            assert result == "No recent pod events found."
+
+    @pytest.mark.asyncio
+    async def test_single_event_formatting(self):
+        """Test formatting a single event."""
+        # Given: Single event with count of 1
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "Started",
+                    "message": "Started container app",
+                    "count": 1,
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event without count display
+            assert "Recent Pod Events:" in result
+            assert "[Started] Started container app" in result
+            assert "(x1)" not in result  # Count of 1 should not be shown
+
+    @pytest.mark.asyncio
+    async def test_event_with_high_count(self):
+        """Test formatting event with count > 1."""
+        # Given: Event with count greater than 1
+        expected_count = 15
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "BackOff",
+                    "message": "Back-off restarting failed container",
+                    "count": expected_count,
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event with count displayed
+            assert f"[BackOff] (x{expected_count}) Back-off restarting failed container" in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_caps_at_ten(self):
+        """Test that event display is capped at 10 even with large tail_limit."""
+        # Given: 20 events with large tail limit
+        expected_total_events = 20
+        expected_line_count = 11  # header + 10 events
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            tail_limit = 1000
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns only 10 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            # Most recent events should be shown (last 10, reversed)
+            assert "[Event19]" in result
+            assert "[Event10]" in result
+            # Older events should not be shown
+            assert "[Event9]" not in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_respects_tail_limit_when_small(self):
+        """Test that event limit respects tail_limit when it's less than 10."""
+        # Given: 10 events with small tail limit
+        expected_total_events = 10
+        expected_tail_limit = 3
+        expected_line_count = 4  # header + 3 events
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+
+            # When: Format events with tail limit of 3
+            result = k8s_client._format_events_for_diagnostic(events, expected_tail_limit)
+
+            # Then: Returns only 3 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            # Should show last 3 events
+            assert "[Event9]" in result
+            assert "[Event8]" in result
+            assert "[Event7]" in result
+            assert "[Event6]" not in result
+
+    @pytest.mark.asyncio
+    async def test_event_with_missing_fields(self):
+        """Test formatting event with missing reason, message, and count."""
+        # Given: Event with all fields missing
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    # Missing all fields
+                }
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns formatted event with default values
+            assert "[Unknown]" in result  # Default reason
+            assert "Recent Pod Events:" in result
+
+    @pytest.mark.asyncio
+    async def test_multiple_events_shown_in_reverse_order(self):
+        """Test that events are displayed in reverse chronological order (most recent first)."""
+        # Given: Multiple events in chronological order
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {"reason": "Event1", "message": "Message 1", "count": 1},
+                {"reason": "Event2", "message": "Message 2", "count": 1},
+                {"reason": "Event3", "message": "Message 3", "count": 1},
+            ]
+            tail_limit = 100
+
+            # When: Format events for diagnostic
+            result = k8s_client._format_events_for_diagnostic(events, tail_limit)
+
+            # Then: Returns events in reverse order
+            lines = result.split("\n")
+            # Check that Event3 (most recent) appears before Event1 (oldest)
+            event3_index = next(i for i, line in enumerate(lines) if "Event3" in line)
+            event1_index = next(i for i, line in enumerate(lines) if "Event1" in line)
+            assert event3_index < event1_index
+
+
+class TestFormatPodEventsForDiagnostic:
+    """Test _format_pod_events_for_diagnostic method."""
+
+    @pytest.mark.asyncio
+    async def test_no_events(self, monkeypatch):
+        """Test formatting when no events are available."""
+        # Given: No events available for pod
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+
+            # When: Format pod events for diagnostic
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+
+            # Then: Returns no events found message
+            assert result == "No recent pod events found."
+
+    @pytest.mark.asyncio
+    async def test_single_event(self, monkeypatch):
+        """Test formatting with a single event."""
+        # Given: Pod with single event
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "Started",
+                    "message": "Started container app",
+                    "count": 1,
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+
+            # When: Format pod events for diagnostic
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+
+            # Then: Returns formatted single event
+            assert "Recent Pod Events:" in result
+            assert "[Started] Started container app" in result
+
+    @pytest.mark.asyncio
+    async def test_event_with_count_greater_than_one(self, monkeypatch):
+        """Test formatting when event has count > 1."""
+        # Given: Pod event with count greater than 1
+        expected_event_count = 5
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": "BackOff",
+                    "message": "Back-off restarting failed container",
+                    "count": expected_event_count,
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+
+            # When: Format pod events for diagnostic
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+
+            # Then: Returns event with count displayed
+            assert f"[BackOff] (x{expected_event_count}) Back-off restarting failed container" in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_capped_at_ten(self, monkeypatch):
+        """Test that event limit is capped at 10 even with large tail_limit."""
+        # Given: 20 pod events with large tail limit
+        expected_total_events = 20
+        expected_line_count = 11  # header + 10 events
+        expected_tail_limit = 1000
+        expected_oldest_shown_event_index = 10
+        expected_newest_shown_event_index = 19
+        expected_oldest_hidden_event_index = 9
+        expected_newest_hidden_event_index = 0
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+
+            # When: Format pod events for diagnostic
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
+
+            # Then: Returns only 10 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            assert lines[0] == "Recent Pod Events:"
+            # Most recent events should be shown
+            assert f"[Event{expected_newest_shown_event_index}]" in result
+            assert f"[Event{expected_oldest_shown_event_index}]" in result
+            # Older events should not be shown
+            assert f"[Event{expected_oldest_hidden_event_index}]" not in result
+            assert f"[Event{expected_newest_hidden_event_index}]" not in result
+
+    @pytest.mark.asyncio
+    async def test_event_limit_respects_tail_limit(self, monkeypatch):
+        """Test that event limit respects tail_limit when it's less than 10."""
+        # Given: 10 pod events with small tail limit
+        expected_total_events = 10
+        expected_tail_limit = 3
+        expected_line_count = 4  # header + 3 events
+        expected_newest_event_index = 9
+        expected_middle_event_index = 8
+        expected_oldest_shown_event_index = 7
+        expected_hidden_event_index = 6
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    "reason": f"Event{i}",
+                    "message": f"Message {i}",
+                    "count": 1,
+                }
+                for i in range(expected_total_events)
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+
+            # When: Format pod events with tail limit of 3
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
+
+            # Then: Returns only 3 most recent events
+            lines = result.split("\n")
+            assert len(lines) == expected_line_count
+            assert f"[Event{expected_newest_event_index}]" in result
+            assert f"[Event{expected_middle_event_index}]" in result
+            assert f"[Event{expected_oldest_shown_event_index}]" in result
+            assert f"[Event{expected_hidden_event_index}]" not in result
+
+    @pytest.mark.asyncio
+    async def test_missing_event_fields(self, monkeypatch):
+        """Test formatting handles missing event fields gracefully."""
+        # Given: Pod event with missing fields
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            events = [
+                {
+                    # Missing reason, message, and count
+                }
+            ]
+            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+
+            # When: Format pod events for diagnostic
+            result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
+
+            # Then: Returns event with default values
+            assert "[Unknown]" in result
+
+
+class TestFormatContainerStatusesStructured:
+    """Test _format_container_statuses_structured method."""
+
+    @pytest.mark.asyncio
+    async def test_no_container_statuses(self):
+        """Test when pod has no container statuses."""
+        # Given: Pod with no container statuses
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+        pod_description = {"status": {}}
+
+        # When: Format container statuses structured
+        result = k8s_client._format_container_statuses_structured(pod_description)
+
+        # Then: Returns None
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_container_waiting_state(self):
+        """Test container in waiting state."""
+        # Given: Container in waiting state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+        pod_description = {
+            "status": {
+                "containerStatuses": [
+                    {
+                        "name": "app",
+                        "state": {
+                            "waiting": {
+                                "reason": "PodInitializing",
+                                "message": "waiting for init containers",
+                            }
+                        },
+                        "restartCount": 0,
+                    }
+                ]
+            }
+        }
+
+        # When: Format container statuses structured
+        result = k8s_client._format_container_statuses_structured(pod_description)
+
+        # Then: Returns structured waiting status with details
+        assert result is not None
+        assert "app" in result
+        assert result["app"].state == "Waiting"
+        assert result["app"].reason == "PodInitializing"
+        assert result["app"].message == "waiting for init containers"
+        assert result["app"].restart_count == 0
+        assert result["app"].exit_code is None
+
+    @pytest.mark.asyncio
+    async def test_container_terminated_state(self):
+        """Test container in terminated state."""
+        # Given: Container in terminated state
+        expected_exit_code = 1
+        expected_restart_count = 3
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {
+                                "terminated": {
+                                    "reason": "Error",
+                                    "message": "container exited with error",
+                                    "exitCode": expected_exit_code,
+                                }
+                            },
+                            "restartCount": expected_restart_count,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format container statuses structured
+            result = k8s_client._format_container_statuses_structured(pod_description)
+
+            # Then: Returns structured terminated status with exit code
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Terminated"
+            assert result["app"].reason == "Error"
+            assert result["app"].message == "container exited with error"
+            assert result["app"].exit_code == expected_exit_code
+            assert result["app"].restart_count == expected_restart_count
+
+    @pytest.mark.asyncio
+    async def test_container_running_state(self):
+        """Test container in running state."""
+        # Given: Container in running state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format container statuses structured
+            result = k8s_client._format_container_statuses_structured(pod_description)
+
+            # Then: Returns structured running status
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Running"
+            assert result["app"].reason is None
+            assert result["app"].restart_count == 0
+
+    @pytest.mark.asyncio
+    async def test_container_with_last_termination_state(self):
+        """Test container with last termination state."""
+        # Given: Container with previous termination history
+        expected_restart_count = 2
+        expected_oom_exit_code = 137
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": expected_restart_count,
+                            "lastState": {
+                                "terminated": {
+                                    "reason": "OOMKilled",
+                                    "exitCode": expected_oom_exit_code,
+                                }
+                            },
+                        }
+                    ]
+                }
+            }
+
+            # When: Format container statuses structured
+            result = k8s_client._format_container_statuses_structured(pod_description)
+
+            # Then: Returns status with last termination details
+            assert result is not None
+            assert "app" in result
+            assert result["app"].state == "Running"
+            assert result["app"].restart_count == expected_restart_count
+            assert result["app"].last_termination_reason == "OOMKilled"
+            assert result["app"].last_exit_code == expected_oom_exit_code
+
+    @pytest.mark.asyncio
+    async def test_multiple_containers(self):
+        """Test pod with multiple containers."""
+        # Given: Pod with multiple containers
+        expected_container_count = 2
+        expected_sidecar_restart_count = 5
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            "name": "app",
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        },
+                        {
+                            "name": "sidecar",
+                            "state": {
+                                "waiting": {
+                                    "reason": "CrashLoopBackOff",
+                                }
+                            },
+                            "restartCount": expected_sidecar_restart_count,
+                        },
+                    ]
+                }
+            }
+
+            # When: Format container statuses structured
+            result = k8s_client._format_container_statuses_structured(pod_description)
+
+            # Then: Returns status for each container
+            assert result is not None
+            assert len(result) == expected_container_count
+            assert "app" in result
+            assert "sidecar" in result
+            assert result["app"].state == "Running"
+            assert result["sidecar"].state == "Waiting"
+            assert result["sidecar"].reason == "CrashLoopBackOff"
+
+    @pytest.mark.asyncio
+    async def test_missing_container_name(self):
+        """Test container with missing name defaults to 'unknown'."""
+        # Given: Container status with missing name
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "containerStatuses": [
+                        {
+                            # Missing name
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format container statuses structured
+            result = k8s_client._format_container_statuses_structured(pod_description)
+
+            # Then: Returns status with unknown as name
+            assert result is not None
+            assert "unknown" in result
+
+
+class TestFormatInitContainerStatusesStructured:
+    """Test _format_init_container_statuses_structured method."""
+
+    @pytest.mark.asyncio
+    async def test_no_init_container_statuses(self):
+        """Test when pod has no init container statuses."""
+        # Given: Pod with no init container statuses
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {"status": {}}
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns None
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_init_container_waiting_state(self):
+        """Test init container in waiting state."""
+        # Given: Init container in waiting state
+        expected_restart_count = 3
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": False,
+                            "state": {
+                                "waiting": {
+                                    "reason": "CrashLoopBackOff",
+                                    "message": "back-off 20s restarting failed container",
+                                }
+                            },
+                            "restartCount": expected_restart_count,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns structured waiting status with details
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is False
+            assert result["init-db"].state == "Waiting"
+            assert result["init-db"].reason == "CrashLoopBackOff"
+            assert result["init-db"].message == "back-off 20s restarting failed container"
+            assert result["init-db"].restart_count == expected_restart_count
+
+    @pytest.mark.asyncio
+    async def test_init_container_terminated_state(self):
+        """Test init container in terminated state."""
+        # Given: Init container in terminated state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": True,
+                            "state": {
+                                "terminated": {
+                                    "reason": "Completed",
+                                    "exitCode": 0,
+                                }
+                            },
+                            "restartCount": 0,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns structured terminated status with exit code
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is True
+            assert result["init-db"].state == "Terminated"
+            assert result["init-db"].reason == "Completed"
+            assert result["init-db"].exit_code == 0
+
+    @pytest.mark.asyncio
+    async def test_init_container_running_state(self):
+        """Test init container in running state."""
+        # Given: Init container in running state
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": False,
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns structured running status
+            assert result is not None
+            assert "init-db" in result
+            assert result["init-db"].ready is False
+            assert result["init-db"].state == "Running"
+            assert result["init-db"].reason is None
+
+    @pytest.mark.asyncio
+    async def test_multiple_init_containers(self):
+        """Test pod with multiple init containers."""
+        # Given: Pod with multiple init containers
+        expected_init_container_count = 2
+        expected_cache_restart_count = 2
+
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            "name": "init-db",
+                            "ready": True,
+                            "state": {"terminated": {"reason": "Completed", "exitCode": 0}},
+                            "restartCount": 0,
+                        },
+                        {
+                            "name": "init-cache",
+                            "ready": False,
+                            "state": {"waiting": {"reason": "CrashLoopBackOff"}},
+                            "restartCount": expected_cache_restart_count,
+                        },
+                    ]
+                }
+            }
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns status for each init container
+            assert result is not None
+            assert len(result) == expected_init_container_count
+            assert "init-db" in result
+            assert "init-cache" in result
+            assert result["init-db"].ready is True
+            assert result["init-db"].state == "Terminated"
+            assert result["init-cache"].ready is False
+            assert result["init-cache"].state == "Waiting"
+
+    @pytest.mark.asyncio
+    async def test_missing_init_container_name(self):
+        """Test init container with missing name defaults to 'unknown'."""
+        # Given: Init container status with missing name
+        with patch("services.k8s.K8sClient.__init__", return_value=None):
+            k8s_client = K8sClient()
+            pod_description = {
+                "status": {
+                    "initContainerStatuses": [
+                        {
+                            # Missing name
+                            "ready": False,
+                            "state": {"running": {}},
+                            "restartCount": 0,
+                        }
+                    ]
+                }
+            }
+
+            # When: Format init container statuses structured
+            result = k8s_client._format_init_container_statuses_structured(pod_description)
+
+            # Then: Returns status with unknown as name
+            assert result is not None
+            assert "unknown" in result
