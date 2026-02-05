@@ -62,13 +62,11 @@ class TestK8sAPIErrorHandling:
                     name="test-pod",
                     namespace="default",
                     container_name="app",
-                    is_terminated=False,
                 ),
                 "tool_input": lambda req, client: {
                     "name": req.name,
                     "namespace": req.namespace,
                     "container_name": req.container_name,
-                    "is_terminated": req.is_terminated,
                     "k8s_client": client,
                 },
             },
