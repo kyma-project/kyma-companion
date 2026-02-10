@@ -1,6 +1,6 @@
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
+from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
 
 from utils import settings
 from utils.config import ModelConfig
@@ -34,6 +34,6 @@ class OpenAIModel:
         return self._name
 
     @property
-    def llm(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GoogleGenAIClient:
         """Returns the instance of OpenAI model."""
         return self._llm

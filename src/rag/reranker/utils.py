@@ -1,7 +1,7 @@
 import json
 
-from langchain.load import dumpd
 from langchain_core.documents import Document
+from langchain_core.load import dumpd
 
 TMP_DOC_ID_PREFIX = "tmp-id-"
 
