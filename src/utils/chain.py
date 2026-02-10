@@ -1,6 +1,6 @@
 from typing import Any
 
-from langchain.schema.runnable import RunnableConfig, RunnableSequence
+from langchain_core.runnables import RunnableConfig, RunnableSequence
 from tenacity import (
     retry,
     stop_after_attempt,

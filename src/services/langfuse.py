@@ -1,11 +1,15 @@
-from typing import Any, Protocol
+"""Langfuse tracing service for LangGraph."""
+
+from typing import Any
 
 import scrubadub
-from aiohttp import BasicAuth
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, ToolMessage
-from langfuse.callback import CallbackHandler
+from langfuse import Langfuse, get_client
+from langfuse.langchain import CallbackHandler
 
 from agents.common.state import GraphInput
+from utils.logging import get_logger
 from utils.settings import (
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
@@ -17,70 +21,63 @@ from utils.settings import (
 from utils.singleton_meta import SingletonMeta
 from utils.utils import string_to_bool
 
+logger = get_logger(__name__)
+
 REDACTED = "REDACTED"
 
 
-class ILangfuseService(Protocol):
-    """Service interface"""
-
-    def handler(self) -> CallbackHandler:
-        """Returns the callback handler"""
-        ...
-
-    def masking_production_data(self, data: str) -> str:
-        """
-        masking_production_data removes sensitive information from traces
-        if Kyma-Companion runs in production mode (LANGFUSE_DEBUG_MODE=false).
-        """
-        ...
-
-
-def get_langfuse_metadata(user_id: str, session_id: str) -> dict:
+def get_langfuse_metadata(user_id: str, session_id: str, tags: list[str]) -> dict:
     """
     Returns metadata for Langfuse traces.
     Args:
         user_id (str): The user ID.
         session_id (str): The session ID.
     """
+    # check CallbackHandler._parse_langfuse_trace_attributes_from_metadata for possible keys.
     return {
         "langfuse_session_id": session_id,
         "langfuse_user_id": user_id,
+        "langfuse_tags": tags,
     }
 
 
 class LangfuseService(metaclass=SingletonMeta):
-    """
-    A class to interact with the Langfuse API.
-
-    Attributes:
-        base_url (str): The base URL for the Langfuse API, set to LANGFUSE_HOST.
-        public_key (str): The public key used for authentication, set to LANGFUSE_PUBLIC_KEY.
-        secret_key (str): The secret key used for authentication, set to LANGFUSE_SECRET_KEY.
-        auth (BasicAuth): An authentication object created using the public and secret keys.
-        masking_mode (str): Data masking options, set LANGFUSE_MASKING_MODE.
-        _handler (CallbackHandler) : A callback handler for langfuse.
-    """
+    """Service for Langfuse tracing integration with LangGraph."""
 
     def __init__(self):
-        self.base_url = str(LANGFUSE_HOST)
-        self.public_key = str(LANGFUSE_PUBLIC_KEY)
-        self.secret_key = str(LANGFUSE_SECRET_KEY)
-        self.auth = BasicAuth(self.public_key, self.secret_key)
-        self._handler = CallbackHandler(
-            secret_key=self.secret_key,
-            public_key=self.public_key,
-            host=self.base_url,
-            enabled=string_to_bool(str(LANGFUSE_ENABLED)),
-            mask=self.masking_production_data,
-        )
+        """Initialize the Langfuse service."""
+        self.enabled = string_to_bool(str(LANGFUSE_ENABLED.lower()))
         self.masking_mode = LANGFUSE_MASKING_MODE
         self.data_scrubber = scrubadub.Scrubber()
         self.data_scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
-    @property
-    def handler(self) -> CallbackHandler:
-        """Returns the callback handler"""
-        return self._handler
+        if self.enabled:
+            # Create/Configure Langfuse client (once at startup)
+            Langfuse(public_key=LANGFUSE_PUBLIC_KEY, secret_key=LANGFUSE_SECRET_KEY, base_url=LANGFUSE_HOST)
+            # Access singleton instance and check authentication.
+            langfuse = get_client()
+            if langfuse.auth_check():
+                logger.info("Langfuse client is authenticated and ready with host: {LANGFUSE_HOST}")
+            else:
+                logger.warning("Langfuse is enabled but Authentication failed. Disabling Langfuse.")
+                self.enabled = False
+
+    def get_callback_handler(
+        self,
+    ) -> BaseCallbackHandler | None:
+        """Get a Langfuse callback handler for tracing.
+
+        Returns:
+            A Langfuse CallbackHandler if enabled, None otherwise.
+        """
+        if not self.enabled:
+            return None
+
+        try:
+            return CallbackHandler()
+        except Exception as e:
+            logger.error(f"Failed to create Langfuse callback handler: {e}")
+            return None
 
     def masking_production_data(self, data: Any) -> Any:
         """

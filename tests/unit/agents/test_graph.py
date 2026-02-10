@@ -99,7 +99,7 @@ def companion_graph(
 
 
 def create_messages_json(content, role, node) -> str:
-    json_str = f"""{{"content": "{content}", "additional_kwargs": {{}}, "response_metadata": {{}}, "type": "{role}", "name": null, "id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}}"""  # noqa
+    json_str = f"""{{"content": "{content}", "additional_kwargs": {{}}, "response_metadata": {{}}, "type": "{role}", "name": null, "id": null, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}}"""  # noqa
     return json_str
 
 

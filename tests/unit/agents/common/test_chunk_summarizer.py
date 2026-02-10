@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT

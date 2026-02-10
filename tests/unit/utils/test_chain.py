@@ -2,8 +2,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from langchain.chains.base import Chain
-from langchain.schema.runnable import RunnableConfig
+from langchain_core.runnables import Runnable, RunnableConfig
 
 from utils.chain import ainvoke_chain
 
@@ -11,7 +10,7 @@ from utils.chain import ainvoke_chain
 @pytest.fixture
 def mock_chain():
     """Fixture for creating a mock LangChain chain."""
-    chain = Mock(spec=Chain)
+    chain = Mock(spec=Runnable)
     chain.ainvoke = AsyncMock()
     return chain
 

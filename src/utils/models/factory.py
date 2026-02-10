@@ -5,7 +5,7 @@ from typing import Protocol, cast, runtime_checkable
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI, OpenAIEmbeddings
-from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
+from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
 from langchain_core.embeddings import Embeddings
 
 from utils.config import Config
@@ -59,7 +59,7 @@ class IModel(Protocol):
     """The name of the model."""
 
     @property
-    def llm(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GoogleGenAIClient:
         """The instance of the model."""
         ...
 

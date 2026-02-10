@@ -3,8 +3,8 @@ from typing import Any, Protocol
 from uuid import UUID
 
 import pydantic
-from langchain.callbacks.base import AsyncCallbackHandler
-from langchain.schema import LLMResult
+from langchain_core.callbacks import AsyncCallbackHandler
+from langchain_core.outputs import LLMResult
 from pydantic import BaseModel
 
 from agents.memory.async_redis_checkpointer import IUsageMemory

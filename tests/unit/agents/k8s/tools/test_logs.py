@@ -1,12 +1,21 @@
 import json
+from typing import TypedDict
 from unittest.mock import AsyncMock
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT, fetch_pod_logs_tool
 from services.k8s import IK8sClient
+
+
+class ToolTestState(TypedDict):
+    """State for testing tools with InjectedState."""
+
+    messages: list[BaseMessage]
+    k8s_client: IK8sClient
 
 
 @pytest.mark.parametrize(
@@ -52,7 +61,13 @@ async def test_fetch_pod_logs_tool(
     expected_error,
 ):
     # Given
-    tool_node = ToolNode([fetch_pod_logs_tool])
+    # In langgraph 1.0, ToolNode with InjectedState must be invoked within a StateGraph context
+    graph = StateGraph(ToolTestState)
+    graph.add_node("tools", ToolNode([fetch_pod_logs_tool], handle_tool_errors=True))
+    graph.add_edge(START, "tools")
+    graph.add_edge("tools", END)
+    app = graph.compile()
+
     k8s_client = AsyncMock(spec=IK8sClient)
     if given_error:
         k8s_client.fetch_pod_logs.side_effect = given_error
@@ -69,7 +84,7 @@ async def test_fetch_pod_logs_tool(
         )
 
     # When: invoke the tool.
-    result = await tool_node.ainvoke(
+    result = await app.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [
