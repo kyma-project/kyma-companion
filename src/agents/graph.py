@@ -62,7 +62,6 @@ from agents.prompts import (
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
-from services.langfuse import get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -454,10 +453,6 @@ class CompanionGraph:
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
             ],
             tags=[cluster_id],
-            metadata=get_langfuse_metadata(
-                message.user_identifier or "unknown",
-                cluster_id,
-            ),
         )
 
         async for chunk in self.graph.astream(input=graph_input, config=run_config):
