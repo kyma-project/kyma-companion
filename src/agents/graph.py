@@ -146,11 +146,9 @@ class CompanionGraph:
         self,
         models: dict[str, IModel | Embeddings],
         memory: BaseCheckpointSaver,
-        handler: Any = None,
     ):
         self.models = models
         self.memory = memory
-        self.handler = handler
 
         main_model_mini = models[MAIN_MODEL_MINI_NAME]
         main_model = models[MAIN_MODEL_NAME]
@@ -449,7 +447,6 @@ class CompanionGraph:
                 "thread_id": conversation_id,
             },
             callbacks=[
-                self.handler,
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
             ],
             tags=[cluster_id],
