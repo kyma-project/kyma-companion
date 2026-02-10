@@ -2,6 +2,7 @@ import json
 from collections.abc import AsyncIterator, Hashable
 from typing import Any, Protocol, cast
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
@@ -34,6 +35,7 @@ from agents.common.constants import (
     RESPONSE_UNABLE_TO_PROCESS,
     SUBTASKS,
     SUMMARIZATION,
+    UNKNOWN,
 )
 from agents.common.data import Message
 from agents.common.state import (
@@ -62,6 +64,7 @@ from agents.prompts import (
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
+from services.langfuse import LangfuseService, get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -442,14 +445,27 @@ class CompanionGraph:
             error=None,
         )
 
+        # Build callbacks list
+        callbacks: list[BaseCallbackHandler] = [
+            UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
+        ]
+
+        # Add Langfuse callback handler if enabled
+        langfuse_handler = LangfuseService().get_callback_handler()
+        if langfuse_handler:
+            callbacks.append(langfuse_handler)
+
         run_config = RunnableConfig(
             configurable={
                 "thread_id": conversation_id,
             },
-            callbacks=[
-                UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
-            ],
+            callbacks=callbacks,
             tags=[cluster_id],
+            metadata=get_langfuse_metadata(
+                message.user_identifier or UNKNOWN,
+                cluster_id,
+                [cluster_id],
+            ),
         )
 
         async for chunk in self.graph.astream(input=graph_input, config=run_config):
