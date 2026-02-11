@@ -84,7 +84,7 @@ class MockK8sClient(IK8sClient):
         return PodLogsResult(
             logs=PodLogs(
                 current_pod="Log line 1\nLog line 2\nLog line 3",
-                previous_pod="Not available (container has not been restarted)",
+                previously_terminated_pod="Not available (container has not been restarted)",
             )
         )
 

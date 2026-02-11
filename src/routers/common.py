@@ -119,7 +119,7 @@ class PodLogsResponse(BaseModel):
 
     logs: PodLogs = Field(
         ...,
-        description="Pod logs with current_pod and previous_pod",
+        description="Pod logs with current_pod and previously_terminated_pod",
     )
     diagnostic_context: PodLogsDiagnosticContext | None = Field(
         default=None,

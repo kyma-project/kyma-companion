@@ -154,7 +154,7 @@ class TestK8sToolsAPI:
         assert "logs" in logs_data
         assert isinstance(logs_data["logs"], dict)
         assert "current_pod" in logs_data["logs"]
-        assert "previous_pod" in logs_data["logs"]
+        assert "previously_terminated_pod" in logs_data["logs"]
         assert "pod_name" in logs_data
         assert logs_data["pod_name"] == pod_name
         logger.info(f"Successfully fetched logs from {pod_namespace}/{pod_name}")

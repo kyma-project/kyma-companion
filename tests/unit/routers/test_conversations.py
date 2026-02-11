@@ -148,7 +148,7 @@ class MockK8sClient:
         return PodLogsResult(
             logs=PodLogs(
                 current_pod="",
-                previous_pod="Not available",
+                previously_terminated_pod="Not available",
             ),
             diagnostic_context=None,
         )

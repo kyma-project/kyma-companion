@@ -52,7 +52,7 @@ class PodLogs(BaseModel):
     """Pod log contents."""
 
     current_pod: str = Field(..., description="Current pod logs as string with newlines")
-    previous_pod: str = Field(..., description="Previous pod logs as string with newlines or unavailability message")
+    previously_terminated_pod: str = Field(..., description="Previously terminated pod logs as string with newlines or unavailability message")
 
 
 class PodLogsResult(BaseModel):

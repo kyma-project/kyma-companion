@@ -74,7 +74,7 @@ class TestLogsEndpoint:
         assert "logs" in response_data
         assert isinstance(response_data["logs"], dict)
         assert "current_pod" in response_data["logs"]
-        assert "previous_pod" in response_data["logs"]
+        assert "previously_terminated_pod" in response_data["logs"]
 
     def test_logs_with_container_name(self, k8s_client_factory):
         """Test fetching logs with specific container name."""
