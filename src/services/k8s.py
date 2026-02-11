@@ -569,7 +569,7 @@ class K8sClient:
 
         Strategy:
         1. Try fetching both current AND previous logs in parallel
-        2. Return structured response with current_pod and previously_terminated_pod logs
+        2. Return structured response with current_container and previously_terminated_container logs
         3. If current logs unavailable, include diagnostic_context
 
         Returns:
@@ -579,8 +579,12 @@ class K8sClient:
             K8sClientError: For authentication (401) or authorization (403) errors
         """
         # Step 1: Try fetching both current and previous logs in parallel
-        current_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, previous=False, tail_limit=tail_limit))
-        previous_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, previous=True, tail_limit=tail_limit))
+        current_task = asyncio.create_task(
+            self._try_fetch_logs(name, namespace, container_name, previous=False, tail_limit=tail_limit)
+        )
+        previous_task = asyncio.create_task(
+            self._try_fetch_logs(name, namespace, container_name, previous=True, tail_limit=tail_limit)
+        )
 
         current_logs, current_error = await current_task
         previous_logs, previous_error = await previous_task
@@ -594,16 +598,16 @@ class K8sClient:
             raise previous_error
 
         # Step 3: Build structured response
-        current_pod_logs: str
-        previously_terminated_pod_logs: str
+        current_container_logs: str
+        previously_terminated_container_logs: str
         diagnostic_context: PodLogsDiagnosticContext | None = None
 
         # Current logs section
         if current_logs is not None:
-            current_pod_logs = "\n".join(current_logs)
+            current_container_logs = "\n".join(current_logs)
         else:
             # Current logs failed - provide explanation
-            current_pod_logs = f"Logs not available. {self._get_error_reason(current_error)}"
+            current_container_logs = f"Logs not available. {self._get_error_reason(current_error)}"
 
             # Add diagnostic context when current logs unavailable
             diagnostic_context = await self._gather_pod_diagnostic_context_structured(
@@ -612,19 +616,22 @@ class K8sClient:
 
         # Previous logs section
         if previous_logs is not None:
-            previously_terminated_pod_logs = "\n".join(previous_logs)
+            previously_terminated_container_logs = "\n".join(previous_logs)
         else:
             # Previous logs not available - this is often expected
             if isinstance(previous_error, K8sClientError):
                 if previous_error.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                    previously_terminated_pod_logs = "Not available (container has not been restarted)"
+                    previously_terminated_container_logs = "Not available (container has not been restarted)"
                 else:
-                    previously_terminated_pod_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
+                    previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
             else:
-                previously_terminated_pod_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
+                previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
 
         return PodLogsResult(
-            logs=PodLogs(current_pod=current_pod_logs, previously_terminated_pod=previously_terminated_pod_logs),
+            logs=PodLogs(
+                current_container=current_container_logs,
+                previously_terminated_container=previously_terminated_container_logs,
+            ),
             diagnostic_context=diagnostic_context,
         )
 
