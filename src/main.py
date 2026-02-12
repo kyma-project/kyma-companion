@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from http import HTTPStatus
 from typing import Any
 
@@ -29,7 +30,7 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def logging_middleware(request: Request, call_next: Any) -> Response:
+async def logging_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Log HTTP requests with appropriate log levels and timing.
 
     - Probe endpoints (/healthz, /readyz) with 200 → DEBUG

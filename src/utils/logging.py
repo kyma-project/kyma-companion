@@ -58,6 +58,7 @@ def _configure_logging() -> None:
     # Determine formatter based on LOG_FORMAT
     format_type = LOG_FORMAT.lower()
 
+    formatter: Formatter
     if format_type == "json":
         try:
             from pythonjsonlogger import jsonlogger
