@@ -10,6 +10,7 @@ groups = ["main"]
 files = [
     {file = "aenum-3.1.16-py2-none-any.whl", hash = "sha256:7810cbb6b4054b7654e5a7bafbe16e9ee1d25ef8e397be699f63f2f3a5800433"},
     {file = "aenum-3.1.16-py3-none-any.whl", hash = "sha256:9035092855a98e41b66e3d0998bd7b96280e85ceb3a04cc035636138a1943eaf"},
+    {file = "aenum-3.1.16.tar.gz", hash = "sha256:bfaf9589bdb418ee3a986d85750c7318d9d2839c1b1a1d6fe8fc53ec201cf140"},
 ]
 
 [[package]]
@@ -2387,20 +2388,20 @@ files = [
 
 [[package]]
 name = "hdbcli"
-version = "2.27.19"
+version = "2.27.23"
 description = "SAP HANA Python Client"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "hdbcli-2.27.19-cp38-abi3-macosx_10_15_x86_64.whl", hash = "sha256:5b91fc6eca13c11e31a031bbb4b859151fe5e9fad4b8c71c96620882bbb32377"},
-    {file = "hdbcli-2.27.19-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:f9a994669c3d7761db95a823a97535d97897694f9cb7805f787225fcfcc375ff"},
-    {file = "hdbcli-2.27.19-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:4962a1c7648ed237318b5c15fd2f12c2e85539ea242d64536827202df2b6120d"},
-    {file = "hdbcli-2.27.19-cp38-abi3-manylinux2014_ppc64le.whl", hash = "sha256:84613398ae2198a9cf02ed8aa5f980caeb14f4b4ea7984eaf474bd4f1a87ea35"},
-    {file = "hdbcli-2.27.19-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:fc361dc9b05b936159012e90d31d8c51e4b2b5a3981b0bb7f080d5267c73f2f7"},
-    {file = "hdbcli-2.27.19-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:ba548a08173c3bfdc30c8d20eadb45e51604cb885ffb9ca8241e1fe410677c02"},
-    {file = "hdbcli-2.27.19-cp38-abi3-win32.whl", hash = "sha256:038bd7191d96e14b486fd2c027564f4aea64c56d839cbb0b26ad43b28f9cb716"},
-    {file = "hdbcli-2.27.19-cp38-abi3-win_amd64.whl", hash = "sha256:a3b0bd8285c5f7fb41e740dcd34ce6d6be9722e6f682a1cfcf5ed63cfd0e32e5"},
+    {file = "hdbcli-2.27.23-cp38-abi3-macosx_10_15_x86_64.whl", hash = "sha256:bd9f83b1d2bb567bd32f7728a4af8e1d04c237cfe02d160572c4c834c6fc2f99"},
+    {file = "hdbcli-2.27.23-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:a946b1d06edd7eb182d2c9c6194052ded08a32ebd63abb72571d2c9626e61371"},
+    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:4a542a77828130b210a064acede764c14d57b085fdb2dcbf97d7cd59728bf49c"},
+    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_ppc64le.whl", hash = "sha256:aa3989ee1be84ed43c6bf8e0ee8d66ef6b5c82fca22055945caf6133f068397a"},
+    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:de365f863235d8dbbe7da5a5eb0dd0d3da94cbbea535d50b76b5d998f38df1e4"},
+    {file = "hdbcli-2.27.23-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:bf910189ac8b07c1fd81bcd74ac3420a5520017b5d4f0c90cdb8209f425f9d80"},
+    {file = "hdbcli-2.27.23-cp38-abi3-win32.whl", hash = "sha256:1b58e779e6f7c6a9286c610906eb938f4d58bd2566610a652d9feee9541e298c"},
+    {file = "hdbcli-2.27.23-cp38-abi3-win_amd64.whl", hash = "sha256:517094332a8a1f5408f8c3b2c2fb4f3461fd6ee40bc0dd0e64688869c5b1ed90"},
 ]
 
 [[package]]
@@ -3201,14 +3202,14 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
 
 [[package]]
 name = "langchain-core"
-version = "0.3.81"
+version = "0.3.83"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0.0,>=3.9.0"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_core-0.3.81-py3-none-any.whl", hash = "sha256:d0f34c88254d78ccb1b9a038f860d13dea90186045026fd8fc3e1265eed73a4e"},
-    {file = "langchain_core-0.3.81.tar.gz", hash = "sha256:0473e7cffbba06017393f2f1ee116da098c298e4ec478ada91d321f42dff921c"},
+    {file = "langchain_core-0.3.83-py3-none-any.whl", hash = "sha256:8c92506f8b53fc1958b1c07447f58c5783eb8833dd3cb6dc75607c80891ab1ae"},
+    {file = "langchain_core-0.3.83.tar.gz", hash = "sha256:a0a4c7b6ea1c446d3b432116f405dc2afa1fe7891c44140d3d5acca221909415"},
 ]
 
 [package.dependencies]
@@ -3219,6 +3220,7 @@ pydantic = ">=2.7.4,<3.0.0"
 PyYAML = ">=5.3.0,<7.0.0"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
 typing-extensions = ">=4.7.0,<5.0.0"
+uuid-utils = ">=0.12.0,<1.0"
 
 [[package]]
 name = "langchain-google-vertexai"
@@ -3250,21 +3252,21 @@ mistral = ["langchain-mistralai (>=0.2.0,<1)"]
 
 [[package]]
 name = "langchain-hana"
-version = "0.3.3"
+version = "0.3.4"
 description = "An integration package connecting SAP HANA Cloud and LangChain"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "langchain_hana-0.3.3-py3-none-any.whl", hash = "sha256:9e61050b1c69faf12825209eb5488c33b57dfe4d4e87af614e5beadd652b9e6f"},
-    {file = "langchain_hana-0.3.3.tar.gz", hash = "sha256:7b155ac145a6e726a1900b80f859714f6f42be92cd0bf81418665b19a8d5c064"},
+    {file = "langchain_hana-0.3.4-py3-none-any.whl", hash = "sha256:d728e6442f8a8ff7df71eab0a989810fdf336a55d507107b7b0e5932dad04075"},
+    {file = "langchain_hana-0.3.4.tar.gz", hash = "sha256:40b75fa4455d82c9641383b4761dc6a27ec780b32ca3896e56b4b825ff8e78a4"},
 ]
 
 [package.dependencies]
 hdbcli = ">=2.23.24,<3.0.0"
 langchain = ">=0.3.25,<0.4.0"
 langchain-core = ">=0.3.15,<0.4.0"
-numpy = {version = ">=2.0.0,<3.0.0", markers = "python_version >= \"3.13\""}
+numpy = {version = ">=2.1.0", markers = "python_version >= \"3.13\""}
 rdflib = "7.0.0"
 
 [[package]]
@@ -8696,4 +8698,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "a90f4880d3e36919831db626fab6633dd7c3f35934fce4112259c2eab95dcde8"
+content-hash = "f83874e5ef074b0d56556daab9e4f44ecd05fb90f532822818bf58531a8ef31c"
