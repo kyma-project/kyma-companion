@@ -36,9 +36,23 @@ class PrettyJSONFormatter(Formatter):
         return json.dumps(log_data, indent=2, sort_keys=False)
 
 
+# Flag to track if logging has been configured
+_logging_configured = False
+
+
 # Configure logging programmatically
 def _configure_logging() -> None:
-    """Configure logging based on LOG_LEVEL and LOG_FORMAT settings."""
+    """Configure logging based on LOG_LEVEL and LOG_FORMAT settings.
+
+    Can be called multiple times safely - only configures once unless force=True.
+    """
+    global _logging_configured
+
+    # Prevent duplicate configuration
+    if _logging_configured:
+        return
+
+    _logging_configured = True
 
     # Determine formatter based on LOG_FORMAT
     format_type = LOG_FORMAT.lower()
@@ -78,7 +92,7 @@ def _configure_logging() -> None:
 
     # Disable uvicorn.access logger (handled by middleware)
     uvicorn_access = logging.getLogger("uvicorn.access")
-    uvicorn_access.handlers = []  # Clear handlers
+    uvicorn_access.handlers.clear()  # Clear handlers properly
     uvicorn_access.setLevel(logging.CRITICAL)
     uvicorn_access.propagate = False
 
@@ -95,7 +109,16 @@ _configure_logging()
 
 def get_logger(name: str) -> Logger:
     """Returns a logger instance that inherits from root logger configuration."""
+    # Ensure logging is configured (lazy initialization)
+    _configure_logging()
     return getLogger(name)
+
+
+def reconfigure_logging() -> None:
+    """Force reconfiguration of logging (useful for testing or hot reload)."""
+    global _logging_configured
+    _logging_configured = False
+    _configure_logging()
 
 
 def after_log(retry_state: RetryCallState) -> None:
