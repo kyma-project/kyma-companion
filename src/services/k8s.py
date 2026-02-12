@@ -569,7 +569,7 @@ class K8sClient:
 
         Strategy:
         1. Try fetching both current AND previous logs in parallel
-        2. Return structured response with current_pod and previous_pod logs
+        2. Return structured response with current_container and previously_terminated_container logs
         3. If current logs unavailable, include diagnostic_context
 
         Returns:
@@ -579,8 +579,12 @@ class K8sClient:
             K8sClientError: For authentication (401) or authorization (403) errors
         """
         # Step 1: Try fetching both current and previous logs in parallel
-        current_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, False, tail_limit))
-        previous_task = asyncio.create_task(self._try_fetch_logs(name, namespace, container_name, True, tail_limit))
+        current_task = asyncio.create_task(
+            self._try_fetch_logs(name, namespace, container_name, previous=False, tail_limit=tail_limit)
+        )
+        previous_task = asyncio.create_task(
+            self._try_fetch_logs(name, namespace, container_name, previous=True, tail_limit=tail_limit)
+        )
 
         current_logs, current_error = await current_task
         previous_logs, previous_error = await previous_task
@@ -594,16 +598,16 @@ class K8sClient:
             raise previous_error
 
         # Step 3: Build structured response
-        current_pod_logs: str
-        previous_pod_logs: str
+        current_container_logs: str
+        previously_terminated_container_logs: str
         diagnostic_context: PodLogsDiagnosticContext | None = None
 
         # Current logs section
         if current_logs is not None:
-            current_pod_logs = "\n".join(current_logs)
+            current_container_logs = "\n".join(current_logs)
         else:
             # Current logs failed - provide explanation
-            current_pod_logs = f"Logs not available. {self._get_error_reason(current_error)}"
+            current_container_logs = f"Logs not available. {self._get_error_reason(current_error)}"
 
             # Add diagnostic context when current logs unavailable
             diagnostic_context = await self._gather_pod_diagnostic_context_structured(
@@ -612,19 +616,22 @@ class K8sClient:
 
         # Previous logs section
         if previous_logs is not None:
-            previous_pod_logs = "\n".join(previous_logs)
+            previously_terminated_container_logs = "\n".join(previous_logs)
         else:
             # Previous logs not available - this is often expected
             if isinstance(previous_error, K8sClientError):
                 if previous_error.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                    previous_pod_logs = "Not available (container has not been restarted)"
+                    previously_terminated_container_logs = "Not available (container has not been restarted)"
                 else:
-                    previous_pod_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
+                    previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
             else:
-                previous_pod_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
+                previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
 
         return PodLogsResult(
-            logs=PodLogs(current_pod=current_pod_logs, previous_pod=previous_pod_logs),
+            logs=PodLogs(
+                current_container=current_container_logs,
+                previously_terminated_container=previously_terminated_container_logs,
+            ),
             diagnostic_context=diagnostic_context,
         )
 
@@ -861,7 +868,7 @@ class K8sClient:
         name: str,
         namespace: str,
         container_name: str,
-        is_terminated: bool,
+        previous: bool,
         tail_limit: int,
     ) -> tuple[list[str] | None, Exception | None]:
         """Try to fetch pod logs with automatic retry on transient errors.
@@ -878,7 +885,7 @@ class K8sClient:
 
         for attempt in range(1, max_attempts + 1):
             try:
-                logs = await self._fetch_pod_logs_no_retry(name, namespace, container_name, is_terminated, tail_limit)
+                logs = await self._fetch_pod_logs_no_retry(name, namespace, container_name, previous, tail_limit)
                 return (logs, None)  # Success
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
                 last_exception = e
@@ -908,13 +915,13 @@ class K8sClient:
         name: str,
         namespace: str,
         container_name: str,
-        is_terminated: bool,
+        previous: bool,
         tail_limit: int,
     ) -> list[str]:
         """Fetch pod logs without retry logic (used internally by _try_fetch_logs)."""
         uri = f"api/v1/namespaces/{namespace}/pods/{name}/log?container={container_name}&tailLines={tail_limit}"
-        # if the pod is terminated, then fetch the logs of last Pod.
-        if is_terminated:
+        # if previous is true, then fetch the logs of previous container instance.
+        if previous:
             uri += "&previous=true"
 
         async with (
