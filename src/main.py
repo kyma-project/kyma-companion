@@ -42,8 +42,8 @@ async def logging_middleware(request: Request, call_next: Any) -> Response:
 
     # Determine log level based on path and status
     is_probe = request.url.path in PROBE_PATHS
-    if is_probe:
-        level = logging.DEBUG if response.status_code == 200 else logging.WARNING
+    if is_probe:  # noqa: SIM108
+        level = logging.DEBUG if response.status_code == HTTPStatus.OK else logging.WARNING
     else:
         level = logging.INFO
 

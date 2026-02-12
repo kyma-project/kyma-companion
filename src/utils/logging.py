@@ -8,6 +8,7 @@ from tenacity import RetryCallState
 
 from utils.settings import LOG_FORMAT, LOG_LEVEL
 
+
 class PrettyJSONFormatter(Formatter):
     """Custom formatter that outputs pretty-printed JSON for development."""
 
@@ -46,7 +47,7 @@ def _configure_logging() -> None:
 
     Can be called multiple times safely - only configures once unless force=True.
     """
-    global _logging_configured
+    global _logging_configured  # noqa: PLW0603
 
     # Prevent duplicate configuration
     if _logging_configured:
@@ -60,26 +61,21 @@ def _configure_logging() -> None:
     if format_type == "json":
         try:
             from pythonjsonlogger import jsonlogger
-            formatter = jsonlogger.JsonFormatter(
-                "%(asctime)s %(name)s %(levelname)s %(message)s"
-            )
+
+            formatter = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
         except ImportError:
             # Use sys.stderr since logging isn't configured yet
             sys.stderr.write(
                 "WARNING: LOG_FORMAT=json specified but python-json-logger not installed. "
                 "Run 'poetry install' to enable JSON logging. Using standard format.\n"
             )
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     elif format_type == "pretty":
         # Pretty-printed JSON for development (no external deps needed)
         formatter = PrettyJSONFormatter()
     else:
         # Standard human-readable format
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Configure console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -116,7 +112,7 @@ def get_logger(name: str) -> Logger:
 
 def reconfigure_logging() -> None:
     """Force reconfiguration of logging (useful for testing or hot reload)."""
-    global _logging_configured
+    global _logging_configured  # noqa: PLW0603
     _logging_configured = False
     _configure_logging()
 
