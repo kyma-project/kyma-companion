@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
 from fastapi.encoders import jsonable_encoder
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
@@ -14,6 +15,7 @@ from routers.common import (
     API_PREFIX,
     SESSION_ID_HEADER,
     FollowUpQuestionsResponse,
+    GenerateQuestionsRequest,
     InitConversationBody,
     InitialQuestionsResponse,
 )
@@ -201,6 +203,51 @@ async def followup_questions(
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)) from e
+
+
+@router.post("/questions/generate", response_model=FollowUpQuestionsResponse)
+async def generate_questions_from_messages(
+    request: Annotated[GenerateQuestionsRequest, Body()],
+    conversation_service: Annotated[IService, Depends(init_conversation_service)],
+) -> JSONResponse:
+    """
+    Endpoint to generate follow-up questions from provided message history.
+    """
+
+    logger.info(f"Generating questions from {len(request.messages)} messages")
+
+    try:
+        # Convert request messages to LangChain BaseMessage format
+        messages = []
+        for msg in request.messages:
+            role = msg.role.lower()
+            if role == "user" or role == "human":
+                messages.append(HumanMessage(content=msg.content))
+            elif role == "assistant" or role == "ai":
+                messages.append(AIMessage(content=msg.content))
+            elif role == "system":
+                messages.append(SystemMessage(content=msg.content))
+            else:
+                # Default to HumanMessage for unknown roles
+                messages.append(HumanMessage(content=msg.content))
+
+        # Generate follow-up questions using the service
+        questions = conversation_service.generate_questions_from_messages(
+            messages=messages
+        )
+
+        # Return response
+        response = FollowUpQuestionsResponse(
+            questions=questions,
+        )
+        return JSONResponse(
+            content=jsonable_encoder(response),
+        )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
 
 
 @router.post("/{conversation_id}/messages")

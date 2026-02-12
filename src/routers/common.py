@@ -54,6 +54,29 @@ class FollowUpQuestionsResponse(BaseModel):
     questions: list[str] = []
 
 
+class ConversationMessage(BaseModel):
+    """A single message in a conversation history"""
+
+    role: str = Field(
+        ...,
+        description="Role of the message sender (e.g., 'user', 'assistant', 'system')",
+        examples=["user", "assistant", "system"],
+    )
+    content: str = Field(
+        ..., description="Content of the message", examples=["What is wrong with my pod?"]
+    )
+
+
+class GenerateQuestionsRequest(BaseModel):
+    """Request body for generating follow-up questions from message history"""
+
+    messages: list[ConversationMessage] = Field(
+        ...,
+        description="List of conversation messages to generate follow-up questions from",
+        min_length=1,
+    )
+
+
 # ============================================================================
 # Health/Probe Models
 # ============================================================================
