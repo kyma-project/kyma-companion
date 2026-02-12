@@ -65,7 +65,11 @@ def load_env_from_json() -> None:
 load_env_from_json()
 
 # Read the configs.
+# Logging configuration - can be set in config.json or via environment variables
+# LOG_LEVEL: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL" (default: INFO)
+# LOG_FORMAT: "json" (structured, production), "pretty" (formatted JSON, dev), or "standard" (human-readable)
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+LOG_FORMAT = config("LOG_FORMAT", default="json")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Initialization of the main chat LLM models and main embedding model.
