@@ -1148,11 +1148,11 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Should show current logs successfully
-            current_logs = result.logs.current_pod
+            current_logs = result.logs.current_container
             assert all(line in current_logs for line in expected_sanitized_logs)
 
             # Should show previous logs not available (error message)
-            previous_logs = result.logs.previous_pod
+            previous_logs = result.logs.previously_terminated_container
             assert "not found" in previous_logs.lower() or "not available" in previous_logs.lower()
 
     @pytest.mark.asyncio
@@ -1237,7 +1237,7 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Should show current logs not available with diagnostic info
-            current_logs = result.logs.current_pod
+            current_logs = result.logs.current_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
 
             # Should have diagnostic context
@@ -1246,7 +1246,7 @@ class TestK8sClient:
             assert "Container is in CrashLoopBackOff state" in diagnostic_str
 
             # Should show previous logs successfully
-            previous_logs = result.logs.previous_pod
+            previous_logs = result.logs.previously_terminated_container
             assert all(line in previous_logs for line in expected_logs)
 
     @pytest.mark.asyncio
@@ -1306,8 +1306,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both current and previous logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1381,7 +1381,7 @@ class TestK8sClient:
             assert hasattr(result, "logs")
 
             # Current logs should succeed after retries
-            current_logs = result.logs.current_pod
+            current_logs = result.logs.current_container
             assert all(line in current_logs for line in success_logs)
 
             # Should have slept twice (after first and second failures)
@@ -1439,8 +1439,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1507,8 +1507,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or "failed" in current_logs.lower() or len(current_logs) == 0
             assert (
                 "failed" in previous_logs.lower() or "not available" in previous_logs.lower() or len(previous_logs) == 0
@@ -1643,8 +1643,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
 
             # Previous logs status depends on error code
@@ -1738,8 +1738,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1828,8 +1828,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1889,8 +1889,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_pod
-            previous_logs = result.logs.previous_pod
+            current_logs = result.logs.current_container
+            previous_logs = result.logs.previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 

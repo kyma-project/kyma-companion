@@ -21,8 +21,8 @@ from services.k8s import IK8sClient
             None,
             {
                 "logs": {
-                    "current_pod": "line 1\nline 2\nline 3",
-                    "previous_pod": "Not available (container has not been restarted)",
+                    "current_container": "line 1\nline 2\nline 3",
+                    "previously_terminated_container": "Not available (container has not been restarted)",
                 },
                 "diagnostic_context": None,
             },
@@ -62,8 +62,8 @@ async def test_fetch_pod_logs_tool(
 
         k8s_client.fetch_pod_logs.return_value = PodLogsResult(
             logs=PodLogs(
-                current_pod=expected_logs_dict["logs"]["current_pod"],
-                previous_pod=expected_logs_dict["logs"]["previous_pod"],
+                current_container=expected_logs_dict["logs"]["current_container"],
+                previously_terminated_container=expected_logs_dict["logs"]["previously_terminated_container"],
             ),
             diagnostic_context=expected_logs_dict["diagnostic_context"],
         )
