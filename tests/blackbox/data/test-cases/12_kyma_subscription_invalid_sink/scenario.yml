@@ -8,10 +8,16 @@ queries:
       name: my-sub
       namespace: test-subscription-12 # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: subscription_config_error
-        statement: points out that the Subscription is configured with an invalid sink URL because it does not end with the required suffix svc.cluster.local
+      - name: subscription_sink_invalid
+        statement: identifies that the sink URL is invalid, incorrectly formatted, or not a Kubernetes service
         threshold: 0.4
         required: true
+
+      - name: subscription_sink_format_correct
+        statement: explains the sink should use Kubernetes service DNS format or mentions svc.cluster.local
+        threshold: 0.4
+        required: false
+
       - name: subscription_correct_sink
         statement: provides an example of how the sink URL should be configured with the suffix svc.cluster.local
         threshold: 0.4
