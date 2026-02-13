@@ -1,7 +1,7 @@
 id: test-subscription-13 # format: test-<resource_kind>-<test_id>
 description: The Subscription is configured with an invalid source configuration.
 queries:
-  - user_query: How exactly to fix my subscription?
+  - user_query: How exactly do I fix my subscription?
     resource:
       kind: Subscription
       api_version: eventing.kyma-project.io/v1alpha2

@@ -1,7 +1,7 @@
 id: test-subscription-12 # format: test-<resource_kind>-<test_id>
 description: The Subscription is configured with an invalid sink URL
 queries:
-  - user_query: How to fix my subscription?
+  - user_query: How do I fix my subscription?
     resource:
       kind: Subscription
       api_version: eventing.kyma-project.io/v1alpha2
