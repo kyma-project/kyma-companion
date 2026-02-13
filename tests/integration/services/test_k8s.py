@@ -385,15 +385,15 @@ class TestK8sClient:
         # the return type should be PodLogsResult (Pydantic model).
         assert result is not None
         assert hasattr(result, "logs")
-        assert hasattr(result.logs, "current_pod")
-        assert hasattr(result.logs, "previous_pod")
+        assert hasattr(result.logs, "current_container")
+        assert hasattr(result.logs, "previously_terminated_container")
 
         # Current logs should be a string
-        assert isinstance(result.logs.current_pod, str)
-        assert result.logs.current_pod != ""
+        assert isinstance(result.logs.current_container, str)
+        assert result.logs.current_container != ""
 
         # Previous logs might not be available for running pods
-        assert isinstance(result.logs.previous_pod, str)
+        assert isinstance(result.logs.previously_terminated_container, str)
 
     @pytest.mark.parametrize(
         "given_kind, expected_api_version",
