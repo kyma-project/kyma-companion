@@ -25,6 +25,9 @@
   "DATABASE_PORT": "443",
   "DOCS_TABLE_NAME": "<VALUE>",
 
+  "LOG_LEVEL": "INFO",
+  "LOG_FORMAT": "json",
+
   "models": [
     {
       "name": "gpt-4.1",
