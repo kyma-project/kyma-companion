@@ -19,6 +19,149 @@ def print_header(name: str) -> None:
     print("************************************************************************\n")
 
 
+def print_separator(char: str = "-", length: int = 80) -> None:
+    """Prints a separator line."""
+    print(char * length)
+
+
+def print_detailed_query_results(scenario, query) -> None:
+    """Prints detailed results for a query including response and expectation breakdown."""
+    from evaluation.scenario.scenario import Query, Scenario
+
+    print_separator("=")
+    print(colored(f"Description: {scenario.description}", "cyan"))
+    print_separator("=")
+    print()
+
+    # Print query and resource context
+    print(colored("Query:", "yellow"), f'"{query.user_query}"')
+    print(colored("Resource Context:", "yellow"))
+    print(f"  - Kind: {query.resource.kind}")
+    print(f"  - Name: {query.resource.name}")
+    print(f"  - Namespace: {query.resource.namespace}")
+    print()
+
+    # Print agent response
+    print_separator()
+    print(colored("Agent Response:", "yellow"))
+    print_separator()
+    if query.actual_response:
+        # Print response with proper formatting
+        response_lines = query.actual_response.split('\n')
+        for line in response_lines:
+            print(line)
+    else:
+        print(colored("(No response received)", "red"))
+    print()
+
+    # Print expectation results
+    if query.evaluation_result and query.evaluation_result.test_results:
+        test_result = query.evaluation_result.test_results[0]
+
+        # Count required vs optional expectations
+        required_count = sum(1 for exp in query.expectations if exp.required)
+        optional_count = len(query.expectations) - required_count
+
+        print_separator()
+        print(colored(f"Expectation Results ({len(query.expectations)} total, {required_count} required, {optional_count} optional):", "yellow"))
+        print_separator()
+        print()
+
+        # Track pass/fail counts
+        required_passed = 0
+        required_total = 0
+        optional_passed = 0
+        optional_total = 0
+
+        # Print each expectation with its result
+        for expectation, metric_data in zip(query.expectations, test_result.metrics_data):
+            # Determine if required or optional
+            req_type = colored("[REQUIRED]", "red", attrs=["bold"]) if expectation.required else colored("[OPTIONAL]", "blue")
+
+            # Get score and threshold
+            score = metric_data.score
+            threshold = expectation.threshold
+
+            # Determine pass/fail
+            passed = score >= threshold
+            status_icon = "✅" if passed else "❌"
+
+            # Track counts
+            if expectation.required:
+                required_total += 1
+                if passed:
+                    required_passed += 1
+            else:
+                optional_total += 1
+                if passed:
+                    optional_passed += 1
+
+            # Print expectation result
+            print(f"{status_icon} {req_type} {expectation.name} (score: {score:.2f}, threshold: {threshold})")
+
+            # Print statement with wrapping
+            statement_lines = expectation.statement.split('\n')
+            for i, line in enumerate(statement_lines):
+                if i == 0:
+                    print(f"   Statement: \"{line}\"")
+                else:
+                    print(f"              {line}")
+
+            # Print result status
+            if passed:
+                if score < threshold + 0.1 and score > threshold:
+                    # Borderline pass
+                    print(colored(f"   Result: PASS (borderline!) - Score {score:.2f} just above threshold {threshold}", "yellow"))
+                else:
+                    print(colored(f"   Result: PASS", "green"))
+            else:
+                if score >= threshold - 0.1:
+                    # Close to passing
+                    print(colored(f"   Result: FAIL (close) - Score {score:.2f} just below threshold {threshold}", "yellow"))
+                else:
+                    print(colored(f"   Result: FAIL", "red"))
+
+            # Print reason if available
+            if hasattr(metric_data, 'reason') and metric_data.reason:
+                reason_preview = metric_data.reason[:200]
+                if len(metric_data.reason) > 200:
+                    reason_preview += "..."
+                print(f"   Reason: {reason_preview}")
+
+            print()
+
+        # Print summary
+        print_separator()
+        overall_passed = (required_passed == required_total)
+        if overall_passed:
+            summary_color = "green"
+            status_icon = "✅"
+            status_text = "TEST PASSED"
+        else:
+            summary_color = "red"
+            status_icon = "❌"
+            status_text = "TEST FAILED"
+
+        # Check if any required expectations were borderline
+        has_borderline = False
+        for expectation, metric_data in zip(query.expectations, test_result.metrics_data):
+            if expectation.required and metric_data.score < expectation.threshold + 0.1 and metric_data.score >= expectation.threshold:
+                has_borderline = True
+                break
+
+        borderline_note = ""
+        if has_borderline and overall_passed:
+            borderline_note = colored(f"\n   ⚠️  Note: One or more required expectations passed with scores close to threshold", "yellow")
+
+        print(colored(
+            f"{status_icon} {status_text} (Required: {required_passed}/{required_total} | Optional: {optional_passed}/{optional_total}){borderline_note}",
+            summary_color,
+            attrs=["bold"]
+        ))
+        print_separator()
+        print()
+
+
 def colored_status(status: TestStatus) -> str:
     """Returns the colored status of the test."""
     if status == TestStatus.PASSED:
