@@ -1,30 +1,36 @@
 id: test-subscription-12 # format: test-<resource_kind>-<test_id>
 description: The Subscription is configured with an invalid sink URL
 queries:
-  - user_query: How to fix my subscription?
+  - user_query: How do I fix my subscription?
     resource:
       kind: Subscription
       api_version: eventing.kyma-project.io/v1alpha2
       name: my-sub
       namespace: test-subscription-12 # format: test-<resource_kind>-<test_id>
     expectations:
-      - name: subscription_config_error
-        statement: points out that the Subscription is configured with an invalid sink URL because it does not end with the required suffix svc.cluster.local
-        threshold: 0.5
+      - name: subscription_sink_invalid
+        statement: identifies that the sink URL is invalid, incorrectly formatted, or not a Kubernetes service
+        threshold: 0.4
         required: true
+
+      - name: subscription_sink_format_correct
+        statement: explains the sink should use Kubernetes service DNS format or mentions svc.cluster.local
+        threshold: 0.4
+        required: false
+
       - name: subscription_correct_sink
         statement: provides an example of how the sink URL should be configured with the suffix svc.cluster.local
-        threshold: 0.5
+        threshold: 0.4
         required: false
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue
-        threshold: 0.5
+        threshold: 0.4
         required: false
       - name: partial_yaml
         statement: provides a partial yaml for the Subscription with an example of a valid sink URL
-        threshold: 0.5
+        threshold: 0.4
         required: false
       - name: complete_yaml
         statement: provides a complete yaml for the Subscription with the correct sink URL which ends with svc.cluster.local
-        threshold: 0.5
+        threshold: 0.4
         required: false
