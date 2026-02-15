@@ -3,7 +3,7 @@ from logging import Logger
 
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_header, print_detailed_query_results
+from common.output import print_detailed_query_results, print_header
 
 from evaluation.companion.companion import (
     CompanionClient,
