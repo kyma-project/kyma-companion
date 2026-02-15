@@ -10,25 +10,25 @@ queries:
     expectations:
       - name: subscription_config_error
         statement: identifies that the source field is missing, empty, or invalid
-        threshold: 0.4
+        threshold: 0.5
         required: true
       - name: subscription_correct_source
         statement: provides an example of how the source should be configured
-        threshold: 0.4
+        threshold: 0.5
         required: true
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: partial_yaml
         statement: provides a partial yaml for the Subscription with an example of a valid source configuration
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: complete_yaml
         statement: provides a complete yaml for the Subscription with the correct source configuration
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: verification
         statement: provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix
-        threshold: 0.4
+        threshold: 0.5
         required: false

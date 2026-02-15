@@ -10,27 +10,27 @@ queries:
     expectations:
       - name: subscription_sink_invalid
         statement: identifies that the sink URL is invalid, incorrectly formatted, or not a Kubernetes service
-        threshold: 0.4
+        threshold: 0.5
         required: true
 
       - name: subscription_sink_format_correct
         statement: explains the sink should use Kubernetes service DNS format or mentions svc.cluster.local
-        threshold: 0.4
+        threshold: 0.5
         required: false
 
       - name: subscription_correct_sink
         statement: provides an example of how the sink URL should be configured with the suffix svc.cluster.local
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: step_by_step_guide
         statement: contains a step-by-step guide on how to fix the issue
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: partial_yaml
         statement: provides a partial yaml for the Subscription with an example of a valid sink URL
-        threshold: 0.4
+        threshold: 0.5
         required: false
       - name: complete_yaml
         statement: provides a complete yaml for the Subscription with the correct sink URL which ends with svc.cluster.local
-        threshold: 0.4
+        threshold: 0.5
         required: false
