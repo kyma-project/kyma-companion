@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 from langchain_core.tools import tool
@@ -63,7 +64,7 @@ class KymaResourceVersionToolArgs(BaseModel):
 
 
 @tool(infer_schema=False, args_schema=KymaResourceVersionToolArgs)
-def fetch_kyma_resource_version(
+async def fetch_kyma_resource_version(
     resource_kind: str,
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
 ) -> str:
@@ -74,7 +75,8 @@ def fetch_kyma_resource_version(
     to be verified or kyma_query_tool returns 404 not found.
     """
     try:
-        return k8s_client.get_resource_version(resource_kind)
+        # Run the synchronous k8s_client call in a thread pool to avoid blocking
+        return await asyncio.to_thread(k8s_client.get_resource_version, resource_kind)
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,
