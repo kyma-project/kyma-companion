@@ -5,10 +5,9 @@ This module exposes Kyma agent tools as REST API endpoints by wrapping
 the tools defined in src/agents/kyma/tools.
 """
 
-from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends
 from langchain_core.embeddings import Embeddings
 
 from agents.kyma.tools.query import (
@@ -27,8 +26,8 @@ from routers.common import (
     init_k8s_client,
     init_models_dict,
 )
+from routers.error_handlers import handle_tool_errors
 from services.k8s import IK8sClient
-from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.models.factory import IModel
 
@@ -51,6 +50,7 @@ router = APIRouter(
 
 
 @router.post("/query", response_model=KymaQueryResponse)
+@handle_tool_errors("Kyma query")
 async def query_kyma_resource(
     request: Annotated[KymaQueryRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
@@ -60,29 +60,13 @@ async def query_kyma_resource(
     """
     logger.info(f"Kyma query request: uri={request.uri}")
 
-    try:
-        result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
-        logger.info(f"Kyma query completed successfully for uri={request.uri}")
-        return KymaQueryResponse(data=result)
-    except K8sClientError as e:
-        logger.error(f"Error during Kyma query: {e.message}")
-        raise HTTPException(
-            status_code=e.status_code,
-            detail={
-                "error": "Kyma query failed:",
-                "message": e.message,
-                "uri": e.uri,
-            },
-        ) from e
-    except Exception as e:
-        logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Kyma query failed: {str(e)}",
-        ) from e
+    result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
+    logger.info(f"Kyma query completed successfully for uri={request.uri}")
+    return KymaQueryResponse(data=result)
 
 
 @router.post("/resource-version", response_model=KymaResourceVersionResponse)
+@handle_tool_errors("Kyma resource version lookup")
 async def get_resource_version(
     request: Annotated[KymaResourceVersionRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
@@ -92,34 +76,21 @@ async def get_resource_version(
     """
     logger.info(f"Resource version request: kind={request.resource_kind}")
 
-    try:
-        api_version = fetch_kyma_resource_version.invoke(
-            {
-                "resource_kind": request.resource_kind,
-                "k8s_client": k8s_client,
-            }
-        )
-        logger.info(f"Resource version lookup successful: kind={request.resource_kind}, version={api_version}")
-        return KymaResourceVersionResponse(
-            resource_kind=request.resource_kind,
-            api_version=api_version,
-        )
-    except K8sClientError as e:
-        logger.error(f"Error fetching resource version: {e.message}")
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=f"Failed to fetch resource version: {e.message}",
-        ) from e
-    except Exception as e:
-        error_msg = f"Unexpected error fetching resource version: {str(e)}"
-        logger.exception(error_msg)
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch resource version: {str(e)}",
-        ) from e
+    api_version = fetch_kyma_resource_version.invoke(
+        {
+            "resource_kind": request.resource_kind,
+            "k8s_client": k8s_client,
+        }
+    )
+    logger.info(f"Resource version lookup successful: kind={request.resource_kind}, version={api_version}")
+    return KymaResourceVersionResponse(
+        resource_kind=request.resource_kind,
+        api_version=api_version,
+    )
 
 
 @router.post("/search", response_model=SearchKymaDocResponse)
+@handle_tool_errors("Kyma documentation search")
 async def search_kyma_documentation(
     request: Annotated[SearchKymaDocRequest, Body()],
     models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
@@ -129,17 +100,10 @@ async def search_kyma_documentation(
     """
     logger.info(f"Search request: query={request.query}")
 
-    try:
-        search_tool = SearchKymaDocTool(models=models, top_k=request.top_k)
-        results = await search_tool.arun_list(query=request.query)
-        logger.info(f"Search completed successfully, returned {len(results)} documents")
-        return SearchKymaDocResponse(
-            results=results,
-            query=request.query,
-        )
-    except Exception as e:
-        logger.exception(f"Error during documentation search: {str(e)}")
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Documentation search failed: {str(e)}",
-        ) from e
+    search_tool = SearchKymaDocTool(models=models, top_k=request.top_k)
+    results = await search_tool.arun_list(query=request.query)
+    logger.info(f"Search completed successfully, returned {len(results)} documents")
+    return SearchKymaDocResponse(
+        results=results,
+        query=request.query,
+    )
