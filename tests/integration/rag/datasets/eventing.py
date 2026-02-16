@@ -2,7 +2,7 @@ from textwrap import dedent
 
 cases = [
     {
-        "input": "some eventing messages are pending in the stream",
+        "input": "Some eventing messages are pending in the stream",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
@@ -27,7 +27,7 @@ cases = [
         ),
     },
     {
-        "input": "event publish rate is too high for NATS",
+        "input": "The event publish rate is too high for NATS",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """

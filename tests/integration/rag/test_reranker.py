@@ -40,9 +40,9 @@ def llm_reranker(app_models):
     [
         # Eventing
         (
-            "some eventing messages are pending in the stream",
+            "Some eventing messages are pending in the stream",
             "datasets/reranker/messages-pending-in-stream",
-            ["some eventing messages are pending in the stream"],
+            ["Some eventing messages are pending in the stream"],
             4,
             [
                 "datasets/reranker/messages-pending-in-stream/03_published_events_are_pending_in_the_stream.md",
@@ -50,9 +50,9 @@ def llm_reranker(app_models):
             0.5,
         ),
         (
-            "what to do if event publish rate is too high for NATS?",
+            "The event publish rate is too high for NATS",
             "datasets/reranker/event-publish-rate-too-high-nats",
-            ["what to do if event publish rate is too high for NATS?"],
+            ["The event publish rate is too high for NATS"],
             4,
             [
                 "datasets/reranker/event-publish-rate-too-high-nats/00_eventing_backend_stopped_receiving_events_due_to_full_storage.md",
@@ -73,10 +73,10 @@ def llm_reranker(app_models):
             0.5,
         ),
         (
-            "why an Istio sidecar is not injected to a pod?",
+            "Why isn't an Istio sidecar injected into a pod?",
             "datasets/reranker/istio-sidecar-not-injected-to-pod",
             [
-                "why an Istio sidecar is not injected to a pod?",
+                "Why isn't an Istio sidecar injected into a pod?",
             ],
             4,
             [
@@ -97,10 +97,10 @@ def llm_reranker(app_models):
             0.5,
         ),
         (
-            "function pod have no sidecar proxy",
+            "Why does a function pod have no sidecar proxy?",
             "datasets/reranker/function-pod-have-no-sidecar-proxy",
             [
-                "function pod have no sidecar proxy",
+                "Why does a function pod have no sidecar proxy?",
             ],
             4,
             [
@@ -184,10 +184,10 @@ def llm_reranker(app_models):
         ),
         # Telemetry
         (
-            "show how to create a trace pipeline",
+            "Show how to create a trace pipeline",
             "datasets/reranker/show-how-to-create-trace-pipeline",
             [
-                "show how to create a trace pipeline",
+                "Show how to create a trace pipeline",
             ],
             4,
             [

@@ -2,7 +2,7 @@ from textwrap import dedent
 
 cases = [
     {
-        "input": "show how to create a trace pipeline",
+        "input": "Show how to create a trace pipeline",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
@@ -64,7 +64,7 @@ cases = [
         ),
     },
     {
-        "input": "why are there no logs in the backend?",
+        "input": "Why are there no logs in the backend?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
