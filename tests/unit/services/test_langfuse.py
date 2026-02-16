@@ -6,7 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from agents.common.state import CompanionState, GraphInput, UserInput
-from services.k8s import K8sClient
+from services.k8s import IK8sClient, K8sClient
 from services.langfuse import EMPTY_OBJECT, REDACTED, LangfuseService, get_langfuse_metadata
 from utils.settings import LangfuseMaskingModes
 
@@ -192,9 +192,11 @@ def test_masking_mode_partial(
     expected_output: Any,
 ):
     service = LangfuseService()
+    original_data = copy.deepcopy(input_data)
 
     # when / then
     assert service._masking_mode_partial(input_data) == expected_output, description
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -345,15 +347,24 @@ def test_masking_mode_partial(
     ],
 )
 def test_masking_mode_filtered(description, input_data, expected_output):
+    # Given
     service = LangfuseService()
     if callable(input_data):
         input_data = input_data()
+    original_data = copy.deepcopy(input_data)
+
+    # when
     result = service._masking_mode_filtered(input_data)
+
+    # then
     # For ToolMessage and HumanMessage, compare their content attribute
     if hasattr(result, "content") and hasattr(expected_output, "content"):
         assert result.content == expected_output.content, description
     else:
         assert result == expected_output, description
+
+    if not isinstance(input_data, (IK8sClient, K8sClient, object)):
+        assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(

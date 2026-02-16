@@ -94,9 +94,12 @@ class LangfuseService(metaclass=SingletonMeta):
         Returns:
             dict: The data with sensitive information removed.
         """
-        # deep clone the data to avoid mutating the original data.
-        # This is important because the same data is used by the agents in parallel and must not modify it in place.
-        data = copy.deepcopy(data)
+        # IMPORTANT: This function should never modify the input data in place.
+        # Always work on a copy of the data to avoid unintended side effects.
+        # We do not deepcopy the whole data at the beginning,
+        # because it can be very large and contain unserializable objects.
+        # Instead, we will create copies of the parts of the data that we
+        # need to modify (e.g. message content) as we go.
 
         # First, check for critical information that should always be masked regardless of the masking mode.
         critical_masked = self._mask_critical(data)
@@ -133,6 +136,12 @@ class LangfuseService(metaclass=SingletonMeta):
 
     def _masking_mode_filtered(self, data: Any) -> Any:  # noqa: C901
         """Recursively masks sensitive information in the provided data."""
+        # IMPORTANT: This function should never modify the input data in place.
+        # Always work on a copy of the data to avoid unintended side effects.
+        # We do not deepcopy the whole data at the beginning,
+        # because it can be very large and contain unserializable objects.
+        # Instead, we will create copies of the parts of the data that we
+        # need to modify (e.g. message content) as we go.
         try:
             if not data or isinstance(data, int | float | bool):
                 return data
@@ -142,22 +151,27 @@ class LangfuseService(metaclass=SingletonMeta):
                 return self.data_scrubber.clean(output if output else REDACTED)
             # If data is a string, sanitize it directly.
             elif isinstance(data, str):
-                return self.data_scrubber.clean(data)
+                return self.data_scrubber.clean(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
+                data = copy.deepcopy(data)
                 data.content = REDACTED
                 return data
             elif isinstance(data, BaseMessage):
+                data = copy.deepcopy(data)
                 data.content = self._get_cleaned_content(data.content)
                 return data
             elif isinstance(data, dict) and "content" in data and "role" in data:
                 # If data is a dictionary with role and content, sanitize the content.
+                data = copy.deepcopy(data)
                 data["content"] = self.data_scrubber.clean(data["content"]) if data["role"] != "tool" else REDACTED
                 return data
             elif isinstance(data, dict):
+                result = {}
                 for key, value in data.items():
                     # Recursively sanitize each value in the dictionary.
-                    data[key] = self._masking_mode_filtered(value)
-                return data
+                    # Do not update the original data in place, create a new dictionary for the result.
+                    result[key] = self._masking_mode_filtered(value)
+                return result
             elif isinstance(data, (IK8sClient, K8sClient)):
                 # Mask Kubernetes client instances with an empty object.
                 return EMPTY_OBJECT
