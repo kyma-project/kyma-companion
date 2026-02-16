@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+
 import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from ragas.dataset_schema import MultiTurnSample
@@ -79,24 +81,15 @@ def create_basic_state(
     )
 
 
+@dataclass
 class TestCase:
-    def __init__(
-        self,
-        name: str,
-        state: KymaAgentState,
-        expected_tool_calls: list[ToolCall] = None,
-        alternative_tool_calls: list[list[ToolCall]] = None,  # Allow multiple valid sequences
-        expected_response: str = None,
-        retrieval_context: str = None,
-        should_raise: bool = False,
-    ):
-        self.name = name
-        self.state = state
-        self.expected_tool_calls = expected_tool_calls
-        self.alternative_tool_calls = alternative_tool_calls or []
-        self.expected_response = expected_response
-        self.retrieval_context = retrieval_context
-        self.should_raise = should_raise
+    name: str
+    state: KymaAgentState
+    expected_tool_calls: list[ToolCall] | None = None
+    alternative_tool_calls: list[list[ToolCall]] = field(default_factory=list)
+    expected_response: str | None = None
+    retrieval_context: str | None = None
+    should_raise: bool = False
 
 
 @pytest.fixture
@@ -158,7 +151,11 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_kyma_knowledge(create_k8s_client()))
+@pytest.mark.parametrize(
+    "test_case",
+    create_test_cases_kyma_knowledge(create_k8s_client()),
+    ids=lambda tc: tc.name
+)
 @pytest.mark.asyncio
 async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
@@ -505,7 +502,11 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_namespace_scoped(create_k8s_client()))
+@pytest.mark.parametrize(
+    "test_case",
+    create_test_cases_namespace_scoped(create_k8s_client()),
+    ids=lambda tc: tc.name
+)
 @pytest.mark.asyncio
 async def test_kyma_agent_namespace_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
@@ -639,7 +640,11 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_cluster_scoped(create_k8s_client()))
+@pytest.mark.parametrize(
+    "test_case",
+    create_test_cases_cluster_scoped(create_k8s_client()),
+    ids=lambda tc: tc.name
+)
 @pytest.mark.asyncio
 async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
