@@ -451,9 +451,12 @@ class CompanionGraph:
         ]
 
         # Add Langfuse callback handler if enabled
-        langfuse_handler = LangfuseService().get_callback_handler()
-        if langfuse_handler:
-            callbacks.append(langfuse_handler)
+        try:
+            langfuse_handler = LangfuseService().get_callback_handler()
+            if langfuse_handler:
+                callbacks.append(langfuse_handler)
+        except Exception:
+            logger.warning("Failed to get Langfuse callback handler. Skipping Langfuse trace...", exc_info=True)
 
         run_config = RunnableConfig(
             configurable={

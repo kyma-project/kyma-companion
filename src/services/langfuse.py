@@ -5,7 +5,7 @@ from typing import Any
 import scrubadub
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, ToolMessage
-from langfuse import Langfuse, get_client
+from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
 from agents.common.state import GraphInput
@@ -62,13 +62,9 @@ class LangfuseService(metaclass=SingletonMeta):
                 base_url=LANGFUSE_HOST,
                 mask=self.masking_production_data,
             )
-            # Access singleton instance and check authentication.
-            langfuse = get_client()
-            if langfuse.auth_check():
-                logger.info("Langfuse client is authenticated and ready with host: {LANGFUSE_HOST}")
-            else:
-                logger.warning("Langfuse is enabled but Authentication failed. Disabling Langfuse.")
-                self.enabled = False
+            logger.debug(f"Langfuse client is initialized with host: {LANGFUSE_HOST}")
+        else:
+            logger.debug("Langfuse is disabled. No client will be initialized.")
 
     def get_callback_handler(
         self,
