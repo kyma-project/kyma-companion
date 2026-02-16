@@ -9,11 +9,11 @@ queries:
       namespace: test-function-8 # format: test-<resource_kind>-<test_id>
     expectations:
       - name: syntax_error
-        statement: points out that the serverless Function 'func1' calls Dates()
+        statement: points out that the serverless Function 'func1' calls Dates() or uses Dates
         threshold: 0.5
         required: true
       - name: syntax_fix
-        statement: points out that the serverless Function 'func1' should call Date() instead of Dates()
+        statement: suggests using Date() instead of Dates() or provides the correct syntax
         threshold: 0.5
         required: true
       - name: step_by_step_guide

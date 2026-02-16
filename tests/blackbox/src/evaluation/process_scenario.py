@@ -3,7 +3,7 @@ from logging import Logger
 
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_header
+from common.output import print_detailed_query_results, print_header
 
 from evaluation.companion.companion import (
     CompanionClient,
@@ -49,6 +49,9 @@ def process_scenario(scenario: Scenario, config: Config, validator: IValidator) 
             # If we fail to validate the scenario,
             # the scenario is marked as failed and we can return.
             return
+
+        # Print detailed results for this query
+        print_detailed_query_results(scenario, query)
 
     # Set the status to complete, if we made it through the whole test without issues.
     scenario.complete()
