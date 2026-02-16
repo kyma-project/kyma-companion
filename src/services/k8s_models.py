@@ -35,7 +35,7 @@ class InitContainerStatus(BaseModel):
 
 
 class PodLogsDiagnosticContext(BaseModel):
-    """Diagnostic context when pod logs are unavailable."""
+    """Diagnostic context when container logs are unavailable."""
 
     events: str = Field(..., description="Formatted text of recent pod events")
     container_statuses: dict[str, ContainerStatus] | None = Field(
@@ -49,17 +49,19 @@ class PodLogsDiagnosticContext(BaseModel):
 
 
 class PodLogs(BaseModel):
-    """Pod log contents."""
+    """Container log contents."""
 
-    current_pod: str = Field(..., description="Current pod logs as string with newlines")
-    previous_pod: str = Field(..., description="Previous pod logs as string with newlines or unavailability message")
+    current_container: str = Field(..., description="Current container logs as string with newlines")
+    previously_terminated_container: str = Field(
+        ..., description="Previously terminated container logs as string with newlines or unavailability message"
+    )
 
 
 class PodLogsResult(BaseModel):
-    """Complete pod logs result with optional diagnostic context."""
+    """Complete container logs result with optional diagnostic context."""
 
-    logs: PodLogs = Field(..., description="Pod logs for current and previous containers")
+    logs: PodLogs = Field(..., description="Container logs for current and previously terminated container instances")
     diagnostic_context: PodLogsDiagnosticContext | None = Field(
         default=None,
-        description="Optional diagnostic information when current pod logs are unavailable",
+        description="Optional diagnostic information when current container logs are unavailable",
     )

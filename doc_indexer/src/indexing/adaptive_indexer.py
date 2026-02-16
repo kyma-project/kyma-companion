@@ -6,7 +6,7 @@ from collections.abc import Generator
 
 import tiktoken
 from hdbcli import dbapi
-from indexing.contants import HEADER1, HEADER2, HEADER3
+from indexing.constants import HEADER1, HEADER2, HEADER3
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB

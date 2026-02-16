@@ -1,15 +1,19 @@
 import json
+from typing import Any, Literal
 
 import github_action_utils as gha_utils
 from deepeval.evaluate.utils import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
 from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import TestStatus
-from evaluation.scenario.scenario import ScenarioList
+from evaluation.scenario.scenario import Expectation, Query, Scenario, ScenarioList
 from prettytable import PrettyTable
 from termcolor import colored
 
 from common.metrics import Metrics
+
+# Constants
+REASON_PREVIEW_MAX_LENGTH = 200
 
 
 def print_header(name: str) -> None:
@@ -17,6 +21,207 @@ def print_header(name: str) -> None:
     print("\n************************************************************************")
     print(f"*** {name}")
     print("************************************************************************\n")
+
+
+def print_separator(char: str = "-", length: int = 80) -> None:
+    """Prints a separator line."""
+    print(char * length)
+
+
+def _print_query_header(scenario: Scenario, query: Query) -> None:
+    """Prints the header section with scenario description and query details."""
+    print_separator("=")
+    print(colored(f"Description: {scenario.description}", "cyan"))
+    print_separator("=")
+    print()
+
+    print(colored("Query:", "yellow"), f'"{query.user_query}"')
+    print(colored("Resource Context:", "yellow"))
+    print(f"  - Kind: {query.resource.kind}")
+    print(f"  - Name: {query.resource.name}")
+    print(f"  - Namespace: {query.resource.namespace}")
+    print()
+
+
+def _print_agent_response(query: Query) -> None:
+    """Prints the agent response section."""
+    print_separator()
+    print(colored("Agent Response:", "yellow"))
+    print_separator()
+    if query.actual_response:
+        response_lines = query.actual_response.split("\n")
+        for line in response_lines:
+            print(line)
+    else:
+        print(colored("(No response received)", "red"))
+    print()
+
+
+def _print_expectation_statement(expectation: Expectation) -> None:
+    """Prints the expectation statement with proper wrapping."""
+    statement_lines = expectation.statement.split("\n")
+    for i, line in enumerate(statement_lines):
+        if i == 0:
+            print(f'   Statement: "{line}"')
+        else:
+            print(f"              {line}")
+
+
+def _print_expectation_result_status(score: float, threshold: float, passed: bool) -> None:
+    """Prints the result status with appropriate coloring for borderline cases."""
+    if passed:
+        if score < threshold + 0.1 and score > threshold:
+            print(
+                colored(
+                    f"   Result: PASS (borderline!) - Score {score:.2f} just above threshold {threshold}",
+                    "yellow",
+                )
+            )
+        else:
+            print(colored("   Result: PASS", "green"))
+    else:
+        if score >= threshold - 0.1:
+            print(colored(f"   Result: FAIL (close) - Score {score:.2f} just below threshold {threshold}", "yellow"))
+        else:
+            print(colored("   Result: FAIL", "red"))
+
+
+def _print_metric_reason(metric_data: Any) -> None:
+    """Prints the metric reason if available, with truncation for long reasons."""
+    if hasattr(metric_data, "reason") and metric_data.reason:
+        reason_preview = metric_data.reason[:REASON_PREVIEW_MAX_LENGTH]
+        if len(metric_data.reason) > REASON_PREVIEW_MAX_LENGTH:
+            reason_preview += "..."
+        print(f"   Reason: {reason_preview}")
+
+
+def _check_borderline_expectations(query: Query, test_result: Any) -> bool:
+    """Checks if any required expectations have borderline passing scores."""
+    if not test_result.metrics_data:
+        return False
+
+    for expectation, metric_data in zip(query.expectations, test_result.metrics_data, strict=False):
+        if (
+            expectation.required
+            and metric_data.score is not None
+            and metric_data.score < expectation.threshold + 0.1
+            and metric_data.score >= expectation.threshold
+        ):
+            return True
+    return False
+
+
+def _print_expectations_summary(
+    required_passed: int,
+    required_total: int,
+    optional_passed: int,
+    optional_total: int,
+    has_borderline: bool,
+) -> None:
+    """Prints the final summary of expectation results."""
+    print_separator()
+    overall_passed = required_passed == required_total
+
+    summary_color: Literal["green", "red"]
+    if overall_passed:
+        summary_color = "green"
+        status_icon = "✅"
+        status_text = "TEST PASSED"
+    else:
+        summary_color = "red"
+        status_icon = "❌"
+        status_text = "TEST FAILED"
+
+    borderline_note = ""
+    if has_borderline and overall_passed:
+        borderline_note = colored(
+            "\n   ⚠️  Note: One or more required expectations passed with scores close to threshold",
+            "yellow",
+        )
+
+    summary_msg = (
+        f"{status_icon} {status_text} (Required: {required_passed}/{required_total} | "
+        f"Optional: {optional_passed}/{optional_total}){borderline_note}"
+    )
+    print(colored(summary_msg, summary_color, attrs=["bold"]))
+    print_separator()
+    print()
+
+
+def print_detailed_query_results(scenario: Scenario, query: Query) -> None:
+    """Prints detailed results for a query including response and expectation breakdown."""
+    _print_query_header(scenario, query)
+    _print_agent_response(query)
+
+    # Print expectation results
+    if not (query.evaluation_result and query.evaluation_result.test_results):
+        return
+
+    test_result = query.evaluation_result.test_results[0]
+
+    # Check if metrics_data is available
+    if not test_result.metrics_data:
+        return
+
+    # Count required vs optional expectations
+    required_count = sum(1 for exp in query.expectations if exp.required)
+    optional_count = len(query.expectations) - required_count
+
+    print_separator()
+    expectation_header = (
+        f"Expectation Results ({len(query.expectations)} total, {required_count} required, {optional_count} optional):"
+    )
+    print(colored(expectation_header, "yellow"))
+    print_separator()
+    print()
+
+    # Track pass/fail counts
+    required_passed = 0
+    required_total = 0
+    optional_passed = 0
+    optional_total = 0
+
+    # Print each expectation with its result
+    for expectation, metric_data in zip(query.expectations, test_result.metrics_data, strict=False):
+        # Determine if required or optional
+        req_type = (
+            colored("[REQUIRED]", "red", attrs=["bold"]) if expectation.required else colored("[OPTIONAL]", "blue")
+        )
+
+        # Get score and threshold
+        score = metric_data.score
+        threshold = expectation.threshold
+
+        # Skip if score is None
+        if score is None:
+            continue
+
+        # Determine pass/fail
+        passed = score >= threshold
+        status_icon = "✅" if passed else "❌"
+
+        # Track counts
+        if expectation.required:
+            required_total += 1
+            if passed:
+                required_passed += 1
+        else:
+            optional_total += 1
+            if passed:
+                optional_passed += 1
+
+        # Print expectation result
+        print(f"{status_icon} {req_type} {expectation.name} (score: {score:.2f}, threshold: {threshold})")
+
+        _print_expectation_statement(expectation)
+        _print_expectation_result_status(score, threshold, passed)
+        _print_metric_reason(metric_data)
+
+        print()
+
+    # Print summary
+    has_borderline = _check_borderline_expectations(query, test_result)
+    _print_expectations_summary(required_passed, required_total, optional_passed, optional_total, has_borderline)
 
 
 def colored_status(status: TestStatus) -> str:
