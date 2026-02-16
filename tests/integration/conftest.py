@@ -102,6 +102,11 @@ def app_models(init_config):
             integration_test_main_evaluator_model_name
         )
 
+    # Set temperature=0 for evaluator models for deterministic evaluation
+    for evaluator_model_name in [integration_test_mini_evaluator_model_name, integration_test_main_evaluator_model_name]:
+        if evaluator_model_name in models and hasattr(models[evaluator_model_name], "llm"):
+            models[evaluator_model_name].llm.temperature = 0.0
+
     return models
 
 
