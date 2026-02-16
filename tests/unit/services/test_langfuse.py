@@ -1,3 +1,4 @@
+import copy
 from typing import Any
 from unittest.mock import patch
 
@@ -144,9 +145,11 @@ def test_masking_production_data(
 ):
     service = LangfuseService()
     service.masking_mode = masking_mode
+    original_data = copy.deepcopy(input_data)
 
     # when / then
     assert service.masking_production_data(data=input_data) == expected_output, description
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(

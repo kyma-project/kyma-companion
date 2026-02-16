@@ -1,5 +1,6 @@
 """Langfuse tracing service for LangGraph."""
 
+import copy
 from typing import Any
 
 import scrubadub
@@ -93,6 +94,10 @@ class LangfuseService(metaclass=SingletonMeta):
         Returns:
             dict: The data with sensitive information removed.
         """
+        # deep clone the data to avoid mutating the original data.
+        # This is important because the same data is used by the agents in parallel and must not modify it in place.
+        data = copy.deepcopy(data)
+
         # First, check for critical information that should always be masked regardless of the masking mode.
         critical_masked = self._mask_critical(data)
         if critical_masked is not None:
