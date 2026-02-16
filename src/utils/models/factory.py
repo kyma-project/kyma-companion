@@ -34,6 +34,8 @@ class ModelType(str, Enum):
 
     GPT41 = "gpt-4.1"
     GPT41_MINI = "gpt-4.1-mini"
+    GPT5 = "gpt-5"
+    GPT5_MINI = "gpt-5-mini"
     TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
