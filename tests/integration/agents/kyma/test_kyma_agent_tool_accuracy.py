@@ -151,11 +151,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    create_test_cases_kyma_knowledge(create_k8s_client()),
-    ids=lambda tc: tc.name
-)
+@pytest.mark.parametrize("test_case", create_test_cases_kyma_knowledge(create_k8s_client()), ids=lambda tc: tc.name)
 @pytest.mark.asyncio
 async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
@@ -502,11 +498,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    create_test_cases_namespace_scoped(create_k8s_client()),
-    ids=lambda tc: tc.name
-)
+@pytest.mark.parametrize("test_case", create_test_cases_namespace_scoped(create_k8s_client()), ids=lambda tc: tc.name)
 @pytest.mark.asyncio
 async def test_kyma_agent_namespace_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
@@ -640,11 +632,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    create_test_cases_cluster_scoped(create_k8s_client()),
-    ids=lambda tc: tc.name
-)
+@pytest.mark.parametrize("test_case", create_test_cases_cluster_scoped(create_k8s_client()), ids=lambda tc: tc.name)
 @pytest.mark.asyncio
 async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
