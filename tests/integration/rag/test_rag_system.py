@@ -1,3 +1,7 @@
+import logging
+import traceback
+
+import github_action_utils as gha_utils
 import pytest
 from deepeval import assert_test
 from deepeval.metrics import (
@@ -73,7 +77,6 @@ async def test_rag_system(
     evaluation_metrics,
     caplog,
 ):
-    import logging
     caplog.set_level(logging.INFO)
 
     query = Query(text=user_query)
@@ -104,7 +107,10 @@ async def test_rag_system(
     )
 
     # Evaluate each metric individually to provide clear failure info
-    failed_metrics = []
+    # Separate infrastructure errors from quality failures
+    evaluation_errors = []  # Infrastructure problems (evaluator crashed)
+    failed_metrics = []     # Quality problems (score below threshold)
+
     for metric in evaluation_metrics:
         try:
             metric_result = metric.measure(test_case)
@@ -126,15 +132,30 @@ async def test_rag_system(
                     'reason': getattr(metric_result, 'reason', 'No reason provided')
                 })
         except Exception as e:
-            print(f"Metric {metric.name} raised exception: {e}")
-            failed_metrics.append({
-                'name': metric.name,
-                'score': 0.0,
-                'threshold': metric.threshold,
-                'reason': f'Exception: {str(e)}'
+            # This is an infrastructure problem, not a quality problem
+            evaluation_errors.append({
+                'metric': metric.name,
+                'error_type': type(e).__name__,
+                'error_msg': str(e)
             })
 
-    # Provide clear assertion message if any metrics failed
+            # Print full stack trace in collapsible section
+            with gha_utils.group(f"⚠️  Stack Trace: {metric.name} - {type(e).__name__}"):
+                print(f"Exception: {type(e).__name__}: {str(e)}")
+                traceback.print_exc()
+
+    # Fail fast if evaluation infrastructure is broken
+    if evaluation_errors:
+        error_msg = f"\n❌ EVALUATION INFRASTRUCTURE ERROR\n\n"
+        error_msg += f"Query: {user_query}\n\n"
+        error_msg += "The following metrics could not be evaluated:\n"
+        for err in evaluation_errors:
+            error_msg += f"  • {err['metric']}: {err['error_type']}\n"
+        error_msg += "\nThis indicates a problem with the evaluation system, not the test output.\n"
+        error_msg += "Check the stack traces above for details.\n"
+        pytest.fail(error_msg)
+
+    # Provide clear assertion message if any metrics failed (quality issues)
     if failed_metrics:
         failure_msg = f"\nRAG System Test Failed for query: '{user_query}'\n\n"
         failure_msg += f"Retrieved {len(retrieved_docs)} documents\n\n"

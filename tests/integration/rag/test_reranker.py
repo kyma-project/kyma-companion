@@ -1,5 +1,7 @@
 import os
+import traceback
 
+import github_action_utils as gha_utils
 import pytest
 from deepeval import assert_test
 from deepeval.metrics.contextual_precision.contextual_precision import (
@@ -320,7 +322,18 @@ async def test_chain_ainvoke(
                 failure_msg += f"  {marker} {i}. {doc}\n"
             pytest.fail(failure_msg)
     except Exception as e:
-        pytest.fail(f"\nReranker Test Exception: {str(e)}\nQuery: {given_queries[0]}")
+        # Infrastructure error - show full stack trace
+        with gha_utils.group(f"⚠️  Stack Trace: {metric.name} - {type(e).__name__}"):
+            print(f"Exception: {type(e).__name__}: {str(e)}")
+            traceback.print_exc()
+
+        error_msg = f"\n❌ RERANKER EVALUATION ERROR\n\n"
+        error_msg += f"Query: {given_queries[0]}\n"
+        error_msg += f"Metric: {metric.name}\n"
+        error_msg += f"Exception: {type(e).__name__}: {str(e)}\n\n"
+        error_msg += "This indicates a problem with the evaluation system, not the reranker output.\n"
+        error_msg += "Check the stack trace above for details.\n"
+        pytest.fail(error_msg)
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:
