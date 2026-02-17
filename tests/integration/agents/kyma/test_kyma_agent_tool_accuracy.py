@@ -174,7 +174,6 @@ async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_
     )
 
 
-
 @dataclass
 class NamespaceScopedTestCase:
     """Test case for namespace-scoped agent testing with invariants."""
