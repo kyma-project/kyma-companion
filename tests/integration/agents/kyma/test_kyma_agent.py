@@ -817,11 +817,11 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{'resource_namespace': 'sample-ns'}"),
-                    HumanMessage(content="How to create an application with Kyma? and register external service"),
+                    HumanMessage(content="How to create an application with Kyma and register an external service?"),
                 ],
                 subtasks=[
                     {
-                        "description": "How to create an application with Kyma?",
+                        "description": "How to create an application with Kyma and register an external service?",
                         "task_title": "Fetching info on creating application",
                         "assigned_to": "KymaAgent",
                         "status": "pending",
@@ -834,7 +834,7 @@ async def test_invoke_chain(
                     },
                 ],
                 my_task=SubTask(
-                    description="How to create an application with Kyma?",
+                    description="How to create an application with Kyma and register an external service?",
                     task_title="Fetching info on creating application",
                     assigned_to="KymaAgent",
                 ),
