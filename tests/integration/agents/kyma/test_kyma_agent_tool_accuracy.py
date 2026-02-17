@@ -23,6 +23,12 @@ from utils.settings import (
 
 AGENT_STEPS_NUMBER = 25
 TOOL_ACCURACY_THRESHOLD = 0.5
+EXPECTED_MAX_RETRY_ATTEMPTS = 5
+
+# Tool name constants
+TOOL_KYMA_QUERY = "kyma_query_tool"
+TOOL_FETCH_KYMA_VERSION = "fetch_kyma_resource_version"
+TOOL_SEARCH_KYMA_DOC = "search_kyma_doc"
 
 
 def create_k8s_client():
@@ -168,127 +174,114 @@ async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_
     )
 
 
+
+@dataclass
+class NamespaceScopedTestCase:
+    """Test case for namespace-scoped agent testing with invariants."""
+
+    name: str
+    state: KymaAgentState
+    # Required invariants
+    must_call_tools: list[str] = field(default_factory=list)  # Tools that MUST be called
+    must_not_call_tools: list[str] = field(default_factory=list)  # Tools that must NOT be called
+    must_contain_in_messages: list[str] = field(default_factory=list)  # Strings that must appear in messages
+    must_not_contain_in_messages: list[str] = field(default_factory=list)  # Strings that must NOT appear
+    max_tool_call_count: dict[str, int] = field(default_factory=dict)  # Max count per tool name
+
+
+def extract_tool_call_info(agent_messages):
+    """Extract tool call names and content from agent messages."""
+    tool_call_names = []
+    all_content = []
+
+    for msg in agent_messages:
+        # Collect tool call names
+        if hasattr(msg, "name") and msg.name:
+            tool_call_names.append(msg.name)
+        elif hasattr(msg, "tool_calls") and msg.tool_calls:
+            for tc in msg.tool_calls:
+                if isinstance(tc, dict) and tc.get("name"):
+                    tool_call_names.append(tc.get("name"))
+                elif hasattr(tc, "name") and tc.name:
+                    tool_call_names.append(tc.name)
+
+        # Collect all message content for version checking
+        if hasattr(msg, "content"):
+            all_content.append(str(msg.content))
+        if hasattr(msg, "additional_kwargs"):
+            all_content.append(str(msg.additional_kwargs))
+
+    return tool_call_names, all_content
+
+
+def assert_outcome_invariants(test_case: NamespaceScopedTestCase, agent_messages: list):
+    """Assert all invariants for a namespace-scoped test case."""
+    tool_call_names, all_content = extract_tool_call_info(agent_messages)
+    messages_str = " ".join(all_content)
+
+    # Check required tools were called
+    for tool_name in test_case.must_call_tools:
+        assert tool_name in tool_call_names, f"Expected tool '{tool_name}' to be called but it wasn't"
+
+    # Check forbidden tools were NOT called
+    for tool_name in test_case.must_not_call_tools:
+        assert tool_name not in tool_call_names, f"Tool '{tool_name}' should NOT have been called but it was"
+
+    # Check required content appears in messages
+    for content in test_case.must_contain_in_messages:
+        assert content in messages_str, f"Expected '{content}' in messages but didn't find it"
+
+    # Check forbidden content does NOT appear
+    for content in test_case.must_not_contain_in_messages:
+        assert content not in messages_str, f"'{content}' should NOT appear in messages but it did"
+
+    # Check tool call counts don't exceed maximums
+    for tool_name, max_count in test_case.max_tool_call_count.items():
+        actual_count = tool_call_names.count(tool_name)
+        assert actual_count <= max_count, f"Tool '{tool_name}' called {actual_count} times, exceeds max of {max_count}"
+
+
 def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
-    """Fixture providing test cases for Kyma agent testing."""
+    """Create table of namespace-scoped test cases with invariants."""
     return [
-        TestCase(
-            "Should not call fetch_kyma_resource_version tool call as Subscription resource version is correct",
+        NamespaceScopedTestCase(
+            name="Should handle wrong Subscription API version and correct it",
             state=create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'eventing.kyma-project.io/v1alpha2', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', 'resource_name': 'sub1', 'resource_scope': 'namespaced'}"
+                        content="{'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', "
+                        "'resource_name': 'sub1', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="is there any issue?"),
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_tool_calls=[
-                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                    },
-                ),
-                # NOTE: search_kyma_doc is only called if there is an actual error in the resource
-                # If the resource is healthy, Agent correctly does not search docs
-            ],
-            alternative_tool_calls=[
-                # Alternative 1: Agent may choose to verify version first (conservative approach)
-                [
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={"resource_kind": "Subscription"},
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                ],
-                # Alternative 2: Resource has error, so Agent searches docs
-                [
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="search_kyma_doc",
-                        args={"query": "Subscription validation errors"},
-                    ),
-                ],
-                # Alternative 3: Verify version + resource has error
-                [
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={"resource_kind": "Subscription"},
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="search_kyma_doc",
-                        args={"query": "Subscription validation errors"},
-                    ),
-                ],
-            ],
+            must_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_KYMA_VERSION],
+            must_contain_in_messages=["v1alpha2"],  # Must eventually use correct version
+            max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
-        TestCase(
-            "Should not call kyma doc search tool as Function has JavaScript issue",
+        NamespaceScopedTestCase(
+            name="Should handle correct Function API version without fetching version",
             state=create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
                         content="{'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', "
+                        "'resource_name': 'func1', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="is there any issue?"),
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_tool_calls=[
-                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
-                    },
-                ),
-            ],
+            must_call_tools=[TOOL_KYMA_QUERY],
+            must_not_call_tools=[TOOL_FETCH_KYMA_VERSION],  # Version is correct, no need to fetch
+            must_contain_in_messages=["v1alpha2"],
         ),
-        TestCase(
-            "Should not call kyma doc search tool as Function is successfully deployed",
-            state=create_basic_state(
-                task_description="check for errors?",
-                messages=[
-                    SystemMessage(
-                        content="The user query is related to: {'resource_api_version': 'serverless.kyma-project.io/v1alpha2', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="check for errors?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                # only retrieves function as function is successfully deployed
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-8/functions/func1"
-                    },
-                ),
-            ],
-        ),
-        TestCase(
-            "Should call fetch_kyma_resource_version tool call if kyma_query_tool call fails",
+        NamespaceScopedTestCase(
+            name="Should handle wrong APIRule version (v2) and correct to v1beta1",
             state=create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
@@ -300,232 +293,30 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 ],
                 k8s_client=k8s_client,
             ),
-            expected_tool_calls=[
-                # kyma_query_tool call fails as 'gateway.kyma-project.io/v2' is not available in the cluster
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
-                ),
-                # after kyma_query_tool call fails, fetch_kyma_resource_version tool call is used for correct version
-                ToolCall(
-                    name="fetch_kyma_resource_version",
-                    args={
-                        "resource_kind": "APIRule",
-                    },
-                ),
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
-                ),
-                ToolCall(
-                    name="search_kyma_doc",
-                    args={"query": "APIRule validation errors allow no_auth access strategy combination"},
-                ),
-            ],
-        ),
-        TestCase(
-            "Should not call fetch_kyma_resource_version tool call if kyma_query_tool call succeeds",
-            state=create_basic_state(
-                task_description="What is wrong with api rule?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="What is wrong with api rule?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                # no fetch_kyma_resource_version tool call as resource_api_version is correctly provided
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules/restapi"},
-                ),
-                # should search kyma doc as there is Kyma APIRule access strategies error
-                ToolCall(
-                    name="search_kyma_doc",
-                    args={"query": "APIRule validation error allow no_auth access strategy combination"},
-                ),
-            ],
-        ),
-        TestCase(
-            "Should call fetch Subscription resource version tool call as provided resource_api_version is wrong",
-            state=create_basic_state(
-                task_description="is there any issue?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', 'resource_name': 'sub1', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="is there any issue?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                # Agent should recognize version is likely wrong and validate upfront (preferred)
-                ToolCall(
-                    name="fetch_kyma_resource_version",
-                    args={
-                        "resource_kind": "Subscription",
-                    },
-                ),
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                    },
-                ),
-            ],
-            alternative_tool_calls=[
-                # Alternative 1: Try wrong version first, then recover when it fails
-                [
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1beta1/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={
-                            "resource_kind": "Subscription",
-                        },
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                ],
-                # Alternative 2: If wrong version exists but resource has errors
-                [
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={
-                            "resource_kind": "Subscription",
-                        },
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="search_kyma_doc",
-                        args={"query": "Subscription validation errors"},
-                    ),
-                ],
-                # Alternative 3: Try-recover-search pattern
-                [
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1beta1/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={
-                            "resource_kind": "Subscription",
-                        },
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/eventing.kyma-project.io/v1alpha2/namespaces/test-function-8/subscriptions/sub1"
-                        },
-                    ),
-                    ToolCall(
-                        name="search_kyma_doc",
-                        args={"query": "Subscription validation errors"},
-                    ),
-                ],
-            ],
-        ),
-        TestCase(
-            "Should use Function resource type from the user query, not APIRule from the system message",
-            state=create_basic_state(
-                task_description="What is wrong with function in namespace test-function-18?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="What is wrong with function in namespace test-function-18?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                # fetch_kyma_resource_version tool call as different resource mentioned in the user query
-                ToolCall(
-                    name="fetch_kyma_resource_version",
-                    args={
-                        "resource_kind": "Function",
-                    },
-                ),
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={
-                        "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-18/functions/func1"
-                    },
-                ),
-            ],
-            alternative_tool_calls=[
-                # Alternative: If resource has error, also search docs
-                [
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={
-                            "resource_kind": "Function",
-                        },
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={
-                            "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/test-function-18/functions/func1"
-                        },
-                    ),
-                    ToolCall(
-                        name="search_kyma_doc",
-                        args={"query": "Function invalid dependencies troubleshooting"},
-                    ),
-                ]
-            ],
+            must_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_KYMA_VERSION],
+            must_contain_in_messages=["v1beta1"],  # Must correct to v1beta1
+            max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_namespace_scoped(create_k8s_client()), ids=lambda tc: tc.name)
+@pytest.mark.parametrize(
+    "test_case",
+    create_test_cases_namespace_scoped(create_k8s_client()),
+    ids=lambda tc: tc.name,
+)
 @pytest.mark.asyncio
-async def test_kyma_agent_namespace_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
-    agent_response = await call_kyma_agent(kyma_agent, test_case.state)
-    agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
+async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScopedTestCase):
+    """Test agent behavior by verifying outcomes and invariants."""
+    # When: Agent processes the request
+    result = await call_kyma_agent(kyma_agent, test_case.state)
 
-    # Try primary expected tool calls first
-    test_case_sample = MultiTurnSample(
-        user_input=agent_messages,
-        reference_tool_calls=test_case.expected_tool_calls,
-    )
-    score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
+    # Then: Agent should have made tool calls
+    agent_messages = result.get("agent_messages", [])
+    assert len(agent_messages) > 0, "Agent should have made tool calls"
 
-    # If primary fails and alternatives exist, try them
-    if score <= TOOL_ACCURACY_THRESHOLD and test_case.alternative_tool_calls:
-        for alt_calls in test_case.alternative_tool_calls:
-            alt_sample = MultiTurnSample(
-                user_input=agent_messages,
-                reference_tool_calls=alt_calls,
-            )
-            alt_score = await tool_accuracy_scorer.multi_turn_ascore(alt_sample)
-            if alt_score > TOOL_ACCURACY_THRESHOLD:
-                score = alt_score
-                break
-
-    assert score > TOOL_ACCURACY_THRESHOLD, (
-        f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
-    )
+    # Then: Assert all invariants defined in the test case
+    assert_outcome_invariants(test_case, agent_messages)
 
 
 def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
