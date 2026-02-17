@@ -3,7 +3,6 @@ import traceback
 
 import github_action_utils as gha_utils
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import (
     ContextualRecallMetric,
     FaithfulnessMetric,
@@ -16,6 +15,89 @@ from integration.rag.datasets.istio import cases as istio_cases
 from integration.rag.datasets.serverless import cases as serverless_cases
 from integration.rag.datasets.telemetry import cases as telemetry_cases
 from rag.system import Query, RAGSystem
+
+# Constants
+MAX_DOCS_TO_PREVIEW = 3
+
+
+def _print_retrieved_docs_summary(user_query: str, retrieved_docs: list) -> None:
+    """Print a summary of retrieved documents for debugging."""
+    print(f"\n{'=' * 80}")
+    print(f"Query: {user_query}")
+    print(f"Retrieved {len(retrieved_docs)} documents:")
+    for i, doc in enumerate(retrieved_docs[:MAX_DOCS_TO_PREVIEW], 1):
+        title = doc.metadata.get("title", "No title")
+        preview = doc.page_content[:100].replace("\n", " ")
+        print(f"  {i}. {title}")
+        print(f"     Preview: {preview}...")
+    if len(retrieved_docs) > MAX_DOCS_TO_PREVIEW:
+        print(f"  ... and {len(retrieved_docs) - MAX_DOCS_TO_PREVIEW} more")
+    print(f"{'=' * 80}\n")
+
+
+def _evaluate_metric(metric, test_case) -> tuple[bool, dict | None]:
+    """
+    Evaluate a single metric.
+
+    Returns:
+        Tuple of (success, result_dict or error_dict)
+        - If success=True, result_dict contains metric failure info or None if passed
+        - If success=False, error_dict contains infrastructure error info
+    """
+    try:
+        metric_result = metric.measure(test_case)
+        score = metric_result.score
+        passed = score >= metric.threshold
+
+        print(f"Metric: {metric.name}")
+        print(f"  Score: {score:.3f} (threshold: {metric.threshold})")
+        print(f"  Status: {'✓ PASS' if passed else '✗ FAIL'}")
+        if hasattr(metric_result, "reason") and metric_result.reason:
+            print(f"  Reason: {metric_result.reason}")
+        print()
+
+        if not passed:
+            return True, {
+                "name": metric.name,
+                "score": score,
+                "threshold": metric.threshold,
+                "reason": getattr(metric_result, "reason", "No reason provided"),
+            }
+        return True, None
+    except Exception as e:
+        # Infrastructure error
+        with gha_utils.group(f"⚠️  Stack Trace: {metric.name} - {type(e).__name__}"):
+            print(f"Exception: {type(e).__name__}: {str(e)}")
+            traceback.print_exc()
+
+        return False, {"metric": metric.name, "error_type": type(e).__name__, "error_msg": str(e)}
+
+
+def _build_infrastructure_error_message(user_query: str, evaluation_errors: list[dict]) -> str:
+    """Build error message for infrastructure failures."""
+    error_msg = "\n❌ EVALUATION INFRASTRUCTURE ERROR\n\n"
+    error_msg += f"Query: {user_query}\n\n"
+    error_msg += "The following metrics could not be evaluated:\n"
+    for err in evaluation_errors:
+        error_msg += f"  • {err['metric']}: {err['error_type']}\n"
+    error_msg += "\nThis indicates a problem with the evaluation system, not the test output.\n"
+    error_msg += "Check the stack traces above for details.\n"
+    return error_msg
+
+
+def _build_quality_failure_message(user_query: str, retrieved_docs: list, failed_metrics: list[dict]) -> str:
+    """Build error message for quality failures."""
+    failure_msg = f"\nRAG System Test Failed for query: '{user_query}'\n\n"
+    failure_msg += f"Retrieved {len(retrieved_docs)} documents\n\n"
+    failure_msg += "Failed Metrics:\n"
+    for fm in failed_metrics:
+        failure_msg += f"  • {fm['name']}: score={fm['score']:.3f}, threshold={fm['threshold']}\n"
+        failure_msg += f"    Reason: {fm['reason']}\n"
+    failure_msg += "\nTop retrieved doc titles:\n"
+    for i, doc in enumerate(retrieved_docs[:MAX_DOCS_TO_PREVIEW], 1):
+        title = doc.metadata.get("title", "No title")
+        failure_msg += f"  {i}. {title}\n"
+    return failure_msg
 
 
 @pytest.fixture
@@ -87,17 +169,7 @@ async def test_rag_system(
     retrieved_docs_content = [doc.page_content for doc in retrieved_docs]
 
     # Log retrieved documents for debugging
-    print(f"\n{'='*80}")
-    print(f"Query: {user_query}")
-    print(f"Retrieved {len(retrieved_docs)} documents:")
-    for i, doc in enumerate(retrieved_docs[:3], 1):  # Show first 3
-        title = doc.metadata.get('title', 'No title')
-        preview = doc.page_content[:100].replace('\n', ' ')
-        print(f"  {i}. {title}")
-        print(f"     Preview: {preview}...")
-    if len(retrieved_docs) > 3:
-        print(f"  ... and {len(retrieved_docs) - 3} more")
-    print(f"{'='*80}\n")
+    _print_retrieved_docs_summary(user_query, retrieved_docs)
 
     test_case = LLMTestCase(
         actual_output="",  # we dont evaluate any llm output
@@ -109,63 +181,22 @@ async def test_rag_system(
     # Evaluate each metric individually to provide clear failure info
     # Separate infrastructure errors from quality failures
     evaluation_errors = []  # Infrastructure problems (evaluator crashed)
-    failed_metrics = []     # Quality problems (score below threshold)
+    failed_metrics = []  # Quality problems (score below threshold)
 
     for metric in evaluation_metrics:
-        try:
-            metric_result = metric.measure(test_case)
-            score = metric_result.score
-            passed = score >= metric.threshold
-
-            print(f"Metric: {metric.name}")
-            print(f"  Score: {score:.3f} (threshold: {metric.threshold})")
-            print(f"  Status: {'✓ PASS' if passed else '✗ FAIL'}")
-            if hasattr(metric_result, 'reason') and metric_result.reason:
-                print(f"  Reason: {metric_result.reason}")
-            print()
-
-            if not passed:
-                failed_metrics.append({
-                    'name': metric.name,
-                    'score': score,
-                    'threshold': metric.threshold,
-                    'reason': getattr(metric_result, 'reason', 'No reason provided')
-                })
-        except Exception as e:
-            # This is an infrastructure problem, not a quality problem
-            evaluation_errors.append({
-                'metric': metric.name,
-                'error_type': type(e).__name__,
-                'error_msg': str(e)
-            })
-
-            # Print full stack trace in collapsible section
-            with gha_utils.group(f"⚠️  Stack Trace: {metric.name} - {type(e).__name__}"):
-                print(f"Exception: {type(e).__name__}: {str(e)}")
-                traceback.print_exc()
+        success, result = _evaluate_metric(metric, test_case)
+        if success:
+            if result is not None:
+                failed_metrics.append(result)
+        else:
+            evaluation_errors.append(result)
 
     # Fail fast if evaluation infrastructure is broken
     if evaluation_errors:
-        error_msg = f"\n❌ EVALUATION INFRASTRUCTURE ERROR\n\n"
-        error_msg += f"Query: {user_query}\n\n"
-        error_msg += "The following metrics could not be evaluated:\n"
-        for err in evaluation_errors:
-            error_msg += f"  • {err['metric']}: {err['error_type']}\n"
-        error_msg += "\nThis indicates a problem with the evaluation system, not the test output.\n"
-        error_msg += "Check the stack traces above for details.\n"
+        error_msg = _build_infrastructure_error_message(user_query, evaluation_errors)
         pytest.fail(error_msg)
 
     # Provide clear assertion message if any metrics failed (quality issues)
     if failed_metrics:
-        failure_msg = f"\nRAG System Test Failed for query: '{user_query}'\n\n"
-        failure_msg += f"Retrieved {len(retrieved_docs)} documents\n\n"
-        failure_msg += "Failed Metrics:\n"
-        for fm in failed_metrics:
-            failure_msg += f"  • {fm['name']}: score={fm['score']:.3f}, threshold={fm['threshold']}\n"
-            failure_msg += f"    Reason: {fm['reason']}\n"
-        failure_msg += f"\nTop retrieved doc titles:\n"
-        for i, doc in enumerate(retrieved_docs[:3], 1):
-            title = doc.metadata.get('title', 'No title')
-            failure_msg += f"  {i}. {title}\n"
-
+        failure_msg = _build_quality_failure_message(user_query, retrieved_docs, failed_metrics)
         pytest.fail(failure_msg)

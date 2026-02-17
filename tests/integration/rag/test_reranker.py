@@ -3,7 +3,6 @@ import traceback
 
 import github_action_utils as gha_utils
 import pytest
-from deepeval import assert_test
 from deepeval.metrics.contextual_precision.contextual_precision import (
     ContextualPrecisionMetric,
 )
@@ -17,6 +16,59 @@ from rag.reranker.reranker import (
     format_queries,
 )
 from utils.settings import MAIN_MODEL_MINI_NAME
+
+# Constants
+MAX_DOCS_TO_SHOW_IN_ERROR = 5
+
+
+def _build_missing_docs_error(given_queries: list, missing_docs: set, actual_docs_titles: list) -> str:
+    """Build error message for missing expected documents."""
+    failure_msg = "\nReranker Test Failed: Expected documents not found\n\n"
+    failure_msg += f"Query: {given_queries[0]}\n\n"
+    failure_msg += f"Missing documents ({len(missing_docs)}):\n"
+    for doc in missing_docs:
+        failure_msg += f"  ✗ {doc}\n"
+    failure_msg += f"\nActual documents returned ({len(actual_docs_titles)}):\n"
+    for i, doc in enumerate(actual_docs_titles[:MAX_DOCS_TO_SHOW_IN_ERROR], 1):
+        failure_msg += f"  {i}. {doc}\n"
+    if len(actual_docs_titles) > MAX_DOCS_TO_SHOW_IN_ERROR:
+        failure_msg += f"  ... and {len(actual_docs_titles) - MAX_DOCS_TO_SHOW_IN_ERROR} more\n"
+    return failure_msg
+
+
+def _build_precision_failure_error(
+    given_queries: list,
+    score: float,
+    threshold: float,
+    metric_result,
+    expected_docs_titles: list,
+    actual_docs_titles: list,
+) -> str:
+    """Build error message for contextual precision failures."""
+    failure_msg = "\nReranker Test Failed: Contextual Precision below threshold\n\n"
+    failure_msg += f"Query: {given_queries[0]}\n"
+    failure_msg += f"Score: {score:.3f} (threshold: {threshold})\n\n"
+    if hasattr(metric_result, "reason"):
+        failure_msg += f"Reason: {metric_result.reason}\n\n"
+    failure_msg += f"Expected docs ({len(expected_docs_titles)}):\n"
+    for doc in expected_docs_titles:
+        failure_msg += f"  ✓ {doc}\n"
+    failure_msg += f"\nActual ranking ({len(actual_docs_titles)}):\n"
+    for i, doc in enumerate(actual_docs_titles, 1):
+        marker = "✓" if doc in expected_docs_titles else " "
+        failure_msg += f"  {marker} {i}. {doc}\n"
+    return failure_msg
+
+
+def _build_evaluation_error(given_queries: list, metric, e: Exception) -> str:
+    """Build error message for evaluation infrastructure errors."""
+    error_msg = "\n❌ RERANKER EVALUATION ERROR\n\n"
+    error_msg += f"Query: {given_queries[0]}\n"
+    error_msg += f"Metric: {metric.name}\n"
+    error_msg += f"Exception: {type(e).__name__}: {str(e)}\n\n"
+    error_msg += "This indicates a problem with the evaluation system, not the reranker output.\n"
+    error_msg += "Check the stack trace above for details.\n"
+    return error_msg
 
 
 @pytest.fixture
@@ -282,16 +334,7 @@ async def test_chain_ainvoke(
     # Check document subset first with clear error message
     missing_docs = set(expected_docs_titles) - set(actual_docs_titles)
     if missing_docs:
-        failure_msg = f"\nReranker Test Failed: Expected documents not found\n\n"
-        failure_msg += f"Query: {given_queries[0]}\n\n"
-        failure_msg += f"Missing documents ({len(missing_docs)}):\n"
-        for doc in missing_docs:
-            failure_msg += f"  ✗ {doc}\n"
-        failure_msg += f"\nActual documents returned ({len(actual_docs_titles)}):\n"
-        for i, doc in enumerate(actual_docs_titles[:5], 1):
-            failure_msg += f"  {i}. {doc}\n"
-        if len(actual_docs_titles) > 5:
-            failure_msg += f"  ... and {len(actual_docs_titles) - 5} more\n"
+        failure_msg = _build_missing_docs_error(given_queries, missing_docs, actual_docs_titles)
         pytest.fail(failure_msg)
 
     # Evaluate contextual precision metric
@@ -304,22 +347,13 @@ async def test_chain_ainvoke(
         print(f"\nReranker Metric: {metric.name}")
         print(f"  Score: {score:.3f} (threshold: {threshold})")
         print(f"  Status: {'✓ PASS' if passed else '✗ FAIL'}")
-        if hasattr(metric_result, 'reason') and metric_result.reason:
+        if hasattr(metric_result, "reason") and metric_result.reason:
             print(f"  Reason: {metric_result.reason}")
 
         if not passed:
-            failure_msg = f"\nReranker Test Failed: Contextual Precision below threshold\n\n"
-            failure_msg += f"Query: {given_queries[0]}\n"
-            failure_msg += f"Score: {score:.3f} (threshold: {threshold})\n\n"
-            if hasattr(metric_result, 'reason'):
-                failure_msg += f"Reason: {metric_result.reason}\n\n"
-            failure_msg += f"Expected docs ({len(expected_docs_titles)}):\n"
-            for doc in expected_docs_titles:
-                failure_msg += f"  ✓ {doc}\n"
-            failure_msg += f"\nActual ranking ({len(actual_docs_titles)}):\n"
-            for i, doc in enumerate(actual_docs_titles, 1):
-                marker = "✓" if doc in expected_docs_titles else " "
-                failure_msg += f"  {marker} {i}. {doc}\n"
+            failure_msg = _build_precision_failure_error(
+                given_queries, score, threshold, metric_result, expected_docs_titles, actual_docs_titles
+            )
             pytest.fail(failure_msg)
     except Exception as e:
         # Infrastructure error - show full stack trace
@@ -327,12 +361,7 @@ async def test_chain_ainvoke(
             print(f"Exception: {type(e).__name__}: {str(e)}")
             traceback.print_exc()
 
-        error_msg = f"\n❌ RERANKER EVALUATION ERROR\n\n"
-        error_msg += f"Query: {given_queries[0]}\n"
-        error_msg += f"Metric: {metric.name}\n"
-        error_msg += f"Exception: {type(e).__name__}: {str(e)}\n\n"
-        error_msg += "This indicates a problem with the evaluation system, not the reranker output.\n"
-        error_msg += "Check the stack trace above for details.\n"
+        error_msg = _build_evaluation_error(given_queries, metric, e)
         pytest.fail(error_msg)
 
 
