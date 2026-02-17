@@ -88,7 +88,7 @@ def create_basic_state(
 
 
 @dataclass
-class TestCase:
+class KymaKnowledgeTestCase:
     name: str
     state: KymaAgentState
     expected_tool_calls: list[ToolCall] | None = None
@@ -114,7 +114,7 @@ async def call_kyma_agent(kyma_agent, state):
 def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should call kyma doc search tool for general Kyma knowledge",
             state=create_basic_state(
                 task_description="what is Kyma?",
@@ -134,7 +134,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
                 ),
             ],
         ),
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should call kyma doc search tool for Kyma module enablement",
             state=create_basic_state(
                 task_description="how to enable a module?",
@@ -159,7 +159,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
 
 @pytest.mark.parametrize("test_case", create_test_cases_kyma_knowledge(create_k8s_client()), ids=lambda tc: tc.name)
 @pytest.mark.asyncio
-async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
+async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
     agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
 
@@ -321,7 +321,7 @@ async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScope
 def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
             state=create_basic_state(
                 task_description="What is wrong with api rules?",
@@ -363,7 +363,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ],
             ],
         ),
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should use cluster scope retrieval with kyma query tool",
             state=create_basic_state(
                 task_description="check all subscriptions in the cluster",
@@ -389,7 +389,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ),
             ],
         ),
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should use cluster scope retrieval with kyma query tool",
             state=create_basic_state(
                 task_description="check all resources in the cluster",
@@ -404,7 +404,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             ),
             expected_tool_calls=[],
         ),
-        TestCase(
+        KymaKnowledgeTestCase(
             "Should use cluster scope retrieval with kyma query tool",
             state=create_basic_state(
                 task_description="show me all Kyma resources",
@@ -424,7 +424,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
 
 @pytest.mark.parametrize("test_case", create_test_cases_cluster_scoped(create_k8s_client()), ids=lambda tc: tc.name)
 @pytest.mark.asyncio
-async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: TestCase):
+async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
     ragas_messages = convert_to_ragas_messages(response["agent_messages"])
 
