@@ -276,10 +276,51 @@ async def test_chain_ainvoke(
 
     actual_docs_titles = get_docs_titles(actual_docs)
     expected_docs_titles = get_docs_titles(expected_docs)
-    # Assert that the expected documents are in the actual list of documents.
-    assert set(expected_docs_titles).issubset(set(actual_docs_titles)), "Expected documents not found in actual output"
-    # Assert that the contextual precision is above the threshold.
-    assert_test(test_case, [contextual_precision(threshold)])
+
+    # Check document subset first with clear error message
+    missing_docs = set(expected_docs_titles) - set(actual_docs_titles)
+    if missing_docs:
+        failure_msg = f"\nReranker Test Failed: Expected documents not found\n\n"
+        failure_msg += f"Query: {given_queries[0]}\n\n"
+        failure_msg += f"Missing documents ({len(missing_docs)}):\n"
+        for doc in missing_docs:
+            failure_msg += f"  ✗ {doc}\n"
+        failure_msg += f"\nActual documents returned ({len(actual_docs_titles)}):\n"
+        for i, doc in enumerate(actual_docs_titles[:5], 1):
+            failure_msg += f"  {i}. {doc}\n"
+        if len(actual_docs_titles) > 5:
+            failure_msg += f"  ... and {len(actual_docs_titles) - 5} more\n"
+        pytest.fail(failure_msg)
+
+    # Evaluate contextual precision metric
+    metric = contextual_precision(threshold)
+    try:
+        metric_result = metric.measure(test_case)
+        score = metric_result.score
+        passed = score >= threshold
+
+        print(f"\nReranker Metric: {metric.name}")
+        print(f"  Score: {score:.3f} (threshold: {threshold})")
+        print(f"  Status: {'✓ PASS' if passed else '✗ FAIL'}")
+        if hasattr(metric_result, 'reason') and metric_result.reason:
+            print(f"  Reason: {metric_result.reason}")
+
+        if not passed:
+            failure_msg = f"\nReranker Test Failed: Contextual Precision below threshold\n\n"
+            failure_msg += f"Query: {given_queries[0]}\n"
+            failure_msg += f"Score: {score:.3f} (threshold: {threshold})\n\n"
+            if hasattr(metric_result, 'reason'):
+                failure_msg += f"Reason: {metric_result.reason}\n\n"
+            failure_msg += f"Expected docs ({len(expected_docs_titles)}):\n"
+            for doc in expected_docs_titles:
+                failure_msg += f"  ✓ {doc}\n"
+            failure_msg += f"\nActual ranking ({len(actual_docs_titles)}):\n"
+            for i, doc in enumerate(actual_docs_titles, 1):
+                marker = "✓" if doc in expected_docs_titles else " "
+                failure_msg += f"  {marker} {i}. {doc}\n"
+            pytest.fail(failure_msg)
+    except Exception as e:
+        pytest.fail(f"\nReranker Test Exception: {str(e)}\nQuery: {given_queries[0]}")
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:
