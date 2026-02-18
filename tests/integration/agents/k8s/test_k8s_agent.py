@@ -199,17 +199,17 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{'resource_namespace': 'production'}"),
-                    HumanMessage(content="Is there any issue with my namespace"),
+                    HumanMessage(content="Is there any issue with my namespace?"),
                 ],
                 subtasks=[
                     {
-                        "description": "Is there any issue with my namespace",
+                        "description": "Is there any issue with my namespace?",
                         "task_title": "Namespace overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Is there any issue with my namespace",
+                    description="Is there any issue with my namespace?",
                     task_title="Namespace overview",
                     assigned_to="KubernetesAgent",
                 ),
@@ -281,17 +281,17 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
-                    HumanMessage(content="Show me the details of resource"),
+                    HumanMessage(content="Show me the details of the resource"),
                 ],
                 subtasks=[
                     {
-                        "description": "Show me the details of resource",
+                        "description": "Show me the details of the resource",
                         "task_title": "Deployment details",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="Show me the details of resource",
+                    description="Show me the details of the resource",
                     task_title="Deployment details",
                     assigned_to="KubernetesAgent",
                 ),
@@ -363,17 +363,17 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
-                    HumanMessage(content="give me cluster overview"),
+                    HumanMessage(content="Give me a cluster overview"),
                 ],
                 subtasks=[
                     {
-                        "description": "give me cluster overview",
+                        "description": "Give me a cluster overview",
                         "task_title": "Cluster overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="give me cluster overview",
+                    description="Give me a cluster overview",
                     task_title="Cluster overview",
                     assigned_to="KubernetesAgent",
                 ),
@@ -390,17 +390,17 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
-                    HumanMessage(content="check all resources in cluster"),
+                    HumanMessage(content="Check all resources in the cluster"),
                 ],
                 subtasks=[
                     {
-                        "description": "check all resources in cluster",
+                        "description": "Check all resources in the cluster",
                         "task_title": "Cluster overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="check all resources in cluster",
+                    description="Check all resources in the cluster",
                     task_title="Cluster overview",
                     assigned_to="KubernetesAgent",
                 ),
@@ -418,17 +418,17 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
-                    HumanMessage(content="give me namespace overview"),
+                    HumanMessage(content="Give me a namespace overview"),
                 ],
                 subtasks=[
                     {
-                        "description": "give me namespace overview",
+                        "description": "Give me a namespace overview",
                         "task_title": "Namespace overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="give me namespace overview",
+                    description="Give me a namespace overview",
                     task_title="Namespace overview",
                     assigned_to="KubernetesAgent",
                 ),
@@ -446,17 +446,17 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_api_version': 'apps/v1', 'resource_namespace': 'default', 'resource_kind': 'Deployment'}"
                     ),
-                    HumanMessage(content="check all resources in namespace"),
+                    HumanMessage(content="Check all resources in the namespace"),
                 ],
                 subtasks=[
                     {
-                        "description": "check all resources in namespace",
+                        "description": "Check all resources in the namespace",
                         "task_title": "Namespace overview",
                         "assigned_to": "KubernetesAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="check all resources in namespace",
+                    description="Check all resources in the namespace",
                     task_title="Namespace overview",
                     assigned_to="KubernetesAgent",
                 ),

@@ -328,10 +328,10 @@ def planner_conversation_history_metric(evaluator_model):
             # given the conversation, the planner knows that the user wants to convert the function to javascript
             # and assigns the task to the Kyma agent
             conversation_sample_6,
-            "convert it to javascript",
+            "convert the function to javascript",
             [
                 {
-                    "description": "convert it to javascript'",
+                    "description": "convert the function to javascript",
                     "task_title": "Kyma function in JavaScript",
                     "assigned_to": "KymaAgent",
                     "status": "pending",
