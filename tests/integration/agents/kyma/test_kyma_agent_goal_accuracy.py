@@ -4,7 +4,7 @@ import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from ragas.dataset_schema import SingleTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
-from ragas.llms import LangchainLLMWrapper
+from ragas.llms import llm_factory
 from ragas.messages import ToolCall
 from ragas.metrics import SimpleCriteriaScore
 
@@ -103,7 +103,7 @@ def create_basic_state(
 @pytest.fixture
 def evaluator_llm(app_models):
     main_model = app_models[MAIN_MODEL_NAME]
-    return LangchainLLMWrapper(main_model.llm)
+    return llm_factory(main_model.llm)
 
 
 @pytest.fixture
