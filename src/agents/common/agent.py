@@ -427,7 +427,8 @@ class BaseAgent:
         # Define nodes with async awareness
         workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
-        workflow.add_node("tools", ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES))
+        tool_node = ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES, handle_tool_errors=True)
+        workflow.add_node("tools", tool_node)
         workflow.add_node("finalizer", self._finalizer_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
 

@@ -1,7 +1,9 @@
+import copy
+import json
 from dataclasses import dataclass, field
 
 import pytest
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from ragas.dataset_schema import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 from ragas.messages import ToolCall
@@ -111,6 +113,35 @@ async def call_kyma_agent(kyma_agent, state):
     return response
 
 
+def convert_agent_messages_to_ragas(agent_messages, metadata: bool = False):
+    """Normalize tool call metadata so Ragas can parse tool calls."""
+    messages = copy.deepcopy(agent_messages)
+    for msg in messages:
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            if msg.additional_kwargs is None:
+                msg.additional_kwargs = {}
+            if "tool_calls" not in msg.additional_kwargs:
+                tool_calls = []
+                for tool_call in msg.tool_calls:
+                    if isinstance(tool_call, dict):
+                        name = tool_call.get("name")
+                        args = tool_call.get("args")
+                    else:
+                        name = getattr(tool_call, "name", None)
+                        args = getattr(tool_call, "args", None)
+
+                    if not name:
+                        continue
+
+                    arguments = args if isinstance(args, str) else json.dumps(args or {})
+
+                    tool_calls.append({"function": {"name": name, "arguments": arguments}})
+
+                msg.additional_kwargs["tool_calls"] = tool_calls
+
+    return convert_to_ragas_messages(messages, metadata=metadata)
+
+
 def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
@@ -161,7 +192,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
 @pytest.mark.asyncio
 async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
-    agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
+    agent_messages = convert_agent_messages_to_ragas(agent_response["agent_messages"], metadata=True)
 
     test_case_sample = MultiTurnSample(
         user_input=agent_messages,
@@ -426,7 +457,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
 @pytest.mark.asyncio
 async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
-    ragas_messages = convert_to_ragas_messages(response["agent_messages"])
+    ragas_messages = convert_agent_messages_to_ragas(response["agent_messages"])
 
     if test_case.expected_tool_calls == []:
         assert len(response["agent_messages"]) == 1
