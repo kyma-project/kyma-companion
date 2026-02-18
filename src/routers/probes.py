@@ -148,8 +148,8 @@ async def healthz(
         logger.debug(f"Health probe returning status: {status}")
         logger.debug(f"Health probe returning body: {response}")
     else:
-        logger.info(f"Health probe returning status: {status}")
-        logger.info(f"Health probe returning body: {response}")
+        logger.debug(f"Health probe returning status: {status}")
+        logger.debug(f"Health probe returning body: {response}")
 
     return JSONResponse(
         content=jsonable_encoder(response),
@@ -182,8 +182,8 @@ async def readyz(
         logger.debug(f"Readiness probe returning status: {status}")
         logger.debug(f"Readiness probe returning body: {response}")
     else:
-        logger.info(f"Readiness probe returning status: {status}")
-        logger.info(f"Readiness probe returning body: {response}")
+        logger.debug(f"Readiness probe returning status: {status}")
+        logger.debug(f"Readiness probe returning body: {response}")
 
     return JSONResponse(content=jsonable_encoder(response), status_code=status)
 
