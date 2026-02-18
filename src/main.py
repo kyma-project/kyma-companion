@@ -1,3 +1,6 @@
+import logging
+import time
+from collections.abc import Awaitable, Callable
 from http import HTTPStatus
 from typing import Any
 
@@ -16,9 +19,50 @@ from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+access_logger = get_logger("access")
+
+# Probe endpoints for efficient path checking
+PROBE_PATHS = frozenset(["/healthz", "/readyz"])
+
 app = FastAPI(
     title="Joule",
 )
+
+
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Log HTTP requests with appropriate log levels and timing.
+
+    - Probe endpoints (/healthz, /readyz) with 200 → DEBUG
+    - Probe endpoints with non-200 → WARNING
+    - All other requests → INFO
+    """
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = (time.perf_counter() - start_time) * 1000
+
+    # Determine log level based on path and status
+    is_probe = request.url.path in PROBE_PATHS
+    if is_probe:  # noqa: SIM108
+        level = logging.DEBUG if response.status_code == HTTPStatus.OK else logging.WARNING
+    else:
+        level = logging.INFO
+
+    # Log with structured data (works well with JSON formatter)
+    client_host = request.client.host if request.client else "unknown"
+    access_logger.log(
+        level,
+        f'{client_host} - "{request.method} {request.url.path}" {response.status_code}',
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": round(duration_ms, 2),
+            "client": client_host,
+        },
+    )
+
+    return response
 
 
 @app.middleware("http")
@@ -144,4 +188,6 @@ async def metrics() -> Response:
 
 
 if __name__ == "__main__":
+    # Logging is already configured in utils.logging
+    # Just run uvicorn without custom log config
     uvicorn.run(app, host="0.0.0.0", port=8000)
