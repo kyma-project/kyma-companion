@@ -10,6 +10,8 @@ from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
 from agents.common.state import GraphInput
+from agents.kyma.tools.query import fetch_kyma_resource_version
+from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
 from utils.settings import (
@@ -53,7 +55,7 @@ class LangfuseService(metaclass=SingletonMeta):
         self.masking_mode = LANGFUSE_MASKING_MODE
         self.data_scrubber = scrubadub.Scrubber()
         self.data_scrubber.remove_detector(scrubadub.detectors.UrlDetector)
-        self.allowed_tools = ["search_kyma_doc", "fetch_kyma_resource_version"]
+        self.allowed_tools = [SEARCH_KYMA_DOC_TOOL_NAME, fetch_kyma_resource_version.name]
 
         if self.enabled:
             # Create/Configure Langfuse client (once at startup)
