@@ -256,7 +256,7 @@ async def test_invoke_planner(
     # When: The supervisor agent's planner is invoked
     result = await companion_graph.supervisor_agent._invoke_planner(state)
 
-    generated_plan = result.dict()
+    generated_plan = result.model_dump()
     # loop over subtasks and remove the task_title field
     for subtask in generated_plan.get("subtasks", []):
         subtask.pop("task_title", None)
