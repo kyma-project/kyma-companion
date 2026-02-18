@@ -1,6 +1,6 @@
 import logging
 from http import HTTPStatus
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import Response
@@ -113,25 +113,33 @@ class TestLoggingMiddleware:
 
     async def test_includes_structured_logging_fields(self, mock_request, mock_call_next):
         """Test that all structured logging fields are included."""
-        mock_request.method = "POST"
-        mock_request.url.path = "/api/create"
-        mock_request.client.host = "192.168.1.100"
+        # Given
+        expected_method = "POST"
+        expected_path = "/api/create"
+        expected_client = "192.168.1.100"
+
+        mock_request.method = expected_method
+        mock_request.url.path = expected_path
+        mock_request.client.host = expected_client
 
         with patch("main.access_logger") as mock_logger:
-            response = await logging_middleware(mock_request, mock_call_next)
+            _ = await logging_middleware(mock_request, mock_call_next)
 
             call_args = mock_logger.log.call_args
             extra_fields = call_args[1]["extra"]
 
-            assert extra_fields["method"] == "POST"
-            assert extra_fields["path"] == "/api/create"
+            assert extra_fields["method"] == expected_method
+            assert extra_fields["path"] == expected_path
             assert extra_fields["status_code"] == HTTPStatus.OK
-            assert extra_fields["client"] == "192.168.1.100"
+            assert extra_fields["client"] == expected_client
             assert "duration_ms" in extra_fields
             assert isinstance(extra_fields["duration_ms"], float)
 
     async def test_handles_missing_client_gracefully(self, mock_request, mock_call_next):
         """Test that middleware handles missing client information."""
+        # Given
+        expected_client = "unknown"
+
         mock_request.client = None
 
         with patch("main.access_logger") as mock_logger:
@@ -141,10 +149,12 @@ class TestLoggingMiddleware:
             call_args = mock_logger.log.call_args
             extra_fields = call_args[1]["extra"]
 
-            assert extra_fields["client"] == "unknown"
+            assert extra_fields["client"] == expected_client
 
     async def test_measures_request_duration(self, mock_request):
         """Test that request duration is measured and included."""
+        # Given
+        expected_min_duration_ms = 10.0
         import asyncio
 
         async def slow_call_next(request):
@@ -152,27 +162,32 @@ class TestLoggingMiddleware:
             return Response(status_code=HTTPStatus.OK)
 
         with patch("main.access_logger") as mock_logger:
-            response = await logging_middleware(mock_request, slow_call_next)
+            _ = await logging_middleware(mock_request, slow_call_next)
 
             call_args = mock_logger.log.call_args
             extra_fields = call_args[1]["extra"]
 
             # Duration should be at least 10ms (accounting for overhead)
-            assert extra_fields["duration_ms"] >= 10.0
+            assert extra_fields["duration_ms"] >= expected_min_duration_ms
 
     async def test_log_message_format(self, mock_request, mock_call_next):
         """Test that log message has correct format."""
-        mock_request.method = "DELETE"
-        mock_request.url.path = "/api/resource/123"
-        mock_request.client.host = "10.0.0.5"
+        # Given
+        expected_method = "DELETE"
+        expected_path = "/api/resource/123"
+        expected_client = "10.0.0.5"
+
+        mock_request.method = expected_method
+        mock_request.url.path = expected_path
+        mock_request.client.host = expected_client
 
         with patch("main.access_logger") as mock_logger:
-            response = await logging_middleware(mock_request, mock_call_next)
+            _ = await logging_middleware(mock_request, mock_call_next)
 
             call_args = mock_logger.log.call_args
             log_message = call_args[0][1]
 
-            expected_message = f'10.0.0.5 - "DELETE /api/resource/123" {HTTPStatus.OK}'
+            expected_message = f'{expected_client} - "{expected_method} {expected_path}" {HTTPStatus.OK}'
             assert log_message == expected_message
 
     @pytest.mark.parametrize(
@@ -205,8 +220,11 @@ class TestLoggingMiddleware:
 
     async def test_duration_rounded_to_two_decimals(self, mock_request, mock_call_next):
         """Test that duration is rounded to 2 decimal places."""
+        # Given
+        expected_max_decimal_places = 2
+
         with patch("main.access_logger") as mock_logger:
-            response = await logging_middleware(mock_request, mock_call_next)
+            _ = await logging_middleware(mock_request, mock_call_next)
 
             call_args = mock_logger.log.call_args
             extra_fields = call_args[1]["extra"]
@@ -215,4 +233,4 @@ class TestLoggingMiddleware:
             # Check that duration has at most 2 decimal places
             if "." in duration_str:
                 decimal_places = len(duration_str.split(".")[1])
-                assert decimal_places <= 2
+                assert decimal_places <= expected_max_decimal_places

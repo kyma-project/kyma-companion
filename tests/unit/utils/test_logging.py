@@ -1,5 +1,6 @@
 import json
 import logging
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import pytest
@@ -92,19 +93,26 @@ class TestPrettyJSONFormatter:
         )
         # Add extra fields
         record.method = "GET"
-        record.path = "/api/test"
-        record.status_code = 200
-        record.duration_ms = 123.45
-        record.client = "192.168.1.1"
+        # Given
+        expected_method = "GET"
+        expected_path = "/api/test"
+        expected_status_code = HTTPStatus.OK
+        expected_duration_ms = 123.45
+        expected_client = "192.168.1.1"
+
+        record.path = expected_path
+        record.status_code = expected_status_code
+        record.duration_ms = expected_duration_ms
+        record.client = expected_client
 
         result = formatter.format(record)
         log_data = json.loads(result)
 
-        assert log_data["method"] == "GET"
-        assert log_data["path"] == "/api/test"
-        assert log_data["status_code"] == 200
-        assert log_data["duration_ms"] == 123.45
-        assert log_data["client"] == "192.168.1.1"
+        assert log_data["method"] == expected_method
+        assert log_data["path"] == expected_path
+        assert log_data["status_code"] == expected_status_code
+        assert log_data["duration_ms"] == expected_duration_ms
+        assert log_data["client"] == expected_client
 
     def test_format_with_partial_extra_fields(self):
         """Test formatting with only some extra fields present."""
@@ -118,15 +126,19 @@ class TestPrettyJSONFormatter:
             args=(),
             exc_info=None,
         )
+        # Given
+        expected_path = "/api/slow"
+        expected_duration_ms = 5000.0
+
         # Add only some extra fields
-        record.path = "/api/slow"
-        record.duration_ms = 5000.0
+        record.path = expected_path
+        record.duration_ms = expected_duration_ms
 
         result = formatter.format(record)
         log_data = json.loads(result)
 
-        assert log_data["path"] == "/api/slow"
-        assert log_data["duration_ms"] == 5000.0
+        assert log_data["path"] == expected_path
+        assert log_data["duration_ms"] == expected_duration_ms
         assert "method" not in log_data
         assert "status_code" not in log_data
         assert "client" not in log_data
