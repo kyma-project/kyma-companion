@@ -418,7 +418,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{}"),
-                    HumanMessage(content="what are the BTP Operator features?"),
+                    HumanMessage(content="What are the BTP Operator features?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -438,8 +438,8 @@ def kyma_agent(app_models):
                 ],
                 subtasks=[
                     {
-                        "description": "what are the BTP Operator features?",
-                        "task_title": "what are the BTP Operator features?",
+                        "description": "What are the BTP Operator features?",
+                        "task_title": "What are the BTP Operator features?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
@@ -465,7 +465,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{}"),
-                    HumanMessage(content="what are the BTP Operator features?"),
+                    HumanMessage(content="What are the BTP Operator features?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -485,8 +485,8 @@ def kyma_agent(app_models):
                 ],
                 subtasks=[
                     {
-                        "description": "what are the BTP Operator features?",
-                        "task_title": "what are the BTP Operator features?",
+                        "description": "What are the BTP Operator features?",
+                        "task_title": "What are the BTP Operator features?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
@@ -817,11 +817,11 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="{'resource_namespace': 'sample-ns'}"),
-                    HumanMessage(content="how to create an application with Kyma and register external service"),
+                    HumanMessage(content="How to create an application with Kyma and register an external service?"),
                 ],
                 subtasks=[
                     {
-                        "description": "how to create an application with Kyma",
+                        "description": "How to create an application with Kyma and register an external service?",
                         "task_title": "Fetching info on creating application",
                         "assigned_to": "KymaAgent",
                         "status": "pending",
@@ -834,7 +834,7 @@ async def test_invoke_chain(
                     },
                 ],
                 my_task=SubTask(
-                    description="how to create an application with Kyma",
+                    description="How to create an application with Kyma and register an external service?",
                     task_title="Fetching info on creating application",
                     assigned_to="KymaAgent",
                 ),
@@ -854,18 +854,18 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="The user query is related to: {'resource_namespace': 'sample-ns'}"),
-                    HumanMessage(content="how to enable a Kyma module?"),
+                    HumanMessage(content="How to enable a Kyma module?"),
                 ],
                 subtasks=[
                     {
-                        "description": "how to enable a Kyma module?",
+                        "description": "How to enable a Kyma module?",
                         "task_title": "Fetching info on enabling a Kyma module",
                         "assigned_to": "KymaAgent",
                         "status": "pending",
                     },
                 ],
                 my_task=SubTask(
-                    description="how to enable a Kyma module?",
+                    description="How to enable a Kyma module?",
                     task_title="Fetching info on enabling a Kyma module",
                     assigned_to="KymaAgent",
                 ),
@@ -885,18 +885,18 @@ async def test_invoke_chain(
                 agent_messages=[],
                 messages=[
                     SystemMessage(content="The user query is related to: {'resource_namespace': 'sample-ns'}"),
-                    HumanMessage(content="show how to create an API Rule"),
+                    HumanMessage(content="Show how to create an API Rule"),
                 ],
                 subtasks=[
                     {
-                        "description": "show how to create an API Rule",
+                        "description": "Show how to create an API Rule",
                         "task_title": "Fetching info on creating an API Rule",
                         "assigned_to": "KymaAgent",
                         "status": "pending",
                     },
                 ],
                 my_task=SubTask(
-                    description="show how to create an API Rule",
+                    description="Show how to create an API Rule",
                     task_title="Fetching info on creating an API Rule",
                     assigned_to="KymaAgent",
                 ),

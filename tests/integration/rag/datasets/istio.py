@@ -51,7 +51,7 @@ cases = [
         ),
     },
     {
-        "input": "why an Istio sidecar is not injected to a pod?",
+        "input": "Why isn't an Istio sidecar injected into a pod?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
@@ -98,7 +98,7 @@ cases = [
         ),
     },
     {
-        "input": "function pod have have no sidecar proxy",
+        "input": "Why does a function pod have no sidecar proxy?",
         "answer_relevancy_threshold": 0.7,
         # "fixtures/kyma_docs/istio/docs/user/troubleshooting/03-30-istio-no-sidecar.md",
         "expected_output": dedent(

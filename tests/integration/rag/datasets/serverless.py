@@ -233,7 +233,7 @@ cases = [
         ),
     },
     {
-        "input": "want to create custom tracing spans for a function",
+        "input": "How to create custom tracing spans for a function?",
         "answer_relevancy_threshold": 0.6,
         "expected_output": dedent(
             """
@@ -312,7 +312,7 @@ cases = [
         ),
     },
     {
-        "input": "adding a new env var to a function",
+        "input": "How to add a new environment variable to a function?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
@@ -467,7 +467,7 @@ cases = [
         ),
     },
     {
-        "input": "Serverless function pod has lots of restarts",
+        "input": "Why does a serverless function pod have many restarts?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
