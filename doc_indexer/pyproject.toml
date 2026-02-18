@@ -32,7 +32,7 @@ package-mode = false
 
 [tool.poetry.group.test.dependencies]
 mypy = "^1.13.0"
-poethepoet = "^0.40.0"
+poethepoet = "^0.41.0"
 pytest = "^9.0.0"
 ruff = "^0.15.0"
 
