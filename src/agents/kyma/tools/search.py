@@ -6,6 +6,7 @@ from rag.system import Query, RAGSystem
 from utils.models.factory import IModel
 
 DEFAULT_TOP_K: int = 5
+SEARCH_KYMA_DOC_TOOL_NAME: str = "search_kyma_doc"
 
 
 class SearchKymaDocArgs(BaseModel):
@@ -20,7 +21,7 @@ class SearchKymaDocArgs(BaseModel):
 class SearchKymaDocTool(BaseTool):
     """Tool to search through Kyma documentation."""
 
-    name: str = "search_kyma_doc"
+    name: str = SEARCH_KYMA_DOC_TOOL_NAME
     description: str = """Used to search through Kyma documentation for relevant information about Kyma concepts, 
     features, components, resources, or troubleshooting. A query is required to search the documentation.
 

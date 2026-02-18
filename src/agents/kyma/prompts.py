@@ -31,7 +31,7 @@ Use the available tool as described in tool description.
 
 2. else:
     `kyma_query_tool` → `search_kyma_doc`
-3. If an error occurs with `kyma_query_tool`
+3. If an error occurs with `kyma_query_tool` or `kyma_query_tool` return 404 Not found.
    `kyma_query_tool (error)` → `fetch_kyma_resource_version (retrieve correct resource details)` → `kyma_query_tool (retry)` → `search_kyma_doc`
 
 ### For Non Troubleshooting Queries

@@ -1,9 +1,9 @@
 from math import ceil
 from typing import Any, Protocol
 
-from langchain.prompts import PromptTemplate
-from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 
 from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT

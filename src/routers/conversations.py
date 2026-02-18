@@ -21,7 +21,6 @@ from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_resource_discovery import K8sResourceDiscovery
-from services.langfuse import ILangfuseService, LangfuseService
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.response import prepare_chunk_response
@@ -33,11 +32,6 @@ from utils.utils import (
 )
 
 logger = get_logger(__name__)
-
-
-def get_langfuse_service() -> ILangfuseService:
-    """Dependency to get the langfuse service instance."""
-    return LangfuseService()
 
 
 @lru_cache(maxsize=1)
@@ -55,10 +49,9 @@ def init_data_sanitizer(
 
 def init_conversation_service(
     config: Annotated[Config, Depends(init_config)],
-    langfuse_service: ILangfuseService = Depends(get_langfuse_service),  # noqa B008
 ) -> IService:
     """Initialize the conversation service instance"""
-    return ConversationService(langfuse_handler=langfuse_service.handler, config=config)
+    return ConversationService(config=config)
 
 
 def enforce_query_token_limit(

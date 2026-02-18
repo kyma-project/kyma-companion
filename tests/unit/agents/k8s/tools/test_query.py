@@ -1,14 +1,23 @@
 import json
+from typing import TypedDict
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.common.data import Message
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
 from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
+
+
+class ToolTestState(TypedDict):
+    """State for testing tools with InjectedState."""
+
+    messages: list[BaseMessage]
+    k8s_client: IK8sClient
 
 
 def sample_k8s_secret():
@@ -76,7 +85,13 @@ def sample_k8s_sanitized_secret():
 @pytest.mark.asyncio
 async def test_k8s_query_tool(given_uri, given_object, given_exception, expected_object, expected_error):
     # Given
-    tool_node = ToolNode([k8s_query_tool])
+    # In langgraph 1.0, ToolNode with InjectedState must be invoked within a StateGraph context
+    graph = StateGraph(ToolTestState)
+    graph.add_node("tools", ToolNode([k8s_query_tool], handle_tool_errors=True))
+    graph.add_edge(START, "tools")
+    graph.add_edge("tools", END)
+    app = graph.compile()
+
     k8s_client = AsyncMock(spec=IK8sClient)
     if given_exception:
         k8s_client.execute_get_api_request.side_effect = given_exception
@@ -84,7 +99,7 @@ async def test_k8s_query_tool(given_uri, given_object, given_exception, expected
         k8s_client.execute_get_api_request.return_value = given_object
 
     # When: invoke the tool.
-    result = await tool_node.ainvoke(
+    result = await app.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [
@@ -177,7 +192,13 @@ async def test_k8s_overview_query_tool(
     expected_error,
 ):
     # Given
-    tool_node = ToolNode([k8s_overview_query_tool])
+    # In langgraph 1.0, ToolNode with InjectedState must be invoked within a StateGraph context
+    graph = StateGraph(ToolTestState)
+    graph.add_node("tools", ToolNode([k8s_overview_query_tool], handle_tool_errors=True))
+    graph.add_edge(START, "tools")
+    graph.add_edge("tools", END)
+    app = graph.compile()
+
     k8s_client = Mock(spec=IK8sClient)
 
     # Configure the mock
@@ -187,7 +208,7 @@ async def test_k8s_overview_query_tool(
         mock_get_context.return_value = given_result
 
     # When: invoke the tool.
-    result = await tool_node.ainvoke(
+    result = await app.ainvoke(
         {
             "k8s_client": k8s_client,
             "messages": [

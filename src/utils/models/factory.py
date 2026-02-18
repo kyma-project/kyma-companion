@@ -5,7 +5,7 @@ from typing import Protocol, cast, runtime_checkable
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI, OpenAIEmbeddings
-from gen_ai_hub.proxy.native.google_vertexai.clients import GenerativeModel
+from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
 from langchain_core.embeddings import Embeddings
 
 from utils.config import Config
@@ -34,6 +34,8 @@ class ModelType(str, Enum):
 
     GPT41 = "gpt-4.1"
     GPT41_MINI = "gpt-4.1-mini"
+    GPT5 = "gpt-5"
+    GPT5_MINI = "gpt-5-mini"
     TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
@@ -59,7 +61,7 @@ class IModel(Protocol):
     """The name of the model."""
 
     @property
-    def llm(self) -> ChatOpenAI | GenerativeModel:
+    def llm(self) -> ChatOpenAI | GoogleGenAIClient:
         """The instance of the model."""
         ...
 

@@ -1,27 +1,61 @@
+import copy
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from agents.common.state import CompanionState, GraphInput, UserInput
-from services.langfuse import REDACTED, LangfuseService, get_langfuse_metadata
+from services.k8s import IK8sClient, K8sClient
+from services.langfuse import EMPTY_OBJECT, REDACTED, LangfuseService, get_langfuse_metadata
 from utils.settings import LangfuseMaskingModes
 
 
+def create_k8s_client():
+    with patch("services.k8s.K8sClient.__init__", return_value=None):
+        return K8sClient()
+
+
 @pytest.mark.parametrize(
-    "user_id, session_id, expected",
+    "description, user_id, session_id, tags, expected",
     [
         (
+            "should include tags for single tag",
             "user1",
             "sess1",
-            {"langfuse_session_id": "sess1", "langfuse_user_id": "user1"},
+            ["tag-a"],
+            {
+                "langfuse_session_id": "sess1",
+                "langfuse_user_id": "user1",
+                "langfuse_tags": ["tag-a"],
+            },
         ),
-        ("abc", "123", {"langfuse_session_id": "123", "langfuse_user_id": "abc"}),
-        ("", "", {"langfuse_session_id": "", "langfuse_user_id": ""}),
+        (
+            "should include tags for multiple tags",
+            "abc",
+            "123",
+            ["tag-1", "tag-2"],
+            {
+                "langfuse_session_id": "123",
+                "langfuse_user_id": "abc",
+                "langfuse_tags": ["tag-1", "tag-2"],
+            },
+        ),
+        (
+            "should include empty tags when none provided",
+            "",
+            "",
+            [],
+            {
+                "langfuse_session_id": "",
+                "langfuse_user_id": "",
+                "langfuse_tags": [],
+            },
+        ),
     ],
 )
-def test_get_langfuse_metadata(user_id, session_id, expected):
-    assert get_langfuse_metadata(user_id, session_id) == expected
+def test_get_langfuse_metadata(description, user_id, session_id, tags, expected):
+    assert get_langfuse_metadata(user_id, session_id, tags) == expected, description
 
 
 @pytest.mark.parametrize(
@@ -111,9 +145,11 @@ def test_masking_production_data(
 ):
     service = LangfuseService()
     service.masking_mode = masking_mode
+    original_data = copy.deepcopy(input_data)
 
     # when / then
-    assert service.masking_production_data(input_data) == expected_output, description
+    assert service.masking_production_data(data=input_data) == expected_output, description
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -156,9 +192,11 @@ def test_masking_mode_partial(
     expected_output: Any,
 ):
     service = LangfuseService()
+    original_data = copy.deepcopy(input_data)
 
     # when / then
     assert service._masking_mode_partial(input_data) == expected_output, description
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -225,6 +263,11 @@ def test_masking_mode_partial(
             "should scrub list of strings",
             ["my email is test@example.com", "no email here"],
             ["my email is {{EMAIL}}", "no email here"],
+        ),
+        (
+            "should redact ToolMessage with disallowed name",
+            ToolMessage(content="secret", tool_call_id="abc", name="unauthorized_tool"),
+            ToolMessage(content=REDACTED, tool_call_id="abc", name="unauthorized_tool"),
         ),
         (
             "should redact ToolMessage",
@@ -296,13 +339,52 @@ def test_masking_mode_partial(
                 "thread_owner": "",
             },
         ),
+        (
+            "should return empty object for K8s client",
+            create_k8s_client,
+            EMPTY_OBJECT,
+        ),
     ],
 )
 def test_masking_mode_filtered(description, input_data, expected_output):
+    # Given
     service = LangfuseService()
+    if callable(input_data):
+        input_data = input_data()
+    original_data = copy.deepcopy(input_data)
+
+    # when
     result = service._masking_mode_filtered(input_data)
+
+    # then
     # For ToolMessage and HumanMessage, compare their content attribute
     if hasattr(result, "content") and hasattr(expected_output, "content"):
         assert result.content == expected_output.content, description
     else:
         assert result == expected_output, description
+
+    if not isinstance(input_data, (IK8sClient, K8sClient, object)):
+        assert input_data == original_data, "input data should not have been modified in place"
+
+
+@pytest.mark.parametrize(
+    "description, input_data, expected_output",
+    [
+        (
+            "should mask K8s client instance",
+            create_k8s_client,
+            EMPTY_OBJECT,
+        ),
+        (
+            "should return None for non-critical data",
+            "safe string",
+            None,
+        ),
+    ],
+)
+def test_mask_critical(description, input_data, expected_output):
+    service = LangfuseService()
+    if callable(input_data):
+        input_data = input_data()
+
+    assert service._mask_critical(input_data) == expected_output, description

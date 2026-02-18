@@ -2,6 +2,7 @@ import json
 from collections.abc import AsyncIterator, Hashable
 from typing import Any, Protocol, cast
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import (
     AIMessage,
@@ -34,6 +35,7 @@ from agents.common.constants import (
     RESPONSE_UNABLE_TO_PROCESS,
     SUBTASKS,
     SUMMARIZATION,
+    UNKNOWN,
 )
 from agents.common.data import Message
 from agents.common.state import (
@@ -62,7 +64,7 @@ from agents.prompts import (
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
-from services.langfuse import get_langfuse_metadata
+from services.langfuse import LangfuseService, get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
@@ -147,11 +149,9 @@ class CompanionGraph:
         self,
         models: dict[str, IModel | Embeddings],
         memory: BaseCheckpointSaver,
-        handler: Any = None,
     ):
         self.models = models
         self.memory = memory
-        self.handler = handler
 
         main_model_mini = models[MAIN_MODEL_MINI_NAME]
         main_model = models[MAIN_MODEL_NAME]
@@ -445,18 +445,29 @@ class CompanionGraph:
             error=None,
         )
 
+        # Build callbacks list
+        callbacks: list[BaseCallbackHandler] = [
+            UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
+        ]
+
+        # Add Langfuse callback handler if enabled
+        try:
+            langfuse_handler = LangfuseService().get_callback_handler()
+            if langfuse_handler:
+                callbacks.append(langfuse_handler)
+        except Exception:
+            logger.warning("Failed to get Langfuse callback handler. Skipping Langfuse trace...", exc_info=True)
+
         run_config = RunnableConfig(
             configurable={
                 "thread_id": conversation_id,
             },
-            callbacks=[
-                self.handler,
-                UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
-            ],
+            callbacks=callbacks,
             tags=[cluster_id],
             metadata=get_langfuse_metadata(
-                message.user_identifier or "unknown",
+                message.user_identifier or UNKNOWN,
                 cluster_id,
+                [cluster_id],
             ),
         )
 

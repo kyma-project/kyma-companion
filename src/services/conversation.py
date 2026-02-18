@@ -4,7 +4,6 @@ from http import HTTPStatus
 from typing import Protocol, cast
 
 from kubernetes.client import ApiException
-from langfuse.callback import CallbackHandler
 
 from agents.common.constants import ERROR, ERROR_RESPONSE
 from agents.common.data import Message
@@ -76,7 +75,6 @@ class ConversationService(metaclass=SingletonMeta):
         initial_questions_handler: IInitialQuestionsHandler | None = None,
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
-        langfuse_handler: CallbackHandler | None = None,
     ) -> None:
         try:
             self._model_factory = model_factory or ModelFactory(config=config)
@@ -96,7 +94,7 @@ class ConversationService(metaclass=SingletonMeta):
         checkpointer = get_async_redis_saver()
         self._usage_limiter = UsageTracker(checkpointer, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL)
 
-        self._companion_graph = CompanionGraph(models, memory=checkpointer, handler=langfuse_handler)
+        self._companion_graph = CompanionGraph(models, memory=checkpointer)
 
     async def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         """Initialize a new conversation."""
