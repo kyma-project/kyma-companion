@@ -62,7 +62,7 @@ types-pyyaml = "^6.0.12.20250822"
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.6.0"
 mypy = "^1.18.2"
-poethepoet = "^0.40.0"
+poethepoet = "^0.41.0"
 poetry-plugin-sort = "^0.3.0"
 ruff = "^0.14.0"
 types-requests = "^2.32.4.20250913"
