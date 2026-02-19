@@ -47,9 +47,9 @@ jobs:
              base64 -d > ${CLUSTER_NAME}_kubeconfig.yaml
 
           # merge with the existing kubeconfig settings
-          mkdir -p ~/.kube
-          KUBECONFIG="~/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
-          mv merged_kubeconfig.yaml ~/.kube/config
+          mkdir -p ${HOME}/.kube
+          KUBECONFIG="${HOME}/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
+          mv merged_kubeconfig.yaml ${HOME}/.kube/config
           echo "::endgroup::"
 
       - name: Display cluster information
@@ -77,7 +77,7 @@ jobs:
         run: |
           echo "::group::Undeploy test cases"
           chmod +x ./scripts/shell/undeploy_test_scenarios.sh
-          ./scripts/shell/undeploy_test_scenarios.sh || true
+          ./scripts/shell/undeploy_test_scenarios.sh 
           echo "::endgroup::"
 
           # Give K8s time to clean up resources
