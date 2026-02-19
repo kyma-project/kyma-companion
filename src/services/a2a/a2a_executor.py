@@ -8,10 +8,12 @@ from a2a.types import InternalError, Part, TaskState, TextPart
 from a2a.utils import new_agent_text_message, new_task
 from a2a.utils.errors import ServerError
 
+from agents.common.constants import ERROR_RESPONSE, RESPONSE_THINKING, RESPONSE_UNABLE_TO_PROCESS
 from agents.common.data import Message as CompanionMessage
 from agents.graph import CompanionGraph
 from services.a2a.utils import extract_response_from_chunk
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
+from utils.response import extract_info_from_response_chunk
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,11 @@ class CompanionA2AExecutor(AgentExecutor):
 
         # 4. Get or create K8s client from metadata
         try:
+            await updater.update_status(
+                TaskState.working,
+                new_agent_text_message("Validating your request...", task.context_id, task.id),
+            )
+
             k8s_config = msg_metadata.get("x-target-k8s", None)            
             if not k8s_config:
                 raise ValueError("No Kubernetes credentials found in message metadata under 'x-target-k8s'")
@@ -98,7 +105,7 @@ class CompanionA2AExecutor(AgentExecutor):
             # 6. Update status to working
             await updater.update_status(
                 TaskState.working,
-                new_agent_text_message("Processing your request...", task.context_id, task.id),
+                new_agent_text_message(RESPONSE_THINKING, task.context_id, task.id),
             )
 
             # 7. Stream from CompanionGraph to the A2A Event Queue
@@ -109,26 +116,44 @@ class CompanionA2AExecutor(AgentExecutor):
                 k8s_client=k8s_client,
             ):
                 # Parse the chunk and extract response content
-                content = extract_response_from_chunk(chunk)
-                if content:
-                    final_response = content
-                    # Send incremental artifact update
-                    await updater.add_artifact(
-                        [Part(root=TextPart(text=content))],
-                        name="response",
+                chunk_info = extract_info_from_response_chunk(chunk)
+                if chunk_info is None:
+                    logger.warning(f"Received chunk with no actionable content: {chunk}")
+                    continue
+                if chunk_info.error:
+                    logger.error(f"Error in chunk response: {chunk_info.error}")
+                    await updater.update_status(
+                        TaskState.failed,
+                        new_agent_text_message(
+                            ERROR_RESPONSE,
+                            task.context_id,
+                            task.id,
+                        ),
                     )
+                    return
+                if chunk_info.status:
+                    await updater.update_status(
+                        TaskState.working,
+                        new_agent_text_message(chunk_info.status, task.context_id, task.id),
+                    )
+                if chunk_info.final_response:
+                    final_response = chunk_info.final_response
+                    
 
             # 8. Mark the A2A task as complete
             if final_response:
+                await updater.add_artifact(
+                        [Part(root=TextPart(text=final_response))],
+                        name="response",
+                    )
                 await updater.complete()
             else:
                 await updater.update_status(
                     TaskState.failed,
                     new_agent_text_message(
-                        "Unable to process your request.", task.context_id, task.id
+                        RESPONSE_UNABLE_TO_PROCESS, task.context_id, task.id
                     ),
                 )
-
         except Exception as e:
             logger.exception(f"Error during CompanionGraph execution: {e}")
             raise ServerError(error=InternalError()) from e

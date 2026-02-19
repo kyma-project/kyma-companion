@@ -2,9 +2,15 @@ import json
 from typing import Any
 
 from langgraph.constants import END
+from pydantic import BaseModel
 
 from agents.common.constants import (
+    TASKS,
+    ANSWER,
+    CONTENT,
     ERROR,
+    ERROR_RESPONSE,
+    STATUS,
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
@@ -12,12 +18,22 @@ from agents.common.constants import (
     NEXT,
     PLANNER,
     SUMMARIZATION,
+    RESPONSE_THINKING,
+    RESPONSE_FINALIZING
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class ChunkInfo(BaseModel):
+    """Response model for extract_info_from_response_chunk."""
+
+    error: str | None = None
+    final_response: str | None = None
+    status: str | None = None
 
 
 PLANNING_TASK = {
@@ -171,3 +187,52 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
         if new_data
         else None
     )
+
+def extract_info_from_response_chunk(chunk: str) -> ChunkInfo | None:
+    """Extracts info from a response chunk. Returns ChunkInfo when successful, otherwise None."""
+    try:
+        data = json.loads(chunk)
+    except json.JSONDecodeError:
+        return ChunkInfo(error="Invalid JSON in chunk response")
+
+    agent = next(iter(data.keys()), None)
+    if not agent:
+        logger.error(f"Agent {agent} is not found in the json data")
+        return ChunkInfo(error="No agent found in the agent metadata")
+
+    agent_data = data[agent]
+    if agent == ERROR:
+        return ChunkInfo(error=agent_data[ERROR])
+
+    if agent_data.get("messages"):
+        last_agent = agent_data["messages"][-1].get("name")
+        # skip all intermediate supervisor response
+        if agent == SUPERVISOR and last_agent != PLANNER and last_agent != FINALIZER:
+            return None
+
+    new_data = process_response(data, agent)
+    if not new_data or not ANSWER in new_data or not new_data[ANSWER]:
+        logger.exception(f"Failed to process response data: {data}")
+        return None
+    
+    if ERROR in new_data and new_data[ERROR]:
+        logger.error(f"Error in agent response: {new_data[ERROR]}")
+        return ChunkInfo(error=new_data[ERROR])
+
+    if NEXT in new_data[ANSWER] and new_data[ANSWER][NEXT] == END:
+        if CONTENT in new_data[ANSWER] and new_data[ANSWER][CONTENT]:
+            return ChunkInfo(final_response=new_data[ANSWER][CONTENT])
+        else:
+            return ChunkInfo(error=ERROR_RESPONSE)
+
+    if TASKS in new_data[ANSWER] and new_data[ANSWER][TASKS] and len(new_data[ANSWER][TASKS]) > 0:
+        tasks = new_data[ANSWER][TASKS]
+        for task in tasks:
+            if task.get(STATUS) != SubTaskStatus.COMPLETED:
+                return ChunkInfo(status=task.get("task_name", RESPONSE_THINKING))
+            
+    if NEXT in new_data[ANSWER] and new_data[ANSWER][NEXT] == FINALIZER:
+        return ChunkInfo(status=RESPONSE_FINALIZING)
+            
+    logger.exception(f"Failed to extract useful information from response data: {data}")
+    return ChunkInfo(error=ERROR_RESPONSE)

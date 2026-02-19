@@ -1,5 +1,7 @@
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 def extract_response_from_chunk(chunk: str) -> str | None:
         """Extract the response content from a graph chunk."""
