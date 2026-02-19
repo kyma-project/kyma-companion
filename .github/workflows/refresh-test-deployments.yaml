@@ -1,0 +1,267 @@
+name: "Refresh Test Deployments"
+
+on:
+  schedule:
+    # Run every night at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  refresh-test-deployments:
+    name: Refresh test deployments
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # Prevent workflow from running too long
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Connect to Gardener cluster - setup kubeconfig
+        env:
+          GARDENER_KYMATUNAS: ${{ secrets.GARDENER_KYMATUNAS }}
+        run: |
+          echo "::group::Setup Gardener kubeconfig"
+          # setup Gardener kubeconfig.
+          mkdir -p "${HOME}/.gardener"
+          export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
+          echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
+          echo "GARDENER_KUBECONFIG=${GARDENER_KUBECONFIG}" >> $GITHUB_ENV
+          echo "::endgroup::"
+
+      - name: Export Github env
+        run: |
+          # set cluster name and export it to Github env to access it later
+          export CLUSTER_NAME="comp-tests-0"
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
+
+      - name: Create kubeconfig request
+        env:
+          GARDENER_PROJECT_NAME: ${{ vars.GARDENER_PROJECT_NAME }}
+        run: |
+          echo "::group::Create cluster kubeconfig"
+          # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
+          kubectl create --kubeconfig="${GARDENER_KUBECONFIG}" \
+             -f <(printf '{"spec":{"expirationSeconds":86400}}') \
+             --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${GARDENER_PROJECT_NAME}/shoots/${CLUSTER_NAME}/adminkubeconfig | \
+             jq -r ".status.kubeconfig" | \
+             base64 -d > ${CLUSTER_NAME}_kubeconfig.yaml
+
+          # merge with the existing kubeconfig settings
+          mkdir -p ~/.kube
+          KUBECONFIG="~/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
+          mv merged_kubeconfig.yaml ~/.kube/config
+          echo "::endgroup::"
+
+      - name: Display cluster information
+        run: |
+          echo "::group::Cluster Information"
+          # display cluster information.
+          echo "Kubectl version:"
+          kubectl version --short 2>/dev/null || kubectl version
+          
+          echo ""
+          echo "Cluster info:"
+          kubectl cluster-info
+          
+          echo ""
+          echo "Nodes:"
+          kubectl get nodes
+          
+          echo ""
+          echo "Current test namespaces:"
+          kubectl get ns | grep -E "test-(pod|deployment|function|subscription|service)" || echo "No test namespaces found"
+          echo "::endgroup::"
+
+      - name: Undeploy all existing test-cases
+        continue-on-error: true
+        run: |
+          echo "::group::Undeploy test cases"
+          chmod +x ./scripts/shell/undeploy_test_scenarios.sh
+          ./scripts/shell/undeploy_test_scenarios.sh || true
+          echo "::endgroup::"
+
+          # Give K8s time to clean up resources
+          echo "Waiting 30 seconds for resources to be cleaned up..."
+          sleep 30
+
+      - name: Force delete remaining test namespaces
+        continue-on-error: true
+        run: |
+          echo "::group::Force delete remaining namespaces"
+          echo "Checking for remaining test namespaces..."
+          remaining_ns=$(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" || true)
+          
+          if [ -n "$remaining_ns" ]; then
+            echo "Found remaining test namespaces:"
+            echo "$remaining_ns"
+            echo ""
+            echo "Force deleting remaining namespaces..."
+            echo "$remaining_ns" | xargs -n 1 kubectl delete --timeout=60s || true
+            
+            # Wait a bit more for finalizers to complete
+            echo "Waiting 15 seconds for finalizers to complete..."
+            sleep 15
+          else
+            echo "All test namespaces successfully removed"
+          fi
+          echo "::endgroup::"
+
+      - name: Verify cleanup complete
+        run: |
+          echo "Final verification of cleanup..."
+          remaining=$(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" || true)
+          if [ -n "$remaining" ]; then
+            echo "WARNING: Some test namespaces still exist:"
+            echo "$remaining"
+            echo "Deployment will continue, but there may be conflicts."
+          else
+            echo "✓ All test namespaces successfully deleted"
+          fi
+
+      - name: Deploy all test-cases
+        run: |
+          echo "::group::Deploy test cases"
+          chmod +x ./scripts/shell/deploy_test_scenarios.sh
+          ./scripts/shell/deploy_test_scenarios.sh
+          echo "::endgroup::"
+
+      - name: Wait for pods to reach their error states
+        run: |
+          echo "Waiting 60 seconds for pods to reach their intended error states..."
+          sleep 60
+
+      - name: Display deployment status
+        if: always()
+        run: |
+          echo "::group::Deployment Status"
+          
+          # Count resources
+          ns_count=$(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" | wc -l)
+          echo "=== Summary ==="
+          echo "Test namespaces deployed: $ns_count"
+          echo ""
+          
+          echo "=== Test Namespaces ==="
+          kubectl get ns | grep -E "test-(pod|deployment|function|subscription|service)" || echo "No test namespaces found"
+
+          echo ""
+          echo "=== Pods Status ==="
+          for ns in $(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" | cut -d/ -f2); do
+            echo "Namespace: $ns"
+            kubectl get pods -n $ns -o wide 2>/dev/null || echo "  No pods found"
+            echo ""
+          done
+
+          echo ""
+          echo "=== Deployments Status ==="
+          for ns in $(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" | cut -d/ -f2); do
+            deployments=$(kubectl get deployments -n $ns --no-headers 2>/dev/null | wc -l)
+            if [ "$deployments" -gt 0 ]; then
+              echo "Namespace: $ns"
+              kubectl get deployments -n $ns
+              echo ""
+            fi
+          done
+
+          echo ""
+          echo "=== Functions Status ==="
+          for ns in $(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" | cut -d/ -f2); do
+            functions=$(kubectl get functions -n $ns --no-headers 2>/dev/null | wc -l)
+            if [ "$functions" -gt 0 ]; then
+              echo "Namespace: $ns"
+              kubectl get functions -n $ns
+              echo ""
+            fi
+          done
+          
+          echo "::endgroup::"
+
+      - name: Verify all test scenarios are deployed
+        run: |
+          echo "::group::Deployment Verification"
+          
+          # Expected test namespaces based on your test cases
+          expected_namespaces=(
+            "test-pod-1"
+            "test-pod-2"
+            "test-pod-3"
+            "test-deployment-4"
+            "test-deployment-5"
+            "test-service-6"
+            "test-function-8"
+            "test-function-10"
+            "test-function-11"
+            "test-subscription-12"
+            "test-subscription-13"
+            "test-subscription-14"
+            "test-deployment-15"
+            "test-deployment-16"
+            "test-function-18"
+          )
+          
+          echo "Checking if all expected namespaces are deployed..."
+          missing_count=0
+          
+          for ns in "${expected_namespaces[@]}"; do
+            if kubectl get ns "$ns" &>/dev/null; then
+              echo "✓ $ns exists"
+            else
+              echo "✗ $ns MISSING"
+              missing_count=$((missing_count + 1))
+            fi
+          done
+          
+          echo ""
+          if [ $missing_count -eq 0 ]; then
+            echo "✓ All ${#expected_namespaces[@]} test namespaces successfully deployed"
+          else
+            echo "⚠ WARNING: $missing_count out of ${#expected_namespaces[@]} namespaces are missing"
+          fi
+          
+          echo "::endgroup::"
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "### Test Deployments Refresh Complete ✓" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count deployed namespaces
+          ns_count=$(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" 2>/dev/null | wc -l)
+          echo "**Test Namespaces Deployed:** $ns_count / 15" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # List namespaces
+          echo "**Deployed Namespaces:**" >> $GITHUB_STEP_SUMMARY
+          kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" 2>/dev/null | cut -d/ -f2 | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || echo "- None found" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Pod status summary
+          echo "**Pod Status Summary:**" >> $GITHUB_STEP_SUMMARY
+          total_pods=0
+          error_pods=0
+          running_pods=0
+          for ns in $(kubectl get ns -o name | grep -E "test-(pod|deployment|function|subscription|service)" 2>/dev/null | cut -d/ -f2); do
+            pods=$(kubectl get pods -n $ns --no-headers 2>/dev/null | wc -l)
+            total_pods=$((total_pods + pods))
+            errors=$(kubectl get pods -n $ns --no-headers 2>/dev/null | grep -E "Error|CrashLoopBackOff|ImagePullBackOff|OOMKilled" | wc -l)
+            error_pods=$((error_pods + errors))
+            running=$(kubectl get pods -n $ns --no-headers 2>/dev/null | grep "Running" | wc -l)
+            running_pods=$((running_pods + running))
+          done
+          echo "- Total pods: $total_pods" >> $GITHUB_STEP_SUMMARY
+          echo "- In error states: $error_pods" >> $GITHUB_STEP_SUMMARY
+          echo "- Running: $running_pods" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "All test deployments have been refreshed and are ready for evaluation tests." >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Test deployment refresh failed. Check the logs for details."
+          echo "### ⚠️ Test Deployment Refresh Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The refresh workflow encountered errors. Please check the workflow logs." >> $GITHUB_STEP_SUMMARY
