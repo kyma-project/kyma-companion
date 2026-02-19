@@ -12,6 +12,7 @@ from services.k8s import (
     K8sClientError,
     get_url_for_paged_request,
 )
+from services.k8s_models import PodLogsDiagnosticContext
 from utils.settings import K8S_API_PAGINATION_MAX_PAGE
 
 
@@ -1220,7 +1221,7 @@ class TestK8sClient:
 
             # Mock diagnostic context gathering - will be shown inline when current logs fail
             k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
-                return_value={"events": "Container is in CrashLoopBackOff state"}
+                return_value=(True, PodLogsDiagnosticContext(events="Container is in CrashLoopBackOff state"))
             )
 
             # when
@@ -1289,7 +1290,7 @@ class TestK8sClient:
 
             # Mock the diagnostic context gathering methods
             k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
-                return_value={"events": "Pod diagnostic info here"}
+                return_value=(True, PodLogsDiagnosticContext(events="Pod diagnostic info here"))
             )
 
             # when: should return diagnostic info instead of raising
@@ -1423,7 +1424,9 @@ class TestK8sClient:
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value=(True, PodLogsDiagnosticContext(events="Diagnostic info"))
+            )
 
             # when: should return diagnostic info instead of raising
             result = await k8s_client.fetch_pod_logs(
@@ -1491,7 +1494,9 @@ class TestK8sClient:
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.SERVICE_UNAVAILABLE)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value=(True, PodLogsDiagnosticContext(events="Diagnostic info"))
+            )
 
             # when: should return diagnostic info after max retries
             result = await k8s_client.fetch_pod_logs(
@@ -1627,7 +1632,9 @@ class TestK8sClient:
                 aio_mock_response.get(previous_url, body=error_message, status=error_status)
 
             # Mock diagnostic context gathering
-            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(return_value={"events": "Diagnostic info"})
+            k8s_client._gather_pod_diagnostic_context_structured = AsyncMock(
+                return_value=(True, PodLogsDiagnosticContext(events="Diagnostic info"))
+            )
 
             # when: Should return diagnostic info
             result = await k8s_client.fetch_pod_logs(
@@ -1875,27 +1882,22 @@ class TestK8sClient:
             aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.NOT_FOUND)
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.NOT_FOUND)
 
-            # when: should return diagnostic info
-            result = await k8s_client.fetch_pod_logs(
-                name="test-pod",
-                namespace="default",
-                container_name="app",
-                tail_limit=100,
-            )
+            # when: should raise NoLogsAvailableError since there's no data
+            from utils.exceptions import NoLogsAvailableError
 
-            # then: should still have diagnostic section, even if empty
-            assert result is not None
-            assert hasattr(result, "logs")
-            assert hasattr(result, "diagnostic_context")
+            with pytest.raises(NoLogsAvailableError) as exc_info:
+                await k8s_client.fetch_pod_logs(
+                    name="test-pod",
+                    namespace="default",
+                    container_name="app",
+                    tail_limit=100,
+                )
 
-            # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
-            assert "not available" in current_logs.lower() or len(current_logs) == 0
-            assert "not available" in previous_logs.lower() or len(previous_logs) == 0
-
-            # Should have diagnostic context, even if minimal
-            assert result.diagnostic_context is not None
+            # then: exception should have correct details
+            assert exc_info.value.pod == "test-pod"
+            assert exc_info.value.namespace == "default"
+            assert exc_info.value.container == "app"
+            assert "No logs or diagnostic information available" in str(exc_info.value)
 
 
 class TestParseContainerState:

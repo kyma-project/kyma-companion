@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
 from services.k8s import IK8sClient
-from utils.exceptions import K8sClientError
+from utils.exceptions import K8sClientError, NoLogsAvailableError
 
 POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
@@ -36,6 +36,9 @@ async def fetch_pod_logs_tool(
         result = await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
         # Serialize Pydantic model to dict for langchain tool compatibility
         return result.model_dump(mode="json", by_alias=True)
+    except NoLogsAvailableError:
+        # Let NoLogsAvailableError pass through - router will handle it
+        raise
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,

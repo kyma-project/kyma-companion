@@ -28,7 +28,7 @@ from services.k8s_models import (
     PodLogsResult,
 )
 from utils import logging
-from utils.exceptions import K8sClientError, parse_k8s_error_response
+from utils.exceptions import K8sClientError, NoLogsAvailableError, parse_k8s_error_response
 from utils.settings import (
     ALLOWED_K8S_DOMAINS,
     K8S_API_PAGINATION_LIMIT,
@@ -586,8 +586,8 @@ class K8sClient:
             self._try_fetch_logs(name, namespace, container_name, previous=True, tail_limit=tail_limit)
         )
 
-        current_logs, current_error = await current_task
-        previous_logs, previous_error = await previous_task
+        has_current_logs, current_logs, current_error = await current_task
+        has_previous_logs, previous_logs, previous_error = await previous_task
 
         # Step 2: Check for authentication/authorization errors - these should fail fast
         # Check current logs error first as it's more critical
@@ -600,22 +600,23 @@ class K8sClient:
         # Step 3: Build structured response
         current_container_logs: str
         previously_terminated_container_logs: str
+        has_diagnostic_info = False
         diagnostic_context: PodLogsDiagnosticContext | None = None
 
         # Current logs section
-        if current_logs is not None:
+        if has_current_logs and current_logs is not None:
             current_container_logs = "\n".join(current_logs)
         else:
             # Current logs failed - provide explanation
             current_container_logs = f"Logs not available. {self._get_error_reason(current_error)}"
 
             # Add diagnostic context when current logs unavailable
-            diagnostic_context = await self._gather_pod_diagnostic_context_structured(
+            has_diagnostic_info, diagnostic_context = await self._gather_pod_diagnostic_context_structured(
                 name, namespace, container_name, tail_limit
             )
 
         # Previous logs section
-        if previous_logs is not None:
+        if has_previous_logs and previous_logs is not None:
             previously_terminated_container_logs = "\n".join(previous_logs)
         else:
             # Previous logs not available - this is often expected
@@ -626,6 +627,16 @@ class K8sClient:
                     previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
             else:
                 previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
+
+        # Check if we have any meaningful data - if not, raise exception
+        has_any_data = has_current_logs or has_previous_logs or has_diagnostic_info
+        if not has_any_data:
+            raise NoLogsAvailableError(
+                message=f"No logs or diagnostic information available for pod '{name}' in namespace '{namespace}'",
+                pod=name,
+                namespace=namespace,
+                container=container_name,
+            )
 
         return PodLogsResult(
             logs=PodLogs(
@@ -645,11 +656,13 @@ class K8sClient:
 
     async def _gather_pod_diagnostic_context_structured(
         self, name: str, namespace: str, container_name: str, tail_limit: int
-    ) -> PodLogsDiagnosticContext | None:
+    ) -> tuple[bool, PodLogsDiagnosticContext | None]:
         """Gather diagnostic context in structured format when pod logs are unavailable.
 
         Returns:
-            PodLogsDiagnosticContext with events and optional container/init container statuses
+            (has_useful_info, diagnostic_context) tuple:
+            - has_useful_info: True if diagnostic context contains meaningful information
+            - diagnostic_context: PodLogsDiagnosticContext or None
         """
         events: str
         container_statuses: dict[str, ContainerStatus] | None = None
@@ -681,11 +694,18 @@ class K8sClient:
             except Exception:
                 events = "No pod events available"
 
-        return PodLogsDiagnosticContext(
+        # Determine if diagnostic context has useful information
+        has_useful_events = events and not events.startswith(("No pod events available", "No recent pod events"))
+        has_container_info = container_statuses is not None or init_container_statuses is not None
+        has_useful_info = has_useful_events or has_container_info
+
+        diagnostic_context = PodLogsDiagnosticContext(
             events=events,
             container_statuses=container_statuses,
             init_container_statuses=init_container_statuses,
         )
+
+        return (has_useful_info, diagnostic_context)
 
     def _parse_container_state(self, state: dict) -> tuple[str, str | None, str | None, int | None]:
         """Parse container state information.
@@ -870,12 +890,14 @@ class K8sClient:
         container_name: str,
         previous: bool,
         tail_limit: int,
-    ) -> tuple[list[str] | None, Exception | None]:
+    ) -> tuple[bool, list[str] | None, Exception | None]:
         """Try to fetch pod logs with automatic retry on transient errors.
 
         Returns:
-            On success: (logs, None)
-            On failure: (None, exception)
+            (has_logs, logs, error) tuple:
+            - has_logs: True if logs were successfully fetched, False otherwise
+            - logs: List of log lines if successful, None otherwise
+            - error: Exception if failed, None if successful
 
         Retries up to 3 times with exponential backoff (1s, 2s, 4s) on retryable errors
         (network timeouts, rate limiting, 5xx errors).
@@ -886,7 +908,7 @@ class K8sClient:
         for attempt in range(1, max_attempts + 1):
             try:
                 logs = await self._fetch_pod_logs_no_retry(name, namespace, container_name, previous, tail_limit)
-                return (logs, None)  # Success
+                return (True, logs, None)  # Success
             except (K8sClientError, aiohttp.ClientError, TimeoutError, OSError) as e:
                 last_exception = e
 
@@ -908,7 +930,7 @@ class K8sClient:
                 await asyncio.sleep(wait_time)
 
         # All retries exhausted or error not retryable
-        return (None, last_exception)
+        return (False, None, last_exception)
 
     async def _fetch_pod_logs_no_retry(
         self,
