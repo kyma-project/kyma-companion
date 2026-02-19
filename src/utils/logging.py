@@ -61,9 +61,9 @@ def _configure_logging() -> None:
     formatter: Formatter
     if format_type == "json":
         try:
-            from pythonjsonlogger import jsonlogger
+            from pythonjsonlogger.json import JsonFormatter
 
-            formatter = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+            formatter = JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
         except ImportError:
             # Use sys.stderr since logging isn't configured yet
             sys.stderr.write(
