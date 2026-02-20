@@ -37,7 +37,7 @@ async def fetch_pod_logs_tool(
         # Serialize Pydantic model to dict for langchain tool compatibility
         return result.model_dump(mode="json", by_alias=True)
     except NoLogsAvailableError:
-        # Let NoLogsAvailableError pass through - router will handle it
+        # Let this exception pass through - router will handle it
         raise
     except Exception as e:
         raise K8sClientError.from_exception(

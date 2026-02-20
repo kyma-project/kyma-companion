@@ -602,6 +602,7 @@ class K8sClient:
         previously_terminated_container_logs: str
         has_diagnostic_info = False
         diagnostic_context: PodLogsDiagnosticContext | None = None
+        response_status_code: int = HTTPStatus.OK  # Default to 200
 
         # Current logs section
         if has_current_logs and current_logs is not None:
@@ -614,6 +615,10 @@ class K8sClient:
             has_diagnostic_info, diagnostic_context = await self._gather_pod_diagnostic_context_structured(
                 name, namespace, container_name, tail_limit
             )
+
+            # Forward the status code from K8s API (e.g., 400 for invalid container)
+            if isinstance(current_error, K8sClientError):
+                response_status_code = current_error.status_code
 
         # Previous logs section
         if has_previous_logs and previous_logs is not None:
@@ -644,6 +649,7 @@ class K8sClient:
                 previously_terminated_container=previously_terminated_container_logs,
             ),
             diagnostic_context=diagnostic_context,
+            status_code=response_status_code,
         )
 
     def _get_error_reason(self, error: Exception | None) -> str:

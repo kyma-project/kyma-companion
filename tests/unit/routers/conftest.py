@@ -131,6 +131,19 @@ class MockK8sClient(IK8sClient):
                     previously_terminated_container="Previous log line 1\nPrevious log line 2",
                 ),
             )
+        elif self.logs_scenario == "invalid_container":
+            # Invalid container name - return result with 400 status code
+            return PodLogsResult(
+                logs=PodLogs(
+                    current_container=f"Logs not available. container {container_name} is not valid for pod {name}",
+                    previously_terminated_container="Not available (container has not been restarted)",
+                ),
+                diagnostic_context=PodLogsDiagnosticContext(
+                    events="No recent pod events found.",
+                    container_statuses={"nginx": ContainerStatus(state="Running", restart_count=0)},
+                ),
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
         else:
             # Default success scenario
             return PodLogsResult(

@@ -1899,6 +1899,64 @@ class TestK8sClient:
             assert exc_info.value.container == "app"
             assert "No logs or diagnostic information available" in str(exc_info.value)
 
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_returns_400_for_invalid_container(self, k8s_client):
+        """Test that status_code 400 is returned for invalid container name."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
+
+        error_message = '{"message": "container _nginx is not valid for pod test-pod"}'
+
+        with aioresponses() as aio_mock_response:
+            current_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log?container=_nginx&tailLines=100"
+            )
+            aio_mock_response.get(current_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # Mock previous logs to also fail
+            previous_url = (
+                f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                "?container=_nginx&tailLines=100&previous=true"
+            )
+            aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
+
+            # Mock describe_resource to return pod with valid containers
+            k8s_client.describe_resource = Mock(
+                return_value={
+                    "events": [],
+                    "status": {
+                        "containerStatuses": [
+                            {
+                                "name": "nginx",
+                                "state": {"running": {"startedAt": "2024-01-01T00:00:00Z"}},
+                                "restartCount": 0,
+                            }
+                        ]
+                    },
+                }
+            )
+
+            # when: should return result with status_code 400
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="_nginx",
+                tail_limit=100,
+            )
+
+            # then: result should have 400 status code and diagnostic context
+            assert result.status_code == HTTPStatus.BAD_REQUEST
+            assert "not valid for pod" in result.logs.current_container
+            assert result.diagnostic_context is not None
+            assert "nginx" in result.diagnostic_context.container_statuses
+
 
 class TestParseContainerState:
     """Test _parse_container_state helper method."""

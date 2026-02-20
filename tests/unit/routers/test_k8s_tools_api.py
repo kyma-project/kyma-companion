@@ -205,6 +205,33 @@ class TestLogsEndpoint:
         # Previous logs should contain actual log content
         assert "Previous log line 1" in response_data["logs"]["previously_terminated_container"]
 
+    def test_logs_returns_400_for_invalid_container(self, k8s_client_factory):
+        """Test that 400 is returned with diagnostic context for invalid container name."""
+        client = k8s_client_factory(logs_scenario="invalid_container")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            "container_name": "_nginx",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        response_data = response.json()
+        # Should have normal response structure
+        assert "logs" in response_data
+        assert "diagnostic_context" in response_data
+        # Error message should be in current_container
+        assert "not valid for pod" in response_data["logs"]["current_container"]
+        # Diagnostic context should show valid containers
+        assert response_data["diagnostic_context"] is not None
+        assert "container_statuses" in response_data["diagnostic_context"]
+
 
 class TestOverviewEndpoint:
     """Test cases for K8s cluster overview endpoint."""
