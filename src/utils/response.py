@@ -5,21 +5,21 @@ from langgraph.constants import END
 from pydantic import BaseModel
 
 from agents.common.constants import (
-    TASKS,
     ANSWER,
     CONTENT,
     ERROR,
     ERROR_RESPONSE,
-    STATUS,
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
     IS_FEEDBACK,
     NEXT,
     PLANNER,
-    SUMMARIZATION,
+    RESPONSE_FINALIZING,
     RESPONSE_THINKING,
-    RESPONSE_FINALIZING
+    STATUS,
+    SUMMARIZATION,
+    TASKS,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -188,6 +188,7 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
         else None
     )
 
+
 def extract_info_from_response_chunk(chunk: str) -> ChunkInfo | None:
     """Extracts info from a response chunk. Returns ChunkInfo when successful, otherwise None."""
     try:
@@ -211,10 +212,10 @@ def extract_info_from_response_chunk(chunk: str) -> ChunkInfo | None:
             return None
 
     new_data = process_response(data, agent)
-    if not new_data or not ANSWER in new_data or not new_data[ANSWER]:
+    if not new_data or ANSWER not in new_data or not new_data[ANSWER]:
         logger.exception(f"Failed to process response data: {data}")
         return None
-    
+
     if ERROR in new_data and new_data[ERROR]:
         logger.error(f"Error in agent response: {new_data[ERROR]}")
         return ChunkInfo(error=new_data[ERROR])
@@ -230,9 +231,9 @@ def extract_info_from_response_chunk(chunk: str) -> ChunkInfo | None:
         for task in tasks:
             if task.get(STATUS) != SubTaskStatus.COMPLETED:
                 return ChunkInfo(status=task.get("task_name", RESPONSE_THINKING))
-            
+
     if NEXT in new_data[ANSWER] and new_data[ANSWER][NEXT] == FINALIZER:
         return ChunkInfo(status=RESPONSE_FINALIZING)
-            
+
     logger.exception(f"Failed to extract useful information from response data: {data}")
     return ChunkInfo(error=ERROR_RESPONSE)

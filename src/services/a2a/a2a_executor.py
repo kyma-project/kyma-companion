@@ -11,7 +11,6 @@ from a2a.utils.errors import ServerError
 from agents.common.constants import ERROR_RESPONSE, RESPONSE_THINKING, RESPONSE_UNABLE_TO_PROCESS
 from agents.common.data import Message as CompanionMessage
 from agents.graph import CompanionGraph
-from services.a2a.utils import extract_response_from_chunk
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from utils.response import extract_info_from_response_chunk
 
@@ -56,7 +55,7 @@ class CompanionA2AExecutor(AgentExecutor):
                 new_agent_text_message("Validating your request...", task.context_id, task.id),
             )
 
-            k8s_config = msg_metadata.get("x-target-k8s", None)            
+            k8s_config = msg_metadata.get("x-target-k8s", None)
             if not k8s_config:
                 raise ValueError("No Kubernetes credentials found in message metadata under 'x-target-k8s'")
             if isinstance(k8s_config, str):
@@ -67,12 +66,14 @@ class CompanionA2AExecutor(AgentExecutor):
             await updater.update_status(
                 TaskState.failed,
                 new_agent_text_message(
-                    "Failed to initialize Kubernetes client: " + str(e) + " Please check the provided credentials and try again.",
+                    "Failed to initialize Kubernetes client: "
+                    + str(e)
+                    + " Please check the provided credentials and try again.",
                     task.context_id,
                     task.id,
                 ),
             )
-            return  
+            return
         except Exception as e:
             logger.exception(f"Unexpected error initializing Kubernetes client: {e}")
             await updater.update_status(
@@ -138,21 +139,18 @@ class CompanionA2AExecutor(AgentExecutor):
                     )
                 if chunk_info.final_response:
                     final_response = chunk_info.final_response
-                    
 
             # 8. Mark the A2A task as complete
             if final_response:
                 await updater.add_artifact(
-                        [Part(root=TextPart(text=final_response))],
-                        name="response",
-                    )
+                    [Part(root=TextPart(text=final_response))],
+                    name="response",
+                )
                 await updater.complete()
             else:
                 await updater.update_status(
                     TaskState.failed,
-                    new_agent_text_message(
-                        RESPONSE_UNABLE_TO_PROCESS, task.context_id, task.id
-                    ),
+                    new_agent_text_message(RESPONSE_UNABLE_TO_PROCESS, task.context_id, task.id),
                 )
         except Exception as e:
             logger.exception(f"Error during CompanionGraph execution: {e}")
@@ -163,13 +161,12 @@ class CompanionA2AExecutor(AgentExecutor):
         if context.current_task:
             logger.info(f"Task {context.current_task.id} cancelled by client.")
         # CompanionGraph doesn't support cancellation currently
-        pass
 
     def _get_k8s_client(self, k8s_config: dict) -> IK8sClient:
         """Get K8s client from metadata or use the injected one."""
         if not k8s_config:
             raise ValueError("No Kubernetes credentials provided in message metadata under 'x-target-k8s'")
-        
+
         headers = K8sAuthHeaders(
             x_cluster_url=k8s_config.get("url", EMPTY_STR),
             x_cluster_certificate_authority_data=k8s_config.get("certificate-authority-data", EMPTY_STR),
@@ -181,8 +178,10 @@ class CompanionA2AExecutor(AgentExecutor):
         headers.validate_headers()
 
         if not headers.is_cluster_url_allowed():
-            raise ValueError(f"Kubernetes cluster URL ({headers.x_cluster_url}) is not in the allowed list. "
-                             f"The agents is configured to only allow access to specific cluster URLs for security reasons.")
+            raise ValueError(
+                f"Kubernetes cluster URL ({headers.x_cluster_url}) is not in the allowed list. "
+                f"The agents is configured to only allow access to specific cluster URLs for security reasons."
+            )
 
         # TODO: add the data_sanitizer to prevent sensitive data from being logged or exposed in errors.
         return K8sClient.new(headers, data_sanitizer=None)

@@ -94,6 +94,6 @@ ERROR_RESPONSE = (
 
 ANSWER = "answer"
 
-CONTENT= "content"
+CONTENT = "content"
 
 STATUS = "status"

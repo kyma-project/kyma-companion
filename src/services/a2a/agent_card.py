@@ -6,7 +6,7 @@ from a2a.types import (
     AgentSkill,
 )
 
-SUPPORTED_CONTENT_TYPES = ['text', 'text/plain', 'text/event-stream']
+SUPPORTED_CONTENT_TYPES = ["text", "text/plain", "text/event-stream"]
 
 # Agent Card: Describes the capabilities of Kyma Companion to other agents
 KYMA_COMPANION_AGENT_CARD = AgentCard(
@@ -75,10 +75,10 @@ KYMA_COMPANION_AGENT_CARD = AgentCard(
 def get_agent_card(base_url: str = "") -> AgentCard:
     """
     Get the agent card with the specified base URL.
-    
+
     Args:
         base_url: The base URL where the agent is deployed.
-        
+
     Returns:
         The configured AgentCard.
     """

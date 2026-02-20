@@ -169,9 +169,9 @@ def handle_http_exception(
         content=response_map.get(HTTPStatus(status), default_response),
     )
 
+
 a2a_app = get_a2a_app()
 app.mount("/a2a", a2a_app)
-# app.mount("/a2a/", a2a_app)
 app.include_router(conversations_router)
 app.include_router(k8s_tools_router)
 app.include_router(kyma_tools_router)
