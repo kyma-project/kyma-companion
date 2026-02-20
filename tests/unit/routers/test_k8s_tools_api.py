@@ -134,6 +134,104 @@ class TestLogsEndpoint:
         # Auth errors should be returned with their original status code
         assert response.status_code == auth_error_status
 
+    def test_logs_returns_404_when_no_data_available(self, k8s_client_factory):
+        """Test that 404 is returned when no logs and no diagnostic info available."""
+        client = k8s_client_factory(logs_scenario="no_logs_no_diagnostic")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            "container_name": "main",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        response_data = response.json()
+        assert "error" in response_data
+        assert response_data["error"] == "Not Found"
+        assert "message" in response_data
+
+    def test_logs_returns_200_when_no_logs_but_has_diagnostic(self, k8s_client_factory):
+        """Test that 200 is returned when no logs but diagnostic info is available."""
+        client = k8s_client_factory(logs_scenario="no_logs_with_diagnostic")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            "container_name": "main",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        response_data = response.json()
+        assert "logs" in response_data
+        assert "diagnostic_context" in response_data
+        assert response_data["diagnostic_context"] is not None
+        # Verify diagnostic context has useful information
+        assert "Failed to pull image" in response_data["diagnostic_context"]["events"]
+        assert "container_statuses" in response_data["diagnostic_context"]
+
+    def test_logs_returns_200_when_only_previous_logs_available(self, k8s_client_factory):
+        """Test that 200 is returned when only previous logs are available."""
+        client = k8s_client_factory(logs_scenario="previous_logs_only")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            "container_name": "main",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        response_data = response.json()
+        assert "logs" in response_data
+        # Current logs should indicate unavailability
+        assert "Logs not available" in response_data["logs"]["current_container"]
+        # Previous logs should contain actual log content
+        assert "Previous log line 1" in response_data["logs"]["previously_terminated_container"]
+
+    def test_logs_returns_400_for_invalid_container(self, k8s_client_factory):
+        """Test that 400 is returned with diagnostic context for invalid container name."""
+        client = k8s_client_factory(logs_scenario="invalid_container")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            "container_name": "_nginx",
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        response_data = response.json()
+        # Should have normal response structure
+        assert "logs" in response_data
+        assert "diagnostic_context" in response_data
+        # Error message should be in current_container
+        assert "not valid for pod" in response_data["logs"]["current_container"]
+        # Diagnostic context should show valid containers
+        assert response_data["diagnostic_context"] is not None
+        assert "container_statuses" in response_data["diagnostic_context"]
+
 
 class TestOverviewEndpoint:
     """Test cases for K8s cluster overview endpoint."""

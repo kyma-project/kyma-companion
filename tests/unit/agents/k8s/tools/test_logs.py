@@ -34,6 +34,7 @@ class ToolTestState(TypedDict):
                     "previously_terminated_container": "Not available (container has not been restarted)",
                 },
                 "diagnostic_context": None,
+                "status_code": 200,
             },
             None,
         ),
@@ -81,6 +82,7 @@ async def test_fetch_pod_logs_tool(
                 previously_terminated_container=expected_logs_dict["logs"]["previously_terminated_container"],
             ),
             diagnostic_context=expected_logs_dict["diagnostic_context"],
+            status_code=expected_logs_dict["status_code"],
         )
 
     # When: invoke the tool.

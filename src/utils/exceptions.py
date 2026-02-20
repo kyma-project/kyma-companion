@@ -19,6 +19,24 @@ def parse_k8s_error_response(error_text: str) -> str:
         return error_text
 
 
+class NoLogsAvailableError(Exception):
+    """
+    Exception raised when no logs or diagnostic information is available for a pod.
+
+    This is raised by fetch_pod_logs when:
+    - Current container logs are not available
+    - Previous container logs are not available
+    - No useful diagnostic information exists
+    """
+
+    def __init__(self, message: str, pod: str, namespace: str, container: str = ""):
+        self.message = message
+        self.pod = pod
+        self.namespace = namespace
+        self.container = container
+        super().__init__(message)
+
+
 class K8sClientError(Exception):
     """
     Custom exception for K8s client operations.

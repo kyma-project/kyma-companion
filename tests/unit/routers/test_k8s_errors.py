@@ -9,7 +9,7 @@ from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 
 from routers.common import K8sOverviewRequest, K8sQueryRequest, PodLogsRequest
 from routers.k8s_tools_api import get_k8s_overview, get_pod_logs, query_k8s_resource
@@ -39,7 +39,12 @@ class TestK8sAPIErrorHandling:
         return Mock(spec=IK8sClient)
 
     @pytest.fixture
-    def endpoint_configs(self):
+    def mock_response(self):
+        """Create a mock Response object."""
+        return Mock(spec=Response)
+
+    @pytest.fixture
+    def endpoint_configs(self, mock_response):
         """Configure all three endpoints with their tools and request objects."""
         return [
             {
@@ -52,6 +57,7 @@ class TestK8sAPIErrorHandling:
                     "uri": req.uri,
                     "k8s_client": client,
                 },
+                "needs_response": False,
             },
             {
                 "name": "logs",
@@ -69,6 +75,8 @@ class TestK8sAPIErrorHandling:
                     "container_name": req.container_name,
                     "k8s_client": client,
                 },
+                "needs_response": True,
+                "response": mock_response,
             },
             {
                 "name": "overview",
@@ -81,6 +89,7 @@ class TestK8sAPIErrorHandling:
                     "resource_kind": req.resource_kind,
                     "k8s_client": client,
                 },
+                "needs_response": False,
             },
         ]
 
@@ -141,7 +150,10 @@ class TestK8sAPIErrorHandling:
                 )
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await config["handler"](config["request"], mock_k8s_client)
+                    if config.get("needs_response"):
+                        await config["handler"](config["request"], mock_k8s_client, config["response"])
+                    else:
+                        await config["handler"](config["request"], mock_k8s_client)
 
                 assert exc_info.value.status_code == expected_status, (
                     f"Failed test case for {config['name']} endpoint: {test_description}"
@@ -160,7 +172,10 @@ class TestK8sAPIErrorHandling:
                 mock_tool.ainvoke = AsyncMock(side_effect=Exception("Connection timeout"))
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await config["handler"](config["request"], mock_k8s_client)
+                    if config.get("needs_response"):
+                        await config["handler"](config["request"], mock_k8s_client, config["response"])
+                    else:
+                        await config["handler"](config["request"], mock_k8s_client)
 
                 assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, (
                     f"Failed test case for {config['name']} endpoint"
