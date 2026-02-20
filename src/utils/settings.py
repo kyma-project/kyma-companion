@@ -65,6 +65,7 @@ def load_env_from_json() -> None:
 load_env_from_json()
 
 # Read the configs.
+HOST_NAME = config("HOST_NAME", default="http://localhost:8000")
 # Logging configuration - can be set in config.json or via environment variables
 # LOG_LEVEL: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL" (default: INFO)
 # LOG_FORMAT: "json" (structured, production), "pretty" (formatted JSON, dev), or "standard" (human-readable)
