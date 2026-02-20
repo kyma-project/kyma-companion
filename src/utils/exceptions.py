@@ -1,9 +1,5 @@
 import json
 from http import HTTPStatus
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from services.k8s_models import PodLogsDiagnosticContext
 
 # HTTP status code validation range
 # Covers standard codes (100-511) and common non-standard codes up to 599
@@ -21,29 +17,6 @@ def parse_k8s_error_response(error_text: str) -> str:
     except (json.JSONDecodeError, AttributeError, KeyError, TypeError):
         # If parsing fails for any reason, return the original text
         return error_text
-
-
-class InvalidContainerError(Exception):
-    """
-    Exception raised when an invalid container name is specified for a pod.
-
-    Includes diagnostic context to show valid containers.
-    """
-
-    def __init__(
-        self,
-        message: str,
-        pod: str,
-        namespace: str,
-        container: str = "",
-        diagnostic_context: "PodLogsDiagnosticContext | None" = None,
-    ):
-        self.message = message
-        self.pod = pod
-        self.namespace = namespace
-        self.container = container
-        self.diagnostic_context = diagnostic_context
-        super().__init__(message)
 
 
 class NoLogsAvailableError(Exception):
