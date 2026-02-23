@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from typing import Any
@@ -25,11 +25,12 @@ access_logger = get_logger("access")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Lifespan event handler to reconfigure logging after uvicorn starts."""
     # Reconfigure logging after uvicorn has applied its config
     reconfigure_logging()
     yield
+
 
 # Probe endpoints for efficient path checking
 PROBE_PATHS = frozenset(["/healthz", "/readyz"])
