@@ -57,7 +57,10 @@ class CompanionA2AExecutor(AgentExecutor):
 
             k8s_config = msg_metadata.get("x-target-k8s", None)
             if not k8s_config:
-                raise ValueError("No Kubernetes credentials found in message metadata under 'x-target-k8s'")
+                if context.metadata and "x-target-k8s" in context.metadata:
+                    k8s_config = context.metadata["x-target-k8s"]
+                else:
+                    raise ValueError("No Kubernetes credentials found in context metadata nor in message metadata under 'x-target-k8s'")
             if isinstance(k8s_config, str):
                 k8s_config = json.loads(k8s_config)
 
