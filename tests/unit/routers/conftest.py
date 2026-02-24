@@ -2,6 +2,7 @@
 Shared fixtures for router unit tests.
 """
 
+from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -12,8 +13,13 @@ from routers.common import init_models_dict
 from routers.k8s_tools_api import init_k8s_client as init_k8s_client_k8s
 from routers.kyma_tools_api import init_k8s_client as init_k8s_client_kyma
 from services.k8s import IK8sClient
-from services.k8s_models import PodLogs, PodLogsResult
-from utils.exceptions import K8sClientError
+from services.k8s_models import (
+    ContainerStatus,
+    PodLogs,
+    PodLogsDiagnosticContext,
+    PodLogsResult,
+)
+from utils.exceptions import K8sClientError, NoLogsAvailableError
 
 # Sample test data
 SAMPLE_BEARER_TOKEN = "test-token-123"
@@ -33,9 +39,15 @@ def get_sample_headers() -> dict[str, str]:
 class MockK8sClient(IK8sClient):
     """Mock implementation of K8s client for testing."""
 
-    def __init__(self, should_fail: bool = False, fail_with_status: int = 500):
+    def __init__(
+        self,
+        should_fail: bool = False,
+        fail_with_status: int = HTTPStatus.INTERNAL_SERVER_ERROR,
+        logs_scenario: str = "success",
+    ):
         self.should_fail = should_fail
         self.fail_with_status = fail_with_status
+        self.logs_scenario = logs_scenario
         self._resource_versions = {
             "Function": "serverless.kyma-project.io/v1alpha2",
             "APIRule": "gateway.kyma-project.io/v1beta1",
@@ -81,12 +93,65 @@ class MockK8sClient(IK8sClient):
                 status_code=self.fail_with_status,
                 uri=f"/api/v1/namespaces/{namespace}/pods/{name}/log",
             )
-        return PodLogsResult(
-            logs=PodLogs(
-                current_container="Log line 1\nLog line 2\nLog line 3",
-                previously_terminated_container="Not available (container has not been restarted)",
+
+        # Return different scenarios based on logs_scenario parameter
+        if self.logs_scenario == "no_logs_no_diagnostic":
+            # No logs and no diagnostic information - raise exception
+            raise NoLogsAvailableError(
+                message=f"No logs or diagnostic information available for pod '{name}' in namespace '{namespace}'",
+                pod=name,
+                namespace=namespace,
+                container=container_name,
             )
-        )
+        elif self.logs_scenario == "no_logs_with_diagnostic":
+            # No logs but has diagnostic information
+            return PodLogsResult(
+                logs=PodLogs(
+                    current_container="Logs not available. Container is waiting",
+                    previously_terminated_container="Not available (container has not been restarted)",
+                ),
+                diagnostic_context=PodLogsDiagnosticContext(
+                    events="LAST SEEN   TYPE      REASON    MESSAGE\n"
+                    "2m ago      Warning   Failed    Failed to pull image",
+                    container_statuses={
+                        "main": ContainerStatus(
+                            state="Waiting",
+                            reason="ImagePullBackOff",
+                            message="Back-off pulling image",
+                            restart_count=0,
+                        )
+                    },
+                ),
+            )
+        elif self.logs_scenario == "previous_logs_only":
+            # Only previous logs available
+            return PodLogsResult(
+                logs=PodLogs(
+                    current_container="Logs not available. Container restarted",
+                    previously_terminated_container="Previous log line 1\nPrevious log line 2",
+                ),
+            )
+        elif self.logs_scenario == "invalid_container":
+            # Invalid container name - return result with 400 status code
+            return PodLogsResult(
+                logs=PodLogs(
+                    current_container=f"Logs not available. container {container_name} is not valid for pod {name}",
+                    previously_terminated_container="Not available (container has not been restarted)",
+                ),
+                diagnostic_context=PodLogsDiagnosticContext(
+                    events="No recent pod events found.",
+                    container_statuses={"nginx": ContainerStatus(state="Running", restart_count=0)},
+                ),
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+        else:
+            # Default success scenario
+            return PodLogsResult(
+                logs=PodLogs(
+                    current_container="Log line 1\nLog line 2\nLog line 3",
+                    previously_terminated_container="Not available (container has not been restarted)",
+                ),
+            )
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
         return []
@@ -115,8 +180,16 @@ def k8s_client_factory():
     cluster interactions with different behaviors (e.g., success, failure).
     """
 
-    def _create_client(should_fail: bool = False, fail_with_status: int = 500):
-        mock_k8s_client = MockK8sClient(should_fail=should_fail, fail_with_status=fail_with_status)
+    def _create_client(
+        should_fail: bool = False,
+        fail_with_status: int = HTTPStatus.INTERNAL_SERVER_ERROR,
+        logs_scenario: str = "success",
+    ):
+        mock_k8s_client = MockK8sClient(
+            should_fail=should_fail,
+            fail_with_status=fail_with_status,
+            logs_scenario=logs_scenario,
+        )
 
         def get_mock_k8s_client():
             return mock_k8s_client

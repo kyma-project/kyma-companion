@@ -9,7 +9,7 @@ All endpoints require Kubernetes authentication headers.
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
@@ -25,7 +25,7 @@ from routers.common import (
 )
 from services.k8s import IK8sClient
 from services.k8s_models import PodLogsResult
-from utils.exceptions import K8sClientError
+from utils.exceptions import K8sClientError, NoLogsAvailableError
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -79,6 +79,7 @@ async def query_k8s_resource(
 async def get_pod_logs(
     request: Annotated[PodLogsRequest, Body()],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
+    response: Response,
 ) -> PodLogsResponse:
     """
     Fetch logs from a Kubernetes pod container.
@@ -102,12 +103,18 @@ async def get_pod_logs(
         # Tool returns dict (serialized Pydantic model), reconstruct for response
         pod_logs_result = PodLogsResult.model_validate(result)
 
-        return PodLogsResponse(
-            logs=pod_logs_result.logs,
-            diagnostic_context=pod_logs_result.diagnostic_context,
-            pod_name=request.name,
-            container_name=request.container_name,
+        # Forward the status code from K8s API (e.g., 400 for invalid container)
+        response.status_code = pod_logs_result.status_code
+
+    except NoLogsAvailableError as e:
+        logger.warning(
+            f"No log data or diagnostic info available for pod={request.name}, "
+            f"namespace={request.namespace}, container={request.container_name}"
         )
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=e.message,
+        ) from e
     except K8sClientError as e:
         logger.error(
             f"K8s error fetching logs for pod={request.name}, "
@@ -123,6 +130,13 @@ async def get_pod_logs(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch pod logs: {str(e)}",
         ) from e
+
+    return PodLogsResponse(
+        logs=pod_logs_result.logs,
+        diagnostic_context=pod_logs_result.diagnostic_context,
+        pod_name=request.name,
+        container_name=request.container_name,
+    )
 
 
 @router.post("/overview", response_model=K8sOverviewResponse)
