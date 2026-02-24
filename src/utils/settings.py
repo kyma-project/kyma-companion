@@ -72,6 +72,10 @@ LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 LOG_FORMAT = config("LOG_FORMAT", default="json")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
+# Server configuration - host and port for uvicorn
+HOST = config("HOST", default="0.0.0.0")
+PORT = config("PORT", default=8000, cast=int)
+
 # Initialization of the main chat LLM models and main embedding model.
 MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
 MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")

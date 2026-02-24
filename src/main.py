@@ -1,6 +1,8 @@
 import logging
+import sys
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from http import HTTPStatus
 from typing import Any
 
@@ -16,16 +18,30 @@ from routers.kyma_tools_api import router as kyma_tools_router
 from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
-from utils.logging import get_logger
+from utils.logging import get_logger, reconfigure_logging
+from utils.settings import HOST, PORT
 
 logger = get_logger(__name__)
 access_logger = get_logger("access")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Lifespan event handler to reconfigure logging after uvicorn starts."""
+    # Only reconfigure logging when NOT running tests
+    # During tests, logging is already configured by utils.logging on import
+    if "pytest" not in sys.modules:
+        # Reconfigure logging after uvicorn has applied its config
+        reconfigure_logging()
+    yield
+
 
 # Probe endpoints for efficient path checking
 PROBE_PATHS = frozenset(["/healthz", "/readyz"])
 
 app = FastAPI(
     title="Joule",
+    lifespan=lifespan,
 )
 
 
@@ -189,5 +205,6 @@ async def metrics() -> Response:
 
 if __name__ == "__main__":
     # Logging is already configured in utils.logging
-    # Just run uvicorn without custom log config
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Disable uvicorn's log config to use our custom configuration
+    # Host and port are loaded from settings (configurable via environment variables)
+    uvicorn.run(app, host=HOST, port=PORT, log_config=None)
