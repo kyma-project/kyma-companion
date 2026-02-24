@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -27,8 +28,11 @@ access_logger = get_logger("access")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Lifespan event handler to reconfigure logging after uvicorn starts."""
-    # Reconfigure logging after uvicorn has applied its config
-    reconfigure_logging()
+    # Only reconfigure logging when NOT running tests
+    # During tests, logging is already configured by utils.logging on import
+    if "pytest" not in sys.modules:
+        # Reconfigure logging after uvicorn has applied its config
+        reconfigure_logging()
     yield
 
 
