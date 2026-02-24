@@ -34,7 +34,7 @@ package-mode = false
 mypy = "^1.13.0"
 poethepoet = "^0.40.0"
 pytest = "^9.0.0"
-ruff = "^0.14.0"
+ruff = "^0.15.2"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
