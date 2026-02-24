@@ -208,5 +208,9 @@ if __name__ == "__main__":
     # Disable uvicorn's log config to use our custom configuration
     # Host and port are configurable via environment variables
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    try:
+        port = int(os.getenv("PORT", "8000"))
+    except ValueError:
+        port = 8000
+        logger.warning("Invalid PORT environment variable, using default port 8000")
     uvicorn.run(app, host=host, port=port, log_config=None)
