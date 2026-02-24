@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
@@ -20,6 +19,7 @@ from routers.probes import router as probes_router
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger, reconfigure_logging
+from utils.settings import HOST, PORT
 
 logger = get_logger(__name__)
 access_logger = get_logger("access")
@@ -206,11 +206,5 @@ async def metrics() -> Response:
 if __name__ == "__main__":
     # Logging is already configured in utils.logging
     # Disable uvicorn's log config to use our custom configuration
-    # Host and port are configurable via environment variables
-    host = os.getenv("HOST", "0.0.0.0")
-    try:
-        port = int(os.getenv("PORT", "8000"))
-    except ValueError:
-        port = 8000
-        logger.warning("Invalid PORT environment variable, using default port 8000")
-    uvicorn.run(app, host=host, port=port, log_config=None)
+    # Host and port are loaded from settings (configurable via environment variables)
+    uvicorn.run(app, host=HOST, port=PORT, log_config=None)
