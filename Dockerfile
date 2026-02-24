@@ -1,4 +1,4 @@
-FROM ghcr.io/gardenlinux/gardenlinux:1877.12 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:1877.13 AS builder
 WORKDIR /app
 
 # Copy only necessary files
