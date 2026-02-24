@@ -36,7 +36,14 @@ def followup_correctness_metric(evaluator_model):
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True)
+def clear_shared_memory():
+    """Clear shared memory before each test to prevent data leaks."""
+    shared_memory.clear()
+    yield
+
+
+@pytest.fixture(scope="function")
 def conversation_service(app_models, companion_graph):
     with patch("services.conversation.ConversationService.__init__") as mock_cs:
         model_mini = app_models[MAIN_MODEL_MINI_NAME]

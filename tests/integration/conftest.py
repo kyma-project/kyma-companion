@@ -125,7 +125,7 @@ def evaluator_main_model(app_models):
     return LangChainOpenAI(app_models[integration_test_main_evaluator_model_name].llm)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def start_fake_redis():
     redis_port = get_free_port_in_range()
     server_address = (REDIS_HOST, redis_port)
@@ -142,7 +142,7 @@ def start_fake_redis():
     t.join(timeout=5)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def companion_graph(app_models, start_fake_redis):
     redis_port = start_fake_redis.server_address[1]
     memory = AsyncRedisSaver.from_conn_info(
