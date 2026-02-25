@@ -6,11 +6,10 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK, UNKNOWN
+from agents.common.constants import COMMON, GATEKEEPER, UNKNOWN
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
-    FeedbackResponse,
     GatekeeperResponse,
     SubTask,
 )
@@ -22,7 +21,6 @@ from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
-    MAIN_MODEL_NANO_NAME,
 )
 
 
@@ -40,7 +38,6 @@ def mock_models():
     return {
         MAIN_MODEL_MINI_NAME: main_model_mini,
         MAIN_MODEL_NAME: main_model,
-        MAIN_MODEL_NANO_NAME: MagicMock(spec=IModel),
         MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 
@@ -82,7 +79,9 @@ def companion_graph(
     mock_gatekeeper_chain,
 ):
     with (
-        patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
+        patch.object(
+            CompanionGraph, "_create_common_chain", return_value=mock_common_chain
+        ),
         patch.object(
             CompanionGraph,
             "_create_gatekeeper_chain",
@@ -94,7 +93,6 @@ def companion_graph(
         graph = CompanionGraph(mock_models, mock_memory)
         graph._invoke_common_node = AsyncMock()
         graph._invoke_gatekeeper_node = AsyncMock()
-        graph._invoke_feedback_node = AsyncMock()
         return graph
 
 
@@ -266,11 +264,15 @@ class TestCompanionGraph:
         assert result == expected_output
 
         if chain_response:
-            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
+            companion_graph._invoke_common_node.assert_awaited_once_with(
+                state, subtasks[0].description
+            )
             assert subtasks[0].status == "completed"
         elif expected_error:
             # if error occurs, return message with error
-            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
+            companion_graph._invoke_common_node.assert_awaited_once_with(
+                state, subtasks[0].description
+            )
             # Verify subtask remains pending after error
             assert subtasks[0].status == "pending"
             assert subtasks[0].assigned_to == COMMON
@@ -280,12 +282,11 @@ class TestCompanionGraph:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "test_case, messages, feedback_node_response, chain_response, expected_output, expected_error",
+        "test_case, messages, chain_response, expected_output, expected_error",
         [
             (
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
-                '{"response" : true}',
                 '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "messages": [
@@ -297,26 +298,22 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    IS_FEEDBACK: True,
                 },
                 None,
             ),
             (
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
-                '{"response" : false}',
                 '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
-                    IS_FEEDBACK: False,
                 },
                 None,
             ),
             (
                 "Handles exception during gatekeeper execution",
                 [HumanMessage(content="What is Java?")],
-                '{"response" : false}',
                 None,
                 {
                     "messages": [
@@ -327,56 +324,6 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    IS_FEEDBACK: False,
-                },
-                "Error in common node: Test error",
-            ),
-            (
-                "Handles exception in feedback node with direct response",
-                [HumanMessage(content="What are Java and Python?")],
-                "feedback_exception",
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Python is a high-level programming language. "
-                            "Java is a general-purpose programming language.",
-                            name=GATEKEEPER,
-                        )
-                    ],
-                    "subtasks": [],
-                    "next": "__end__",
-                    IS_FEEDBACK: False,
-                },
-                None,
-            ),
-            (
-                "Handles exception in feedback node with forward query",
-                [HumanMessage(content="What is Kyma?")],
-                "feedback_exception",
-                '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
-                {
-                    "subtasks": [],
-                    "next": SUPERVISOR,
-                    IS_FEEDBACK: False,
-                },
-                None,
-            ),
-            (
-                "Handles exception in both feedback and gatekeeper nodes",
-                [HumanMessage(content="What is Java?")],
-                "feedback_exception",
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I am unable to process the request.",
-                            name=GATEKEEPER,
-                        )
-                    ],
-                    "subtasks": [],
-                    "next": "__end__",
-                    IS_FEEDBACK: False,
                 },
                 "Error in common node: Test error",
             ),
@@ -387,7 +334,6 @@ class TestCompanionGraph:
         companion_graph,
         test_case,
         messages,
-        feedback_node_response,
         chain_response,
         expected_output,
         expected_error,
@@ -395,19 +341,13 @@ class TestCompanionGraph:
         # Given
         state = CompanionState(subtasks=[], messages=messages)
 
-        # Set up feedback node - handle exception case
-        if feedback_node_response == "feedback_exception":
-            companion_graph._invoke_feedback_node.side_effect = Exception("Error in feedback node")
-        else:
-            companion_graph._invoke_feedback_node.return_value = FeedbackResponse.model_validate_json(
-                feedback_node_response
-            )
-
         if expected_error:
-            companion_graph._invoke_gatekeeper_node.side_effect = Exception(expected_error)
+            companion_graph._invoke_gatekeeper_node.side_effect = Exception(
+                expected_error
+            )
         else:
-            companion_graph._invoke_gatekeeper_node.return_value = GatekeeperResponse.model_validate_json(
-                chain_response
+            companion_graph._invoke_gatekeeper_node.return_value = (
+                GatekeeperResponse.model_validate_json(chain_response)
             )
 
         # When
@@ -415,9 +355,6 @@ class TestCompanionGraph:
         assert result == expected_output, test_case
 
         # Then
-        # Feedback node should always be called (even if it raises an exception)
-        companion_graph._invoke_feedback_node.assert_awaited_once_with(state)
-
         if chain_response:
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(state)
         elif expected_error:
@@ -433,7 +370,9 @@ class TestCompanionGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.CompanionGraph", return_value=companion_graph) as mock:
+        with patch(
+            "services.conversation.CompanionGraph", return_value=companion_graph
+        ) as mock:
             yield mock
 
     @pytest.mark.asyncio
@@ -453,9 +392,17 @@ class TestCompanionGraph:
                 [
                     {"Planner": AIMessage(content="Query is decomposed into subtasks")},
                     {"Supervisor": AIMessage(content="next is KymaAgent")},
-                    {"KymaAgent": AIMessage(content="You can deploy a Kyma function by following these steps")},
+                    {
+                        "KymaAgent": AIMessage(
+                            content="You can deploy a Kyma function by following these steps"
+                        )
+                    },
                     {"Supervisor": AIMessage(content="next is KubernetesAgent")},
-                    {"KubernetesAgent": AIMessage(content="You can deploy a k8s app by following these steps")},
+                    {
+                        "KubernetesAgent": AIMessage(
+                            content="You can deploy a k8s app by following these steps"
+                        )
+                    },
                     {"Exit": AIMessage(content="final response")},
                 ],
                 [
@@ -600,10 +547,14 @@ class TestCompanionGraph:
                 and message.resource_api_version == ""
             ):
                 if not isinstance(first_message, HumanMessage):
-                    raise Exception("The first message should be a HumanMessage when resource info is empty.")
+                    raise Exception(
+                        "The first message should be a HumanMessage when resource info is empty."
+                    )
             else:
                 if not isinstance(first_message, SystemMessage):
-                    raise Exception("The first message should be a SystemMessage when resource_name info is non-empty.")
+                    raise Exception(
+                        "The first message should be a SystemMessage when resource_name info is non-empty."
+                    )
                 if message.resource_kind == UNKNOWN:
                     assert (
                         first_message.content
@@ -619,12 +570,16 @@ class TestCompanionGraph:
 
         if expected_error:
             with pytest.raises(Exception) as exc_info:
-                async for _ in companion_graph.astream(conversation_id, message, mock_k8s_client):
+                async for _ in companion_graph.astream(
+                    conversation_id, message, mock_k8s_client
+                ):
                     pass
             assert str(exc_info.value) == expected_error
         else:
             result = []
-            async for chunk in companion_graph.astream(conversation_id, message, mock_k8s_client):
+            async for chunk in companion_graph.astream(
+                conversation_id, message, mock_k8s_client
+            ):
                 result.append(chunk)
 
             assert result == expected_output
@@ -740,7 +695,9 @@ class TestCompanionGraph:
             ),
         ],
     )
-    async def test_aget_thread_owner(self, companion_graph, conversation_id, state_values, expected_owner):
+    async def test_aget_thread_owner(
+        self, companion_graph, conversation_id, state_values, expected_owner
+    ):
         # Given
         state_snapshot = StateSnapshot(
             values=state_values,
@@ -804,7 +761,9 @@ class TestCompanionGraph:
             parent_config=None,
             interrupts=(),
         )
-        companion_graph.graph.aget_state = AsyncMock(return_value=initial_state_snapshot)
+        companion_graph.graph.aget_state = AsyncMock(
+            return_value=initial_state_snapshot
+        )
         companion_graph.graph.aupdate_state = AsyncMock()
 
         # When

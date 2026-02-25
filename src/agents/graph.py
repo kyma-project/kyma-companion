@@ -26,7 +26,6 @@ from agents.common.constants import (
     CONTINUE,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
-    IS_FEEDBACK,
     MESSAGES,
     MESSAGES_SUMMARY,
     NEXT,
@@ -40,7 +39,6 @@ from agents.common.constants import (
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
-    FeedbackResponse,
     GatekeeperResponse,
     GraphInput,
     Plan,
@@ -57,7 +55,6 @@ from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import (
     COMMON_QUESTION_PROMPT,
-    FEEDBACK_PROMPT,
     GATEKEEPER_INSTRUCTIONS,
     GATEKEEPER_PROMPT,
 )
@@ -72,7 +69,6 @@ from utils.models.factory import IModel
 from utils.settings import (
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
-    MAIN_MODEL_NANO_NAME,
     SUMMARIZATION_TOKEN_LOWER_LIMIT,
     SUMMARIZATION_TOKEN_UPPER_LIMIT,
 )
@@ -90,7 +86,12 @@ class CustomJSONEncoder(json.JSONEncoder):
         """Custom JSON encoder for RemoveMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage, and SubTask."""
         if isinstance(
             o,
-            RemoveMessage | AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask,
+            RemoveMessage
+            | AIMessage
+            | HumanMessage
+            | SystemMessage
+            | ToolMessage
+            | SubTask,
         ):
             return o.__dict__
         elif isinstance(o, IK8sClient):
@@ -122,7 +123,9 @@ def create_chain(
 class IGraph(Protocol):
     """Graph interface."""
 
-    def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
+    def astream(
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+    ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         ...
 
@@ -175,7 +178,6 @@ class CompanionGraph:
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
         self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
-        self._feedback_chain = self._create_feedback_chain(cast(IModel, models[MAIN_MODEL_NANO_NAME]))
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
 
@@ -197,7 +199,9 @@ class CompanionGraph:
         response = await ainvoke_chain(
             self._common_chain,
             {
-                "messages": filter_valid_messages(state.get_messages_including_summary()),
+                "messages": filter_valid_messages(
+                    state.get_messages_including_summary()
+                ),
                 "query": subtask,
             },
         )
@@ -209,7 +213,9 @@ class CompanionGraph:
         for subtask in state.subtasks:
             if subtask.assigned_to == COMMON and subtask.status != "completed":
                 try:
-                    response = await self._invoke_common_node(state, subtask.description)
+                    response = await self._invoke_common_node(
+                        state, subtask.description
+                    )
                     subtask.complete()
                     return {
                         MESSAGES: [
@@ -255,34 +261,16 @@ class CompanionGraph:
         )
         return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
-    @staticmethod
-    def _create_feedback_chain(model: IModel) -> RunnableSequence:
-        """Feedback node chain to handle feedback queries."""
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", FEEDBACK_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        )
-        return prompt | model.llm.with_structured_output(FeedbackResponse, method="function_calling")  # type: ignore
-
-    async def _invoke_feedback_node(self, state: CompanionState) -> FeedbackResponse:
-        """Invoke the Feedback node."""
-        response: Any = await ainvoke_chain(
-            self._feedback_chain,
-            {
-                "messages": [state.messages[-1]],  # last human message
-            },
-        )
-        return cast(FeedbackResponse, response)
-
-    async def _invoke_gatekeeper_node(self, state: CompanionState) -> GatekeeperResponse:
+    async def _invoke_gatekeeper_node(
+        self, state: CompanionState
+    ) -> GatekeeperResponse:
         """Invoke the Gatekeeper node."""
         response: Any = await ainvoke_chain(
             self._gatekeeper_chain,
             {
-                "messages": filter_valid_messages(state.get_messages_including_summary()),
+                "messages": filter_valid_messages(
+                    state.get_messages_including_summary()
+                ),
             },
         )
 
@@ -292,27 +280,41 @@ class CompanionGraph:
         # set forward_query as false by default.
         gatekeeper_response.forward_query = False
 
-        if gatekeeper_response.is_prompt_injection or gatekeeper_response.is_security_threat:
+        if (
+            gatekeeper_response.is_prompt_injection
+            or gatekeeper_response.is_security_threat
+        ):
             logger.debug("Prompt injection or security issue detected")
             gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
         elif gatekeeper_response.category == "Greeting":
             logger.debug("Gatekeeper responding to greeting")
             gatekeeper_response.direct_response = RESPONSE_HELLO
-        elif gatekeeper_response.category in ["Programming", "About You"] and gatekeeper_response.direct_response:
-            logger.debug("Gatekeeper responding with direct response for programming or about you category")
+        elif (
+            gatekeeper_response.category in ["Programming", "About You"]
+            and gatekeeper_response.direct_response
+        ):
+            logger.debug(
+                "Gatekeeper responding with direct response for programming or about you category"
+            )
         elif (
             gatekeeper_response.category in ["Kyma", "Kubernetes"]
             and gatekeeper_response.answer_from_history
             and gatekeeper_response.is_user_query_in_past_tense
         ):
-            logger.debug("Gatekeeper answering from conversation history for Kyma or Kubernetes")
-            gatekeeper_response.direct_response = gatekeeper_response.answer_from_history
+            logger.debug(
+                "Gatekeeper answering from conversation history for Kyma or Kubernetes"
+            )
+            gatekeeper_response.direct_response = (
+                gatekeeper_response.answer_from_history
+            )
         elif gatekeeper_response.category in ["Kyma", "Kubernetes"]:
             logger.debug("Gatekeeper forwarding the query")
             gatekeeper_response.forward_query = True
         else:
             # If no category matched, return a default response.
-            logger.debug("Gatekeeper responding with default response because no category matched")
+            logger.debug(
+                "Gatekeeper responding with default response because no category matched"
+            )
             gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
 
         # return the gatekeeper response.
@@ -322,19 +324,12 @@ class CompanionGraph:
         """Gatekeeper node to handle general and queries that can answered from conversation history."""
 
         try:
-            feedback_response = await self._invoke_feedback_node(state)
-        except Exception:
-            logger.exception("Error in feedback node")
-            feedback_response = FeedbackResponse(response=False)
-
-        try:
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
             if gatekeeper_response.forward_query:
                 logger.debug("Gatekeeper node forwarding the query")
                 return {
                     NEXT: SUPERVISOR,
                     SUBTASKS: [],
-                    IS_FEEDBACK: False,  # Quick FIx - Need to remove this hardcoded value
                 }
 
             logger.debug("Gatekeeper node directly responding")
@@ -351,7 +346,6 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                IS_FEEDBACK: feedback_response.response,
             }
         except Exception:
             logger.exception("Error in gatekeeper node")
@@ -364,7 +358,6 @@ class CompanionGraph:
                     )
                 ],
                 SUBTASKS: [],
-                IS_FEEDBACK: feedback_response.response,
             }
 
     def _build_graph(self) -> CompiledStateGraph:
@@ -422,7 +415,9 @@ class CompanionGraph:
 
         return graph
 
-    async def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
+    async def astream(
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+    ) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
         user_input = UserInput(**message.__dict__)
         messages: list[BaseMessage] = [HumanMessage(content=message.query)]
@@ -456,7 +451,10 @@ class CompanionGraph:
             if langfuse_handler:
                 callbacks.append(langfuse_handler)
         except Exception:
-            logger.warning("Failed to get Langfuse callback handler. Skipping Langfuse trace...", exc_info=True)
+            logger.warning(
+                "Failed to get Langfuse callback handler. Skipping Langfuse trace...",
+                exc_info=True,
+            )
 
         run_config = RunnableConfig(
             configurable={
@@ -498,11 +496,18 @@ class CompanionGraph:
                 },
             }
         )
-        if state and state.values and "thread_owner" in state.values and state.values["thread_owner"] != "":
+        if (
+            state
+            and state.values
+            and "thread_owner" in state.values
+            and state.values["thread_owner"] != ""
+        ):
             return str(state.values["thread_owner"])
         return None
 
-    async def aupdate_thread_owner(self, conversation_id: str, user_identifier: str) -> None:
+    async def aupdate_thread_owner(
+        self, conversation_id: str, user_identifier: str
+    ) -> None:
         """Update the owner of the thread."""
         await self.graph.aupdate_state(
             {

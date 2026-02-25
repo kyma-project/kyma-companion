@@ -8,7 +8,6 @@ from agents.common.constants import (
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
-    IS_FEEDBACK,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -49,7 +48,9 @@ def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     return tasks
 
 
-def handle_agent_error(agent_data: dict[str, Any], agent: str) -> tuple[str | None, dict[str, Any] | None]:
+def handle_agent_error(
+    agent_data: dict[str, Any], agent: str
+) -> tuple[str | None, dict[str, Any] | None]:
     """Handle agent error cases and return error message and response if applicable."""
 
     agent_error = None
@@ -90,7 +91,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             "answer": {
                 "content": "",
                 "tasks": [PLANNING_TASK],
-                IS_FEEDBACK: (agent_data.get(IS_FEEDBACK) if IS_FEEDBACK in agent_data else None),
                 NEXT: SUPERVISOR,
             },
         }
@@ -104,8 +104,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
     if agent in (SUPERVISOR, GATEKEEPER):
         answer[NEXT] = agent_data.get(NEXT)
-        if IS_FEEDBACK in agent_data:
-            answer[IS_FEEDBACK] = agent_data.get(IS_FEEDBACK)
     else:
         # for all other agent, decide next based on pending task
         if agent_data.get("subtasks"):
@@ -131,13 +129,17 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
         data = json.loads(chunk)
     except json.JSONDecodeError:
         logger.exception("Invalid JSON")
-        return json.dumps({"event": "unknown", "data": {"error": "Invalid JSON"}}).encode()
+        return json.dumps(
+            {"event": "unknown", "data": {"error": "Invalid JSON"}}
+        ).encode()
 
     agent = next(iter(data.keys()), None)
 
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
-        return json.dumps({"event": "unknown", "data": {"error": "No agent found"}}).encode()
+        return json.dumps(
+            {"event": "unknown", "data": {"error": "No agent found"}}
+        ).encode()
 
     agent_data = data[agent]
 

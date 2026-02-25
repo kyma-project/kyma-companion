@@ -1,4 +1,3 @@
-from enum import Enum
 from functools import lru_cache
 from typing import Protocol, cast, runtime_checkable
 
@@ -27,16 +26,6 @@ class EmbeddingModelPrefix:
 
     OPENAI = "text-embedding"
     GECKO = "textembedding-gecko"
-
-
-class ModelType(str, Enum):
-    """Enum for LLM model names."""
-
-    GPT41 = "gpt-4.1"
-    GPT41_MINI = "gpt-4.1-mini"
-    GPT5 = "gpt-5"
-    GPT5_MINI = "gpt-5-mini"
-    TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
 @runtime_checkable
@@ -133,4 +122,6 @@ class ModelFactory:
 
     def create_models(self) -> dict[str, IModel | Embeddings]:
         """Create all models defined in the configuration."""
-        return {model.name: self.create_model(model.name) for model in self._config.models}
+        return {
+            model.name: self.create_model(model.name) for model in self._config.models
+        }

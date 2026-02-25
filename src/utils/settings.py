@@ -13,7 +13,9 @@ class LangfuseMaskingModes(StrEnum):
 
     DISABLED = "DISABLED"  # No masking, return data as is.
     PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
-    FILTERED = "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
+    FILTERED = (
+        "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
+    )
     REDACTED = "REDACTED"  # Everything is redacted.
 
 
@@ -21,16 +23,22 @@ def load_env_from_json() -> None:
     """Load the configuration from the config.json file."""
     # if running tests with pytest, use config_test.json
     if "pytest" in sys.modules:
-        test_config_path = Path(__file__).parent.parent.parent / "config" / "config.test.json"
+        test_config_path = (
+            Path(__file__).parent.parent.parent / "config" / "config.test.json"
+        )
         if test_config_path.exists():
             default_config_path = test_config_path
         else:
-            default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
+            default_config_path = (
+                Path(__file__).parent.parent.parent / "config" / "config.json"
+            )
             logging.warning(
                 f"Test config file {test_config_path} not found. Using default config file {default_config_path}"
             )
     else:
-        default_config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
+        default_config_path = (
+            Path(__file__).parent.parent.parent / "config" / "config.json"
+        )
 
     config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
@@ -73,11 +81,14 @@ LOG_FORMAT = config("LOG_FORMAT", default="json")
 DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Initialization of the main chat LLM models and main embedding model.
-MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
-MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
-MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
-MAIN_MODEL_NANO_NAME = config("MAIN_MODEL_NANO_NAME", default="gpt-4.1-nano")
-LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
+MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-5")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-5-mini")
+MAIN_EMBEDDING_MODEL_NAME = config(
+    "MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large"
+)
+LLM_REQUEST_TIMEOUT_SECONDS = config(
+    "LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int
+)
 GRAPH_STEP_TIMEOUT_SECONDS = config("GRAPH_STEP_TIMEOUT_SECONDS", default=180, cast=int)
 
 # Redis
@@ -96,16 +107,26 @@ LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
-LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
+LANGFUSE_MASKING_MODE = config(
+    "LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes
+)
 
 # Summarization
-SUMMARIZATION_TOKEN_UPPER_LIMIT = config("SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int)
-SUMMARIZATION_TOKEN_LOWER_LIMIT = config("SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int)
+SUMMARIZATION_TOKEN_UPPER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int
+)
+SUMMARIZATION_TOKEN_LOWER_LIMIT = config(
+    "SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int
+)
 
-MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int)
+MAX_TOKEN_LIMIT_INPUT_QUERY = config(
+    "MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int
+)
 
 # RAG
-RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
+RAG_RELEVANCY_SCORE_THRESHOLD = config(
+    "RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float
+)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
@@ -117,16 +138,22 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 )  # Default 5 minutes
 
 TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 5000000, cast=int)
-TOKEN_USAGE_RESET_INTERVAL = config("TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int)  # 24 hours
+TOKEN_USAGE_RESET_INTERVAL = config(
+    "TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int
+)  # 24 hours
 
 
 K8S_API_PAGINATION_LIMIT = config("K8S_API_PAGINATION_LIMIT", 40, cast=int)
 
 K8S_API_PAGINATION_MAX_PAGE = config("K8S_API_PAGINATION_MAX_PAGE", 1, cast=int)
 
-TOTAL_CHUNKS_LIMIT = config("TOTAL_CHUNKS_LIMIT", 2, cast=int)  # Limit the number of allowed chunking of tool response
+TOTAL_CHUNKS_LIMIT = config(
+    "TOTAL_CHUNKS_LIMIT", 2, cast=int
+)  # Limit the number of allowed chunking of tool response
 
-TOOL_RESPONSE_TOKEN_COUNT_LIMIT = config("TOOL_RESPONSE_TOKEN_COUNT_LIMIT", 10000, cast=int)
+TOOL_RESPONSE_TOKEN_COUNT_LIMIT = config(
+    "TOOL_RESPONSE_TOKEN_COUNT_LIMIT", 10000, cast=int
+)
 
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 K8S_API_RESOURCES_JSON_FILE = config(
@@ -145,5 +172,7 @@ if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
     TEST_CLUSTER_CA_DATA = config("TEST_CLUSTER_CA_DATA", default="")
     TEST_CLUSTER_AUTH_TOKEN = config("TEST_CLUSTER_AUTH_TOKEN", default="")
-    TEST_CLUSTER_CLIENT_CERTIFICATE_DATA = config("TEST_CLUSTER_CLIENT_CERTIFICATE_DATA", default="")
+    TEST_CLUSTER_CLIENT_CERTIFICATE_DATA = config(
+        "TEST_CLUSTER_CLIENT_CERTIFICATE_DATA", default=""
+    )
     TEST_CLUSTER_CLIENT_KEY_DATA = config("TEST_CLUSTER_CLIENT_KEY_DATA", default="")

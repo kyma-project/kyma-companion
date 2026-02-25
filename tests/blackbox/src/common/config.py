@@ -17,7 +17,9 @@ class Config:
     test_data_path: str  # Path to the test data directory e.g. "~kyma-companion/tests/blackbox/data"
     namespace_scoped_test_data_path: str
     companion_api_url: str
-    companion_token: str  # Authentication token when the companion is deployed in MPS cluster.
+    companion_token: (
+        str  # Authentication token when the companion is deployed in MPS cluster.
+    )
     test_cluster_url: str  # Gardener test cluster API server URL.
     test_cluster_ca_data: str  # Gardener test cluster CA data.
     test_cluster_auth_token: str  # Gardener test cluster authentication token.
@@ -40,17 +42,25 @@ class Config:
         self.test_data_path = config("TEST_DATA_PATH", default="./data")
         self.namespace_scoped_test_data_path = f"{self.test_data_path}/test-cases"
 
-        self.companion_api_url = config("COMPANION_API_URL", default="http://localhost:8000")
+        self.companion_api_url = config(
+            "COMPANION_API_URL", default="http://localhost:8000"
+        )
         self.companion_token = config("COMPANION_TOKEN", default="not-needed")
         self.test_cluster_url = config("TEST_CLUSTER_URL")
         self.test_cluster_ca_data = config("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = config("TEST_CLUSTER_AUTH_TOKEN")
 
-        self.model_name = config("MODEL_NAME", default="gpt-4.1-mini")
-        self.streaming_response_timeout = config("STREAMING_RESPONSE_TIMEOUT", default=600, cast=int)  # seconds
+        self.model_name = config("MAIN_MODEL_MINI_NAME", default="gpt-5-mini")
+        self.streaming_response_timeout = config(
+            "STREAMING_RESPONSE_TIMEOUT", default=600, cast=int
+        )  # seconds
         self.max_workers = config("MAX_WORKERS", default=1, cast=int)
-        self.retry_wait_time = config("RETRY_WAIT_TIME", default=60, cast=int)  # seconds
-        self.retry_max_wait_time = config("RETRY_MAX_WAIT_TIME", default=240, cast=int)  # seconds
+        self.retry_wait_time = config(
+            "RETRY_WAIT_TIME", default=60, cast=int
+        )  # seconds
+        self.retry_max_wait_time = config(
+            "RETRY_MAX_WAIT_TIME", default=240, cast=int
+        )  # seconds
         self.scenario_retries = config(
             "KC_EVAL_RETRIES", default=3, cast=int
         )  # total number of attempts per scenario (includes initial attempt)
@@ -58,7 +68,9 @@ class Config:
 
     def __load_env_from_json(self) -> None:
         """Load the configuration from the config.json file."""
-        default_config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
+        default_config_path = (
+            Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
+        )
         config_path = Path(os.getenv("CONFIG_PATH", default_config_path))
 
         try:
