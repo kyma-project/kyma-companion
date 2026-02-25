@@ -19,7 +19,7 @@ requires-python = "==3.13.*"
 dependencies = [
   "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
   "hdbcli (>=2.22.29,<3.0.0)",
-  "langchain-hana (>=0.3.2,<0.4.0)",
+  "langchain-hana (>=1.0.2,<1.1.0)",
   "markdown (>=3.7,<4.0.0)",
   "pydantic (>=2.9.2,<3.0.0)",
   "python-decouple (>=3.8,<4.0.0)",
