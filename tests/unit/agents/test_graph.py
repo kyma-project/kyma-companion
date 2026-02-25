@@ -79,9 +79,7 @@ def companion_graph(
     mock_gatekeeper_chain,
 ):
     with (
-        patch.object(
-            CompanionGraph, "_create_common_chain", return_value=mock_common_chain
-        ),
+        patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
         patch.object(
             CompanionGraph,
             "_create_gatekeeper_chain",
@@ -264,15 +262,11 @@ class TestCompanionGraph:
         assert result == expected_output
 
         if chain_response:
-            companion_graph._invoke_common_node.assert_awaited_once_with(
-                state, subtasks[0].description
-            )
+            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
             assert subtasks[0].status == "completed"
         elif expected_error:
             # if error occurs, return message with error
-            companion_graph._invoke_common_node.assert_awaited_once_with(
-                state, subtasks[0].description
-            )
+            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
             # Verify subtask remains pending after error
             assert subtasks[0].status == "pending"
             assert subtasks[0].assigned_to == COMMON
@@ -342,12 +336,10 @@ class TestCompanionGraph:
         state = CompanionState(subtasks=[], messages=messages)
 
         if expected_error:
-            companion_graph._invoke_gatekeeper_node.side_effect = Exception(
-                expected_error
-            )
+            companion_graph._invoke_gatekeeper_node.side_effect = Exception(expected_error)
         else:
-            companion_graph._invoke_gatekeeper_node.return_value = (
-                GatekeeperResponse.model_validate_json(chain_response)
+            companion_graph._invoke_gatekeeper_node.return_value = GatekeeperResponse.model_validate_json(
+                chain_response
             )
 
         # When
@@ -370,9 +362,7 @@ class TestCompanionGraph:
             "chunk2",
             "chunk3",
         ]
-        with patch(
-            "services.conversation.CompanionGraph", return_value=companion_graph
-        ) as mock:
+        with patch("services.conversation.CompanionGraph", return_value=companion_graph) as mock:
             yield mock
 
     @pytest.mark.asyncio
@@ -392,17 +382,9 @@ class TestCompanionGraph:
                 [
                     {"Planner": AIMessage(content="Query is decomposed into subtasks")},
                     {"Supervisor": AIMessage(content="next is KymaAgent")},
-                    {
-                        "KymaAgent": AIMessage(
-                            content="You can deploy a Kyma function by following these steps"
-                        )
-                    },
+                    {"KymaAgent": AIMessage(content="You can deploy a Kyma function by following these steps")},
                     {"Supervisor": AIMessage(content="next is KubernetesAgent")},
-                    {
-                        "KubernetesAgent": AIMessage(
-                            content="You can deploy a k8s app by following these steps"
-                        )
-                    },
+                    {"KubernetesAgent": AIMessage(content="You can deploy a k8s app by following these steps")},
                     {"Exit": AIMessage(content="final response")},
                 ],
                 [
@@ -547,14 +529,10 @@ class TestCompanionGraph:
                 and message.resource_api_version == ""
             ):
                 if not isinstance(first_message, HumanMessage):
-                    raise Exception(
-                        "The first message should be a HumanMessage when resource info is empty."
-                    )
+                    raise Exception("The first message should be a HumanMessage when resource info is empty.")
             else:
                 if not isinstance(first_message, SystemMessage):
-                    raise Exception(
-                        "The first message should be a SystemMessage when resource_name info is non-empty."
-                    )
+                    raise Exception("The first message should be a SystemMessage when resource_name info is non-empty.")
                 if message.resource_kind == UNKNOWN:
                     assert (
                         first_message.content
@@ -570,16 +548,12 @@ class TestCompanionGraph:
 
         if expected_error:
             with pytest.raises(Exception) as exc_info:
-                async for _ in companion_graph.astream(
-                    conversation_id, message, mock_k8s_client
-                ):
+                async for _ in companion_graph.astream(conversation_id, message, mock_k8s_client):
                     pass
             assert str(exc_info.value) == expected_error
         else:
             result = []
-            async for chunk in companion_graph.astream(
-                conversation_id, message, mock_k8s_client
-            ):
+            async for chunk in companion_graph.astream(conversation_id, message, mock_k8s_client):
                 result.append(chunk)
 
             assert result == expected_output
@@ -695,9 +669,7 @@ class TestCompanionGraph:
             ),
         ],
     )
-    async def test_aget_thread_owner(
-        self, companion_graph, conversation_id, state_values, expected_owner
-    ):
+    async def test_aget_thread_owner(self, companion_graph, conversation_id, state_values, expected_owner):
         # Given
         state_snapshot = StateSnapshot(
             values=state_values,
@@ -761,9 +733,7 @@ class TestCompanionGraph:
             parent_config=None,
             interrupts=(),
         )
-        companion_graph.graph.aget_state = AsyncMock(
-            return_value=initial_state_snapshot
-        )
+        companion_graph.graph.aget_state = AsyncMock(return_value=initial_state_snapshot)
         companion_graph.graph.aupdate_state = AsyncMock()
 
         # When

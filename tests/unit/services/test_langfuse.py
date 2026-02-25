@@ -153,12 +153,8 @@ def test_masking_production_data(
     original_data = copy.deepcopy(input_data)
 
     # when / then
-    assert (
-        service.masking_production_data(data=input_data) == expected_output
-    ), description
-    assert (
-        input_data == original_data
-    ), "input data should not have been modified in place"
+    assert service.masking_production_data(data=input_data) == expected_output, description
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -205,9 +201,7 @@ def test_masking_mode_partial(
 
     # when / then
     assert service._masking_mode_partial(input_data) == expected_output, description
-    assert (
-        input_data == original_data
-    ), "input data should not have been modified in place"
+    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -374,9 +368,7 @@ def test_masking_mode_filtered(description, input_data, expected_output):
         assert result == expected_output, description
 
     if not isinstance(input_data, (IK8sClient, K8sClient, object)):
-        assert (
-            input_data == original_data
-        ), "input data should not have been modified in place"
+        assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(

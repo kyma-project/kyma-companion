@@ -48,9 +48,7 @@ def reformat_subtasks(subtasks: list[dict[Any, Any]]) -> list[dict[str, Any]]:
     return tasks
 
 
-def handle_agent_error(
-    agent_data: dict[str, Any], agent: str
-) -> tuple[str | None, dict[str, Any] | None]:
+def handle_agent_error(agent_data: dict[str, Any], agent: str) -> tuple[str | None, dict[str, Any] | None]:
     """Handle agent error cases and return error message and response if applicable."""
 
     agent_error = None
@@ -129,17 +127,13 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
         data = json.loads(chunk)
     except json.JSONDecodeError:
         logger.exception("Invalid JSON")
-        return json.dumps(
-            {"event": "unknown", "data": {"error": "Invalid JSON"}}
-        ).encode()
+        return json.dumps({"event": "unknown", "data": {"error": "Invalid JSON"}}).encode()
 
     agent = next(iter(data.keys()), None)
 
     if not agent:
         logger.error(f"Agent {agent} is not found in the json data")
-        return json.dumps(
-            {"event": "unknown", "data": {"error": "No agent found"}}
-        ).encode()
+        return json.dumps({"event": "unknown", "data": {"error": "No agent found"}}).encode()
 
     agent_data = data[agent]
 

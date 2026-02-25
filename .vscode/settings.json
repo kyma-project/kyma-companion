@@ -13,6 +13,9 @@
     "dmypyExecutable": "dmypy", // add dmypy to PATH
     "configFile": "mypy.ini"
   },
+  "python.analysis.extraPaths": [
+    "./src"
+  ],
   "python.testing.pytestArgs": [
     "tests"
   ],

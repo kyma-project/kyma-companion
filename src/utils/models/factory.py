@@ -122,6 +122,4 @@ class ModelFactory:
 
     def create_models(self) -> dict[str, IModel | Embeddings]:
         """Create all models defined in the configuration."""
-        return {
-            model.name: self.create_model(model.name) for model in self._config.models
-        }
+        return {model.name: self.create_model(model.name) for model in self._config.models}
