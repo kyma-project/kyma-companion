@@ -85,6 +85,8 @@ def _configure_logging() -> None:
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(LOG_LEVEL)
+    # Clear existing handlers to prevent duplicates when reconfiguring
+    root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
 
     # Disable uvicorn.access logger (handled by middleware)

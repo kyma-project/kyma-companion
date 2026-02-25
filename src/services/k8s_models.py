@@ -65,3 +65,7 @@ class PodLogsResult(BaseModel):
         default=None,
         description="Optional diagnostic information when current container logs are unavailable",
     )
+    status_code: int = Field(
+        default=200,
+        description="HTTP status code from K8s API for current logs (forwarded to response)",
+    )
