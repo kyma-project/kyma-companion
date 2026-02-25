@@ -2,9 +2,9 @@ module-name: kyma-companion
 kind: kcp
 bdba:
   # kyma-companion
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:0.4.0
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:0.5.0
   # doc-indexer
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:0.4.0
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:0.5.0
 checkmarx-one:
   preset: python-default
   exclude:
