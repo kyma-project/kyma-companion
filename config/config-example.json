@@ -27,6 +27,8 @@
 
   "LOG_LEVEL": "INFO",
   "LOG_FORMAT": "json",
+  "HOST": "0.0.0.0",
+  "PORT": "8000",
 
   "models": [
     {

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Any, Literal, cast
 
 from langchain_core.messages import (
@@ -15,7 +15,7 @@ from agents.common.constants import CLUSTER, COMMON, K8S_AGENT, KYMA_AGENT
 from utils.utils import to_sequence_messages
 
 
-class SubTaskStatus(str, Enum):
+class SubTaskStatus(StrEnum):
     """Status of the sub-task."""
 
     PENDING = "pending"

@@ -3,10 +3,10 @@
 This module defines constants to avoid magic strings throughout the codebase.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class PodPhase(str, Enum):
+class PodPhase(StrEnum):
     """Kubernetes Pod phase values.
 
     Reference: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
@@ -19,7 +19,7 @@ class PodPhase(str, Enum):
     UNKNOWN = "Unknown"
 
 
-class ContainerStateType(str, Enum):
+class ContainerStateType(StrEnum):
     """Container state types in Kubernetes status."""
 
     WAITING = "waiting"
@@ -27,7 +27,7 @@ class ContainerStateType(str, Enum):
     TERMINATED = "terminated"
 
 
-class LogSource(str, Enum):
+class LogSource(StrEnum):
     """Source of pod logs - current or previous container."""
 
     CURRENT = "current"
