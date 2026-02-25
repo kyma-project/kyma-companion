@@ -4,7 +4,7 @@ import copy
 import os
 import ssl
 import tempfile
-from enum import Enum
+from enum import StrEnum
 from http import HTTPStatus
 from typing import Any, Protocol, cast, runtime_checkable
 from urllib.parse import urlparse
@@ -41,7 +41,7 @@ GROUP_VERSION_SEPARATOR = "/"
 GROUP_VERSION_PARTS_COUNT = 2
 
 
-class AuthType(str, Enum):
+class AuthType(StrEnum):
     """Status of the sub-task."""
 
     TOKEN = "token"

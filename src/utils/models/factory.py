@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 from typing import Protocol, cast, runtime_checkable
 
@@ -29,7 +29,7 @@ class EmbeddingModelPrefix:
     GECKO = "textembedding-gecko"
 
 
-class ModelType(str, Enum):
+class ModelType(StrEnum):
     """Enum for LLM model names."""
 
     GPT41 = "gpt-4.1"
