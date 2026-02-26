@@ -35,9 +35,7 @@ def _model_name(model: object) -> str:
 
 
 def _models_key(models: Iterable[object]) -> tuple:
-    # Keyed only by model names on purpose:
-    # - stable across Config instances
-    # - works with mocked configs in unit tests
+    """Generate a hashable key for models"""
     return tuple(_model_name(m) for m in models)
 
 
@@ -49,8 +47,7 @@ def reset_models_cache_for_tests() -> None:
 
 
 def get_models(config: Config) -> dict[str, IModel | Embeddings]:
-    """Return a cached dict of model_name -> model instance.
-
+    """
     This cache is shared across routers/services/probes so the process initializes
     models only once.
     """
