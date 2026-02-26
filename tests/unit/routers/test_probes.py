@@ -5,7 +5,12 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IHana, ILLMProbe, IRedis, IUsageTrackerProbe
+from routers.probes import (
+    IHana,
+    ILLMProbe,
+    IRedis,
+    IUsageTrackerProbe,
+)
 from services.hana import get_hana
 from services.probes import get_llm_probe, get_usage_tracker_probe
 from services.redis import get_redis

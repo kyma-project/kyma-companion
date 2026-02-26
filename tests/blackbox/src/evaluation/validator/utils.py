@@ -9,7 +9,7 @@ from evaluation.validator.validator import (
 
 def create_validator(config: Config) -> IValidator:
     """Create a validator based on the model name in the configuration."""
-    if config.model_name == AIModel.CHATGPT_4_1_MINI:
+    if config.model_name == AIModel.CHATGPT_5_MINI:
         model_config = config.get_model_config(config.model_name)
         return ChatOpenAIValidator(
             model_config["name"],

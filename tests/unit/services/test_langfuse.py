@@ -7,7 +7,12 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 
 from agents.common.state import CompanionState, GraphInput, UserInput
 from services.k8s import IK8sClient, K8sClient
-from services.langfuse import EMPTY_OBJECT, REDACTED, LangfuseService, get_langfuse_metadata
+from services.langfuse import (
+    EMPTY_OBJECT,
+    REDACTED,
+    LangfuseService,
+    get_langfuse_metadata,
+)
 from utils.settings import LangfuseMaskingModes
 
 
@@ -306,7 +311,6 @@ def test_masking_mode_partial(
                     "resource_related_to": None,
                     "resource_scope": None,
                 },
-                "is_feedback": False,
                 "messages": [
                     {
                         "additional_kwargs": {},

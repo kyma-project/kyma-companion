@@ -7,6 +7,7 @@ from utils.models.factory import (
     ModelFactory,
     OpenAIModel,
 )
+from utils.settings import MAIN_MODEL_NAME
 
 SUPPORTED_MODEL_COUNT = 3
 
@@ -31,8 +32,8 @@ class TestModelFactory:
         "test_case,model_name,expected_model_class,expected_exception",
         [
             (
-                "should return OpenAIModel when gpt4o is requested",
-                "gpt-4.1",
+                "should return OpenAIModel when main model is requested",
+                MAIN_MODEL_NAME,
                 OpenAIModel,
                 None,
             ),

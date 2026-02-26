@@ -72,5 +72,26 @@ class RAGSystem:
             output_limit=top_k,
         )
 
+        # If the LLM reranker filtered everything out (e.g., due to thresholding),
+        # fall back to the originally retrieved documents to avoid returning empty
+        if not reranked_docs:
+            fallback_docs: list[Document] = []
+            for docs in all_docs:
+                for doc in docs:
+                    if doc not in fallback_docs:
+                        fallback_docs.append(doc)
+                    if len(fallback_docs) >= top_k:
+                        break
+                if len(fallback_docs) >= top_k:
+                    break
+
+            if fallback_docs:
+                logger.warning(
+                    "Reranker returned no documents for query '%s'; falling back to top %s retrieved documents.",
+                    query.text,
+                    top_k,
+                )
+                reranked_docs = fallback_docs
+
         logger.info(f"Retrieved {len(reranked_docs)} documents.")
         return reranked_docs

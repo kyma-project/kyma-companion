@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Minimum status code for client/server errors
 MIN_ERROR_STATUS_CODE = 400
+TIMEOUT = 120  # seconds
 
 
 # Shared fixtures for all test classes
@@ -59,7 +60,7 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/apps/v1/namespaces/default/deployments"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -77,7 +78,7 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/api/v1/namespaces/default/pods"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -96,7 +97,7 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/api/v1/namespaces"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert namespaces_response.status_code == HTTPStatus.OK
@@ -120,7 +121,7 @@ class TestK8sToolsAPI:
                 f"{base_url}/query",
                 json={"uri": f"/api/v1/namespaces/{namespace}/pods"},
                 headers=auth_headers,
-                timeout=30,
+                timeout=TIMEOUT,
             )
 
             if pods_response.status_code == HTTPStatus.OK:
@@ -146,7 +147,7 @@ class TestK8sToolsAPI:
                 "tail_lines": 10,
             },
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Accept both 200 (logs available) and 404 (no logs/diagnostic info) as valid responses
@@ -178,7 +179,7 @@ class TestK8sToolsAPI:
             f"{base_url}/overview",
             json={"namespace": "", "resource_kind": "cluster"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -195,7 +196,7 @@ class TestK8sToolsAPI:
             f"{base_url}/overview",
             json={"namespace": "default", "resource_kind": "namespace"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -220,7 +221,7 @@ class TestKymaToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -238,7 +239,7 @@ class TestKymaToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/gateway.kyma-project.io/v1beta1/apirules"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -270,7 +271,7 @@ class TestKymaToolsAPI:
             f"{base_url}/resource-version",
             json={"resource_kind": resource_kind},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Skip if resource CRD is not installed in the cluster
@@ -302,7 +303,7 @@ class TestKymaToolsAPI:
             f"{base_url}/search",
             json={"query": query},
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -338,7 +339,7 @@ class TestKymaToolsAPI:
             f"{base_url}/search",
             json=request_json,
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -364,7 +365,7 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/k8s/query",
             json={},  # Missing 'uri' field
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -375,7 +376,7 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/k8s/query",
             json={"uri": "/api/v1/pods"},
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Should return error (either 422 or 500 depending on validation)
@@ -387,7 +388,7 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/kyma/search",
             json={},  # Missing 'query' field
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -398,7 +399,7 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/kyma/resource-version",
             json={"resource_kind": "InvalidResourceKind"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR

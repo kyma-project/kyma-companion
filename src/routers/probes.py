@@ -171,10 +171,11 @@ async def readyz(
     K8sResourceDiscovery.initialize()
 
     # Check all the required statuses.
+    models_initialized = llm_probe.has_models()
     response = ReadinessModel(
         is_hana_initialized=hana.has_connection(),
         is_redis_initialized=redis.has_connection(),
-        are_models_initialized=llm_probe.has_models(),
+        are_models_initialized=models_initialized,
     )
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):

@@ -23,15 +23,14 @@ from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
-    MAIN_MODEL_NANO_NAME,
     REDIS_DB_NUMBER,
     REDIS_HOST,
     REDIS_PASSWORD,
 )
 
 # integration test configurations.
-integration_test_mini_evaluator_model_name = "gpt-4.1-mini"
-integration_test_main_evaluator_model_name = "gpt-4.1"
+integration_test_mini_evaluator_model_name = MAIN_MODEL_MINI_NAME
+integration_test_main_evaluator_model_name = MAIN_MODEL_NAME
 
 
 def get_free_port_in_range(start_port=60000, end_port=60999, host="127.0.0.1") -> int:
@@ -83,12 +82,11 @@ def app_models(init_config):
     models = {
         MAIN_MODEL_MINI_NAME: model_factory.create_model(MAIN_MODEL_MINI_NAME),
         MAIN_MODEL_NAME: model_factory.create_model(MAIN_MODEL_NAME),
-        MAIN_MODEL_NANO_NAME: model_factory.create_model(MAIN_MODEL_NANO_NAME),
         MAIN_EMBEDDING_MODEL_NAME: model_factory.create_model(MAIN_EMBEDDING_MODEL_NAME),
     }
 
     # Set temperature=0 for deterministic test behavior
-    for model_name in [MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME, MAIN_MODEL_NANO_NAME]:
+    for model_name in [MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME]:
         if hasattr(models[model_name], "llm"):
             models[model_name].llm.temperature = 0.0
 

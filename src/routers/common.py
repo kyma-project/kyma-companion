@@ -14,7 +14,8 @@ from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelFactory
+from utils.models.factory import IModel
+from utils.models_cache import get_models
 
 logger = get_logger(__name__)
 
@@ -240,12 +241,6 @@ def init_data_sanitizer(
     return DataSanitizer(config.sanitization_config)
 
 
-class _ModelsCache:
-    """Singleton cache for models dict to avoid using global statement."""
-
-    _instance: dict[str, IModel | Embeddings] | None = None
-
-
 def init_models_dict(
     config: Annotated[Config, Depends(init_config)],
 ) -> dict[str, IModel | Embeddings]:
@@ -254,20 +249,17 @@ def init_models_dict(
 
     Creates a dict of model_name -> model instance for use by tools
     that require LLM models and embeddings.
-    Uses a class-level cache to avoid recreating models on every request.
+    Uses a process-level shared cache to avoid recreating models across
+    routers/services/probes.
     """
-    if _ModelsCache._instance is None:
-        try:
-            model_factory = ModelFactory(config=config)
-            _ModelsCache._instance = model_factory.create_models()
-        except Exception as e:
-            logger.exception("Failed to initialize models")
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=f"Failed to initialize models: {str(e)}",
-            ) from e
-
-    return _ModelsCache._instance
+    try:
+        return get_models(config)
+    except Exception as e:
+        logger.exception("Failed to initialize models")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f"Failed to initialize models: {str(e)}",
+        ) from e
 
 
 def init_k8s_client(

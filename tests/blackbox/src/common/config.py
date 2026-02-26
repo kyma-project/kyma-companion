@@ -46,7 +46,7 @@ class Config:
         self.test_cluster_ca_data = config("TEST_CLUSTER_CA_DATA")
         self.test_cluster_auth_token = config("TEST_CLUSTER_AUTH_TOKEN")
 
-        self.model_name = config("MODEL_NAME", default="gpt-4.1-mini")
+        self.model_name = config("MAIN_MODEL_MINI_NAME", default="gpt-5-mini")
         self.streaming_response_timeout = config("STREAMING_RESPONSE_TIMEOUT", default=600, cast=int)  # seconds
         self.max_workers = config("MAX_WORKERS", default=1, cast=int)
         self.retry_wait_time = config("RETRY_WAIT_TIME", default=60, cast=int)  # seconds
