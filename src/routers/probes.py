@@ -176,9 +176,7 @@ async def readyz(
     hana: IHana = Depends(get_hana),  # noqa: B008
     redis: IRedis = Depends(get_redis),  # noqa: B008
     llm_probe: ILLMProbe = Depends(get_llm_probe),  # noqa: B008
-    tools_models_initialized: Annotated[
-        bool, Depends(get_tools_models_initialized)
-    ] = True,
+    tools_models_initialized: Annotated[bool, Depends(get_tools_models_initialized)] = True,
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""
 
@@ -219,8 +217,4 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
             and all(response.llms.values())
         )
     if isinstance(response, ReadinessModel):
-        return (
-            response.is_redis_initialized
-            and response.is_hana_initialized
-            and response.are_models_initialized
-        )
+        return response.is_redis_initialized and response.is_hana_initialized and response.are_models_initialized
