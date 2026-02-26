@@ -8,6 +8,7 @@ from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.responses import JSONResponse
 
@@ -127,7 +128,9 @@ def handle_http_exception(
             )
     elif isinstance(exc, RequestValidationError | ResponseValidationError):
         status = HTTPStatus.UNPROCESSABLE_ENTITY
-        exc_detail = exc.errors()
+        # Use FastAPI's jsonable_encoder to handle bytes and other non-JSON types
+        # This follows the same approach as FastAPI's built-in exception handler
+        exc_detail = jsonable_encoder(exc.errors())
     else:
         status = HTTPStatus.INTERNAL_SERVER_ERROR
 
