@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Minimum status code for client/server errors
 MIN_ERROR_STATUS_CODE = 400
-TIMEOUT = 120  # seconds
+TIMEOUT = 60  # seconds
 
 
 # Shared fixtures for all test classes
