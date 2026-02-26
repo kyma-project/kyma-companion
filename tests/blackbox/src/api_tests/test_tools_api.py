@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Minimum status code for client/server errors
 MIN_ERROR_STATUS_CODE = 400
+TIMEOUT = 60  # seconds
 
 
 # Shared fixtures for all test classes
@@ -51,7 +52,9 @@ class TestK8sToolsAPI:
         """Get base URL for K8s Tools API requests."""
         return f"{base_api_url}/api/tools/k8s"
 
-    def test_query_k8s_deployments(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_k8s_deployments(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying K8s deployments in default namespace."""
         logger.info("Testing K8s Query - List Deployments")
 
@@ -59,14 +62,18 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/apps/v1/namespaces/default/deployments"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried deployments: {len(items)} found")
 
     def test_query_k8s_pods(self, base_url: str, auth_headers: dict[str, str]) -> None:
@@ -77,14 +84,18 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/api/v1/namespaces/default/pods"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried pods: {len(items)} found")
 
     def test_get_pod_logs(self, base_url: str, auth_headers: dict[str, str]) -> None:
@@ -96,7 +107,7 @@ class TestK8sToolsAPI:
             f"{base_url}/query",
             json={"uri": "/api/v1/namespaces"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert namespaces_response.status_code == HTTPStatus.OK
@@ -120,7 +131,7 @@ class TestK8sToolsAPI:
                 f"{base_url}/query",
                 json={"uri": f"/api/v1/namespaces/{namespace}/pods"},
                 headers=auth_headers,
-                timeout=30,
+                timeout=TIMEOUT,
             )
 
             if pods_response.status_code == HTTPStatus.OK:
@@ -146,7 +157,7 @@ class TestK8sToolsAPI:
                 "tail_lines": 10,
             },
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Accept both 200 (logs available) and 404 (no logs/diagnostic info) as valid responses
@@ -167,10 +178,14 @@ class TestK8sToolsAPI:
             error_data = logs_response.json()
             assert "error" in error_data
             assert error_data["error"] == "Not Found"
-            logger.info(f"Pod {pod_name} has no logs or diagnostic information available (404)")
+            logger.info(
+                f"Pod {pod_name} has no logs or diagnostic information available (404)"
+            )
         logger.info(f"Successfully fetched logs from {pod_namespace}/{pod_name}")
 
-    def test_get_cluster_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_get_cluster_overview(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test getting cluster-level overview."""
         logger.info("Testing K8s Overview - Cluster Level")
 
@@ -178,7 +193,7 @@ class TestK8sToolsAPI:
             f"{base_url}/overview",
             json={"namespace": "", "resource_kind": "cluster"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -187,7 +202,9 @@ class TestK8sToolsAPI:
         assert len(data["context"]) > 0
         logger.info("Successfully retrieved cluster overview")
 
-    def test_get_namespace_overview(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_get_namespace_overview(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test getting namespace-level overview."""
         logger.info("Testing K8s Overview - Namespace Level")
 
@@ -195,13 +212,15 @@ class TestK8sToolsAPI:
             f"{base_url}/overview",
             json={"namespace": "default", "resource_kind": "namespace"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "context" in data
-        logger.info(f"Successfully retrieved namespace overview (length: {len(data['context'])})")
+        logger.info(
+            f"Successfully retrieved namespace overview (length: {len(data['context'])})"
+        )
 
 
 class TestKymaToolsAPI:
@@ -212,7 +231,9 @@ class TestKymaToolsAPI:
         """Get base URL for Kyma Tools API requests."""
         return f"{base_api_url}/api/tools/kyma"
 
-    def test_query_kyma_functions(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_kyma_functions(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying Kyma serverless functions."""
         logger.info("Testing Kyma Query - List Functions")
 
@@ -220,17 +241,23 @@ class TestKymaToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried functions: {len(items)} found")
 
-    def test_query_kyma_apirules(self, base_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_kyma_apirules(
+        self, base_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test querying Kyma API Rules."""
         logger.info("Testing Kyma Query - List APIRules")
 
@@ -238,14 +265,18 @@ class TestKymaToolsAPI:
             f"{base_url}/query",
             json={"uri": "/apis/gateway.kyma-project.io/v1beta1/apirules"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert "data" in data
         # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
+        items = (
+            data["data"].get("items", [])
+            if isinstance(data["data"], dict)
+            else data["data"]
+        )
         logger.info(f"Successfully queried APIRules: {len(items)} found")
 
     @pytest.mark.parametrize(
@@ -270,7 +301,7 @@ class TestKymaToolsAPI:
             f"{base_url}/resource-version",
             json={"resource_kind": resource_kind},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Skip if resource CRD is not installed in the cluster
@@ -302,7 +333,7 @@ class TestKymaToolsAPI:
             f"{base_url}/search",
             json={"query": query},
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -311,7 +342,9 @@ class TestKymaToolsAPI:
         assert "query" in data
         assert data["query"] == query
         assert len(data["results"]) > 0
-        logger.info(f"Successfully searched documentation: {len(data['results'])} documents returned")
+        logger.info(
+            f"Successfully searched documentation: {len(data['results'])} documents returned"
+        )
 
     @pytest.mark.parametrize(
         "top_k,query",
@@ -323,14 +356,20 @@ class TestKymaToolsAPI:
             (10, "Kyma serverless functions"),
         ],
     )
-    def test_search_with_top_k_parameter(self, base_url: str, top_k: int | None, query: str) -> None:
+    def test_search_with_top_k_parameter(
+        self, base_url: str, top_k: int | None, query: str
+    ) -> None:
         """Test searching Kyma documentation with custom and default top_k parameter."""
         if top_k is None:
-            logger.info(f"Testing Kyma Documentation Search with default top_k: '{query}'")
+            logger.info(
+                f"Testing Kyma Documentation Search with default top_k: '{query}'"
+            )
             request_json = {"query": query}
             expected_max = 5  # Default value
         else:
-            logger.info(f"Testing Kyma Documentation Search with top_k={top_k}: '{query}'")
+            logger.info(
+                f"Testing Kyma Documentation Search with top_k={top_k}: '{query}'"
+            )
             request_json = {"query": query, "top_k": top_k}
             expected_max = top_k
 
@@ -338,7 +377,7 @@ class TestKymaToolsAPI:
             f"{base_url}/search",
             json=request_json,
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
@@ -358,13 +397,15 @@ class TestKymaToolsAPI:
 class TestToolsAPIErrorHandling:
     """Test suite for Tools API error handling."""
 
-    def test_query_missing_uri_returns_422(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
+    def test_query_missing_uri_returns_422(
+        self, base_api_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test that missing required field returns 422."""
         response = requests.post(
             f"{base_api_url}/api/tools/k8s/query",
             json={},  # Missing 'uri' field
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -375,7 +416,7 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/k8s/query",
             json={"uri": "/api/v1/pods"},
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         # Should return error (either 422 or 500 depending on validation)
@@ -387,18 +428,20 @@ class TestToolsAPIErrorHandling:
             f"{base_api_url}/api/tools/kyma/search",
             json={},  # Missing 'query' field
             headers={"Content-Type": "application/json"},
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-    def test_invalid_resource_kind_returns_error(self, base_api_url: str, auth_headers: dict[str, str]) -> None:
+    def test_invalid_resource_kind_returns_error(
+        self, base_api_url: str, auth_headers: dict[str, str]
+    ) -> None:
         """Test that invalid resource kind returns error."""
         response = requests.post(
             f"{base_api_url}/api/tools/kyma/resource-version",
             json={"resource_kind": "InvalidResourceKind"},
             headers=auth_headers,
-            timeout=30,
+            timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR

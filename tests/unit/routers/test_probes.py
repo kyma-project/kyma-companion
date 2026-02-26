@@ -5,7 +5,13 @@ from fastapi.testclient import TestClient
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from main import app
-from routers.probes import IHana, ILLMProbe, IRedis, IUsageTrackerProbe
+from routers.probes import (
+    IHana,
+    ILLMProbe,
+    IRedis,
+    IUsageTrackerProbe,
+    get_tools_models_initialized,
+)
 from services.hana import get_hana
 from services.probes import get_llm_probe, get_usage_tracker_probe
 from services.redis import get_redis
@@ -111,6 +117,8 @@ def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_st
     mock_redis = MagicMock(spec=IRedis)
     mock_redis.has_connection.return_value = redis_ready
     app.dependency_overrides[get_redis] = lambda: mock_redis
+
+    app.dependency_overrides[get_tools_models_initialized] = lambda: llm_states
 
     mock_llm_probe = MagicMock(spec=ILLMProbe)
     mock_llm_probe.has_models.return_value = llm_states
