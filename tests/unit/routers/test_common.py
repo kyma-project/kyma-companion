@@ -10,6 +10,7 @@ from fastapi import HTTPException
 
 from routers.common import init_k8s_client, init_models_dict
 from services.data_sanitizer import IDataSanitizer
+from utils.models_cache import reset_models_cache_for_tests
 
 
 class TestInitK8sClient:
@@ -65,15 +66,13 @@ class TestInitModelsDict:
     @pytest.fixture(autouse=True)
     def reset_cache(self):
         """Reset the models cache before each test."""
-        from routers.common import _ModelsCache
-
-        _ModelsCache._instance = None
+        reset_models_cache_for_tests()
         yield
-        _ModelsCache._instance = None
+        reset_models_cache_for_tests()
 
     def test_init_models_dict_caches_result(self, mock_config):
         """Test that init_models_dict caches models dict (singleton behavior)."""
-        with patch("routers.common.ModelFactory") as mock_factory_class:
+        with patch("utils.models_cache.ModelFactory") as mock_factory_class:
             mock_factory = Mock()
             mock_models = {"gpt-4": Mock()}
             mock_factory.create_models.return_value = mock_models
@@ -91,7 +90,7 @@ class TestInitModelsDict:
 
     def test_init_models_dict_raises_http_exception_on_error(self, mock_config):
         """Test that init_models_dict raises HTTPException when model creation fails."""
-        with patch("routers.common.ModelFactory") as mock_factory_class:
+        with patch("utils.models_cache.ModelFactory") as mock_factory_class:
             mock_factory = Mock()
             mock_factory.create_models.side_effect = Exception("Model initialization failed")
             mock_factory_class.return_value = mock_factory

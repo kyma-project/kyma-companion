@@ -1,4 +1,4 @@
-from typing import Annotated, Protocol
+from typing import Protocol
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
@@ -6,7 +6,7 @@ from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
-from routers.common import HealthModel, ReadinessModel, init_config, init_models_dict
+from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
 from services.k8s_resource_discovery import K8sResourceDiscovery
 from services.probes import (
@@ -14,7 +14,6 @@ from services.probes import (
     get_usage_tracker_probe,
 )
 from services.redis import get_redis
-from utils.config import Config
 from utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -158,25 +157,11 @@ async def healthz(
     )
 
 
-def get_tools_models_initialized(
-    config: Annotated[Config, Depends(init_config)],
-) -> bool:
-    """Warm and verify the models cache used by tools routes."""
-
-    try:
-        init_models_dict(config)
-        return True
-    except Exception as e:
-        logger.warning(f"Readiness probe: models not initialized yet: {e}")
-        return False
-
-
 @router.get("/readyz")
 async def readyz(
     hana: IHana = Depends(get_hana),  # noqa: B008
     redis: IRedis = Depends(get_redis),  # noqa: B008
     llm_probe: ILLMProbe = Depends(get_llm_probe),  # noqa: B008
-    tools_models_initialized: Annotated[bool, Depends(get_tools_models_initialized)] = True,
 ) -> JSONResponse:
     """The endpoint for the Ready Probe."""
 
@@ -186,7 +171,7 @@ async def readyz(
     K8sResourceDiscovery.initialize()
 
     # Check all the required statuses.
-    models_initialized = tools_models_initialized and llm_probe.has_models()
+    models_initialized = llm_probe.has_models()
     response = ReadinessModel(
         is_hana_initialized=hana.has_connection(),
         is_redis_initialized=redis.has_connection(),
