@@ -279,6 +279,14 @@ class TestErrorHandling:
         )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        # Verify response is valid JSON with expected structure
+        data = response.json()
+        assert "error" in data
+        assert "message" in data
+        assert "detail" in data
+        assert data["error"] == "Validation Error"
+        # Verify error details are serializable (no bytes)
+        assert isinstance(data["detail"], list)
 
     def test_missing_required_field_returns_422(self, k8s_client_factory):
         """Test that missing required field returns validation error."""

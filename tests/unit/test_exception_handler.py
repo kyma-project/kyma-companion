@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic_core import ValidationError
 
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from main import handle_http_exception
@@ -117,3 +119,57 @@ async def test_rate_limit_exception_handling(mock_request, mock_call_next):
     content = json.loads(response.body.decode())
     assert content == rate_limit_detail
     assert response.headers["Retry-After"] == str(retry_after_sec)
+
+
+@pytest.mark.asyncio
+async def test_request_validation_error_with_bytes_input(mock_request, mock_call_next):
+    """Test that RequestValidationError with bytes input is properly serialized.
+
+    This test ensures that validation errors containing bytes (e.g., from invalid
+    JSON requests) are properly converted to JSON-serializable strings using
+    FastAPI's jsonable_encoder, preventing JSON serialization errors.
+
+    This addresses an issue that appeared when upgrading to FastAPI 0.133.x where
+    validation errors include the raw request body as bytes.
+    """
+    # Create a validation error that mimics what Pydantic returns when
+    # receiving invalid JSON with bytes in the input field
+    validation_error = ValidationError.from_exception_data(
+        "RequestValidationError",
+        [
+            {
+                "type": "json_invalid",
+                "loc": ("body",),
+                "msg": "JSON decode error",
+                "input": b"invalid json",  # bytes input that needs conversion
+                "ctx": {"error": "Expecting value"},
+            }
+        ],
+    )
+
+    request_validation_error = RequestValidationError(errors=validation_error.errors())
+
+    response = handle_http_exception(request_validation_error)
+
+    assert isinstance(response, JSONResponse)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    # Verify the response can be successfully serialized to JSON
+    content = json.loads(response.body.decode())
+
+    # Verify structure matches expected validation error format
+    assert "error" in content
+    assert "message" in content
+    assert "detail" in content
+    assert content["error"] == "Validation Error"
+    assert content["message"] == "Request validation failed"
+
+    # Verify the error details are present and serializable
+    assert isinstance(content["detail"], list)
+    assert len(content["detail"]) > 0
+
+    # Verify bytes have been converted to string
+    error_detail = content["detail"][0]
+    assert "input" in error_detail
+    assert isinstance(error_detail["input"], str)  # Should be string, not bytes
+    assert error_detail["input"] == "invalid json"
