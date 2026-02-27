@@ -24,7 +24,7 @@ dependencies = [
   "pydantic (>=2.9.2,<3.0.0)",
   "python-decouple (>=3.8,<4.0.0)",
   "python-dotenv (>=1.0.1,<2.0.0)",
-  "unstructured (>=0.18.0,<0.19.0)"
+  "unstructured (>=0.21.5,<0.22.0)"
 ]
 
 [tool.poetry]
@@ -32,7 +32,7 @@ package-mode = false
 
 [tool.poetry.group.test.dependencies]
 mypy = "^1.13.0"
-poethepoet = "^0.40.0"
+poethepoet = "^0.42.0"
 pytest = "^9.0.0"
 ruff = "^0.15.2"
 
