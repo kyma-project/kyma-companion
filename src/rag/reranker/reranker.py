@@ -112,7 +112,7 @@ class LLMReranker(IReranker):
         )
 
         # Keep only scores for ids that were present in the input.
-        candidate_ids = {doc.id for doc in docs_cloned if doc.id}
+        candidate_ids = {doc.id for doc in docs_cloned}
         response.documents = [d for d in response.documents if d.id in candidate_ids]
 
         # sort the documents by score in descending order
