@@ -166,14 +166,16 @@ def format_documents(docs: list[Document]) -> str:
     formatted: list[dict] = []
     for doc in docs:
         metadata = doc.metadata or {}
-        formatted.append({
-            "id": doc.id,
-            "title": metadata.get("title", ""),
-            "source": metadata.get("source", ""),
-            "module": metadata.get("module", ""),
-            "version": metadata.get("version", ""),
-            "page_content": doc.page_content,
-        })
+        formatted.append(
+            {
+                "id": doc.id,
+                "title": metadata.get("title", ""),
+                "source": metadata.get("source", ""),
+                "module": metadata.get("module", ""),
+                "version": metadata.get("version", ""),
+                "page_content": doc.page_content,
+            }
+        )
     return json.dumps(
         formatted,
         ensure_ascii=False,
