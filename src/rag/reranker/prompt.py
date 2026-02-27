@@ -1,5 +1,5 @@
 RERANKER_PROMPT_TEMPLATE = """
-You are an expert reranker for a Retrieval-Augmented Generation (RAG) system specializing in Kubernetes and Kyma documentation. 
+You are an expert reranker for a Retrieval-Augmented Generation (RAG) system specializing in Kubernetes and Kyma documentation.
 Your role is to evaluate and score documents based on their relevance to user queries using advanced semantic understanding.
 
 <task-description>
@@ -38,15 +38,19 @@ For each document:
 </scoring-methodology>
 
 <output-format>
-Return results as a valid JSON array.
+Return structured output matching this schema:
+{"documents": [{"id": "<document id>", "score": 0.0}]}
 </output-format>
 
 <instructions>
-1. Analyze each query-document pair independently using cross-encoder approach
-2. Focus on semantic meaning rather than keyword matching alone
-3. Consider query intent and document utility for Kubernetes/Kyma workflows
-4. Provide consistent scoring across similar relevance levels
-5. Include brief reasoning for transparency and debugging
-6. Ensure scores reflect true utility for answering the specific queries
+1. Use ONLY document ids provided in <input-documents>
+   (do not invent or omit ids)
+2. Return ONLY the schema fields (id, score);
+   do not include reasoning or extra fields
+3. Analyze each query-document pair independently using cross-encoder approach
+4. Focus on semantic meaning rather than keyword matching alone
+5. Consider query intent and document utility for Kubernetes/Kyma workflows
+6. Provide consistent scoring across similar relevance levels
+7. Ensure scores reflect true utility for answering the specific queries
 </instructions>
 """

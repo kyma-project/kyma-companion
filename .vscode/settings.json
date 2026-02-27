@@ -2,9 +2,10 @@
   "[python]": {
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.fixAll": "explicit"
+      "source.fixAll": "explicit",
+      "source.fixAll.ruff": "explicit"
     },
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "testing.pytestArgs": ["tests"],
     "testing.unittestEnabled": false,
     "testing.pytestEnabled": true
