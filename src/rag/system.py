@@ -58,11 +58,31 @@ class RAGSystem:
         logger.info(f"Retrieving documents for query: {query.text}")
 
         alternative_queries = await self.query_generator.agenerate_queries(query.text)
-        # add original query to the list
-        all_queries = [query.text] + alternative_queries.queries
+
+        # add original query to the list and de-duplicate
+        raw_queries = [query.text] + alternative_queries.queries
+        seen: set[str] = set()
+        all_queries: list[str] = []
+        for q in raw_queries:
+            q = (q or "").strip()
+            if not q or q in seen:
+                continue
+            seen.add(q)
+            all_queries.append(q)
+
+        # retrieve a larger candidate set per query for reranking
+        candidate_k = max(top_k * 4, 10)
 
         # retrieve documents for all queries concurrently
-        all_docs = await asyncio.gather(*(self.retriever.aretrieve(q) for q in all_queries))
+        all_docs = await asyncio.gather(
+            *(
+                self.retriever.aretrieve(
+                    q,
+                    top_k=candidate_k,
+                )
+                for q in all_queries
+            )
+        )
 
         # rerank documents
         reranked_docs = await self.reranker.arerank(
