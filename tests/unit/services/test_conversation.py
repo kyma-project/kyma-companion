@@ -10,6 +10,7 @@ from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
 from services.usage import UsageExceedReport
 from utils.settings import MAIN_MODEL_MINI_NAME
+from utils.singleton_meta import SingletonMeta
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
@@ -36,13 +37,20 @@ TEST_MESSAGE = Message(
 
 
 class TestConversation:
+    @pytest.fixture(autouse=True)
+    def reset_singleton(self):
+        """Reset singleton instance to ensure test isolation."""
+        SingletonMeta.reset_instance(ConversationService)
+        yield
+        SingletonMeta.reset_instance(ConversationService)
+
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
         mock_models = {MAIN_MODEL_MINI_NAME: mock_model}
-        with patch("services.conversation.ModelFactory") as mock:
-            mock.return_value.create_models.return_value = mock_models
-            yield mock
+        with patch("services.conversation.get_models") as mock_get_models:
+            mock_get_models.return_value = mock_models
+            yield mock_get_models
 
     @pytest.fixture
     def mock_companion_graph(self):
@@ -109,8 +117,6 @@ class TestConversation:
         mock_handler.apply_token_limit = Mock(return_value=k8s_context)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
 
-        # Reset singleton instances to ensure test isolation.
-        ConversationService._instances = {}
         conversation_service = ConversationService(
             config=mock_config,
             initial_questions_handler=mock_handler,
