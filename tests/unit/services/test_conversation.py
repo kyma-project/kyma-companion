@@ -48,12 +48,9 @@ class TestConversation:
     def mock_model_factory(self):
         mock_model = Mock()
         mock_models = {MAIN_MODEL_MINI_NAME: mock_model}
-        with (
-            patch("services.conversation.ModelFactory") as mock_factory,
-            patch("services.conversation.get_models") as mock_get_models,
-        ):
+        with patch("services.conversation.get_models") as mock_get_models:
             mock_get_models.return_value = mock_models
-            yield mock_factory
+            yield mock_get_models
 
     @pytest.fixture
     def mock_companion_graph(self):
@@ -64,7 +61,9 @@ class TestConversation:
             "chunk2",
             "chunk3",
         ]
-        with patch("services.conversation.CompanionGraph", return_value=mock_companion_graph) as mock:
+        with patch(
+            "services.conversation.CompanionGraph", return_value=mock_companion_graph
+        ) as mock:
             yield mock
 
     @pytest.fixture
@@ -116,7 +115,9 @@ class TestConversation:
     ) -> None:
         # Given:
         mock_handler = Mock()
-        mock_handler.fetch_relevant_data_from_k8s_cluster = fetch_relevant_data_from_k8s_cluster_mock
+        mock_handler.fetch_relevant_data_from_k8s_cluster = (
+            fetch_relevant_data_from_k8s_cluster_mock
+        )
         mock_handler.apply_token_limit = Mock(return_value=k8s_context)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
 
@@ -130,10 +131,14 @@ class TestConversation:
         # When:
         if should_expect_exception:
             with pytest.raises(ApiException):
-                await conversation_service.new_conversation(k8s_client=mock_k8s_client, message=TEST_MESSAGE)
+                await conversation_service.new_conversation(
+                    k8s_client=mock_k8s_client, message=TEST_MESSAGE
+                )
             return
 
-        result = await conversation_service.new_conversation(k8s_client=mock_k8s_client, message=TEST_MESSAGE)
+        result = await conversation_service.new_conversation(
+            k8s_client=mock_k8s_client, message=TEST_MESSAGE
+        )
 
         # Then:
         assert result == QUESTIONS
@@ -167,15 +172,21 @@ class TestConversation:
         )
         conversation_service._followup_questions_handler = mock_handler
         # define mock for CompanionGraph.
-        conversation_service._companion_graph.aget_messages = AsyncMock(return_value=dummy_conversation_history)
+        conversation_service._companion_graph.aget_messages = AsyncMock(
+            return_value=dummy_conversation_history
+        )
 
         # When:
         result = await conversation_service.handle_followup_questions(CONVERSATION_ID)
 
         # Then:
         assert result == QUESTIONS
-        mock_handler.generate_questions.assert_called_once_with(messages=dummy_conversation_history)
-        conversation_service._companion_graph.aget_messages.assert_called_once_with(CONVERSATION_ID)
+        mock_handler.generate_questions.assert_called_once_with(
+            messages=dummy_conversation_history
+        )
+        conversation_service._companion_graph.aget_messages.assert_called_once_with(
+            CONVERSATION_ID
+        )
 
     @pytest.mark.asyncio
     async def test_handle_request(
@@ -193,7 +204,10 @@ class TestConversation:
 
         # Then:
         result = [
-            chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
+            chunk
+            async for chunk in messaging_service.handle_request(
+                CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client
+            )
         ]
         assert result == [b"chunk1", b"chunk2", b"chunk3"]
 
@@ -212,7 +226,10 @@ class TestConversation:
         messaging_service._companion_graph = mock_companion_graph
 
         result = [
-            chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
+            chunk
+            async for chunk in messaging_service.handle_request(
+                CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client
+            )
         ]
 
         error_response = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}}).encode()
@@ -266,12 +283,16 @@ class TestConversation:
         conversation_service._companion_graph = mock_companion_graph
 
         # When
-        result = await conversation_service.authorize_user(conversation_id, user_identifier)
+        result = await conversation_service.authorize_user(
+            conversation_id, user_identifier
+        )
 
         # Then
         assert result == expected_result
         if thread_owner is None:
-            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(conversation_id, user_identifier)
+            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(
+                conversation_id, user_identifier
+            )
         else:
             mock_companion_graph.aupdate_thread_owner.assert_not_called()
 
@@ -312,7 +333,9 @@ class TestConversation:
         # Given
         mock_usage_limiter = Mock()
         mock_usage_limiter.adelete_expired_records = AsyncMock()
-        mock_usage_limiter.ais_usage_limit_exceeded = AsyncMock(return_value=usage_limit_exceeded)
+        mock_usage_limiter.ais_usage_limit_exceeded = AsyncMock(
+            return_value=usage_limit_exceeded
+        )
 
         conversation_service = ConversationService(config=mock_config)
         conversation_service._usage_limiter = mock_usage_limiter
