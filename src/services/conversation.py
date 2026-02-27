@@ -77,12 +77,12 @@ class ConversationService(metaclass=SingletonMeta):
         model_factory: IModelFactory | None = None,
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
     ) -> None:
-        try:
             if model_factory is not None:
                 self._model_factory = model_factory
                 models = self._model_factory.create_models()
             else:
                 models = get_models(config)
+                self._model_factory = None  # type: ignore
         except Exception:
             logger.exception("Failed to initialize models")
             raise
