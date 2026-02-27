@@ -289,7 +289,7 @@ class TestKymaToolsAPI:
     @pytest.mark.parametrize(
         "query",
         [
-            "How to install Kyma?",
+            "Help me get started with kyma",
             "How to create a function in Kyma?",
             "What is an APIRule?",
             "How to troubleshoot Kyma Istio module?",
@@ -317,8 +317,8 @@ class TestKymaToolsAPI:
     @pytest.mark.parametrize(
         "top_k,query",
         [
-            (None, "How to install Kyma?"),  # Test default top_k
-            (1, "How to install Kyma?"),
+            (None, "Help me get started with kyma"),  # Test default top_k
+            (1, "Help me get started with kyma"),
             (3, "What is an APIRule?"),
             (5, "How to troubleshoot Kyma?"),
             (10, "Kyma serverless functions"),
