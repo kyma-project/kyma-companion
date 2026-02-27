@@ -59,7 +59,7 @@ class RAGSystem:
 
         alternative_queries = await self.query_generator.agenerate_queries(query.text)
 
-        # add original query to the list and de-duplicate
+        # add original query to the list, filter empty queries, and de-duplicate
         raw_queries = [query.text] + alternative_queries.queries
         seen: set[str] = set()
         all_queries: list[str] = []
