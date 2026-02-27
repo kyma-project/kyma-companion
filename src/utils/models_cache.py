@@ -53,7 +53,7 @@ def get_models(config: Config) -> dict[str, IModel | Embeddings]:
     models only once.
     """
 
-    key = _models_key(getattr(config, "models", []) or [])
+    key = _models_key(config.models)
 
     with _lock:
         if _state.models is not None and _state.key == key:
