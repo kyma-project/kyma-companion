@@ -19,7 +19,7 @@ requires-python = "==3.13.*"
 dependencies = [
   "aiohttp (>=3.12.15,<4.0.0)",
   "cryptography (>=46.0.0,<46.1.0)",
-  "fastapi[standard] (>=0.129.0,<0.130.0)",
+  "fastapi[standard] (>=0.134.0,<0.135.0)",
   "hdbcli (>=2.27.23,<3.0.0)",
   "kubernetes (>=35.0.0,<35.1.0)",
   "langchain (>=1.2.9,<2.0.0)",
@@ -62,7 +62,7 @@ types-pyyaml = "^6.0.12.20250822"
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.6.0"
 mypy = "^1.18.2"
-poethepoet = "^0.40.0"
+poethepoet = "^0.42.0"
 poetry-plugin-sort = "^0.3.0"
 ruff = "^0.15.2"
 types-requests = "^2.32.4.20250913"
