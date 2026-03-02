@@ -39,7 +39,7 @@ For each document:
 
 <output-format>
 Return structured output matching this schema:
-{"documents": [{"id": "<document id>", "score": 0.0}]}
+{{"documents": [{{"id": "<document id>", "score": 0.0}}]}}
 </output-format>
 
 <instructions>
