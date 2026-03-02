@@ -302,10 +302,7 @@ def load_docs(paths: list[str]) -> list[Document]:
             content = file.read()
             # Extract title from first line
             first_line = content.split("\n")[0].strip()
-            if first_line.startswith("#"):
-                title = first_line.lstrip("#").strip()
-            else:
-                title = "Untitled"
+            title = first_line.lstrip("#").strip() if first_line.startswith("#") else "Untitled"
             # Simulate production metadata that would come from vector store
             metadata = {
                 "title": title,
