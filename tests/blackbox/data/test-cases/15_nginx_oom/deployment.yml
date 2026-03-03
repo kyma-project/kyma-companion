@@ -23,12 +23,21 @@ spec:
         app: nginx
     spec:
       containers:
-        - image: nginx
+        - image: python:3.12-alpine
           name: nginx
+          command:
+            - python
+            - -c
+            - |
+              import time
+              blocks = []
+              while True:
+                  blocks.append(bytearray(10 * 1024 * 1024))
+                  time.sleep(0.1)
           resources:
             limits:
-              memory: "2Mi"
+              memory: "32Mi"
               cpu: "250m"
             requests:
-              memory: "1Mi"
+              memory: "16Mi"
               cpu: "250m"
