@@ -49,7 +49,9 @@ class LLMReranker(IReranker):
     def __init__(self, model: IModel):
         """Initialize the reranker."""
         prompt = PromptTemplate.from_template(RERANKER_PROMPT_TEMPLATE)
-        self.chain = prompt | model.llm.with_structured_output(DocumentRelevancyScores, method="function_calling")
+        self.chain = prompt | model.llm.with_structured_output(
+            DocumentRelevancyScores, method="function_calling"
+        )
         logger.info("Reranker initialized")
 
     async def arerank(
@@ -81,16 +83,21 @@ class LLMReranker(IReranker):
             # Use the LLM model to rerank the documents with limit output_limit.
             return await self._chain_ainvoke(docs, queries, output_limit)
         except Exception as e:
-            logger.error(f"Failed to rerank documents, return top {output_limit} unique documents: {e}")
+            logger.error(
+                f"Failed to rerank documents, return top {output_limit} unique documents: {e}"
+            )
             return docs[:output_limit]
 
-    async def _chain_ainvoke(self, docs: list[Document], queries: list[str], limit: int) -> list[Document]:
+    async def _chain_ainvoke(
+        self, docs: list[Document], queries: list[str], limit: int
+    ) -> list[Document]:
         """
         Invoke the reranker model with the relevant documents and queries.
         :param docs: A list of documents.
         :param queries: A list of queries.
         :param limit: The maximum number of documents to return.
         :return: A list of reranked documents.
+        for testing
         """
 
         # Assign a unique ID to each document.
@@ -113,7 +120,11 @@ class LLMReranker(IReranker):
         # sort the documents by score in descending order
         response.documents.sort(key=lambda x: x.score, reverse=True)
         # filter out documents with a score below the threshold.
-        response.documents = [doc for doc in response.documents if doc.score >= RAG_RELEVANCY_SCORE_THRESHOLD]
+        response.documents = [
+            doc
+            for doc in response.documents
+            if doc.score >= RAG_RELEVANCY_SCORE_THRESHOLD
+        ]
 
         logger.info(
             f"Reranker: filtered {len(response.documents)} out of {len(docs_cloned)} documents for queries: {queries}"
@@ -126,7 +137,11 @@ class LLMReranker(IReranker):
             original_doc = next((d for d in docs_cloned if d.id == doc.id), None)
             if original_doc:
                 # remove the temporary ID if it exists.
-                original_doc.id = None if original_doc.id.startswith(TMP_DOC_ID_PREFIX) else original_doc.id
+                original_doc.id = (
+                    None
+                    if original_doc.id.startswith(TMP_DOC_ID_PREFIX)
+                    else original_doc.id
+                )
                 reranked_docs.append(original_doc)
         return reranked_docs[:limit]
 
