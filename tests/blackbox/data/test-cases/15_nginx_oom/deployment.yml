@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - image: python:3.12-alpine
-          name: nginx
+          name: oom-test
           command:
             - python
             - -c
