@@ -9,22 +9,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: nginx
-  name: nginx
+    app: case15-app
+  name: test-deployment-15
   namespace: test-deployment-15
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: case15-app
   template:
     metadata:
       labels:
-        app: nginx
+        app: case15-app
     spec:
       containers:
         - image: python:3.12-alpine
-          name: oom-test
+          name: main
           command:
             - python
             - -c

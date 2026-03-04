@@ -1,11 +1,11 @@
 id: test-deployment-15 # format: test-<resource_kind>-<test_id>
-description: The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory.
+description: The Deployment is configured to an insufficient amount of memory and will run out of memory.
 queries:
   - user_query: Why is the Deployment not available?
     resource:
       kind: Deployment
       api_version: apps/v1
-      name: nginx
+      name: test-deployment-15
       namespace: test-deployment-15 # format: test-<resource_kind>-<test_id>
     expectations:
       - name: insufficient_memory
@@ -33,6 +33,6 @@ queries:
         threshold: 0.5
         required: false
       - name: fully_deployable_yaml
-        statement: provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'test-deployment-15', that contains all required fields and that contains the settings for a Container with resource limits and/or resource requests
+        statement: provides a complete yaml formatted manifest for a Deployment, with the name set to 'test-deployment-15', the namespace set to 'test-deployment-15', that contains all required fields and that contains the settings for a Container with resource limits and/or resource requests
         threshold: 0.5
         required: false

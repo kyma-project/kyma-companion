@@ -1,4 +1,4 @@
 #!/bin/bash
 
-echo "## Undeploying nginx_oom scenario ##"
+echo "## Undeploying test-deployment-15 scenario ##"
 kubectl delete --timeout=120s --wait=false -f deployment.yml
