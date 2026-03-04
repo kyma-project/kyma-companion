@@ -203,7 +203,7 @@ class SearchKymaDocRequest(BaseModel):
         ...,
         description="Search query for Kyma documentation",
         examples=[
-            "How to install Kyma?",
+            "Help me get started with kyma",
             "What are Kyma components?",
             "How to troubleshoot Kyma Istio module?",
         ],

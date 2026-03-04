@@ -1,6 +1,6 @@
-from langchain_core.documents import Document
+import json
 
-from rag.reranker.utils import document_to_str, str_to_document
+from langchain_core.documents import Document
 
 
 def get_relevant_documents(docs_list: list[list[Document]], k: int = 60, limit: int = -1) -> list[Document]:
@@ -17,14 +17,28 @@ def get_relevant_documents(docs_list: list[list[Document]], k: int = 60, limit: 
     """
     if limit == 0:
         return []
-    scores = {}
+
+    scores: dict[str, float] = {}
+    docs_by_key: dict[str, Document] = {}
+
     for docs in docs_list:
         for rank, doc in enumerate(docs):
-            doc_str = document_to_str(doc)
-            if doc_str not in scores:
-                scores[doc_str] = 0.0
-            scores[doc_str] += 1 / (rank + k)
-    relevant_docs = [
-        str_to_document(doc_str) for doc_str, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    ]
+            doc_key = _get_document_key(doc)
+            if doc_key not in scores:
+                scores[doc_key] = 0.0
+                docs_by_key[doc_key] = doc
+            scores[doc_key] += 1 / (rank + k)
+
+    relevant_docs = [docs_by_key[doc_key] for doc_key, _ in sorted(scores.items(), key=lambda x: x[1], reverse=True)]
     return relevant_docs if limit < 0 else relevant_docs[:limit]
+
+
+def _get_document_key(doc: Document) -> str:
+    return json.dumps(
+        {
+            "page_content": doc.page_content,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
