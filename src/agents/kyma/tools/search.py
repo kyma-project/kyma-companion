@@ -14,7 +14,7 @@ class SearchKymaDocArgs(BaseModel):
 
     query: str = Field(
         description="The search query to find relevant Kyma documentation",
-        examples=["How to install Kyma?", "What are Kyma components?"],
+        examples=["Help me get started with kyma", "What are Kyma components?"],
     )
 
 
@@ -22,7 +22,7 @@ class SearchKymaDocTool(BaseTool):
     """Tool to search through Kyma documentation."""
 
     name: str = SEARCH_KYMA_DOC_TOOL_NAME
-    description: str = """Used to search through Kyma documentation for relevant information about Kyma concepts, 
+    description: str = """Used to search through Kyma documentation for relevant information about Kyma concepts,
     features, components, resources, or troubleshooting. A query is required to search the documentation.
 
     Example queries:
