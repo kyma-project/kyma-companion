@@ -9,6 +9,8 @@ import pytest
 from fetcher.scroller import Scroller
 from fetcher.source import DocumentsSource
 
+pytestmark = pytest.mark.unit
+
 
 def get_random_string(length) -> str:
     return "".join(random.choice(string.ascii_lowercase) for i in range(length))

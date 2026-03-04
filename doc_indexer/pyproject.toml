@@ -17,14 +17,11 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = "==3.13.*"
 dependencies = [
-  "generative-ai-hub-sdk[all] (>=4.0.0,<5.0.0)",
   "hdbcli (>=2.22.29,<3.0.0)",
-  "langchain-hana (>=0.3.2,<0.4.0)",
-  "markdown (>=3.7,<4.0.0)",
+  "langchain-hana (>=1.0.1,<2.0.0)",
   "pydantic (>=2.9.2,<3.0.0)",
   "python-decouple (>=3.8,<4.0.0)",
-  "python-dotenv (>=1.0.1,<2.0.0)",
-  "unstructured (>=0.21.5,<0.22.0)"
+  "sap-ai-sdk-gen[all] (>=6.0.0,<7.0.0)"
 ]
 
 [tool.poetry]
@@ -33,6 +30,7 @@ package-mode = false
 [tool.poetry.group.test.dependencies]
 mypy = "^1.13.0"
 poethepoet = "^0.42.0"
+poetry-plugin-sort = "^0.3.0"
 pytest = "^9.0.0"
 ruff = "^0.15.2"
 
@@ -41,6 +39,10 @@ minversion = "6.0"
 addopts = "-ra"
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = [
+  "unit: marks tests as unit tests (fast, no external dependencies)",
+  "integration: marks tests as integration tests (may require external services or API keys)"
+]
 
 [tool.poe.tasks]
 format = "ruff format . --check"
@@ -50,8 +52,11 @@ format-fix = "ruff format ."
 code-fix = ["format-fix", "lint-fix"]
 typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
-test-unit = "pytest tests/unit"
-test-integration = "pytest tests/integration"
+test-unit = "pytest tests/unit -v"
+test-integration = "pytest tests/integration -v"
+test-unit-marked = "pytest -m unit -v"
+test-integration-marked = "pytest -m integration -v"
 test = ["test-unit", "test-integration"]
+test-all = "pytest -v"
 sort = "poetry sort"
-pre-commit-check = ["sort", "code-fix", "codecheck", "test"]
+pre-commit-check = ["sort", "code-fix", "codecheck", "test-unit"]
