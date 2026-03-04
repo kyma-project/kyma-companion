@@ -41,21 +41,20 @@ def _get_model_config(model_name: str) -> dict[str, str]:
     try:
         with config_path.open() as f:
             config = json.load(f)
-
-        # Find the model in the models list
-        models = config.get("models", [])
-        for model in models:
-            if model.get("name") == model_name:
-                return cast(dict[str, str], model)
-
-        raise ValueError(
-            f"Model '{model_name}' not found in config file. Available models: {[m.get('name') for m in models]}"
-        )
-
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in config file {config_path}: {e}") from e
-    except Exception as e:
+    except OSError as e:
         raise ValueError(f"Error reading config file {config_path}: {e}") from e
+
+    # Find the model in the models list
+    models = config.get("models", [])
+    for model in models:
+        if model.get("name") == model_name:
+            return cast(dict[str, str], model)
+
+    raise ValueError(
+        f"Model '{model_name}' not found in config file. Available models: {[m.get('name') for m in models]}"
+    )
 
 
 def create_embedding_factory(

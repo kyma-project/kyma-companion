@@ -85,6 +85,7 @@ def test_openai_embedding_creator(
         patch("utils.models._get_model_config", return_value=mock_model_config),
         patch("utils.models.get_proxy_client", return_value=mock_proxy_client),
         patch("utils.models.OpenAIEmbeddings") as mock_openai_cls,
+        patch("utils.models.time.sleep"),
     ):
         if mock_openai_error:
             mock_openai_cls.side_effect = mock_openai_error

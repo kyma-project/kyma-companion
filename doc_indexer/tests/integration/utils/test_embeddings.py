@@ -20,8 +20,16 @@ LOW_SIMILARITY_THRESHOLD = 0.95  # Threshold for different texts
 def skip_if_no_credentials():
     """Verify credentials are configured.
 
-    If credentials are missing, model initialization will fail with a clear error message.
+    Skips tests if config file is not found.
     """
+    from pathlib import Path
+
+    default_config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
+    config_path_str = os.getenv("CONFIG_PATH", str(default_config_path))
+    config_path = Path(config_path_str)
+
+    if not config_path.exists():
+        pytest.skip(f"Config file not found at {config_path}")
 
 
 @pytest.fixture(scope="module")
@@ -133,6 +141,11 @@ class TestEmbeddingGeneration:
         dot_product = sum(a * b for a, b in zip(embedding1, embedding2, strict=True))
         magnitude1 = math.sqrt(sum(x * x for x in embedding1))
         magnitude2 = math.sqrt(sum(x * x for x in embedding2))
+
+        # Guard against zero magnitudes
+        if magnitude1 == 0 or magnitude2 == 0:
+            pytest.fail("Embedding has zero magnitude")
+
         cosine_similarity = dot_product / (magnitude1 * magnitude2)
 
         assert cosine_similarity > HIGH_SIMILARITY_THRESHOLD
@@ -150,6 +163,11 @@ class TestEmbeddingGeneration:
         dot_product = sum(a * b for a, b in zip(embedding1, embedding2, strict=True))
         magnitude1 = math.sqrt(sum(x * x for x in embedding1))
         magnitude2 = math.sqrt(sum(x * x for x in embedding2))
+
+        # Guard against zero magnitudes
+        if magnitude1 == 0 or magnitude2 == 0:
+            pytest.fail("Embedding has zero magnitude")
+
         cosine_similarity = dot_product / (magnitude1 * magnitude2)
 
         # Different topics should have lower similarity
