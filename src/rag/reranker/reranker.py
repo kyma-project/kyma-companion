@@ -1,4 +1,5 @@
 import copy
+import json
 from typing import Protocol
 
 from langchain_core.documents import Document
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 
 from rag.reranker.prompt import RERANKER_PROMPT_TEMPLATE
 from rag.reranker.rrf import get_relevant_documents
-from rag.reranker.utils import TMP_DOC_ID_PREFIX, document_to_str, get_tmp_document_id
+from rag.reranker.utils import TMP_DOC_ID_PREFIX, get_tmp_document_id
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
@@ -110,6 +111,10 @@ class LLMReranker(IReranker):
             },
         )
 
+        # Keep only scores for ids that were present in the input.
+        candidate_ids = {doc.id for doc in docs_cloned}
+        response.documents = [d for d in response.documents if d.id in candidate_ids]
+
         # sort the documents by score in descending order
         response.documents.sort(key=lambda x: x.score, reverse=True)
         # filter out documents with a score below the threshold.
@@ -158,7 +163,24 @@ def format_documents(docs: list[Document]) -> str:
     :param docs: A list of documents.
     :return: A string representation of the documents in JSON format.
     """
-    return "[{}]".format(",".join(document_to_str(doc) for doc in docs))
+    formatted: list[dict] = []
+    for doc in docs:
+        metadata = doc.metadata or {}
+        formatted.append(
+            {
+                "id": doc.id,
+                "title": metadata.get("title", ""),
+                "source": metadata.get("source", ""),
+                "module": metadata.get("module", ""),
+                "version": metadata.get("version", ""),
+                "page_content": doc.page_content,
+            }
+        )
+    return json.dumps(
+        formatted,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
 
 def format_queries(queries: list[str]) -> str:
@@ -167,4 +189,8 @@ def format_queries(queries: list[str]) -> str:
     :param queries: A list of queries.
     :return: A string representation of the queries in JSON format.
     """
-    return "[{}]".format(",".join(f'"{query}"' for query in queries))
+    return json.dumps(
+        queries,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )

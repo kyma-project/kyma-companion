@@ -99,3 +99,51 @@ def test_get_relevant_documents(
     assert actual_docs_list == expected_docs_list
     if given_limit >= 0:
         assert len(actual_docs_list) <= given_limit
+
+
+@pytest.mark.parametrize(
+    "name, given_docs_list, expected_docs_list",
+    [
+        (
+            "same content deduplicates to first doc",
+            [
+                [Document(page_content="same content")],
+                [Document(page_content="same content")],
+            ],
+            [Document(page_content="same content")],
+        ),
+        (
+            "same content with different metadata keeps first metadata",
+            [
+                [
+                    Document(
+                        page_content="same content",
+                        metadata={"title": "Doc A"},
+                    )
+                ],
+                [
+                    Document(
+                        page_content="same content",
+                        metadata={"title": "Doc B"},
+                    )
+                ],
+            ],
+            [
+                Document(
+                    page_content="same content",
+                    metadata={"title": "Doc A"},
+                )
+            ],
+        ),
+    ],
+)
+def test_get_relevant_documents_page_content_dedup_cases(
+    name: str,
+    given_docs_list: list[list[Document]],
+    expected_docs_list: list[Document],
+) -> None:
+    # When
+    actual_docs_list = get_relevant_documents(docs_list=given_docs_list, limit=10)
+
+    # Then
+    assert actual_docs_list == expected_docs_list
