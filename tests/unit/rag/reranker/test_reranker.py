@@ -1,4 +1,4 @@
-from unittest.mock import ANY, AsyncMock, MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from langchain_core.documents import Document
@@ -127,14 +127,14 @@ class TestLLMReranker:
         """
 
         # Given
-        mock_response = expected_docs_list
         mock_model = Mock()
         mock_model.name.return_value = "gpt-4o-mini"
         reranker = LLMReranker(model=mock_model)
-        reranker.chain = AsyncMock()
-        reranker.chain.ainvoke.return_value.documents = mock_response
+        reranker._chain_ainvoke = AsyncMock()  # type: ignore[method-assign]
         if given_raise_exception:
-            reranker.chain.ainvoke.side_effect = Exception("Some error occurred.")
+            reranker._chain_ainvoke.side_effect = Exception("Some error occurred.")
+        else:
+            reranker._chain_ainvoke.return_value = expected_docs_list
 
         # When
         actual_docs_list = await reranker.arerank(
@@ -146,14 +146,12 @@ class TestLLMReranker:
 
         # Then
         assert actual_docs_list == expected_docs_list
-        reranker.chain.ainvoke.assert_called_with(
-            config=None,
-            input={
-                "documents": ANY,
-                "queries": format_queries(given_queries),
-                "limit": given_output_limit,
-            },
-        )
+        if not given_raise_exception:
+            reranker._chain_ainvoke.assert_awaited_once_with(
+                given_relevant_docs,
+                given_queries,
+                given_output_limit,
+            )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -334,12 +332,37 @@ def test_format_documents():
         Document(
             type="Document",
             page_content="this is a test content 1",
-            metadata={"type": "test 1", "metadata": "test 1"},
+            metadata={
+                "title": "Kyma Overview",
+                "source": "docs/kyma/overview.md",
+                "module": "kyma",
+                "version": "latest",
+            },
         ),
         Document(
             type="Document",
             page_content="this is a test content 2",
-            metadata={"type": "test 2", "metadata": "test 2"},
+            metadata={
+                "title": "APIRule",
+                "source": "docs/kyma/apirule.md",
+                "module": "api-gateway",
+                "version": "2.3",
+            },
+        ),
+        Document(
+            type="Document",
+            page_content="this is a test content 3",
+            metadata={},
+        ),
+        Document(
+            type="Document",
+            page_content="this is a test content 4",
+            metadata={
+                "title": "",
+                "source": "",
+                "module": "",
+                "version": "",
+            },
         ),
     ]
 
@@ -348,8 +371,14 @@ def test_format_documents():
 
     # Then
     assert s == (
-        '[{"kwargs": {"page_content": "this is a test content 1"}},'
-        '{"kwargs": {"page_content": "this is a test content 2"}}]'
+        '[{"id":null,"title":"Kyma Overview","source":"docs/kyma/overview.md",'
+        '"module":"kyma","version":"latest","page_content":"this is a test content 1"},'
+        '{"id":null,"title":"APIRule","source":"docs/kyma/apirule.md",'
+        '"module":"api-gateway","version":"2.3","page_content":"this is a test content 2"},'
+        '{"id":null,"title":"","source":"","module":"","version":"",'
+        '"page_content":"this is a test content 3"},'
+        '{"id":null,"title":"","source":"","module":"","version":"",'
+        '"page_content":"this is a test content 4"}]'
     )
 
 

@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 
 from rag.reranker.reranker import (
     LLMReranker,
-    document_to_str,
     format_documents,
     format_queries,
 )
@@ -262,7 +261,7 @@ async def test_chain_ainvoke(
     # Then
     tc_input = format_queries(given_queries)
     tc_actual_output = format_documents(actual_docs)
-    tc_retrieval_context = [document_to_str(doc) for doc in actual_docs]
+    tc_retrieval_context = [doc.page_content for doc in actual_docs]
     tc_expected_output = format_documents(expected_docs)
     test_case = LLMTestCase(
         input=tc_input,
@@ -299,9 +298,19 @@ def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Docu
 def load_docs(paths: list[str]) -> list[Document]:
     docs = []
     for path in paths:
-        with open(path) as file:
+        with open(path, encoding="utf-8") as file:
             content = file.read()
-            docs.append(Document(page_content=content))
+            # Extract title from first line
+            first_line = content.split("\n")[0].strip()
+            title = first_line.lstrip("#").strip() if first_line.startswith("#") else "Untitled"
+            # Simulate production metadata that would come from vector store
+            metadata = {
+                "title": title,
+                "source": path,
+                "module": "kyma",
+                "version": "latest",
+            }
+            docs.append(Document(page_content=content, metadata=metadata))
     return docs
 
 
