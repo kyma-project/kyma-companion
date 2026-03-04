@@ -128,9 +128,6 @@ async def test_request_validation_error_with_bytes_input(mock_request, mock_call
     This test ensures that validation errors containing bytes (e.g., from invalid
     JSON requests) are properly converted to JSON-serializable strings using
     FastAPI's jsonable_encoder, preventing JSON serialization errors.
-
-    This addresses an issue that appeared when upgrading to FastAPI 0.133.x where
-    validation errors include the raw request body as bytes.
     """
     # Create a validation error that mimics what Pydantic returns when
     # receiving invalid JSON with bytes in the input field
