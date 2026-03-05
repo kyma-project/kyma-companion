@@ -77,10 +77,9 @@ HOST = config("HOST", default="0.0.0.0")
 PORT = config("PORT", default=8000, cast=int)
 
 # Initialization of the main chat LLM models and main embedding model.
-MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
-MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
+MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-5")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-5-mini")
 MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
-MAIN_MODEL_NANO_NAME = config("MAIN_MODEL_NANO_NAME", default="gpt-4.1-nano")
 LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
 GRAPH_STEP_TIMEOUT_SECONDS = config("GRAPH_STEP_TIMEOUT_SECONDS", default=180, cast=int)
 
