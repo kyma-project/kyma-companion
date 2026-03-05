@@ -12,6 +12,11 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration]
+    name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,10 +46,10 @@ jobs:
         run: poetry install --with test
 
       - name: Run unit tests
+        if: matrix.test-type == 'unit'
         working-directory: ./doc_indexer
         env:
           LOG_LEVEL: "DEBUG"
-          # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
@@ -52,10 +57,10 @@ jobs:
           poetry run poe test-unit
 
       - name: Run integration tests
+        if: matrix.test-type == 'integration'
         working-directory: ./doc_indexer
         env:
           LOG_LEVEL: "DEBUG"
-          # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"

@@ -4,6 +4,8 @@ import pytest
 
 from utils.utils import clone_repo
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture()
 def mock_subprocess_run():
