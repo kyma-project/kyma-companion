@@ -4,6 +4,8 @@ from unittest.mock import Mock, patch
 import pytest
 from fetcher.fetcher import DocumentsFetcher
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def docs_sources_file_path(root_tests_path):

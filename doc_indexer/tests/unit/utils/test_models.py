@@ -1,120 +1,41 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from gen_ai_hub.proxy.core.base import BaseProxyClient
-from gen_ai_hub.proxy.langchain.openai import OpenAIEmbeddings
+from gen_ai_hub.proxy.langchain import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
 
 from utils.models import (
     create_embedding_factory,
-    init_proxy_client,
     openai_embedding_creator,
 )
 
-
-@pytest.fixture(autouse=True)
-def clear_lru_cache():
-    """Clear the LRU cache before each test."""
-    yield
-    init_proxy_client.cache_clear()
-
-
-@pytest.fixture
-def mock_proxy_client():
-    return Mock(spec=BaseProxyClient)
-
-
-@pytest.fixture
-def mock_get_proxy_client():
-    with patch("utils.models.get_proxy_client") as mock:
-        yield mock
+pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize(
-    "test_case,mock_return,expected_exception,expected_error_msg",
-    [
-        (
-            "successful initialization",
-            Mock(spec=BaseProxyClient),
-            None,
-            None,
-        ),
-        (
-            "initialization error",
-            Exception("Connection error"),
-            Exception,
-            "Connection error",
-        ),
-    ],
-)
-def test_init_proxy_client(
-    mock_get_proxy_client,
-    clear_lru_cache,
-    test_case,
-    mock_return,
-    expected_exception,
-    expected_error_msg,
-):
-    # Arrange
-    if isinstance(mock_return, Exception):
-        mock_get_proxy_client.side_effect = mock_return
-    else:
-        mock_get_proxy_client.return_value = mock_return
-
-    # Act & Assert
-    if expected_exception:
-        with pytest.raises(expected_exception) as exc_info:
-            init_proxy_client()
-        assert str(exc_info.value) == expected_error_msg
-    else:
-        result = init_proxy_client()
-        assert isinstance(result, Mock)
-        assert mock_get_proxy_client.return_value == result
-
-    mock_get_proxy_client.assert_called_once_with("gen-ai-hub")
-
-
-@pytest.mark.parametrize(
-    "test_case,deployment_id,creator_return,init_client_error,expected_exception",
+    "test_case,deployment_id,creator_return,expected_exception",
     [
         (
             "successful factory creation",
             "test-deployment",
             Mock(spec=Embeddings),
             None,
-            None,
         ),
         (
             "factory creation with creator error",
             "test-deployment",
             Exception("Creator error"),
-            None,
-            Exception,
-        ),
-        (
-            "factory creation with client initialization error",
-            "test-deployment",
-            Mock(spec=Embeddings),
-            Exception("Client init error"),
             Exception,
         ),
     ],
 )
 def test_create_embedding_factory(
-    mock_get_proxy_client,
-    mock_proxy_client,
     test_case,
     deployment_id,
     creator_return,
-    init_client_error,
     expected_exception,
 ):
     # Arrange
-    if init_client_error:
-        mock_get_proxy_client.side_effect = init_client_error
-    else:
-        mock_get_proxy_client.return_value = mock_proxy_client
-
     mock_embedding_creator = Mock()
     if isinstance(creator_return, Exception):
         mock_embedding_creator.side_effect = creator_return
@@ -131,38 +52,41 @@ def test_create_embedding_factory(
         result = factory(deployment_id)
         assert isinstance(result, Mock)
         assert result == creator_return
-        mock_embedding_creator.assert_called_once_with(deployment_id, mock_proxy_client)
-
-    # Verify init_proxy_client was called (which internally calls get_proxy_client)
-    mock_get_proxy_client.assert_called_once_with("gen-ai-hub")
+        mock_embedding_creator.assert_called_once_with(deployment_id)
 
 
 @pytest.mark.parametrize(
-    "test_case,deployment_id,mock_openai_error",
+    "test_case,model_name,mock_openai_error",
     [
         (
             "successful creation",
-            "test-deployment-id",
+            "text-embedding-3-large",
             None,
         ),
         (
             "creation error",
-            "test-deployment-id",
+            "text-embedding-3-large",
             ValueError("Model creation error"),
         ),
     ],
 )
 def test_openai_embedding_creator(
-    mock_proxy_client,
     test_case,
-    deployment_id,
+    model_name,
     mock_openai_error,
     caplog,
 ):
     # Arrange
     mock_embeddings = Mock(spec=OpenAIEmbeddings)
+    mock_proxy_client = Mock()
+    mock_model_config = {"name": model_name, "deployment_id": "test-deployment-id"}
 
-    with patch("utils.models.OpenAIEmbeddings") as mock_openai_cls:
+    with (
+        patch("utils.models._get_model_config", return_value=mock_model_config),
+        patch("utils.models.get_proxy_client", return_value=mock_proxy_client),
+        patch("utils.models.OpenAIEmbeddings") as mock_openai_cls,
+        patch("utils.models.time.sleep"),
+    ):
         if mock_openai_error:
             mock_openai_cls.side_effect = mock_openai_error
         else:
@@ -171,17 +95,17 @@ def test_openai_embedding_creator(
         # Act & Assert
         if mock_openai_error:
             with pytest.raises(type(mock_openai_error)) as exc_info:
-                openai_embedding_creator(deployment_id, mock_proxy_client)
+                openai_embedding_creator(model_name)
             assert str(exc_info.value) == str(mock_openai_error)
             assert "Error while creating OpenAI embedding model" in caplog.text
         else:
-            result = openai_embedding_creator(deployment_id, mock_proxy_client)
+            result = openai_embedding_creator(model_name)
 
             # Assert the result is correct
             assert result == mock_embeddings
 
             # Assert OpenAIEmbeddings was called with correct parameters
-            mock_openai_cls.assert_called_once_with(
-                deployment_id=deployment_id,
-                proxy_client=mock_proxy_client,
-            )
+            call_kwargs = mock_openai_cls.call_args.kwargs
+            assert call_kwargs["model"] == model_name
+            assert call_kwargs["deployment_id"] == "test-deployment-id"
+            assert call_kwargs["proxy_client"] == mock_proxy_client
