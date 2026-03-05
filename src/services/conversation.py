@@ -21,7 +21,8 @@ from services.k8s import IK8sClient
 from services.usage import IUsageTracker, UsageExceedReport, UsageTracker
 from utils.config import Config
 from utils.logging import get_logger
-from utils.models.factory import IModel, IModelFactory, ModelFactory
+from utils.models.factory import IModel, IModelFactory
+from utils.models_cache import get_models
 from utils.settings import (
     MAIN_MODEL_MINI_NAME,
     TOKEN_LIMIT_PER_CLUSTER,
@@ -66,7 +67,7 @@ class ConversationService(metaclass=SingletonMeta):
 
     _init_questions_handler: IInitialQuestionsHandler
     _kyma_graph: IGraph
-    _model_factory: IModelFactory
+    _model_factory: IModelFactory | None
     _usage_limiter: IUsageTracker
 
     def __init__(
@@ -77,8 +78,12 @@ class ConversationService(metaclass=SingletonMeta):
         followup_questions_handler: IFollowUpQuestionsHandler | None = None,
     ) -> None:
         try:
-            self._model_factory = model_factory or ModelFactory(config=config)
-            models = self._model_factory.create_models()
+            if model_factory is not None:
+                self._model_factory = model_factory
+                models = self._model_factory.create_models()
+            else:
+                self._model_factory = None
+                models = get_models(config)
         except Exception:
             logger.exception("Failed to initialize models")
             raise
