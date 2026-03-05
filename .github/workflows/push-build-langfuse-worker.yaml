@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build:
-    uses: kyma-project/kyma-companion/.github/workflows/build-langfuse-reuseable.yaml@main
+    uses: kyma-project/kyma-companion/.github/workflows/build-langfuse-reusable.yaml@main
     with:
       IMAGE_NAME: external-langfuse-worker
       DOCKERFILE: Dockerfile.langfuse-worker
