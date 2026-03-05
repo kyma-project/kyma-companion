@@ -7,4 +7,4 @@ LABEL org.opencontainers.image.title="langfuse" \
       org.opencontainers.image.url="https://github.com/langfuse/langfuse" \
       org.opencontainers.image.licenses="NOASSERTION"
 
-# No other changes — we inherit everything else!
+# No other changes — we inherit everything else1!
