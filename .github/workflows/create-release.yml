@@ -312,7 +312,7 @@ jobs:
         run-integration-tests,
         run-evaluation-tests,
         run-integration-tests-indexer,
-        run-unit-tests-indexer
+        run-unit-tests-indexer,
       ]
     runs-on: ubuntu-latest
     env:
@@ -519,3 +519,11 @@ jobs:
           IMAGE_NAME: ${{ env.IMAGE_NAME_INDEXER }}
         run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
 
+  upload-release-log:
+    name: Upload release log
+    needs: ["check-prerequisites"]
+    if: ${{ needs.check-prerequisites.result == 'success' }}
+    uses: kyma-project/compliancy/.github/workflows/notify-release-report.yml@main
+    secrets: inherit
+    with:
+      release_version: ${{ inputs.name }}
