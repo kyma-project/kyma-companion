@@ -4,7 +4,7 @@ from threading import Thread
 
 import pytest
 from deepeval.metrics import AnswerRelevancyMetric, GEval
-from deepeval.models.base_model import DeepEvalBaseLLM
+from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCaseParams
 from fakeredis import TcpFakeServer
 from langchain_core.messages import (
