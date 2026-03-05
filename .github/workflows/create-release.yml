@@ -521,12 +521,8 @@ jobs:
 
   upload-release-log:
     name: Upload release log
-    needs:
-      [
-        "check-prerequisites",
-      ]
+    needs: ["check-prerequisites"]
     if: ${{ needs.check-prerequisites.result == 'success' }}
-    if: ${{ needs.run-integration-tests.result == 'success' && needs.run-unit-tests.result == 'success' && needs.run-evaluation-tests.result == 'success' && needs.run-integration-tests-indexer.result == 'success' && needs.run-unit-tests-indexer.result == 'success' }}
     uses: kyma-project/compliancy/.github/workflows/notify-release-report.yml@main
     secrets: inherit
     with:
