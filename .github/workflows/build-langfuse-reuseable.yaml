@@ -1,0 +1,54 @@
+name: "Build Image LangFuse"
+run-name: "Build Image LangFuse"
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        description: "The name of the image to build, e.g. external-langfuse."
+        type: string
+      DOCKERFILE:
+        required: true
+        description: "The Dockerfile to use for building the image."
+        type: string
+
+
+jobs:
+  compute-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.export_tag.outputs.TAGS }}
+    env:
+      DOCKERFILE: ${{ inputs.DOCKERFILE }}
+      TAG_FILE: "./tmp/version.${{ inputs.IMAGE_NAME }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get tag from Dockerfile
+        id: get_tag
+        run: scripts/shell/get_langfuse_tag.sh
+      - name: Export the tag
+        id: export_tag
+        run: |
+          if [ ! -f "$TAG_FILE" ]; then
+            echo "Tag file not found: $TAG_FILE" >&2
+            exit 1
+          fi
+          tag_value=$(cat "$TAG_FILE")
+          echo "Exporting tag: $tag_value"
+          {
+            echo 'TAGS<<EOF'
+            echo "$tag_value"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+  build:
+    needs: compute-tags
+    uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
+    with:
+      name: ${{ inputs.IMAGE_NAME }}
+      dockerfile: ${{ inputs.DOCKERFILE }}
+      context: .
+      tags: ${{ needs.compute-tags.outputs.tags }}
+      platforms: |
+        linux/amd64
