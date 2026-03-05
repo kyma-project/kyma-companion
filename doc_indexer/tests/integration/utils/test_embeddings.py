@@ -10,6 +10,7 @@ import pytest
 from langchain_core.embeddings import Embeddings
 
 from utils.models import create_embedding_factory, openai_embedding_creator
+from utils.settings import EMBEDDING_MODEL_NAME
 
 # Constants for similarity thresholds
 HIGH_SIMILARITY_THRESHOLD = 0.99  # Threshold for identical/similar texts
@@ -36,24 +37,11 @@ def skip_if_no_credentials():
 def embedding_model(skip_if_no_credentials):
     """Create an embedding model for testing.
 
-    Tries to use text-embedding-3-small first, falls back to text-embedding-3-large
-    if small is not available.
+    Uses EMBEDDING_MODEL_NAME from settings, which reads from env var
+    or falls back to config default (text-embedding-3-large).
     """
-    model_name = os.getenv("EMBEDDING_MODEL_NAME")
-    if model_name:
-        # If explicitly set via env var, use it
-        create_embedding = create_embedding_factory(openai_embedding_creator)
-        return create_embedding(model_name)
-
-    # Try small first, fall back to large
     create_embedding = create_embedding_factory(openai_embedding_creator)
-    try:
-        return create_embedding("text-embedding-3-small")
-    except ValueError as e:
-        if "not found in config" in str(e):
-            # Fall back to large model
-            return create_embedding("text-embedding-3-large")
-        raise
+    return create_embedding(EMBEDDING_MODEL_NAME)
 
 
 @pytest.mark.integration
@@ -180,20 +168,8 @@ class TestEmbeddingFactory:
 
     def test_factory_creates_embeddings(self, skip_if_no_credentials):
         """Test that the factory creates valid embeddings."""
-        model_name = os.getenv("EMBEDDING_MODEL_NAME")
         factory = create_embedding_factory(openai_embedding_creator)
-
-        # Try to create embedding model with fallback
-        if model_name:
-            embedding_model = factory(model_name)
-        else:
-            try:
-                embedding_model = factory("text-embedding-3-small")
-            except ValueError as e:
-                if "not found in config" in str(e):
-                    embedding_model = factory("text-embedding-3-large")
-                else:
-                    raise
+        embedding_model = factory(EMBEDDING_MODEL_NAME)
 
         # Test basic embedding
         text = "Factory pattern test."
@@ -205,15 +181,7 @@ class TestEmbeddingFactory:
     def test_factory_with_different_models(self, skip_if_no_credentials):
         """Test creating embeddings with different model names."""
         factory = create_embedding_factory(openai_embedding_creator)
-
-        # Try to create with small model, fall back to large
-        try:
-            model = factory("text-embedding-3-small")
-        except ValueError as e:
-            if "not found in config" in str(e):
-                model = factory("text-embedding-3-large")
-            else:
-                raise
+        model = factory(EMBEDDING_MODEL_NAME)
 
         text = "Test text."
         embedding = model.embed_query(text)
