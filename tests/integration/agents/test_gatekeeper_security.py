@@ -1,7 +1,7 @@
 import pytest
 from deepeval import assert_test
-from deepeval.metrics.g_eval.g_eval import GEval
-from deepeval.test_case.llm_test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from integration.conftest import create_mock_state

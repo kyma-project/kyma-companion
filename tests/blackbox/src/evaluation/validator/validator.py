@@ -1,7 +1,7 @@
 from typing import Any, Protocol
 
 from deepeval import evaluate
-from deepeval.evaluate import AsyncConfig, CacheConfig, DisplayConfig
+from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig
 from deepeval.evaluate.types import EvaluationResult
 from deepeval.metrics import BaseMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
