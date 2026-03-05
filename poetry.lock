@@ -3910,6 +3910,7 @@ files = [
 [package.dependencies]
 opentelemetry-proto = "1.40.0"
 
+
 [[package]]
 name = "opentelemetry-exporter-otlp-proto-http"
 version = "1.40.0"
@@ -8141,3 +8142,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 lock-version = "2.1"
 python-versions = "==3.13.*"
 content-hash = "e821ad08d06a5ed78786da88c7527de0bf0f370283fb54b836219aa889d4271c"
+
