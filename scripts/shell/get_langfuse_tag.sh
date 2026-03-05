@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 ##############################################################################
-# NOTE: This script is used in the GitHub Actions workflow.
-# Make sure any changes are compatible with the existing workflows.
+# **NOTE**: This script is used in the GitHub Actions workflow.
+#           Make sure any changes are compatible with the existing workflows.
+# **Description**: This script extracts the tag from the first FROM line in the 
+#                  specified Dockerfile and saves it to a file.
 ##############################################################################
 
 # standard bash error handling
