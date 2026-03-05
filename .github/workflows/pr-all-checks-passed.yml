@@ -17,8 +17,6 @@ on:
         milestoned,
       ]
   workflow_run:
-    branches-ignore:
-      - main
     workflows: ["Integration Test", "Evaluation tests"]
     types:
       - completed
