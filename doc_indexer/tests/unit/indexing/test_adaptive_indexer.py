@@ -11,6 +11,8 @@ from indexing.adaptive_indexer import (
 )
 from langchain_core.documents import Document
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture(scope="session")
 def fixtures_path(root_tests_path) -> str:
