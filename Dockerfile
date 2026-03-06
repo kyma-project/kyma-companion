@@ -11,7 +11,14 @@ RUN apt update && apt install -y build-essential gcc python3.13 python3.13-dev p
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.create false \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
-  && ./venv/bin/pip uninstall -y poetry \
+  && ./venv/bin/pip freeze | grep -v -E "^(aiohttp|cryptography|fastapi|hdbcli|kubernetes|langchain|langfuse|langgraph|prometheus-client|pyjwt|python-decouple|python-json-logger|redis|sap-ai-sdk-gen|scrubadub|tenacity|tiktoken|uvicorn)" > /tmp/to_remove.txt \
+  && ./venv/bin/pip uninstall -y -r /tmp/to_remove.txt \
+  && rm -rf ./venv/lib/python3.13/site-packages/pip* \
+  && rm -rf ./venv/lib/python3.13/site-packages/setuptools* \
+  && rm -rf ./venv/lib/python3.13/site-packages/wheel* \
+  && rm -rf ./venv/lib/python3.13/site-packages/poetry* \
+  && rm -rf ./venv/lib/python3.13/site-packages/virtualenv* \
+  && rm -rf ./venv/lib/python3.13/site-packages/dulwich* \
   && find ./venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
   && find ./venv -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true \
   && find ./venv -type d -name "test" -exec rm -rf {} + 2>/dev/null || true \
