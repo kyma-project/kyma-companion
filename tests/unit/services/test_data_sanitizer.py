@@ -2,7 +2,6 @@ import pytest
 
 from services.data_sanitizer import REDACTED_VALUE, DataSanitizer
 from utils.config import DataSanitizationConfig
-from utils.pii_detector import PIIDetector
 from utils.singleton_meta import SingletonMeta
 
 
