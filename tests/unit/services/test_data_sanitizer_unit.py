@@ -7,6 +7,7 @@ credential detection, K8s resource handling) without loading the spaCy model.
 import pytest
 
 from services.data_sanitizer import REDACTED_VALUE, DataSanitizer
+from utils.pii_detector import PIIDetector
 from utils.singleton_meta import SingletonMeta
 
 
@@ -43,14 +44,17 @@ class TestDataSanitizerUnit:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Reset DataSanitizer and setup with mocked PII service."""
-        # Only reset DataSanitizer - we're injecting a mock PII service, not using PIIDetector
+        # Reset both to inject mock - DataSanitizer will create new instance with mock
+        # PIIDetector reset is needed here because we're injecting a mock service
+        SingletonMeta.reset_instance(PIIDetector)
         SingletonMeta.reset_instance(DataSanitizer)
         # Create with mock PII service
         self.mock_pii = MockPIIService()
         self.data_sanitizer = DataSanitizer(pii_service=self.mock_pii)
         yield
-        # Clean up after test to ensure isolation
+        # Clean up - reset PIIDetector so next test suite gets real one
         SingletonMeta.reset_instance(DataSanitizer)
+        SingletonMeta.reset_instance(PIIDetector)
 
     def test_basic_dict_traversal(self):
         """Test that DataSanitizer correctly traverses nested dictionaries."""

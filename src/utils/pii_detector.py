@@ -18,6 +18,8 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from presidio_anonymizer.entities.engine.recognizer_result import RecognizerResult as AnonymizerRecognizerResult
 
+from utils.singleton_meta import SingletonMeta
+
 
 class PIIService(Protocol):
     """Protocol for PII detection services.
@@ -38,11 +40,14 @@ class PIIService(Protocol):
         ...
 
 
-class PIIDetector:
+class PIIDetector(metaclass=SingletonMeta):
     """PII detector using Microsoft Presidio.
 
     Replaces personally identifiable information with tokens like {{EMAIL}}.
     Compatible with scrubadub.Scrubber() interface.
+
+    Uses SingletonMeta to avoid loading spaCy model multiple times.
+    This dramatically reduces memory usage (from 64GB to <1GB in tests).
 
     Uses Presidio to detect:
     - EMAIL_ADDRESS

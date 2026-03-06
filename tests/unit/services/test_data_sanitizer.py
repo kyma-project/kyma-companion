@@ -2,6 +2,7 @@ import pytest
 
 from services.data_sanitizer import REDACTED_VALUE, DataSanitizer
 from utils.config import DataSanitizationConfig
+from utils.pii_detector import PIIDetector
 from utils.singleton_meta import SingletonMeta
 
 
@@ -9,9 +10,9 @@ class TestDataSanitizer:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Reset DataSanitizer singleton and setup test instance."""
-        # Reset singleton using the proper method
+        # Only reset DataSanitizer - PIIDetector can be shared as it's stateless
         SingletonMeta.reset_instance(DataSanitizer)
-        # Create new instance with default config
+        # Create new instance with default config (reuses existing PIIDetector singleton)
         self.data_sanitizer = DataSanitizer()
         yield
         # Clean up after test to ensure isolation
