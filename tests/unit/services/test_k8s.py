@@ -14,6 +14,7 @@ from services.k8s import (
 )
 from services.k8s_models import PodLogsDiagnosticContext
 from utils.settings import K8S_API_PAGINATION_MAX_PAGE
+from utils.singleton_meta import SingletonMeta
 
 
 def sample_k8s_secret():
@@ -411,6 +412,12 @@ class TestK8sAuthHeaders:
 
 
 class TestK8sClient:
+    @pytest.fixture(autouse=True)
+    def reset_singletons(self):
+        """Reset DataSanitizer singleton between tests."""
+        SingletonMeta.reset_instance(DataSanitizer)
+        yield
+
     @pytest.fixture
     def k8s_client(self):
         with patch("services.k8s.K8sClient.__init__", return_value=None):
