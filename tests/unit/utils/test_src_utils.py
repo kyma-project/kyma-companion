@@ -17,6 +17,7 @@ from agents.common.utils import get_relevant_context_from_k8s_cluster
 from services.data_sanitizer import DataSanitizer
 from services.k8s import IK8sClient
 from utils import utils
+from utils.singleton_meta import SingletonMeta
 from utils.utils import (
     JWT_TOKEN_EMAIL,
     JWT_TOKEN_SERVICE_ACCOUNT,
@@ -309,6 +310,13 @@ def test_to_sequence_messages(test_description, input_data, expected_output, exp
 )
 def test_generate_sha256_hash(input_data, expected_hash):
     assert generate_sha256_hash(input_data) == expected_hash
+
+
+@pytest.fixture(autouse=True)
+def reset_data_sanitizer_singleton():
+    """Reset DataSanitizer singleton before each test."""
+    SingletonMeta.reset_instance(DataSanitizer)
+    yield
 
 
 @pytest.fixture

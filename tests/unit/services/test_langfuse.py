@@ -9,6 +9,29 @@ from agents.common.state import CompanionState, GraphInput, UserInput
 from services.k8s import IK8sClient, K8sClient
 from services.langfuse import EMPTY_OBJECT, REDACTED, LangfuseService, get_langfuse_metadata
 from utils.settings import LangfuseMaskingModes
+from utils.singleton_meta import SingletonMeta
+
+
+class MockPIIService:
+    """Mock PII service for testing without spaCy model."""
+
+    def clean(self, text: str) -> str:
+        """Mock PII detection that replaces test emails."""
+        if not text:
+            return text
+        # Simple email replacement for testing
+        return text.replace("testuser@kyma.com", "{{EMAIL}}").replace("test@example.com", "{{EMAIL}}")
+
+
+@pytest.fixture
+def mock_langfuse_service():
+    """Create LangfuseService with mocked PII detection."""
+    # Reset singleton to inject mock
+    SingletonMeta.reset_instance(LangfuseService)
+    service = LangfuseService(pii_service=MockPIIService())
+    yield service
+    # Clean up after test
+    SingletonMeta.reset_instance(LangfuseService)
 
 
 def create_k8s_client():
@@ -138,17 +161,17 @@ def test_get_langfuse_metadata(description, user_id, session_id, tags, expected)
     ],
 )
 def test_masking_production_data(
+    mock_langfuse_service: LangfuseService,
     description: str,
     masking_mode: LangfuseMaskingModes,
     input_data: Any,
     expected_output: Any,
 ):
-    service = LangfuseService()
-    service.masking_mode = masking_mode
+    mock_langfuse_service.masking_mode = masking_mode
     original_data = copy.deepcopy(input_data)
 
     # when / then
-    assert service.masking_production_data(data=input_data) == expected_output, description
+    assert mock_langfuse_service.masking_production_data(data=input_data) == expected_output, description
     assert input_data == original_data, "input data should not have been modified in place"
 
 
@@ -187,15 +210,15 @@ def test_masking_production_data(
     ],
 )
 def test_masking_mode_partial(
+    mock_langfuse_service: LangfuseService,
     description: str,
     input_data: Any,
     expected_output: Any,
 ):
-    service = LangfuseService()
     original_data = copy.deepcopy(input_data)
 
     # when / then
-    assert service._masking_mode_partial(input_data) == expected_output, description
+    assert mock_langfuse_service._masking_mode_partial(input_data) == expected_output, description
     assert input_data == original_data, "input data should not have been modified in place"
 
 
@@ -346,15 +369,14 @@ def test_masking_mode_partial(
         ),
     ],
 )
-def test_masking_mode_filtered(description, input_data, expected_output):
+def test_masking_mode_filtered(mock_langfuse_service: LangfuseService, description, input_data, expected_output):
     # Given
-    service = LangfuseService()
     if callable(input_data):
         input_data = input_data()
     original_data = copy.deepcopy(input_data)
 
     # when
-    result = service._masking_mode_filtered(input_data)
+    result = mock_langfuse_service._masking_mode_filtered(input_data)
 
     # then
     # For ToolMessage and HumanMessage, compare their content attribute
@@ -382,9 +404,8 @@ def test_masking_mode_filtered(description, input_data, expected_output):
         ),
     ],
 )
-def test_mask_critical(description, input_data, expected_output):
-    service = LangfuseService()
+def test_mask_critical(mock_langfuse_service: LangfuseService, description, input_data, expected_output):
     if callable(input_data):
         input_data = input_data()
 
-    assert service._mask_critical(input_data) == expected_output, description
+    assert mock_langfuse_service._mask_critical(input_data) == expected_output, description
