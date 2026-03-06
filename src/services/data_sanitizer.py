@@ -2,9 +2,8 @@ import json
 import re
 from typing import Any, Protocol
 
-import scrubadub
-
 from utils.config import DataSanitizationConfig
+from utils.pii_detector import PIIDetector
 from utils.singleton_meta import SingletonMeta
 
 DEFAULT_SENSITIVE_RESOURCES = [
@@ -99,8 +98,7 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
             regex_patterns=DEFAULT_REGEX_PATTERNS,
         )
-        self.scrubber = scrubadub.Scrubber()
-        self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
+        self.pii_detector = PIIDetector()
 
     def sanitize(self, data: str | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
@@ -120,8 +118,8 @@ class DataSanitizer(metaclass=SingletonMeta):
         Sanitize raw string data by replacing personal information and credentials.
         """
 
-        # First pass: Use scrubadub for standard PII
-        sanitized_text = self.scrubber.clean(raw_text)
+        # First pass: Use PIIDetector for standard PII
+        sanitized_text = self.pii_detector.clean(raw_text)
 
         # Second pass: Apply custom credential patterns
         for pattern in self.config.regex_patterns:
@@ -237,7 +235,7 @@ class DataSanitizer(metaclass=SingletonMeta):
         """Cleans personal information from a string."""
         data_str = json.dumps(data)
 
-        sanitized_data_str = self.scrubber.clean(data_str)
+        sanitized_data_str = self.pii_detector.clean(data_str)
 
         return dict(json.loads(sanitized_data_str))
 
