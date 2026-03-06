@@ -38,10 +38,12 @@ class PIIDetector:
         """Initialize the PII detector with Presidio engines.
 
         Creates:
-        - AnalyzerEngine: Detects PII in text
+        - AnalyzerEngine: Detects PII in text with small spaCy model (13MB)
         - AnonymizerEngine: Anonymizes/redacts detected PII
+
+        Note: Uses en_core_web_sm (small model) to keep Docker image small.
         """
-        # Initialize Presidio engines
+        # Initialize Presidio engines with default NLP (uses en_core_web_sm)
         self.analyzer = AnalyzerEngine()
         self.anonymizer = AnonymizerEngine()
 
