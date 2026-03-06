@@ -1,7 +1,74 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python cache and compiled files
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Testing
 .pytest_cache
 .coverage
 htmlcov
+.tox/
+tests/
+test/
+*_test.py
+test_*.py
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+docs/
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Docker
+Dockerfile*
+!Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Logs and temporary files
+*.log
+logs/
+*.bak
+*.tmp
+
+# Environment files
+.env
+.env.*
