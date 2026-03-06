@@ -2,15 +2,20 @@ import pytest
 
 from services.data_sanitizer import REDACTED_VALUE, DataSanitizer
 from utils.config import DataSanitizationConfig
+from utils.singleton_meta import SingletonMeta
 
 
 class TestDataSanitizer:
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Reset the DataSanitizer singleton between tests."""
-        DataSanitizer._instances = {}
+        """Reset DataSanitizer singleton and setup test instance."""
+        # Reset singleton using the proper method
+        SingletonMeta.reset_instance(DataSanitizer)
+        # Create new instance with default config
         self.data_sanitizer = DataSanitizer()
         yield
+        # Clean up after test to ensure isolation
+        SingletonMeta.reset_instance(DataSanitizer)
 
     test_data = [
         {
@@ -137,7 +142,8 @@ class TestDataSanitizer:
     )
     def test_custom_config(self, custom_config, resource, expected_results):
         """Test DataSanitizer with custom configuration."""
-        DataSanitizer._instances = {}  # reset singleton instance
+        # Reset singleton to allow creating instance with custom config
+        SingletonMeta.reset_instance(DataSanitizer)
         sanitizer = DataSanitizer(config=custom_config)
         sanitized = sanitizer.sanitize(resource)
         assert sanitized == expected_results
@@ -261,98 +267,16 @@ class TestDataSanitizer:
                 ],
                 None,
             ),
-            # Nested PII test
-            (
-                {
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": "app-config",
-                        "annotations": {
-                            "description": "Contact email: john.doe@example.com",
-                            "nested": {
-                                "contact": "phone: 1800 555-5555",
-                                "details": {
-                                    "address": "123 Main St, NY",
-                                    "ssn": "123-45-6789",
-                                },
-                            },
-                        },
-                    },
-                    "data": {
-                        "config.json": '{"admin_email": "admin@example.com"}',
-                    },
-                },
-                {
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": "app-config",
-                        "annotations": {
-                            "description": "Contact email: {{EMAIL}}",
-                            "nested": {
-                                "contact": "phone: {{PHONE}}",
-                                "details": {
-                                    "address": "123 Main St, NY",
-                                    "ssn": "{{SOCIAL_SECURITY_NUMBER}}",
-                                },
-                            },
-                        },
-                    },
-                    "data": {
-                        "config.json": '{"admin_email": "{{EMAIL}}"}',
-                    },
-                },
-                None,
-            ),
-            # Mixed list with PII
-            (
-                {
-                    "users": [
-                        {"name": "John Doe", "email": "john@example.com"},
-                        {"name": "Jane Smith", "phone": "1800 555-5555"},
-                        {"name": "Bob Wilson", "normal_field": "value"},
-                    ]
-                },
-                {
-                    "users": [
-                        {"name": "John Doe", "email": "{{EMAIL}}"},
-                        {"name": "Jane Smith", "phone": "{{PHONE}}"},
-                        {"name": "Bob Wilson", "normal_field": "value"},
-                    ]
-                },
-                None,
-            ),
+            # Simple integration test to verify PII detection works end-to-end
+            # (Detailed PII testing is in test_pii_detector.py and test_data_sanitizer_unit.py)
             (
                 {
                     "email": "john.doe@example.com",
-                    "phone": "+49 555 1234567",
-                    "description": "any test information",
+                    "password": "secret123",
                 },
                 {
                     "email": "{{EMAIL}}",
-                    "phone": "{{PHONE}}",
-                    "description": "any test information",
-                },
-                None,
-            ),
-            # personal information in yaml file
-            (
-                {
-                    "kind": "ConfigMap",
-                    "metadata": {"name": "my-configmap"},
-                    "data": {
-                        "email": "john.doe@example.com",
-                        "phone": "+49 555 1234567",
-                        "description": "any test information",
-                    },
-                },
-                {
-                    "kind": "ConfigMap",
-                    "metadata": {"name": "my-configmap"},
-                    "data": {
-                        "email": "{{EMAIL}}",
-                        "phone": "{{PHONE}}",
-                        "description": "any test information",
-                    },
+                    "password": REDACTED_VALUE,
                 },
                 None,
             ),
@@ -1153,136 +1077,38 @@ class TestDataSanitizer:
     @pytest.mark.parametrize(
         "input_text,expected_contains,test_description",
         [
-            # Password patterns
-            ("password=secret123", "{{REDACTED}}", "password with equals"),
-            ("Password: mypassword", "{{REDACTED}}", "password with colon uppercase"),
-            ("passwd=admin123", "{{REDACTED}}", "passwd abbreviation"),
-            ("pwd: letmein", "{{REDACTED}}", "pwd abbreviation"),
-            ("PASSWORD = strongpass", "{{REDACTED}}", "password with spaces"),
-            # API Key patterns
-            ("api_key=sk-1234567890abcdef", "{{REDACTED}}", "api_key with underscore"),
-            ("api-key: xyz789", "{{REDACTED}}", "api-key with hyphen"),
-            ("apikey=abcd1234", "{{REDACTED}}", "apikey no separator"),
-            ("API_KEY: test123", "{{REDACTED}}", "API_KEY uppercase"),
-            # Secret key patterns
-            ("secret_key=mysecret", "{{REDACTED}}", "secret_key with underscore"),
-            ("secret-key: topsecret", "{{REDACTED}}", "secret-key with hyphen"),
-            ("secretkey=hidden", "{{REDACTED}}", "secretkey no separator"),
-            ("SECRET_KEY: classified", "{{REDACTED}}", "SECRET_KEY uppercase"),
-            # Access token patterns
-            ("access_token=bearer123", "{{REDACTED}}", "access_token with underscore"),
-            ("access-token: token456", "{{REDACTED}}", "access-token with hyphen"),
-            ("accesstoken=mytoken", "{{REDACTED}}", "accesstoken no separator"),
-            ("ACCESS_TOKEN: xyz", "{{REDACTED}}", "ACCESS_TOKEN uppercase"),
-            # Bearer token patterns
+            # Integration tests verifying credential regex patterns work end-to-end
+            # (Detailed regex pattern testing is in test_data_sanitizer_unit.py)
+            # Password pattern
+            ("password=secret123", "{{REDACTED}}", "password credential"),
+            # API Key pattern
+            ("api_key=sk-1234567890abcdef", "{{REDACTED}}", "api_key credential"),
+            # Bearer token pattern
             (
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
-                "{{REDACTED}}",
-                "bearer token JWT-like",
+                "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+                "Authorization: {{REDACTED}}",
+                "bearer token",
             ),
-            ("bearer abc123def456", "{{REDACTED}}", "bearer token simple"),
-            (
-                "BEARER token_with_special-chars.+/=",
-                "{{REDACTED}}",
-                "bearer uppercase with special chars",
-            ),
-            # Basic auth patterns
+            # Basic auth pattern
             (
                 "Authorization: Basic dXNlcjpwYXNz",
                 "{{REDACTED}}",
-                "authorization basic",
+                "basic auth",
             ),
-            (
-                "authorization: basic YWRtaW46YWRtaW4=",
-                "{{REDACTED}}",
-                "authorization basic lowercase",
-            ),
-            (
-                "Auth: Basic bXl1c2VyOnNlY3JldA==",
-                "{{REDACTED}}",
-                "auth basic short form",
-            ),
-            ("auth: basic dGVzdDp0ZXN0", "{{REDACTED}}", "auth basic lowercase"),
-            # Long alphanumeric strings (32+ chars)
-            (
-                "This is a token: 1234567890abcdef1234567890abcdef",
-                "This is a {{REDACTED}}",
-                "32 char hash token",
-            ),
-            (
-                "This is a hash: 1234567890abcdef1234567890abcdef",
-                "This is a hash: 1234567890abcdef1234567890abcdef",
-                "just a hash with a prefix of key or token should not redacted",
-            ),
-            (
-                "Token: abcdef1234567890abcdef1234567890abcdef",
-                "{{REDACTED}}",
-                "40 char token",
-            ),
-            (
-                "Key: 123456789012345678901234567890123456789012345678901234567890abcd",
-                "{{REDACTED}}",
-                "64 char key",
-            ),
-            # Username patterns
-            ("username=johndoe", "{{REDACTED}}", "username with equals"),
-            ("user: admin", "{{REDACTED}}", "user with colon"),
-            ("USERNAME = testuser", "{{REDACTED}}", "USERNAME uppercase with spaces"),
-            ("User: service_account", "{{REDACTED}}", "User capitalized"),
-            # Multiple patterns in one string
-            (
-                "username=admin password=secret api_key=sk-123456",
-                "{{REDACTED}} {{REDACTED}} {{REDACTED}}",
-                "multiple credentials",
-            ),
-            # Edge cases - should NOT be redacted
-            (
-                "This is a short string",
-                "This is a short string",
-                "normal text unchanged",
-            ),
-            ("password", "password", "keyword alone without assignment"),
-            ("api_key", "api_key", "api_key without value"),
-            ("Short123", "Short123", "short alphanumeric string"),
-            ("email@example.com", "{{EMAIL}}", "email format"),
-            # Case sensitivity tests
-            ("PASSWORD=TEST123", "{{REDACTED}}", "all caps password"),
-            ("Api_Key=test", "{{REDACTED}}", "mixed case api key"),
-            # Different separators and spacing
-            (
-                "api_key:   token_with_leading_spaces",
-                "{{REDACTED}}",
-                "api_key with leading spaces after colon",
-            ),
-            # Complex real-world examples , not redacting url as this can be used by llm to identify problems
-            (
-                "curl -H 'Authorization: Bearer abc123def456' https://api.example.com",
-                "curl -H 'Authorization: {{REDACTED}} https://api.example.com",
-                "curl command with bearer",
-            ),
-            # Multiline scenarios
-            (
-                "line1\npassword=secret\nline3",
-                "line1\n{{REDACTED}}\nline3",
-                "multiline with password",
-            ),
-            # Special characters in credentials
-            ("password=p@ssw0rd!", "{{REDACTED}}", "password with special chars"),
-            (
-                "api_key=sk-proj-1234567890abcdef",
-                "{{REDACTED}}",
-                "api key with project prefix",
-            ),
-            # Mixed sensitive data in single log line
+            # Mixed credentials and PII
             (
                 "User john@example.com logged with user=admin password=admin123",
                 "User {{EMAIL}} logged with {{REDACTED}} {{REDACTED}}",
-                "Mixed sensitive data in single log line",
+                "mixed PII and credentials",
             ),
         ],
     )
     def test_sanitize_raw_string_data(self, input_text, expected_contains, test_description):
-        """Test _sanitize_raw_string_data with various input patterns."""
+        """Test raw string sanitization integration (credentials + PII).
+
+        This is an integration test verifying the credential regex + PII pipeline works.
+        Detailed regex pattern variations are tested in test_data_sanitizer_unit.py.
+        """
 
         result = self.data_sanitizer.sanitize(input_text)
 

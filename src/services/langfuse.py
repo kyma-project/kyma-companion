@@ -13,7 +13,7 @@ from agents.kyma.tools.query import fetch_kyma_resource_version
 from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
-from utils.pii_detector import PIIDetector
+from utils.pii_detector import PIIDetector, PIIService
 from utils.settings import (
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
@@ -47,13 +47,17 @@ def get_langfuse_metadata(user_id: str, session_id: str, tags: list[str]) -> dic
 
 
 class LangfuseService(metaclass=SingletonMeta):
-    """Service for Langfuse tracing integration with LangGraph."""
+    """Service for Langfuse tracing integration with LangGraph.
 
-    def __init__(self):
+    Args:
+        pii_service: PII detection service. Defaults to PIIDetector singleton.
+    """
+
+    def __init__(self, pii_service: PIIService | None = None):
         """Initialize the Langfuse service."""
         self.enabled = string_to_bool(str(LANGFUSE_ENABLED.lower()))
         self.masking_mode = LANGFUSE_MASKING_MODE
-        self.pii_detector = PIIDetector()
+        self.pii_detector = pii_service or PIIDetector()
         self.allowed_tools = [SEARCH_KYMA_DOC_TOOL_NAME, fetch_kyma_resource_version.name]
 
         if self.enabled:
