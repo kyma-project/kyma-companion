@@ -29,7 +29,11 @@ RUN apt update && apt install -y build-essential gcc python3.13 python3.13-dev p
 FROM ghcr.io/gardenlinux/gardenlinux:2150.0.0
 WORKDIR /app
 
-# Copy virtual environment from builder (includes Python!)
+# Install Python runtime (needed for venv symlinks)
+RUN apt update && apt install -y python3.13 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
 COPY --from=builder /app/venv ./venv
 
 # Copy application code
