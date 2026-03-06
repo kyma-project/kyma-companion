@@ -11,9 +11,12 @@ References:
 - Documentation: https://microsoft.github.io/presidio/
 """
 
+from typing import cast
+
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
+from presidio_anonymizer.entities.engine.recognizer_result import RecognizerResult as AnonymizerRecognizerResult
 
 
 class PIIDetector:
@@ -91,9 +94,11 @@ class PIIDetector:
                 operators[entity_type] = OperatorConfig("replace", {"new_value": token})
 
         # Anonymize the text using the operators
+        # Cast analyzer results to anonymizer's RecognizerResult type
+        # (they are compatible at runtime, just different type definitions)
         anonymized_result = self.anonymizer.anonymize(
             text=text,
-            analyzer_results=analyzer_results,
+            analyzer_results=cast(list[AnonymizerRecognizerResult], analyzer_results),
             operators=operators,
         )
 
