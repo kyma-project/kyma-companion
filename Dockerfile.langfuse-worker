@@ -1,0 +1,10 @@
+FROM langfuse/langfuse-worker:3.63.0
+
+# ---- Override OCI labels (remove emojis) ----
+LABEL org.opencontainers.image.title="langfuse-worker" \
+      org.opencontainers.image.description="Open source LLM engineering platform - LLM observability, metrics, evals, prompt management, playground, datasets. Integrates with OpenTelemetry, Langchain, OpenAI SDK, LiteLLM and more. YC W23." \
+      org.opencontainers.image.source="https://github.com/langfuse/langfuse" \
+      org.opencontainers.image.url="https://github.com/langfuse/langfuse" \
+      org.opencontainers.image.licenses="NOASSERTION"
+
+# No other changes — we inherit everything else!

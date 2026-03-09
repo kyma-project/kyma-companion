@@ -1,0 +1,21 @@
+name: Push Build Image LangFuse
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile.langfuse"
+
+
+permissions:
+  id-token: write # This is required for requesting the JWT token
+  contents: read # This is required for actions/checkout
+
+
+jobs:
+  build:
+    uses: kyma-project/kyma-companion/.github/workflows/build-langfuse-reusable.yaml@main
+    with:
+      IMAGE_NAME: external-langfuse
+      DOCKERFILE: Dockerfile.langfuse

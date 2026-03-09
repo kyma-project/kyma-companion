@@ -5,6 +5,8 @@ import pytest
 from indexing.indexer import MarkdownIndexer, create_chunks
 from langchain_core.documents import Document
 
+pytestmark = pytest.mark.unit
+
 SINGLE_BATCH_DOCS = [Document(page_content="# My Header 1\nContent")]
 TABLE_NAME = "test_table"
 BACKUP_TABLE_NAME = "backup_test_table"
