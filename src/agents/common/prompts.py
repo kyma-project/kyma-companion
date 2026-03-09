@@ -18,11 +18,46 @@ When a tool call fails, follow this protocol:
 
 
 CHUNK_SUMMARIZER_PROMPT = """
-            "Focusing on the query: '{query}'\n\n"
-            "Summarize this text, extracting key points relevant to the query:\n"
-            "{tool_response_chunk}\n\n"
-            "Summary (keep it concise, no preamble):"
-        """
+You are summarizing a tool response to answer a user's query.
+
+User query:
+{query}
+
+Tool response (structured data):
+{tool_response_chunk}
+
+Write a concise summary that directly answers the query.
+- Focus on concrete facts relevant to the query.
+- Be concise, but do not omit query-relevant details.
+- Keep important numbers and key-value pairs.
+- If the query asks about configuration, strategy, or what is "used", include
+  all relevant setting/value pairs that appear in the data (not only the primary
+  field).
+- If there are multiple resources, use a short bullet list.
+- Do not invent information.
+
+Summary (no preamble):
+"""
+
+
+CHUNK_SUMMARIZER_MERGE_PROMPT = """
+You are given summaries from different chunks of one tool response.
+
+User query:
+{query}
+
+Chunk summaries:
+{chunk_summaries}
+
+Combine these into one final answer.
+- Keep it concise, readable, and complete for the user query.
+- Do not drop query-relevant facts from chunk summaries.
+- Preserve important numbers and setting/value pairs.
+- Preserve important ports, protocols, statuses, timestamps, and annotations.
+- Remove duplicates.
+
+Final summary (no preamble):
+"""
 
 JOULE_CONTEXT_INFORMATION = """
 Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. 
