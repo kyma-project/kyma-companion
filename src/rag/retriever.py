@@ -9,6 +9,7 @@ from langchain_hana import HanaDB
 
 from services.metrics import CustomMetrics
 from utils.logging import get_logger
+from utils.settings import RAG_DEFAULT_TOP_K
 
 logger = get_logger(__name__)
 
@@ -55,7 +56,7 @@ class HanaVectorDB(HanaDB):
 class IRetriever(Protocol):
     """Retriever interface."""
 
-    async def aretrieve(self, query: str, top_k: int = 3) -> list[Document]:
+    async def aretrieve(self, query: str, top_k: int = RAG_DEFAULT_TOP_K) -> list[Document]:
         """Retrieve relevant documents based on the query."""
         ...
 
@@ -70,7 +71,7 @@ class HanaDBRetriever:
             table_name=table_name,
         )
 
-    async def aretrieve(self, query: str, top_k: int = 5) -> list[Document]:
+    async def aretrieve(self, query: str, top_k: int = RAG_DEFAULT_TOP_K) -> list[Document]:
         """Retrieve relevant documents based on the query."""
         start_time = time.perf_counter()
         try:

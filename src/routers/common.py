@@ -15,6 +15,7 @@ from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import RAG_DEFAULT_TOP_K
 
 logger = get_logger(__name__)
 
@@ -209,7 +210,7 @@ class SearchKymaDocRequest(BaseModel):
         ],
     )
     top_k: int = Field(
-        default=5,
+        default=RAG_DEFAULT_TOP_K,
         description="Number of top documents to return",
         ge=1,
         le=50,
