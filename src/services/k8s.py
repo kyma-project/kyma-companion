@@ -526,7 +526,14 @@ class K8sClient:
     async def list_nodes_metrics(self) -> list[dict]:
         """List all K8s Nodes metrics."""
         result = await self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
-        return list[dict](result)
+        # execute_get_api_request returns dict | list[dict]
+        # For metrics API, it returns a dict with "items" field
+        if isinstance(result, dict) and "items" in result:
+            return cast(list[dict], result["items"])
+        elif isinstance(result, list):
+            return result
+        else:
+            return []
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events. Provide empty string for namespace to list all events."""
@@ -538,7 +545,9 @@ class K8sClient:
         # convert objects to dictionaries and return.
         events = [event.to_dict() for event in result.items]
         if self.data_sanitizer:
-            return list[dict](self.data_sanitizer.sanitize(events))
+            sanitized = self.data_sanitizer.sanitize(events)
+            # sanitize returns dict | list[dict] | Any, ensure we have a list
+            return sanitized if isinstance(sanitized, list) else []
         return events
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
