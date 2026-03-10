@@ -547,7 +547,13 @@ class K8sClient:
         if self.data_sanitizer:
             sanitized = self.data_sanitizer.sanitize(events)
             # sanitize returns dict | list[dict] | Any, ensure we have a list
-            return sanitized if isinstance(sanitized, list) else []
+            if isinstance(sanitized, list):
+                return sanitized
+            logger.warning(
+                f"Data sanitizer returned unexpected type {type(sanitized)} for events; "
+                f"expected list. Returning empty list."
+            )
+            return []
         return events
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
