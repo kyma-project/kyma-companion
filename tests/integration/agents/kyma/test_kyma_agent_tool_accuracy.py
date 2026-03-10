@@ -311,12 +311,12 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
             must_contain_in_messages=["v1alpha2"],
         ),
         NamespaceScopedTestCase(
-            name="Should handle wrong APIRule version (v2) and correct to v1beta1",
+            name="Should handle deprecated APIRule version (v1beta1) and query with current v2",
             state=create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
                         "'resource_namespace': 'test-apirule-7', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="What is wrong with api rules?"),
@@ -324,7 +324,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 k8s_client=k8s_client,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            must_contain_in_messages=["v1beta1"],  # Must correct to v1beta1
+            must_contain_in_messages=["v2"],  # v1beta1 is removed; agent must correct to v2
             max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
     ]
@@ -371,11 +371,11 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ),
                 ToolCall(
                     name="kyma_query_tool",
-                    args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
+                    args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
                 ),
                 ToolCall(
                     name="search_kyma_doc",
-                    args={"query": "APIRule validation error allow no_auth access strategy combination"},
+                    args={"query": "APIRule validation error noAuth jwt authentication combination"},
                 ),
             ],
             alternative_tool_calls=[
@@ -389,7 +389,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                     ),
                     ToolCall(
                         name="kyma_query_tool",
-                        args={"uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/test-apirule-7/apirules"},
+                        args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
                     ),
                 ],
             ],
@@ -400,7 +400,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 task_description="check all subscriptions in the cluster",
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="check all subscriptions in the cluster"),
@@ -426,7 +426,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 task_description="check all resources in the cluster",
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="check all resources in the cluster"),
@@ -441,7 +441,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 task_description="show me all Kyma resources",
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
                         "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
                     ),
                     HumanMessage(content="what is wrong with Kyma?"),
