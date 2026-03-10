@@ -15,7 +15,6 @@ from agents.kyma.state import KymaAgentState
 from integration.agents.fixtures.api_rule import (
     API_RULE_WITH_CONFLICT_ACCESS_STRATEGIES,
     EXPECTED_API_RULE_RESPONSE,
-    EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
     KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
 )
 from integration.agents.fixtures.btp_manager import (
@@ -78,7 +77,7 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
+    "test_case,state,retrieval_context,expected_result,should_raise",
     [
         (
             "Should mention about resource context in kyma dashboard",
@@ -124,13 +123,12 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             None,
             "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. ",
-            None,
             False,
         ),
-        # Test case for API Rule with wrong access strategy
+        # Test case for API Rule with conflict access strategies
         # - Verifies agent correctly identifies and explains API Rule validation error
         # - Checks agent uses both kyma_query_tool and search_kyma_doc
-        # - Validates response matches expected explanation about multiple access strategies
+        # - Validates response matches expected explanation about conflict access strategies
         (
             "Should return right solution for API Rule with wrong access strategy",
             KymaAgentState(
@@ -193,75 +191,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             KYMADOC_FOR_API_RULE_VALIDATION_ERROR,
             EXPECTED_API_RULE_RESPONSE,
-            None,
-            False,
-        ),
-        # Test case for initial API Rule query
-        # - Verifies agent makes correct kyma_query_tool call on first interaction
-        (
-            "Should return Kyma resource query tool call for the first user query call",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'APIRule', 'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_name': 'restapi', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
-                    HumanMessage(content="What is wrong with the APIRule?"),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with the APIRule?",
-                        "task_title": "What is wrong with the APIRule?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with the APIRule?",
-                    task_title="What is wrong with the APIRule?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            None,
-            EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
-            "kyma_query_tool",
-            False,
-        ),
-        # Test case for APIRule query with missing api_version (flow 1)
-        # - Verifies agent starts with fetch_kyma_resource_version when api_version is absent.
-        # - This is flow 1 (no version info → discover first), distinct from the Function
-        #   error-retry case in test_tool_calling which tests flow 3.
-        (
-            "Should return fetch_kyma_resource_version call when api_version is missing",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'APIRule', 'resource_name': 'restapi', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
-                    HumanMessage(content="What is wrong with the APIRule?"),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with the APIRule?",
-                        "task_title": "What is wrong with the APIRule?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with the APIRule?",
-                    task_title="What is wrong with the APIRule?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            None,
-            "",
-            "fetch_kyma_resource_version",
             False,
         ),
         # Test case for Serverless Function with syntax error
@@ -329,7 +258,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),  # context
             None,  # retrieval_context
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
-            None,  # expected_tool_call
             False,  # should_raise
         ),
         # Test case for Serverless Function with no replicas
@@ -390,7 +318,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             None,
             EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
-            None,
             False,
         ),
         # Test case for general Kyma documentation query
@@ -439,7 +366,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             "",
             EXPECTED_BTP_MANAGER_RESPONSE,
-            None,
             False,
         ),
         # Test case for Kyma doc search when no relevant documentation is found
@@ -491,7 +417,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             "allowing you to provision and bind services from the SAP Business Technology Platform."
             "If you have specific questions or need further details, you might want to check the official "
             "SAP BTP documentation or resources related to the BTP Operator for more comprehensive information.",
-            None,
             False,
         ),
         # Test case for Kyma doc search when no relevant documentation is found
@@ -546,7 +471,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             "and using dependency injection for external services. "
             "For Node.js specifically, consider using async/await patterns and avoiding blocking operations. "
             "Please refer to the Kyma Serverless documentation for detailed deployment guides and examples.",
-            None,
             False,
         ),
         # Test case for Kyma doc search when no relevant documentation is found
@@ -600,7 +524,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             "global rate limiting (using an external rate limit service like Redis). "
             "For detailed configuration examples, please check the Kyma API Gateway documentation "
             "or Istio's traffic management guides.",
-            None,
             False,
         ),
         # Test case for healthy resource - agent should return direct answer WITHOUT calling search_kyma_doc.
@@ -652,7 +575,6 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             None,
             "The Function 'func1' is running correctly. Its state is Ready and the deployment is ready.",  # expected_result
-            None,
             False,
         ),
         # Test case for a broad cluster-wide query from a clean start (no prior tool calls).
@@ -685,7 +607,93 @@ def assert_tool_call(response: AIMessage, expected_tool: str) -> None:
             ),
             None,
             "I need more information to answer this question. Please provide more information about which specific resource or namespace you want to investigate.",
+            False,
+        ),
+        # Test case for exhausted retries - agent should give up and return a best-effort answer.
+        # - kyma_query_tool already failed 3 consecutive times.
+        # - Verifies agent stops retrying and provides a graceful fallback response.
+        (
+            "Should not retry tool calling as already failed multiple times",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                    ),
+                    HumanMessage(content="what is wrong?"),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Error : failed executing kyma_query_tool",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Error : failed executing kyma_query_tool",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                    AIMessage(
+                        content="",
+                        tool_calls=[
+                            {
+                                "id": "tool_call_id_1",
+                                "type": "tool_call",
+                                "name": "kyma_query_tool",
+                                "args": {
+                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+                                },
+                            }
+                        ],
+                    ),
+                    ToolMessage(
+                        content="Error : failed executing kyma_query_tool",
+                        name="kyma_query_tool",
+                        tool_call_id="tool_call_id_1",
+                    ),
+                ],
+                subtasks=[
+                    {
+                        "description": "what is wrong with Function 'func1'?",
+                        "task_title": "what is wrong with Function 'func1'?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="what is wrong with Function 'func1'?",
+                    task_title="what is wrong with Function 'func1'?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
             None,
+            "I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.",
             False,
         ),
     ],
@@ -699,135 +707,95 @@ async def test_invoke_chain(
     state,
     retrieval_context,
     expected_result,
-    expected_tool_call,
     should_raise,
 ):
     """
-    Tests that the _invoke_chain method of the KymaAgent returns the expected response
-    for the given user query, subtask and tool calls.
+    Tests answer quality: verifies the final response content using GEval (and optionally
+    FaithfulnessMetric). All cases in this test produce a text answer, no tool calls.
+    For tool routing tests, see test_tool_calling.
     """
-    # Given: A KymaAgent instance and test parameters
-
     if should_raise:
-        # When: the chain is invoked and an error is expected
-        # Then: the expected error should be raised
         with pytest.raises(expected_result):
-            kyma_agent._invoke_chain(state, {})
+            await kyma_agent._invoke_chain(state, {})
     else:
-        # When: the chain is invoked normally
         response = await kyma_agent._invoke_chain(state, {})
         assert isinstance(response, AIMessage)
-        # Then: verify routing (str) or response quality (None).
-        if isinstance(expected_tool_call, str):
-            assert_tool_call(response, expected_tool_call)
-        else:
-            llm_test_case = LLMTestCase(
-                input=state.my_task.description,
-                actual_output=response.content,
-                expected_output=expected_result if expected_result else None,
-                retrieval_context=([retrieval_context] if retrieval_context else []),
-            )
-            metrics = [correctness_metric]
-            if retrieval_context:
-                metrics.append(faithfulness_metric)
-            assert_test(llm_test_case, metrics)
+        llm_test_case = LLMTestCase(
+            input=state.my_task.description,
+            actual_output=response.content,
+            expected_output=expected_result if expected_result else None,
+            retrieval_context=([retrieval_context] if retrieval_context else []),
+        )
+        metrics = [correctness_metric]
+        if retrieval_context:
+            metrics.append(faithfulness_metric)
+        assert_test(llm_test_case, metrics)
 
 
 @pytest.mark.parametrize(
-    "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
+    "test_case,state,expected_tool",
     [
-        # Test case for kyma tool when already failed multiple times
-        # and should give proper response to user,
+        # Test case for initial APIRule query (Flow 2: api_version present → kyma_query_tool directly).
         (
-            "Should not retry tool calling as already failed multiple  times",
+            "Should return kyma_query_tool call for first query with full resource context",
             KymaAgentState(
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+                        content="{'resource_kind': 'APIRule', 'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_name': 'restapi', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
+                    HumanMessage(content="What is wrong with the APIRule?"),
                 ],
                 subtasks=[
                     {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "description": "What is wrong with the APIRule?",
+                        "task_title": "What is wrong with the APIRule?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                    description="What is wrong with the APIRule?",
+                    task_title="What is wrong with the APIRule?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            """I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.
-
-<SOME TROUBLESHOOTING TIPS HERE>""",  # expected_result
-            None,  # expected_tool_call
-            False,  # should_raise
+            ),
+            "kyma_query_tool",
         ),
-        # Test case for kyma tool when only first tool call failed and should retry tool calling.
+        # Test case for APIRule query with missing api_version (Flow 1: no version → discover first).
         (
-            "Should retry tool calling after first tool call failed",
+            "Should return fetch_kyma_resource_version call when api_version is missing",
+            KymaAgentState(
+                agent_messages=[],
+                messages=[
+                    SystemMessage(
+                        content="{'resource_kind': 'APIRule', 'resource_name': 'restapi', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                    ),
+                    HumanMessage(content="What is wrong with the APIRule?"),
+                ],
+                subtasks=[
+                    {
+                        "description": "What is wrong with the APIRule?",
+                        "task_title": "What is wrong with the APIRule?",
+                        "assigned_to": "KymaAgent",
+                    }
+                ],
+                my_task=SubTask(
+                    description="What is wrong with the APIRule?",
+                    task_title="What is wrong with the APIRule?",
+                    assigned_to="KymaAgent",
+                ),
+                k8s_client=Mock(spec_set=IK8sClient),  # noqa
+                is_last_step=False,
+                remaining_steps=AGENT_STEPS_NUMBER,
+            ),
+            "fetch_kyma_resource_version",
+        ),
+        # Test case for kyma tool when only first tool call failed (Flow 3: error → recover via fetch version).
+        (
+            "Should return fetch_kyma_resource_version call to recover after first tool call failed",
             KymaAgentState(
                 agent_messages=[],
                 messages=[
@@ -856,24 +824,21 @@ async def test_invoke_chain(
                 ],
                 subtasks=[
                     {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                        "description": "what is wrong with Function 'func1'?",
+                        "task_title": "what is wrong with Function 'func1'?",
                         "assigned_to": "KymaAgent",
                     }
                 ],
                 my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+                    description="what is wrong with Function 'func1'?",
+                    task_title="what is wrong with Function 'func1'?",
                     assigned_to="KymaAgent",
                 ),
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            "",  # expected_result
-            "fetch_kyma_resource_version",  # expected_tool_call
-            False,  # should_raise
+            ),
+            "fetch_kyma_resource_version",
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
@@ -906,11 +871,8 @@ async def test_invoke_chain(
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            "",  # expected_result
-            "search_kyma_doc",  # expected_tool_call
-            False,  # should_raise
+            ),
+            "search_kyma_doc",
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
@@ -937,11 +899,8 @@ async def test_invoke_chain(
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            "",  # expected_result
-            "search_kyma_doc",  # expected_tool_call
-            False,  # should_raise
+            ),
+            "search_kyma_doc",
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
@@ -968,52 +927,23 @@ async def test_invoke_chain(
                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            "",  # expected_result
-            "search_kyma_doc",  # expected_tool_call
-            False,  # should_raise
+            ),
+            "search_kyma_doc",
         ),
     ],
 )
 @pytest.mark.asyncio
 async def test_tool_calling(
     kyma_agent,
-    correctness_metric,
-    faithfulness_metric,
     test_case,
     state,
-    retrieval_context,
-    expected_result,
-    expected_tool_call,
-    should_raise,
+    expected_tool,
 ):
     """
-    Tests that the _invoke_chain method of the KymaAgent returns the expected response
-    for the given user query, subtask and tool calls.
+    Tests tool routing: verifies the agent selects the correct next tool.
+    All cases use assert_tool_call, no GEval.
+    For answer quality tests, see test_invoke_chain.
     """
-    # Given: A KymaAgent instance and test parameters
-
-    if should_raise:
-        # When: the chain is invoked and an error is expected
-        # Then: the expected error should be raised
-        with pytest.raises(expected_result):
-            await kyma_agent._invoke_chain(state, {})
-    else:
-        # When: the chain is invoked normally
-        response = await kyma_agent._invoke_chain(state, {})
-        assert isinstance(response, AIMessage)
-        # Then: verify routing (str) or response quality (None).
-        if isinstance(expected_tool_call, str):
-            assert_tool_call(response, expected_tool_call)
-        else:
-            llm_test_case = LLMTestCase(
-                input=state.my_task.description,
-                actual_output=response.content,
-                expected_output=expected_result if expected_result else None,
-                retrieval_context=([retrieval_context] if retrieval_context else []),
-            )
-            metrics = [correctness_metric]
-            if retrieval_context:
-                metrics.append(faithfulness_metric)
-            assert_test(llm_test_case, metrics)
+    response = await kyma_agent._invoke_chain(state, {})
+    assert isinstance(response, AIMessage)
+    assert_tool_call(response, expected_tool)
