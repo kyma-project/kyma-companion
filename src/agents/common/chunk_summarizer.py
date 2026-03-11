@@ -138,7 +138,7 @@ class ToolResponseSummarizer:
         # Join all chunk summaries
         combined_summaries = "\n\n".join(item.content for item in chunk_summary)
 
-        if len(chunk_summary) == 1:
+        if len(chunk_summary) <= 1:
             return combined_summaries
 
         merge_chain = self._create_merge_chain(user_query)

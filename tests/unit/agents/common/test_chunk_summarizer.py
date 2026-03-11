@@ -49,8 +49,8 @@ class TestToolResponseSummarizer:
                 [{"id": 1}, {"id": 2}, {"id": 3}, {"id": 4}],
                 2,
                 [
-                    Document(page_content="{'id': 1}\n\n{'id': 2}"),
-                    Document(page_content="{'id': 3}\n\n{'id': 4}"),
+                    Document(page_content='{"id":1}\n\n{"id":2}'),
+                    Document(page_content='{"id":3}\n\n{"id":4}'),
                 ],
             ),
             (
@@ -58,15 +58,15 @@ class TestToolResponseSummarizer:
                 [{"id": 1}, {"id": 2}, {"id": 3}],
                 2,
                 [
-                    Document(page_content="{'id': 1}\n\n{'id': 2}"),
-                    Document(page_content="{'id': 3}"),
+                    Document(page_content='{"id":1}\n\n{"id":2}'),
+                    Document(page_content='{"id":3}'),
                 ],
             ),
             (
                 "should handle single item list",
                 [{"id": 1}],
                 2,
-                [Document(page_content="{'id': 1}")],
+                [Document(page_content='{"id":1}')],
             ),
             (
                 "should handle empty list",
@@ -85,10 +85,6 @@ class TestToolResponseSummarizer:
         expected_chunks,
     ):
         # given
-        # Convert the list items to string representation for comparison
-        for i, item in enumerate(tool_response):
-            tool_response[i] = str(item)
-
         # when
         chunks = summarizer._create_chunks_from_list(tool_response, nums_of_chunks)
 
@@ -107,15 +103,19 @@ class TestToolResponseSummarizer:
         nums_of_chunks = 2
 
         mock_chain = AsyncMock()
+        mock_merge_chain = AsyncMock()
         summarizer._create_chain = Mock(return_value=mock_chain)
+        summarizer._create_merge_chain = Mock(return_value=mock_merge_chain)
 
         # Mock response objects with content attribute
         mock_response1 = Mock()
         mock_response1.content = "Summary 1"
         mock_response2 = Mock()
         mock_response2.content = "Summary 2"
+        mock_response_merged = Mock()
+        mock_response_merged.content = "Merged Summary"
 
-        mock_ainvoke_chain.side_effect = [mock_response1, mock_response2]
+        mock_ainvoke_chain.side_effect = [mock_response1, mock_response2, mock_response_merged]
 
         summarizer._create_chunks_from_list = Mock(
             return_value=[
@@ -128,7 +128,8 @@ class TestToolResponseSummarizer:
 
         summarizer._create_chunks_from_list.assert_called_once_with(tool_response, nums_of_chunks)
 
-        assert mock_ainvoke_chain.call_count == nums_of_chunks
+        # 2 chunk summarization calls + 1 merge call
+        assert mock_ainvoke_chain.call_count == nums_of_chunks + 1
 
         # Check first ainvoke_chain call
         mock_ainvoke_chain.assert_any_call(
@@ -144,7 +145,14 @@ class TestToolResponseSummarizer:
             config=config,
         )
 
-        assert result == "Summary 1\n\nSummary 2"
+        # Check merge call
+        mock_ainvoke_chain.assert_any_call(
+            mock_merge_chain,
+            {"chunk_summaries": "Summary 1\n\nSummary 2"},
+            config=config,
+        )
+
+        assert result == "Merged Summary"
 
     @pytest.mark.asyncio
     async def test_summarize_tool_response_with_empty_chunks(self, summarizer):
