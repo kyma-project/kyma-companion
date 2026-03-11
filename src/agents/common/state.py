@@ -101,11 +101,11 @@ class GatekeeperResponse(BaseModel):
             - "Kyma": User query related to kyma related user intent.
             - "Kubernetes": User query related to kubernetes.
             - "Programming": User query related to Programming but NOT specific to Kyma or Kubernetes.
-            - "About You": User query about you and your capabilities and expertise.
+            - "About You": User query about your knowledge, capabilities, expertise, and limitations. Does NOT include personal preference questions(e.g., favorite color, feelings, personal opinions).
             - "Greeting": greeting user intent, e.g "Hello", "Hi", "How are you?", "Hey", "Good morning",
                           "Good afternoon", "Good evening", "Howdy", "Hey there", "Greetings",
                           or any simple social pleasantries without technical content
-            - "Irrelevant": ALL other user queries including general knowledge, geography, history, science, etc.
+            - "Irrelevant": ALL other user queries including general knowledge, geography, history, science, personal preference questions(e.g., favorite color, feelings, personal opinions), etc.
             """,
         ),
     ]

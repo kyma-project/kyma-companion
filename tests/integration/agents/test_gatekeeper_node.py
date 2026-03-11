@@ -253,11 +253,7 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'default'}"),
                 HumanMessage(content="What's your favorite color?"),
             ],
-            """I don't have personal preferences or favorites, but I'm here to help you with any Kyma or Kubernetes questions you might have!
-            
-            OR
-            
-            This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.""",
+            "This question appears to be outside my domain of expertise. If you have any technical or Kyma related questions, I'd be happy to help.",
             False,
         ),
         (
