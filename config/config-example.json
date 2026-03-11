@@ -37,12 +37,14 @@
     {
       "name": "gpt-5",
       "deployment_id": "<VALUE>",
-      "temperature": 0
+      "temperature": 0,
+      "reasoning_effort": "low"
     },
     {
       "name": "gpt-5-mini",
       "deployment_id": "<VALUE>",
-      "temperature": 0
+      "temperature": 0,
+      "reasoning_effort": "low"
     },
     {
       "name": "text-embedding-3-large",

@@ -14,13 +14,19 @@ class OpenAIModel:
 
     def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
         self._name = config.name
+        llm_kwargs = {
+            "proxy_model_name": config.name,
+            "deployment_id": config.deployment_id,
+            "proxy_client": proxy_client,
+            "temperature": config.temperature,
+            "request_timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS,
+            "timeout": settings.LLM_REQUEST_TIMEOUT_SECONDS,
+        }
+        if config.reasoning_effort:
+            llm_kwargs["reasoning_effort"] = config.reasoning_effort
+
         self._llm = ChatOpenAI(
-            proxy_model_name=config.name,
-            deployment_id=config.deployment_id,
-            proxy_client=proxy_client,
-            temperature=config.temperature,
-            request_timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
-            timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
+            **llm_kwargs,
         )
 
     def invoke(self, content: str):  # noqa
