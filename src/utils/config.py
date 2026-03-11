@@ -15,6 +15,8 @@ class ModelConfig(BaseModel):
     name: str
     deployment_id: str
     temperature: float = 0.0
+    # Optional per-model latency/quality trade-off knob supported by OpenAI models.
+    reasoning_effort: str | None = None
 
 
 class DataSanitizationConfig(BaseModel):

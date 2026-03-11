@@ -102,7 +102,7 @@ or
    Now past your `host` into this manifest and apply the APIRule to your cluster.
 
    ```yaml
-   apiVersion: gateway.kyma-project.io/v1beta1
+   apiVersion: gateway.kyma-project.io/v2
    kind: APIRule
    metadata:
      labels:
@@ -111,19 +111,19 @@ or
      namespace: langfuse
    spec:
      gateway: kyma-system/kyma-gateway
-     host: langfuse.<YOUR HOST>
+     hosts:
+     - langfuse.<YOUR HOST>
      rules:
-     - accessStrategies:
-       - handler: no_auth
+     - noAuth: true
        methods:
        - GET
        - POST
        - PUT
        - OPTIONS
        path: /.*
-     service:
-       name: langfuse-web
-       port: 3000
+       service:
+         name: langfuse-web
+         port: 3000
    ```
 
 3. Open the web interface:

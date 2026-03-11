@@ -32,7 +32,7 @@ async def kyma_query_tool(
     Use this to get information about Kyma-specific resources like Function, APIRule, etc.
     Example URIs:
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
-    - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
+    - /apis/gateway.kyma-project.io/v2/namespaces/default/apirules"""
     try:
         return await k8s_client.execute_get_api_request(uri)
     except K8sClientError as e:

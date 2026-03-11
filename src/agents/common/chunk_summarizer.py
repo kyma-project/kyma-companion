@@ -1,3 +1,4 @@
+import json
 from math import ceil
 from typing import Any, Protocol
 
@@ -6,7 +7,10 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 
-from agents.common.prompts import CHUNK_SUMMARIZER_PROMPT
+from agents.common.prompts import (
+    CHUNK_SUMMARIZER_MERGE_PROMPT,
+    CHUNK_SUMMARIZER_PROMPT,
+)
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
@@ -35,6 +39,17 @@ class ToolResponseSummarizer:
     def __init__(self, model: IModel | Embeddings):
         self.model = model
 
+    @classmethod
+    def _format_tool_item(
+        cls,
+        item: Any,
+    ) -> str:
+        """Format one tool item into compact JSON for more stable LLM parsing."""
+        try:
+            return json.dumps(item, ensure_ascii=False, separators=(",", ":"), default=str)
+        except (TypeError, ValueError):
+            return str(item)
+
     def _create_chain(self, user_query: str) -> Any:
         """Summarize a single chunk with the query-focused prompt."""
         agent_prompt = PromptTemplate(
@@ -45,7 +60,21 @@ class ToolResponseSummarizer:
 
         return agent_prompt | self.model.llm
 
-    def _create_chunks_from_list(self, tool_response: list[Any], nums_of_chunks: int) -> list[Document]:
+    def _create_merge_chain(self, user_query: str) -> Any:
+        """Merge summaries from chunks into one coherent final response."""
+        merge_prompt = PromptTemplate(
+            template=CHUNK_SUMMARIZER_MERGE_PROMPT,
+            input_variables=["chunk_summaries"],
+            partial_variables={"query": user_query},
+        )
+
+        return merge_prompt | self.model.llm
+
+    def _create_chunks_from_list(
+        self,
+        tool_response: list[Any],
+        nums_of_chunks: int,
+    ) -> list[Document]:
         """Split a list of K8s items into a specific number of Document chunks"""
 
         chunk_size = ceil(len(tool_response) / nums_of_chunks)
@@ -54,7 +83,7 @@ class ToolResponseSummarizer:
         if tool_response:
             for i in range(0, len(tool_response), chunk_size):
                 chunk_items = tool_response[i : i + chunk_size]
-                text = "\n\n".join([str(item) for item in chunk_items])
+                text = "\n\n".join(self._format_tool_item(item) for item in chunk_items)
                 chunks.append(Document(page_content=text))
 
         return chunks
@@ -107,6 +136,18 @@ class ToolResponseSummarizer:
             chunk_summary.append(response)
 
         # Join all chunk summaries
-        final_summary = "\n\n".join([item.content for item in chunk_summary])
+        combined_summaries = "\n\n".join(item.content for item in chunk_summary)
 
-        return final_summary
+        if len(chunk_summary) <= 1:
+            return combined_summaries
+
+        merge_chain = self._create_merge_chain(user_query)
+        merged_response = await ainvoke_chain(
+            merge_chain,
+            {
+                "chunk_summaries": combined_summaries,
+            },
+            config=config,
+        )
+
+        return str(merged_response.content)

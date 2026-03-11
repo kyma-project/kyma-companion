@@ -1,4 +1,3 @@
-from enum import StrEnum
 from functools import lru_cache
 from typing import Protocol, cast, runtime_checkable
 
@@ -27,16 +26,6 @@ class EmbeddingModelPrefix:
 
     OPENAI = "text-embedding"
     GECKO = "textembedding-gecko"
-
-
-class ModelType(StrEnum):
-    """Enum for LLM model names."""
-
-    GPT41 = "gpt-4.1"
-    GPT41_MINI = "gpt-4.1-mini"
-    GPT5 = "gpt-5"
-    GPT5_MINI = "gpt-5-mini"
-    TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
 @runtime_checkable

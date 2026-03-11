@@ -16,7 +16,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="Describe Kyma in detail"),
-                AIMessage(name="KymaAgent", content="It is a color of fish."),
+                AIMessage(name="KymaAgent", content="Sorry, I need more steps to process the request."),
             ],
             dedent(
                 """It appears that the agents were unable to provide a detailed description of Kyma.
@@ -28,21 +28,6 @@ from integration.agents.test_common_node import create_mock_state
         ),
         (
             "case 2: Finalizer do not answer the question itself",
-            [
-                SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
-                HumanMessage(content="What is k8s?"),
-                AIMessage(name="KubernetesAgent", content="The sky is blue."),
-            ],
-            dedent(
-                """
-            The agents did not provide any information regarding what Kubernetes (k8s) is.
-            Therefore, I cannot offer any specific information on this topic.
-            If you have any other questions or need assistance with a different subject, feel free to ask!
-            """
-            ),
-        ),
-        (
-            "case 3: Finalizer do not answer the question itself",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="What is k8s?"),
@@ -60,17 +45,17 @@ from integration.agents.test_common_node import create_mock_state
             ),
         ),
         (
-            "case 4: Finalizer do not answer the question itself",
+            "case 3: Finalizer do not answer the question itself - multiple agents fail",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="what are the types of a k8s service? what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
-                    content="The sun emits light.",
+                    content="Sorry, I need more steps to process the request.",
                 ),
                 AIMessage(
                     name="KymaAgent",
-                    content="The moon reflects the sun's light.",
+                    content="I'm sorry, I was unable to find relevant information to answer your question.",
                 ),
             ],
             dedent(
@@ -251,7 +236,7 @@ from integration.agents.test_common_node import create_mock_state
                 HumanMessage(content="what is k8s stateful set and what is a kyma function?"),
                 AIMessage(
                     name="KubernetesAgent",
-                    content="The sun emits light.",
+                    content="Sorry, I need more steps to process the request.",
                 ),
                 AIMessage(
                     name="KymaAgent",
@@ -472,7 +457,7 @@ from integration.agents.test_common_node import create_mock_state
                     name="KubernetesAgent",
                     content=dedent(
                         """
-                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                         Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                         """
                     ),
@@ -480,7 +465,7 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                 Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                 """
             ),

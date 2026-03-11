@@ -11,6 +11,7 @@ from integration.rag.datasets.istio import cases as istio_cases
 from integration.rag.datasets.serverless import cases as serverless_cases
 from integration.rag.datasets.telemetry import cases as telemetry_cases
 from rag.system import Query, RAGSystem
+from utils.settings import RAG_DEFAULT_TOP_K
 
 
 @pytest.fixture
@@ -70,7 +71,7 @@ async def test_rag_system(
     evaluation_metrics,
 ):
     query = Query(text=user_query)
-    retrieved_docs = await rag_system.aretrieve(query, 10)
+    retrieved_docs = await rag_system.aretrieve(query, RAG_DEFAULT_TOP_K)
     assert len(retrieved_docs) > 0, "No documents retrieved"
 
     # convert the retrieved documents to array of strings

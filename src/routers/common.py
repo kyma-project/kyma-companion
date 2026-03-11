@@ -15,6 +15,7 @@ from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import RAG_DEFAULT_TOP_K
 
 logger = get_logger(__name__)
 
@@ -161,7 +162,7 @@ class KymaQueryRequest(BaseModel):
         description="Kubernetes API URI path for Kyma resources",
         examples=[
             "/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions",
-            "/apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules",
+            "/apis/gateway.kyma-project.io/v2/namespaces/default/apirules",
             "/apis/eventing.kyma-project.io/v1alpha2/namespaces/default/subscriptions",
         ],
     )
@@ -209,7 +210,7 @@ class SearchKymaDocRequest(BaseModel):
         ],
     )
     top_k: int = Field(
-        default=5,
+        default=RAG_DEFAULT_TOP_K,
         description="Number of top documents to return",
         ge=1,
         le=50,

@@ -77,10 +77,9 @@ HOST = config("HOST", default="0.0.0.0")
 PORT = config("PORT", default=8000, cast=int)
 
 # Initialization of the main chat LLM models and main embedding model.
-MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
-MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
+MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-5")
+MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-5-mini")
 MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
-MAIN_MODEL_NANO_NAME = config("MAIN_MODEL_NANO_NAME", default="gpt-4.1-nano")
 LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
 GRAPH_STEP_TIMEOUT_SECONDS = config("GRAPH_STEP_TIMEOUT_SECONDS", default=180, cast=int)
 
@@ -110,6 +109,9 @@ MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
+RAG_DEFAULT_TOP_K = config("RAG_DEFAULT_TOP_K", default=5, cast=int)
+RAG_CANDIDATE_TOP_K_MULTIPLIER = config("RAG_CANDIDATE_TOP_K_MULTIPLIER", default=4, cast=int)
+RAG_CANDIDATE_TOP_K_MIN = config("RAG_CANDIDATE_TOP_K_MIN", default=10, cast=int)
 
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)

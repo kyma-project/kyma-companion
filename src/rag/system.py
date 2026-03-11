@@ -15,6 +15,9 @@ from utils.settings import (
     DOCS_TABLE_NAME,
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
+    RAG_CANDIDATE_TOP_K_MIN,
+    RAG_CANDIDATE_TOP_K_MULTIPLIER,
+    RAG_DEFAULT_TOP_K,
 )
 
 logger = get_logger(__name__)
@@ -29,7 +32,7 @@ class Query(BaseModel):
 class IRAGSystem(Protocol):
     """A protocol for a RAG system."""
 
-    async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+    async def aretrieve(self, query: Query, top_k: int = RAG_DEFAULT_TOP_K) -> list[Document]:
         """Retrieve documents for a given query."""
         ...
 
@@ -53,7 +56,7 @@ class RAGSystem:
         logger.info("RAG system initialized.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
 
-    async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
+    async def aretrieve(self, query: Query, top_k: int = RAG_DEFAULT_TOP_K) -> list[Document]:
         """Retrieve documents for a given query."""
         logger.info(f"Retrieving documents for query: {query.text}")
 
@@ -71,7 +74,7 @@ class RAGSystem:
             all_queries.append(q)
 
         # retrieve a larger candidate set per query for reranking
-        candidate_k = max(top_k * 4, 10)
+        candidate_k = max(top_k * RAG_CANDIDATE_TOP_K_MULTIPLIER, RAG_CANDIDATE_TOP_K_MIN)
 
         # retrieve documents for all queries concurrently
         all_docs = await asyncio.gather(

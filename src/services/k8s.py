@@ -473,8 +473,22 @@ class K8sClient:
             if not api_resources:
                 raise ValueError(f"Resource kind '{kind}' not found")
 
-            # Get the first match (most accurate)
-            resource = api_resources[0]
+            # Exclude subresources (e.g. "apirules/status") which contain "/" in their name.
+            main_resources = [r for r in api_resources if "/" not in getattr(r, "name", "")]
+            candidates = main_resources if main_resources else api_resources
+
+            # When multiple API versions exist for the same kind (e.g. gateway.kyma-project.io
+            # registers v2, v1beta1, and v2alpha1 for APIRule), prefer stable > beta > alpha
+            # to avoid returning a deprecated or pre-release version.
+            def _stability(r: Any) -> int:
+                gv = str(getattr(r, "group_version", "")).lower()
+                if "alpha" in gv:
+                    return 0
+                if "beta" in gv:
+                    return 1
+                return 2
+
+            resource = max(candidates, key=_stability)
 
             # Return the API version
             return str(resource.group_version)

@@ -467,13 +467,13 @@ cases = [
         ),
     },
     {
-        "input": "Why does a serverless function pod have many restarts?",
+        "input": "Why does the Serverless Function Controller periodically restart?",
         "answer_relevancy_threshold": 0.7,
         "expected_output": dedent(
             """
-            If your serverless function pod has lots of restarts, it might be due to the Function Controller crashing and restarting. This can happen when you have many Git-sourced Functions deployed together that reference large repositories. The periodic polling for changes in these repositories can cause high demand on CPU and I/O resources, leading to the Function Controller crashing.
+            The Function Controller periodically restarts because it polls for changes in referenced Git repositories every 10 minutes. If you have many Git-sourced Functions deployed at approximately the same time, their Git sources are checked out in a synchronized pulse. If these Functions reference large repositories (multi-repositories), there will be rhythmical, high demand on CPU and I/O resources every 10 minutes. This may cause the Function Controller to crash and restart.
 
-            To avoid this, try to use small, dedicated repositories for your Git Functions. This will reduce the resource usage and improve the stability of the Function Controller.
+            To avoid this, use small, dedicated Function repositories instead of large or multi-repositories. This reduces the CPU and I/O resource usage and improves the stability of the Function Controller.
             """
         ),
     },

@@ -83,6 +83,7 @@
       "docs/user/custom-resources/apigateway/*",
       "docs/user/custom-resources/apirule/04-10-apirule-custom-resource.md",
       "docs/user/custom-resources/apirule/04-15-api-rule-access-strategies.md",
+      "docs/user/custom-resources/apirule/04-20-significance-of-rule-path-and-method-order.md",
       "docs/user/custom-resources/apirule/04-70-changes-in-apirule-v2.md",
       "docs/user/custom-resources/ratelimit/*",
       "docs/user/troubleshooting-guides/*",
@@ -93,7 +94,9 @@
       "docs/user/apirule-migration/01-81-retrieve-v1beta1-spec.md",
       "docs/user/apirule-migration/01-82-migrate-allow-noop-no_auth-v1beta1-to-v2.md",
       "docs/user/apirule-migration/01-83-migrate-jwt-v1beta1-to-v2.md",
-      "docs/user/apirule-migration/01-84-migrate-oauth2-v1beta1-to-v2.md"
+      "docs/user/apirule-migration/01-84-migrate-oauth2-v1beta1-to-v2.md",
+      "docs/user/apirule-migration/01-85-apirule-migration-faq.md",
+      "docs/user/apirule-migration/01-90-migrate-multiple-apirules-targeting-same-workload.md"
     ]
   },
   {

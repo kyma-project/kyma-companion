@@ -23,7 +23,7 @@ class TestQueryEndpoint:
                 HTTPStatus.OK,
             ),
             (
-                "/apis/gateway.kyma-project.io/v1beta1/apirules",
+                "/apis/gateway.kyma-project.io/v2/apirules",
                 HTTPStatus.OK,
             ),
             (
