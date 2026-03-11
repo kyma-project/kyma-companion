@@ -232,13 +232,15 @@ class K8sClient:
     """Client to interact with the Kubernetes API."""
 
     # HTTP status codes that indicate transient failures worth retrying
-    RETRYABLE_HTTP_STATUS_CODES = frozenset({
-        HTTPStatus.TOO_MANY_REQUESTS,  # 429 - Rate limiting
-        HTTPStatus.INTERNAL_SERVER_ERROR,  # 500
-        HTTPStatus.BAD_GATEWAY,  # 502
-        HTTPStatus.SERVICE_UNAVAILABLE,  # 503
-        HTTPStatus.GATEWAY_TIMEOUT,  # 504
-    })
+    RETRYABLE_HTTP_STATUS_CODES = frozenset(
+        {
+            HTTPStatus.TOO_MANY_REQUESTS,  # 429 - Rate limiting
+            HTTPStatus.INTERNAL_SERVER_ERROR,  # 500
+            HTTPStatus.BAD_GATEWAY,  # 502
+            HTTPStatus.SERVICE_UNAVAILABLE,  # 503
+            HTTPStatus.GATEWAY_TIMEOUT,  # 504
+        }
+    )
 
     k8s_auth_headers: K8sAuthHeaders
     ca_temp_filename: str = ""
@@ -441,8 +443,7 @@ class K8sClient:
     ) -> dict:
         """Get a specific resource by name in a namespace."""
         resource = (
-            self.dynamic_client.resources
-            .get(api_version=api_version, kind=kind)
+            self.dynamic_client.resources.get(api_version=api_version, kind=kind)
             .get(name=name, namespace=namespace)
             .to_dict()
         )
