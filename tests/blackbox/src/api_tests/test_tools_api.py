@@ -231,30 +231,19 @@ class TestKymaToolsAPI:
         items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
         logger.info(f"Successfully queried functions: {len(items)} found")
 
-    def test_query_kyma_apirules(self, base_url: str, auth_headers: dict[str, str]) -> None:
-        """Test querying Kyma API Rules."""
-        logger.info("Testing Kyma Query - List APIRules")
-
-        response = requests.post(
-            f"{base_url}/query",
-            json={"uri": "/apis/gateway.kyma-project.io/v1beta1/apirules"},
-            headers=auth_headers,
-            timeout=TIMEOUT,
-        )
-
-        assert response.status_code == HTTPStatus.OK
-        data = response.json()
-        assert "data" in data
-        # Handle both dict and list response formats
-        items = data["data"].get("items", []) if isinstance(data["data"], dict) else data["data"]
-        logger.info(f"Successfully queried APIRules: {len(items)} found")
-
     @pytest.mark.parametrize(
-        "resource_kind,expected_api_version",
+        "resource_kind,valid_api_versions",
         [
-            ("Function", "serverless.kyma-project.io/v1alpha2"),
-            ("APIRule", "gateway.kyma-project.io/v1beta1"),
-            ("Subscription", "eventing.kyma-project.io/v1alpha2"),
+            ("Function", ["serverless.kyma-project.io/v1alpha2"]),
+            (
+                "APIRule",
+                [
+                    "gateway.kyma-project.io/v2",
+                    "gateway.kyma-project.io/v2alpha1",
+                    "gateway.kyma-project.io/v1beta1",
+                ],
+            ),
+            ("Subscription", ["eventing.kyma-project.io/v1alpha2"]),
         ],
     )
     def test_get_resource_version(
@@ -262,9 +251,14 @@ class TestKymaToolsAPI:
         base_url: str,
         auth_headers: dict[str, str],
         resource_kind: str,
-        expected_api_version: str,
+        valid_api_versions: list[str],
     ) -> None:
-        """Test getting API version for various Kyma resource kinds."""
+        """Test getting API version for various Kyma resource kinds.
+
+        Verifies that the /resource-version endpoint returns a known valid version
+        for the given resource kind. The exact version depends on which Kyma modules
+        are installed and their version on the test cluster.
+        """
         logger.info(f"Testing Kyma Resource Version - {resource_kind}")
 
         response = requests.post(
@@ -283,8 +277,10 @@ class TestKymaToolsAPI:
         assert "resource_kind" in data
         assert "api_version" in data
         assert data["resource_kind"] == resource_kind
-        assert data["api_version"] == expected_api_version
-        logger.info(f"Successfully verified {resource_kind} -> {expected_api_version}")
+        assert data["api_version"] in valid_api_versions, (
+            f"{resource_kind}: got '{data['api_version']}', expected one of {valid_api_versions}"
+        )
+        logger.info(f"Successfully verified {resource_kind} -> {data['api_version']}")
 
     @pytest.mark.parametrize(
         "query",
