@@ -276,20 +276,21 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
         NamespaceScopedTestCase(
             name="Should handle wrong Subscription API version and correct it",
             state=create_basic_state(
-                task_description="is there any issue?",
+                task_description="is there any issue with my Subscription sub1?",
                 messages=[
                     SystemMessage(
                         content="{'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
                         "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', "
                         "'resource_name': 'sub1', 'resource_scope': 'namespaced'}"
                     ),
-                    HumanMessage(content="is there any issue?"),
+                    HumanMessage(content="is there any issue with my Subscription sub1?"),
                 ],
                 k8s_client=k8s_client,
             ),
-            must_call_tools=[TOOL_KYMA_QUERY],
+            # Recovery flow: kyma_query_tool (wrong v1beta1 → 404) → fetch_kyma_resource_version → kyma_query_tool (v1alpha2)
+            must_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_KYMA_VERSION],
             must_contain_in_messages=["v1alpha2"],  # Must eventually use correct version
-            max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
+            max_tool_call_count={TOOL_FETCH_KYMA_VERSION: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
         NamespaceScopedTestCase(
             name="Should handle correct Function API version without fetching version",
