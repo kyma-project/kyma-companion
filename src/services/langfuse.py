@@ -3,7 +3,6 @@
 import copy
 from typing import Any
 
-import scrubadub
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, ToolMessage
 from langfuse import Langfuse
@@ -14,6 +13,7 @@ from agents.kyma.tools.query import fetch_kyma_resource_version
 from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
+from utils.pii_detector import PIIDetector, PIIService
 from utils.settings import (
     LANGFUSE_ENABLED,
     LANGFUSE_HOST,
@@ -47,14 +47,17 @@ def get_langfuse_metadata(user_id: str, session_id: str, tags: list[str]) -> dic
 
 
 class LangfuseService(metaclass=SingletonMeta):
-    """Service for Langfuse tracing integration with LangGraph."""
+    """Service for Langfuse tracing integration with LangGraph.
 
-    def __init__(self):
+    Args:
+        pii_service: PII detection service. Defaults to PIIDetector singleton.
+    """
+
+    def __init__(self, pii_service: PIIService | None = None):
         """Initialize the Langfuse service."""
         self.enabled = string_to_bool(str(LANGFUSE_ENABLED.lower()))
         self.masking_mode = LANGFUSE_MASKING_MODE
-        self.data_scrubber = scrubadub.Scrubber()
-        self.data_scrubber.remove_detector(scrubadub.detectors.UrlDetector)
+        self.pii_detector = pii_service or PIIDetector()
         self.allowed_tools = [SEARCH_KYMA_DOC_TOOL_NAME, fetch_kyma_resource_version.name]
 
         if self.enabled:
@@ -132,7 +135,7 @@ class LangfuseService(metaclass=SingletonMeta):
         if isinstance(data, GraphInput):
             output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
             if output:
-                return self.data_scrubber.clean(output)
+                return self.pii_detector.clean(output)
 
         return REDACTED
 
@@ -150,10 +153,10 @@ class LangfuseService(metaclass=SingletonMeta):
             # If data is a GraphInput, sanitize the messages in reverse order for better readability.
             if isinstance(data, GraphInput):
                 output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-                return self.data_scrubber.clean(output if output else REDACTED)
+                return self.pii_detector.clean(output if output else REDACTED)
             # If data is a string, sanitize it directly.
             elif isinstance(data, str):
-                return self.data_scrubber.clean(copy.copy(data))
+                return self.pii_detector.clean(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
                 data = copy.deepcopy(data)
                 data.content = REDACTED
@@ -165,7 +168,7 @@ class LangfuseService(metaclass=SingletonMeta):
             elif isinstance(data, dict) and "content" in data and "role" in data:
                 # If data is a dictionary with role and content, sanitize the content.
                 data = copy.deepcopy(data)
-                data["content"] = self.data_scrubber.clean(data["content"]) if data["role"] != "tool" else REDACTED
+                data["content"] = self.pii_detector.clean(data["content"]) if data["role"] != "tool" else REDACTED
                 return data
             elif isinstance(data, dict):
                 result = {}
@@ -195,5 +198,5 @@ class LangfuseService(metaclass=SingletonMeta):
         Helper function to clean the content of a message.
         """
         if isinstance(content, str):
-            return self.data_scrubber.clean(content)
+            return self.pii_detector.clean(content)
         return f"Error while masking message content: content (type: {type(content)}) is not a string."
