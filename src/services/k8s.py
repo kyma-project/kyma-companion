@@ -479,7 +479,7 @@ class K8sClient:
             # When multiple API versions exist for the same kind (e.g. gateway.kyma-project.io
             # registers v2, v1beta1, and v2alpha1 for APIRule), prefer stable > beta > alpha
             # to avoid returning a deprecated or pre-release version.
-            def _stability(r) -> int:
+            def _stability(r: Any) -> int:
                 gv = str(getattr(r, "group_version", "")).lower()
                 if "alpha" in gv:
                     return 0
