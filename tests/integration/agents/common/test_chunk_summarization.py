@@ -142,8 +142,8 @@ providing HTTP (port 80) and HTTPS (port 443) access to the cluster.""",
         user_query="What ports are exposed by the deployment?",
         nums_of_chunks=2,
         expected_summary="""
-        cert-manager controller exposes port 9402 (http-metrics) with TCP protocol.
-        It has Prometheus annotations configured: prometheus.io/scrape=true, prometheus.io/port=9402, prometheus.io/path=/metrics.""",
+        The cert-manager deployment exposes port 9402 (http-metrics, TCP protocol)
+        with Prometheus annotations: prometheus.io/scrape=true, prometheus.io/port=9402, prometheus.io/path=/metrics.""",
     ),
 ]
 
