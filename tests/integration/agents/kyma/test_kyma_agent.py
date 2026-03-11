@@ -802,7 +802,7 @@ async def test_invoke_chain(
                     SystemMessage(
                         content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
                     ),
-                    HumanMessage(content="what is wrong?"),
+                    HumanMessage(content="what is wrong with the function?"),
                     AIMessage(
                         content="",
                         tool_calls=[
@@ -817,7 +817,7 @@ async def test_invoke_chain(
                         ],
                     ),
                     ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
+                        content="Error: 404 Not Found - no such resource type",
                         name="kyma_query_tool",
                         tool_call_id="tool_call_id_1",
                     ),

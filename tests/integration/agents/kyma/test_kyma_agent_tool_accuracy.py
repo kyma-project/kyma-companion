@@ -64,19 +64,19 @@ def kyma_agent(app_models):
 
 def create_basic_state(
     task_description: str,
-    messages: list = None,
-    k8s_client: IK8sClient = None,
+    messages: list | None = None,
+    k8s_client: IK8sClient | None = None,
 ) -> KymaAgentState:
     """Create a basic KymaAgentState with common fields."""
     return KymaAgentState(
         agent_messages=[],
-        messages=messages,
+        messages=messages or [],
         subtasks=[
-            {
-                "description": task_description,
-                "task_title": task_description,
-                "assigned_to": "KymaAgent",
-            }
+            SubTask(
+                description=task_description,
+                task_title=task_description,
+                assigned_to="KymaAgent",
+            )
         ],
         my_task=SubTask(
             description=task_description,
@@ -94,7 +94,6 @@ class KymaKnowledgeTestCase:
     name: str
     state: KymaAgentState
     expected_tool_calls: list[ToolCall] | None = None
-    alternative_tool_calls: list[list[ToolCall]] = field(default_factory=list)
     expected_response: str | None = None
     retrieval_context: str | None = None
     should_raise: bool = False
@@ -160,7 +159,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
             ),
             expected_tool_calls=[
                 ToolCall(
-                    name="search_kyma_doc",
+                    name=TOOL_SEARCH_KYMA_DOC,
                     args={"query": "what is Kyma?"},
                 ),
             ],
@@ -180,7 +179,7 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
             ),
             expected_tool_calls=[
                 ToolCall(
-                    name="search_kyma_doc",
+                    name=TOOL_SEARCH_KYMA_DOC,
                     args={"query": "how to enable a module?"},
                 ),
             ],
@@ -311,20 +310,43 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
             must_contain_in_messages=["v1alpha2"],
         ),
         NamespaceScopedTestCase(
-            name="Should handle deprecated APIRule version (v1beta1) and query with current v2",
+            name="Should query namespace APIRules using provided api_version and diagnose access strategy error",
             state=create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
                     SystemMessage(
                         content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_scope': 'namespaced'}"
+                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_scope': 'namespaced'}"
                     ),
                     HumanMessage(content="What is wrong with api rules?"),
                 ],
                 k8s_client=k8s_client,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            must_contain_in_messages=["v2"],  # v1beta1 is removed; agent must correct to v2
+            must_not_call_tools=[TOOL_FETCH_KYMA_VERSION],  # Version is valid, no need to fetch
+            must_contain_in_messages=["test-apirule-7", "no_auth"],
+            max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
+        ),
+        NamespaceScopedTestCase(
+            name="Should list namespace subscriptions without name when api_version is already known",
+            state=create_basic_state(
+                task_description="troubleshoot my subscriptions",
+                messages=[
+                    # Correct api_version + namespace present, no resource_name:
+                    # agent must NOT ask for name and must NOT call fetch_kyma_resource_version —
+                    # it should build the namespace-list URI directly and call kyma_query_tool.
+                    SystemMessage(
+                        content="{'resource_api_version': 'eventing.kyma-project.io/v1alpha2', "
+                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Subscription', "
+                        "'resource_scope': 'namespaced'}"
+                    ),
+                    HumanMessage(content="troubleshoot my subscriptions"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            must_call_tools=[TOOL_KYMA_QUERY],
+            must_not_call_tools=[TOOL_FETCH_KYMA_VERSION],
+            must_contain_in_messages=["test-function-8", "sub1"],
             max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
     ]
@@ -350,52 +372,10 @@ async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScope
 
 
 def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
-    """Fixture providing test cases for Kyma agent testing."""
+    """Fixture providing test cases for cluster-scoped Kyma agent queries."""
     return [
         KymaKnowledgeTestCase(
-            "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
-            state=create_basic_state(
-                task_description="What is wrong with api rules?",
-                messages=[
-                    SystemMessage(content="{'resource_namespace': 'test-apirule-7'}"),
-                    HumanMessage(content="What is wrong with api rules?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                ToolCall(
-                    name="fetch_kyma_resource_version",
-                    args={
-                        "resource_kind": "APIRule",
-                    },
-                ),
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
-                ),
-                ToolCall(
-                    name="search_kyma_doc",
-                    args={"query": "APIRule validation error noAuth jwt authentication combination"},
-                ),
-            ],
-            alternative_tool_calls=[
-                # Alternative: If no errors found in APIRule, agent may not search docs
-                [
-                    ToolCall(
-                        name="fetch_kyma_resource_version",
-                        args={
-                            "resource_kind": "APIRule",
-                        },
-                    ),
-                    ToolCall(
-                        name="kyma_query_tool",
-                        args={"uri": "/apis/gateway.kyma-project.io/v2/namespaces/test-apirule-7/apirules"},
-                    ),
-                ],
-            ],
-        ),
-        KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should fetch Subscription version and query all subscriptions cluster-wide",
             state=create_basic_state(
                 task_description="check all subscriptions in the cluster",
                 messages=[
@@ -409,19 +389,19 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             ),
             expected_tool_calls=[
                 ToolCall(
-                    name="fetch_kyma_resource_version",
+                    name=TOOL_FETCH_KYMA_VERSION,
                     args={
                         "resource_kind": "Subscription",
                     },
                 ),
                 ToolCall(
-                    name="kyma_query_tool",
+                    name=TOOL_KYMA_QUERY,
                     args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
                 ),
             ],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should decline cluster-wide all-resources query as too broad",
             state=create_basic_state(
                 task_description="check all resources in the cluster",
                 messages=[
@@ -436,7 +416,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             expected_tool_calls=[],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should decline vague all-Kyma-resources query as too broad",
             state=create_basic_state(
                 task_description="show me all Kyma resources",
                 messages=[
@@ -457,7 +437,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
 @pytest.mark.asyncio
 async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
     response = await call_kyma_agent(kyma_agent, test_case.state)
-    ragas_messages = convert_agent_messages_to_ragas(response["agent_messages"])
+    ragas_messages = convert_agent_messages_to_ragas(response["agent_messages"], metadata=True)
 
     if test_case.expected_tool_calls == []:
         assert len(response["agent_messages"]) == 1
@@ -468,18 +448,6 @@ async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_
             reference_tool_calls=test_case.expected_tool_calls,
         )
         score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
-
-        # If primary fails and alternatives exist, try them
-        if score <= TOOL_ACCURACY_THRESHOLD and test_case.alternative_tool_calls:
-            for alt_calls in test_case.alternative_tool_calls:
-                alt_sample = MultiTurnSample(
-                    user_input=ragas_messages,
-                    reference_tool_calls=alt_calls,
-                )
-                alt_score = await tool_accuracy_scorer.multi_turn_ascore(alt_sample)
-                if alt_score > TOOL_ACCURACY_THRESHOLD:
-                    score = alt_score
-                    break
 
         assert score > TOOL_ACCURACY_THRESHOLD, (
             f"{test_case.name}: Tool call accuracy ({score:.2f}) is below the threshold of {TOOL_ACCURACY_THRESHOLD}"
