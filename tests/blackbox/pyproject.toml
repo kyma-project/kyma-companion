@@ -17,47 +17,47 @@ authors = [
 requires-python = "==3.13.*"
 dependencies = [
   "ai-core-sdk (>=2.6.2,<3.0.0)",
-  "cryptography (>=44.0.2,<45.0.0)",
-  "fastapi[standard] (>=0.115.11,<0.116.0)",
+  "cryptography (>=46.0.5,<47.0.0)",
+  "fastapi[standard] (>=0.135.1,<0.136.0)",
   "generative-ai-hub-sdk[all] (>=4.12.4,<5.0.0)",
   "github-action-utils (>=1.1.0,<2.0.0)",
-  "hdbcli (>=2.23.27,<3.0.0)",
-  "kubernetes (>=30.0.0,<33.0.0)",
-  "langgraph[all] (>=0.4.7,<0.5.0)",
-  "prometheus-client (>=0.21.1,<0.22.0)",
-  "pyjwt (>=2.10.1,<3.0.0)",
+  "hdbcli (>=2.27.24,<3.0.0)",
+  "kubernetes (>=35.0.0,<36.0.0)",
+  "langgraph[all] (>=0.6.11,<0.7.0)",
+  "prometheus-client (>=0.24.1,<0.25.0)",
+  "pyjwt (>=2.12.0,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "redis (>=5.2.1,<6.0.0)",
-  "requests (>=2.32.3,<3.0.0)",
+  "redis (>=7.3.0,<8.0.0)",
+  "requests (>=2.32.5,<3.0.0)",
   "scrubadub (>=2.0.1,<3.0.0)",
   "tenacity (>=9.0.0,<10.0.0)",
-  "tiktoken (>=0.9.0,<0.10.0)",
-  "uvicorn (>=0.34.0,<0.35.0)"
+  "tiktoken (>=0.12.0,<0.13.0)",
+  "uvicorn (>=0.41.0,<0.42.0)"
 ]
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = { extras = ["all"], version = "^3.0.1" }
-fakeredis = "^2.27.0"
-prettytable = "^3.15.1"
-pytest = "^8.3.5"
-pytest-asyncio = "^0.25.3"
+deepeval = { extras = ["all"], version = "^3.2.9" }
+fakeredis = "^2.34.1"
+prettytable = "^3.17.0"
+pytest = "^9.0.2"
+pytest-asyncio = "^1.3.0"
 pytest-dotenv = "^0.5.2"
-pytest-mock = "^3.14.0"
+pytest-mock = "^3.15.1"
 pytest-rerunfailures = "^12.0"
 pyyaml = "^6.0.2"
-termcolor = "^2.5.0"
-types-pyyaml = "^6.0.12.20241230"
+termcolor = "^3.3.0"
+types-pyyaml = "^6.0.12.20250915"
 
 [tool.poetry.group.dev.dependencies]
-cryptography = "^44.0.2"
-ipython = "^9.0.2"
-mypy = "^1.15.0"
-poethepoet = "^0.33.0"
+cryptography = "^46.0.5"
+ipython = "^9.11.0"
+mypy = "^1.19.1"
+poethepoet = "^0.42.1"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.15.2"
-types-requests = "^2.32.0.20250306"
+ruff = "^0.15.6"
+types-requests = "^2.32.4.20260107"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
