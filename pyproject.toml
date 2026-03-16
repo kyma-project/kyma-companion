@@ -60,6 +60,7 @@ termcolor = "^3.3.0"
 types-pyyaml = "^6.0.12.20250915"
 
 [tool.poetry.group.dev.dependencies]
+fastapi = {version = ">=0.135.1,<0.136.0", extras = ["standard"]}
 ipython = "^9.11.0"
 mypy = "^1.19.1"
 poethepoet = "^0.42.1"
