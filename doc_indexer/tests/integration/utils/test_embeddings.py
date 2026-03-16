@@ -4,8 +4,6 @@ These tests make real API calls to the embedding service.
 """
 
 import math
-import os
-from pathlib import Path
 
 import pytest
 from langchain_core.embeddings import Embeddings
@@ -16,16 +14,6 @@ from utils.settings import EMBEDDING_MODEL_NAME
 # Constants for similarity thresholds
 HIGH_SIMILARITY_THRESHOLD = 0.99  # Threshold for identical/similar texts
 LOW_SIMILARITY_THRESHOLD = 0.95  # Threshold for different texts
-
-
-@pytest.fixture(scope="module")
-def require_credentials():
-    """Fail fast if the config file is not present."""
-    default_config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
-    config_path = Path(os.getenv("CONFIG_PATH", str(default_config_path)))
-
-    if not config_path.exists():
-        pytest.fail(f"Config file not found at {config_path}.")
 
 
 @pytest.fixture(scope="module")
