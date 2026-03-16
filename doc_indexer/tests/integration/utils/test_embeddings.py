@@ -5,6 +5,7 @@ These tests make real API calls to the embedding service.
 
 import math
 import os
+from pathlib import Path
 
 import pytest
 from langchain_core.embeddings import Embeddings
@@ -18,23 +19,17 @@ LOW_SIMILARITY_THRESHOLD = 0.95  # Threshold for different texts
 
 
 @pytest.fixture(scope="module")
-def skip_if_no_credentials():
-    """Verify credentials are configured.
-
-    Skips tests if config file is not found.
-    """
-    from pathlib import Path
-
+def require_credentials():
+    """Fail fast if the config file is not present."""
     default_config_path = Path(__file__).parent.parent.parent.parent.parent / "config" / "config.json"
-    config_path_str = os.getenv("CONFIG_PATH", str(default_config_path))
-    config_path = Path(config_path_str)
+    config_path = Path(os.getenv("CONFIG_PATH", str(default_config_path)))
 
     if not config_path.exists():
-        pytest.skip(f"Config file not found at {config_path}")
+        pytest.fail(f"Config file not found at {config_path}.")
 
 
 @pytest.fixture(scope="module")
-def embedding_model(skip_if_no_credentials):
+def embedding_model(require_credentials):
     """Create an embedding model for testing.
 
     Uses EMBEDDING_MODEL_NAME from settings, which reads from env var
@@ -166,7 +161,7 @@ class TestEmbeddingGeneration:
 class TestEmbeddingFactory:
     """Test the embedding factory pattern."""
 
-    def test_factory_creates_embeddings(self, skip_if_no_credentials):
+    def test_factory_creates_embeddings(self, require_credentials):
         """Test that the factory creates valid embeddings."""
         factory = create_embedding_factory(openai_embedding_creator)
         embedding_model = factory(EMBEDDING_MODEL_NAME)
@@ -178,7 +173,7 @@ class TestEmbeddingFactory:
         assert isinstance(embedding, list)
         assert len(embedding) > 0
 
-    def test_factory_with_different_models(self, skip_if_no_credentials):
+    def test_factory_with_different_models(self, require_credentials):
         """Test creating embeddings with different model names."""
         factory = create_embedding_factory(openai_embedding_creator)
         model = factory(EMBEDDING_MODEL_NAME)

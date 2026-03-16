@@ -50,7 +50,7 @@ def run_indexer() -> None:
     # init embedding model
     embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
     create_embedding = create_embedding_factory(openai_embedding_creator)
-    embeddings_model = create_embedding(embedding_model.deployment_id)
+    embeddings_model = create_embedding(embedding_model.name)
     # setup connection to Hana Cloud DB
     hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
     if not hana_conn:
