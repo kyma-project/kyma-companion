@@ -34,17 +34,16 @@ poetry run python src/main.py index
 
 ## Testing
 
-The `config.json` file must be present for integration and e2e tests (see [template](../config/config-example.json)).
+The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).
 
 ### Test structure
 
-| Layer | Location | Runs in CI | Description |
-|---|---|---|---|
-| Unit | `tests/unit/` | Always | Fast tests with no external dependencies. All external calls are mocked. |
-| Integration | `tests/integration/` | Always (requires credentials) | Tests that make real API calls to the embedding service and SAP AI Core. |
-| E2E | `tests/e2e/` | Always (requires credentials) | Exercises the full `run_indexer()` production code path: model creation → Hana DB connection → document indexing. Creates and drops a temporary Hana DB table on each run. |
+| Layer | Location | Description |
+|---|---|---|
+| Unit | `tests/unit/` | Fast tests with no external dependencies. All external calls are mocked. |
+| Integration | `tests/integration/` | Tests that make real API calls to the embedding service and SAP AI Core, including a full end-to-end test that writes to a temporary Hana DB table. |
 
-All three suites run as independent parallel jobs in CI. A missing config is a hard failure — there are no silent skips.
+A missing config is a hard failure — there are no silent skips.
 
 In CI, the e2e table is named `kc_pr_<PR number>_e2e` so orphaned tables can be traced back to the PR that created them. Locally a UUID is used (`test_e2e_<uuid>_e2e`).
 
@@ -60,11 +59,6 @@ Run integration tests:
 poetry run poe test-integration
 ```
 
-Run e2e tests:
-```bash
-poetry run poe test-e2e
-```
-
 Run all tests:
 ```bash
 poetry run poe test
@@ -75,7 +69,7 @@ poetry run poe test
 - **`tests/unit/test_main.py::test_run_indexer_passes_model_name_not_deployment_id`** — verifies that `run_indexer()` passes the model name (not the deployment ID) to the embedding factory.
 - **`tests/integration/test_main.py::test_run_indexer_embedding_model_creation`** — positive check: model creation via the exact production sequence produces a working embeddings model.
 - **`tests/integration/test_main.py::test_run_indexer_fails_when_deployment_id_passed_as_model_name`** — negative check: passing a deployment ID instead of a model name raises `ValueError`.
-- **`tests/e2e/test_main.py::test_run_indexer_e2e`** — full end-to-end: indexes real documents into a temporary Hana DB table and verifies chunks were stored.
+- **`tests/integration/test_main.py::test_run_indexer_e2e`** — full end-to-end: indexes real documents into a temporary Hana DB table and verifies chunks were stored.
 
 ## Static Code Analysis
 ```bash

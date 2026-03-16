@@ -38,11 +38,10 @@ ruff = "^0.15.2"
 minversion = "6.0"
 addopts = "-ra"
 pythonpath = ["src"]
-testpaths = ["tests/unit", "tests/integration", "tests/e2e"]
+testpaths = ["tests"]
 markers = [
   "unit: marks tests as unit tests (fast, no external dependencies)",
-  "integration: marks tests as integration tests (may require external services or API keys)",
-  "e2e: marks tests as end-to-end tests (require live external services and write to the database)"
+  "integration: marks tests as integration tests (may require external services or API keys)"
 ]
 
 [tool.poe.tasks]
@@ -55,7 +54,6 @@ typecheck = "mypy . --pretty --config-file ../mypy.ini"
 codecheck = ["lint", "typecheck", "format"]
 test-unit = "pytest tests/unit -v"
 test-integration = "pytest tests/integration -v"
-test-e2e = "pytest tests/e2e -v"
 test-unit-marked = "pytest -m unit -v"
 test-integration-marked = "pytest -m integration -v"
 test = ["test-unit", "test-integration"]
