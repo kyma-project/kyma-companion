@@ -3,6 +3,8 @@ import os
 import pytest
 from fetcher.source import get_documents_sources
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def docs_sources_file_path(root_tests_path):

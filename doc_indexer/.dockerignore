@@ -72,3 +72,6 @@ logs/
 # Environment files
 .env
 .env.*
+
+# Data directories (build context optimization)
+data/
