@@ -299,11 +299,13 @@ def init_k8s_client(
     - x-client-certificate-data & x-client-key-data: Client certificates
     """
     k8s_auth_headers = K8sAuthHeaders(
-        x_cluster_url=x_cluster_url,
-        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
-        x_k8s_authorization=x_k8s_authorization,
-        x_client_certificate_data=x_client_certificate_data,
-        x_client_key_data=x_client_key_data,
+        x_cluster_url=x_cluster_url if x_cluster_url else "",
+        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data
+        if x_cluster_certificate_authority_data
+        else "",
+        x_k8s_authorization=x_k8s_authorization if x_k8s_authorization else None,
+        x_client_certificate_data=x_client_certificate_data if x_client_certificate_data else None,
+        x_client_key_data=x_client_key_data if x_client_key_data else None,
     )
 
     # if x_target_cluster_encrypted is provided, get the K8s auth headers from the encrypted payload
@@ -358,7 +360,10 @@ def get_k8s_auth_headers_from_encrypted_payload(
         encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64)
         payload = encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
         # parse the payload as JSON and convert to a K8sAuthHeaders instance
-        return K8sAuthHeaders.model_validate(json.loads(payload))
+        payload = json.loads(payload)
+        # convert all keys to lowercase to match the K8sAuthHeaders model
+        auth_headers = {k.lower(): v for k, v in payload.items()}
+        return K8sAuthHeaders.model_validate(auth_headers)
     except HTTPException:
         raise
     except Exception as e:
