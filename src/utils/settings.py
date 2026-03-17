@@ -111,6 +111,10 @@ MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
 
+# Encryption
+# RSA_PRIVATE_KEY is the base64-encoded RSA private key
+RSA_PRIVATE_KEY = config("RSA_PRIVATE_KEY", default="")
+
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)

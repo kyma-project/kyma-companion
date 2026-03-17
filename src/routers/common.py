@@ -2,9 +2,15 @@
 Common models, constants, and dependencies shared across routers.
 """
 
+import base64
+import json
 from http import HTTPStatus
 from typing import Annotated
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
@@ -15,6 +21,7 @@ from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import RSA_PRIVATE_KEY
 
 logger = get_logger(__name__)
 
@@ -271,12 +278,15 @@ def init_models_dict(
 
 
 def init_k8s_client(
-    x_cluster_url: Annotated[str, Header()],
-    x_cluster_certificate_authority_data: Annotated[str, Header()],
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
+    x_cluster_url: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_cluster_certificate_authority_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_encrypted_key: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_client_iv: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_target_cluster_encrypted: Annotated[str, Header()] = None,  # type: ignore[assignment]
 ) -> IK8sClient:
     """
     Initialize K8s client with authentication headers.
@@ -289,6 +299,61 @@ def init_k8s_client(
     - x-k8s-authorization: Bearer token
     - x-client-certificate-data & x-client-key-data: Client certificates
     """
+
+
+    
+    if x_encrypted_key and x_client_iv and x_target_cluster_encrypted and RSA_PRIVATE_KEY:
+        try:
+            # Decode the base64-encoded RSA private key and load it
+            private_key_pem = base64.b64decode(RSA_PRIVATE_KEY)
+            private_key = serialization.load_pem_private_key(
+                private_key_pem,
+                password=None,
+                backend=default_backend(),
+            )
+
+            # Decode the base64-encoded encrypted AES key
+            encrypted_aes_key = base64.b64decode(x_encrypted_key)
+
+            # Decrypt the AES-256 key using RSA-OAEP
+            aes_key = private_key.decrypt(
+                encrypted_aes_key,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None,
+                ),
+            )
+
+            # Decode the base64-encoded IV and ciphertext
+            iv = base64.b64decode(x_client_iv)
+            ciphertext = base64.b64decode(x_target_cluster_encrypted)
+
+            # Decrypt the target cluster data using AES-GCM
+            aesgcm = AESGCM(aes_key)
+            decrypted_data = aesgcm.decrypt(iv, ciphertext, None)
+
+            # Parse the decrypted JSON data
+            cluster_data = json.loads(decrypted_data.decode("utf-8"))
+
+            # Extract cluster credentials from decrypted data
+            x_cluster_url = cluster_data.get("cluster_url", "")
+            x_cluster_certificate_authority_data = cluster_data.get(
+                "cluster_certificate_authority_data", ""
+            )
+            x_k8s_authorization = cluster_data.get("k8s_authorization", "")
+            x_client_certificate_data = cluster_data.get(
+                "client_certificate_data", None
+            )
+            x_client_key_data = cluster_data.get("client_key_data", None)
+
+        except Exception as e:
+            logger.exception("Failed to decrypt cluster credentials")
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=f"Failed to decrypt cluster credentials: {str(e)}",
+            ) from e
+
     k8s_auth_headers = K8sAuthHeaders(
         x_cluster_url=x_cluster_url,
         x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
