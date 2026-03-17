@@ -1015,14 +1015,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "3.8.8"
+version = "3.8.9"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-3.8.8-py3-none-any.whl", hash = "sha256:32a188a478abeeede896dcd524ac142d1c16948bfd023ce4457e6790ebe4689b"},
-    {file = "deepeval-3.8.8.tar.gz", hash = "sha256:389c1742f02121525ecfe40c3d613f76fd418ad0ac0b843df715a9b460b5e679"},
+    {file = "deepeval-3.8.9-py3-none-any.whl", hash = "sha256:33124aa7f400e96ec27ab32b6c76fd4f0aae8af91d268dae92882fddcafd8931"},
+    {file = "deepeval-3.8.9.tar.gz", hash = "sha256:c75127db4929a7f53df2b008a237d35f0c62df88f1a06c30ddc695e807a94e5e"},
 ]
 
 [package.dependencies]
@@ -2022,20 +2022,20 @@ files = [
 
 [[package]]
 name = "hdbcli"
-version = "2.27.23"
+version = "2.27.24"
 description = "SAP HANA Python Client"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "hdbcli-2.27.23-cp38-abi3-macosx_10_15_x86_64.whl", hash = "sha256:bd9f83b1d2bb567bd32f7728a4af8e1d04c237cfe02d160572c4c834c6fc2f99"},
-    {file = "hdbcli-2.27.23-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:a946b1d06edd7eb182d2c9c6194052ded08a32ebd63abb72571d2c9626e61371"},
-    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:4a542a77828130b210a064acede764c14d57b085fdb2dcbf97d7cd59728bf49c"},
-    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_ppc64le.whl", hash = "sha256:aa3989ee1be84ed43c6bf8e0ee8d66ef6b5c82fca22055945caf6133f068397a"},
-    {file = "hdbcli-2.27.23-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:de365f863235d8dbbe7da5a5eb0dd0d3da94cbbea535d50b76b5d998f38df1e4"},
-    {file = "hdbcli-2.27.23-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:bf910189ac8b07c1fd81bcd74ac3420a5520017b5d4f0c90cdb8209f425f9d80"},
-    {file = "hdbcli-2.27.23-cp38-abi3-win32.whl", hash = "sha256:1b58e779e6f7c6a9286c610906eb938f4d58bd2566610a652d9feee9541e298c"},
-    {file = "hdbcli-2.27.23-cp38-abi3-win_amd64.whl", hash = "sha256:517094332a8a1f5408f8c3b2c2fb4f3461fd6ee40bc0dd0e64688869c5b1ed90"},
+    {file = "hdbcli-2.27.24-cp38-abi3-macosx_10_15_x86_64.whl", hash = "sha256:77185f07fd96c01eca16b7c1b9b85c8a02236b75f63db4751a0ebfd9ee4cab7f"},
+    {file = "hdbcli-2.27.24-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:42787a4e7e76097c7b331c1672c755439b88df8893f71e716a8526218dbc08ee"},
+    {file = "hdbcli-2.27.24-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:5fda06d03c66a87493d508d5d16bb5a083de15fcc0f3e2b67904beeadd8de6b0"},
+    {file = "hdbcli-2.27.24-cp38-abi3-manylinux2014_ppc64le.whl", hash = "sha256:7a1aa6c658e728eb214f1d72866e833bb870e07b7aac6e1dec58000790ebe118"},
+    {file = "hdbcli-2.27.24-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:3be05dc041e971c0508a4c5ff9ee4752a3a09fb5eb31f9d007fe42e99556659c"},
+    {file = "hdbcli-2.27.24-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:5fa5048ed2a51629b80afa30e63445ca2881ffb36862d54b30f1fa657bee0396"},
+    {file = "hdbcli-2.27.24-cp38-abi3-win32.whl", hash = "sha256:21adbb297ec3b354f529a0eac42e341838f5ab134e31d21d1603f6de4b1aee5e"},
+    {file = "hdbcli-2.27.24-cp38-abi3-win_amd64.whl", hash = "sha256:240a712f8b8ca205198b41ce5936fdef96bdd913119a275f4926b7ae063910b9"},
 ]
 
 [[package]]
@@ -2722,19 +2722,19 @@ google-auth = ["google-auth (>=1.0.1)"]
 
 [[package]]
 name = "langchain"
-version = "1.2.10"
+version = "1.2.12"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main", "test"]
 files = [
-    {file = "langchain-1.2.10-py3-none-any.whl", hash = "sha256:e07a377204451fffaed88276b8193e894893b1003e25c5bca6539288ccca3698"},
-    {file = "langchain-1.2.10.tar.gz", hash = "sha256:bdcd7218d9c79a413cf15e106e4eb94408ac0963df9333ccd095b9ed43bf3be7"},
+    {file = "langchain-1.2.12-py3-none-any.whl", hash = "sha256:60eff184b8f92c2610f5a4c9a97ad339a891adb01901e83e4df8e6c9c69cf852"},
+    {file = "langchain-1.2.12.tar.gz", hash = "sha256:ed705b5b293799f7e3e394387f398a1b71707542758283206c8c21415759d991"},
 ]
 
 [package.dependencies]
 langchain-core = ">=1.2.10,<2.0.0"
-langgraph = ">=1.0.8,<1.1.0"
+langgraph = ">=1.1.1,<1.2.0"
 pydantic = ">=2.7.4,<3.0.0"
 
 [package.extras]
@@ -2841,14 +2841,14 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10.0.0"
 
 [[package]]
 name = "langchain-core"
-version = "1.2.17"
+version = "1.2.19"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_core-1.2.17-py3-none-any.whl", hash = "sha256:bf6bd6ce503874e9c2da1669a69383e967c3de1ea808921d19a9a6bff1a9fbbe"},
-    {file = "langchain_core-1.2.17.tar.gz", hash = "sha256:54aa267f3311e347fb2e50951fe08e53761cebfb999ab80e6748d70525bbe872"},
+    {file = "langchain_core-1.2.19-py3-none-any.whl", hash = "sha256:6e74cb0fb443a8046ee298c05c99b67abe54cc57fcbc6d1cd3b0f2485ee47574"},
+    {file = "langchain_core-1.2.19.tar.gz", hash = "sha256:87fa82c3eb4cc3d7a65f574cb447b5df09ec2131c8c2a0a02d4737ad02685438"},
 ]
 
 [package.dependencies]
@@ -2932,6 +2932,23 @@ files = [
 langchain-core = ">=1.2.13,<2.0.0"
 
 [[package]]
+name = "langcodes"
+version = "3.5.1"
+description = "Tools for labeling human languages with IETF language tags"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "langcodes-3.5.1-py3-none-any.whl", hash = "sha256:b6a9c25c603804e2d169165091d0cdb23934610524a21d226e4f463e8e958a72"},
+    {file = "langcodes-3.5.1.tar.gz", hash = "sha256:40bff315e01b01d11c2ae3928dd4f5cbd74dd38f9bd912c12b9a3606c143f731"},
+]
+
+[package.extras]
+build = ["build", "twine"]
+data = ["language-data (>=1.2)"]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "langfuse"
 version = "3.14.5"
 description = "A client library for accessing langfuse"
@@ -2957,14 +2974,14 @@ wrapt = ">=1.14,<2.0"
 
 [[package]]
 name = "langgraph"
-version = "1.0.10"
+version = "1.1.2"
 description = "Building stateful, multi-actor applications with LLMs"
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "test"]
 files = [
-    {file = "langgraph-1.0.10-py3-none-any.whl", hash = "sha256:7c298bef4f6ea292fcf9824d6088fe41a6727e2904ad6066f240c4095af12247"},
-    {file = "langgraph-1.0.10.tar.gz", hash = "sha256:73bd10ee14a8020f31ef07e9cd4c1a70c35cc07b9c2b9cd637509a10d9d51e29"},
+    {file = "langgraph-1.1.2-py3-none-any.whl", hash = "sha256:5fd43c839ec2b5af564e9ae2d2d4f22ce0a006a0b58e800cc4e8de4dd9cbb643"},
+    {file = "langgraph-1.1.2.tar.gz", hash = "sha256:c4385ce349823a590891b3f6b1c46b54f51d0134164056866e95034985f047c9"},
 ]
 
 [package.dependencies]
@@ -3156,21 +3173,6 @@ files = [
     {file = "librt-0.8.1-cp39-cp39-win_amd64.whl", hash = "sha256:64548cde61b692dc0dc379f4b5f59a2f582c2ebe7890d09c1ae3b9e66fa015b7"},
     {file = "librt-0.8.1.tar.gz", hash = "sha256:be46a14693955b3bd96014ccbdb8339ee8c9346fbe11c1b78901b55125f14c73"},
 ]
-
-[[package]]
-name = "lingua-language-detector"
-version = "1.3.4"
-description = "An accurate natural language detection library, suitable for long and short text alike"
-optional = false
-python-versions = ">=3.8, !=2.7.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*, !=3.7.*"
-groups = ["main"]
-files = [
-    {file = "lingua_language_detector-1.3.4-py3-none-any.whl", hash = "sha256:0a2908445686440c1bd2052013cc690e6dfeaa561f72a7500cdfbcca300360df"},
-    {file = "lingua_language_detector-1.3.4.tar.gz", hash = "sha256:10d49ac3a3654d3b9bc108e72e5a7ddfcf29b8de50040b081ed1d322e0fb5a30"},
-]
-
-[package.dependencies]
-regex = ">=2023.10.3,<2024.0.0"
 
 [[package]]
 name = "markdown-it-py"
@@ -5187,14 +5189,14 @@ files = [
 
 [[package]]
 name = "pyjwt"
-version = "2.11.0"
+version = "2.12.1"
 description = "JSON Web Token implementation in Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pyjwt-2.11.0-py3-none-any.whl", hash = "sha256:94a6bde30eb5c8e04fee991062b534071fd1439ef58d2adc9ccb823e7bcd0469"},
-    {file = "pyjwt-2.11.0.tar.gz", hash = "sha256:35f95c1f0fbe5d5ba6e43f00271c275f7a1a4db1dab27bf708073b75318ea623"},
+    {file = "pyjwt-2.12.1-py3-none-any.whl", hash = "sha256:28ca37c070cad8ba8cd9790cd940535d40274d22f80ab87f3ac6a713e6e8454c"},
+    {file = "pyjwt-2.12.1.tar.gz", hash = "sha256:c74a7a2adf861c04d002db713dd85f84beb242228e671280bf709d765b03672b"},
 ]
 
 [package.extras]
@@ -5822,14 +5824,14 @@ rdf4j = ["httpx (>=0.28.1,<0.29.0)"]
 
 [[package]]
 name = "redis"
-version = "7.2.1"
+version = "7.3.0"
 description = "Python client for Redis database and key-value store"
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "test"]
 files = [
-    {file = "redis-7.2.1-py3-none-any.whl", hash = "sha256:49e231fbc8df2001436ae5252b3f0f3dc930430239bfeb6da4c7ee92b16e5d33"},
-    {file = "redis-7.2.1.tar.gz", hash = "sha256:6163c1a47ee2d9d01221d8456bc1c75ab953cbda18cfbc15e7140e9ba16ca3a5"},
+    {file = "redis-7.3.0-py3-none-any.whl", hash = "sha256:9d4fcb002a12a5e3c3fbe005d59c48a2cc231f87fbb2f6b70c2d89bb64fec364"},
+    {file = "redis-7.3.0.tar.gz", hash = "sha256:4d1b768aafcf41b01022410b3cc4f15a07d9b3d6fe0c66fc967da2c88e551034"},
 ]
 
 [package.extras]
@@ -6216,30 +6218,30 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "ruff"
-version = "0.15.4"
+version = "0.15.6"
 description = "An extremely fast Python linter and code formatter, written in Rust."
 optional = false
 python-versions = ">=3.7"
 groups = ["dev"]
 files = [
-    {file = "ruff-0.15.4-py3-none-linux_armv6l.whl", hash = "sha256:a1810931c41606c686bae8b5b9a8072adac2f611bb433c0ba476acba17a332e0"},
-    {file = "ruff-0.15.4-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:5a1632c66672b8b4d3e1d1782859e98d6e0b4e70829530666644286600a33992"},
-    {file = "ruff-0.15.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:a4386ba2cd6c0f4ff75252845906acc7c7c8e1ac567b7bc3d373686ac8c222ba"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b2496488bdfd3732747558b6f95ae427ff066d1fcd054daf75f5a50674411e75"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:3f1c4893841ff2d54cbda1b2860fa3260173df5ddd7b95d370186f8a5e66a4ac"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:820b8766bd65503b6c30aaa6331e8ef3a6e564f7999c844e9a547c40179e440a"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c9fb74bab47139c1751f900f857fa503987253c3ef89129b24ed375e72873e85"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f80c98765949c518142b3a50a5db89343aa90f2c2bf7799de9986498ae6176db"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:451a2e224151729b3b6c9ffb36aed9091b2996fe4bdbd11f47e27d8f2e8888ec"},
-    {file = "ruff-0.15.4-py3-none-manylinux_2_31_riscv64.whl", hash = "sha256:a8f157f2e583c513c4f5f896163a93198297371f34c04220daf40d133fdd4f7f"},
-    {file = "ruff-0.15.4-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:917cc68503357021f541e69b35361c99387cdbbf99bd0ea4aa6f28ca99ff5338"},
-    {file = "ruff-0.15.4-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:e9737c8161da79fd7cfec19f1e35620375bd8b2a50c3e77fa3d2c16f574105cc"},
-    {file = "ruff-0.15.4-py3-none-musllinux_1_2_i686.whl", hash = "sha256:291258c917539e18f6ba40482fe31d6f5ac023994ee11d7bdafd716f2aab8a68"},
-    {file = "ruff-0.15.4-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:3f83c45911da6f2cd5936c436cf86b9f09f09165f033a99dcf7477e34041cbc3"},
-    {file = "ruff-0.15.4-py3-none-win32.whl", hash = "sha256:65594a2d557d4ee9f02834fcdf0a28daa8b3b9f6cb2cb93846025a36db47ef22"},
-    {file = "ruff-0.15.4-py3-none-win_amd64.whl", hash = "sha256:04196ad44f0df220c2ece5b0e959c2f37c777375ec744397d21d15b50a75264f"},
-    {file = "ruff-0.15.4-py3-none-win_arm64.whl", hash = "sha256:60d5177e8cfc70e51b9c5fad936c634872a74209f934c1e79107d11787ad5453"},
-    {file = "ruff-0.15.4.tar.gz", hash = "sha256:3412195319e42d634470cc97aa9803d07e9d5c9223b99bcb1518f0c725f26ae1"},
+    {file = "ruff-0.15.6-py3-none-linux_armv6l.whl", hash = "sha256:7c98c3b16407b2cf3d0f2b80c80187384bc92c6774d85fefa913ecd941256fff"},
+    {file = "ruff-0.15.6-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:ee7dcfaad8b282a284df4aa6ddc2741b3f4a18b0555d626805555a820ea181c3"},
+    {file = "ruff-0.15.6-py3-none-macosx_11_0_arm64.whl", hash = "sha256:3bd9967851a25f038fc8b9ae88a7fbd1b609f30349231dffaa37b6804923c4bb"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:13f4594b04e42cd24a41da653886b04d2ff87adbf57497ed4f728b0e8a4866f8"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:e2ed8aea2f3fe57886d3f00ea5b8aae5bf68d5e195f487f037a955ff9fbaac9e"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:70789d3e7830b848b548aae96766431c0dc01a6c78c13381f423bf7076c66d15"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:542aaf1de3154cea088ced5a819ce872611256ffe2498e750bbae5247a8114e9"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:1c22e6f02c16cfac3888aa636e9eba857254d15bbacc9906c9689fdecb1953ab"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:98893c4c0aadc8e448cfa315bd0cc343a5323d740fe5f28ef8a3f9e21b381f7e"},
+    {file = "ruff-0.15.6-py3-none-manylinux_2_31_riscv64.whl", hash = "sha256:70d263770d234912374493e8cc1e7385c5d49376e41dfa51c5c3453169dc581c"},
+    {file = "ruff-0.15.6-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:55a1ad63c5a6e54b1f21b7514dfadc0c7fb40093fa22e95143cf3f64ebdcd512"},
+    {file = "ruff-0.15.6-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:8dc473ba093c5ec238bb1e7429ee676dca24643c471e11fbaa8a857925b061c0"},
+    {file = "ruff-0.15.6-py3-none-musllinux_1_2_i686.whl", hash = "sha256:85b042377c2a5561131767974617006f99f7e13c63c111b998f29fc1e58a4cfb"},
+    {file = "ruff-0.15.6-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:cef49e30bc5a86a6a92098a7fbf6e467a234d90b63305d6f3ec01225a9d092e0"},
+    {file = "ruff-0.15.6-py3-none-win32.whl", hash = "sha256:bbf67d39832404812a2d23020dda68fee7f18ce15654e96fb1d3ad21a5fe436c"},
+    {file = "ruff-0.15.6-py3-none-win_amd64.whl", hash = "sha256:aee25bc84c2f1007ecb5037dff75cef00414fdf17c23f07dc13e577883dca406"},
+    {file = "ruff-0.15.6-py3-none-win_arm64.whl", hash = "sha256:c34de3dd0b0ba203be50ae70f5910b17188556630e2178fd7d79fc030eb0d837"},
+    {file = "ruff-0.15.6.tar.gz", hash = "sha256:8394c7bb153a4e3811a4ecdacd4a8e6a4fa8097028119160dffecdcdf9b56ae4"},
 ]
 
 [[package]]
@@ -6293,13 +6295,13 @@ sap-ai-sdk-base = ">=3.2,<4.0"
 
 [[package]]
 name = "sap-ai-sdk-gen"
-version = "6.5.0"
+version = "6.6.0"
 description = "SAP Cloud SDK for AI (Python): generative AI SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_gen-6.5.0-py3-none-any.whl", hash = "sha256:2b0d1815dd7d94ae1d34629182a60c30c532b2bf8882a4f079d26a31bfc19295"},
+    {file = "sap_ai_sdk_gen-6.6.0-py3-none-any.whl", hash = "sha256:02dbb0b0c877e3ebeec6cd5c6b4aac63df3965f56bc80c79123a363d9f8ecab9"},
 ]
 
 [package.dependencies]
@@ -6316,7 +6318,7 @@ langchain-classic = ">=1.0.0,<1.1.0"
 langchain-community = ">=0.4.1,<0.5.0"
 langchain-google-genai = {version = ">=4.2.0,<4.3.0", optional = true, markers = "extra == \"all\""}
 langchain-openai = ">=1.1.0,<1.2.0"
-lingua-language-detector = "1.3.4"
+langcodes = ">=3.5.1,<3.6.0"
 openai = ">=1.58.1"
 overloading = "0.5.0"
 packaging = ">=23.2"
@@ -7199,14 +7201,14 @@ files = [
 
 [[package]]
 name = "uvicorn"
-version = "0.41.0"
+version = "0.42.0"
 description = "The lightning-fast ASGI server."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "uvicorn-0.41.0-py3-none-any.whl", hash = "sha256:29e35b1d2c36a04b9e180d4007ede3bcb32a85fbdfd6c6aeb3f26839de088187"},
-    {file = "uvicorn-0.41.0.tar.gz", hash = "sha256:09d11cf7008da33113824ee5a1c6422d89fbc2ff476540d69a34c87fab8b571a"},
+    {file = "uvicorn-0.42.0-py3-none-any.whl", hash = "sha256:96c30f5c7abe6f74ae8900a70e92b85ad6613b745d4879eb9b16ccad15645359"},
+    {file = "uvicorn-0.42.0.tar.gz", hash = "sha256:9b1f190ce15a2dd22e7758651d9b6d12df09a13d51ba5bf4fc33c383a48e1775"},
 ]
 
 [package.dependencies]
@@ -8140,4 +8142,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "e821ad08d06a5ed78786da88c7527de0bf0f370283fb54b836219aa889d4271c"
+content-hash = "559b73404d51befe40c557f8cdad0cb7d31b29992d2171ebb1e50fa3f8118f37"
