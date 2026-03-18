@@ -49,6 +49,8 @@ async def init_public_key(
 ) -> PublicKeyResponse:
     """Initialize a key exchange session by storing client public key in Redis."""
 
+    companion_public_key = _get_companion_public_key()
+    
     session_id = create_session_id()
 
     try:
@@ -62,5 +64,5 @@ async def init_public_key(
 
     return PublicKeyResponse(
         session_id=session_id,
-        companion_public_key=_get_companion_public_key(),
+        companion_public_key=companion_public_key,
     )
