@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.encryption import Encryption
+from services.encryption_cache import EncryptionCache, get_encryption_cache
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
@@ -273,8 +274,9 @@ def init_models_dict(
     return _ModelsCache._instance
 
 
-def init_k8s_client(
+async def init_k8s_client(
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
+    encryption_cache: Annotated[EncryptionCache, Depends(get_encryption_cache)],
     # Plain headers for backward compatibility.
     x_cluster_url: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_cluster_certificate_authority_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
@@ -310,8 +312,8 @@ def init_k8s_client(
 
     # if x_target_cluster_encrypted is provided, get the K8s auth headers from the encrypted payload
     if x_target_cluster_encrypted:
-        k8s_auth_headers = get_k8s_auth_headers_from_encrypted_payload(
-            x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted
+        k8s_auth_headers = await get_k8s_auth_headers_from_encrypted_payload(
+            x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted, encryption_cache
         )
 
     # validate the K8s auth headers
@@ -329,8 +331,9 @@ def init_k8s_client(
     )
 
 
-def get_k8s_auth_headers_from_encrypted_payload(
-    x_encrypted_key: str, x_client_iv: str, x_session_id: str, x_target_cluster_encrypted: str
+async def get_k8s_auth_headers_from_encrypted_payload(
+    x_encrypted_key: str, x_client_iv: str, x_session_id: str, x_target_cluster_encrypted: str,
+    encryption_cache: EncryptionCache,
 ) -> K8sAuthHeaders:
     """
     Get K8s auth headers from encrypted payload.
@@ -357,8 +360,8 @@ def get_k8s_auth_headers_from_encrypted_payload(
 
     try:
         # decrypt the payload using the encryption service.
-        encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64)
-        payload = encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
+        encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64, encryption_cache)
+        payload = await encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
         # parse the payload as JSON and convert to a K8sAuthHeaders instance
         payload = json.loads(payload)
         # convert all keys to lowercase to match the K8sAuthHeaders model
@@ -366,6 +369,11 @@ def get_k8s_auth_headers_from_encrypted_payload(
         return K8sAuthHeaders.model_validate(auth_headers)
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
