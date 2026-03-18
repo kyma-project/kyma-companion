@@ -62,29 +62,23 @@ class MockService(IService):
         return None
 
     async def handle_request(
-        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient, cluster_id: str = ""
     ) -> AsyncGenerator[bytes]:
         if self.expected_error:
             raise self.expected_error
         if message.resource_kind == UNKNOWN:
             yield (
-                b'{"KymaAgent": {"messages": [{"content": '
-                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "additional_kwargs": {}, '
-                b'"response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, '
-                b'"example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+                b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
+                b'"Resource information is not available. Ask the user, if you need resource information like kind, name or namespace.", "tasks": []}, "error": null}}'
             )
 
         yield (
-            b'{"KymaAgent": {"messages": [{"content": '
-            b'"To create an API Rule in Kyma to expose a service externally", "additional_kwargs": {}, '
-            b'"response_metadata": {}, "type": "ai", "name": "Supervisor", "id": null, '
-            b'"example": false, "tool_calls": [], "invalid_tool_calls": [], "usage_metadata": null}]}}'
+            b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content": '
+            b'"To create an API Rule in Kyma to expose a service externally", "tasks": []}, "error": null}}'
         )
         yield (
-            b'{"KubernetesAgent": {"messages": [{"content": "To create a kubernetes deployment", '
-            b'"additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Supervisor", '
-            b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], '
-            b'"usage_metadata": null}]}}'
+            b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"content": '
+            b'"To create a kubernetes deployment", "tasks": []}, "error": null}}'
         )
 
 

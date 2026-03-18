@@ -153,16 +153,16 @@ class MockK8sClient(IK8sClient):
                 ),
             )
 
-    def list_not_running_pods(self, namespace: str) -> list[dict]:
+    async def list_not_running_pods(self, namespace: str) -> list[dict]:
         return []
 
     async def list_nodes_metrics(self) -> list[dict]:
         return []
 
-    def list_k8s_warning_events(self, namespace: str) -> list[dict]:
+    async def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         return []
 
-    def get_resource_version(self, kind: str) -> str:
+    async def get_resource_version(self, kind: str) -> str:
         if self.should_fail:
             raise ValueError(f"Resource kind '{kind}' not found")
         if kind in self._resource_versions:

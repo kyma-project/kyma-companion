@@ -137,11 +137,11 @@ class IK8sClient(Protocol):
         """Execute a GET request to the Kubernetes API."""
         ...
 
-    def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
+    async def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         """List resources of a specific kind in a namespace."""
         ...
 
-    def get_resource(
+    async def get_resource(
         self,
         api_version: str,
         kind: str,
@@ -151,11 +151,11 @@ class IK8sClient(Protocol):
         """Get a specific resource by name in a namespace."""
         ...
 
-    def get_resource_version(self, kind: str) -> str:
+    async def get_resource_version(self, kind: str) -> str:
         """Get the resource version for a given kind."""
         ...
 
-    def describe_resource(
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -165,7 +165,7 @@ class IK8sClient(Protocol):
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
         ...
 
-    def list_not_running_pods(self, namespace: str) -> list[dict]:
+    async def list_not_running_pods(self, namespace: str) -> list[dict]:
         """List all pods that are not in the Running phase"""
         ...
 
@@ -173,15 +173,15 @@ class IK8sClient(Protocol):
         """List all node metrics."""
         ...
 
-    def list_k8s_events(self, namespace: str) -> list[dict]:
+    async def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events."""
         ...
 
-    def list_k8s_warning_events(self, namespace: str) -> list[dict]:
+    async def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes warning events."""
         ...
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
+    async def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         """List all Kubernetes events for a specific resource."""
         ...
 
@@ -423,25 +423,27 @@ class K8sClient:
             result = self.data_sanitizer.sanitize(result)
         return result
 
-    def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
-        """List resources of a specific kind in a namespace.
-        Provide empty string for namespace to list resources in all namespaces."""
+    def _list_resources_sync(self, api_version: str, kind: str, namespace: str) -> list[dict]:
+        """Sync implementation of list_resources."""
         result = self.dynamic_client.resources.get(api_version=api_version, kind=kind).get(namespace=namespace)
-
-        # convert objects to dictionaries.
         items = [item.to_dict() for item in result.items]
         if self.data_sanitizer:
             return self.data_sanitizer.sanitize(items)  # type: ignore
         return items
 
-    def get_resource(
+    async def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
+        """List resources of a specific kind in a namespace.
+        Provide empty string for namespace to list resources in all namespaces."""
+        return await asyncio.to_thread(self._list_resources_sync, api_version, kind, namespace)
+
+    def _get_resource_sync(
         self,
         api_version: str,
         kind: str,
         name: str,
         namespace: str,
     ) -> dict:
-        """Get a specific resource by name in a namespace."""
+        """Sync implementation of get_resource."""
         resource = (
             self.dynamic_client.resources.get(api_version=api_version, kind=kind)
             .get(name=name, namespace=namespace)
@@ -451,38 +453,53 @@ class K8sClient:
             return cast(dict, self.data_sanitizer.sanitize(resource))
         return resource  # type: ignore
 
-    def get_resource_version(self, kind: str) -> str:
-        """Get the resource version for a given kind.
+    async def get_resource(
+        self,
+        api_version: str,
+        kind: str,
+        name: str,
+        namespace: str,
+    ) -> dict:
+        """Get a specific resource by name in a namespace."""
+        return await asyncio.to_thread(self._get_resource_sync, api_version, kind, name, namespace)
 
-        Args:
-            kind: The Kyma/Kubernetes resource kind (e.g. 'Function', 'TracePipeline', 'Pod', 'Deployment', etc.)
-
-        Returns:
-            The resource version as a string
-
-        Raises:
-            ValueError: If the resource kind is not found
-        """
-
+    def _get_resource_version_sync(self, kind: str) -> str:
+        """Sync implementation of get_resource_version."""
         if not kind:
             raise ValueError("Resource kind is required.")
 
         try:
-            # Query the API server for the resource kind
             api_resources = self.dynamic_client.resources.search(kind=kind)
             if not api_resources:
                 raise ValueError(f"Resource kind '{kind}' not found")
-
-            # Get the first match (most accurate)
             resource = api_resources[0]
-
-            # Return the API version
             return str(resource.group_version)
         except Exception as e:
             logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
             raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
 
-    def describe_resource(
+    async def get_resource_version(self, kind: str) -> str:
+        """Get the resource version for a given kind."""
+        return await asyncio.to_thread(self._get_resource_version_sync, kind)
+
+    def _describe_resource_sync(
+        self,
+        api_version: str,
+        kind: str,
+        name: str,
+        namespace: str,
+    ) -> dict:
+        """Sync implementation of describe_resource."""
+        resource = self._get_resource_sync(api_version, kind, name, namespace)
+        result = copy.deepcopy(resource)
+        result[K8sApiFields.EVENTS] = self._list_k8s_events_for_resource_sync(kind, name, namespace)
+        for event in result[K8sApiFields.EVENTS]:
+            del event[K8sApiFields.INVOLVED_OBJECT]
+        if self.data_sanitizer:
+            return self.data_sanitizer.sanitize(result)  # type: ignore
+        return result
+
+    async def describe_resource(
         self,
         api_version: str,
         kind: str,
@@ -490,29 +507,15 @@ class K8sClient:
         namespace: str,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
-        resource = self.get_resource(api_version, kind, name, namespace)
+        return await asyncio.to_thread(self._describe_resource_sync, api_version, kind, name, namespace)
 
-        # clone the object because we cannot modify the original object.
-        result = copy.deepcopy(resource)
-
-        # get events for the resource.
-        result[K8sApiFields.EVENTS] = self.list_k8s_events_for_resource(kind, name, namespace)
-        for event in result[K8sApiFields.EVENTS]:
-            del event[K8sApiFields.INVOLVED_OBJECT]
-
-        if self.data_sanitizer:
-            return self.data_sanitizer.sanitize(result)  # type: ignore
-        return result
-
-    def list_not_running_pods(self, namespace: str) -> list[dict]:
-        """List all pods that are not in the Running phase.
-        Provide empty string for namespace to list all pods."""
-        all_pods = self.list_resources(
+    def _list_not_running_pods_sync(self, namespace: str) -> list[dict]:
+        """Sync implementation of list_not_running_pods."""
+        all_pods = self._list_resources_sync(
             api_version="v1",
             kind=K8sResourceKind.POD,
             namespace=namespace,
         )
-        # filter pods by status and convert object to dictionary.
         items = []
         for pod in all_pods:
             if (
@@ -523,31 +526,41 @@ class K8sClient:
                 items.append(pod)
         return items
 
+    async def list_not_running_pods(self, namespace: str) -> list[dict]:
+        """List all pods that are not in the Running phase.
+        Provide empty string for namespace to list all pods."""
+        return await asyncio.to_thread(self._list_not_running_pods_sync, namespace)
+
     async def list_nodes_metrics(self) -> list[dict]:
         """List all K8s Nodes metrics."""
         result = await self.execute_get_api_request("apis/metrics.k8s.io/v1beta1/nodes")
         return list[dict](result)
 
-    def list_k8s_events(self, namespace: str) -> list[dict]:
-        """List all Kubernetes events. Provide empty string for namespace to list all events."""
-
+    def _list_k8s_events_sync(self, namespace: str) -> list[dict]:
+        """Sync implementation of list_k8s_events."""
         result = self.dynamic_client.resources.get(api_version="v1", kind=K8sResourceKind.EVENT).get(
             namespace=namespace
         )
-
-        # convert objects to dictionaries and return.
         events = [event.to_dict() for event in result.items]
         if self.data_sanitizer:
             return list[dict](self.data_sanitizer.sanitize(events))
         return events
 
-    def list_k8s_warning_events(self, namespace: str) -> list[dict]:
-        """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
-        return [event for event in self.list_k8s_events(namespace) if event["type"] == "Warning"]
+    async def list_k8s_events(self, namespace: str) -> list[dict]:
+        """List all Kubernetes events. Provide empty string for namespace to list all events."""
+        return await asyncio.to_thread(self._list_k8s_events_sync, namespace)
 
-    def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
-        """List all Kubernetes events for a specific resource. Provide empty string for namespace to list all events."""
-        events = self.list_k8s_events(namespace)
+    def _list_k8s_warning_events_sync(self, namespace: str) -> list[dict]:
+        """Sync implementation of list_k8s_warning_events."""
+        return [event for event in self._list_k8s_events_sync(namespace) if event["type"] == "Warning"]
+
+    async def list_k8s_warning_events(self, namespace: str) -> list[dict]:
+        """List all Kubernetes warning events. Provide empty string for namespace to list all warning events."""
+        return await asyncio.to_thread(self._list_k8s_warning_events_sync, namespace)
+
+    def _list_k8s_events_for_resource_sync(self, kind: str, name: str, namespace: str) -> list[dict]:
+        """Sync implementation of list_k8s_events_for_resource."""
+        events = self._list_k8s_events_sync(namespace)
         result = []
         for event in events:
             if (
@@ -555,8 +568,11 @@ class K8sClient:
                 and event[K8sApiFields.INVOLVED_OBJECT][K8sApiFields.NAME] == name
             ):
                 result.append(event)
-
         return result
+
+    async def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
+        """List all Kubernetes events for a specific resource. Provide empty string for namespace to list all events."""
+        return await asyncio.to_thread(self._list_k8s_events_for_resource_sync, kind, name, namespace)
 
     async def fetch_pod_logs(
         self,
@@ -676,7 +692,7 @@ class K8sClient:
 
         # Try to get pod description (which includes events) and statuses
         try:
-            pod_description = self.describe_resource(
+            pod_description = await self.describe_resource(
                 api_version="v1", kind=K8sResourceKind.POD, name=name, namespace=namespace
             )
 
@@ -778,13 +794,8 @@ class K8sClient:
         return "\n".join(lines)
 
     def _format_pod_events_for_diagnostic(self, name: str, namespace: str, tail_limit: int) -> str:
-        """Format pod events for diagnostic output by fetching them first.
-
-        Shows recent pod events to help diagnose why logs are unavailable.
-        The number of events shown is capped at a reasonable limit to avoid overwhelming output,
-        even if tail_limit for logs is large.
-        """
-        events = self.list_k8s_events_for_resource(kind=K8sResourceKind.POD, name=name, namespace=namespace)
+        """Format pod events for diagnostic output by fetching them first."""
+        events = self._list_k8s_events_for_resource_sync(kind=K8sResourceKind.POD, name=name, namespace=namespace)
         return self._format_events_for_diagnostic(events, tail_limit)
 
     def _format_container_statuses_structured(self, pod_description: dict) -> dict[str, ContainerStatus] | None:

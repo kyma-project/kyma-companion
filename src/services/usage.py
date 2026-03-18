@@ -7,10 +7,10 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.outputs import LLMResult
 from pydantic import BaseModel
 
-from agents.memory.async_redis_checkpointer import IUsageMemory
 from routers.probes import IUsageTrackerProbe
 from services.metrics import CustomMetrics, LangGraphErrorType
 from services.probes import get_usage_tracker_probe
+from services.usage_store import IUsageMemory
 from utils.settings import TOKEN_USAGE_RESET_INTERVAL
 
 

@@ -1,32 +1,25 @@
 import socket
-from collections.abc import Sequence
 from threading import Thread
+from typing import cast
 
+import fakeredis.aioredis
 import pytest
 from deepeval.metrics import AnswerRelevancyMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCaseParams
-from fakeredis import TcpFakeServer
-from langchain_core.messages import (
-    AIMessage,
-    BaseMessage,
-    HumanMessage,
-    SystemMessage,
-)
 
-from agents.common.state import CompanionState, UserInput
-from agents.graph import CompanionGraph
-from agents.memory.async_redis_checkpointer import AsyncRedisSaver
+from agents.companion import CompanionAgent
+from agents.tools import ToolRegistry
+from services.conversation_store import ConversationStore
+from services.model_adapter import create_model_adapter
+from services.response_converter import ResponseConverter
 from utils.config import get_config
-from utils.models.factory import ModelFactory
+from utils.models.factory import IModel, ModelFactory
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
     MAIN_MODEL_NANO_NAME,
-    REDIS_DB_NUMBER,
-    REDIS_HOST,
-    REDIS_PASSWORD,
 )
 
 # integration test configurations.
@@ -126,33 +119,39 @@ def evaluator_main_model(app_models):
 
 
 @pytest.fixture(scope="session")
-def start_fake_redis():
-    redis_port = get_free_port_in_range()
-    server_address = (REDIS_HOST, redis_port)
-    server = TcpFakeServer(server_address)
-    t = Thread(target=server.serve_forever, daemon=True)
-    t.start()
-
-    # Yield control back to the tests
-    yield server
-
-    # Teardown: Stop the server after all tests are finished
-    server.shutdown()
-    server.server_close()
-    t.join(timeout=5)
+def conversation_store():
+    """Create a ConversationStore connected to in-memory fakeredis."""
+    conn = fakeredis.aioredis.FakeRedis()
+    return ConversationStore(conn=conn)
 
 
 @pytest.fixture(scope="session")
-def companion_graph(app_models, start_fake_redis):
-    redis_port = start_fake_redis.server_address[1]
-    memory = AsyncRedisSaver.from_conn_info(
-        host=REDIS_HOST,
-        port=redis_port,
-        db=REDIS_DB_NUMBER,
-        password=REDIS_PASSWORD,
+def model_adapter(app_models):
+    """Create a model adapter for the main model."""
+    model = cast(IModel, app_models[MAIN_MODEL_NAME])
+    return create_model_adapter(model)
+
+
+@pytest.fixture(scope="session")
+def tool_registry(app_models):
+    """Create a ToolRegistry with RAG system."""
+    try:
+        from rag.system import RAGSystem
+
+        rag_system = RAGSystem(app_models)
+    except Exception:
+        rag_system = None
+    return ToolRegistry(rag_system=rag_system)
+
+
+@pytest.fixture(scope="session")
+def companion_agent(model_adapter, tool_registry, conversation_store):
+    """Create a CompanionAgent for integration testing."""
+    return CompanionAgent(
+        adapter=model_adapter,
+        tool_registry=tool_registry,
+        conversation_store=conversation_store,
     )
-    graph = CompanionGraph(app_models, memory)
-    return graph
 
 
 @pytest.fixture
@@ -223,51 +222,4 @@ def security_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.7,
-    )
-
-
-def convert_dict_to_messages(messages: dict) -> list[BaseMessage]:
-    # convert messages from BaseMessage to SystemMessage, HumanMessage, AIMessage
-    # if message.type is not "ai", "human", or "system", keep base message
-    return [
-        (
-            SystemMessage(content=message.get("content"), name=message.get("name"))
-            if message.get("type") == "system"
-            else (
-                HumanMessage(content=message.get("content"), name=message.get("name"))
-                if message.get("type") == "human"
-                else (
-                    AIMessage(content=message.get("content"), name=message.get("name"))
-                    if message.get("type") == "ai"
-                    else message
-                )
-            )
-        )
-        for message in messages
-    ]
-
-
-def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:
-    """Create a mock langgraph state for tests."""
-    if subtasks is None:
-        subtasks = []
-
-    # find the last human message and use its content as user query.
-    last_human_message = next((msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None)
-
-    # if no human message is found, use the last message's content.
-    user_input = UserInput(
-        query=(last_human_message.content if last_human_message else messages[-1].content),
-        resource_kind=None,
-        resource_api_version=None,
-        resource_name=None,
-        namespace=None,
-    )
-
-    return CompanionState(
-        input=user_input,
-        messages=messages,
-        next="",
-        subtasks=subtasks,
-        error=None,
     )

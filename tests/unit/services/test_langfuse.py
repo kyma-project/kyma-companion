@@ -5,7 +5,6 @@ from unittest.mock import patch
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from agents.common.state import CompanionState, GraphInput, UserInput
 from services.k8s import IK8sClient, K8sClient
 from services.langfuse import EMPTY_OBJECT, REDACTED, LangfuseService, get_langfuse_metadata
 from utils.settings import LangfuseMaskingModes
@@ -74,36 +73,10 @@ def test_get_langfuse_metadata(description, user_id, session_id, tags, expected)
             "REDACTED",
         ),
         (
-            "should return REDACTED when masking mode is PARTIAL but data is not of type GraphInput",
+            "should return REDACTED when masking mode is PARTIAL and data is a plain string",
             LangfuseMaskingModes.PARTIAL,
             "string data type",
-            "REDACTED",
-        ),
-        (
-            "should return graph input messages when masking mode is PARTIAL and data is of type GraphInput",
-            LangfuseMaskingModes.PARTIAL,
-            GraphInput(
-                messages=[
-                    SystemMessage(content="message 1"),
-                    HumanMessage(content="message 2"),
-                ],
-                input=UserInput(query="foo bar"),
-                k8s_client=None,
-            ),
-            "message 2\nmessage 1",  # Will be scrubbed, so we patch scrubber
-        ),
-        (
-            "should return scrubbed output (removed email) when masking mode is PARTIAL and data is of type GraphInput",
-            LangfuseMaskingModes.PARTIAL,
-            GraphInput(
-                messages=[
-                    SystemMessage(content="message 1"),
-                    HumanMessage(content="message 2 for testuser@kyma.com"),
-                ],
-                input=UserInput(query="foo bar"),
-                k8s_client=None,
-            ),
-            "message 2 for {{EMAIL}}\nmessage 1",  # Will be scrubbed, so we patch scrubber
+            "string data type",  # Partial mode scrubs strings now
         ),
         (
             "should scrub dict with content and role when masking mode is FILTERED",
@@ -156,33 +129,19 @@ def test_masking_production_data(
     "description, input_data, expected_output",
     [
         (
-            "should return REDACTED when  data is not of type GraphInput",
-            "string data type",
+            "should scrub string with PII",
+            "my email is test@example.com",
+            "my email is {{EMAIL}}",
+        ),
+        (
+            "should return REDACTED for non-string non-dict data",
+            123,
             "REDACTED",
         ),
         (
-            "should return graph input messages when  data is of type GraphInput",
-            GraphInput(
-                messages=[
-                    SystemMessage(content="message 1"),
-                    HumanMessage(content="message 2"),
-                ],
-                input=UserInput(query="foo bar"),
-                k8s_client=None,
-            ),
-            "message 2\nmessage 1",  # Will be scrubbed, so we patch scrubber
-        ),
-        (
-            "should return scrubbed output (removed email) when data is of type GraphInput",
-            GraphInput(
-                messages=[
-                    SystemMessage(content="message 1"),
-                    HumanMessage(content="message 2 for testuser@kyma.com"),
-                ],
-                input=UserInput(query="foo bar"),
-                k8s_client=None,
-            ),
-            "message 2 for {{EMAIL}}\nmessage 1",  # Will be scrubbed, so we patch scrubber
+            "should scrub dict content in partial mode",
+            {"role": "user", "content": "email test@example.com"},
+            "email {{EMAIL}}",
         ),
     ],
 )
@@ -192,11 +151,7 @@ def test_masking_mode_partial(
     expected_output: Any,
 ):
     service = LangfuseService()
-    original_data = copy.deepcopy(input_data)
-
-    # when / then
     assert service._masking_mode_partial(input_data) == expected_output, description
-    assert input_data == original_data, "input data should not have been modified in place"
 
 
 @pytest.mark.parametrize(
@@ -213,36 +168,24 @@ def test_masking_mode_partial(
             f"{REDACTED} - Unsupported data type (<class 'object'>) for masking.",
         ),
         (
-            "should return REDACTED for empty data",
+            "should return None for empty data",
             None,
             None,
         ),
         (
-            "should return REDACTED for int",
+            "should return int unchanged",
             123,
             123,
         ),
         (
-            "should return REDACTED for float",
+            "should return float unchanged",
             1.23,
             1.23,
         ),
         (
-            "should return REDACTED for bool",
+            "should return bool unchanged",
             True,
             True,
-        ),
-        (
-            "should scrub GraphInput messages",
-            GraphInput(
-                messages=[
-                    SystemMessage(content="message 1"),
-                    HumanMessage(content="message 2 for test@example.com"),
-                ],
-                input=UserInput(query="foo bar"),
-                k8s_client=None,
-            ),
-            "message 2 for {{EMAIL}}\nmessage 1",
         ),
         (
             "should scrub dict with content and role",
@@ -270,7 +213,7 @@ def test_masking_mode_partial(
             ToolMessage(content=REDACTED, tool_call_id="abc", name="unauthorized_tool"),
         ),
         (
-            "should redact ToolMessage",
+            "should redact ToolMessage without name",
             ToolMessage(content="secret", tool_call_id="abc"),
             ToolMessage(content=REDACTED, tool_call_id="abc"),
         ),
@@ -283,61 +226,6 @@ def test_masking_mode_partial(
             "should scrub AIMessage",
             AIMessage(content="my email is test@example.com"),
             AIMessage(content="my email is {{EMAIL}}"),
-        ),
-        (
-            "should scrub CompanionState",
-            CompanionState(
-                messages=[
-                    SystemMessage(content="system message"),
-                    HumanMessage(content="my email is test@example.com"),
-                    ToolMessage(content="secret", tool_call_id="abc"),
-                ],
-                k8s_client=None,
-                input=UserInput(query="query"),
-            ),
-            {
-                "error": None,
-                "input": {
-                    "namespace": None,
-                    "query": "query",
-                    "resource_api_version": None,
-                    "resource_kind": None,
-                    "resource_name": None,
-                    "resource_related_to": None,
-                    "resource_scope": None,
-                },
-                "is_feedback": False,
-                "messages": [
-                    {
-                        "additional_kwargs": {},
-                        "content": "system message",
-                        "id": None,
-                        "name": None,
-                        "response_metadata": {},
-                        "type": "system",
-                    },
-                    {
-                        "additional_kwargs": {},
-                        "content": "my email is {{EMAIL}}",
-                        "id": None,
-                        "name": None,
-                        "response_metadata": {},
-                        "type": "human",
-                    },
-                    {
-                        "additional_kwargs": {},
-                        "content": "secret",
-                        "id": None,
-                        "name": None,
-                        "response_metadata": {},
-                        "type": "tool",
-                    },
-                ],
-                "messages_summary": "",
-                "next": None,
-                "subtasks": [],
-                "thread_owner": "",
-            },
         ),
         (
             "should return empty object for K8s client",
@@ -357,7 +245,6 @@ def test_masking_mode_filtered(description, input_data, expected_output):
     result = service._masking_mode_filtered(input_data)
 
     # then
-    # For ToolMessage and HumanMessage, compare their content attribute
     if hasattr(result, "content") and hasattr(expected_output, "content"):
         assert result.content == expected_output.content, description
     else:

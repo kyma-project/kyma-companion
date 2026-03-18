@@ -1,0 +1,48 @@
+# Minimal local development setup: Kyma Companion + Redis
+#
+# Usage:
+#   1. cp config/config.local.json config/config.json
+#   2. Edit config/config.json — fill in your AICORE_* credentials
+#   3. docker compose up --build
+#
+# Companion: http://localhost:8000
+# Health:    http://localhost:8000/healthz
+
+services:
+  kyma-companion:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config/config.json:/app/config/config.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      CONFIG_PATH: /app/config/config.json
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - companion_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  companion_redis_data:
+    driver: local

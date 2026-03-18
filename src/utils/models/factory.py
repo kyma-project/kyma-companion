@@ -9,6 +9,7 @@ from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAICl
 from langchain_core.embeddings import Embeddings
 
 from utils.config import Config
+from utils.models.anthropic import AnthropicModel
 from utils.models.exceptions import ModelNotFoundError, UnsupportedModelError
 from utils.models.gemini import GeminiModel
 from utils.models.openai import OpenAIModel
@@ -19,6 +20,7 @@ class ModelPrefix:
 
     GPT = "gpt"
     GEMINI = "gemini"
+    ANTHROPIC = "anthropic--"
     TEXT_EMBEDDING = "text-embedding"
 
 
@@ -110,6 +112,7 @@ class ModelFactory:
         # Dispatch mechanism for model creation.
         model_prefix_dispatch = {
             ModelPrefix.GPT: lambda: OpenAIModel(model_config, self._proxy_client),
+            ModelPrefix.ANTHROPIC: lambda: AnthropicModel(model_config, self._proxy_client),
             ModelPrefix.GEMINI: lambda: GeminiModel(model_config, self._proxy_client),
             ModelPrefix.TEXT_EMBEDDING: lambda: cast(
                 Embeddings,

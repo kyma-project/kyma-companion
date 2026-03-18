@@ -1,8 +1,7 @@
 """
 Kubernetes Tools REST API Router.
 
-This module exposes Kubernetes agent tools as REST API endpoints by wrapping
-the tools defined in src/agents/k8s/tools.
+This module exposes Kubernetes agent tools as REST API endpoints.
 All endpoints require Kubernetes authentication headers.
 """
 
@@ -11,8 +10,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
 
-from agents.k8s.tools.logs import fetch_pod_logs_tool
-from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
+from agents.common.data import Message
+from agents.common.utils import get_relevant_context_from_k8s_cluster
 from routers.common import (
     API_PREFIX,
     K8sOverviewRequest,
@@ -30,6 +29,7 @@ from utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
 # ============================================================================
 # Router
@@ -57,8 +57,7 @@ async def query_k8s_resource(
     logger.info(f"K8s query request: uri={request.uri}")
 
     try:
-        # Use k8s_query_tool from agents/k8s/tools/query.py
-        result = await k8s_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
+        result = await k8s_client.execute_get_api_request(request.uri)
         logger.info(f"K8s query completed successfully for uri={request.uri}")
         return K8sQueryResponse(data=result)
     except K8sClientError as e:
@@ -89,19 +88,14 @@ async def get_pod_logs(
     )
 
     try:
-        result = await fetch_pod_logs_tool.ainvoke(
-            {
-                "name": request.name,
-                "namespace": request.namespace,
-                "container_name": request.container_name,
-                "k8s_client": k8s_client,
-            }
+        pod_logs_result = await k8s_client.fetch_pod_logs(
+            request.name,
+            request.namespace,
+            request.container_name,
+            POD_LOGS_TAIL_LINES_LIMIT,
         )
 
         logger.info(f"Successfully fetched logs for pod={request.name}")
-
-        # Tool returns dict (serialized Pydantic model), reconstruct for response
-        pod_logs_result = PodLogsResult.model_validate(result)
 
         # Forward the status code from K8s API (e.g., 400 for invalid container)
         response.status_code = pod_logs_result.status_code
@@ -150,14 +144,14 @@ async def get_k8s_overview(
     logger.info(f"K8s overview request: namespace={request.namespace}, resource_kind={request.resource_kind}")
 
     try:
-        # Use k8s_overview_query_tool from agents/k8s/tools/query.py
-        context = await k8s_overview_query_tool.ainvoke(
-            {
-                "namespace": request.namespace,
-                "resource_kind": request.resource_kind,
-                "k8s_client": k8s_client,
-            }
+        message = Message(
+            resource_kind=request.resource_kind,
+            namespace=request.namespace,
+            query="",
+            resource_api_version="",
+            resource_name="",
         )
+        context = await get_relevant_context_from_k8s_cluster(message, k8s_client)
 
         logger.info(f"Successfully retrieved overview for namespace={request.namespace}")
 

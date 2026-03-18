@@ -1,14 +1,18 @@
-import json
+"""Conversation service — wires up CompanionAgent, replaces LangGraph pipeline."""
+
+import uuid
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from typing import Protocol, cast
 
 from kubernetes.client import ApiException
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langfuse.langchain import CallbackHandler
 
-from agents.common.constants import ERROR, ERROR_RESPONSE
+from agents.common.constants import ERROR_RESPONSE
 from agents.common.data import Message
-from agents.graph import CompanionGraph, IGraph
-from agents.memory.async_redis_checkpointer import get_async_redis_saver
+from agents.companion import CompanionAgent
+from agents.tools import ToolRegistry
 from followup_questions.followup_questions import (
     FollowUpQuestionsHandler,
     IFollowUpQuestionsHandler,
@@ -17,17 +21,25 @@ from initial_questions.inital_questions import (
     IInitialQuestionsHandler,
     InitialQuestionsHandler,
 )
+from rag.system import RAGSystem
+from services.conversation_store import ConversationStore
 from services.k8s import IK8sClient
-from services.usage import IUsageTracker, UsageExceedReport, UsageTracker
+from services.langfuse import LangfuseService, get_langfuse_metadata
+from services.model_adapter import create_model_adapter
+from services.response_converter import ResponseConverter
+from services.usage import IUsageTracker, UsageExceedReport, UsageTracker, UsageTrackerCallback
+from services.usage_store import UsageStore
 from utils.config import Config
 from utils.logging import get_logger
 from utils.models.factory import IModel, IModelFactory, ModelFactory
 from utils.settings import (
     MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
     TOKEN_LIMIT_PER_CLUSTER,
     TOKEN_USAGE_RESET_INTERVAL,
 )
 from utils.singleton_meta import SingletonMeta
+from utils.streaming import make_error_event
 
 logger = get_logger(__name__)
 
@@ -45,7 +57,9 @@ class IService(Protocol):
         """Generate follow-up questions for a conversation."""
         ...
 
-    def handle_request(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncGenerator[bytes]:
+    def handle_request(
+        self, conversation_id: str, message: Message, k8s_client: IK8sClient, cluster_id: str = ""
+    ) -> AsyncGenerator[bytes]:
         """Handle a request for a conversation"""
         ...
 
@@ -59,13 +73,9 @@ class IService(Protocol):
 
 
 class ConversationService(metaclass=SingletonMeta):
-    """
-    Implementation of the conversation service.
-    This class is a singleton and should be used to handle the conversation.
-    """
+    """Implementation of the conversation service using CompanionAgent."""
 
     _init_questions_handler: IInitialQuestionsHandler
-    _kyma_graph: IGraph
     _model_factory: IModelFactory
     _usage_limiter: IUsageTracker
 
@@ -84,17 +94,64 @@ class ConversationService(metaclass=SingletonMeta):
             raise
 
         model_mini = cast(IModel, models[MAIN_MODEL_MINI_NAME])
-        # Set up the initial question handler, which will handle all the logic to generate the inital questions.
+        self._model_main = cast(IModel, models[MAIN_MODEL_NAME])
+
+        # Set up the initial question handler
         self._init_questions_handler = initial_questions_handler or InitialQuestionsHandler(model=model_mini)
 
-        # Set up the followup question handler.
+        # Set up the followup question handler
         self._followup_questions_handler = followup_questions_handler or FollowUpQuestionsHandler(model=model_mini)
 
-        # Set up the Kyma Graph which allows access to stored conversation histories.
-        checkpointer = get_async_redis_saver()
-        self._usage_limiter = UsageTracker(checkpointer, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL)
+        # Set up conversation store (replaces AsyncRedisSaver for messages)
+        self._conversation_store = ConversationStore()
 
-        self._companion_graph = CompanionGraph(models, memory=checkpointer)
+        # Set up usage store and tracker (replaces AsyncRedisSaver for usage)
+        self._usage_store = UsageStore()
+        self._usage_limiter = UsageTracker(self._usage_store, TOKEN_LIMIT_PER_CLUSTER, TOKEN_USAGE_RESET_INTERVAL)
+
+        # Set up Langfuse service
+        self._langfuse = LangfuseService()
+
+        # Set up RAG system for search_kyma_doc tool
+        rag_system = None
+        try:
+            rag_system = RAGSystem(models)
+        except Exception:
+            logger.warning("Failed to initialize RAG system, search_kyma_doc will be unavailable")
+
+        # Set up tool registry
+        self._tool_registry = ToolRegistry(rag_system=rag_system)
+
+    def _build_callbacks(self, cluster_id: str, conversation_id: str, user_id: str) -> list:
+        """Build LangChain callbacks for a request (Langfuse tracing + usage tracking)."""
+        callbacks = []
+
+        # Langfuse tracing callback — one trace per conversation turn
+        if self._langfuse.enabled:
+            trace_id = str(uuid.uuid4())
+            handler = CallbackHandler(
+                trace_context={"trace_id": trace_id},
+                update_trace=True,
+            )
+            callbacks.append(handler)
+
+        # Usage tracking callback
+        if cluster_id:
+            usage_callback = UsageTrackerCallback(
+                cluster_id=cluster_id,
+                memory=self._usage_store,
+            )
+            callbacks.append(usage_callback)
+
+        return callbacks
+
+    def _build_langfuse_metadata(self, conversation_id: str, user_id: str) -> dict:
+        """Build Langfuse metadata to pass through RunnableConfig."""
+        return get_langfuse_metadata(
+            user_id=user_id,
+            session_id=conversation_id,
+            tags=["companion-agent"],
+        )
 
     async def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         """Initialize a new conversation."""
@@ -129,29 +186,69 @@ class ConversationService(metaclass=SingletonMeta):
 
         logger.info(f"Generating follow-up questions for conversation: ({conversation_id})")
 
-        # Fetch the conversation history from the LangGraph.
-        messages = await self._companion_graph.aget_messages(conversation_id)
-        # Generate follow-up questions based on the conversation history.
+        # Load conversation history from new store
+        history_dicts = await self._conversation_store.load_messages(conversation_id)
+
+        # Convert to LangChain messages for the existing handler
+        messages: list[BaseMessage] = []
+        for msg in history_dicts:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+            if role == "user":
+                messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                messages.append(AIMessage(content=content))
+
         return self._followup_questions_handler.generate_questions(messages=messages)
 
     async def handle_request(
-        self, conversation_id: str, message: Message, k8s_client: IK8sClient
+        self,
+        conversation_id: str,
+        message: Message,
+        k8s_client: IK8sClient,
+        cluster_id: str = "",
     ) -> AsyncGenerator[bytes]:
-        """Handle a request"""
+        """Handle a request by delegating to CompanionAgent."""
         try:
-            async for chunk in self._companion_graph.astream(conversation_id, message, k8s_client):
-                yield chunk.encode()
+            # Build per-request callbacks for Langfuse tracing and usage tracking
+            callbacks = self._build_callbacks(
+                cluster_id=cluster_id,
+                conversation_id=conversation_id,
+                user_id=message.user_identifier or "",
+            )
+
+            # Build Langfuse metadata for RunnableConfig
+            metadata = self._build_langfuse_metadata(
+                conversation_id=conversation_id,
+                user_id=message.user_identifier or "",
+            )
+
+            # Create per-request adapter with callbacks and metadata
+            adapter = create_model_adapter(self._model_main, callbacks=callbacks, metadata=metadata)
+
+            # Create response converter for this request
+            response_converter = ResponseConverter(k8s_client)
+
+            # Create companion agent for this request
+            agent = CompanionAgent(
+                adapter=adapter,
+                tool_registry=self._tool_registry,
+                conversation_store=self._conversation_store,
+                response_converter=response_converter,
+            )
+
+            async for chunk in agent.handle_message(conversation_id, message, k8s_client):
+                yield chunk
         except Exception:
             logger.exception("Error during streaming")
-            error_chunk = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}})
-            yield error_chunk.encode()
+            yield make_error_event(ERROR_RESPONSE)
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
         """Authorize the user to access the conversation."""
-        owner = await self._companion_graph.aget_thread_owner(conversation_id)
+        owner = await self._conversation_store.get_thread_owner(conversation_id)
         # If the owner is None, we can update the owner to the current user.
         if owner is None:
-            await self._companion_graph.aupdate_thread_owner(conversation_id, user_identifier)
+            await self._conversation_store.set_thread_owner(conversation_id, user_identifier)
             return True
         # If the owner is the same as the user, we can authorize the user.
         return owner == user_identifier

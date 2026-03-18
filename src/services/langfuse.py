@@ -1,18 +1,15 @@
-"""Langfuse tracing service for LangGraph."""
+"""Langfuse tracing service."""
 
 import copy
 from typing import Any
 
-import scrubadub
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, ToolMessage
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
-from agents.common.state import GraphInput
-from agents.kyma.tools.query import fetch_kyma_resource_version
-from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.k8s import IK8sClient, K8sClient
+from services.pii_detector import scrub_pii
 from utils.logging import get_logger
 from utils.settings import (
     LANGFUSE_ENABLED,
@@ -30,15 +27,12 @@ logger = get_logger(__name__)
 REDACTED = "REDACTED"
 EMPTY_OBJECT: dict[str, Any] = {}
 
+# Tools whose output is safe to include in traces
+ALLOWED_TOOL_NAMES = ["search_kyma_doc", "fetch_kyma_resource_version"]
+
 
 def get_langfuse_metadata(user_id: str, session_id: str, tags: list[str]) -> dict:
-    """
-    Returns metadata for Langfuse traces.
-    Args:
-        user_id (str): The user ID.
-        session_id (str): The session ID.
-    """
-    # check CallbackHandler._parse_langfuse_trace_attributes_from_metadata for possible keys.
+    """Returns metadata for Langfuse traces."""
     return {
         "langfuse_session_id": session_id,
         "langfuse_user_id": user_id,
@@ -47,18 +41,15 @@ def get_langfuse_metadata(user_id: str, session_id: str, tags: list[str]) -> dic
 
 
 class LangfuseService(metaclass=SingletonMeta):
-    """Service for Langfuse tracing integration with LangGraph."""
+    """Service for Langfuse tracing integration."""
 
     def __init__(self):
         """Initialize the Langfuse service."""
         self.enabled = string_to_bool(str(LANGFUSE_ENABLED.lower()))
         self.masking_mode = LANGFUSE_MASKING_MODE
-        self.data_scrubber = scrubadub.Scrubber()
-        self.data_scrubber.remove_detector(scrubadub.detectors.UrlDetector)
-        self.allowed_tools = [SEARCH_KYMA_DOC_TOOL_NAME, fetch_kyma_resource_version.name]
+        self.allowed_tools = ALLOWED_TOOL_NAMES
 
         if self.enabled:
-            # Create/Configure Langfuse client (once at startup)
             Langfuse(
                 public_key=LANGFUSE_PUBLIC_KEY,
                 secret_key=LANGFUSE_SECRET_KEY,
@@ -69,14 +60,8 @@ class LangfuseService(metaclass=SingletonMeta):
         else:
             logger.debug("Langfuse is disabled. No client will be initialized.")
 
-    def get_callback_handler(
-        self,
-    ) -> BaseCallbackHandler | None:
-        """Get a Langfuse callback handler for tracing.
-
-        Returns:
-            A Langfuse CallbackHandler if enabled, None otherwise.
-        """
+    def get_callback_handler(self) -> BaseCallbackHandler | None:
+        """Get a Langfuse callback handler for tracing."""
         if not self.enabled:
             return None
 
@@ -87,32 +72,14 @@ class LangfuseService(metaclass=SingletonMeta):
             return None
 
     def masking_production_data(self, *, data: Any, **kwargs: dict[str, Any]) -> Any:
-        """
-        Removes sensitive information from traces.
-
-        Args:
-            data (dict): The data containing sensitive information.
-
-        Returns:
-            dict: The data with sensitive information removed.
-        """
-        # IMPORTANT: This function should never modify the input data in place.
-        # Always work on a copy of the data to avoid unintended side effects.
-        # We do not deepcopy the whole data at the beginning,
-        # because it can be very large and contain unserializable objects.
-        # Instead, we will create copies of the parts of the data that we
-        # need to modify (e.g. message content) as we go.
-
-        # First, check for critical information that should always be masked regardless of the masking mode.
+        """Removes sensitive information from traces."""
         critical_masked = self._mask_critical(data)
         if critical_masked is not None:
             return critical_masked
 
         if self.masking_mode == LangfuseMaskingModes.DISABLED:
-            # If masking is disabled, return the data unmasked.
             return data
         elif self.masking_mode == LangfuseMaskingModes.REDACTED:
-            # If masking is set to REDACTED, return a placeholder string
             return REDACTED
         elif self.masking_mode == LangfuseMaskingModes.PARTIAL:
             return self._masking_mode_partial(data)
@@ -129,31 +96,21 @@ class LangfuseService(metaclass=SingletonMeta):
 
     def _masking_mode_partial(self, data: Any) -> Any:
         """Return only the user input and resource information. Everything else is redacted."""
-        if isinstance(data, GraphInput):
-            output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-            if output:
-                return self.data_scrubber.clean(output)
-
+        if isinstance(data, str):
+            return scrub_pii(data)
+        if isinstance(data, dict) and "content" in data and "role" in data:
+            content = data.get("content", "")
+            if isinstance(content, str):
+                return scrub_pii(content)
         return REDACTED
 
     def _masking_mode_filtered(self, data: Any) -> Any:  # noqa: C901
         """Recursively masks sensitive information in the provided data."""
-        # IMPORTANT: This function should never modify the input data in place.
-        # Always work on a copy of the data to avoid unintended side effects.
-        # We do not deepcopy the whole data at the beginning,
-        # because it can be very large and contain unserializable objects.
-        # Instead, we will create copies of the parts of the data that we
-        # need to modify (e.g. message content) as we go.
         try:
             if not data or isinstance(data, int | float | bool):
                 return data
-            # If data is a GraphInput, sanitize the messages in reverse order for better readability.
-            if isinstance(data, GraphInput):
-                output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-                return self.data_scrubber.clean(output if output else REDACTED)
-            # If data is a string, sanitize it directly.
-            elif isinstance(data, str):
-                return self.data_scrubber.clean(copy.copy(data))
+            if isinstance(data, str):
+                return scrub_pii(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
                 data = copy.deepcopy(data)
                 data.content = REDACTED
@@ -163,22 +120,17 @@ class LangfuseService(metaclass=SingletonMeta):
                 data.content = self._get_cleaned_content(data.content)
                 return data
             elif isinstance(data, dict) and "content" in data and "role" in data:
-                # If data is a dictionary with role and content, sanitize the content.
                 data = copy.deepcopy(data)
-                data["content"] = self.data_scrubber.clean(data["content"]) if data["role"] != "tool" else REDACTED
+                data["content"] = scrub_pii(data["content"]) if data["role"] != "tool" else REDACTED
                 return data
             elif isinstance(data, dict):
                 result = {}
                 for key, value in data.items():
-                    # Recursively sanitize each value in the dictionary.
-                    # Do not update the original data in place, create a new dictionary for the result.
                     result[key] = self._masking_mode_filtered(value)
                 return result
             elif isinstance(data, (IK8sClient, K8sClient)):
-                # Mask Kubernetes client instances with an empty object.
                 return EMPTY_OBJECT
             elif isinstance(data, list):
-                # If data is a list, sanitize each item in the list (recursively).
                 return [self._masking_mode_filtered(item) for item in data]
             elif hasattr(data, "to_dict"):
                 return self._masking_mode_filtered(data.to_dict())
@@ -191,9 +143,7 @@ class LangfuseService(metaclass=SingletonMeta):
             return f"Error while masking data: {e}"
 
     def _get_cleaned_content(self, content: Any) -> Any:
-        """
-        Helper function to clean the content of a message.
-        """
+        """Clean the content of a message using regex PII scrubbing."""
         if isinstance(content, str):
-            return self.data_scrubber.clean(content)
+            return scrub_pii(content)
         return f"Error while masking message content: content (type: {type(content)}) is not a string."

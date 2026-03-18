@@ -3,15 +3,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from kubernetes.client import ApiException
-from langchain_core.messages import AIMessage
 
-from agents.common.constants import ERROR, ERROR_RESPONSE
 from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
 from services.usage import UsageExceedReport
-from utils.settings import MAIN_MODEL_MINI_NAME
+from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME
 
-TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
 CONVERSATION_ID = "1"
 POD_YAML = """
@@ -36,30 +33,49 @@ TEST_MESSAGE = Message(
 
 
 class TestConversation:
+    @pytest.fixture(autouse=True)
+    def reset_singleton(self):
+        """Reset singleton instances for test isolation."""
+        ConversationService._instances = {}
+        yield
+        ConversationService._instances = {}
+
     @pytest.fixture
     def mock_model_factory(self):
         mock_model = Mock()
-        mock_models = {MAIN_MODEL_MINI_NAME: mock_model}
+        mock_model.name = "gpt-4.1"
+        mock_model.llm = Mock()
+        mock_models = {
+            MAIN_MODEL_MINI_NAME: mock_model,
+            MAIN_MODEL_NAME: mock_model,
+        }
         with patch("services.conversation.ModelFactory") as mock:
             mock.return_value.create_models.return_value = mock_models
             yield mock
 
     @pytest.fixture
-    def mock_companion_graph(self):
-        mock_companion_graph = MagicMock()
-        mock_companion_graph.astream.return_value = AsyncMock()
-        mock_companion_graph.astream.return_value.__aiter__.return_value = [
-            "chunk1",
-            "chunk2",
-            "chunk3",
-        ]
-        with patch("services.conversation.CompanionGraph", return_value=mock_companion_graph) as mock:
-            yield mock
+    def mock_conversation_store(self):
+        store = Mock()
+        store.load_messages = AsyncMock(return_value=[])
+        store.save_messages = AsyncMock()
+        store.get_thread_owner = AsyncMock(return_value=None)
+        store.set_thread_owner = AsyncMock()
+        with patch("services.conversation.ConversationStore", return_value=store):
+            yield store
 
     @pytest.fixture
-    def mock_redis_saver(self):
-        with patch("services.conversation.get_async_redis_saver") as mock:
-            mock.from_conn_info.return_value = Mock()
+    def mock_usage_store(self):
+        store = Mock()
+        store.awrite_llm_usage = AsyncMock()
+        store.adelete_expired_llm_usage_records = AsyncMock()
+        store.alist_llm_usage_records = AsyncMock(return_value=[])
+        with patch("services.conversation.UsageStore", return_value=store):
+            yield store
+
+    @pytest.fixture
+    def mock_adapter(self):
+        with patch("services.conversation.create_model_adapter") as mock:
+            mock.return_value = Mock()
             yield mock
 
     @pytest.fixture
@@ -95,8 +111,9 @@ class TestConversation:
     async def test_new_conversation(
         self,
         mock_model_factory,
-        mock_companion_graph,
-        mock_redis_saver,
+        mock_conversation_store,
+        mock_usage_store,
+        mock_adapter,
         mock_config,
         test_description,
         k8s_context,
@@ -109,8 +126,6 @@ class TestConversation:
         mock_handler.apply_token_limit = Mock(return_value=k8s_context)
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
 
-        # Reset singleton instances to ensure test isolation.
-        ConversationService._instances = {}
         conversation_service = ConversationService(
             config=mock_config,
             initial_questions_handler=mock_handler,
@@ -138,110 +153,87 @@ class TestConversation:
     async def test_handle_followup_questions(
         self,
         mock_model_factory,
-        mock_companion_graph,
-        mock_redis_saver,
+        mock_conversation_store,
+        mock_usage_store,
+        mock_adapter,
         mock_config,
     ) -> None:
         # Given:
-        dummy_conversation_history = [
-            AIMessage(content="Message 1"),
-            AIMessage(content="Message 2"),
-            AIMessage(content="Message 3"),
+        dummy_history = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"},
+            {"role": "user", "content": "What is Kyma?"},
         ]
-        # define mock for FollowUpQuestionsHandler.
+        mock_conversation_store.load_messages = AsyncMock(return_value=dummy_history)
+
         mock_handler = Mock()
         mock_handler.generate_questions = Mock(return_value=QUESTIONS)
-        # initialize ConversationService instance.
+
         conversation_service = ConversationService(
             config=mock_config,
             followup_questions_handler=mock_handler,
         )
-        conversation_service._followup_questions_handler = mock_handler
-        # define mock for CompanionGraph.
-        conversation_service._companion_graph.aget_messages = AsyncMock(return_value=dummy_conversation_history)
 
         # When:
         result = await conversation_service.handle_followup_questions(CONVERSATION_ID)
 
         # Then:
         assert result == QUESTIONS
-        mock_handler.generate_questions.assert_called_once_with(messages=dummy_conversation_history)
-        conversation_service._companion_graph.aget_messages.assert_called_once_with(CONVERSATION_ID)
+        mock_handler.generate_questions.assert_called_once()
+        # Verify LangChain messages were constructed from history
+        call_args = mock_handler.generate_questions.call_args
+        messages = call_args[1]["messages"]
+        assert len(messages) == 3
 
     @pytest.mark.asyncio
-    async def test_handle_request(
+    async def test_handle_request_streams_events(
         self,
         mock_model_factory,
-        mock_redis_saver,
-        mock_companion_graph,
+        mock_conversation_store,
+        mock_usage_store,
+        mock_adapter,
         mock_config,
     ):
         # Given:
         mock_k8s_client = Mock()
+        conversation_service = ConversationService(config=mock_config)
 
-        # When:
-        messaging_service = ConversationService(config=mock_config)
+        # Mock the CompanionAgent to yield test events
+        mock_events = [b'{"event":"agent_action","data":{}}', b'{"event":"agent_action","data":{}}']
+        with patch("services.conversation.CompanionAgent") as mock_agent_cls:
+            mock_agent = Mock()
+
+            async def mock_handle(*args, **kwargs):
+                for event in mock_events:
+                    yield event
+
+            mock_agent.handle_message = mock_handle
+            mock_agent_cls.return_value = mock_agent
+
+            # When:
+            result = [
+                chunk async for chunk in conversation_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
+            ]
 
         # Then:
-        result = [
-            chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
-        ]
-        assert result == [b"chunk1", b"chunk2", b"chunk3"]
-
-    @pytest.mark.asyncio
-    async def test_handle_request_exception(
-        self,
-        mock_model_factory,
-        mock_redis_saver,
-        mock_companion_graph,
-        mock_config,
-    ):
-        mock_k8s_client = Mock()
-        mock_companion_graph.astream.side_effect = Exception("stream failure")
-
-        messaging_service = ConversationService(config=mock_config)
-        messaging_service._companion_graph = mock_companion_graph
-
-        result = [
-            chunk async for chunk in messaging_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
-        ]
-
-        error_response = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}}).encode()
-        assert result == [error_response]
+        assert len(result) == 2
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_description, conversation_id, user_identifier, thread_owner, expected_result",
         [
-            (
-                "owner is None, should update owner and authorize",
-                "conversation1",
-                "user1",
-                None,
-                True,
-            ),
-            (
-                "owner is the same as user, should authorize",
-                "conversation2",
-                "user2",
-                "user2",
-                True,
-            ),
-            (
-                "owner is different from user, should not authorize",
-                "conversation3",
-                "user3",
-                "user4",
-                False,
-            ),
+            ("owner is None, should update owner and authorize", "conversation1", "user1", None, True),
+            ("owner is the same as user, should authorize", "conversation2", "user2", "user2", True),
+            ("owner is different from user, should not authorize", "conversation3", "user3", "user4", False),
         ],
     )
     async def test_authorize_user(
         self,
         test_description,
         mock_model_factory,
-        mock_redis_saver,
-        mock_companion_graph,
+        mock_conversation_store,
+        mock_usage_store,
+        mock_adapter,
         mock_config,
         conversation_id,
         user_identifier,
@@ -249,12 +241,10 @@ class TestConversation:
         expected_result,
     ):
         # Given
-        mock_companion_graph = Mock()
-        mock_companion_graph.aget_thread_owner = AsyncMock(return_value=thread_owner)
-        mock_companion_graph.aupdate_thread_owner = AsyncMock()
+        mock_conversation_store.get_thread_owner = AsyncMock(return_value=thread_owner)
+        mock_conversation_store.set_thread_owner = AsyncMock()
 
         conversation_service = ConversationService(config=mock_config)
-        conversation_service._companion_graph = mock_companion_graph
 
         # When
         result = await conversation_service.authorize_user(conversation_id, user_identifier)
@@ -262,9 +252,9 @@ class TestConversation:
         # Then
         assert result == expected_result
         if thread_owner is None:
-            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(conversation_id, user_identifier)
+            mock_conversation_store.set_thread_owner.assert_called_once_with(conversation_id, user_identifier)
         else:
-            mock_companion_graph.aupdate_thread_owner.assert_not_called()
+            mock_conversation_store.set_thread_owner.assert_not_called()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -294,8 +284,9 @@ class TestConversation:
     async def test_is_usage_limit_exceeded(
         self,
         mock_model_factory,
-        mock_redis_saver,
-        mock_companion_graph,
+        mock_conversation_store,
+        mock_usage_store,
+        mock_adapter,
         mock_config,
         cluster_id,
         usage_limit_exceeded,

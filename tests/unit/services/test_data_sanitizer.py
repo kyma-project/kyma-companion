@@ -292,7 +292,7 @@ class TestDataSanitizer:
                                 "contact": "phone: {{PHONE}}",
                                 "details": {
                                     "address": "123 Main St, NY",
-                                    "ssn": "{{SOCIAL_SECURITY_NUMBER}}",
+                                    "ssn": "{{SSN}}",
                                 },
                             },
                         },

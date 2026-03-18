@@ -23,7 +23,6 @@ from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_resource_discovery import K8sResourceDiscovery
 from utils.config import Config, get_config
 from utils.logging import get_logger
-from utils.response import prepare_chunk_response
 from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
     create_session_id,
@@ -261,12 +260,15 @@ async def messages(
         # mark the message as a cluster overview query
         message.resource_scope = CLUSTER
 
+    # Extract cluster_id for usage tracking and Langfuse
+    cluster_id = x_cluster_url.split(".")[1] if "." in x_cluster_url else ""
+
     return StreamingResponse(
         (
-            chunk_response + b"\n"
-            async for chunk in conversation_service.handle_request(str(conversation_id), message, k8s_client)
-            for chunk_response in (prepare_chunk_response(chunk),)
-            if chunk_response is not None
+            chunk + b"\n"
+            async for chunk in conversation_service.handle_request(
+                str(conversation_id), message, k8s_client, cluster_id=cluster_id
+            )
         ),
         media_type="text/event-stream",
     )

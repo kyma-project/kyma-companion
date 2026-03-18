@@ -1,8 +1,7 @@
 """
 Kyma Tools REST API Router.
 
-This module exposes Kyma agent tools as REST API endpoints by wrapping
-the tools defined in src/agents/kyma/tools.
+This module exposes Kyma agent tools as REST API endpoints.
 """
 
 from http import HTTPStatus
@@ -11,10 +10,6 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, HTTPException
 from langchain_core.embeddings import Embeddings
 
-from agents.kyma.tools.query import (
-    fetch_kyma_resource_version,
-    kyma_query_tool,
-)
 from agents.kyma.tools.search import SearchKymaDocTool
 from routers.common import (
     API_PREFIX,
@@ -61,7 +56,7 @@ async def query_kyma_resource(
     logger.info(f"Kyma query request: uri={request.uri}")
 
     try:
-        result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
+        result = await k8s_client.execute_get_api_request(request.uri)
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
     except K8sClientError as e:
@@ -93,12 +88,7 @@ async def get_resource_version(
     logger.info(f"Resource version request: kind={request.resource_kind}")
 
     try:
-        api_version = fetch_kyma_resource_version.invoke(
-            {
-                "resource_kind": request.resource_kind,
-                "k8s_client": k8s_client,
-            }
-        )
+        api_version = await k8s_client.get_resource_version(request.resource_kind)
         logger.info(f"Resource version lookup successful: kind={request.resource_kind}, version={api_version}")
         return KymaResourceVersionResponse(
             resource_kind=request.resource_kind,

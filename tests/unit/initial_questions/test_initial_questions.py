@@ -73,20 +73,23 @@ def test_generate_questions(mock_init):
 @pytest.fixture
 def mock_k8s_client():
     mock = Mock()
-    mock.list_not_running_pods.return_value = [{KEY: LIST_NOT_RUNNING_PODS}, MOCK_DICT]
-    mock.list_nodes_metrics = AsyncMock()
-    mock.list_nodes_metrics.return_value = [{KEY: LIST_NODES_METRICS}, MOCK_DICT]
-    mock.list_k8s_warning_events.return_value = [
-        {KEY: LIST_K8S_WARNING_EVENTS},
-        MOCK_DICT,
-    ]
-    mock.list_resources.return_value = [{KEY: LIST_RESOURCES}, MOCK_DICT]
-    mock.list_k8s_events_for_resource.return_value = [
-        {KEY: LIST_K8S_EVENTS_FOR_RESOURCE},
-        MOCK_DICT,
-    ]
-    mock.get_resource.return_value = {KEY: GET_RESOURCE}
-    mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE}
+    mock.list_not_running_pods = AsyncMock(return_value=[{KEY: LIST_NOT_RUNNING_PODS}, MOCK_DICT])
+    mock.list_nodes_metrics = AsyncMock(return_value=[{KEY: LIST_NODES_METRICS}, MOCK_DICT])
+    mock.list_k8s_warning_events = AsyncMock(
+        return_value=[
+            {KEY: LIST_K8S_WARNING_EVENTS},
+            MOCK_DICT,
+        ]
+    )
+    mock.list_resources = AsyncMock(return_value=[{KEY: LIST_RESOURCES}, MOCK_DICT])
+    mock.list_k8s_events_for_resource = AsyncMock(
+        return_value=[
+            {KEY: LIST_K8S_EVENTS_FOR_RESOURCE},
+            MOCK_DICT,
+        ]
+    )
+    mock.get_resource = AsyncMock(return_value={KEY: GET_RESOURCE})
+    mock.describe_resource = AsyncMock(return_value={KEY: DESCRIBE_RESOURCE})
     mock.get_data_sanitizer.return_value = None
     return mock
 

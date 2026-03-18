@@ -1,0 +1,58 @@
+{
+  "AICORE_AUTH_URL": "<FILL_IN>",
+  "AICORE_BASE_URL": "<FILL_IN>",
+  "AICORE_CLIENT_ID": "<FILL_IN>",
+  "AICORE_CLIENT_SECRET": "<FILL_IN>",
+  "AICORE_RESOURCE_GROUP": "default",
+
+  "REDIS_HOST": "redis",
+  "REDIS_PORT": "6379",
+  "REDIS_PASSWORD": "",
+
+  "TEST_CLUSTER_URL": "<FILL_IN_FOR_INTEGRATION_TESTS>",
+  "TEST_CLUSTER_CA_DATA": "<FILL_IN_FOR_INTEGRATION_TESTS>",
+  "TEST_CLUSTER_AUTH_TOKEN": "<FILL_IN_FOR_INTEGRATION_TESTS>",
+
+  "LANGFUSE_ENABLED": "True",
+  "LANGFUSE_HOST": "http://langfuse-web:3000",
+  "LANGFUSE_PUBLIC_KEY": "pk-lf-local-companion",
+  "LANGFUSE_SECRET_KEY": "sk-lf-local-companion",
+  "LANGFUSE_MASKING_MODE": "FILTERED",
+
+  "DATABASE_URL": "<FILL_IN_FOR_RAG>",
+  "DATABASE_USER": "<FILL_IN_FOR_RAG>",
+  "DATABASE_PASSWORD": "<FILL_IN_FOR_RAG>",
+  "DATABASE_PORT": "443",
+  "DOCS_TABLE_NAME": "kyma_docs",
+
+  "LOG_LEVEL": "INFO",
+  "LOG_FORMAT": "pretty",
+  "HOST": "0.0.0.0",
+  "PORT": "8000",
+
+  "models": [
+    {
+      "name": "gpt-4.1",
+      "deployment_id": "<FILL_IN>",
+      "temperature": 0
+    },
+    {
+      "name": "gpt-4.1-mini",
+      "deployment_id": "<FILL_IN>",
+      "temperature": 0
+    },
+    {
+      "name": "gpt-4.1-nano",
+      "deployment_id": "<FILL_IN>",
+      "temperature": 0
+    },
+    {
+      "name": "text-embedding-3-large",
+      "deployment_id": "<FILL_IN>"
+    }
+  ],
+  "MAIN_MODEL_NAME": "gpt-4.1",
+  "MAIN_MODEL_MINI_NAME": "gpt-4.1-mini",
+  "MAIN_MODEL_NANO_NAME": "gpt-4.1-nano",
+  "MAIN_EMBEDDING_MODEL_NAME": "text-embedding-3-large"
+}
