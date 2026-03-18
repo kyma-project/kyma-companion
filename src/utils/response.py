@@ -8,7 +8,6 @@ from agents.common.constants import (
     FINALIZER,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
-    IS_FEEDBACK,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -90,7 +89,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
             "answer": {
                 "content": "",
                 "tasks": [PLANNING_TASK],
-                IS_FEEDBACK: (agent_data.get(IS_FEEDBACK) if IS_FEEDBACK in agent_data else None),
                 NEXT: SUPERVISOR,
             },
         }
@@ -104,8 +102,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     # as of now 'next' field is provided by only SUPERVISOR and GATEKEEPER
     if agent in (SUPERVISOR, GATEKEEPER):
         answer[NEXT] = agent_data.get(NEXT)
-        if IS_FEEDBACK in agent_data:
-            answer[IS_FEEDBACK] = agent_data.get(IS_FEEDBACK)
     else:
         # for all other agent, decide next based on pending task
         if agent_data.get("subtasks"):
@@ -142,16 +138,14 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
     agent_data = data[agent]
 
     if agent == ERROR:
-        return json.dumps(
-            {
-                "event": "unknown",
-                "data": {
-                    "agent": None,
-                    "error": agent_data[ERROR],
-                    "answer": {"content": agent_data[ERROR], "tasks": [], NEXT: END},
-                },
-            }
-        ).encode()
+        return json.dumps({
+            "event": "unknown",
+            "data": {
+                "agent": None,
+                "error": agent_data[ERROR],
+                "answer": {"content": agent_data[ERROR], "tasks": [], NEXT: END},
+            },
+        }).encode()
 
     if agent_data.get("messages"):
         last_agent = agent_data["messages"][-1].get("name")
@@ -162,12 +156,10 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
     new_data = process_response(data, agent)
 
     return (
-        json.dumps(
-            {
-                "event": "agent_action",
-                "data": new_data,
-            }
-        ).encode()
+        json.dumps({
+            "event": "agent_action",
+            "data": new_data,
+        }).encode()
         if new_data
         else None
     )
