@@ -105,11 +105,13 @@ def create_chain(
     schema: Any,
 ) -> RunnableSequence:
     """Create the a chain."""
-    prompt_template = ChatPromptTemplate.from_messages([
-        ("system", main_sys_prompt),
-        MessagesPlaceholder(variable_name="messages"),
-        ("system", followup_sys_prompt),
-    ])
+    prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", main_sys_prompt),
+            MessagesPlaceholder(variable_name="messages"),
+            ("system", followup_sys_prompt),
+        ]
+    )
     return prompt_template | model.llm.with_structured_output(schema, method="function_calling")  # type: ignore
 
 
@@ -176,11 +178,13 @@ class CompanionGraph:
     def _create_common_chain(model: IModel) -> RunnableSequence:
         """Common node chain to handle general queries."""
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", COMMON_QUESTION_PROMPT),
-            MessagesPlaceholder(variable_name="messages"),
-            ("human", "query: {query}"),
-        ])
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", COMMON_QUESTION_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("human", "query: {query}"),
+            ]
+        )
         return prompt | model.llm  # type: ignore
 
     async def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
@@ -237,11 +241,13 @@ class CompanionGraph:
         """Gatekeeper node chain to handle general queries
         and queries that can answered from conversation history."""
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", GATEKEEPER_PROMPT),
-            MessagesPlaceholder(variable_name="messages"),
-            ("system", GATEKEEPER_INSTRUCTIONS),
-        ])
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", GATEKEEPER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("system", GATEKEEPER_INSTRUCTIONS),
+            ]
+        )
         return prompt | model.llm.with_structured_output(GatekeeperResponse, method="function_calling")  # type: ignore
 
     async def _invoke_gatekeeper_node(self, state: CompanionState) -> GatekeeperResponse:
@@ -436,22 +442,26 @@ class CompanionGraph:
 
     async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
         """Get messages from the graph state."""
-        latest_state = await self.graph.aget_state({
-            "configurable": {
-                "thread_id": conversation_id,
-            },
-        })
+        latest_state = await self.graph.aget_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
         if latest_state.values and "messages" in latest_state.values:
             return latest_state.values["messages"]  # type: ignore
         return []
 
     async def aget_thread_owner(self, conversation_id: str) -> str | None:
         """Get the owner of the thread."""
-        state = await self.graph.aget_state({
-            "configurable": {
-                "thread_id": conversation_id,
-            },
-        })
+        state = await self.graph.aget_state(
+            {
+                "configurable": {
+                    "thread_id": conversation_id,
+                },
+            }
+        )
         if state and state.values and "thread_owner" in state.values and state.values["thread_owner"] != "":
             return str(state.values["thread_owner"])
         return None
