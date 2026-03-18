@@ -22,7 +22,7 @@ class EncryptionCache:
 
     async def save_public_key(self, session_id: str, public_key: str) -> None:
         await self._redis.get_connection().set(
-            name=f"encryption_cache_session_{session_id}",
+            name=f"encryption:{session_id}",
             value=public_key,
             ex=REDIS_TTL,
         )

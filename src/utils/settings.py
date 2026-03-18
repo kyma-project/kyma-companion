@@ -95,6 +95,8 @@ user_part = f"{REDIS_USER}" if REDIS_USER else ""
 auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD else ""
 REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
+REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
+
 # Langfuse
 LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
 LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
@@ -111,6 +113,7 @@ MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
 
+# Database
 DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)
@@ -120,6 +123,14 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
     "HANA_HEALTH_CHECK_CACHE_TTL_SECONDS", default=300, cast=int
 )  # Default 5 minutes
 
+# Encryption (Base64 encoded)
+ENCRYPTION_PUBLIC_KEY_B64 = config("ENCRYPTION_PUBLIC_KEY_B64", default="")
+ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="")
+
+# TEST CLIENT KEY-PAIR (Base64 encoded) (TODO: Remove this after testing)
+TEST_CLIENT_PUBLIC_KEY_B64 = config("TEST_CLIENT_PUBLIC_KEY_B64", default="")
+
+# Token limits
 TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 5000000, cast=int)
 TOKEN_USAGE_RESET_INTERVAL = config("TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int)  # 24 hours
 
@@ -132,7 +143,6 @@ TOTAL_CHUNKS_LIMIT = config("TOTAL_CHUNKS_LIMIT", 2, cast=int)  # Limit the numb
 
 TOOL_RESPONSE_TOKEN_COUNT_LIMIT = config("TOOL_RESPONSE_TOKEN_COUNT_LIMIT", 10000, cast=int)
 
-REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",
     default=f"{Path(__file__).parent.parent.parent}/config/api_resources.json",
