@@ -23,6 +23,8 @@ _NONCE = "test-nonce"
 def _nonce_key(session_id: str, nonce: str) -> str:
     """Build the expected Redis key for a nonce, mirroring the production logic."""
     return f"{_NONCE_KEY_PREFIX}{quote(session_id, safe='')}:{quote(nonce, safe='')}"
+
+
 _PUBLIC_KEY = "test-public-key"
 _FIXED_TIME = 1_000_000.0
 
