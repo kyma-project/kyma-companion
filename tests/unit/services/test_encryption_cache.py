@@ -10,6 +10,8 @@ from services.encryption_cache import (
     _ENCRYPTION_CACHE_KEY_PREFIX,
     _NONCE_KEY_PREFIX,
     EncryptionCache,
+    IEncryptionCache,
+    get_encryption_cache,
 )
 from utils.settings import NONCE_REPLAY_WINDOW_SECONDS, REDIS_TTL
 
@@ -170,3 +172,33 @@ class TestEncryptionCache:
         if stored_first_seen_offset is None:
             stored = await fake_redis.get(nonce_key)
             assert stored == str(_FIXED_TIME), test_case
+
+    def test_encryption_cache_implements_iencryption_cache(self, fake_redis: fakeredis.FakeAsyncRedis):
+        """EncryptionCache must satisfy the IEncryptionCache Protocol."""
+        cache = EncryptionCache(redis=MockRedisService(fake_redis))
+        assert isinstance(cache, IEncryptionCache)
+
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            pytest.param(
+                "returns an EncryptionCache instance wrapping the provided Redis service",
+                id="returns_encryption_cache",
+            ),
+        ],
+    )
+    def test_get_encryption_cache(
+        self,
+        fake_redis: fakeredis.FakeAsyncRedis,
+        test_case: str,
+    ):
+        # Given:
+        redis_service = MockRedisService(fake_redis)
+
+        # When:
+        cache = get_encryption_cache(redis=redis_service)
+
+        # Then:
+        assert isinstance(cache, EncryptionCache), test_case
+        assert isinstance(cache, IEncryptionCache), test_case
+        assert cache._redis is redis_service, test_case

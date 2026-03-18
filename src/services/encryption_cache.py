@@ -1,5 +1,5 @@
 import time
-from typing import Annotated, Protocol, cast
+from typing import Annotated, Protocol, cast, runtime_checkable
 
 from fastapi import Depends
 from redis.asyncio import Redis as AsyncRedis
@@ -19,6 +19,7 @@ class IRedisService(Protocol):
         ...
 
 
+@runtime_checkable
 class IEncryptionCache(Protocol):
     """Protocol for services that can store and retrieve session public keys."""
 
