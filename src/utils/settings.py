@@ -124,7 +124,7 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 )  # Default 5 minutes
 
 # Encryption (Base64 encoded)
-ENCRYPTION_PUBLIC_KEY_B64 = config("ENCRYPTION_PUBLIC_KEY_B64", default="123123123")
+ENCRYPTION_PUBLIC_KEY_B64 = config("ENCRYPTION_PUBLIC_KEY_B64", default="")
 ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="")
 
 # TEST CLIENT KEY-PAIR (Base64 encoded) (TODO: Remove this after testing)
