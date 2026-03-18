@@ -332,7 +332,10 @@ async def init_k8s_client(
 
 
 async def get_k8s_auth_headers_from_encrypted_payload(
-    x_encrypted_key: str, x_client_iv: str, x_session_id: str, x_target_cluster_encrypted: str,
+    x_encrypted_key: str,
+    x_client_iv: str,
+    x_session_id: str,
+    x_target_cluster_encrypted: str,
     encryption_cache: EncryptionCache,
 ) -> K8sAuthHeaders:
     """

@@ -126,9 +126,7 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 # Encryption (Base64 encoded)
 ENCRYPTION_PUBLIC_KEY_B64 = config("ENCRYPTION_PUBLIC_KEY_B64", default="")
 ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="")
-
-# TEST CLIENT KEY-PAIR (Base64 encoded) (TODO: Remove this after testing)
-TEST_CLIENT_PUBLIC_KEY_B64 = config("TEST_CLIENT_PUBLIC_KEY_B64", default="")
+NONCE_REPLAY_WINDOW_SECONDS = config("NONCE_REPLAY_WINDOW_SECONDS", default=300, cast=int)  # 5 minutes
 
 # Token limits
 TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 5000000, cast=int)

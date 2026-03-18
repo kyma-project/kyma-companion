@@ -45,6 +45,7 @@ class Encryption:
             raise TypeError("private_key_b64 is not an EC private key")
         self._private_key: EllipticCurvePrivateKey = key
         self._encryption_cache = encryption_cache
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -67,7 +68,9 @@ class Encryption:
         """
         client_public_key_b64 = await self._get_client_public_key(client_public_key_id)
         if not client_public_key_b64:
-            raise ValueError(f"Client public key not found for session ID: {client_public_key_id}")
+            raise ValueError(f"Client public key not found: {client_public_key_id}")
+        if not await self._encryption_cache.is_nonce_allowed(client_public_key_id, iv):
+            raise ValueError("Replay attack detected: nonce already used outside the allowed window")
         shared_key = self._derive_shared_key(client_public_key_b64)
         aes_key = self._decrypt_aes_key(encrypted_key, shared_key)
         return self._decrypt_data(encrypted_data, aes_key, iv)
@@ -77,8 +80,7 @@ class Encryption:
     # ------------------------------------------------------------------
 
     async def _get_client_public_key(self, client_public_key_id: str) -> str | None:
-        """Resolve the client's ECDH public key from the encryption cache.
-        """
+        """Resolve the client's ECDH public key from the encryption cache."""
         return await self._encryption_cache.get_client_public_key(client_public_key_id)
 
     def _derive_shared_key(self, client_public_key_b64: str) -> bytes:

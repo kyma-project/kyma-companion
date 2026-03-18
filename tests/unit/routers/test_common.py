@@ -3,13 +3,14 @@ Unit tests for routers/common.py shared dependencies and utilities.
 """
 
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException
 
 from routers.common import init_k8s_client, init_models_dict
 from services.data_sanitizer import IDataSanitizer
+from services.encryption_cache import IEncryptionCache
 
 
 class TestInitK8sClient:
@@ -21,6 +22,11 @@ class TestInitK8sClient:
         return Mock(spec=IDataSanitizer)
 
     @pytest.fixture
+    def mock_encryption_cache(self):
+        """Create a mock EncryptionCache."""
+        return AsyncMock(spec=IEncryptionCache)
+
+    @pytest.fixture
     def valid_headers(self):
         """Provide valid K8s authentication headers."""
         return {
@@ -29,7 +35,10 @@ class TestInitK8sClient:
             "x_k8s_authorization": "test-token-123",
         }
 
-    def test_init_k8s_client_raises_422_on_validation_error(self, valid_headers, mock_data_sanitizer):
+    @pytest.mark.asyncio
+    async def test_init_k8s_client_raises_422_on_validation_error(
+        self, valid_headers, mock_data_sanitizer, mock_encryption_cache
+    ):
         """Test that init_k8s_client raises 422 when headers validation fails."""
         with patch("routers.common.K8sAuthHeaders") as mock_auth_class:
             mock_auth = Mock()
@@ -37,10 +46,11 @@ class TestInitK8sClient:
             mock_auth_class.return_value = mock_auth
 
             with pytest.raises(HTTPException) as exc_info:
-                init_k8s_client(
+                await init_k8s_client(
                     x_cluster_url=valid_headers["x_cluster_url"],
                     x_cluster_certificate_authority_data=valid_headers["x_cluster_certificate_authority_data"],
                     data_sanitizer=mock_data_sanitizer,
+                    encryption_cache=mock_encryption_cache,
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
                     x_client_key_data=None,

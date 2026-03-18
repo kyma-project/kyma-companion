@@ -14,7 +14,7 @@ class MockEncryptionCache:
         self.should_fail = should_fail
         self.saved: dict[str, tuple[str, int | None]] = {}
 
-    async def save_public_key(self, session_id: str, public_key: str) -> None:
+    async def save_client_public_key(self, session_id: str, public_key: str) -> None:
         if self.should_fail:
             raise RuntimeError("encryption cache save failed")
         self.saved[session_id] = (public_key, REDIS_TTL)
