@@ -1,23 +1,16 @@
 from typing import Annotated, Protocol
 
 from fastapi import Depends
+from redis.asyncio import Redis as AsyncRedis
 
 from services.redis import Redis, get_redis
 from utils.settings import REDIS_TTL
 
 
-class IRedisConnection(Protocol):
-    """Protocol describing the subset of Redis connection methods used by this module."""
-
-    async def set(self, name: str, value: str, ex: int | None = None) -> bool:
-        """Store a value under a key, optionally with an expiration in seconds."""
-        ...
-
-
 class IRedisService(Protocol):
     """Protocol for services that can provide a Redis connection."""
 
-    def get_connection(self) -> IRedisConnection:
+    def get_connection(self) -> AsyncRedis:
         """Return an active Redis connection."""
         ...
 
