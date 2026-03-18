@@ -1,5 +1,6 @@
 import time
 from typing import Annotated, Protocol, cast, runtime_checkable
+from urllib.parse import quote
 
 from fastapi import Depends
 from redis.asyncio import Redis as AsyncRedis
@@ -68,7 +69,7 @@ class EncryptionCache:
         (agents may legitimately resend the same headers). Uses beyond that
         window are rejected as replay attacks.
         """
-        key = f"{_NONCE_KEY_PREFIX}{session_id}:{nonce}"
+        key = f"{_NONCE_KEY_PREFIX}{quote(session_id, safe='')}:{quote(nonce, safe='')}"
         raw = cast(str | None, await self._redis.get_connection().get(key))
         if raw is None:
             await self._redis.get_connection().set(key, str(time.time()), ex=REDIS_TTL)

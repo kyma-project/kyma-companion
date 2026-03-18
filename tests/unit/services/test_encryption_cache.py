@@ -1,6 +1,7 @@
 """Unit tests for services/encryption_cache.py."""
 
 from unittest.mock import patch
+from urllib.parse import quote
 
 import fakeredis
 import pytest
@@ -17,6 +18,11 @@ from utils.settings import NONCE_REPLAY_WINDOW_SECONDS, REDIS_TTL
 
 _SESSION_ID = "test-session-id"
 _NONCE = "test-nonce"
+
+
+def _nonce_key(session_id: str, nonce: str) -> str:
+    """Build the expected Redis key for a nonce, mirroring the production logic."""
+    return f"{_NONCE_KEY_PREFIX}{quote(session_id, safe='')}:{quote(nonce, safe='')}"
 _PUBLIC_KEY = "test-public-key"
 _FIXED_TIME = 1_000_000.0
 
@@ -124,25 +130,47 @@ class TestEncryptionCache:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "test_case, stored_first_seen_offset, expected_result",
+        "test_case, session_id, nonce, stored_first_seen_offset, expected_result",
         [
             pytest.param(
                 "returns True and stores the nonce timestamp on first use",
+                _SESSION_ID,
+                _NONCE,
                 None,
                 True,
                 id="first_use",
             ),
             pytest.param(
                 "returns True when the nonce was first seen within the replay window",
+                _SESSION_ID,
+                _NONCE,
                 -(NONCE_REPLAY_WINDOW_SECONDS - 10),
                 True,
                 id="within_window",
             ),
             pytest.param(
                 "returns False when the nonce was first seen outside the replay window",
+                _SESSION_ID,
+                _NONCE,
                 -(NONCE_REPLAY_WINDOW_SECONDS + 10),
                 False,
                 id="outside_window",
+            ),
+            pytest.param(
+                "handles a base64 nonce containing special characters (/, +, =)",
+                "session-abc",
+                "a/b+c=d/e+f==",
+                None,
+                True,
+                id="base64_nonce_special_chars",
+            ),
+            pytest.param(
+                "handles a session_id containing colons without key ambiguity",
+                "ns:pod:abc",
+                _NONCE,
+                None,
+                True,
+                id="session_id_with_colons",
             ),
         ],
     )
@@ -151,11 +179,13 @@ class TestEncryptionCache:
         fake_redis: fakeredis.FakeAsyncRedis,
         cache: EncryptionCache,
         test_case: str,
+        session_id: str,
+        nonce: str,
         stored_first_seen_offset: float | None,
         expected_result: bool,
     ):
         # Given:
-        nonce_key = f"{_NONCE_KEY_PREFIX}{_SESSION_ID}:{_NONCE}"
+        nonce_key = _nonce_key(session_id, nonce)
         if stored_first_seen_offset is not None:
             first_seen = _FIXED_TIME + stored_first_seen_offset
             await fake_redis.set(nonce_key, str(first_seen))
@@ -163,7 +193,7 @@ class TestEncryptionCache:
         # When:
         with patch("services.encryption_cache.time") as mock_time:
             mock_time.time.return_value = _FIXED_TIME
-            result = await cache.is_nonce_allowed(_SESSION_ID, _NONCE)
+            result = await cache.is_nonce_allowed(session_id, nonce)
 
         # Then:
         assert result == expected_result, test_case

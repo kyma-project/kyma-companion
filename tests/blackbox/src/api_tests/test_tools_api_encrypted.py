@@ -119,9 +119,7 @@ def encryption_session(config: Config, base_api_url: str) -> dict:
         headers={"Content-Type": "application/json"},
         timeout=TIMEOUT,
     )
-    assert response.status_code == HTTPStatus.OK, (
-        f"Failed to register client public key: {response.text}"
-    )
+    assert response.status_code == HTTPStatus.OK, f"Failed to register client public key: {response.text}"
     body = response.json()
 
     # 3. Build cluster credentials payload using the K8sAuthHeaders validation alias keys
@@ -525,7 +523,9 @@ class TestToolsAPIErrorHandling:
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
-    def test_invalid_resource_kind_returns_error(self, base_api_url: str, encrypted_auth_headers: dict[str, str]) -> None:
+    def test_invalid_resource_kind_returns_error(
+        self, base_api_url: str, encrypted_auth_headers: dict[str, str]
+    ) -> None:
         """Test that invalid resource kind returns error."""
         response = requests.post(
             f"{base_api_url}/api/tools/kyma/resource-version",
