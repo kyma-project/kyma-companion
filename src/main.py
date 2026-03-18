@@ -16,8 +16,8 @@ from agents.common.constants import ERROR_RATE_LIMIT_CODE
 from routers.conversations import router as conversations_router
 from routers.k8s_tools_api import router as k8s_tools_router
 from routers.kyma_tools_api import router as kyma_tools_router
-from routers.public_key import router as public_key_router
 from routers.probes import router as probes_router
+from routers.public_key import router as public_key_router
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger, reconfigure_logging
