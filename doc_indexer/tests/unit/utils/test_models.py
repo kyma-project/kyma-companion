@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 from gen_ai_hub.proxy.langchain import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
+from utils.model_config import ModelConfig
 
 from utils.models import (
     create_embedding_factory,
@@ -79,10 +80,10 @@ def test_openai_embedding_creator(
     # Arrange
     mock_embeddings = Mock(spec=OpenAIEmbeddings)
     mock_proxy_client = Mock()
-    mock_model_config = {"name": model_name, "deployment_id": "test-deployment-id"}
+    mock_model_config = ModelConfig(name=model_name, deployment_id="test-deployment-id")
 
     with (
-        patch("utils.models._get_model_config", return_value=mock_model_config),
+        patch("utils.models.get_embedding_model_config", return_value=mock_model_config),
         patch("utils.models.get_proxy_client", return_value=mock_proxy_client),
         patch("utils.models.OpenAIEmbeddings") as mock_openai_cls,
         patch("utils.models.time.sleep"),

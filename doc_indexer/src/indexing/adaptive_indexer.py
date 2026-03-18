@@ -176,12 +176,12 @@ class AdaptiveSplitMarkdownIndexer:
 
         for sub_doc in splitted_docs:
             if not sub_doc.metadata:
-                print("  skip chunk - no metadata")
+                logger.warning("skip chunk - no metadata")
                 continue
 
             title = self._build_title(sub_doc)
             if not title:
-                print("skip chunk - no title")
+                logger.warning("skip chunk - no title")
                 continue
 
             if parent_title != title and (parent_title + " - ") not in title:

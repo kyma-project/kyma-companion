@@ -34,24 +34,42 @@ poetry run python src/main.py index
 
 ## Testing
 
-The `config-doc-indexer.json` file can also be used for testing.
-To run the unit and integration tests, use the following command:
+The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).
 
-```bash
-poetry run poe test
-```
+### Test structure
 
-To run the unit tests, use the following command:
+| Layer | Location | Description |
+|---|---|---|
+| Unit | `tests/unit/` | Fast tests with no external dependencies. All external calls are mocked. |
+| Integration | `tests/integration/` | Tests that make real API calls to the embedding service and SAP AI Core, including a full end-to-end test that writes to a temporary Hana DB table. |
 
+A missing config is a hard failure — there are no silent skips.
+
+In CI, the e2e table is named `kc_pr_<PR number>_e2e` so orphaned tables can be traced back to the PR that created them. Locally a UUID is used (`test_e2e_<uuid>_e2e`).
+
+### Running tests
+
+Run unit tests:
 ```bash
 poetry run poe test-unit
 ```
 
-To run the integration tests, use the following command:
-
+Run integration tests:
 ```bash
 poetry run poe test-integration
 ```
+
+Run all tests:
+```bash
+poetry run poe test
+```
+
+### Key regression tests
+
+- **`tests/unit/test_main.py::test_run_indexer_passes_model_name_not_deployment_id`** — verifies that `run_indexer()` passes the model name (not the deployment ID) to the embedding factory.
+- **`tests/integration/test_main.py::test_run_indexer_embedding_model_creation`** — positive check: model creation via the exact production sequence produces a working embeddings model.
+- **`tests/integration/test_main.py::test_run_indexer_fails_when_deployment_id_passed_as_model_name`** — negative check: passing a deployment ID instead of a model name raises `ValueError`.
+- **`tests/integration/test_main.py::test_run_indexer_e2e`** — full end-to-end: indexes real documents into a temporary Hana DB table and verifies chunks were stored.
 
 ## Static Code Analysis
 ```bash
