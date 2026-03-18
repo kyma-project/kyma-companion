@@ -124,5 +124,7 @@ class Encryption:
             ciphertext ‖ GCM-tag[16B]
         """
         iv = base64.b64decode(iv_b64)
+        if len(iv) != _AES_GCM_NONCE_SIZE:
+            raise ValueError(f"IV must be {_AES_GCM_NONCE_SIZE} bytes, got {len(iv)}")
         ciphertext_with_tag = base64.b64decode(encrypted_data_b64)
         return AESGCM(aes_key).decrypt(iv, ciphertext_with_tag, None)
