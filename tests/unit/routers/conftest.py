@@ -50,7 +50,7 @@ class MockK8sClient(IK8sClient):
         self.logs_scenario = logs_scenario
         self._resource_versions = {
             "Function": "serverless.kyma-project.io/v1alpha2",
-            "APIRule": "gateway.kyma-project.io/v1beta1",
+            "APIRule": "gateway.kyma-project.io/v2",
             "Subscription": "eventing.kyma-project.io/v1alpha2",
             "TracePipeline": "telemetry.kyma-project.io/v1alpha1",
             "ServiceInstance": "services.cloud.sap.com/v1",

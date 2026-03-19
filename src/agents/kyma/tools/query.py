@@ -32,7 +32,7 @@ async def kyma_query_tool(
     Use this to get information about Kyma-specific resources like Function, APIRule, etc.
     Example URIs:
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
-    - /apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules"""
+    - /apis/gateway.kyma-project.io/v2/namespaces/default/apirules"""
     try:
         return await k8s_client.execute_get_api_request(uri)
     except K8sClientError as e:
@@ -62,6 +62,15 @@ class KymaResourceVersionToolArgs(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
+DEPRECATED_API_VERSIONS = {
+    "gateway.kyma-project.io/v1beta1": (
+        "gateway.kyma-project.io/v2",
+        "APIRule v1beta1 is deprecated and removed in API Gateway module release 3.4. "
+        "Migrate to v2. See: https://kyma-project.io/#/api-gateway/user/custom-resources/apirule/04-10-apirule-custom-resource",
+    ),
+}
+
+
 @tool(infer_schema=False, args_schema=KymaResourceVersionToolArgs)
 def fetch_kyma_resource_version(
     resource_kind: str,
@@ -74,7 +83,11 @@ def fetch_kyma_resource_version(
     to be verified or kyma_query_tool returns 404 not found.
     """
     try:
-        return k8s_client.get_resource_version(resource_kind)
+        version = k8s_client.get_resource_version(resource_kind)
+        if version in DEPRECATED_API_VERSIONS:
+            _, warning = DEPRECATED_API_VERSIONS[version]
+            return f"{version}\nWARNING: {warning}"
+        return version
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,
