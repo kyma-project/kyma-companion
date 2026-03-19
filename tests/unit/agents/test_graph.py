@@ -6,11 +6,10 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON, GATEKEEPER, IS_FEEDBACK, UNKNOWN
+from agents.common.constants import COMMON, GATEKEEPER, UNKNOWN
 from agents.common.data import Message
 from agents.common.state import (
     CompanionState,
-    FeedbackResponse,
     GatekeeperResponse,
     SubTask,
 )
@@ -22,7 +21,6 @@ from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
-    MAIN_MODEL_NANO_NAME,
 )
 
 
@@ -40,7 +38,6 @@ def mock_models():
     return {
         MAIN_MODEL_MINI_NAME: main_model_mini,
         MAIN_MODEL_NAME: main_model,
-        MAIN_MODEL_NANO_NAME: MagicMock(spec=IModel),
         MAIN_EMBEDDING_MODEL_NAME: main_embedding_model,
     }
 
@@ -94,7 +91,6 @@ def companion_graph(
         graph = CompanionGraph(mock_models, mock_memory)
         graph._invoke_common_node = AsyncMock()
         graph._invoke_gatekeeper_node = AsyncMock()
-        graph._invoke_feedback_node = AsyncMock()
         return graph
 
 
@@ -280,12 +276,11 @@ class TestCompanionGraph:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
-        "test_case, messages, feedback_node_response, chain_response, expected_output, expected_error",
+        "test_case, messages, chain_response, expected_output, expected_error",
         [
             (
                 "Direct response, mark next == __end__",
                 [HumanMessage(content="What are Java and Python?")],
-                '{"response" : true}',
                 '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "messages": [
@@ -297,26 +292,22 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    IS_FEEDBACK: True,
                 },
                 None,
             ),
             (
                 "No direct response, Forward query to supervisor",
                 [HumanMessage(content="What is Kyma?")],
-                '{"response" : false}',
                 '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
                 {
                     "subtasks": [],
                     "next": SUPERVISOR,
-                    IS_FEEDBACK: False,
                 },
                 None,
             ),
             (
                 "Handles exception during gatekeeper execution",
                 [HumanMessage(content="What is Java?")],
-                '{"response" : false}',
                 None,
                 {
                     "messages": [
@@ -327,56 +318,6 @@ class TestCompanionGraph:
                     ],
                     "subtasks": [],
                     "next": "__end__",
-                    IS_FEEDBACK: False,
-                },
-                "Error in common node: Test error",
-            ),
-            (
-                "Handles exception in feedback node with direct response",
-                [HumanMessage(content="What are Java and Python?")],
-                "feedback_exception",
-                '{"direct_response" :"Python is a high-level programming language. Java is a general-purpose programming language.", "forward_query" : false, "user_intent" : "Programming", "category" : "Programming", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Python is a high-level programming language. "
-                            "Java is a general-purpose programming language.",
-                            name=GATEKEEPER,
-                        )
-                    ],
-                    "subtasks": [],
-                    "next": "__end__",
-                    IS_FEEDBACK: False,
-                },
-                None,
-            ),
-            (
-                "Handles exception in feedback node with forward query",
-                [HumanMessage(content="What is Kyma?")],
-                "feedback_exception",
-                '{"direct_response" :"", "forward_query" : true, "user_intent" : "Kyma", "category" : "Kyma", "is_prompt_injection": false, "is_security_threat": false, "answer_from_history": ""}',
-                {
-                    "subtasks": [],
-                    "next": SUPERVISOR,
-                    IS_FEEDBACK: False,
-                },
-                None,
-            ),
-            (
-                "Handles exception in both feedback and gatekeeper nodes",
-                [HumanMessage(content="What is Java?")],
-                "feedback_exception",
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I am unable to process the request.",
-                            name=GATEKEEPER,
-                        )
-                    ],
-                    "subtasks": [],
-                    "next": "__end__",
-                    IS_FEEDBACK: False,
                 },
                 "Error in common node: Test error",
             ),
@@ -387,21 +328,12 @@ class TestCompanionGraph:
         companion_graph,
         test_case,
         messages,
-        feedback_node_response,
         chain_response,
         expected_output,
         expected_error,
     ):
         # Given
         state = CompanionState(subtasks=[], messages=messages)
-
-        # Set up feedback node - handle exception case
-        if feedback_node_response == "feedback_exception":
-            companion_graph._invoke_feedback_node.side_effect = Exception("Error in feedback node")
-        else:
-            companion_graph._invoke_feedback_node.return_value = FeedbackResponse.model_validate_json(
-                feedback_node_response
-            )
 
         if expected_error:
             companion_graph._invoke_gatekeeper_node.side_effect = Exception(expected_error)
@@ -415,9 +347,6 @@ class TestCompanionGraph:
         assert result == expected_output, test_case
 
         # Then
-        # Feedback node should always be called (even if it raises an exception)
-        companion_graph._invoke_feedback_node.assert_awaited_once_with(state)
-
         if chain_response:
             companion_graph._invoke_gatekeeper_node.assert_awaited_once_with(state)
         elif expected_error:
