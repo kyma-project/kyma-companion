@@ -2,6 +2,7 @@
 Common models, constants, and dependencies shared across routers.
 """
 
+import json
 from http import HTTPStatus
 from typing import Annotated
 
@@ -10,11 +11,14 @@ from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
 
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
+from services.encryption import Encryption
+from services.encryption_cache import EncryptionCache, get_encryption_cache
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import ENCRYPTION_PRIVATE_KEY_B64
 
 logger = get_logger(__name__)
 
@@ -270,13 +274,20 @@ def init_models_dict(
     return _ModelsCache._instance
 
 
-def init_k8s_client(
-    x_cluster_url: Annotated[str, Header()],
-    x_cluster_certificate_authority_data: Annotated[str, Header()],
+async def init_k8s_client(
     data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
+    encryption_cache: Annotated[EncryptionCache, Depends(get_encryption_cache)],
+    # Plain headers for backward compatibility.
+    x_cluster_url: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_cluster_certificate_authority_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    # Encrypted headers for new authentication mechanism.
+    x_encrypted_key: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_client_iv: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_session_id: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    x_target_cluster_encrypted: Annotated[str, Header()] = None,  # type: ignore[assignment]
 ) -> IK8sClient:
     """
     Initialize K8s client with authentication headers.
@@ -290,13 +301,22 @@ def init_k8s_client(
     - x-client-certificate-data & x-client-key-data: Client certificates
     """
     k8s_auth_headers = K8sAuthHeaders(
-        x_cluster_url=x_cluster_url,
-        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
-        x_k8s_authorization=x_k8s_authorization,
-        x_client_certificate_data=x_client_certificate_data,
-        x_client_key_data=x_client_key_data,
+        x_cluster_url=x_cluster_url if x_cluster_url else "",
+        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data
+        if x_cluster_certificate_authority_data
+        else "",
+        x_k8s_authorization=x_k8s_authorization if x_k8s_authorization else None,
+        x_client_certificate_data=x_client_certificate_data if x_client_certificate_data else None,
+        x_client_key_data=x_client_key_data if x_client_key_data else None,
     )
 
+    # if x_target_cluster_encrypted is provided, get the K8s auth headers from the encrypted payload
+    if x_target_cluster_encrypted:
+        k8s_auth_headers = await get_k8s_auth_headers_from_encrypted_payload(
+            x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted, encryption_cache
+        )
+
+    # validate the K8s auth headers
     try:
         k8s_auth_headers.validate_headers()
     except Exception as e:
@@ -309,3 +329,56 @@ def init_k8s_client(
         k8s_auth_headers=k8s_auth_headers,
         data_sanitizer=data_sanitizer,
     )
+
+
+async def get_k8s_auth_headers_from_encrypted_payload(
+    x_encrypted_key: str,
+    x_client_iv: str,
+    x_session_id: str,
+    x_target_cluster_encrypted: str,
+    encryption_cache: EncryptionCache,
+) -> K8sAuthHeaders:
+    """
+    Get K8s auth headers from encrypted payload.
+
+    x_encrypted_key: base64(nonce ‖ AES-GCM ciphertext+tag) of the random AES-256 key,
+                     encrypted with the ECDH-derived shared key.
+    x_client_iv: base64-encoded 12-byte nonce used for payload encryption.
+    x_session_id: session identifier used to resolve the client's ECDH public key.
+    x_target_cluster_encrypted: base64(AES-GCM ciphertext+tag) of the JSON cluster payload,
+                                encrypted with the random AES-256 key.
+    """
+
+    if not ENCRYPTION_PRIVATE_KEY_B64:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Encrypted Auth Headers are not enabled in companion",
+        )
+
+    if not x_encrypted_key or not x_client_iv or not x_target_cluster_encrypted:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Missing required encrypted headers (x-encrypted-key, x-client-iv, x-target-cluster-encrypted)",
+        )
+
+    try:
+        # decrypt the payload using the encryption service.
+        encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64, encryption_cache)
+        payload = await encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
+        # parse the payload as JSON and convert to a K8sAuthHeaders instance
+        payload = json.loads(payload)
+        # convert all keys to lowercase to match the K8sAuthHeaders model
+        auth_headers = {k.lower(): v for k, v in payload.items()}
+        return K8sAuthHeaders.model_validate(auth_headers)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail="Failed to decrypt cluster authentication headers",
+        ) from e

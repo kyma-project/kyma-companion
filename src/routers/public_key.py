@@ -54,7 +54,7 @@ async def init_public_key(
     session_id = create_session_id()
 
     try:
-        await encryption_cache.save_public_key(session_id=session_id, public_key=request.public_key)
+        await encryption_cache.save_client_public_key(session_id=session_id, public_key=request.public_key)
     except Exception as e:
         logger.error(f"Failed to persist client public key in Redis: {str(e)}")
         raise HTTPException(
