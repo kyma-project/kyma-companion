@@ -4,7 +4,8 @@ from langchain_core.embeddings import Embeddings
 
 from utils.config import get_config
 from utils.logging import get_logger
-from utils.models.factory import IModel, ModelFactory
+from utils.models.factory import IModel
+from utils.models_cache import get_models
 from utils.singleton_meta import SingletonMeta
 
 USAGE_TRACKER_FAILURE_THRESHOLD = 3
@@ -115,7 +116,7 @@ class LLMProbe(metaclass=SingletonMeta):
 
 def _get_models() -> dict[str, IModel | Embeddings]:
     """Do not use this function directly to create Models. Use the ModelFactory instead."""
-    return ModelFactory(get_config()).create_models()
+    return get_models(get_config())
 
 
 def get_llm_probe() -> LLMProbe:
