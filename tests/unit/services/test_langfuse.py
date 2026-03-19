@@ -306,7 +306,6 @@ def test_masking_mode_partial(
                     "resource_related_to": None,
                     "resource_scope": None,
                 },
-                "is_feedback": False,
                 "messages": [
                     {
                         "additional_kwargs": {},
