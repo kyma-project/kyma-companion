@@ -135,7 +135,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -146,7 +146,7 @@ def kyma_agent(app_models):
                                 "type": "tool_call",
                                 "name": "kyma_query_tool",
                                 "args": {
-                                    "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
+                                    "uri": "/apis/gateway.kyma-project.io/v2/namespaces/kyma-app-apirule-broken/apirules"
                                 },
                             }
                         ],
@@ -202,7 +202,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                 ],
@@ -236,7 +236,7 @@ def kyma_agent(app_models):
                 agent_messages=[],
                 messages=[
                     SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', 'resource_namespace': 'kyma-app-apirule-broken'}"
+                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_namespace': 'kyma-app-apirule-broken'}"
                     ),
                     HumanMessage(content="What is wrong with api rule?"),
                     AIMessage(
@@ -247,7 +247,7 @@ def kyma_agent(app_models):
                                 "type": "tool_call",
                                 "name": "kyma_query_tool",
                                 "args": {
-                                    "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
+                                    "uri": "/apis/gateway.kyma-project.io/v2/namespaces/kyma-app-apirule-broken/apirules"
                                 },
                             }
                         ],

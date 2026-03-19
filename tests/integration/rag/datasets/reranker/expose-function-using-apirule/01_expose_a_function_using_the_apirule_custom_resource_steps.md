@@ -10,9 +10,9 @@ You can expose a Function using Kyma dashboard, Kyma CLI, or kubectl:
 > The APIRule CR can have a name different from that of the Function, but it is recommended that all related resources share a common name.
 - **Service Name** matching the Function's name.
 - **Host** to determine the host on which you want to expose your Function.
-4. Edit the access strategy in the **Rules** > **Access Strategies** section
+4. Edit the access strategy in the **Rules** section
 - Select the methods `GET`, `POST`, `PUT`, and `DELETE`.
-- Use the default `no_auth` handler.
+- Use `noAuth: true` to allow unauthenticated access.
 5. Select **Create** to confirm your changes.
 6. Check if you can access the Function by selecting the HTTPS link under the **Host** column for the newly created APIRule. If successful, the `Hello World!` message appears.
 #### **Kyma CLI**
@@ -38,8 +38,7 @@ rules:
 - POST
 - PUT
 - DELETE
-accessStrategies:
-- handler: no_auth
+noAuth: true
 ```
 4. Apply the new configuration to the cluster:
 ```bash
@@ -51,7 +50,7 @@ kubectl get apirules $NAME -n $NAMESPACE
 ```
 6. Check that the APIRule was created successfully and has the status `OK`:
 ```bash
-kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.APIRuleStatus.code}'
+kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.state}'
 ```
 7. Call the Function's external address:
 ```bash
@@ -70,14 +69,15 @@ export NAMESPACE={FUNCTION_NAMESPACE}
 2. Create an APIRule CR, which exposes your Function on port `80`.
 ```bash
 cat <<EOF | kubectl apply -f -
-apiVersion: gateway.kyma-project.io/v1beta1
+apiVersion: gateway.kyma-project.io/v2
 kind: APIRule
 metadata:
 name: $NAME
 namespace: $NAMESPACE
 spec:
 gateway: kyma-system/kyma-gateway
-host: $NAME.$DOMAIN
+hosts:
+- $NAME.$DOMAIN
 service:
 name: $NAME
 port: 80
@@ -88,13 +88,12 @@ methods:
 - POST
 - PUT
 - DELETE
-accessStrategies:
-- handler: no_auth
+noAuth: true
 EOF
 ```
 3. Check that the APIRule was created successfully and has the status `OK`:
 ```bash
-kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.APIRuleStatus.code}'
+kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.state}'
 ```
 4. Access the Function's external address:
 ```bash

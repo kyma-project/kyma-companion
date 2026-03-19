@@ -165,7 +165,7 @@ class KymaQueryRequest(BaseModel):
         description="Kubernetes API URI path for Kyma resources",
         examples=[
             "/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions",
-            "/apis/gateway.kyma-project.io/v1beta1/namespaces/default/apirules",
+            "/apis/gateway.kyma-project.io/v2/namespaces/default/apirules",
             "/apis/eventing.kyma-project.io/v1alpha2/namespaces/default/subscriptions",
         ],
     )
@@ -198,6 +198,7 @@ class KymaResourceVersionResponse(BaseModel):
 
     resource_kind: str = Field(..., description="Resource kind")
     api_version: str = Field(..., description="API version (e.g., 'group/version')")
+    deprecation_warning: str | None = Field(default=None, description="Deprecation warning if the version is outdated")
 
 
 class SearchKymaDocRequest(BaseModel):
