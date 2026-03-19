@@ -1,0 +1,36 @@
+name: All Checks Passed
+
+permissions:
+  contents: read
+
+on:
+  merge_group:
+  pull_request:
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        edited,
+        labeled,
+        milestoned,
+      ]
+  workflow_run:
+    workflows: ["Integration Test", "Evaluation tests"]
+    types:
+      - completed
+
+jobs:
+  all-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read # Required for checking the status of actions
+      contents: read
+    steps:
+      - name: Check if all checks passed
+        uses: wechuli/allcheckspassed@1d00cf0c34c4b0805db8866d8913f22e7125301e # v2.3.0
+        with:
+          delay: "1" # minutes
+          retries: "10"
+          polling_interval: "1" # minutes
