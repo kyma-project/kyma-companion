@@ -9,8 +9,9 @@ from indexing.adaptive_indexer import (
     remove_header_brackets,
     remove_parentheses,
 )
-from utils.utils import sanitize_table_name
 from langchain_core.documents import Document
+
+from utils.utils import sanitize_table_name
 
 pytestmark = pytest.mark.unit
 

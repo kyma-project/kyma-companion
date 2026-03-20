@@ -70,7 +70,9 @@ class MarkdownIndexer:
             embedding=embedding,
             table_name=table_name,
         )
-        self.backup_table_name = sanitize_table_name(backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}")
+        self.backup_table_name = sanitize_table_name(
+            backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}"
+        )
 
     def _load_documents(self) -> list[Document]:
         # Load all documents from the given directory
