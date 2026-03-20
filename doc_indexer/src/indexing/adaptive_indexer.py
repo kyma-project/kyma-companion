@@ -23,6 +23,21 @@ logger = get_logger(__name__)
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
 
 
+def sanitize_table_name(name: str) -> str:
+    """Replace characters illegal in HANA table names with underscores.
+
+    HANA table names may only contain letters, digits, and underscores.
+    Any other character (dots, hyphens, slashes, etc.) is replaced with '_'.
+    Leading digits are prefixed with '_' to avoid invalid identifiers.
+
+    Example: 'release-0.5.2_e2e' -> 'release_0_5_2_e2e'
+    """
+    sanitized = re.sub(r"[^A-Za-z0-9_]", "_", name)
+    if sanitized and sanitized[0].isdigit():
+        sanitized = f"_{sanitized}"
+    return sanitized
+
+
 def remove_parentheses(text: str) -> str:
     """Remove text within parentheses () from a string.
     Example: 'Hello (world)' -> 'Hello '
@@ -114,6 +129,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
             table_name = docs_path.split("/")[-1]
+        table_name = sanitize_table_name(table_name)
 
         self.docs_path = docs_path
         self.table_name = table_name

@@ -8,6 +8,7 @@ from indexing.adaptive_indexer import (
     remove_brackets,
     remove_header_brackets,
     remove_parentheses,
+    sanitize_table_name,
 )
 from langchain_core.documents import Document
 
@@ -140,6 +141,22 @@ def test_remove_header_brackets(input_text: str, expected: str):
 )
 def test_extract_first_title(given_text: str, wanted_title: str | None):
     assert extract_first_title(given_text) == wanted_title
+
+
+@pytest.mark.parametrize(
+    "input_name,expected",
+    [
+        ("kyma_docs", "kyma_docs"),  # already valid
+        ("release-0.5.2_e2e", "release_0_5_2_e2e"),  # dots and hyphens replaced
+        ("kc_pr_release_0.5.2_e2e", "kc_pr_release_0_5_2_e2e"),  # original error case
+        ("my table/name", "my_table_name"),  # spaces and slashes
+        ("123starts_with_digit", "_123starts_with_digit"),  # leading digit prefixed
+        ("valid_NAME_123", "valid_NAME_123"),  # already valid with mixed case
+        ("a!b@c#d", "a_b_c_d"),  # special chars replaced
+    ],
+)
+def test_sanitize_table_name(input_name: str, expected: str):
+    assert sanitize_table_name(input_name) == expected
 
 
 class TestAdaptiveSplitMarkdownIndexer:
