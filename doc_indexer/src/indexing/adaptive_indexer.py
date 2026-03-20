@@ -15,27 +15,13 @@ from utils.documents import load_documents
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
+from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
 
 logger = get_logger(__name__)
 
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
-
-
-def sanitize_table_name(name: str) -> str:
-    """Replace characters illegal in HANA table names with underscores.
-
-    HANA table names may only contain letters, digits, and underscores.
-    Any other character (dots, hyphens, slashes, etc.) is replaced with '_'.
-    Leading digits are prefixed with '_' to avoid invalid identifiers.
-
-    Example: 'release-0.5.2_e2e' -> 'release_0_5_2_e2e'
-    """
-    sanitized = re.sub(r"[^A-Za-z0-9_]", "_", name)
-    if sanitized and sanitized[0].isdigit():
-        sanitized = f"_{sanitized}"
-    return sanitized
 
 
 def remove_parentheses(text: str) -> str:

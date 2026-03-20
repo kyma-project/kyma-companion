@@ -8,8 +8,8 @@ from indexing.adaptive_indexer import (
     remove_brackets,
     remove_header_brackets,
     remove_parentheses,
-    sanitize_table_name,
 )
+from utils.utils import sanitize_table_name
 from langchain_core.documents import Document
 
 pytestmark = pytest.mark.unit
@@ -153,6 +153,7 @@ def test_extract_first_title(given_text: str, wanted_title: str | None):
         ("123starts_with_digit", "_123starts_with_digit"),  # leading digit prefixed
         ("valid_NAME_123", "valid_NAME_123"),  # already valid with mixed case
         ("a!b@c#d", "a_b_c_d"),  # special chars replaced
+        ("", ""),  # empty string
     ],
 )
 def test_sanitize_table_name(input_name: str, expected: str):

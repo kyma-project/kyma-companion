@@ -1,4 +1,3 @@
-import re
 import time
 from typing import Protocol
 
@@ -13,25 +12,11 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER
+from utils.utils import sanitize_table_name
 
 logger = get_logger(__name__)
 
 ERR_SQL_INV_TABLE = 259  # SQL error code for invalid table name in HANA Databases.
-
-
-def sanitize_table_name(name: str) -> str:
-    """Replace characters illegal in HANA table names with underscores.
-
-    HANA table names may only contain letters, digits, and underscores.
-    Any other character (dots, hyphens, slashes, etc.) is replaced with '_'.
-    Leading digits are prefixed with '_' to avoid invalid identifiers.
-
-    Example: 'release-0.5.2_e2e' -> 'release_0_5_2_e2e'
-    """
-    sanitized = re.sub(r"[^A-Za-z0-9_]", "_", name)
-    if sanitized and sanitized[0].isdigit():
-        sanitized = f"_{sanitized}"
-    return sanitized
 
 
 def create_chunks(documents: list[Document], headers_to_split_on: list[tuple[str, str]]) -> list[Document]:
@@ -85,7 +70,7 @@ class MarkdownIndexer:
             embedding=embedding,
             table_name=table_name,
         )
-        self.backup_table_name = backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}"
+        self.backup_table_name = sanitize_table_name(backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}")
 
     def _load_documents(self) -> list[Document]:
         # Load all documents from the given directory
