@@ -93,16 +93,22 @@ async def get_resource_version(
     logger.info(f"Resource version request: kind={request.resource_kind}")
 
     try:
-        api_version = fetch_kyma_resource_version.invoke(
+        result = fetch_kyma_resource_version.invoke(
             {
                 "resource_kind": request.resource_kind,
                 "k8s_client": k8s_client,
             }
         )
+        # The tool may return "version\nWARNING: ..." for deprecated versions.
+        # Split into clean api_version and optional deprecation_warning.
+        parts = result.split("\nWARNING: ", maxsplit=1)
+        api_version = parts[0]
+        deprecation_warning = parts[1] if len(parts) > 1 else None
         logger.info(f"Resource version lookup successful: kind={request.resource_kind}, version={api_version}")
         return KymaResourceVersionResponse(
             resource_kind=request.resource_kind,
             api_version=api_version,
+            deprecation_warning=deprecation_warning,
         )
     except K8sClientError as e:
         logger.error(f"Error fetching resource version: {e.message}")

@@ -414,6 +414,8 @@ class TestKymaToolsAPI:
         assert "api_version" in data
         assert data["resource_kind"] == resource_kind
         assert data["api_version"] == expected_api_version
+        if expected_api_version == "gateway.kyma-project.io/v1beta1":
+            assert data.get("deprecation_warning"), "Expected deprecation warning for v1beta1 APIRule"
         logger.info(f"Successfully verified {resource_kind} -> {expected_api_version}")
 
     @pytest.mark.parametrize(
