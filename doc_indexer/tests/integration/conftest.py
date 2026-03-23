@@ -13,6 +13,7 @@ from utils.settings import (
     EMBEDDING_MODEL_NAME,
     get_embedding_model_config,
 )
+from utils.utils import sanitize_table_name
 
 
 @pytest.fixture(scope="module")
