@@ -12,6 +12,7 @@ from utils.settings import (
     EMBEDDING_MODEL_NAME,
     get_embedding_model_config,
 )
+from utils.utils import sanitize_table_name
 
 
 @pytest.fixture(scope="module")
@@ -39,4 +40,4 @@ def e2e_table_name() -> str:
     # UUID to ensure uniqueness and avoid dirty state from crashed runs.
     ci_table_name = os.getenv("DOCS_TABLE_NAME", "")
     base = ci_table_name if ci_table_name.startswith("kc_pr_") else f"test_e2e_{uuid.uuid4().hex}"
-    return f"{base}_e2e"
+    return sanitize_table_name(f"{base}_e2e")
