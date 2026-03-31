@@ -43,6 +43,7 @@ def run_fetcher() -> None:
     # print the filtered documents
     try:
         subprocess.run(["tree", DOCS_PATH])
+    # this is only a test
     except Exception:
         logger.warning("Fetcher Completed but Failed to print the documents list")
 
