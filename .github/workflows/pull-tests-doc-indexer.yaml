@@ -10,7 +10,30 @@ on:
       - "doc_indexer/**"
 
 jobs:
+  check-author:
+    runs-on: ubuntu-latest
+    outputs:
+      is-codeowner: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if PR author is a codeowner
+        id: check
+        uses: actions/github-script@v8
+        with:
+          script: |
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org: 'kyma-project',
+                team_slug: 'ai-force',
+                username: context.payload.pull_request.user.login,
+              });
+              return true;
+            } catch {
+              return false;
+            }
+
   tests:
+    needs: check-author
+    if: needs.check-author.outputs.is-codeowner == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,7 +42,7 @@ jobs:
     name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -32,7 +55,7 @@ jobs:
           echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
