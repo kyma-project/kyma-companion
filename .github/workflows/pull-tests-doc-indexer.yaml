@@ -12,6 +12,8 @@ on:
 jobs:
   check-author:
     runs-on: ubuntu-latest
+    outputs:
+      is-codeowner: ${{ steps.check.outputs.result }}
     steps:
       - name: Check if PR author is a codeowner
         id: check
@@ -29,14 +31,9 @@ jobs:
               return false;
             }
 
-      - name: Fail if PR author is not a codeowner
-        if: steps.check.outputs.result != 'true'
-        run: |
-          echo "PR author is not a codeowner. Tests are restricted to codeowners only."
-          exit 1
-
   tests:
     needs: check-author
+    if: needs.check-author.outputs.is-codeowner == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
