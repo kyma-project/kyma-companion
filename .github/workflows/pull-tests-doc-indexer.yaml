@@ -2,7 +2,7 @@ name: pull-tests-doc-indexer
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
       - "release-**"
@@ -33,9 +33,7 @@ jobs:
 
   tests:
     needs: check-author
-    if: |
-      needs.check-author.outputs.is-codeowner == 'true' ||
-      contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    if: needs.check-author.outputs.is-codeowner == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
