@@ -53,7 +53,7 @@ def run_indexer(
     docs_path: str = DOCS_PATH,
     table_name: str = DOCS_TABLE_NAME,
 ) -> None:
-    """Entry function to run the indexer.
+    """Entry function to run the indexer for hanadb.
 
     Args:
         embeddings_model: Embedding model to use. If None, created from config.
