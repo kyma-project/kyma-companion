@@ -9,6 +9,8 @@ on:
     paths:
       - "doc_indexer/**"
 
+permissions: read-all
+
 jobs:
   check-author:
     runs-on: ubuntu-latest
