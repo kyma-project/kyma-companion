@@ -30,7 +30,7 @@ jobs:
               run_id: context.payload.workflow_run.id,
             });
             const artifact = artifacts.data.artifacts.find(a => a.name.startsWith('pr-context-'));
-            if (!artifact) core.setFailed('No PR context artifact found');
+            if (!artifact) { core.setFailed('No PR context artifact found'); return; }
             const download = await github.rest.actions.downloadArtifact({
               owner: context.repo.owner,
               repo: context.repo.repo,
