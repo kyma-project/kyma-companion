@@ -5,6 +5,8 @@ on: workflow_dispatch
 env:
   KYMA_VERSION: "2.20.5" # Required Kyma version.
 
+permissions: read-all
+
 jobs:
   setup-gardener-cluster:
     name: Setup Gardener cluster
