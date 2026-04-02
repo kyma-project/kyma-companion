@@ -1,0 +1,111 @@
+name: "API Tests (privileged)"
+run-name: "API Tests (privileged)"
+
+on:
+  workflow_run:
+    workflows: ["API Tests"]
+    types: [completed]
+
+permissions: read-all
+
+jobs:
+  check-author:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    outputs:
+      pr-number: ${{ steps.load-context.outputs.pr-number }}
+      head-sha: ${{ steps.load-context.outputs.head-sha }}
+      head-ref: ${{ steps.load-context.outputs.head-ref }}
+      head-repo: ${{ steps.load-context.outputs.head-repo }}
+      has-label: ${{ steps.load-context.outputs.has-label }}
+    steps:
+      - name: Download PR context artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            const artifact = artifacts.data.artifacts.find(a => a.name.startsWith('pr-context-api-tests-'));
+            if (!artifact) { core.setFailed('No PR context artifact found'); return; }
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: artifact.id,
+              archive_format: 'zip',
+            });
+            const fs = require('fs');
+            fs.writeFileSync('/tmp/pr-context.zip', Buffer.from(download.data));
+
+      - name: Extract PR context
+        run: unzip /tmp/pr-context.zip -d /tmp/pr-context
+
+      - name: Load PR context and check author
+        id: load-context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const ctx = JSON.parse(fs.readFileSync('/tmp/pr-context/pr-context.json', 'utf8'));
+            core.setOutput('pr-number', ctx.pr_number);
+            core.setOutput('head-sha', ctx.head_sha);
+            core.setOutput('head-ref', ctx.head_ref);
+            core.setOutput('head-repo', ctx.head_repo);
+            const hasLabel = ctx.labels.includes('api-tests');
+            core.setOutput('has-label', hasLabel.toString());
+            if (ctx.labels.includes('ok-to-test')) return;
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org: 'kyma-project',
+                team_slug: 'ai-force',
+                username: context.payload.workflow_run.triggering_actor.login,
+              });
+            } catch {
+              core.setFailed(`PR author ${context.payload.workflow_run.triggering_actor.login} is not a codeowner.`);
+            }
+
+  wait-for-build:
+    name: Wait for image build job
+    needs: check-author
+    if: needs.check-author.outputs.has-label == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ needs.check-author.outputs.head-sha }}
+          REPOSITORY_FULL_NAME: "${{ github.repository }}"
+          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+
+  api-tests:
+    name: Run API tests
+    uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
+    needs: [check-author, wait-for-build]
+    secrets: inherit
+    with:
+      IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ needs.check-author.outputs.pr-number }}"
+      TEST_REPO_FULLNAME: ${{ needs.check-author.outputs.head-repo }}
+      TEST_REF: ${{ needs.check-author.outputs.head-ref }}
+      RUN_EVALUATION_TESTS: false
