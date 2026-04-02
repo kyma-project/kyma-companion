@@ -1,0 +1,38 @@
+name: Push E2E Tests for Indexer
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+    paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
+      - "docs/**"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
+      - "src/**"
+      - "doc_indexer/.vscode/**"
+      - "doc_indexer/tests/**"
+      - CODEOWNERS
+      - LICENSE
+      - "sec-scanners-config.yaml"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "renovate.json"
+      - ".gitignore"
+      - external-images.yaml
+
+permissions: read-all
+
+jobs:
+  e2e-tests:
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
+    secrets: inherit
+    with:
+      IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:${{ github.ref_name }}"
+      DOCS_TABLE_NAME: "kc_push_${{ github.sha }}_e2e"

@@ -1,0 +1,276 @@
+name: e2e-tests-doc-indexer (privileged)
+run-name: e2e-tests-doc-indexer (privileged)
+
+on:
+  workflow_run:
+    workflows: ["pull-e2e-tests-doc-indexer"]
+    types: [completed]
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: "Full doc_indexer image name to run (e.g. europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:main)"
+      DOCS_TABLE_NAME:
+        required: true
+        type: string
+        description: "HANA table name to index into (must be unique, will not be cleaned up automatically)"
+    secrets:
+      DOC_INDEXER_TESTS_CONFIG:
+        required: true
+
+env:
+  K3D_VERSION: "v5.8.3"
+  NAMESPACE: "doc-indexer"
+
+jobs:
+  # ── Phase 1: authorization gate (only for workflow_run trigger) ──────────────
+  check-author:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run'
+    outputs:
+      pr-number: ${{ steps.load-context.outputs.pr-number }}
+      head-sha: ${{ steps.load-context.outputs.head-sha }}
+      image-name: ${{ steps.load-context.outputs.image-name }}
+      table-name: ${{ steps.load-context.outputs.table-name }}
+    steps:
+      - name: Check triggering workflow conclusion
+        if: github.event.workflow_run.conclusion != 'success'
+        run: |
+          echo "Triggering workflow did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }}). Skipping."
+          exit 1
+
+      - name: Download PR context artifact
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            const artifact = artifacts.data.artifacts.find(
+              a => a.name.startsWith('pr-context-e2e-doc-indexer-')
+            );
+            if (!artifact) {
+              core.setFailed('No PR context artifact found');
+              return;
+            }
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: artifact.id,
+              archive_format: 'zip',
+            });
+            const fs = require('fs');
+            fs.writeFileSync('/tmp/pr-context.zip', Buffer.from(download.data));
+
+      - name: Extract PR context
+        run: unzip /tmp/pr-context.zip -d /tmp/pr-context
+
+      - name: Load PR context and check author
+        id: load-context
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const ctx = JSON.parse(fs.readFileSync('/tmp/pr-context/pr-context.json', 'utf8'));
+            core.setOutput('pr-number', ctx.pr_number);
+            core.setOutput('head-sha', ctx.head_sha);
+            const imageName = `europe-docker.pkg.dev/kyma-project/dev/kyma-companion-indexer:PR-${ctx.pr_number}`;
+            core.setOutput('image-name', imageName);
+            const tableName = `kc_pr_${ctx.pr_number}_e2e`;
+            core.setOutput('table-name', tableName);
+
+            if (ctx.labels.includes('ok-to-test')) {
+              console.log('ok-to-test label present — proceeding.');
+              return;
+            }
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org: 'kyma-project',
+                team_slug: 'ai-force',
+                username: context.payload.workflow_run.triggering_actor.login,
+              });
+              console.log('Author is a codeowner — proceeding.');
+            } catch {
+              core.setFailed(
+                `PR author ${context.payload.workflow_run.triggering_actor.login} is not a codeowner. ` +
+                `A codeowner must apply the 'ok-to-test' label to run e2e tests.`
+              );
+            }
+
+  # ── Phase 2: wait for indexer image build (workflow_run trigger only) ────────
+  wait-for-image:
+    runs-on: ubuntu-latest
+    needs: check-author
+    if: github.event_name == 'workflow_run' && success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install wait-for-commit-check requirements
+        run: pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: Wait for indexer image build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ needs.check-author.outputs.head-sha }}
+          REPOSITORY_FULL_NAME: ${{ github.repository }}
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: python ./scripts/python/wait-for-commit-check/run.py
+
+  # ── Phase 3: run e2e tests ────────────────────────────────────────────────────
+  e2e-tests:
+    runs-on: ubuntu-latest
+    # For workflow_run: needs both authorization and image-build to succeed.
+    # For workflow_call: runs unconditionally (caller is responsible for providing valid inputs).
+    needs:
+      - check-author
+      - wait-for-image
+    if: |
+      always() &&
+      (
+        github.event_name == 'workflow_call' ||
+        (needs.check-author.result == 'success' && needs.wait-for-image.result == 'success')
+      )
+    env:
+      IMAGE_NAME: ${{ github.event_name == 'workflow_call' && inputs.IMAGE_NAME || needs.check-author.outputs.image-name }}
+      DOCS_TABLE_NAME: ${{ github.event_name == 'workflow_call' && inputs.DOCS_TABLE_NAME || needs.check-author.outputs.table-name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Kubectl
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
+          k3d --version
+
+      - name: Create K3d cluster
+        run: |
+          k3d cluster create doc-indexer-e2e \
+            --verbose \
+            --agents=1
+
+      - name: Verify K3d context
+        run: |
+          context_name=$(kubectl config current-context)
+          if [ "$context_name" != "k3d-doc-indexer-e2e" ]; then
+            echo "K3d context is not correct. Expected: k3d-doc-indexer-e2e, got: $context_name"
+            exit 1
+          fi
+          echo "K3d context is correct: $context_name"
+
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }}
+
+      - name: Create config secret
+        env:
+          DOC_INDEXER_CONFIG_BASE64: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: doc-indexer-config
+            namespace: ${{ env.NAMESPACE }}
+          type: Opaque
+          data:
+            config.json: "$DOC_INDEXER_CONFIG_BASE64"
+          EOF
+
+      - name: Create doc sources ConfigMap
+        run: |
+          kubectl create configmap doc-indexer-sources \
+            --from-file=e2e_docs_sources.json=./doc_indexer/e2e_docs_sources.json \
+            -n ${{ env.NAMESPACE }}
+
+      - name: Import doc_indexer image into K3d
+        run: |
+          echo "Pulling image: ${{ env.IMAGE_NAME }}"
+          docker pull ${{ env.IMAGE_NAME }}
+          k3d image import ${{ env.IMAGE_NAME }} -c doc-indexer-e2e
+
+      - name: Run fetch and index Job
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-e2e
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ env.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["sh", "-c", "python src/main.py fetch && python src/main.py index"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  - name: DOCS_SOURCES_FILE_PATH
+                    value: "/etc/doc-sources/e2e_docs_sources.json"
+                  - name: DOCS_PATH
+                    value: "/app/data"
+                  - name: DOCS_TABLE_NAME
+                    value: "${{ env.DOCS_TABLE_NAME }}"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                  - name: doc-sources
+                    mountPath: /etc/doc-sources
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+                - name: doc-sources
+                  configMap:
+                    name: doc-indexer-sources
+          EOF
+
+      - name: Wait for e2e Job to complete
+        run: |
+          kubectl wait --for=condition=complete job/doc-indexer-e2e \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=1200s
+
+      - name: Print Job logs
+        if: always()
+        run: |
+          kubectl logs -n ${{ env.NAMESPACE }} -l job-name=doc-indexer-e2e --tail=200 || true
+
+      - name: Debug information on failure
+        if: failure()
+        run: |
+          echo "=== Jobs status ==="
+          kubectl get jobs -n ${{ env.NAMESPACE }} -o wide || true
+          kubectl describe jobs -n ${{ env.NAMESPACE }} || true
+          echo "=== Pod status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide || true
+          kubectl describe pods -n ${{ env.NAMESPACE }} || true
