@@ -12,7 +12,7 @@ from agents.common.constants import (
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
-from agents.kyma.tools.search import SearchKymaDocTool
+from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME, SearchKymaDocTool
 from utils.models.factory import IModel
 from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS, MAIN_MODEL_NAME
 
@@ -26,10 +26,11 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]) -> None:
         """Initialize the KymaAgent with necessary tools and models."""
+        search_kyma_doc_tool = SearchKymaDocTool(models)
         tools: list[BaseTool] = [
             fetch_kyma_resource_version,
             kyma_query_tool,
-            SearchKymaDocTool(models),
+            search_kyma_doc_tool,
         ]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
@@ -40,7 +41,7 @@ class KymaAgent(BaseAgent):
             ]
         ).partial(
             kyma_query_tool=kyma_query_tool.name,
-            search_kyma_doc=SearchKymaDocTool(models).name,
+            search_kyma_doc=SEARCH_KYMA_DOC_TOOL_NAME,
         )
         super().__init__(
             name=KYMA_AGENT,
