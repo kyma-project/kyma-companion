@@ -57,6 +57,7 @@ jobs:
             core.setOutput('head-repo', ctx.head_repo);
             const hasLabel = ctx.labels.includes('run-integration-test');
             core.setOutput('has-label', hasLabel.toString());
+            if (ctx.labels.includes('ok-to-test')) return;
             try {
               await github.rest.teams.getMembershipForUserInOrg({
                 org: 'kyma-project',

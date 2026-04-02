@@ -49,6 +49,7 @@ jobs:
             core.setOutput('pr-number', ctx.pr_number);
             core.setOutput('head-ref', ctx.head_ref);
             core.setOutput('head-repo', ctx.head_repo);
+            if (ctx.labels.includes('ok-to-test')) return;
             try {
               await github.rest.teams.getMembershipForUserInOrg({
                 org: 'kyma-project',

@@ -21,9 +21,10 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
           mkdir -p /tmp/pr-context
-          echo "{\"pr_number\":\"$PR_NUMBER\",\"head_sha\":\"$PR_HEAD_SHA\",\"head_ref\":\"$PR_HEAD_REF\",\"head_repo\":\"$PR_HEAD_REPO\"}" \
+          echo "{\"pr_number\":\"$PR_NUMBER\",\"head_sha\":\"$PR_HEAD_SHA\",\"head_ref\":\"$PR_HEAD_REF\",\"head_repo\":\"$PR_HEAD_REPO\",\"labels\":$PR_LABELS}" \
             > /tmp/pr-context/pr-context.json
           cat /tmp/pr-context/pr-context.json
 
