@@ -6,6 +6,8 @@ on:
 env:
   GITLEAKS_VERSION: 8.18.2
 
+permissions: read-all
+
 jobs:
   scan:
     runs-on: ubuntu-latest
