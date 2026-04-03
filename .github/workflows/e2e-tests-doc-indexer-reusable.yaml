@@ -151,7 +151,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event_name == 'workflow_run' && needs.check-author.outputs.head-sha || 'main' }}
 
       - name: Install Kubectl
         run: |
@@ -207,8 +207,8 @@ jobs:
       - name: Import doc_indexer image into K3d
         run: |
           echo "Pulling image: ${{ env.IMAGE_NAME }}"
-          docker pull ${{ env.IMAGE_NAME }}
-          k3d image import ${{ env.IMAGE_NAME }} -c doc-indexer-e2e
+          docker pull "${{ env.IMAGE_NAME }}"
+          k3d image import "${{ env.IMAGE_NAME }}" -c doc-indexer-e2e
 
       - name: Run fetch and index Job
         run: |
@@ -256,9 +256,25 @@ jobs:
 
       - name: Wait for e2e Job to complete
         run: |
-          kubectl wait --for=condition=complete job/doc-indexer-e2e \
-            -n ${{ env.NAMESPACE }} \
-            --timeout=1200s
+          echo "Waiting for job doc-indexer-e2e to finish (timeout 1200s)..."
+          deadline=$((SECONDS + 1200))
+          while [ $SECONDS -lt $deadline ]; do
+            complete=$(kubectl get job doc-indexer-e2e -n ${{ env.NAMESPACE }} \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+            failed=$(kubectl get job doc-indexer-e2e -n ${{ env.NAMESPACE }} \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+            if [ "$complete" = "True" ]; then
+              echo "Job completed successfully."
+              exit 0
+            fi
+            if [ "$failed" = "True" ]; then
+              echo "Job failed."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for job."
+          exit 1
 
       - name: Print Job logs
         if: always()
