@@ -235,7 +235,7 @@ def extract_tool_call_info(agent_messages):
                 elif hasattr(tc, "name") and tc.name:
                     tool_call_names.append(tc.name)
         # Collect tool names from ToolMessage responses
-        elif isinstance(msg, ToolMessage) and msg.name:
+        if isinstance(msg, ToolMessage) and msg.name:
             tool_call_names.append(msg.name)
 
         # Collect all message content for version checking
@@ -279,7 +279,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     return [
         NamespaceScopedTestCase(
             name="Should handle wrong Subscription API version and correct it",
-            state_factory=lambda: create_basic_state(
+            state_factory=lambda k8s=k8s_client: create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
@@ -289,7 +289,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                     ),
                     HumanMessage(content="is there any issue?"),
                 ],
-                k8s_client=k8s_client,
+                k8s_client=k8s,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
             must_contain_in_messages=["v1alpha2"],  # Must eventually use correct version
@@ -297,7 +297,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
         ),
         NamespaceScopedTestCase(
             name="Should handle correct Function API version without fetching version",
-            state_factory=lambda: create_basic_state(
+            state_factory=lambda k8s=k8s_client: create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
@@ -307,7 +307,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                     ),
                     HumanMessage(content="is there any issue?"),
                 ],
-                k8s_client=k8s_client,
+                k8s_client=k8s,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
             must_not_call_tools=[TOOL_FETCH_KYMA_VERSION],  # Version is correct, no need to fetch
@@ -315,7 +315,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
         ),
         NamespaceScopedTestCase(
             name="Should handle wrong APIRule version (v1beta1) and correct to v2",
-            state_factory=lambda: create_basic_state(
+            state_factory=lambda k8s=k8s_client: create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
                     SystemMessage(
@@ -324,7 +324,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                     ),
                     HumanMessage(content="What is wrong with api rules?"),
                 ],
-                k8s_client=k8s_client,
+                k8s_client=k8s,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
             must_contain_in_messages=["v2"],  # Must correct to v2
