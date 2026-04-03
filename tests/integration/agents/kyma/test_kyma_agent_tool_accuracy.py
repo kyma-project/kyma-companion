@@ -1,9 +1,10 @@
 import copy
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from ragas.dataset_schema import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 from ragas.messages import ToolCall
@@ -210,7 +211,8 @@ class NamespaceScopedTestCase:
     """Test case for namespace-scoped agent testing with invariants."""
 
     name: str
-    state: KymaAgentState
+    # Factory callable so each test/retry gets a fresh, unmutated state.
+    state_factory: Callable[[], KymaAgentState]
     # Required invariants
     must_call_tools: list[str] = field(default_factory=list)  # Tools that MUST be called
     must_not_call_tools: list[str] = field(default_factory=list)  # Tools that must NOT be called
@@ -225,15 +227,16 @@ def extract_tool_call_info(agent_messages):
     all_content = []
 
     for msg in agent_messages:
-        # Collect tool call names
-        if hasattr(msg, "name") and msg.name:
-            tool_call_names.append(msg.name)
-        elif hasattr(msg, "tool_calls") and msg.tool_calls:
+        # Collect tool call names from AIMessage.tool_calls
+        if hasattr(msg, "tool_calls") and msg.tool_calls:
             for tc in msg.tool_calls:
                 if isinstance(tc, dict) and tc.get("name"):
                     tool_call_names.append(tc.get("name"))
                 elif hasattr(tc, "name") and tc.name:
                     tool_call_names.append(tc.name)
+        # Collect tool names from ToolMessage responses
+        elif isinstance(msg, ToolMessage) and msg.name:
+            tool_call_names.append(msg.name)
 
         # Collect all message content for version checking
         if hasattr(msg, "content"):
@@ -276,7 +279,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     return [
         NamespaceScopedTestCase(
             name="Should handle wrong Subscription API version and correct it",
-            state=create_basic_state(
+            state_factory=lambda: create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
@@ -294,7 +297,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
         ),
         NamespaceScopedTestCase(
             name="Should handle correct Function API version without fetching version",
-            state=create_basic_state(
+            state_factory=lambda: create_basic_state(
                 task_description="is there any issue?",
                 messages=[
                     SystemMessage(
@@ -312,7 +315,7 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
         ),
         NamespaceScopedTestCase(
             name="Should handle wrong APIRule version (v1beta1) and correct to v2",
-            state=create_basic_state(
+            state_factory=lambda: create_basic_state(
                 task_description="What is wrong with api rules?",
                 messages=[
                     SystemMessage(
@@ -338,8 +341,11 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
 @pytest.mark.asyncio
 async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScopedTestCase):
     """Test agent behavior by verifying outcomes and invariants."""
+    # Build a fresh state on every invocation so reruns start clean.
+    state = test_case.state_factory()
+
     # When: Agent processes the request
-    result = await call_kyma_agent(kyma_agent, test_case.state)
+    result = await call_kyma_agent(kyma_agent, state)
 
     # Then: Agent should have made tool calls
     agent_messages = result.get("agent_messages", [])
