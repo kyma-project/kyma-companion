@@ -22,7 +22,7 @@ from agents.common.constants import (
 from agents.common.exceptions import SubtasksMissingError
 from agents.common.prompts import JOULE_CONTEXT_INFORMATION
 from agents.common.response_converter import IResponseConverter, ResponseConverter
-from agents.common.state import Plan
+from agents.common.state import CompanionState, Plan
 from agents.common.utils import (
     create_node_output,
     filter_messages,
@@ -34,10 +34,8 @@ from agents.supervisor.prompts import (
     PLANNER_STEP_INSTRUCTIONS,
     PLANNER_SYSTEM_PROMPT,
 )
-from agents.supervisor.state import SupervisorState
 from utils.chain import ainvoke_chain
 from utils.filter_messages import (
-    filter_messages_via_checks,
     is_ai_message,
     is_finalizer_message,
     is_human_message,
@@ -53,7 +51,7 @@ ROUTER = "Router"
 logger = get_logger(__name__)
 
 
-def decide_route_or_exit(state: SupervisorState) -> Literal[ROUTER, END]:  # type: ignore
+def decide_route_or_exit(state: CompanionState) -> Literal[ROUTER, END]:  # type: ignore
     """Return the next node whether to route or exit with a direct response."""
     if state.next == END:
         logger.debug("Ending the workflow.")
@@ -66,7 +64,7 @@ def decide_route_or_exit(state: SupervisorState) -> Literal[ROUTER, END]:  # typ
     return ROUTER
 
 
-def decide_entry_point(state: SupervisorState) -> Literal[PLANNER, ROUTER, FINALIZER]:  # type: ignore
+def decide_entry_point(state: CompanionState) -> Literal[PLANNER, ROUTER, FINALIZER]:  # type: ignore
     """When entering the supervisor subgraph, decide the entry point: plan, route, or finalize."""
 
     # if no subtasks is pending, finalize the response
@@ -124,7 +122,7 @@ class SupervisorAgent:
         """Get Supervisor agent node function."""
         return self._graph
 
-    def _route(self, state: SupervisorState) -> dict[str, Any]:
+    def _route(self, state: CompanionState) -> dict[str, Any]:
         """Router node. Routes the conversation to the next agent."""
 
         # Check for pending subtasks
@@ -152,18 +150,13 @@ class SupervisorAgent:
         ).partial(kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON)
         return self.planner_prompt | model.llm.with_structured_output(Plan, method="function_calling")  # type: ignore
 
-    async def _invoke_planner(self, state: SupervisorState) -> Plan:
-        """Invoke the planner with retry logic using tenacity."""
-
-        filtered_messages = filter_messages_via_checks(
-            state.messages,
-            [
-                is_human_message,
-                is_system_message,
-                is_finalizer_message,
-                is_ai_message,
-            ],
-        )
+    async def _invoke_planner(self, state: CompanionState) -> Plan:
+        """Invoke the planner."""
+        filtered_messages = [
+            msg
+            for msg in state.messages
+            if any(check(msg) for check in [is_human_message, is_system_message, is_finalizer_message, is_ai_message])
+        ]
         reduces_messages = filter_messages(filtered_messages)
 
         plan: Plan = await ainvoke_chain(
@@ -174,7 +167,7 @@ class SupervisorAgent:
         )
         return plan
 
-    async def _plan(self, state: SupervisorState) -> dict[str, Any]:
+    async def _plan(self, state: CompanionState) -> dict[str, Any]:
         """
         Breaks down the given user query into sub-tasks if the query is related to Kyma and K8s.
         If the query is general, it returns the response directly.
@@ -209,7 +202,7 @@ class SupervisorAgent:
                 error="Unexpected error while processing the request. Please try again later.",
             )
 
-    def _final_response_chain(self, state: SupervisorState) -> RunnableSequence:
+    def _final_response_chain(self, state: CompanionState) -> RunnableSequence:
         # last human message must be the query
         if not state.input or not state.input.query:
             raise ValueError("Input query is missing in the finalizer state.")
@@ -228,7 +221,7 @@ class SupervisorAgent:
         )
         return prompt | self.model.llm  # type: ignore
 
-    async def _generate_final_response(self, state: SupervisorState) -> dict[str, Any]:
+    async def _generate_final_response(self, state: CompanionState) -> dict[str, Any]:
         """Generate the final response."""
 
         # If all required agents failed: tell user that we can't give them response due to agent failure
@@ -261,13 +254,13 @@ class SupervisorAgent:
             NEXT: END,
         }
 
-    async def _get_converted_final_response(self, state: SupervisorState) -> dict[str, Any]:
+    async def _get_converted_final_response(self, state: CompanionState) -> dict[str, Any]:
         """Convert the generated final response"""
         try:
             final_response = await self._generate_final_response(state)
             logger.debug("Response conversion node started")
             if state.k8s_client is None:
-                raise ValueError("K8s client is not initialized in the SupervisorState.")
+                raise ValueError("K8s client is not initialized in the state.")
             return await ResponseConverter(state.k8s_client).convert_final_response(final_response)
         except Exception:
             logger.exception("Error in generating final response")
@@ -282,7 +275,7 @@ class SupervisorAgent:
 
     def _build_graph(self) -> CompiledStateGraph:
         # Define a new graph.
-        workflow = StateGraph(SupervisorState)
+        workflow = StateGraph(CompanionState)
 
         # Define the nodes of the graph.
         workflow.add_node(PLANNER, self._plan)

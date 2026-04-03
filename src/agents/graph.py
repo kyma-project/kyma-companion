@@ -25,7 +25,6 @@ from agents.common.constants import (
     COMMON,
     CONTINUE,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     MESSAGES,
     MESSAGES_SUMMARY,
     NEXT,
@@ -74,6 +73,10 @@ from utils.settings import (
 )
 
 logger = get_logger(__name__)
+
+# Private node name: same summarizer re-used at graph entry to compress history before gatekeeper.
+# Not exported — this is a graph topology detail, not a public constant.
+_INITIAL_SUMMARIZATION = "InitialSummarization"
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -344,18 +347,18 @@ class CompanionGraph:
         workflow.add_node(COMMON, self._common_node)
         workflow.add_node(GATEKEEPER, self._gatekeeper_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
-        workflow.add_node(INITIAL_SUMMARIZATION, self.summarization.summarization_node)
+        # Re-use the same summarizer function at entry to compress history before gatekeeper.
+        # LangGraph requires a distinct node name; this is not a separate implementation.
+        workflow.add_node(_INITIAL_SUMMARIZATION, self.summarization.summarization_node)
 
         # Define the edges: (KymaAgent | KubernetesAgent | Common) --> summarization --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
             workflow.add_edge(member, SUMMARIZATION)
 
-        # Set the entrypoint: ENTRY --> Initial_Summarization
-        workflow.set_entry_point(INITIAL_SUMMARIZATION)
-
-        # Define the edges: Initial_Summarization --> Gatekeeper
-        workflow.add_edge(INITIAL_SUMMARIZATION, GATEKEEPER)
+        # Set the entrypoint: ENTRY --> _INITIAL_SUMMARIZATION --> Gatekeeper
+        workflow.set_entry_point(_INITIAL_SUMMARIZATION)
+        workflow.add_edge(_INITIAL_SUMMARIZATION, GATEKEEPER)
 
         # Define the dynamic conditional edges: Gatekeeper --> (SUPERVISOR | END)
         workflow.add_conditional_edges(

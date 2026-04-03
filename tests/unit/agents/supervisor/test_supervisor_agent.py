@@ -10,7 +10,6 @@ from agents.common.state import CompanionState, Plan, SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from agents.supervisor.agent import FINALIZER, ROUTER, SupervisorAgent
-from agents.supervisor.state import SupervisorState
 from utils.models.factory import IModel
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
@@ -260,7 +259,7 @@ class TestSupervisorAgent:
         expected_error,
     ):
         # Given
-        state = SupervisorState(messages=conversation_messages, subtasks=subtasks)
+        state = CompanionState(messages=conversation_messages, subtasks=subtasks)
 
         mock_final_response_chain = AsyncMock()
         if final_response_content is not None:
@@ -390,7 +389,7 @@ class TestSupervisorAgent:
             else:
                 mock_invoke_planner.return_value = Plan.model_validate_json(mock_plan_content)
 
-            state = SupervisorState(messages=[HumanMessage(content=input_query)])
+            state = CompanionState(messages=[HumanMessage(content=input_query)])
             result = await supervisor_agent._plan(state)
             assert result["messages"][-1].name == "Planner", "Last message name should be 'Planner'"
             assert result == expected_output, test_case

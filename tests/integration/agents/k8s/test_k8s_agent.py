@@ -9,9 +9,9 @@ from deepeval.metrics import (
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+from agents.common.state import BaseAgentState as KubernetesAgentState
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
-from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 

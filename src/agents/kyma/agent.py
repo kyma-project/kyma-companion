@@ -9,8 +9,8 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     KYMA_AGENT,
 )
+from agents.common.state import BaseAgentState
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
-from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
 from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel
@@ -47,6 +47,6 @@ class KymaAgent(BaseAgent):
             model=cast(IModel, models[MAIN_MODEL_NAME]),
             tools=tools,
             agent_prompt=agent_prompt,
-            state_class=KymaAgentState,
+            state_class=BaseAgentState,
         )
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
