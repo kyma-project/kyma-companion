@@ -73,8 +73,10 @@ class TestLogsEndpoint:
         response_data = response.json()
         assert "logs" in response_data
         assert isinstance(response_data["logs"], dict)
-        assert "current_container" in response_data["logs"]
-        assert "previously_terminated_container" in response_data["logs"]
+        # When no container_name is given, logs dict is keyed by pod name
+        for _container, logs in response_data["logs"].items():
+            assert "current_container" in logs
+            assert "previously_terminated_container" in logs
 
     def test_logs_with_container_name(self, k8s_client_factory):
         """Test fetching logs with specific container name."""
@@ -94,6 +96,31 @@ class TestLogsEndpoint:
         )
 
         assert response.status_code == HTTPStatus.OK
+
+    def test_logs_returns_all_containers_when_no_container_name(self, k8s_client_factory):
+        """Test that logs for all containers are returned when no container_name is given."""
+        client = k8s_client_factory(logs_scenario="multi_container")
+        headers = get_sample_headers()
+        request_body = {
+            "name": "test-pod",
+            "namespace": "default",
+            # no container_name
+        }
+
+        response = client.post(
+            "/api/tools/k8s/pods/logs",
+            json=request_body,
+            headers=headers,
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        response_data = response.json()
+        assert "logs" in response_data
+        assert isinstance(response_data["logs"], dict)
+        assert "main" in response_data["logs"]
+        assert "sidecar" in response_data["logs"]
+        assert "Main container log line 1" in response_data["logs"]["main"]["current_container"]
+        assert "Sidecar log line 1" in response_data["logs"]["sidecar"]["current_container"]
 
     def test_logs_handles_fetch_error(self, k8s_client_factory):
         """Test that logs endpoint handles fetch errors gracefully."""
@@ -180,6 +207,8 @@ class TestLogsEndpoint:
         # Verify diagnostic context has useful information
         assert "Failed to pull image" in response_data["diagnostic_context"]["events"]
         assert "container_statuses" in response_data["diagnostic_context"]
+        # logs is now a dict keyed by container name
+        assert isinstance(response_data["logs"], dict)
 
     def test_logs_returns_200_when_only_previous_logs_available(self, k8s_client_factory):
         """Test that 200 is returned when only previous logs are available."""
@@ -200,10 +229,12 @@ class TestLogsEndpoint:
         assert response.status_code == HTTPStatus.OK
         response_data = response.json()
         assert "logs" in response_data
+        assert isinstance(response_data["logs"], dict)
+        container_logs = response_data["logs"]["main"]
         # Current logs should indicate unavailability
-        assert "Logs not available" in response_data["logs"]["current_container"]
+        assert "Logs not available" in container_logs["current_container"]
         # Previous logs should contain actual log content
-        assert "Previous log line 1" in response_data["logs"]["previously_terminated_container"]
+        assert "Previous log line 1" in container_logs["previously_terminated_container"]
 
     def test_logs_returns_400_for_invalid_container(self, k8s_client_factory):
         """Test that 400 is returned with diagnostic context for invalid container name."""
@@ -226,8 +257,10 @@ class TestLogsEndpoint:
         # Should have normal response structure
         assert "logs" in response_data
         assert "diagnostic_context" in response_data
+        assert isinstance(response_data["logs"], dict)
+        container_logs = response_data["logs"]["_nginx"]
         # Error message should be in current_container
-        assert "not valid for pod" in response_data["logs"]["current_container"]
+        assert "not valid for pod" in container_logs["current_container"]
         # Diagnostic context should show valid containers
         assert response_data["diagnostic_context"] is not None
         assert "container_statuses" in response_data["diagnostic_context"]
