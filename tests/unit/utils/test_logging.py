@@ -165,3 +165,30 @@ class TestPrettyJSONFormatter:
         # Should be pretty-printed (contains newlines and indentation)
         assert "\n" in result
         assert "  " in result
+
+    def test_format_with_exc_info(self):
+        """Test that exception info is included in the output when present."""
+        formatter = PrettyJSONFormatter()
+        try:
+            raise ValueError("something went wrong")
+        except ValueError:
+            import sys
+
+            exc_info = sys.exc_info()
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.ERROR,
+            pathname="test.py",
+            lineno=10,
+            msg="Unhandled exception",
+            args=(),
+            exc_info=exc_info,
+        )
+
+        result = formatter.format(record)
+        log_data = json.loads(result)
+
+        assert "exception" in log_data
+        assert "ValueError" in log_data["exception"]
+        assert "something went wrong" in log_data["exception"]

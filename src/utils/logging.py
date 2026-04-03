@@ -33,6 +33,11 @@ class PrettyJSONFormatter(Formatter):
         if hasattr(record, "client"):
             log_data["client"] = record.client
 
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+        if record.stack_info:
+            log_data["stack"] = self.formatStack(record.stack_info)
+
         # Pretty print with indentation and colors for readability
         return json.dumps(log_data, indent=2, sort_keys=False)
 
