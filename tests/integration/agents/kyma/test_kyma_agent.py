@@ -9,9 +9,9 @@ from deepeval.metrics import (
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
+from agents.common.state import BaseAgentState as KymaAgentState
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
-from agents.kyma.state import KymaAgentState
 from integration.agents.fixtures.api_rule import (
     API_RULE_WITH_WRONG_ACCESS_STRATEGY,
     EXPECTED_API_RULE_RESPONSE,

@@ -6,7 +6,6 @@ import pytest
 from agents.common.constants import (
     FINALIZER,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -302,7 +301,7 @@ def test_reformat_subtasks(subtasks, expected_output):
             "summarization_agent_without_error",
         ),
         (
-            INITIAL_SUMMARIZATION,
+            "InitialSummarization",
             [{"name": "any_agent", "content": "test"}],
             "any_agent",
             False,
@@ -401,7 +400,7 @@ def test_reformat_subtasks(subtasks, expected_output):
             "summarization_agent_with_error",
         ),
         (
-            INITIAL_SUMMARIZATION,
+            "InitialSummarization",
             [{"name": "any_agent", "content": "test"}],
             "any_agent",
             True,
@@ -417,7 +416,7 @@ def test_reformat_subtasks(subtasks, expected_output):
             "summarization_with_empty_messages_but_error",
         ),
         (
-            INITIAL_SUMMARIZATION,
+            "InitialSummarization",
             None,
             None,
             True,
@@ -433,7 +432,7 @@ def test_prepare_chunk_response_all_skipping_scenarios(
     Comprehensive test for all agent skipping and non-skipping scenarios in prepare_chunk_response.
 
     Tests the following skipping logic:
-    1. Summarization agents (SUMMARIZATION, INITIAL_SUMMARIZATION) are skipped when NO error
+    1. Summarization agents (SUMMARIZATION, "InitialSummarization") are skipped when NO error
     2. Summarization agents are NOT skipped when they have errors (CRITICAL behavior)
     3. Supervisor responses are skipped when last_agent is not PLANNER or FINALIZER
     4. All other agents are processed normally
@@ -450,7 +449,7 @@ def test_prepare_chunk_response_all_skipping_scenarios(
     chunk = json.dumps(chunk_data).encode()
 
     # Mock process_response to return appropriate response based on agent and error
-    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
+    if agent in (SUMMARIZATION, "InitialSummarization"):
         # For summarization agents with errors, companion returns error response
         if has_error:
             mock_process_return = {

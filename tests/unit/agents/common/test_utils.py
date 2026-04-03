@@ -12,6 +12,7 @@ from langchain_core.messages import (
 
 import agents.common.constants as constants
 from agents.common.agent import agent_edge, subtask_selector_edge
+from agents.common.state import BaseAgentState as KubernetesAgentState
 from agents.common.state import CompanionState, SubTask, SubTaskStatus, UserInput
 from agents.common.utils import (
     RECENT_MESSAGES_LIMIT,
@@ -22,7 +23,6 @@ from agents.common.utils import (
     get_resource_context_message,
 )
 from agents.k8s.agent import K8S_AGENT
-from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
 
 # Mock the logging setup

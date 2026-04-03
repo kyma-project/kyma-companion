@@ -8,9 +8,9 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.messages import ToolCall
 from ragas.metrics import SimpleCriteriaScore
 
+from agents.common.state import BaseAgentState as KymaAgentState
 from agents.common.state import SubTask
 from agents.kyma.agent import KymaAgent
-from agents.kyma.state import KymaAgentState
 from services.data_sanitizer import DataSanitizer
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from utils.settings import (

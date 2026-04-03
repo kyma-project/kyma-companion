@@ -5,7 +5,7 @@ from deepeval import assert_test
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from integration.agents.test_common_node import create_mock_state
+from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -174,10 +174,10 @@ from integration.agents.test_common_node import create_mock_state
                 Kubernetes services are:
                 1. **ClusterIP**: Exposes the service on a cluster-internal IP. This type makes the service only
                 reachable from within the cluster. It is the default type of service.
-                2. **NodePort**: Exposes the service on each Node’s IP at a static port (the NodePort). A ClusterIP
-                service, to which the NodePort service routes, is automatically created. You’ll be able to contact the
+                2. **NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). A ClusterIP
+                service, to which the NodePort service routes, is automatically created. You'll be able to contact the
                 NodePort service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.
-                3. **LoadBalancer**: Exposes the service externally using a cloud provider’s load balancer. NodePort and
+                3. **LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. NodePort and
                 ClusterIP services, to which the external load balancer routes, are automatically created.
                 4. **ExternalName**: Maps the service to the contents of the `externalName` field (e.g.,
                 `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
@@ -216,10 +216,10 @@ from integration.agents.test_common_node import create_mock_state
             services are:
             1. **ClusterIP**: Exposes the service on a cluster-internal IP. This type makes the service only reachable
             from within the cluster. It is the default type of service.
-            2. **NodePort**: Exposes the service on each Node’s IP at a static port (the NodePort). A ClusterIP service,
-            to which the NodePort service routes, is automatically created. You’ll be able to contact the NodePort
+            2. **NodePort**: Exposes the service on each Node's IP at a static port (the NodePort). A ClusterIP service,
+            to which the NodePort service routes, is automatically created. You'll be able to contact the NodePort
             service, from outside the cluster, by requesting `<NodeIP>:<NodePort>`.
-            3. **LoadBalancer**: Exposes the service externally using a cloud provider’s load balancer. NodePort and
+            3. **LoadBalancer**: Exposes the service externally using a cloud provider's load balancer. NodePort and
             ClusterIP services, to which the external load balancer routes, are automatically created.
             4. **ExternalName**: Maps the service to the contents of the `externalName` field (e.g.,
             `foo.bar.example.com`), by returning a CNAME record with its value. No proxying of any kind is set up.
@@ -472,7 +472,7 @@ from integration.agents.test_common_node import create_mock_state
                     name="KubernetesAgent",
                     content=dedent(
                         """
-                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                        I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                         Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                         """
                     ),
@@ -480,7 +480,7 @@ from integration.agents.test_common_node import create_mock_state
             ],
             dedent(
                 """
-                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. 
+                I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource.
                 Joule enhances your workflow by using the active resource in your Kyma dashboard as the context for your queries. This ensures that when you ask questions, Joule delivers relevant and tailored answers specific to the resource you're engaged with, making your interactions both efficient and intuitive.
                 """
             ),
@@ -488,16 +488,16 @@ from integration.agents.test_common_node import create_mock_state
     ],
 )
 @pytest.mark.asyncio
-async def test_generate_final_response(test_case, messages, expected_answer, companion_graph, goal_accuracy_metric):
-    """
-    Tests that the _generate_final_response method of the Finalizer correctly synthesizes
-    the received agent responses or rejects irrelevant responses.
-    """
-    # Given: A conversation state with messages and an expected answer
-    state = create_mock_state(messages)
+async def test_response_synthesis(test_case, messages, expected_answer, companion_graph, goal_accuracy_metric):
+    """Tests that given assembled agent messages, the final synthesis produces the correct output.
 
-    # When: The Finalizer generates a final response
+    These tests verify the response synthesis contract: given a set of agent responses
+    in the conversation, the final answer to the user should accurately reflect those
+    responses. Tests use LLM-quality metrics only — no structural assertions.
+    """
+    state = create_mock_state(messages)
     assert state.input is not None
+
     result = await companion_graph.supervisor_agent._generate_final_response(state)
     latest_human_message = HumanMessage(content=state.input.query)
     test_case = LLMTestCase(

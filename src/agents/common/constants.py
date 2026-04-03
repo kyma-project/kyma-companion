@@ -1,7 +1,6 @@
 PLANNER = "Planner"
 
 SUMMARIZATION = "Summarization"
-INITIAL_SUMMARIZATION = "InitialSummarization"
 
 CLUSTER = "cluster"
 

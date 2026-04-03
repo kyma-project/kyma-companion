@@ -7,7 +7,6 @@ from agents.common.constants import (
     ERROR,
     FINALIZER,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
     SUMMARIZATION,
@@ -54,7 +53,7 @@ def handle_agent_error(agent_data: dict[str, Any], agent: str) -> tuple[str | No
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
-        if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
+        if agent in (SUMMARIZATION, "InitialSummarization"):
             # we don't show summarization node, but only error
             error_response = {
                 "agent": None,
@@ -76,7 +75,7 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
         return error_response
 
     # skip summarization node
-    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
+    if agent in (SUMMARIZATION, "InitialSummarization"):
         return None
 
     # send planing task, if request was forwarded to supervisor

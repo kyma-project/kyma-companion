@@ -6,8 +6,8 @@ from agents.common.constants import (
     K8S_AGENT,
 )
 from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
+from agents.common.state import BaseAgentState
 from agents.k8s.prompts import K8S_AGENT_PROMPT
-from agents.k8s.state import KubernetesAgentState
 from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.k8s.tools.query import k8s_query_tool
 from utils.models.factory import IModel
@@ -32,6 +32,6 @@ class KubernetesAgent(BaseAgent):
             model=model,
             tools=tools,
             agent_prompt=agent_prompt,
-            state_class=KubernetesAgentState,
+            state_class=BaseAgentState,
         )
         self.graph.step_timeout = GRAPH_STEP_TIMEOUT_SECONDS
