@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 
 # Probe endpoints for efficient path checking
-PROBE_PATHS = frozenset(["/healthz", "/readyz"])
+PROBE_PATHS = frozenset(["/healthz", "/readyz", "/metrics"])
 
 app = FastAPI(
     title="Joule",
@@ -51,9 +51,11 @@ app = FastAPI(
 async def logging_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Log HTTP requests with appropriate log levels and timing.
 
-    - Probe endpoints (/healthz, /readyz) with 200 → DEBUG
-    - Probe endpoints with non-200 → WARNING
-    - All other requests → INFO
+    - Probe endpoints (/healthz, /readyz) with 200 -> DEBUG
+    - Probe endpoints with non-200 -> WARNING
+    - Metrics endpoint (/metrics) with 200 -> DEBUG
+    - Metrics endpoint with non-200 -> WARNING
+    - All other requests -> INFO
     """
     start_time = time.perf_counter()
     response = await call_next(request)
