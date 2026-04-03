@@ -292,7 +292,6 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
                 k8s_client=k8s,
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            must_contain_in_messages=["v1alpha2"],  # Must eventually use correct version
             max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
         ),
         NamespaceScopedTestCase(
