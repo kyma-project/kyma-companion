@@ -288,8 +288,10 @@ class TestK8sToolsAPI:
             logs_data = logs_response.json()
             assert "logs" in logs_data
             assert isinstance(logs_data["logs"], dict)
-            assert "current_container" in logs_data["logs"]
-            assert "previously_terminated_container" in logs_data["logs"]
+            # logs is keyed by container name; each entry has current and previous logs
+            for _container, container_logs in logs_data["logs"].items():
+                assert "current_container" in container_logs
+                assert "previously_terminated_container" in container_logs
             assert "pod_name" in logs_data
             assert logs_data["pod_name"] == pod_name
             logger.info(f"Successfully retrieved logs for pod {pod_name}")

@@ -1149,11 +1149,11 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Should show current logs successfully
-            current_logs = result.logs.current_container
+            current_logs = result.logs["app"].current_container
             assert all(line in current_logs for line in expected_sanitized_logs)
 
             # Should show previous logs not available (error message)
-            previous_logs = result.logs.previously_terminated_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not found" in previous_logs.lower() or "not available" in previous_logs.lower()
 
     @pytest.mark.asyncio
@@ -1238,7 +1238,7 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Should show current logs not available with diagnostic info
-            current_logs = result.logs.current_container
+            current_logs = result.logs["app"].current_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
 
             # Should have diagnostic context
@@ -1247,7 +1247,7 @@ class TestK8sClient:
             assert "Container is in CrashLoopBackOff state" in diagnostic_str
 
             # Should show previous logs successfully
-            previous_logs = result.logs.previously_terminated_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert all(line in previous_logs for line in expected_logs)
 
     @pytest.mark.asyncio
@@ -1307,8 +1307,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both current and previous logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1382,7 +1382,7 @@ class TestK8sClient:
             assert hasattr(result, "logs")
 
             # Current logs should succeed after retries
-            current_logs = result.logs.current_container
+            current_logs = result.logs["app"].current_container
             assert all(line in current_logs for line in success_logs)
 
             # Should have slept twice (after first and second failures)
@@ -1442,8 +1442,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1512,8 +1512,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or "failed" in current_logs.lower() or len(current_logs) == 0
             assert (
                 "failed" in previous_logs.lower() or "not available" in previous_logs.lower() or len(previous_logs) == 0
@@ -1650,8 +1650,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
 
             # Previous logs status depends on error code
@@ -1745,8 +1745,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1835,8 +1835,8 @@ class TestK8sClient:
             assert hasattr(result, "diagnostic_context")
 
             # Both logs should be error messages or empty
-            current_logs = result.logs.current_container
-            previous_logs = result.logs.previously_terminated_container
+            current_logs = result.logs["app"].current_container
+            previous_logs = result.logs["app"].previously_terminated_container
             assert "not available" in current_logs.lower() or len(current_logs) == 0
             assert "not available" in previous_logs.lower() or len(previous_logs) == 0
 
@@ -1953,12 +1953,66 @@ class TestK8sClient:
 
             # then: result should have 400 status code and diagnostic context
             assert result.status_code == HTTPStatus.BAD_REQUEST
-            assert "not valid for pod" in result.logs.current_container
+            assert "not valid for pod" in result.logs["_nginx"].current_container
             assert result.diagnostic_context is not None
             assert "nginx" in result.diagnostic_context.container_statuses
 
+    @pytest.mark.asyncio
+    async def test_fetch_pod_logs_all_containers_when_no_container_name(self, k8s_client):
+        """Test that when no container_name is given, logs are fetched for all containers."""
+        k8s_client.api_server = "https://api.example.com"
+        k8s_client.k8s_auth_headers = K8sAuthHeaders(
+            x_cluster_url=k8s_client.api_server,
+            x_cluster_certificate_authority_data="abc",
+            x_k8s_authorization="test-token",
+            x_client_certificate_data=None,
+            x_client_key_data=None,
+        )
+        k8s_client.data_sanitizer = None
 
-class TestParseContainerState:
+        # Mock get_resource to return pod with two containers
+        k8s_client.get_resource = Mock(
+            return_value={
+                "spec": {
+                    "containers": [
+                        {"name": "main"},
+                        {"name": "sidecar"},
+                    ]
+                }
+            }
+        )
+
+        with aioresponses() as aio_mock_response:
+            for container in ("main", "sidecar"):
+                current_url = (
+                    f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                    f"?container={container}&tailLines=100"
+                )
+                previous_url = (
+                    f"{k8s_client.api_server}/api/v1/namespaces/default/pods/test-pod/log"
+                    f"?container={container}&tailLines=100&previous=true"
+                )
+                aio_mock_response.get(current_url, body=f"{container} log line 1", status=HTTPStatus.OK)
+                aio_mock_response.get(
+                    previous_url,
+                    body='{"message": "not found"}',
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+
+            result = await k8s_client.fetch_pod_logs(
+                name="test-pod",
+                namespace="default",
+                container_name="",
+                tail_limit=100,
+            )
+
+        assert result is not None
+        assert isinstance(result.logs, dict)
+        assert "main" in result.logs
+        assert "sidecar" in result.logs
+        assert "main log line 1" in result.logs["main"].current_container
+        assert "sidecar log line 1" in result.logs["sidecar"].current_container
+
     """Test _parse_container_state helper method."""
 
     @pytest.mark.asyncio

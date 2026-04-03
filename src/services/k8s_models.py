@@ -60,7 +60,9 @@ class PodLogs(BaseModel):
 class PodLogsResult(BaseModel):
     """Complete container logs result with optional diagnostic context."""
 
-    logs: PodLogs = Field(..., description="Container logs for current and previously terminated container instances")
+    logs: dict[str, PodLogs] = Field(
+        ..., description="Container logs keyed by container name, each with current and previously terminated instances"
+    )
     diagnostic_context: PodLogsDiagnosticContext | None = Field(
         default=None,
         description="Optional diagnostic information when current container logs are unavailable",

@@ -94,6 +94,9 @@ class MockK8sClient(IK8sClient):
                 uri=f"/api/v1/namespaces/{namespace}/pods/{name}/log",
             )
 
+        # Determine the key to use for the logs dict
+        log_key = container_name if container_name else name
+
         # Return different scenarios based on logs_scenario parameter
         if self.logs_scenario == "no_logs_no_diagnostic":
             # No logs and no diagnostic information - raise exception
@@ -106,10 +109,12 @@ class MockK8sClient(IK8sClient):
         elif self.logs_scenario == "no_logs_with_diagnostic":
             # No logs but has diagnostic information
             return PodLogsResult(
-                logs=PodLogs(
-                    current_container="Logs not available. Container is waiting",
-                    previously_terminated_container="Not available (container has not been restarted)",
-                ),
+                logs={
+                    log_key: PodLogs(
+                        current_container="Logs not available. Container is waiting",
+                        previously_terminated_container="Not available (container has not been restarted)",
+                    )
+                },
                 diagnostic_context=PodLogsDiagnosticContext(
                     events="LAST SEEN   TYPE      REASON    MESSAGE\n"
                     "2m ago      Warning   Failed    Failed to pull image",
@@ -126,31 +131,51 @@ class MockK8sClient(IK8sClient):
         elif self.logs_scenario == "previous_logs_only":
             # Only previous logs available
             return PodLogsResult(
-                logs=PodLogs(
-                    current_container="Logs not available. Container restarted",
-                    previously_terminated_container="Previous log line 1\nPrevious log line 2",
-                ),
+                logs={
+                    log_key: PodLogs(
+                        current_container="Logs not available. Container restarted",
+                        previously_terminated_container="Previous log line 1\nPrevious log line 2",
+                    )
+                },
             )
         elif self.logs_scenario == "invalid_container":
             # Invalid container name - return result with 400 status code
             return PodLogsResult(
-                logs=PodLogs(
-                    current_container=f"Logs not available. container {container_name} is not valid for pod {name}",
-                    previously_terminated_container="Not available (container has not been restarted)",
-                ),
+                logs={
+                    log_key: PodLogs(
+                        current_container=f"Logs not available. container {container_name} is not valid for pod {name}",
+                        previously_terminated_container="Not available (container has not been restarted)",
+                    )
+                },
                 diagnostic_context=PodLogsDiagnosticContext(
                     events="No recent pod events found.",
                     container_statuses={"nginx": ContainerStatus(state="Running", restart_count=0)},
                 ),
                 status_code=HTTPStatus.BAD_REQUEST,
             )
+        elif self.logs_scenario == "multi_container":
+            # Multiple containers returned when no container_name specified
+            return PodLogsResult(
+                logs={
+                    "main": PodLogs(
+                        current_container="Main container log line 1",
+                        previously_terminated_container="Not available (container has not been restarted)",
+                    ),
+                    "sidecar": PodLogs(
+                        current_container="Sidecar log line 1",
+                        previously_terminated_container="Not available (container has not been restarted)",
+                    ),
+                },
+            )
         else:
             # Default success scenario
             return PodLogsResult(
-                logs=PodLogs(
-                    current_container="Log line 1\nLog line 2\nLog line 3",
-                    previously_terminated_container="Not available (container has not been restarted)",
-                ),
+                logs={
+                    log_key: PodLogs(
+                        current_container="Log line 1\nLog line 2\nLog line 3",
+                        previously_terminated_container="Not available (container has not been restarted)",
+                    )
+                },
             )
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
