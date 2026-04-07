@@ -10,6 +10,7 @@ from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
 
+from agents.kyma.tools.search import SearchKymaDocTool
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.encryption import Encryption
 from services.encryption_cache import EncryptionCache, get_encryption_cache
@@ -251,6 +252,12 @@ class _ModelsCache:
     _instance: dict[str, IModel | Embeddings] | None = None
 
 
+class _SearchToolCache:
+    """Singleton cache for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
+
+    _instance: SearchKymaDocTool | None = None
+
+
 def init_models_dict(
     config: Annotated[Config, Depends(init_config)],
 ) -> dict[str, IModel | Embeddings]:
@@ -273,6 +280,20 @@ def init_models_dict(
             ) from e
 
     return _ModelsCache._instance
+
+
+def init_search_tool(
+    models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
+) -> SearchKymaDocTool:
+    """
+    Initialize SearchKymaDocTool singleton.
+
+    Instantiates SearchKymaDocTool (and therefore RAGSystem) once and caches it.
+    Uses a class-level cache to avoid reinitializing RAGSystem on every request.
+    """
+    if _SearchToolCache._instance is None:
+        _SearchToolCache._instance = SearchKymaDocTool(models)
+    return _SearchToolCache._instance
 
 
 async def init_k8s_client(
