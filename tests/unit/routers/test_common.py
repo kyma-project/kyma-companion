@@ -156,12 +156,13 @@ class TestInitModelsDict:
 
     @pytest.fixture(autouse=True)
     def reset_cache(self):
-        """Reset the models cache before each test."""
-        from routers.common import _ModelsCache
+        """Reset the models registry before each test."""
+        from routers.common import _ModelsRegistry
+        from utils.singleton_meta import SingletonMeta
 
-        _ModelsCache._instance = None
+        SingletonMeta.reset_instance(_ModelsRegistry)
         yield
-        _ModelsCache._instance = None
+        SingletonMeta.reset_instance(_ModelsRegistry)
 
     def test_init_models_dict_caches_result(self, mock_config):
         """Test that init_models_dict caches models dict (singleton behavior)."""

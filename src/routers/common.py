@@ -20,6 +20,7 @@ from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
 from utils.settings import ENCRYPTION_PRIVATE_KEY_B64
+from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
 
@@ -246,16 +247,27 @@ def init_data_sanitizer(
     return DataSanitizer(config.sanitization_config)
 
 
-class _ModelsCache:
-    """Singleton cache for models dict to avoid using global statement."""
+class _ModelsRegistry(metaclass=SingletonMeta):
+    """Singleton registry for the models dictionary."""
 
-    _instance: dict[str, IModel | Embeddings] | None = None
+    def __init__(self, config: Config):
+        try:
+            model_factory = ModelFactory(config=config)
+            self.models: dict[str, IModel | Embeddings] = model_factory.create_models()
+        except Exception as e:
+            logger.exception("Failed to initialize models")
+            SingletonMeta.reset_instance(_ModelsRegistry)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize models: {str(e)}",
+            ) from e
 
 
-class _SearchToolCache:
-    """Singleton cache for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
+class _SearchToolRegistry(metaclass=SingletonMeta):
+    """Singleton registry for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
 
-    _instance: SearchKymaDocTool | None = None
+    def __init__(self, models: dict[str, IModel | Embeddings]):
+        self.tool = SearchKymaDocTool(models)
 
 
 def init_models_dict(
@@ -266,20 +278,9 @@ def init_models_dict(
 
     Creates a dict of model_name -> model instance for use by tools
     that require LLM models and embeddings.
-    Uses a class-level cache to avoid recreating models on every request.
+    Uses SingletonMeta to avoid recreating models on every request.
     """
-    if _ModelsCache._instance is None:
-        try:
-            model_factory = ModelFactory(config=config)
-            _ModelsCache._instance = model_factory.create_models()
-        except Exception as e:
-            logger.exception("Failed to initialize models")
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=f"Failed to initialize models: {str(e)}",
-            ) from e
-
-    return _ModelsCache._instance
+    return _ModelsRegistry(config).models
 
 
 def init_search_tool(
@@ -289,11 +290,9 @@ def init_search_tool(
     Initialize SearchKymaDocTool singleton.
 
     Instantiates SearchKymaDocTool (and therefore RAGSystem) once and caches it.
-    Uses a class-level cache to avoid reinitializing RAGSystem on every request.
+    Uses SingletonMeta to avoid reinitializing RAGSystem on every request.
     """
-    if _SearchToolCache._instance is None:
-        _SearchToolCache._instance = SearchKymaDocTool(models)
-    return _SearchToolCache._instance
+    return _SearchToolRegistry(models).tool
 
 
 async def init_k8s_client(
