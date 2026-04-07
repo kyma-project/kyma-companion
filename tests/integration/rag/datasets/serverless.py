@@ -12,7 +12,7 @@ cases = [
 
             - Navigate to **Discovery and Network** > **API Rules** and click **Create API Rule**.
             - Provide the APIRule name (matching the function's name is recommended), service name, and desired host.
-            - In **Rules** > **Access Strategies**, select methods (GET, POST, PUT, DELETE) and the `no_auth` handler for an unsecured endpoint.
+            - In **Rules**, select methods (GET, POST, PUT, DELETE) and use `noAuth: true` for an unsecured endpoint.
             - Click **Create** and test the exposed function using the HTTPS link under the **Host** column.
 
 
@@ -33,12 +33,11 @@ cases = [
                     - POST
                     - PUT
                     - DELETE
-                    accessStrategies:
-                      - handler: no_auth
+                    noAuth: true
             ```
 
             - Apply the configuration: `kyma apply function`.
-            - Verify the APIRule creation and status: `kubectl get apirules $NAME -n $NAMESPACE` and `kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.APIRuleStatus.code}'`.
+            - Verify the APIRule creation and status: `kubectl get apirules $NAME -n $NAMESPACE` and `kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.state}'`.
             - Call the function's external address: `curl https://$NAME.$DOMAIN`.
 
 
@@ -48,14 +47,15 @@ cases = [
             - Create an APIRule CR using `kubectl apply -f -` with the following YAML structure:
 
             ```yaml
-            apiVersion: gateway.kyma-project.io/v1beta1
+            apiVersion: gateway.kyma-project.io/v2
             kind: APIRule
             metadata:
               name: $NAME
               namespace: $NAMESPACE
             spec:
               gateway: kyma-system/kyma-gateway
-              host: $NAME.$DOMAIN
+              hosts:
+                - $NAME.$DOMAIN
               service:
                 name: $NAME
                 port: 80
@@ -66,11 +66,10 @@ cases = [
                     - POST
                     - PUT
                     - DELETE
-                  accessStrategies:
-                    - handler: no_auth
+                  noAuth: true
             ```
 
-            - Verify APIRule creation and status: `kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.APIRuleStatus.code}'`.
+            - Verify APIRule creation and status: `kubectl get apirules $NAME -n $NAMESPACE -o=jsonpath='{.status.state}'`.
             - Access the function's external address: `curl https://$NAME.$DOMAIN`.
 
             These methods provide different ways to achieve the same result: exposing your Kyma function through an APIRule for external access. Remember to adjust the provided code snippets with your specific values.

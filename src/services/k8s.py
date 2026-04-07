@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 import aiohttp
 from kubernetes import client, dynamic
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from services.data_sanitizer import IDataSanitizer
 from services.k8s_constants import (
@@ -52,11 +52,15 @@ class AuthType(StrEnum):
 class K8sAuthHeaders(BaseModel):
     """Model for Kubernetes API authentication headers."""
 
-    x_cluster_url: str
-    x_cluster_certificate_authority_data: str
-    x_k8s_authorization: str | None = None
-    x_client_certificate_data: str | None = None
-    x_client_key_data: str | None = None
+    model_config = ConfigDict(populate_by_name=True)
+
+    x_cluster_url: str = Field(default="", validation_alias="x-cluster-url")
+    x_cluster_certificate_authority_data: str = Field(
+        default="", validation_alias="x-cluster-certificate-authority-data"
+    )
+    x_k8s_authorization: str | None = Field(default=None, validation_alias="x-k8s-authorization")
+    x_client_certificate_data: str | None = Field(default=None, validation_alias="x-client-certificate-data")
+    x_client_key_data: str | None = Field(default=None, validation_alias="x-client-key-data")
     allowed_domains: list[str] = ALLOWED_K8S_DOMAINS
 
     def validate_headers(self) -> None:

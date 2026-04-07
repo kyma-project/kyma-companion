@@ -12,6 +12,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER
+from utils.utils import sanitize_table_name
 
 logger = get_logger(__name__)
 
@@ -59,6 +60,7 @@ class MarkdownIndexer:
             headers_to_split_on = [HEADER1]
         if not table_name:
             table_name = docs_path.split("/")[-1]
+        table_name = sanitize_table_name(table_name)
 
         self.docs_path = docs_path
         self.embedding = embedding
@@ -68,7 +70,9 @@ class MarkdownIndexer:
             embedding=embedding,
             table_name=table_name,
         )
-        self.backup_table_name = backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}"
+        self.backup_table_name = sanitize_table_name(
+            backup_table_name or f"{self.db.table_name}_backup_{int(time.time())}"
+        )
 
     def _load_documents(self) -> list[Document]:
         # Load all documents from the given directory

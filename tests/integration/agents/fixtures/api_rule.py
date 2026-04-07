@@ -1,13 +1,13 @@
 API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
-"apiVersion": "gateway.kyma-project.io/v1beta1",
+"apiVersion": "gateway.kyma-project.io/v2",
 "items": [
     {
-        "apiVersion": "gateway.kyma-project.io/v1beta1",
+        "apiVersion": "gateway.kyma-project.io/v2",
         "kind": "APIRule",
         "metadata": {
             "annotations": {
                 "kubectl.kubernetes.io/last-applied-configuration": {
-                    "apiVersion": "gateway.kyma-project.io/v1beta1",
+                    "apiVersion": "gateway.kyma-project.io/v2",
                     "kind": "APIRule",
                     "metadata": {
                         "annotations": {},
@@ -16,17 +16,20 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                     },
                     "spec": {
                         "gateway": "kyma-system/kyma-gateway",
-                        "host": "kyma-app-apirule-broken.c-5cb6076.stage.kyma.ondemand.com",
+                        "hosts": [
+                            "kyma-app-apirule-broken.c-5cb6076.stage.kyma.ondemand.com"
+                        ],
                         "rules": [
                             {
-                                "accessStrategies": [
-                                    {
-                                        "handler": "allow"
-                                    },
-                                    {
-                                        "handler": "jwt"
-                                    }
-                                ],
+                                "jwt": {
+                                    "authentications": [
+                                        {
+                                            "issuer": "https://dev.kyma.local",
+                                            "jwksUri": "https://dev.kyma.local/.well-known/jwks.json"
+                                        }
+                                    ]
+                                },
+                                "noAuth": true,
                                 "methods": [
                                     "GET",
                                     "POST"
@@ -49,7 +52,7 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
             "generation": 1,
             "managedFields": [
                 {
-                    "apiVersion": "gateway.kyma-project.io/v1beta1",
+                    "apiVersion": "gateway.kyma-project.io/v2",
                     "fieldsType": "FieldsV1",
                     "fieldsV1": {
                         "f:metadata": {
@@ -61,7 +64,7 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                         "f:spec": {
                             ".": {},
                             "f:gateway": {},
-                            "f:host": {},
+                            "f:hosts": {},
                             "f:rules": {},
                             "f:service": {
                                 ".": {},
@@ -76,7 +79,7 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                     "time": "2024-09-12T14:19:04Z"
                 },
                 {
-                    "apiVersion": "gateway.kyma-project.io/v1beta1",
+                    "apiVersion": "gateway.kyma-project.io/v2",
                     "fieldsType": "FieldsV1",
                     "fieldsV1": {
                         "f:metadata": {
@@ -91,26 +94,15 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
                     "time": "2024-09-12T14:19:04Z"
                 },
                 {
-                    "apiVersion": "gateway.kyma-project.io/v1beta1",
+                    "apiVersion": "gateway.kyma-project.io/v2",
                     "fieldsType": "FieldsV1",
                     "fieldsV1": {
                         "f:status": {
                             ".": {},
-                            "f:APIRuleStatus": {
-                                ".": {},
-                                "f:code": {},
-                                "f:desc": {}
-                            },
-                            "f:accessRuleStatus": {
-                                ".": {},
-                                "f:code": {}
-                            },
+                            "f:state": {},
+                            "f:description": {},
                             "f:lastProcessedTime": {},
-                            "f:observedGeneration": {},
-                            "f:virtualServiceStatus": {
-                                ".": {},
-                                "f:code": {}
-                            }
+                            "f:observedGeneration": {}
                         }
                     },
                     "manager": "manager",
@@ -126,17 +118,20 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
         },
         "spec": {
             "gateway": "kyma-system/kyma-gateway",
-            "host": "kyma-app-apirule-broken.c-5cb6076.stage.kyma.ondemand.com",
+            "hosts": [
+                "kyma-app-apirule-broken.c-5cb6076.stage.kyma.ondemand.com"
+            ],
             "rules": [
                 {
-                    "accessStrategies": [
-                        {
-                            "handler": "allow"
-                        },
-                        {
-                            "handler": "jwt"
-                        }
-                    ],
+                    "jwt": {
+                        "authentications": [
+                            {
+                                "issuer": "https://dev.kyma.local",
+                                "jwksUri": "https://dev.kyma.local/.well-known/jwks.json"
+                            }
+                        ]
+                    },
+                    "noAuth": true,
                     "methods": [
                         "GET",
                         "POST"
@@ -151,18 +146,10 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
             }
         },
         "status": {
-            "APIRuleStatus": {
-                "code": "ERROR",
-                "desc": "Multiple validation errors: \nAttribute \".spec.rules[0].accessStrategies.accessStrategies[1].handler\": allow access strategy is not allowed in combination with other access strategies\nAttribute \".spec.rules[0].accessStrategies.accessStrategies[0].handler\": allow access strategy is not allowed in combination with other access strategies"
-            },
-            "accessRuleStatus": {
-                "code": "SKIPPED"
-            },
+            "state": "ERROR",
+            "description": "Multiple validation errors: \nAttribute \".spec.rules[0]\": noAuth and jwt are mutually exclusive and cannot be used together on the same path",
             "lastProcessedTime": "2024-11-04T17:59:23Z",
-            "observedGeneration": 1,
-            "virtualServiceStatus": {
-                "code": "SKIPPED"
-            }
+            "observedGeneration": 1
         }
     }
 ],
@@ -175,54 +162,62 @@ API_RULE_WITH_WRONG_ACCESS_STRATEGY = """
 
 KYMADOC_FOR_API_RULE_VALIDATION_ERROR = """
 ## Unsupported Handlers' Combination
-### Cause  
-The following APIRule has both `allow` and `jwt` handlers defined on the same path:  
+### Cause
+The following APIRule has both `noAuth` and `jwt` defined on the same path:
 ```yaml
 spec:
 ...
 rules:
 - path: /.*
 methods: ["GET"]
-accessStrategies:
-- handler: allow
-- handler: jwt
-config:
-trusted_issuers: ["https://dev.kyma.local"]
-```  
-The handlers' combination in the above example is not supported. If an APIRule has an unsupported handlers' combination defined **on the same path**, the following `APIRuleStatus` error appears:  
+noAuth: true
+jwt:
+  authentications:
+  - issuer: https://dev.kyma.local
+    jwksUri: https://dev.kyma.local/.well-known/jwks.json
 ```
-{"code":"ERROR","desc":"Validation error: Attribute \".spec.rules[0].accessStrategies.accessStrategies[0].handler\": allow access strategy is not allowed in combination with other access strategies"}
-```  
-### Remedy  
-Decide on one configuration you want to use. You can either `allow` access to the specific path or restrict it using the JWT security token. Defining both configuration methods on the same path is not allowed.
+The configuration in the above example is not supported. If an APIRule has both `noAuth` and `jwt` defined **on the same path**, the following `status` error appears:
+```
+{"state":"ERROR","description":"Attribute \".spec.rules[0]\": noAuth and jwt are mutually exclusive and cannot be used together on the same path"}
+```
+### Remedy
+Decide on one configuration you want to use. You can either use `noAuth: true` to allow unauthenticated access to the specific path or restrict it using the JWT security token. Defining both configuration methods on the same path is not allowed.
 """
 
 EXPECTED_API_RULE_RESPONSE = """
-Looking at the APIRule configuration and the error message, there is a specific issue with the access strategies configuration. The error occurs because you're trying to use multiple access strategies (`allow` and `jwt`) together, which is not allowed.
+Looking at the APIRule configuration and the error message, there is a specific issue with the access configuration. The error occurs because you're trying to use both `noAuth` and `jwt` together, which is not allowed.
 
-The error message clearly states two validation errors:
-1. `allow` access strategy cannot be combined with other access strategies
-2. `jwt` access strategy cannot be combined with other access strategies
+The error message clearly states:
+- `noAuth` and `jwt` are mutually exclusive and cannot be used together on the same path
 
 Here's what's wrong in the current configuration:
 ```yaml
-accessStrategies:
-- handler: jwt
-- handler: allow
+rules:
+- path: /.*
+  noAuth: true
+  jwt:
+    authentications:
+    - issuer: https://dev.kyma.local
+      jwksUri: https://dev.kyma.local/.well-known/jwks.json
 ```
 
 To fix this, you should choose only one access strategy.
 
 ```yaml
-accessStrategies:
-- handler: jwt
+rules:
+- path: /.*
+  jwt:
+    authentications:
+    - issuer: https://dev.kyma.local
+      jwksUri: https://dev.kyma.local/.well-known/jwks.json
 ```
 
 OR
 
 ```yaml
-accessStrategies:
-- handler: allow
+rules:
+- path: /.*
+  noAuth: true
 ```
 """
 
@@ -239,7 +234,7 @@ EXPECTED_API_RULE_TOOL_CALL_RESPONSE = """
                 "function": {
                     "name": "kyma_query_tool",
                     "arguments": {
-                        "uri": "/apis/gateway.kyma-project.io/v1beta1/namespaces/kyma-app-apirule-broken/apirules"
+                        "uri": "/apis/gateway.kyma-project.io/v2/namespaces/kyma-app-apirule-broken/apirules"
                     }
                 }
             }

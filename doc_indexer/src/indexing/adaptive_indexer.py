@@ -15,6 +15,7 @@ from utils.documents import load_documents
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
+from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
 
@@ -114,6 +115,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
             table_name = docs_path.split("/")[-1]
+        table_name = sanitize_table_name(table_name)
 
         self.docs_path = docs_path
         self.table_name = table_name
@@ -176,12 +178,12 @@ class AdaptiveSplitMarkdownIndexer:
 
         for sub_doc in splitted_docs:
             if not sub_doc.metadata:
-                print("  skip chunk - no metadata")
+                logger.warning("skip chunk - no metadata")
                 continue
 
             title = self._build_title(sub_doc)
             if not title:
-                print("skip chunk - no title")
+                logger.warning("skip chunk - no title")
                 continue
 
             if parent_title != title and (parent_title + " - ") not in title:
