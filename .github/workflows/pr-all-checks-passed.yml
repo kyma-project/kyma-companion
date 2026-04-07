@@ -4,7 +4,6 @@ permissions:
   contents: read
 
 on:
-  merge_group:
   pull_request:
     types:
       [
@@ -16,10 +15,6 @@ on:
         labeled,
         milestoned,
       ]
-  workflow_run:
-    workflows: ["Integration Test", "Evaluation tests"]
-    types:
-      - completed
 
 jobs:
   all-checks:
