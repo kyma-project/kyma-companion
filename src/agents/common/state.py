@@ -317,15 +317,5 @@ class BaseAgentState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def get_agent_messages_including_summary(self) -> Sequence[BaseMessage]:
-        """Get messages including the summary message."""
-        if self.agent_messages_summary:
-            return to_sequence_messages(
-                add_messages(
-                    SystemMessage(content=self.agent_messages_summary),
-                    cast(
-                        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]],
-                        self.agent_messages,
-                    ),
-                )
-            )
+        """Return agent thread messages (summary field is retained for state compatibility only)."""
         return self.agent_messages

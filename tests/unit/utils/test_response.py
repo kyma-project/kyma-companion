@@ -6,10 +6,8 @@ import pytest
 from agents.common.constants import (
     FINALIZER,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
-    SUMMARIZATION,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -115,30 +113,12 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b't": "The capital of India is New Delhi.", "tasks": [], "next": "__end__"}, "'
             b'error": null}}',
         ),
-        # Skip response if agent is Summarization
-        (b'{"Summarization": {"messages": []}}', None),
         (
             # input
             b'{"KubernetesAgent": {"error": "Error occurred"}}',
             # expected
             b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"t'
             b'asks": []}, "error": "Error occurred"}}',
-        ),
-        (
-            # Summarization agent with error - special error response
-            # input
-            b'{"Summarization": {"error": "Summarization failed", "messages": []}}',
-            # expected
-            b'{"event": "agent_action", "data": {"agent": null, "error": "Summarization f'
-            b'ailed", "answer": {"content": "", "tasks": [], "next": "__end__"}}}',
-        ),
-        (
-            # InitialSummarization agent with error - special error response
-            # input
-            b'{"InitialSummarization": {"error": "Initial summarization failed", "messages": []}}',
-            # expected
-            b'{"event": "agent_action", "data": {"agent": null, "error": "Initial summar'
-            b'ization failed", "answer": {"content": "", "tasks": [], "next": "__end__"}}}',
         ),
         (
             # KymaAgent with error and empty subtasks
@@ -294,30 +274,6 @@ def test_reformat_subtasks(subtasks, expected_output):
     [
         # Skipping scenarios
         (
-            SUMMARIZATION,
-            [{"name": "any_agent", "content": "test"}],
-            "any_agent",
-            False,
-            True,
-            "summarization_agent_without_error",
-        ),
-        (
-            INITIAL_SUMMARIZATION,
-            [{"name": "any_agent", "content": "test"}],
-            "any_agent",
-            False,
-            True,
-            "initial_summarization_without_error",
-        ),
-        (
-            SUMMARIZATION,
-            [],
-            None,
-            False,
-            True,
-            "summarization_with_empty_messages_no_error",
-        ),
-        (
             SUPERVISOR,
             [{"name": "intermediate_agent", "content": "test"}],
             "intermediate_agent",
@@ -391,39 +347,6 @@ def test_reformat_subtasks(subtasks, expected_output):
             False,
             "custom_agent",
         ),
-        # Summarization agents with errors should NOT be skipped
-        (
-            SUMMARIZATION,
-            [{"name": "any_agent", "content": "test"}],
-            "any_agent",
-            True,
-            False,
-            "summarization_agent_with_error",
-        ),
-        (
-            INITIAL_SUMMARIZATION,
-            [{"name": "any_agent", "content": "test"}],
-            "any_agent",
-            True,
-            False,
-            "initial_summarization_with_error",
-        ),
-        (
-            SUMMARIZATION,
-            [],
-            None,
-            True,
-            False,
-            "summarization_with_empty_messages_but_error",
-        ),
-        (
-            INITIAL_SUMMARIZATION,
-            None,
-            None,
-            True,
-            False,
-            "initial_summarization_no_messages_but_error",
-        ),
     ],
 )
 def test_prepare_chunk_response_all_skipping_scenarios(
@@ -433,10 +356,8 @@ def test_prepare_chunk_response_all_skipping_scenarios(
     Comprehensive test for all agent skipping and non-skipping scenarios in prepare_chunk_response.
 
     Tests the following skipping logic:
-    1. Summarization agents (SUMMARIZATION, INITIAL_SUMMARIZATION) are skipped when NO error
-    2. Summarization agents are NOT skipped when they have errors (CRITICAL behavior)
-    3. Supervisor responses are skipped when last_agent is not PLANNER or FINALIZER
-    4. All other agents are processed normally
+    1. Supervisor responses are skipped when last_agent is not PLANNER or FINALIZER
+    2. All other agents are processed normally
     """
     # Prepare chunk data
     chunk_data = {agent: {}}
@@ -449,24 +370,11 @@ def test_prepare_chunk_response_all_skipping_scenarios(
 
     chunk = json.dumps(chunk_data).encode()
 
-    # Mock process_response to return appropriate response based on agent and error
-    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
-        # For summarization agents with errors, companion returns error response
-        if has_error:
-            mock_process_return = {
-                "agent": None,
-                "error": f"{agent} error occurred",
-                "answer": {"content": "", "tasks": [], NEXT: "__end__"},
-            }
-        else:
-            mock_process_return = None
-    else:
-        # For all other cases, return normal response
-        mock_process_return = {
-            "agent": agent,
-            "answer": {"content": "test response", "tasks": []},
-            "error": None,
-        }
+    mock_process_return = {
+        "agent": agent,
+        "answer": {"content": "test response", "tasks": []},
+        "error": None,
+    }
 
     with patch("utils.response.process_response") as mock_process:
         mock_process.return_value = mock_process_return

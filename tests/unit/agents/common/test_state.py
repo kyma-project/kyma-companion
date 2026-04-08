@@ -100,55 +100,24 @@ class TestCompanionState:
 
 
 class TestAgentState:
-    @pytest.mark.parametrize(
-        "messages, messages_summary, expected",
-        [
-            # Test case when messages_summary is not empty, should add the previous summary as first message.
-            (
-                [
-                    AIMessage(content="Message 1", id="1"),
-                    AIMessage(content="Message 2", id="2"),
-                ],
-                "Summary message",
-                [
-                    SystemMessage(content="Summary message"),
-                    AIMessage(content="Message 1", id="1"),
-                    AIMessage(content="Message 2", id="2"),
-                ],
-            ),
-            # Test case when messages_summary is empty, should not add the previous summary as first message.
-            (
-                [
-                    AIMessage(content="Message 1", id="1"),
-                    AIMessage(content="Message 2", id="2"),
-                ],
-                "",
-                [
-                    AIMessage(content="Message 1", id="1"),
-                    AIMessage(content="Message 2", id="2"),
-                ],
-            ),
-        ],
-    )
-    def test_get_agent_messages_including_summary(self, messages, messages_summary, expected):
-        # given
+    def test_get_agent_messages_including_summary_returns_agent_messages_only(self):
+        messages = [
+            AIMessage(content="Message 1", id="1"),
+            AIMessage(content="Message 2", id="2"),
+        ]
         state = BaseAgentState(
             messages=[],
             messages_summary="",
             agent_messages=messages,
-            agent_messages_summary=messages_summary,
+            agent_messages_summary="ignored legacy field",
             k8s_client=Mock(spec=IK8sClient),
             subtasks=[],
             my_task=None,
             is_last_step=False,
             remaining_steps=25,
         )
-
-        # when
         result = state.get_agent_messages_including_summary()
-
-        # then
-        assert len(result) == len(expected)
+        assert list(result) == messages
 
 
 class TestUserInput:

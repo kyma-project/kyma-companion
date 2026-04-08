@@ -7,10 +7,8 @@ from agents.common.constants import (
     ERROR,
     FINALIZER,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     NEXT,
     PLANNER,
-    SUMMARIZATION,
 )
 from agents.common.state import SubTaskStatus
 from agents.supervisor.agent import SUPERVISOR
@@ -54,15 +52,6 @@ def handle_agent_error(agent_data: dict[str, Any], agent: str) -> tuple[str | No
     agent_error = None
     if "error" in agent_data and agent_data["error"]:
         agent_error = agent_data["error"]
-        if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
-            # we don't show summarization node, but only error
-            error_response = {
-                "agent": None,
-                "error": agent_error,
-                "answer": {"content": "", "tasks": [], NEXT: END},
-            }
-            return agent_error, error_response
-
     return agent_error, None
 
 
@@ -74,10 +63,6 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     agent_error, error_response = handle_agent_error(agent_data, agent)
     if error_response is not None:
         return error_response
-
-    # skip summarization node
-    if agent in (SUMMARIZATION, INITIAL_SUMMARIZATION):
-        return None
 
     # send planing task, if request was forwarded to supervisor
     if agent == GATEKEEPER and agent_data.get(NEXT) == SUPERVISOR:

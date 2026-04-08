@@ -195,7 +195,7 @@ def test_subtask_selector_edge(is_last_step: bool, my_task: SubTask | None, expe
                 tool_calls={"call_MEOW": "test"},
             ),
             False,
-            "Summarization",
+            "tools",
         ),
         # Case 2: AI message without tool calls -> finalizer
         (
@@ -210,7 +210,7 @@ def test_subtask_selector_edge(is_last_step: bool, my_task: SubTask | None, expe
                 tool_calls=[{"name": "some_tool", "id": "call_123", "args": {}}],
             ),
             False,
-            "Summarization",
+            "tools",
         ),
         # Case 4: Insufficient remaining steps without task -> finalizer
         (

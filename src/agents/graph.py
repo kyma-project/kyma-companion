@@ -24,15 +24,12 @@ from agents.common.agent import IAgent
 from agents.common.constants import (
     CONTINUE,
     GATEKEEPER,
-    INITIAL_SUMMARIZATION,
     MESSAGES,
-    MESSAGES_SUMMARY,
     NEXT,
     RESPONSE_HELLO,
     RESPONSE_QUERY_OUTSIDE_DOMAIN,
     RESPONSE_UNABLE_TO_PROCESS,
     SUBTASKS,
-    SUMMARIZATION,
     UNKNOWN,
 )
 from agents.common.data import Message
@@ -44,16 +41,11 @@ from agents.common.state import (
     SubTask,
     UserInput,
 )
-from agents.common.utils import (
-    filter_valid_messages,
-    get_resource_context_message,
-    should_continue,
-)
+from agents.common.utils import filter_valid_messages, get_resource_context_message, should_continue
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import GATEKEEPER_INSTRUCTIONS, GATEKEEPER_PROMPT
-from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from services.langfuse import LangfuseService, get_langfuse_metadata
@@ -61,12 +53,7 @@ from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
-from utils.settings import (
-    MAIN_MODEL_MINI_NAME,
-    MAIN_MODEL_NAME,
-    SUMMARIZATION_TOKEN_LOWER_LIMIT,
-    SUMMARIZATION_TOKEN_UPPER_LIMIT,
-)
+from utils.settings import MAIN_MODEL_NAME
 
 logger = get_logger(__name__)
 
@@ -144,7 +131,6 @@ class CompanionGraph:
         self.models = models
         self.memory = memory
 
-        main_model_mini = models[MAIN_MODEL_MINI_NAME]
         main_model = models[MAIN_MODEL_NAME]
 
         self.kyma_agent = KymaAgent(models)
@@ -153,15 +139,6 @@ class CompanionGraph:
         self.supervisor_agent = SupervisorAgent(
             models,
             members=[KYMA_AGENT, K8S_AGENT],
-        )
-
-        self.summarization = MessageSummarizer(
-            model=main_model_mini,
-            tokenizer_model_name=MAIN_MODEL_NAME,
-            token_lower_limit=SUMMARIZATION_TOKEN_LOWER_LIMIT,
-            token_upper_limit=SUMMARIZATION_TOKEN_UPPER_LIMIT,
-            messages_key=MESSAGES,
-            messages_summary_key=MESSAGES_SUMMARY,
         )
 
         self.members = [self.kyma_agent.name, self.k8s_agent.name]
@@ -274,19 +251,20 @@ class CompanionGraph:
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(GATEKEEPER, self._gatekeeper_node)
-        workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
-        workflow.add_node(INITIAL_SUMMARIZATION, self.summarization.summarization_node)
 
-        # Define the edges: (KymaAgent | KubernetesAgent) --> summarization --> supervisor
-        # The agents ALWAYS "report back" to the supervisor through summarization node.
+        # Set the entrypoint: ENTRY --> Gatekeeper
+        workflow.set_entry_point(GATEKEEPER)
+
+        # After each agent, return to supervisor unless the run failed (error ends the graph).
         for member in self.members:
-            workflow.add_edge(member, SUMMARIZATION)
-
-        # Set the entrypoint: ENTRY --> Initial_Summarization
-        workflow.set_entry_point(INITIAL_SUMMARIZATION)
-
-        # Define the edges: Initial_Summarization --> Gatekeeper
-        workflow.add_edge(INITIAL_SUMMARIZATION, GATEKEEPER)
+            workflow.add_conditional_edges(
+                member,
+                should_continue,
+                {
+                    CONTINUE: SUPERVISOR,
+                    END: END,
+                },
+            )
 
         # Define the dynamic conditional edges: Gatekeeper --> (SUPERVISOR | END)
         workflow.add_conditional_edges(
@@ -302,15 +280,6 @@ class CompanionGraph:
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
         # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
-
-        workflow.add_conditional_edges(
-            SUMMARIZATION,
-            should_continue,
-            {
-                CONTINUE: SUPERVISOR,
-                END: END,
-            },
-        )
 
         # Compile the graph.
         graph = workflow.compile(checkpointer=self.memory)
