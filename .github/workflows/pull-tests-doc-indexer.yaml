@@ -32,7 +32,7 @@ jobs:
 
   tests:
     needs: check-author
-    if: success()
+    if: ${{ needs.check-author.result == 'success' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

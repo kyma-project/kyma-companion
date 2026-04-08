@@ -28,6 +28,7 @@ jobs:
               });
               core.setOutput('is-codeowner', 'true');
             } catch {
+              // Note: both 403 (token lacks org read scope) and 404 (not a member) are treated as external contributor.
               core.setOutput('is-codeowner', 'false');
             }
 
