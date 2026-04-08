@@ -354,13 +354,13 @@ from integration.conftest import convert_dict_to_messages, create_mock_state
             False,
         ),
         (
-            "answers a general programming related query",
+            "programming query should be forwarded",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
-            'print("Hello, World!")',
-            False,
+            "",
+            True,
         ),
         (
             "Query about self capabilities.",
@@ -426,13 +426,13 @@ async def test_invoke_gatekeeper_node(
     "test_description, messages, expected_category, expected_query_forwarding",
     [
         (
-            "Programming query should be categorized as Programming",
+            "Programming query should be categorized as Programming and forwarded",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content='Write "Hello, World!" code in Python'),
             ],
             "Programming",
-            False,
+            True,
         ),
         (
             "Greeting query should be categorized as Greeting",
@@ -562,65 +562,46 @@ async def test_gatekeeper_categorization(
     "test_description, conversation_history, user_query, expected_answer, expected_query_forwarding",
     [
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_2,
             "what was the issue?",
-            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
-            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
-            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
-            "which may fail to run correctly in certain environments.",
-            False,
+            "",
+            True,
         ),
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_2,
             "what was wrong?",
-            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
-            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
-            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
-            "which may fail to run correctly in certain environments.",
-            False,
+            "",
+            True,
         ),
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_2,
             "what was the problem?",
-            "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
-            "is likely due to the configuration of `replicas: 0`, which means no pods are set to run. "
-            "Additionally, if there were build issues, it could be related to the kaniko tool used for building container images, "
-            "which may fail to run correctly in certain environments.",
-            False,
+            "",
+            True,
         ),
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_5,
             "what was the cause?",
-            "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
-            "for the service account `pod-reader-sa`. The container `kubectl-container` is trying to execute the "
-            "command `kubectl get pods`, and if the service account does not have the necessary role bindings to "
-            "list pods, it will result in an error, causing the container to terminate with an exit code of 1. "
-            "You should verify the role and role binding for the service account to ensure it has the required permissions.",
-            False,
+            "",
+            True,
         ),
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_5,
             "what was the reason?",
-            "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
-            "for the service account `pod-reader-sa`. The container `kubectl-container` is trying to execute the "
-            "command `kubectl get pods`, and if the service account does not have the necessary role bindings to "
-            "list pods, it will result in an error, causing the container to terminate with an exit code of 1. "
-            "You should verify the role and role binding for the service account to ensure it has the required permissions.",
-            False,
+            "",
+            True,
         ),
         (
-            "answer the question based on the conversation history",
+            "past-tense query should be forwarded even with conversation history",
             conversation_sample_7,
             "what was the issue?",
-            "The issue with the function in the `test-function-8` namespace was a syntax error in the JavaScript code.\n"
-            "The line `const now = new Dates();` was incorrect and should have been `const now = new Date();`.\n"
-            "This typo would cause the function to fail when executed, as `Dates` is not a valid JavaScript object. The correct object is `Date`.\n",
-            False,
+            "",
+            True,
         ),
         (
             "answer the question based on the conversation history",
@@ -698,7 +679,7 @@ async def test_gatekeeper_categorization(
             True,
         ),
         (
-            "conversation about Kyma with context switching to general programming",
+            "programming query should be forwarded even with Kyma conversation history",
             [
                 {"type": "human", "content": "How do I create a Kyma function?"},
                 {
@@ -707,8 +688,8 @@ async def test_gatekeeper_categorization(
                 },
             ],
             "What's the difference between async/await and Promises in JavaScript?",
-            "Promises and async/await are JavaScript features for handling asynchronous operations:\n\n- **Promises** provide a way to handle asynchronous results with `.then()`, `.catch()`, and `.finally()` methods. They can be chained and represent a value that may be available now, later, or never.\n\n- **Async/await** is syntactic sugar built on top of Promises, making asynchronous code look and behave more like synchronous code. The `async` keyword declares that a function returns a Promise, and the `await` keyword pauses execution until that Promise resolves.\n\nWhile Promises often require callback chains, async/await provides a cleaner, more readable syntax for the same operations, especially when dealing with multiple sequential asynchronous tasks.",
-            False,
+            "",
+            True,
         ),
         (
             "conversation with error troubleshooting follow-up",

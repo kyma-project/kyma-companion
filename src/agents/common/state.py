@@ -74,25 +74,6 @@ class GatekeeperResponse(BaseModel):
         ),
     ]
 
-    user_intent: Annotated[
-        str,
-        Field(
-            description="""
-            Identifies and extracts the user's intent from the user query and conversation history.
-
-            CRITICAL: When the user query contains pronouns or refers to previous topics
-            (like "it", "that", "this", "them", "example of it"),
-            you MUST analyze the conversation history to understand what the user is referring to.
-
-            For example:
-            - If previous context discussed "Kyma Function" and user asks "check it?"
-            - The intent should be identified as "Check Kyma Function"
-
-            The conversation history provides essential context for resolving ambiguous references.
-            """,
-        ),
-    ]
-
     category: Annotated[
         Literal["Kyma", "Kubernetes", "Programming", "About You", "Greeting", "Irrelevant"],
         Field(
@@ -114,41 +95,8 @@ class GatekeeperResponse(BaseModel):
         str,
         Field(
             description="""
-            If category is "Programming" or "About You", then generate direct response based to the user intent.
+            If category is "About You", then generate direct response based to the user intent.
             Otherwise return empty string.
-            """,
-        ),
-    ]
-
-    is_user_query_in_past_tense: Annotated[
-        bool,
-        Field(
-            default=False,
-            description="""
-                Determines if the query is in past tense, which indicates we should check conversation history.
-                Look for past tense patterns and indicators:
-                - "what was", "what happened", "what went wrong", "what did you find"
-                - "what were", "what caused", "what led to", "how did"
-                - "why was", "why did", "why were", "previously"
-                - "what issue/problem/error/bug was", "what was the diagnosis"
-
-                The key principle is detecting when the user is asking about something that already occurred.
-                """,
-        ),
-    ]
-
-    answer_from_history: Annotated[
-        str,
-        Field(
-            default="",
-            description="""
-            Retrieve an answer from the conversation history only if the following conditions are true.
-            Otherwise return empty string.
-            1. If user query is NOT asking about current status, issues, or configuration of resources.
-            2. If an complete answer exists in conversation history. For ambiguous queries,
-                assume they refer to the most recent issue.
-            3. If the conversation history contains a complete answer without generating new content.
-            For ambiguous queries, prioritize the most recent issue discussed.
             """,
         ),
     ]

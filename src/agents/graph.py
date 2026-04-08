@@ -12,7 +12,6 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig, RunnableSequence
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -37,7 +36,6 @@ from agents.common.state import (
     CompanionState,
     GatekeeperResponse,
     GraphInput,
-    Plan,
     SubTask,
     UserInput,
 )
@@ -119,10 +117,6 @@ class CompanionGraph:
     k8s_agent: IAgent
     members: list[str] = []
 
-    plan_parser = PydanticOutputParser(pydantic_object=Plan)
-
-    planner_prompt: ChatPromptTemplate
-
     def __init__(
         self,
         models: dict[str, IModel | Embeddings],
@@ -180,16 +174,9 @@ class CompanionGraph:
         elif gatekeeper_response.category == "Greeting":
             logger.debug("Gatekeeper responding to greeting")
             gatekeeper_response.direct_response = RESPONSE_HELLO
-        elif gatekeeper_response.category in ["Programming", "About You"] and gatekeeper_response.direct_response:
-            logger.debug("Gatekeeper responding with direct response for programming or about you category")
-        elif (
-            gatekeeper_response.category in ["Kyma", "Kubernetes"]
-            and gatekeeper_response.answer_from_history
-            and gatekeeper_response.is_user_query_in_past_tense
-        ):
-            logger.debug("Gatekeeper answering from conversation history for Kyma or Kubernetes")
-            gatekeeper_response.direct_response = gatekeeper_response.answer_from_history
-        elif gatekeeper_response.category in ["Kyma", "Kubernetes"]:
+        elif gatekeeper_response.category in ["About You"] and gatekeeper_response.direct_response:
+            logger.debug("Gatekeeper responding with direct response for about you category")
+        elif gatekeeper_response.category in ["Kyma", "Kubernetes", "Programming"]:
             logger.debug("Gatekeeper forwarding the query")
             gatekeeper_response.forward_query = True
         else:

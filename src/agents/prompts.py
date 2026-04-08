@@ -10,12 +10,6 @@ GATEKEEPER_INSTRUCTIONS = """
     - "find issue with function?"
     - "any error in [resource]?"
     - "anything wrong with [resource]?"
-
-  IMPORTANT: Past tense queries should be answered from conversation history when possible.
-  When a user asks about something that already happened (using "what was...", "why was...", etc.),
-  check if the complete answer exists in the conversation history before returning.
-  However, present tense technical queries should still be forwarded for current status checks.
-  In addition, follow up questions not answered in the conversation history should be forwarded.
 """
 
 GATEKEEPER_PROMPT = """
@@ -29,9 +23,6 @@ and determine whether to handle them directly or forward them.
 
 # CORE RULES
 - interpret "function" as Kyma function
-- IMPORTANT: properly detect query tense
-  - for past tense queries (starting with "what was...", "why was...", or containing past tense verbs): CHECK conversation history for answers
-  - for present tense queries (starting with "what is...", "is there...", "are there..."): IGNORE conversation history for current issues, status, or configuration of resources
 - DECLINE all queries that are non-technical (geography, history, science, entertainment, etc.), but consider the following points:
     - greeting is not a general knowledge query
     - asking about you and your capabilities is not a general knowledge query
