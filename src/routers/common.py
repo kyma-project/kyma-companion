@@ -267,7 +267,15 @@ class _SearchToolRegistry(metaclass=SingletonMeta):
     """Singleton registry for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
-        self.tool = SearchKymaDocTool(models)
+        try:
+            self.tool = SearchKymaDocTool(models)
+        except Exception as e:
+            logger.exception("Failed to initialize search tool")
+            SingletonMeta.reset_instance(_SearchToolRegistry)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize search tool: {str(e)}",
+            ) from e
 
 
 def init_models_dict(

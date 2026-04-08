@@ -9,7 +9,12 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi import HTTPException
 
-from routers.common import get_k8s_auth_headers_from_encrypted_payload, init_k8s_client, init_models_dict
+from routers.common import (
+    get_k8s_auth_headers_from_encrypted_payload,
+    init_k8s_client,
+    init_models_dict,
+    init_search_tool,
+)
 from services.data_sanitizer import IDataSanitizer
 from services.encryption_cache import IEncryptionCache
 from services.k8s import K8sAuthHeaders
@@ -193,6 +198,60 @@ class TestInitModelsDict:
                 init_models_dict(mock_config)
 
             assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+class TestInitSearchTool:
+    """Tests for init_search_tool dependency (caching behavior)."""
+
+    @pytest.fixture
+    def mock_models(self):
+        return {"gpt-4": Mock()}
+
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        """Reset the search tool registry before each test."""
+        from routers.common import _SearchToolRegistry
+        from utils.singleton_meta import SingletonMeta
+
+        SingletonMeta.reset_instance(_SearchToolRegistry)
+        yield
+        SingletonMeta.reset_instance(_SearchToolRegistry)
+
+    def test_init_search_tool_caches_result(self, mock_models):
+        """Test that init_search_tool caches the tool instance (singleton behavior)."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool = Mock()
+            mock_tool_class.return_value = mock_tool
+
+            result1 = init_search_tool(models=mock_models)
+            result2 = init_search_tool(models=mock_models)
+
+            assert result1 is result2
+            assert mock_tool_class.call_count == 1
+
+    def test_init_search_tool_raises_http_exception_on_error(self, mock_models):
+        """Test that init_search_tool raises HTTPException when tool creation fails."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool_class.side_effect = Exception("RAG initialization failed")
+
+            with pytest.raises(HTTPException) as exc_info:
+                init_search_tool(models=mock_models)
+
+            assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+
+    def test_init_search_tool_allows_retry_after_error(self, mock_models):
+        """Test that a failed init does not permanently cache a broken instance."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool_class.side_effect = Exception("transient error")
+            with pytest.raises(HTTPException):
+                init_search_tool(models=mock_models)
+
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool = Mock()
+            mock_tool_class.return_value = mock_tool
+
+            result = init_search_tool(models=mock_models)
+            assert result is mock_tool
 
 
 @pytest.mark.asyncio
