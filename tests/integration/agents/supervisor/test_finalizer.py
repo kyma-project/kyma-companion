@@ -5,7 +5,7 @@ from deepeval import assert_test
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from integration.agents.test_common_node import create_mock_state
+from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -287,12 +287,12 @@ from integration.agents.test_common_node import create_mock_state
             ),
         ),
         (
-            "Finalizer answers based on Common and Kyma agent's responses",
+            "Finalizer answers based on Kubernetes and Kyma agent's responses",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'test-namespace'}"),
                 HumanMessage(content="write hello world nodejs script. Show me how to deploy it as a Kyma function."),
                 AIMessage(
-                    name="Common",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         Here is the hello world nodejs script:

@@ -11,7 +11,7 @@ from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
-from agents.common.constants import CLUSTER, COMMON, K8S_AGENT, KYMA_AGENT
+from agents.common.constants import CLUSTER, K8S_AGENT, KYMA_AGENT
 from utils.utils import to_sequence_messages
 
 
@@ -168,7 +168,7 @@ class SubTask(BaseModel):
           'Retrieving', 'Fetching', 'Extracting' or 'Checking'. Never use 'Creating'."""
         ),
     ]
-    assigned_to: Literal[KYMA_AGENT, K8S_AGENT, COMMON]  # type: ignore
+    assigned_to: Literal[KYMA_AGENT, K8S_AGENT]  # type: ignore
     status: str = Field(default=SubTaskStatus.PENDING)
 
     def complete(self) -> None:

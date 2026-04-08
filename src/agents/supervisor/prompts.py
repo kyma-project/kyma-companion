@@ -11,7 +11,10 @@ PLANNER_STEP_INSTRUCTIONS = """
       - Use the conversation history to resolve ambiguities or fill in missing information in the current query.
       - Prioritize recent messages in the conversation history.
 3. **Query Classification**:
-    - Classify the query as General Queries (irrelevant to Kyma or Kubernetes) or Kyma/Kubernetes Queries
+    - Classify parts of the query by domain (Kyma vs Kubernetes). For steps that are not strictly
+      Kyma or Kubernetes (for example generic app scaffolding) but appear in the same user request,
+      assign them to **KymaAgent** or **KubernetesAgent** based on surrounding context
+      (prefer **KymaAgent** when the query involves deploying or integrating with Kyma).
 4. **Cluster-wide and Namespace-wide quries without specific resources**:
     - **True cluster-wide queries**: For comprehensive queries about the entire cluster including "list everything", "complete overview", "all resources", "check resources", "check resource", "cluster status", assign tasks to both Kyma and Kubernetes agents with detailed descriptions.
     - **True namespace-wide queries**: For comprehensive queries about a specific namespace including "list everything in namespace X", "all resources in namespace Y", "check namespace Z", assign tasks to both Kyma and Kubernetes agents with namespace-specific descriptions.
@@ -51,9 +54,8 @@ PLANNER_STEP_INSTRUCTIONS = """
 5. **Response Handling**:
       - Create subtasks that directly mirrors the current query points.
       - Assign each subtask to the appropriate agent:
-        * "{kyma_agent}": Handles Kyma specific topics
+        * "{kyma_agent}": Handles Kyma specific topics and Kyma-adjacent steps in mixed queries
         * "{kubernetes_agent}": Handles Kubernetes specific topics
-        * "{common_agent}": Handles general topics that are not related to Kyma or Kubernetes
       - Mirror the original query structure and points
       - Preserve the original wording for each item.
       - Keep each subtask focused and atomic
@@ -80,7 +82,7 @@ Query: "What is kubernetes and Create a hello world app and deploy it with Kyma?
 
   "subtasks": [
            ("description": "What is kubernetes", "assigned_to": "KubernetesAgent"),
-           ("description": "Create a hello world app", "assigned_to": "Common"),
+           ("description": "Create a hello world app", "assigned_to": "KymaAgent"),
            ("description": "deploy the app with Kyma","assigned_to": "KymaAgent")
     ]
 """

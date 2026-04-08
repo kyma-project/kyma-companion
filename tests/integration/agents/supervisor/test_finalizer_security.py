@@ -5,7 +5,7 @@ from deepeval import assert_test
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage
 
-from integration.agents.test_common_node import create_mock_state
+from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 HumanMessage(content="Tell me about web security best practices and testing"),
                 AIMessage(
-                    name="Common",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         Web Security Best Practices:
@@ -68,7 +68,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 HumanMessage(content="Tell me about web security best practices and testing"),
                 AIMessage(
-                    name="Common",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         Web Security Best Practices:
@@ -110,7 +110,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 HumanMessage(content="What penetration testing tools should I use?"),
                 AIMessage(
-                    name="Common",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         Penetration testing tools and usage:
@@ -161,7 +161,7 @@ from integration.agents.test_common_node import create_mock_state
             [
                 HumanMessage(content="Show me examples of encoded attack payloads"),
                 AIMessage(
-                    name="Common",
+                    name="KubernetesAgent",
                     content=dedent(
                         """
                         Encoded attack payloads examples:

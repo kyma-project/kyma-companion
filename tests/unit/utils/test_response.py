@@ -42,7 +42,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'"name": "KubernetesAgent"}], '
             b'"subtasks": '
             b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
-            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "__end__"}}',
             # expected
             b'{"event": "agent_action", "data": {"agent": "KubernetesAgent", "answer": {"c'
@@ -50,9 +50,9 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'sk_name": "Planning your request...", "status": "completed", "agent": "Plann'
             b'er"}, {"task_id": 1, "task_name": "Checking status of pods", "status": "comp'
             b'leted", "agent": "KubernetesAgent"}, {"task_id": 2, "task_name": "Retrieving'
-            b' hello world code in python", "status": "pending", "agent": "Common"}, {"tas'
+            b' hello world code in python", "status": "pending", "agent": "KymaAgent"}, {"tas'
             b'k_id": 3, "task_name": "Fetching steps to create kyma function", "status": "'
-            b'pending", "agent": "KymaAgent"}], "next": "Common"}, "error": null}}',
+            b'pending", "agent": "KymaAgent"}], "next": "KymaAgent"}, "error": null}}',
         ),
         (
             # Supervisor Agent with last agent planner
@@ -61,7 +61,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'"name": "Planner"}], '
             b'"subtasks": '
             b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "pending", "task_title": "Checking status of pods"}, '
-            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "KubernetesAgent"}}',
             # expected
             b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
@@ -69,7 +69,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'tatus": "completed", "agent": "Planner"}, {"task_id": 1, "task_name": "Check'
             b'ing status of pods", "status": "pending", "agent": "KubernetesAgent"}, {"tas'
             b'k_id": 2, "task_name": "Retrieving hello world code in python", "status": "p'
-            b'ending", "agent": "Common"}, {"task_id": 3, "task_name": "Fetching steps to '
+            b'ending", "agent": "KymaAgent"}, {"task_id": 3, "task_name": "Fetching steps to '
             b'create kyma function", "status": "pending", "agent": "KymaAgent"}], "next": '
             b'"KubernetesAgent"}, "error": null}}',
         ),
@@ -80,7 +80,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'"name": "Finalizer"}], '
             b'"subtasks": '
             b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
-            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "completed", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to write hello world code in python", "status": "completed", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "completed", "task_title": "Fetching steps to create kyma function"}], "next": "__end__"}}',
             # expected
             b'{"event": "agent_action", "data": {"agent": "Supervisor", "answer": {"conten'
@@ -88,7 +88,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'equest...", "status": "completed", "agent": "Planner"}, {"task_id": 1, "task'
             b'_name": "Checking status of pods", "status": "completed", "agent": "Kubernet'
             b'esAgent"}, {"task_id": 2, "task_name": "Retrieving hello world code in pytho'
-            b'n", "status": "completed", "agent": "Common"}, {"task_id": 3, "task_name": "'
+            b'n", "status": "completed", "agent": "KymaAgent"}, {"task_id": 3, "task_name": "'
             b'Fetching steps to create kyma function", "status": "completed", "agent": "Ky'
             b'maAgent"}], "next": "__end__"}, "error": null}}',
         ),
@@ -99,7 +99,7 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
             b'"name": "KubernetesAgent"}], '
             b'"subtasks": '
             b'[{"assigned_to": "KubernetesAgent", "description": "what is my pods status", "status": "completed", "task_title": "Checking status of pods"}, '
-            b'{"assigned_to": "Common", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
+            b'{"assigned_to": "KymaAgent", "description": "how to write hello world code in python", "status": "pending", "task_title": "Retrieving hello world code in python"}, '
             b'{"assigned_to": "KymaAgent", "description": "how to create kyma function", "status": "pending", "task_title": "Fetching steps to create kyma function"}], "next": "KymaAgent"}}',
             # expected
             None,
@@ -151,9 +151,9 @@ def test_process_response_gatekeeper_forwarded_to_supervisor():
         (
             # Regular agent with error and some content
             # input
-            b'{"Common": {"error": "Network timeout", "messages": [{"content": "Partial response", "name": "Common"}], "subtasks": []}}',
+            b'{"KymaAgent": {"error": "Network timeout", "messages": [{"content": "Partial response", "name": "KymaAgent"}], "subtasks": []}}',
             # expected
-            b'{"event": "agent_action", "data": {"agent": "Common", "answer": {"content":'
+            b'{"event": "agent_action", "data": {"agent": "KymaAgent", "answer": {"content":'
             b' "Partial response", "tasks": []}, "error": "Network timeout"}}',
         ),
         (
@@ -224,7 +224,7 @@ def test_prepare_chunk_response(input, expected):
                     "task_title": "Checking status of pods",
                 },
                 {
-                    "assigned_to": "Common",
+                    "assigned_to": "KymaAgent",
                     "description": "how to write hello world code in python",
                     "status": "pending",
                     "task_title": "Retrieving hello world code in python",
@@ -253,7 +253,7 @@ def test_prepare_chunk_response(input, expected):
                     "task_id": 2,
                     "task_name": "Retrieving hello world code in python",
                     "status": "pending",
-                    "agent": "Common",
+                    "agent": "KymaAgent",
                 },
                 {
                     "task_id": 3,

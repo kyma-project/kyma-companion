@@ -53,10 +53,6 @@ KYMA_AGENT = "KymaAgent"
 
 KYMA_AGENT_TASK_DESCRIPTION = "Fetching data from Kyma"
 
-COMMON = "Common"
-
-COMMON_TASK_DESCRIPTION = "Answering general queries"
-
 RESPONSE_CONVERTER = "ResponseConverter"
 
 NEW_YAML = "New"

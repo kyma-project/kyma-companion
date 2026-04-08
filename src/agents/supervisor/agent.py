@@ -11,7 +11,6 @@ from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 
 from agents.common.constants import (
-    COMMON,
     FINALIZER,
     K8S_AGENT,
     KYMA_AGENT,
@@ -149,7 +148,7 @@ class SupervisorAgent:
                 MessagesPlaceholder(variable_name="messages"),
                 ("system", PLANNER_STEP_INSTRUCTIONS),
             ]
-        ).partial(kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT, common_agent=COMMON)
+        ).partial(kyma_agent=KYMA_AGENT, kubernetes_agent=K8S_AGENT)
         return self.planner_prompt | model.llm.with_structured_output(Plan, method="function_calling")  # type: ignore
 
     async def _invoke_planner(self, state: SupervisorState) -> Plan:

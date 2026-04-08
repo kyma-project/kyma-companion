@@ -6,13 +6,9 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
-from agents.common.constants import COMMON, GATEKEEPER, UNKNOWN
+from agents.common.constants import GATEKEEPER, UNKNOWN
 from agents.common.data import Message
-from agents.common.state import (
-    CompanionState,
-    GatekeeperResponse,
-    SubTask,
-)
+from agents.common.state import CompanionState, GatekeeperResponse
 from agents.graph import CompanionGraph
 from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
@@ -53,12 +49,6 @@ def mock_planner_chain():
 
 
 @pytest.fixture
-def mock_common_chain():
-    mock = AsyncMock()
-    return mock
-
-
-@pytest.fixture
 def mock_gatekeeper_chain():
     mock = AsyncMock()
     return mock
@@ -75,11 +65,9 @@ def companion_graph(
     mock_memory,
     mock_graph,
     mock_planner_chain,
-    mock_common_chain,
     mock_gatekeeper_chain,
 ):
     with (
-        patch.object(CompanionGraph, "_create_common_chain", return_value=mock_common_chain),
         patch.object(
             CompanionGraph,
             "_create_gatekeeper_chain",
@@ -89,7 +77,6 @@ def companion_graph(
         patch("agents.graph.KymaAgent", return_value=Mock()),
     ):
         graph = CompanionGraph(mock_models, mock_memory)
-        graph._invoke_common_node = AsyncMock()
         graph._invoke_gatekeeper_node = AsyncMock()
         return graph
 
@@ -100,180 +87,6 @@ def create_messages_json(content, role, node) -> str:
 
 
 class TestCompanionGraph:
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "description, subtasks, messages, chain_response, expected_output, expected_error",
-        [
-            (
-                "Completes a single subtask successfully",
-                [
-                    SubTask(
-                        description="Explain Python",
-                        assigned_to=COMMON,
-                        status="pending",
-                        task_title="Explain Python",
-                    )
-                ],
-                [HumanMessage(content="What is Java?")],
-                "Python is a high-level programming language. Java is a general-purpose programming language.",
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Python is a high-level programming language. Java is a general-purpose programming language.",
-                            additional_kwargs={},
-                            response_metadata={},
-                            name="Common",
-                        )
-                    ],
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Python",
-                            task_title="Explain Python",
-                            assigned_to="Common",
-                            status="completed",
-                        )
-                    ],
-                },
-                None,
-            ),
-            (
-                "Completes multiple subtasks successfully",
-                [
-                    SubTask(
-                        description="Explain Python",
-                        task_title="Explain Python",
-                        assigned_to=COMMON,
-                        status="pending",
-                    ),
-                    SubTask(
-                        description="Explain Java",
-                        task_title="Explain Java",
-                        assigned_to=COMMON,
-                        status="pending",
-                    ),
-                ],
-                [HumanMessage(content="What are Java and Python?")],
-                "Python is a high-level programming language. Java is a general-purpose programming language.",
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Python is a high-level programming language. "
-                            "Java is a general-purpose programming language.",
-                            name=COMMON,
-                        )
-                    ],
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Python",
-                            task_title="Explain Python",
-                            assigned_to="Common",
-                            status="completed",
-                        ),
-                        SubTask(
-                            description="Explain Java",
-                            task_title="Explain Java",
-                            assigned_to="Common",
-                            status="pending",
-                        ),
-                    ],
-                },
-                None,
-            ),
-            (
-                "Returns message when all subtasks are already completed",
-                [
-                    SubTask(
-                        description="Explain Python",
-                        task_title="Explain Python",
-                        assigned_to=COMMON,
-                        status="completed",
-                    )
-                ],
-                [HumanMessage(content="What is Java?")],
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="All my subtasks are already completed.",
-                            name=COMMON,
-                        )
-                    ],
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Python",
-                            task_title="Explain Python",
-                            assigned_to="Common",
-                            status="completed",
-                        )
-                    ],
-                },
-                None,
-            ),
-            (
-                "Handles exception during subtask execution",
-                [
-                    SubTask(
-                        description="Explain Python",
-                        task_title="Explain Python",
-                        assigned_to=COMMON,
-                        status="pending",
-                    )
-                ],
-                [HumanMessage(content="What is Java?")],
-                None,
-                {
-                    "messages": [
-                        AIMessage(
-                            content="Sorry, I am unable to process the request.",
-                            name=COMMON,
-                        )
-                    ],
-                    "subtasks": [
-                        SubTask(
-                            description="Explain Python",
-                            task_title="Explain Python",
-                            assigned_to="Common",
-                            status="pending",
-                        )
-                    ],
-                },
-                "Error in common node: Test error",
-            ),
-        ],
-    )
-    async def test_common_node(
-        self,
-        companion_graph,
-        description,
-        subtasks,
-        messages,
-        chain_response,
-        expected_output,
-        expected_error,
-    ):
-        state = CompanionState(subtasks=subtasks, messages=messages)
-
-        if expected_error:
-            companion_graph._invoke_common_node.side_effect = Exception(expected_error)
-        else:
-            companion_graph._invoke_common_node.return_value = chain_response
-
-        result = await companion_graph._common_node(state)
-        assert result == expected_output
-
-        if chain_response:
-            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
-            assert subtasks[0].status == "completed"
-        elif expected_error:
-            # if error occurs, return message with error
-            companion_graph._invoke_common_node.assert_awaited_once_with(state, subtasks[0].description)
-            # Verify subtask remains pending after error
-            assert subtasks[0].status == "pending"
-            assert subtasks[0].assigned_to == COMMON
-        else:
-            # if all subtasks are completed, no need call LLM
-            assert subtasks[0].status == "completed"
-
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_case, messages, chain_response, expected_output, expected_error",
@@ -319,7 +132,7 @@ class TestCompanionGraph:
                     "subtasks": [],
                     "next": "__end__",
                 },
-                "Error in common node: Test error",
+                "Error in gatekeeper node: Test error",
             ),
         ],
     )
@@ -576,7 +389,7 @@ class TestCompanionGraph:
             # Verify SupervisorAgent was constructed with correct arguments
             mock_supervisor_cls.assert_called_once_with(
                 mock_models,
-                members=["KymaAgent", "KubernetesAgent", "Common"],
+                members=["KymaAgent", "KubernetesAgent"],
             )
 
             mock_build_graph.assert_called_once()

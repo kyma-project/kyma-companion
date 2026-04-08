@@ -1,7 +1,3 @@
-COMMON_QUESTION_PROMPT = """
-Given the conversation and the last user query you are tasked with generating a response.
-"""
-
 GATEKEEPER_INSTRUCTIONS = """
 # Additional information
   Resource status queries are queries that are asking about current status, issues, or configuration of resources.

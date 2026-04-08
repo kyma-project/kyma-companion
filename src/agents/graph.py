@@ -22,7 +22,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from agents.common.agent import IAgent
 from agents.common.constants import (
-    COMMON,
     CONTINUE,
     GATEKEEPER,
     INITIAL_SUMMARIZATION,
@@ -53,11 +52,7 @@ from agents.common.utils import (
 from agents.k8s.agent import K8S_AGENT, KubernetesAgent
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
-from agents.prompts import (
-    COMMON_QUESTION_PROMPT,
-    GATEKEEPER_INSTRUCTIONS,
-    GATEKEEPER_PROMPT,
-)
+from agents.prompts import GATEKEEPER_INSTRUCTIONS, GATEKEEPER_PROMPT
 from agents.summarization.summarization import MessageSummarizer
 from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
@@ -157,7 +152,7 @@ class CompanionGraph:
         self.k8s_agent = KubernetesAgent(cast(IModel, main_model))
         self.supervisor_agent = SupervisorAgent(
             models,
-            members=[KYMA_AGENT, K8S_AGENT, COMMON],
+            members=[KYMA_AGENT, K8S_AGENT],
         )
 
         self.summarization = MessageSummarizer(
@@ -169,72 +164,9 @@ class CompanionGraph:
             messages_summary_key=MESSAGES_SUMMARY,
         )
 
-        self.members = [self.kyma_agent.name, self.k8s_agent.name, COMMON]
-        self._common_chain = self._create_common_chain(cast(IModel, main_model_mini))
+        self.members = [self.kyma_agent.name, self.k8s_agent.name]
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
-
-    @staticmethod
-    def _create_common_chain(model: IModel) -> RunnableSequence:
-        """Common node chain to handle general queries."""
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", COMMON_QUESTION_PROMPT),
-                MessagesPlaceholder(variable_name="messages"),
-                ("human", "query: {query}"),
-            ]
-        )
-        return prompt | model.llm  # type: ignore
-
-    async def _invoke_common_node(self, state: CompanionState, subtask: str) -> str:
-        """Invoke the common node."""
-        response = await ainvoke_chain(
-            self._common_chain,
-            {
-                "messages": filter_valid_messages(state.get_messages_including_summary()),
-                "query": subtask,
-            },
-        )
-        return str(response.content)
-
-    async def _common_node(self, state: CompanionState) -> dict[str, Any]:
-        """Common node to handle general queries."""
-
-        for subtask in state.subtasks:
-            if subtask.assigned_to == COMMON and subtask.status != "completed":
-                try:
-                    response = await self._invoke_common_node(state, subtask.description)
-                    subtask.complete()
-                    return {
-                        MESSAGES: [
-                            AIMessage(
-                                content=response,
-                                name=COMMON,
-                            )
-                        ],
-                        SUBTASKS: state.subtasks,
-                    }
-                except Exception:
-                    logger.exception("Error in common node")
-                    return {
-                        MESSAGES: [
-                            AIMessage(
-                                content="Sorry, I am unable to process the request.",
-                                name=COMMON,
-                            )
-                        ],
-                        SUBTASKS: state.subtasks,
-                    }
-        return {
-            MESSAGES: [
-                AIMessage(
-                    content="All my subtasks are already completed.",
-                    name=COMMON,
-                )
-            ],
-            SUBTASKS: state.subtasks,
-        }
 
     @staticmethod
     def _create_gatekeeper_chain(model: IModel) -> RunnableSequence:
@@ -341,12 +273,11 @@ class CompanionGraph:
         workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
         workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
-        workflow.add_node(COMMON, self._common_node)
         workflow.add_node(GATEKEEPER, self._gatekeeper_node)
         workflow.add_node(SUMMARIZATION, self.summarization.summarization_node)
         workflow.add_node(INITIAL_SUMMARIZATION, self.summarization.summarization_node)
 
-        # Define the edges: (KymaAgent | KubernetesAgent | Common) --> summarization --> supervisor
+        # Define the edges: (KymaAgent | KubernetesAgent) --> summarization --> supervisor
         # The agents ALWAYS "report back" to the supervisor through summarization node.
         for member in self.members:
             workflow.add_edge(member, SUMMARIZATION)
@@ -369,7 +300,7 @@ class CompanionGraph:
 
         # The supervisor dynamically populates the "next" field in the graph.
         conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
-        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | Common | END)
+        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | END)
         workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
 
         workflow.add_conditional_edges(

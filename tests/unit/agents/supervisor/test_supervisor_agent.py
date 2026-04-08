@@ -5,7 +5,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.constants import END
 
-from agents.common.constants import COMMON, ERROR, PLANNER
+from agents.common.constants import ERROR, PLANNER
 from agents.common.state import CompanionState, Plan, SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
@@ -31,7 +31,7 @@ def mock_models():
 class TestSupervisorAgent:
     @pytest.fixture
     def supervisor_agent(self, mock_models):
-        agent = SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])
+        agent = SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT])
         return agent
 
     @pytest.mark.parametrize(

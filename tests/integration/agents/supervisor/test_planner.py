@@ -191,23 +191,23 @@ def planner_correctness_metric(evaluator_model):
             0.8,
         ),
         (
-            # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
+            # tests if a query related to Kyma splits app creation and deployment across subtasks
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="Create a hello world app and deploy it with Kyma?"),
             ],
-            '{ "subtasks": [{"description": "Create a hello world app", "assigned_to": "Common", "status" : "pending"},'
+            '{ "subtasks": [{"description": "Create a hello world app", "assigned_to": "KymaAgent", "status" : "pending"},'
             '{"description": "deploy the app with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
             0.8,
         ),
         (
-            # tests if a query related to Kyma and Common is divided into the correct subtasks for both agents
+            # tests if a query related to Kyma splits python app creation and deployment across subtasks
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="Create a hello world app with python and deploy it with Kyma?"),
             ],
-            '{ "subtasks": [{ "description": "Create a hello world app with python", "assigned_to": "Common", "status" : "pending"},'
+            '{ "subtasks": [{ "description": "Create a hello world app with python", "assigned_to": "KymaAgent", "status" : "pending"},'
             '{"description": "deploy it with Kyma", "assigned_to": "KymaAgent", "status" : "pending"}] }',
             False,
             0.8,
@@ -231,7 +231,7 @@ def planner_correctness_metric(evaluator_model):
                     content="How to create a Python app that performs Discounted Cash Flow (DCF) calculations? How to create a Kyma function? How to create a k8s service for this function?"
                 ),
             ],
-            '{ "subtasks": [{"description": "How to create a Python app that performs Discounted Cash Flow (DCF) calculations?", "assigned_to": "Common", "status" : "pending"},'
+            '{ "subtasks": [{"description": "How to create a Python app that performs Discounted Cash Flow (DCF) calculations?", "assigned_to": "KymaAgent", "status" : "pending"},'
             '{"description": "How to create a Kyma function?", "assigned_to": "KymaAgent", "status" :"pending"},'
             '{"description": "How to create a k8s service for this function?", "assigned_to": "KubernetesAgent", "status" :"pending"}] }',
             False,

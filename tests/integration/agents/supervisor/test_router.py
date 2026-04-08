@@ -1,11 +1,10 @@
 import pytest
 from langchain_core.messages import SystemMessage
 
-from agents.common.constants import COMMON
 from agents.common.state import SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from integration.agents.test_common_node import create_mock_state
+from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -14,7 +13,6 @@ from integration.agents.test_common_node import create_mock_state
         # Single task:
         # - Assigned K8sAgent is 'Next' agent
         # - Assigned KymaAgent is 'Next' agent
-        # - Assigned Common is 'Next' agent
         (
             [
                 SystemMessage(
@@ -50,29 +48,10 @@ from integration.agents.test_common_node import create_mock_state
                 ),
             ],
             KYMA_AGENT,
-        ),
-        (
-            [
-                SystemMessage(
-                    content="""
-                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """
-                )
-            ],
-            [
-                SubTask(
-                    description="Task 1",
-                    task_title="Task 1",
-                    assigned_to=COMMON,
-                    status="pending",
-                ),
-            ],
-            COMMON,
         ),
         # Multiple tasks, all still pending:
         # - First assigned K8sAgent is 'Next' agent
         # - First assigned KymaAgent is 'Next' agent
-        # - First assigned Common is 'Next' agent
         (
             [
                 SystemMessage(
@@ -120,35 +99,10 @@ from integration.agents.test_common_node import create_mock_state
                 ),
             ],
             KYMA_AGENT,
-        ),
-        (
-            [
-                SystemMessage(
-                    content="""
-                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """
-                )
-            ],
-            [
-                SubTask(
-                    description="Task 1",
-                    task_title="Task 1",
-                    assigned_to=COMMON,
-                    status="pending",
-                ),
-                SubTask(
-                    description="Task 2",
-                    task_title="Task 2",
-                    assigned_to=KYMA_AGENT,
-                    status="pending",
-                ),
-            ],
-            COMMON,
         ),
         # Multiple tasks, the first one is completed:
         # - Second pending K8sAgent is 'Next' agent
         # - Second pending KymaAgent is 'Next' agent
-        # - Second pending Common is 'Next' agent
         (
             [
                 SystemMessage(
@@ -196,30 +150,6 @@ from integration.agents.test_common_node import create_mock_state
                 ),
             ],
             KYMA_AGENT,
-        ),
-        (
-            [
-                SystemMessage(
-                    content="""
-                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
-                """
-                )
-            ],
-            [
-                SubTask(
-                    description="Task 1",
-                    task_title="Task 1",
-                    assigned_to=KYMA_AGENT,
-                    status="completed",
-                ),
-                SubTask(
-                    description="Task 2",
-                    task_title="Task 2",
-                    assigned_to=COMMON,
-                    status="pending",
-                ),
-            ],
-            COMMON,
         ),
     ],
 )
