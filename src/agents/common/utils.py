@@ -11,22 +11,15 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langgraph.constants import END
 from langgraph.graph.message import Messages
-from pydantic import BaseModel
 
 from agents.common.constants import (
     CLUSTER,
-    CONTINUE,
-    ERROR,
-    MESSAGES,
-    NEXT,
     RECENT_MESSAGES_LIMIT,
-    SUBTASKS,
     UNKNOWN,
 )
 from agents.common.data import Message
-from agents.common.state import SubTask, UserInput
+from agents.common.state import UserInput
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.utils import is_empty_str, is_non_empty_str
@@ -84,30 +77,6 @@ def filter_valid_messages(
     return filtered
 
 
-def create_node_output(
-    message: BaseMessage | None = None,
-    next: str | None = None,
-    subtasks: list[SubTask] | None = None,
-    error: str | None = None,
-) -> dict[str, Any]:
-    """
-    This function is used to create the output of a LangGraph node centrally.
-
-    Args:
-        message: BaseMessage | None: message to be sent to the user
-        next: str | None: next LangGraph node to be called
-        subtasks: list[SubTask] | None: different steps/subtasks to follow
-        final_response: str | None: final response to the user
-        error: str | None: error message if error occurred
-    """
-    return {
-        MESSAGES: [message] if message else [],
-        NEXT: next,
-        SUBTASKS: subtasks,
-        ERROR: error,
-    }
-
-
 def compute_string_token_count(text: str, model_type: str) -> int:
     """Returns the token count of the string."""
     try:
@@ -123,15 +92,6 @@ def compute_messages_token_count(msgs: Messages, model_type: str) -> int:
     """Returns the token count of the messages."""
     tokens_per_msg = (compute_string_token_count(str(msg.content), model_type) for msg in msgs)
     return sum(tokens_per_msg)
-
-
-def should_continue(state: BaseModel) -> str:
-    """
-    Returns END if there is an error, else CONTINUE.
-    """
-    if hasattr(state, "error") and state.error:
-        return END
-    return CONTINUE
 
 
 def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:

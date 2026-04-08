@@ -1,5 +1,5 @@
 import json
-from collections.abc import AsyncIterator, Hashable
+from collections.abc import AsyncIterator
 from typing import Any, Protocol, cast
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -19,16 +19,13 @@ from langgraph.constants import END
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from agents.common.agent import IAgent
 from agents.common.constants import (
-    CONTINUE,
     GATEKEEPER,
     MESSAGES,
     NEXT,
     RESPONSE_HELLO,
     RESPONSE_QUERY_OUTSIDE_DOMAIN,
     RESPONSE_UNABLE_TO_PROCESS,
-    SUBTASKS,
     UNKNOWN,
 )
 from agents.common.data import Message
@@ -36,15 +33,12 @@ from agents.common.state import (
     CompanionState,
     GatekeeperResponse,
     GraphInput,
-    SubTask,
     UserInput,
 )
-from agents.common.utils import filter_valid_messages, get_resource_context_message, should_continue
-from agents.k8s.agent import K8S_AGENT, KubernetesAgent
+from agents.common.utils import filter_valid_messages, get_resource_context_message
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
 from agents.prompts import GATEKEEPER_INSTRUCTIONS, GATEKEEPER_PROMPT
-from agents.supervisor.agent import SUPERVISOR, SupervisorAgent
 from services.k8s import IK8sClient
 from services.langfuse import LangfuseService, get_langfuse_metadata
 from services.usage import UsageTrackerCallback
@@ -58,15 +52,15 @@ logger = get_logger(__name__)
 
 class CustomJSONEncoder(json.JSONEncoder):
     """
-    Custom JSON encoder for AIMessage, HumanMessage, and SubTask.
+    Custom JSON encoder for AIMessage, HumanMessage, etc.
     Default JSON cannot serialize these objects.
     """
 
     def default(self, o):  # noqa D102
-        """Custom JSON encoder for RemoveMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage, and SubTask."""
+        """Custom JSON encoder for RemoveMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage."""
         if isinstance(
             o,
-            RemoveMessage | AIMessage | HumanMessage | SystemMessage | ToolMessage | SubTask,
+            RemoveMessage | AIMessage | HumanMessage | SystemMessage | ToolMessage,
         ):
             return o.__dict__
         elif isinstance(o, IK8sClient):
@@ -76,23 +70,6 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif hasattr(o, "model_dump"):
             return o.model_dump()
         return super().default(o)
-
-
-def create_chain(
-    main_sys_prompt: str,
-    followup_sys_prompt: str,
-    model: IModel,
-    schema: Any,
-) -> RunnableSequence:
-    """Create the a chain."""
-    prompt_template = ChatPromptTemplate.from_messages(
-        [
-            ("system", main_sys_prompt),
-            MessagesPlaceholder(variable_name="messages"),
-            ("system", followup_sys_prompt),
-        ]
-    )
-    return prompt_template | model.llm.with_structured_output(schema, method="function_calling")  # type: ignore
 
 
 class IGraph(Protocol):
@@ -112,10 +89,7 @@ class CompanionGraph:
 
     models: dict[str, IModel | Embeddings]
     memory: BaseCheckpointSaver
-    supervisor_agent: IAgent
-    kyma_agent: IAgent
-    k8s_agent: IAgent
-    members: list[str] = []
+    kyma_agent: KymaAgent
 
     def __init__(
         self,
@@ -128,14 +102,6 @@ class CompanionGraph:
         main_model = models[MAIN_MODEL_NAME]
 
         self.kyma_agent = KymaAgent(models)
-
-        self.k8s_agent = KubernetesAgent(cast(IModel, main_model))
-        self.supervisor_agent = SupervisorAgent(
-            models,
-            members=[KYMA_AGENT, K8S_AGENT],
-        )
-
-        self.members = [self.kyma_agent.name, self.k8s_agent.name]
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
         self.graph = self._build_graph()
 
@@ -162,10 +128,7 @@ class CompanionGraph:
             },
         )
 
-        # Cast the response to GatekeeperResponse.
         gatekeeper_response = cast(GatekeeperResponse, response)
-
-        # set forward_query as false by default.
         gatekeeper_response.forward_query = False
 
         if gatekeeper_response.is_prompt_injection or gatekeeper_response.is_security_threat:
@@ -180,11 +143,9 @@ class CompanionGraph:
             logger.debug("Gatekeeper forwarding the query")
             gatekeeper_response.forward_query = True
         else:
-            # If no category matched, return a default response.
             logger.debug("Gatekeeper responding with default response because no category matched")
             gatekeeper_response.direct_response = RESPONSE_QUERY_OUTSIDE_DOMAIN
 
-        # return the gatekeeper response.
         return gatekeeper_response
 
     async def _gatekeeper_node(self, state: CompanionState) -> dict[str, Any]:
@@ -193,10 +154,9 @@ class CompanionGraph:
         try:
             gatekeeper_response = await self._invoke_gatekeeper_node(state)
             if gatekeeper_response.forward_query:
-                logger.debug("Gatekeeper node forwarding the query")
+                logger.debug("Gatekeeper node forwarding the query to Kyma agent")
                 return {
-                    NEXT: SUPERVISOR,
-                    SUBTASKS: [],
+                    NEXT: KYMA_AGENT,
                 }
 
             logger.debug("Gatekeeper node directly responding")
@@ -212,7 +172,6 @@ class CompanionGraph:
                         name=GATEKEEPER,
                     )
                 ],
-                SUBTASKS: [],
             }
         except Exception:
             logger.exception("Error in gatekeeper node")
@@ -224,54 +183,30 @@ class CompanionGraph:
                         name=GATEKEEPER,
                     )
                 ],
-                SUBTASKS: [],
             }
 
     def _build_graph(self) -> CompiledStateGraph:
         """Create the companion parent graph."""
 
-        # Define a new graph.
         workflow = StateGraph(CompanionState)
 
-        # Define the nodes of the graph.
-        workflow.add_node(SUPERVISOR, self.supervisor_agent.agent_node())
-        workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
-        workflow.add_node(K8S_AGENT, self.k8s_agent.agent_node())
         workflow.add_node(GATEKEEPER, self._gatekeeper_node)
+        workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
 
-        # Set the entrypoint: ENTRY --> Gatekeeper
         workflow.set_entry_point(GATEKEEPER)
 
-        # After each agent, return to supervisor unless the run failed (error ends the graph).
-        for member in self.members:
-            workflow.add_conditional_edges(
-                member,
-                should_continue,
-                {
-                    CONTINUE: SUPERVISOR,
-                    END: END,
-                },
-            )
-
-        # Define the dynamic conditional edges: Gatekeeper --> (SUPERVISOR | END)
         workflow.add_conditional_edges(
             GATEKEEPER,
             lambda x: x.next,
             {
-                SUPERVISOR: SUPERVISOR,
+                KYMA_AGENT: KYMA_AGENT,
                 END: END,
             },
         )
 
-        # The supervisor dynamically populates the "next" field in the graph.
-        conditional_map: dict[Hashable, str] = {k: k for k in self.members + [END]}
-        # Define the dynamic conditional edges: supervisor --> (KymaAgent | KubernetesAgent | END)
-        workflow.add_conditional_edges(SUPERVISOR, lambda x: x.next, conditional_map)
+        workflow.add_edge(KYMA_AGENT, END)
 
-        # Compile the graph.
-        graph = workflow.compile(checkpointer=self.memory)
-
-        return graph
+        return workflow.compile(checkpointer=self.memory)
 
     async def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
@@ -287,21 +222,17 @@ class CompanionGraph:
         x_cluster_url = k8s_client.get_api_server()
         cluster_id = x_cluster_url.split(".")[1]
 
-        # define the graph input.
         graph_input = GraphInput(
             messages=messages,
             input=user_input,
             k8s_client=k8s_client,
-            subtasks=[],
             error=None,
         )
 
-        # Build callbacks list
         callbacks: list[BaseCallbackHandler] = [
             UsageTrackerCallback(cluster_id, cast(IUsageMemory, self.memory)),
         ]
 
-        # Add Langfuse callback handler if enabled
         try:
             langfuse_handler = LangfuseService().get_callback_handler()
             if langfuse_handler:

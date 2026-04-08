@@ -1,7 +1,7 @@
 from typing import Any, Literal, Protocol
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph import StateGraph
@@ -11,12 +11,9 @@ from langgraph.prebuilt import ToolNode
 from agents.common.constants import (
     AGENT_MESSAGES,
     ERROR,
-    IS_LAST_STEP,
     MESSAGES,
-    MY_TASK,
-    SUBTASKS,
 )
-from agents.common.state import BaseAgentState, SubTaskStatus
+from agents.common.state import BaseAgentState
 from agents.common.utils import (
     filter_messages,
     filter_valid_messages,
@@ -30,13 +27,6 @@ logger = get_logger(__name__)
 
 
 AGENT_STEPS_NUMBER = 3
-
-
-def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
-    """Function that determines whether to finalize or call agent."""
-    if state.is_last_step and state.my_task is None:
-        return "finalizer"
-    return "agent"
 
 
 def agent_edge(state: BaseAgentState) -> Literal["tools", "finalizer"]:
@@ -90,26 +80,12 @@ class BaseAgent:
     def _create_chain(self, agent_prompt: ChatPromptTemplate) -> Any:
         return agent_prompt | self.model.llm.bind_tools(self.tools)
 
-    def _subtask_selector_node(self, state: BaseAgentState) -> dict[str, Any]:
-        if state.k8s_client is None:
-            raise ValueError("Kubernetes client is not initialized.")
-
-        # find subtasks assigned to this agent and not completed.
-        for subtask in state.subtasks:
-            if subtask.assigned_to == self.name and subtask.status == SubTaskStatus.PENDING:
-                return {
-                    MY_TASK: subtask,
-                }
-
-        return {
-            AGENT_MESSAGES: [
-                AIMessage(
-                    content="All my subtasks are already completed.",
-                    name=self.name,
-                )
-            ],
-            IS_LAST_STEP: True,
-        }
+    def _get_user_query(self, state: BaseAgentState) -> str:
+        """Extract the user query from messages."""
+        for msg in reversed(state.messages):
+            if isinstance(msg, HumanMessage):
+                return msg.content
+        return ""
 
     async def _invoke_chain(self, state: BaseAgentState, config: RunnableConfig) -> Any:
         input_messages = state.get_agent_messages_including_summary()
@@ -121,7 +97,7 @@ class BaseAgent:
             self.chain,
             {
                 AGENT_MESSAGES: filter_valid_messages_list,
-                "query": state.my_task.description,
+                "query": self._get_user_query(state),
             },
             config=config,
         )
@@ -129,9 +105,6 @@ class BaseAgent:
 
     def _handle_recursive_limit_error(self, state: BaseAgentState) -> dict[str, Any]:
         """Handle recursive limit error."""
-        if state.my_task:
-            state.my_task.status = SubTaskStatus.ERROR
-
         logger.error(f"Agent reached the recursive limit, steps remaining: {state.remaining_steps}.")
         return {
             AGENT_MESSAGES: [
@@ -153,10 +126,6 @@ class BaseAgent:
             return response, None
         except Exception:
             logger.exception("An error occurred while processing the request.")
-            # Update current subtask status
-            if state.my_task:
-                state.my_task.status = SubTaskStatus.ERROR
-
             error_response = {
                 AGENT_MESSAGES: [
                     AIMessage(
@@ -170,7 +139,9 @@ class BaseAgent:
             return None, error_response
 
     async def _model_node(self, state: BaseAgentState, config: RunnableConfig) -> dict[str, Any]:
-        # if the recursive limit is reached, return a message.
+        if state.k8s_client is None:
+            raise ValueError("Kubernetes client is not initialized.")
+
         if state.remaining_steps <= AGENT_STEPS_NUMBER:
             return self._handle_recursive_limit_error(state)
 
@@ -178,8 +149,6 @@ class BaseAgent:
         if error_response:
             return error_response
 
-        # if the recursive limit is reached and the response is a tool call, return a message.
-        # 'is_last_step' is a boolean that is True if the recursive limit is reached.
         if state.is_last_step and isinstance(response, AIMessage) and response.tool_calls:
             return {
                 AGENT_MESSAGES: [
@@ -196,13 +165,8 @@ class BaseAgent:
         }
 
     def _finalizer_node(self, state: BaseAgentState, config: RunnableConfig) -> Any:
-        """Finalizer node will mark the task as completed."""
-        if state.my_task is not None and state.my_task.status != SubTaskStatus.ERROR:
-            logger.info("Agent task completed")
-            state.my_task.complete()
-
-        agent_pre_message = f"'{state.my_task.description}' , Agent Response - "
-        # Check if agent_messages exists and has at least one element
+        """Finalizer node: propagates the agent's final response to the parent graph messages."""
+        last_content = ""
         if (
             hasattr(state, "agent_messages")
             and state.agent_messages
@@ -211,45 +175,30 @@ class BaseAgent:
             and state.agent_messages[-1]
             and hasattr(state.agent_messages[-1], "content")
         ):
-            current_content = state.agent_messages[-1].content or ""
-            state.agent_messages[-1].content = agent_pre_message + current_content
+            last_content = state.agent_messages[-1].content or ""
 
-        # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
         return {
             MESSAGES: [
                 AIMessage(
-                    content=state.agent_messages[-1].content,
+                    content=last_content,
                     name=self.name,
-                    id=state.agent_messages[-1].id,
+                    id=state.agent_messages[-1].id if state.agent_messages else None,
                 )
             ],
-            SUBTASKS: state.subtasks,
         }
 
     def _build_graph(self, state_class: type) -> CompiledStateGraph:
-        # Define a new graph
         workflow: StateGraph = StateGraph(state_class)
 
-        # Define nodes with async awareness
-        workflow.add_node("subtask_selector", self._subtask_selector_node)
         workflow.add_node("agent", self._model_node)
         tool_node = ToolNode(tools=self.tools, messages_key=AGENT_MESSAGES, handle_tool_errors=True)
         workflow.add_node("tools", tool_node)
         workflow.add_node("finalizer", self._finalizer_node)
 
-        # Set the entrypoint: ENTRY --> subtask_selector
-        workflow.set_entry_point("subtask_selector")
+        workflow.set_entry_point("agent")
 
-        # Define the edge: subtask_selector --> (agent | end)
-        workflow.add_conditional_edges("subtask_selector", subtask_selector_edge)
-
-        # Define the edge: agent --> (tools | finalizer)
         workflow.add_conditional_edges("agent", agent_edge)
-
-        # Define the edge: tool --> agent
         workflow.add_edge("tools", "agent")
-
-        # Define the edge: finalizer --> END
         workflow.add_edge("finalizer", "__end__")
 
         return workflow.compile()

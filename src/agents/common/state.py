@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from enum import StrEnum
 from typing import Annotated, Any, Literal, cast
 
 from langchain_core.messages import (
@@ -11,16 +10,8 @@ from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
-from agents.common.constants import CLUSTER, K8S_AGENT, KYMA_AGENT
+from agents.common.constants import CLUSTER
 from utils.utils import to_sequence_messages
-
-
-class SubTaskStatus(StrEnum):
-    """Status of the sub-task."""
-
-    PENDING = "pending"
-    COMPLETED = "completed"
-    ERROR = "error"
 
 
 class GatekeeperResponse(BaseModel):
@@ -102,40 +93,6 @@ class GatekeeperResponse(BaseModel):
     ]
 
 
-class SubTask(BaseModel):
-    """Sub-task data model."""
-
-    description: Annotated[
-        str,
-        Field(description="user query with original wording for the assigned agent"),
-    ]
-    task_title: Annotated[
-        str,
-        Field(
-            description="""Generate a title of 4 to 5 words, only use these:
-          'Retrieving', 'Fetching', 'Extracting' or 'Checking'. Never use 'Creating'."""
-        ),
-    ]
-    assigned_to: Literal[KYMA_AGENT, K8S_AGENT]  # type: ignore
-    status: str = Field(default=SubTaskStatus.PENDING)
-
-    def complete(self) -> None:
-        """Update the result of the task."""
-        self.status = SubTaskStatus.COMPLETED
-
-    def completed(self) -> bool:
-        """Check if the task is completed."""
-        return self.status == SubTaskStatus.COMPLETED
-
-    def is_pending(self) -> bool:
-        """Check if the task is pending."""
-        return self.status == SubTaskStatus.PENDING
-
-    def is_error(self) -> bool:
-        """Check if the task is error status."""
-        return self.status == SubTaskStatus.ERROR
-
-
 # After upgrading generative-ai-hub-sdk we can message that use pydantic v2
 # Currently, we are using pydantic v1.
 class UserInput(BaseModel):
@@ -184,19 +141,12 @@ class UserInput(BaseModel):
         return self.resource_kind.lower() == CLUSTER
 
 
-class Plan(BaseModel):
-    """Plan to follow in future"""
-
-    subtasks: list[SubTask] | None = Field(description="different subtasks for user query, should be in sorted order")
-
-
 class GraphInput(BaseModel):
     """Input for the companion graph."""
 
     messages: list[BaseMessage]
     input: UserInput
     k8s_client: Annotated[Any, Field(default=None, exclude=True)]
-    subtasks: list[SubTask] = []
     error: str | None = None
 
 
@@ -206,11 +156,9 @@ class CompanionState(BaseModel):
     Attributes:
         input: UserInput: user input with user query and resource(s) contextual information
         messages: list[BaseMessage]: messages exchanged between agents and user
-        next: str: next LangGraph node to be called. It can be KymaAgent, KubernetesAgent, or Finalizer.
-        subtasks: list[SubTask]: different steps/subtasks to follow
+        next: str: next LangGraph node to be called (KymaAgent or END)
         error: str: error message if error occurred
         k8s_client: IK8sClient: Kubernetes client for fetching data from the cluster
-
     """
 
     input: Annotated[
@@ -224,7 +172,6 @@ class CompanionState(BaseModel):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     messages_summary: str = ""
     next: str | None = None
-    subtasks: list[SubTask] | None = []
     error: str | None = None
     k8s_client: Annotated[Any, Field(default=None, exclude=True)]
 
@@ -247,16 +194,14 @@ class CompanionState(BaseModel):
 
 
 class BaseAgentState(BaseModel):
-    """Base state for KymaAgent and KubernetesAgent agents (subgraphs)."""
+    """Base state for agent subgraphs."""
 
     messages: Annotated[Sequence[BaseMessage], add_messages]
-    subtasks: list[SubTask] | None = []
     k8s_client: Annotated[Any, Field(default=None, exclude=True)]
 
     # Subgraph private fields
     agent_messages: Annotated[Sequence[BaseMessage], add_messages]
     agent_messages_summary: str = ""
-    my_task: SubTask | None = None
     is_last_step: IsLastStep = Field(default=False)
     error: str | None = None
     remaining_steps: RemainingSteps = Field(default=RemainingSteps(25))

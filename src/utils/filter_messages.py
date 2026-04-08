@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from agents.common.constants import FINALIZER
+from agents.common.constants import KYMA_AGENT
 
 
 def filter_messages_via_checks(
@@ -31,12 +31,12 @@ def is_human_message(message: BaseMessage) -> bool:
     return isinstance(message, HumanMessage)
 
 
-def is_finalizer_message(message: BaseMessage) -> bool:
+def is_agent_message(message: BaseMessage) -> bool:
     """
-    Check if a message is a finalizer message. Can be used as a check in the
+    Check if a message is from the Kyma agent. Can be used as a check in the
     'filter_messages_via_checks' function.
     """
-    return isinstance(message, AIMessage) and message.name == FINALIZER
+    return isinstance(message, AIMessage) and message.name == KYMA_AGENT
 
 
 def is_system_message(message: BaseMessage) -> bool:

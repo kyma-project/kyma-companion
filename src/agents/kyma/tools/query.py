@@ -9,13 +9,14 @@ from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
 
 
-class KymaQueryToolArgs(BaseModel):
-    """Arguments for the kyma_query_tool."""
+class ClusterQueryToolArgs(BaseModel):
+    """Arguments for the cluster_query_tool."""
 
     uri: str = Field(
-        description="Kubernetes API URI path for querying Kyma resources. "
+        description="Kubernetes API URI path for querying Kyma and Kubernetes resources. "
         "Must follow the format of Kubernetes API paths like "
-        "'/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions'."
+        "'/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions' "
+        "or '/api/v1/namespaces/default/pods'."
     )
     k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 
@@ -23,27 +24,28 @@ class KymaQueryToolArgs(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-@tool(infer_schema=False, args_schema=KymaQueryToolArgs)
-async def kyma_query_tool(
+@tool(infer_schema=False, args_schema=ClusterQueryToolArgs)
+async def cluster_query_tool(
     uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
 ) -> dict | list[dict]:
-    """Query the state of Kyma resources in the cluster using the provided URI.
+    """Query the state of Kyma and Kubernetes resources in the cluster using the provided URI.
     The URI must follow the format of Kubernetes API.
-    Use this to get information about Kyma-specific resources like Function, APIRule, etc.
+    Use this for both Kyma-specific resources (Function, APIRule, etc.) and
+    generic Kubernetes resources (Pod, Deployment, Service, etc.).
     Example URIs:
     - /apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions
-    - /apis/gateway.kyma-project.io/v2/namespaces/default/apirules"""
+    - /api/v1/namespaces/default/pods
+    - /apis/apps/v1/namespaces/default/deployments"""
     try:
         return await k8s_client.execute_get_api_request(uri)
     except K8sClientError as e:
-        # Add tool name if not already set
         if not e.tool_name:
-            e.tool_name = "kyma_query_tool"
+            e.tool_name = "cluster_query_tool"
         raise
     except Exception as e:
         raise K8sClientError.from_exception(
             exception=e,
-            tool_name="kyma_query_tool",
+            tool_name="cluster_query_tool",
             uri=uri,
         ) from e
 
@@ -80,7 +82,7 @@ def fetch_kyma_resource_version(
     Use this to get the resource version for a given resource kind.
     Example resource kinds: Function, APIRule, TracePipeline, etc.
     Use this tool when the resource version is not known or needs
-    to be verified or kyma_query_tool returns 404 not found.
+    to be verified or cluster_query_tool returns 404 not found.
     """
     try:
         version = k8s_client.get_resource_version(resource_kind)

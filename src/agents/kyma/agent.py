@@ -9,27 +9,29 @@ from agents.common.constants import (
     AGENT_MESSAGES,
     KYMA_AGENT,
 )
+from agents.k8s.tools.logs import fetch_pod_logs_tool
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
-from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
+from agents.kyma.tools.query import cluster_query_tool, fetch_kyma_resource_version
 from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel
 from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS, MAIN_MODEL_NAME
 
 
 class KymaAgent(BaseAgent):
-    """Kyma agent specialized in handling Kyma-related queries and operations.
+    """Kyma agent handling Kyma, Kubernetes, and SAP BTP related queries.
 
-    This agent is equipped with tools for searching Kyma documentation and querying
-    Kyma cluster resources. It uses GPT-4 for processing queries and generating responses.
+    This agent is equipped with tools for searching Kyma documentation, querying
+    cluster resources (both Kyma and Kubernetes), and fetching pod logs.
     """
 
     def __init__(self, models: dict[str, IModel | Embeddings]) -> None:
-        """Initialize the KymaAgent with necessary tools and models."""
+        """Initialize the KymaAgent with all tools and models."""
         tools: list[BaseTool] = [
             fetch_kyma_resource_version,
-            kyma_query_tool,
+            cluster_query_tool,
             SearchKymaDocTool(models),
+            fetch_pod_logs_tool,
         ]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
@@ -38,9 +40,6 @@ class KymaAgent(BaseAgent):
                 ("human", "{query}"),
                 ("system", KYMA_AGENT_INSTRUCTIONS),
             ]
-        ).partial(
-            kyma_query_tool=kyma_query_tool.name,
-            search_kyma_doc=SearchKymaDocTool(models).name,
         )
         super().__init__(
             name=KYMA_AGENT,

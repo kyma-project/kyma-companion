@@ -12,8 +12,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from langchain_core.embeddings import Embeddings
 
 from agents.kyma.tools.query import (
+    cluster_query_tool,
     fetch_kyma_resource_version,
-    kyma_query_tool,
 )
 from agents.kyma.tools.search import SearchKymaDocTool
 from routers.common import (
@@ -61,7 +61,7 @@ async def query_kyma_resource(
     logger.info(f"Kyma query request: uri={request.uri}")
 
     try:
-        result = await kyma_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
+        result = await cluster_query_tool.ainvoke({"uri": request.uri, "k8s_client": k8s_client})
         logger.info(f"Kyma query completed successfully for uri={request.uri}")
         return KymaQueryResponse(data=result)
     except K8sClientError as e:
