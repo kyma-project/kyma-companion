@@ -27,10 +27,10 @@ jobs:
                 username: context.payload.pull_request.user.login,
               });
               core.setOutput('is-codeowner', 'true');
-            } catch {
-              // Note: both 403 (token lacks org read scope) and 404 (not a member) are treated as external contributor.
-              core.setOutput('is-codeowner', 'false');
-            }
+            } catch (e) {
+            core.warning(`Team membership check failed: ${e.status} ${e.message}`);
+            core.setOutput('is-codeowner', 'false');
+            }    
 
       - name: Install comment cli
         uses: shmokmt/actions-setup-github-comment@v2.1.1
