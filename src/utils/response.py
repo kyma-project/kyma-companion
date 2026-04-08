@@ -5,6 +5,7 @@ from langgraph.constants import END
 
 from agents.common.constants import (
     ERROR,
+    FINALIZER,
     GATEKEEPER,
     KYMA_AGENT,
     NEXT,
@@ -70,6 +71,10 @@ def prepare_chunk_response(chunk: bytes) -> bytes | None:
                 },
             }
         ).encode()
+
+    # Skip intermediate KymaAgent output; the Finalizer produces the user-facing response.
+    if agent == KYMA_AGENT:
+        return None
 
     new_data = process_response(data, agent)
 

@@ -20,6 +20,7 @@ from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from agents.common.constants import (
+    FINALIZER,
     GATEKEEPER,
     MESSAGES,
     NEXT,
@@ -29,6 +30,7 @@ from agents.common.constants import (
     UNKNOWN,
 )
 from agents.common.data import Message
+from agents.common.response_converter import ResponseConverter
 from agents.common.state import (
     CompanionState,
     GatekeeperResponse,
@@ -38,14 +40,19 @@ from agents.common.state import (
 from agents.common.utils import filter_valid_messages, get_resource_context_message
 from agents.kyma.agent import KYMA_AGENT, KymaAgent
 from agents.memory.async_redis_checkpointer import IUsageMemory
-from agents.prompts import GATEKEEPER_INSTRUCTIONS, GATEKEEPER_PROMPT
+from agents.prompts import (
+    FINALIZER_INSTRUCTIONS,
+    FINALIZER_PROMPT,
+    GATEKEEPER_INSTRUCTIONS,
+    GATEKEEPER_PROMPT,
+)
 from services.k8s import IK8sClient
 from services.langfuse import LangfuseService, get_langfuse_metadata
 from services.usage import UsageTrackerCallback
 from utils.chain import ainvoke_chain
 from utils.logging import get_logger
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_NAME
+from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME
 
 logger = get_logger(__name__)
 
@@ -100,9 +107,11 @@ class CompanionGraph:
         self.memory = memory
 
         main_model = models[MAIN_MODEL_NAME]
+        mini_model = models[MAIN_MODEL_MINI_NAME]
 
         self.kyma_agent = KymaAgent(models)
         self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
+        self._finalizer_chain_model = cast(IModel, mini_model)
         self.graph = self._build_graph()
 
     @staticmethod
@@ -185,6 +194,57 @@ class CompanionGraph:
                 ],
             }
 
+    def _create_finalizer_chain(self, state: CompanionState) -> RunnableSequence:
+        """Create the finalizer LLM chain, parameterized with the user query."""
+        if not state.input or not state.input.query:
+            raise ValueError("Input query is missing in the finalizer state.")
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", FINALIZER_PROMPT),
+                MessagesPlaceholder(variable_name="messages"),
+                ("system", FINALIZER_INSTRUCTIONS),
+            ]
+        ).partial(query=state.input.query)
+        return prompt | self._finalizer_chain_model.llm  # type: ignore
+
+    async def _finalizer_node(self, state: CompanionState) -> dict[str, Any]:
+        """Finalizer node: synthesizes the agent's output into a clean user-facing response,
+        then converts YAML blocks into HTML with resource links."""
+        try:
+            finalizer_chain = self._create_finalizer_chain(state)
+            final_response = await ainvoke_chain(
+                finalizer_chain,
+                {"messages": filter_valid_messages(state.messages)},
+            )
+            logger.debug("Final response generated")
+
+            finalizer_output = {
+                MESSAGES: [
+                    AIMessage(
+                        content=final_response.content,
+                        name=FINALIZER,
+                    )
+                ],
+            }
+
+            if state.k8s_client is not None:
+                logger.debug("Response conversion node started")
+                finalizer_output = await ResponseConverter(state.k8s_client).convert_final_response(finalizer_output)
+
+            return finalizer_output
+
+        except Exception:
+            logger.exception("Error in finalizer node")
+            return {
+                MESSAGES: [
+                    AIMessage(
+                        content="Sorry, I encountered an error while processing the request. Try again later.",
+                        name=FINALIZER,
+                    )
+                ],
+            }
+
     def _build_graph(self) -> CompiledStateGraph:
         """Create the companion parent graph."""
 
@@ -192,6 +252,7 @@ class CompanionGraph:
 
         workflow.add_node(GATEKEEPER, self._gatekeeper_node)
         workflow.add_node(KYMA_AGENT, self.kyma_agent.agent_node())
+        workflow.add_node(FINALIZER, self._finalizer_node)
 
         workflow.set_entry_point(GATEKEEPER)
 
@@ -204,7 +265,8 @@ class CompanionGraph:
             },
         )
 
-        workflow.add_edge(KYMA_AGENT, END)
+        workflow.add_edge(KYMA_AGENT, FINALIZER)
+        workflow.add_edge(FINALIZER, END)
 
         return workflow.compile(checkpointer=self.memory)
 
