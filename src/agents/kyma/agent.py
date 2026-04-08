@@ -12,7 +12,7 @@ from agents.common.constants import (
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.state import KymaAgentState
 from agents.kyma.tools.query import fetch_kyma_resource_version, kyma_query_tool
-from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME, SearchKymaDocTool
+from agents.kyma.tools.search import SearchKymaDocTool
 from utils.models.factory import IModel
 from utils.settings import GRAPH_STEP_TIMEOUT_SECONDS, MAIN_MODEL_NAME
 
@@ -41,7 +41,7 @@ class KymaAgent(BaseAgent):
             ]
         ).partial(
             kyma_query_tool=kyma_query_tool.name,
-            search_kyma_doc=SEARCH_KYMA_DOC_TOOL_NAME,
+            search_kyma_doc=search_kyma_doc_tool.name,
         )
         super().__init__(
             name=KYMA_AGENT,
