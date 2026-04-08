@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     yield
 
 
-# Probe endpoints for efficient path checking
-PROBE_PATHS = frozenset(["/healthz", "/readyz"])
+# Paths that log at DEBUG on 200 and WARNING on non-200, instead of INFO
+LOW_VERBOSITY_PATHS = frozenset(["/healthz", "/readyz", "/metrics"])
 
 app = FastAPI(
     title="Joule",
@@ -51,17 +51,16 @@ app = FastAPI(
 async def logging_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Log HTTP requests with appropriate log levels and timing.
 
-    - Probe endpoints (/healthz, /readyz) with 200 → DEBUG
-    - Probe endpoints with non-200 → WARNING
-    - All other requests → INFO
+    - /healthz, /readyz, /metrics with 200 -> DEBUG
+    - /healthz, /readyz, /metrics with non-200 -> WARNING
+    - all other requests -> INFO
     """
     start_time = time.perf_counter()
     response = await call_next(request)
     duration_ms = (time.perf_counter() - start_time) * 1000
 
     # Determine log level based on path and status
-    is_probe = request.url.path in PROBE_PATHS
-    if is_probe:  # noqa: SIM108
+    if request.url.path in LOW_VERBOSITY_PATHS:
         level = logging.DEBUG if response.status_code == HTTPStatus.OK else logging.WARNING
     else:
         level = logging.INFO
