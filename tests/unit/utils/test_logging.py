@@ -197,7 +197,8 @@ class TestPrettyJSONFormatter:
             assert "ValueError" in log_data["exception"]
             assert "something went wrong" in log_data["exception"]
         finally:
-            del exc_info
+            # break reference cycle: both names hold the traceback tuple
+            del exc_info, record
 
     def test_format_with_stack_info(self):
         """Test that stack info is included in the output when present."""
