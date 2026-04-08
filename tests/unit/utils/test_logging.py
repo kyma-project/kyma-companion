@@ -1,5 +1,7 @@
 import json
 import logging
+import sys
+import traceback
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -78,6 +80,8 @@ class TestPrettyJSONFormatter:
         assert log_data["logger"] == "test.logger"
         assert log_data["message"] == "Test message"
         assert "timestamp" in log_data
+        assert "exception" not in log_data
+        assert "stack" not in log_data
 
     def test_format_with_extra_fields(self):
         """Test formatting a log record with all extra fields."""
@@ -174,8 +178,6 @@ class TestPrettyJSONFormatter:
             try:
                 raise ValueError("something went wrong")
             except ValueError:
-                import sys
-
                 exc_info = sys.exc_info()
 
             record = logging.LogRecord(
@@ -199,8 +201,6 @@ class TestPrettyJSONFormatter:
 
     def test_format_with_stack_info(self):
         """Test that stack info is included in the output when present."""
-        import traceback
-
         formatter = PrettyJSONFormatter()
         stack_info = "".join(traceback.format_stack())
 
