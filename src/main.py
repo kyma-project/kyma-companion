@@ -60,8 +60,7 @@ async def logging_middleware(request: Request, call_next: Callable[[Request], Aw
     duration_ms = (time.perf_counter() - start_time) * 1000
 
     # Determine log level based on path and status
-    is_low_verbosity = request.url.path in LOW_VERBOSITY_PATHS
-    if is_low_verbosity:  # noqa: SIM108
+    if request.url.path in LOW_VERBOSITY_PATHS:
         level = logging.DEBUG if response.status_code == HTTPStatus.OK else logging.WARNING
     else:
         level = logging.INFO
