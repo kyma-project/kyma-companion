@@ -1,5 +1,7 @@
 import json
 import logging
+import sys
+import traceback
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -78,6 +80,8 @@ class TestPrettyJSONFormatter:
         assert log_data["logger"] == "test.logger"
         assert log_data["message"] == "Test message"
         assert "timestamp" in log_data
+        assert "exception" not in log_data
+        assert "stack" not in log_data
 
     def test_format_with_extra_fields(self):
         """Test formatting a log record with all extra fields."""
@@ -165,3 +169,55 @@ class TestPrettyJSONFormatter:
         # Should be pretty-printed (contains newlines and indentation)
         assert "\n" in result
         assert "  " in result
+
+    def test_format_with_exc_info(self):
+        """Test that exception info is included in the output when present."""
+        formatter = PrettyJSONFormatter()
+        exc_info = None
+        try:
+            try:
+                raise ValueError("something went wrong")
+            except ValueError:
+                exc_info = sys.exc_info()
+
+            record = logging.LogRecord(
+                name="test",
+                level=logging.ERROR,
+                pathname="test.py",
+                lineno=10,
+                msg="Unhandled exception",
+                args=(),
+                exc_info=exc_info,
+            )
+
+            result = formatter.format(record)
+            log_data = json.loads(result)
+
+            assert "exception" in log_data
+            assert "ValueError" in log_data["exception"]
+            assert "something went wrong" in log_data["exception"]
+        finally:
+            # break reference cycle: both names hold the traceback tuple
+            del exc_info, record
+
+    def test_format_with_stack_info(self):
+        """Test that stack info is included in the output when present."""
+        formatter = PrettyJSONFormatter()
+        stack_info = "".join(traceback.format_stack())
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.ERROR,
+            pathname="test.py",
+            lineno=10,
+            msg="Error with stack",
+            args=(),
+            exc_info=None,
+        )
+        record.stack_info = stack_info
+
+        result = formatter.format(record)
+        log_data = json.loads(result)
+
+        assert "stack" in log_data
+        assert log_data["stack"] == stack_info
