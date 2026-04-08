@@ -1,8 +1,8 @@
 import pytest
+from agents.k8s.agent import K8S_AGENT
 from langchain_core.messages import SystemMessage
 
 from agents.common.state import SubTask
-from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
 from integration.conftest import create_mock_state
 

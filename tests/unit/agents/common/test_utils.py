@@ -2,6 +2,8 @@ from collections.abc import Sequence
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from agents.k8s.agent import K8S_AGENT
+from agents.k8s.state import KubernetesAgentState
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
@@ -21,8 +23,6 @@ from agents.common.utils import (
     filter_valid_messages,
     get_resource_context_message,
 )
-from agents.k8s.agent import K8S_AGENT
-from agents.k8s.state import KubernetesAgentState
 from services.k8s import IK8sClient
 
 # Mock the logging setup

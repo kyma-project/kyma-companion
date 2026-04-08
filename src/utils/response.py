@@ -5,7 +5,6 @@ from langgraph.constants import END
 
 from agents.common.constants import (
     ERROR,
-    FINALIZER,
     GATEKEEPER,
     KYMA_AGENT,
     NEXT,
@@ -35,6 +34,8 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     answer: dict[str, Any] = {}
     if "messages" in agent_data and agent_data["messages"]:
         answer["content"] = agent_data["messages"][-1].get("content")
+
+    answer["tasks"] = []
 
     if agent == GATEKEEPER:
         answer[NEXT] = agent_data.get(NEXT)

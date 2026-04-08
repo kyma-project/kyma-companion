@@ -2,6 +2,7 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
+from agents.supervisor.agent import SUPERVISOR
 
 from agents.common.constants import (
     FINALIZER,
@@ -10,7 +11,6 @@ from agents.common.constants import (
     PLANNER,
 )
 from agents.common.state import SubTaskStatus
-from agents.supervisor.agent import SUPERVISOR
 from utils.response import prepare_chunk_response, process_response, reformat_subtasks
 
 

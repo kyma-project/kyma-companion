@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+from agents.supervisor.agent import SUPERVISOR
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
@@ -10,7 +11,6 @@ from agents.common.constants import GATEKEEPER, UNKNOWN
 from agents.common.data import Message
 from agents.common.state import CompanionState, GatekeeperResponse
 from agents.graph import CompanionGraph
-from agents.supervisor.agent import SUPERVISOR
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
 from utils.settings import (
