@@ -77,6 +77,37 @@ class TestLoggingMiddleware:
             call_args = mock_logger.log.call_args
             assert call_args[0][0] == logging.DEBUG
 
+    async def test_logs_metrics_200_at_debug_level(self, mock_request, mock_call_next):
+        """Test that successful /metrics requests are logged at DEBUG level."""
+        mock_request.url.path = "/metrics"
+
+        with patch("main.access_logger") as mock_logger:
+            response = await logging_middleware(mock_request, mock_call_next)
+
+            assert response.status_code == HTTPStatus.OK
+            mock_logger.log.assert_called_once()
+
+            # Verify DEBUG level was used
+            call_args = mock_logger.log.call_args
+            assert call_args[0][0] == logging.DEBUG
+
+    async def test_logs_metrics_non_200_at_warning_level(self, mock_request):
+        """Test that failed /metrics requests are logged at WARNING level."""
+        mock_request.url.path = "/metrics"
+
+        async def failing_call_next(request):
+            return Response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        with patch("main.access_logger") as mock_logger:
+            response = await logging_middleware(mock_request, failing_call_next)
+
+            assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+            mock_logger.log.assert_called_once()
+
+            # Verify WARNING level was used
+            call_args = mock_logger.log.call_args
+            assert call_args[0][0] == logging.WARNING
+
     async def test_logs_healthz_non_200_at_warning_level(self, mock_request):
         """Test that failed /healthz requests are logged at WARNING level."""
         mock_request.url.path = "/healthz"
