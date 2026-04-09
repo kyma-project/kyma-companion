@@ -12,28 +12,27 @@ on:
 jobs:
   check-author:
     runs-on: ubuntu-latest
-    outputs:
-      is-codeowner: ${{ steps.check.outputs.result }}
     steps:
       - name: Check if PR author is a codeowner
-        id: check
         uses: actions/github-script@v8
         with:
           script: |
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            if (labels.includes('ok-to-test')) return;
             try {
               await github.rest.teams.getMembershipForUserInOrg({
                 org: 'kyma-project',
                 team_slug: 'ai-force',
                 username: context.payload.pull_request.user.login,
               });
-              return true;
             } catch {
-              return false;
+              core.setFailed(`PR author ${context.payload.pull_request.user.login} is not a codeowner. Apply the 'ok-to-test' label to allow tests to run.`);
+              return;
             }
 
   tests:
     needs: check-author
-    if: needs.check-author.outputs.is-codeowner == 'true'
+    if: ${{ needs.check-author.result == 'success' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
