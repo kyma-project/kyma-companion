@@ -8,8 +8,6 @@ on:
       - "release-**"
     paths:
       - "doc_indexer/**"
-  pull_request_review:
-    types: [submitted]
 
 permissions: read-all
 
@@ -17,77 +15,34 @@ jobs:
   check-author:
     runs-on: ubuntu-latest
     outputs:
-      authorized: ${{ steps.check.outputs.authorized }}
-      pr-number: ${{ steps.check.outputs.pr-number }}
+      pr-number: ${{ steps.get-pr.outputs.pr-number }}
     steps:
-      - name: Check authorization
-        id: check
+      - name: Resolve PR number and author
+        id: get-pr
         uses: actions/github-script@v8
         with:
           script: |
-            const prNumber = context.payload.pull_request?.number ?? context.payload.review?.pull_request_url?.split('/').pop();
+            const prNumber = context.payload.pull_request.number;
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: parseInt(prNumber),
+              pull_number: prNumber,
             });
             core.setOutput('pr-number', prNumber);
+            core.setOutput('pr-author', pr.data.user.login);
 
-            // Check if PR touches doc_indexer/** (relevant when triggered by a review on an unrelated PR)
-            const files = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: parseInt(prNumber),
-              per_page: 100,
-            });
-            const touchesDocIndexer = files.data.some(f => f.filename.startsWith('doc_indexer/'));
-            if (!touchesDocIndexer) {
-              console.log('PR does not touch doc_indexer/ — skipping.');
-              core.setOutput('authorized', 'skip');
-              return;
-            }
+      - name: Checkout code (for local action)
+        uses: actions/checkout@v6
 
-            // Check if PR author is a codeowner
-            try {
-              await github.rest.teams.getMembershipForUserInOrg({
-                org: 'kyma-project',
-                team_slug: 'ai-force',
-                username: pr.data.user.login,
-              });
-              console.log(`Author ${pr.data.user.login} is a codeowner — authorized.`);
-              core.setOutput('authorized', 'true');
-              return;
-            } catch {}
-
-            // Not a codeowner — check for a codeowner approval
-            const reviews = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: parseInt(prNumber),
-            });
-            const approvals = reviews.data.filter(r => r.state === 'APPROVED');
-            for (const approval of approvals) {
-              try {
-                await github.rest.teams.getMembershipForUserInOrg({
-                  org: 'kyma-project',
-                  team_slug: 'ai-force',
-                  username: approval.user.login,
-                });
-                console.log(`PR approved by codeowner ${approval.user.login} — authorized.`);
-                core.setOutput('authorized', 'true');
-                return;
-              } catch {}
-            }
-
-            core.setOutput('authorized', 'false');
-            core.setFailed(
-              `PR author ${pr.data.user.login} is not a codeowner and the PR has no codeowner approval. ` +
-              `A codeowner must approve the PR to allow tests to run.`
-            );
+      - name: Check codeowner authorization
+        uses: ./.github/actions/check-codeowner-auth
+        with:
+          pr-number: ${{ steps.get-pr.outputs.pr-number }}
+          pr-author: ${{ steps.get-pr.outputs.pr-author }}
 
   tests:
     needs: check-author
-    if: needs.check-author.result == 'success' && needs.check-author.outputs.authorized == 'true'
+    if: needs.check-author.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
