@@ -23,7 +23,6 @@ jobs:
 
   tests:
     needs: check-author
-    if: needs.check-author.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
