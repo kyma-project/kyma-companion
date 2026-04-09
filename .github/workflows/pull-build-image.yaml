@@ -1,7 +1,7 @@
 name: Pull Build Image
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
@@ -33,7 +33,7 @@ jobs:
       - name: Extract image name from JSON
         id: extract-image
         run: |
-          echo "IMAGE_NAME=$(echo '${{ needs.build.outputs.images }}' | jq -r '.[0]')" >> $GITHUB_ENV
+          echo "IMAGE_NAME=$(echo '${{ needs.build.outputs.images }}' | jq -r '.[0]')" >> "$GITHUB_ENV"
 
       - name: Test image
         run: ./scripts/shell/run-and-check-container.sh "$IMAGE_NAME" PR-${{ github.event.number }}-container
