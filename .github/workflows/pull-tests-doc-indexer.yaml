@@ -1,4 +1,4 @@
-name: pull-tests-doc-indexer
+name: Doc Indexer Tests
 
 on:
   pull_request_target:
@@ -36,7 +36,6 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Extract Python version
-        id: python-version
         working-directory: ./doc_indexer
         run: |
           ../scripts/shell/extract-python-version.sh
