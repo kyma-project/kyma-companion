@@ -15,11 +15,8 @@ jobs:
   authorize:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code (for local action)
-        uses: actions/checkout@v6
-
       - name: Check codeowner authorization
-        uses: ./.github/actions/check-codeowner-auth
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
 
   tests:
     needs: authorize
