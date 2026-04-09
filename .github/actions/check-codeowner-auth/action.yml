@@ -1,12 +1,18 @@
 name: "Check codeowner authorization"
 description: "Fails if PR author is not a codeowner and PR has no codeowner approval. Trusted bots are always authorized."
 
+inputs:
+  github-token:
+    description: "Token with read:org scope for team membership checks (use GIT_BOT_TOKEN)."
+    required: true
+
 runs:
   using: "composite"
   steps:
     - name: Check authorization
       uses: actions/github-script@v8
       with:
+        github-token: ${{ inputs.github-token }}
         script: |
           const TRUSTED_BOTS = [
             'renovate[bot]',
