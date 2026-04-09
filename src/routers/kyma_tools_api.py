@@ -9,7 +9,6 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from langchain_core.embeddings import Embeddings
 
 from agents.kyma.tools.query import (
     fetch_kyma_resource_version,
@@ -25,12 +24,11 @@ from routers.common import (
     SearchKymaDocRequest,
     SearchKymaDocResponse,
     init_k8s_client,
-    init_models_dict,
+    init_search_tool,
 )
 from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
-from utils.models.factory import IModel
 
 logger = get_logger(__name__)
 
@@ -128,7 +126,7 @@ async def get_resource_version(
 @router.post("/search", response_model=SearchKymaDocResponse)
 async def search_kyma_documentation(
     request: Annotated[SearchKymaDocRequest, Body()],
-    models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
+    search_tool: Annotated[SearchKymaDocTool, Depends(init_search_tool)],
 ) -> SearchKymaDocResponse:
     """
     Search Kyma documentation using semantic search.
@@ -136,8 +134,7 @@ async def search_kyma_documentation(
     logger.info(f"Search request: query={request.query}")
 
     try:
-        search_tool = SearchKymaDocTool(models=models, top_k=request.top_k)
-        results = await search_tool.arun_list(query=request.query)
+        results = await search_tool.arun_list(query=request.query, top_k=request.top_k)
         logger.info(f"Search completed successfully, returned {len(results)} documents")
         return SearchKymaDocResponse(
             results=results,

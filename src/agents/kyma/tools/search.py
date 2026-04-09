@@ -58,11 +58,11 @@ class SearchKymaDocTool(BaseTool):
             return "No relevant documentation found."
         return combined
 
-    async def arun_list(self, query: str) -> list[str]:
+    async def arun_list(self, query: str, top_k: int | None = None) -> list[str]:
         """Async implementation of the search through Kyma documentation. Returns list of document contents."""
         query_obj = Query(text=query)
         relevant_docs = await self.rag_system.aretrieve(
             query_obj,
-            top_k=self.top_k if self.top_k is not None else DEFAULT_TOP_K,
+            top_k=top_k if top_k is not None else (self.top_k or DEFAULT_TOP_K),
         )
         return [doc.page_content for doc in relevant_docs if doc.page_content.strip()]

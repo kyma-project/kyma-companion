@@ -26,10 +26,11 @@ class KymaAgent(BaseAgent):
 
     def __init__(self, models: dict[str, IModel | Embeddings]) -> None:
         """Initialize the KymaAgent with necessary tools and models."""
+        search_kyma_doc_tool = SearchKymaDocTool(models)
         tools: list[BaseTool] = [
             fetch_kyma_resource_version,
             kyma_query_tool,
-            SearchKymaDocTool(models),
+            search_kyma_doc_tool,
         ]
         agent_prompt = ChatPromptTemplate.from_messages(
             [
@@ -40,7 +41,7 @@ class KymaAgent(BaseAgent):
             ]
         ).partial(
             kyma_query_tool=kyma_query_tool.name,
-            search_kyma_doc=SearchKymaDocTool(models).name,
+            search_kyma_doc=search_kyma_doc_tool.name,
         )
         super().__init__(
             name=KYMA_AGENT,
