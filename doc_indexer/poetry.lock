@@ -1565,24 +1565,27 @@ xai = ["langchain-xai"]
 
 [[package]]
 name = "langchain-aws"
-version = "1.1.0"
+version = "1.4.1"
 description = "An integration package connecting AWS and LangChain"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "langchain_aws-1.1.0-py3-none-any.whl", hash = "sha256:8ec074615b42839e035354063717374c32c63f5028ef5221ba073fd5f3ef5e37"},
-    {file = "langchain_aws-1.1.0.tar.gz", hash = "sha256:1e2f8570328eae4907c3cf7e900dc68d8034ddc865d9dc96823c9f9d8cccb901"},
+    {file = "langchain_aws-1.4.1-py3-none-any.whl", hash = "sha256:42faf88d646966155da006be61d8beb8e35decd4d610cf86728ef17a19be0a23"},
+    {file = "langchain_aws-1.4.1.tar.gz", hash = "sha256:9b91efc224b4d9a44120a4dea65f57097c75adcdba906dcea13357ffa93b0559"},
 ]
 
 [package.dependencies]
-boto3 = ">=1.40.19"
-langchain-core = ">=1.1.0"
-numpy = {version = ">=2.3.2,<3", markers = "python_version >= \"3.12\""}
+boto3 = ">=1.42.42"
+langchain-core = ">=1.2.15"
+numpy = ">=1.0.0,<3"
 pydantic = ">=2.10.6,<3"
 
 [package.extras]
-tools = ["beautifulsoup4 (>=4.13.4)", "bedrock-agentcore (>=0.1.0) ; python_version >= \"3.10\"", "playwright (>=1.53.0)"]
+anthropic = ["anthropic[bedrock]", "langchain-anthropic"]
+nova-sonic = ["aws-sdk-bedrock-runtime ; python_version >= \"3.12\""]
+tools = ["beautifulsoup4 (>=4.13.4)", "bedrock-agentcore (>=1.4.0) ; python_version >= \"3.10\"", "playwright (>=1.53.0)"]
+valkey = ["valkey-glide-sync (>=2.0.0)"]
 
 [[package]]
 name = "langchain-classic"
@@ -1738,6 +1741,23 @@ files = [
 
 [package.dependencies]
 langchain-core = ">=1.2.13,<2.0.0"
+
+[[package]]
+name = "langcodes"
+version = "3.5.1"
+description = "Tools for labeling human languages with IETF language tags"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "langcodes-3.5.1-py3-none-any.whl", hash = "sha256:b6a9c25c603804e2d169165091d0cdb23934610524a21d226e4f463e8e958a72"},
+    {file = "langcodes-3.5.1.tar.gz", hash = "sha256:40bff315e01b01d11c2ae3928dd4f5cbd74dd38f9bd912c12b9a3606c143f731"},
+]
+
+[package.extras]
+build = ["build", "twine"]
+data = ["language-data (>=1.2)"]
+test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "langgraph"
@@ -1940,21 +1960,6 @@ files = [
     {file = "librt-0.8.1-cp39-cp39-win_amd64.whl", hash = "sha256:64548cde61b692dc0dc379f4b5f59a2f582c2ebe7890d09c1ae3b9e66fa015b7"},
     {file = "librt-0.8.1.tar.gz", hash = "sha256:be46a14693955b3bd96014ccbdb8339ee8c9346fbe11c1b78901b55125f14c73"},
 ]
-
-[[package]]
-name = "lingua-language-detector"
-version = "1.3.4"
-description = "An accurate natural language detection library, suitable for long and short text alike"
-optional = false
-python-versions = ">=3.8, !=2.7.*, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*, !=3.7.*"
-groups = ["main"]
-files = [
-    {file = "lingua_language_detector-1.3.4-py3-none-any.whl", hash = "sha256:0a2908445686440c1bd2052013cc690e6dfeaa561f72a7500cdfbcca300360df"},
-    {file = "lingua_language_detector-1.3.4.tar.gz", hash = "sha256:10d49ac3a3654d3b9bc108e72e5a7ddfcf29b8de50040b081ed1d322e0fb5a30"},
-]
-
-[package.dependencies]
-regex = ">=2023.10.3,<2024.0.0"
 
 [[package]]
 name = "marshmallow"
@@ -3739,13 +3744,13 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a0)"]
 
 [[package]]
 name = "sap-ai-sdk-base"
-version = "3.2.3"
+version = "3.4.0"
 description = "SAP Cloud SDK for AI (Python): Base Client"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_base-3.2.3-py3-none-any.whl", hash = "sha256:c06a7c8800d17a83948cfce31623da4cf91f91a7f793e52c472d221d7d2e3474"},
+    {file = "sap_ai_sdk_base-3.4.0-py3-none-any.whl", hash = "sha256:0f820e5b4976989d9d178c64bc989d0f80fc61442b64e96851628ddacfadb366"},
 ]
 
 [package.dependencies]
@@ -3755,28 +3760,28 @@ requests = ">=2.32,<3.0"
 
 [[package]]
 name = "sap-ai-sdk-core"
-version = "3.2.0"
+version = "3.3.0"
 description = "SAP Cloud SDK for AI (Python): Core SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_core-3.2.0-py3-none-any.whl", hash = "sha256:be4b6795b8be36f4a8f01b49d13e143161a76d322b1fa3edee8b821ffe44bdf7"},
+    {file = "sap_ai_sdk_core-3.3.0-py3-none-any.whl", hash = "sha256:f13552ab3525bc559a212951b4ae02d992722e355ae0e997cd129199bdad64e3"},
 ]
 
 [package.dependencies]
 click = ">=8.3,<9.0"
-sap-ai-sdk-base = ">=3.2,<4.0"
+sap-ai-sdk-base = ">=3.4,<4.0"
 
 [[package]]
 name = "sap-ai-sdk-gen"
-version = "6.5.0"
+version = "6.7.0"
 description = "SAP Cloud SDK for AI (Python): generative AI SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_gen-6.5.0-py3-none-any.whl", hash = "sha256:2b0d1815dd7d94ae1d34629182a60c30c532b2bf8882a4f079d26a31bfc19295"},
+    {file = "sap_ai_sdk_gen-6.7.0-py3-none-any.whl", hash = "sha256:5bc3c54b6bb36039db59a4c35069d6bc91409e8f8219654e707082e2cab74a4f"},
 ]
 
 [package.dependencies]
@@ -3788,22 +3793,22 @@ google-genai = {version = ">=1.60.0,<1.61.0", optional = true, markers = "extra 
 h11 = ">=0.16.0"
 httpx = ">=0.27.0"
 langchain = ">=1.2.10,<1.3.0"
-langchain-aws = {version = ">=1.1.0,<1.2.0", optional = true, markers = "extra == \"all\""}
+langchain-aws = {version = ">=1.4.0,<1.5.0", optional = true, markers = "extra == \"all\""}
 langchain-classic = ">=1.0.0,<1.1.0"
 langchain-community = ">=0.4.1,<0.5.0"
 langchain-google-genai = {version = ">=4.2.0,<4.3.0", optional = true, markers = "extra == \"all\""}
 langchain-openai = ">=1.1.0,<1.2.0"
-lingua-language-detector = "1.3.4"
+langcodes = ">=3.5.1,<3.6.0"
 openai = ">=1.58.1"
 overloading = "0.5.0"
 packaging = ">=23.2"
 pandas = ">=2.2.0"
 pydantic = ">=2.12,<3.0"
-sap-ai-sdk-core = ">=3.1.0"
+sap-ai-sdk-core = ">=3.3.0"
 
 [package.extras]
-all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=1.60.0,<1.61.0)", "langchain-aws (>=1.1.0,<1.2.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
-amazon = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "langchain-aws (>=1.1.0,<1.2.0)"]
+all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=1.60.0,<1.61.0)", "langchain-aws (>=1.4.0,<1.5.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
+amazon = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "langchain-aws (>=1.4.0,<1.5.0)"]
 google = ["google-genai (>=1.60.0,<1.61.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
 
 [[package]]
@@ -4862,4 +4867,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "eba4fc4a24923744cceb482ffc8482d7c9d147ad15e67d8ed41b5b98bb6500ba"
+content-hash = "4106fcd5be67660d73436cae32a02a69b6cd2355690bd61e939533dd43696ab5"
