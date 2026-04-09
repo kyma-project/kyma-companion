@@ -9,7 +9,7 @@ runs:
       with:
         script: |
           const TRUSTED_BOTS = [
-            'app/renovate',
+            'renovate[bot]',
           ];
 
           const org = 'kyma-project';
@@ -32,15 +32,25 @@ runs:
             });
             console.log(`Author ${prAuthor} is a codeowner - authorized.`);
             return;
-          } catch {}
+          } catch (e) {
+            if (e.status !== 404) throw e;
+          }
 
           // Not a codeowner - check for a codeowner approval
-          const reviews = await github.rest.pulls.listReviews({
+          const allReviews = await github.paginate(github.rest.pulls.listReviews, {
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: prNumber,
+            per_page: 100,
           });
-          const approvals = reviews.data.filter(r => r.state === 'APPROVED');
+          // Keep only the latest review state per reviewer (excludes comments)
+          const latestReviews = new Map();
+          for (const review of allReviews) {
+            if (review.state !== 'COMMENTED') {
+              latestReviews.set(review.user.login, review);
+            }
+          }
+          const approvals = [...latestReviews.values()].filter(r => r.state === 'APPROVED');
           for (const approval of approvals) {
             try {
               await github.rest.teams.getMembershipForUserInOrg({
@@ -50,7 +60,9 @@ runs:
               });
               console.log(`PR approved by codeowner ${approval.user.login} - authorized.`);
               return;
-            } catch {}
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
           }
 
           core.setFailed(
