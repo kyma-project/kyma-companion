@@ -14,31 +14,12 @@ permissions: read-all
 jobs:
   check-author:
     runs-on: ubuntu-latest
-    outputs:
-      pr-number: ${{ steps.get-pr.outputs.pr-number }}
     steps:
-      - name: Resolve PR number and author
-        id: get-pr
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-            core.setOutput('pr-number', prNumber);
-            core.setOutput('pr-author', pr.data.user.login);
-
       - name: Checkout code (for local action)
         uses: actions/checkout@v6
 
       - name: Check codeowner authorization
         uses: ./.github/actions/check-codeowner-auth
-        with:
-          pr-number: ${{ steps.get-pr.outputs.pr-number }}
-          pr-author: ${{ steps.get-pr.outputs.pr-author }}
 
   tests:
     needs: check-author
@@ -86,7 +67,7 @@ jobs:
           LOG_LEVEL: "DEBUG"
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ needs.check-author.outputs.pr-number }}"
+          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
         run: |
           poetry run poe test-unit
 
@@ -97,7 +78,7 @@ jobs:
           LOG_LEVEL: "DEBUG"
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ needs.check-author.outputs.pr-number }}"
+          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
