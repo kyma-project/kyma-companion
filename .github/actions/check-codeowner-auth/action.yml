@@ -43,7 +43,9 @@ runs:
             pull_number: prNumber,
             per_page: 100,
           });
-          // Keep only the latest review state per reviewer (excludes comments)
+          // Keep only the latest review state per reviewer (excludes comments).
+          // This filters out stale approvals: if a reviewer approved and later
+          // requested changes, only the CHANGES_REQUESTED state is kept.
           const latestReviews = new Map();
           for (const review of allReviews) {
             if (review.state !== 'COMMENTED') {
