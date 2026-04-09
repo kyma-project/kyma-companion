@@ -31,9 +31,9 @@ def process_response(data: dict[str, Any], agent: str) -> dict[str, Any] | None:
     if error_response is not None:
         return error_response
 
-    answer: dict[str, Any] = {}
+    answer: dict[str, Any] = {"content": ""}
     if "messages" in agent_data and agent_data["messages"]:
-        answer["content"] = agent_data["messages"][-1].get("content")
+        answer["content"] = agent_data["messages"][-1].get("content", "")
 
     answer["tasks"] = []
 
