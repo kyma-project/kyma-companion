@@ -12,7 +12,7 @@ on:
 permissions: read-all
 
 jobs:
-  check-author:
+  authorize:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code (for local action)
@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions/check-codeowner-auth
 
   tests:
-    needs: check-author
+    needs: authorize
     runs-on: ubuntu-latest
     permissions:
       contents: read
