@@ -42,7 +42,7 @@ dependencies = [
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = "^3.8.8"
+deepeval = "^3.9.6"
 fakeredis = "^2.34.1"
 prettytable = "^3.17.0"
 pytest = ">=9.0,<10.0"
