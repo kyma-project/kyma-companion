@@ -8,32 +8,89 @@ on:
       - "release-**"
     paths:
       - "doc_indexer/**"
+  pull_request_review:
+    types: [submitted]
+
+permissions: read-all
 
 jobs:
   check-author:
     runs-on: ubuntu-latest
+    outputs:
+      authorized: ${{ steps.check.outputs.authorized }}
+      pr-number: ${{ steps.check.outputs.pr-number }}
     steps:
-      - name: Check if PR author is a codeowner
+      - name: Check authorization
+        id: check
         uses: actions/github-script@v8
         with:
           script: |
-            const labels = context.payload.pull_request.labels.map(l => l.name);
-            if (labels.includes('ok-to-test')) return;
+            const prNumber = context.payload.pull_request?.number ?? context.payload.review?.pull_request_url?.split('/').pop();
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: parseInt(prNumber),
+            });
+            core.setOutput('pr-number', prNumber);
+
+            // Check if PR touches doc_indexer/** (relevant when triggered by a review on an unrelated PR)
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: parseInt(prNumber),
+              per_page: 100,
+            });
+            const touchesDocIndexer = files.data.some(f => f.filename.startsWith('doc_indexer/'));
+            if (!touchesDocIndexer) {
+              console.log('PR does not touch doc_indexer/ — skipping.');
+              core.setOutput('authorized', 'skip');
+              return;
+            }
+
+            // Check if PR author is a codeowner
             try {
               await github.rest.teams.getMembershipForUserInOrg({
                 org: 'kyma-project',
                 team_slug: 'ai-force',
-                username: context.payload.pull_request.user.login,
+                username: pr.data.user.login,
               });
-            } catch {
-              core.setFailed(`PR author ${context.payload.pull_request.user.login} is not a codeowner. Apply the 'ok-to-test' label to allow tests to run.`);
+              console.log(`Author ${pr.data.user.login} is a codeowner — authorized.`);
+              core.setOutput('authorized', 'true');
               return;
+            } catch {}
+
+            // Not a codeowner — check for a codeowner approval
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: parseInt(prNumber),
+            });
+            const approvals = reviews.data.filter(r => r.state === 'APPROVED');
+            for (const approval of approvals) {
+              try {
+                await github.rest.teams.getMembershipForUserInOrg({
+                  org: 'kyma-project',
+                  team_slug: 'ai-force',
+                  username: approval.user.login,
+                });
+                console.log(`PR approved by codeowner ${approval.user.login} — authorized.`);
+                core.setOutput('authorized', 'true');
+                return;
+              } catch {}
             }
+
+            core.setOutput('authorized', 'false');
+            core.setFailed(
+              `PR author ${pr.data.user.login} is not a codeowner and the PR has no codeowner approval. ` +
+              `A codeowner must approve the PR to allow tests to run.`
+            );
 
   tests:
     needs: check-author
-    if: ${{ needs.check-author.result == 'success' }}
+    if: needs.check-author.result == 'success' && needs.check-author.outputs.authorized == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +98,7 @@ jobs:
     name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -54,14 +111,14 @@ jobs:
           echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         working-directory: ./doc_indexer
@@ -74,7 +131,7 @@ jobs:
           LOG_LEVEL: "DEBUG"
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+          DOCS_TABLE_NAME: "kc_pr_${{ needs.check-author.outputs.pr-number }}"
         run: |
           poetry run poe test-unit
 
@@ -85,8 +142,8 @@ jobs:
           LOG_LEVEL: "DEBUG"
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+          DOCS_TABLE_NAME: "kc_pr_${{ needs.check-author.outputs.pr-number }}"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > $CONFIG_PATH
+          echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
           poetry run poe test-integration
