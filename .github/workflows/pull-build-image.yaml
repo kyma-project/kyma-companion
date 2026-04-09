@@ -6,12 +6,20 @@ on:
     branches:
       - main
 
-permissions:
-  id-token: write # This is required for requesting the JWT token
-  contents: read # This is required for actions/checkout
+permissions: read-all
 
 jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check codeowner authorization
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+
   build:
+    needs: authorize
+    permissions:
+      id-token: write # This is required for requesting the JWT token
+      contents: read # This is required for actions/checkout
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: kyma-companion
