@@ -1,0 +1,41 @@
+id: test-cluster-29 # format: test-<resource_kind>-<test_id>
+description: Ask specifically about Kyma module health. The agent should invoke cluster diagnostics and report on module statuses.
+queries:
+  - user_query: Are all Kyma modules running correctly?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_modules
+        statement: mentions Kyma modules or module status
+        threshold: 0.5
+        required: true
+      - name: module_state_info
+        statement: reports the state of modules (e.g. Ready, not Ready) or lists specific module names and their statuses
+        threshold: 0.5
+        required: true
+      - name: non_ready_details
+        statement: if non-ready modules exist, provides details such as module name, state, and error conditions; if all are ready, confirms that
+        threshold: 0.5
+        required: true
+      - name: remediation
+        statement: suggests next steps to fix non-ready modules, or confirms no action is needed
+        threshold: 0.5
+        required: false
+  - user_query: Which Kyma modules are not working?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_modules
+        statement: mentions Kyma modules or module status
+        threshold: 0.5
+        required: true
+      - name: module_state_info
+        statement: identifies non-ready modules with their state, or confirms all modules are ready
+        threshold: 0.5
+        required: true

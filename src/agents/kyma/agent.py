@@ -4,6 +4,8 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import BaseTool
 
+from agents.cluster_diagnostics.agent import ClusterDiagnosticsAgent
+from agents.cluster_diagnostics.tools.diagnose import DiagnoseClusterTool
 from agents.common.agent import BaseAgent
 from agents.common.constants import (
     AGENT_MESSAGES,
@@ -22,16 +24,20 @@ class KymaAgent(BaseAgent):
     """Kyma agent handling Kyma, Kubernetes, and SAP BTP related queries.
 
     This agent is equipped with tools for searching Kyma documentation, querying
-    cluster resources (both Kyma and Kubernetes), and fetching pod logs.
+    cluster resources (both Kyma and Kubernetes), fetching pod logs, and running
+    cluster-wide diagnostics via the ClusterDiagnosticsAgent sub-agent.
     """
 
     def __init__(self, models: dict[str, IModel | Embeddings]) -> None:
         """Initialize the KymaAgent with all tools and models."""
+        diagnostics_agent = ClusterDiagnosticsAgent(models)
+
         tools: list[BaseTool] = [
             fetch_kyma_resource_version,
             cluster_query_tool,
             SearchKymaDocTool(models),
             fetch_pod_logs_tool,
+            DiagnoseClusterTool(diagnostics_agent=diagnostics_agent),
         ]
         agent_prompt = ChatPromptTemplate.from_messages(
             [

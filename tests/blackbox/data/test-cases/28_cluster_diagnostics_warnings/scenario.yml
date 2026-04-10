@@ -1,0 +1,37 @@
+id: test-cluster-28 # format: test-<resource_kind>-<test_id>
+description: Ask specifically about cluster warnings and events. The agent should invoke cluster diagnostics and report on warning events.
+queries:
+  - user_query: Are there any warnings or errors in my cluster?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_warning_events
+        statement: mentions Kubernetes warning events or cluster warnings
+        threshold: 0.5
+        required: true
+      - name: event_details
+        statement: provides details about specific warning events such as reason, message, or involved object, or states there are no warnings
+        threshold: 0.5
+        required: true
+      - name: actionable_advice
+        statement: suggests next steps or actions based on the warnings found, or confirms the cluster is healthy
+        threshold: 0.5
+        required: false
+  - user_query: Show me the cluster events that indicate problems
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_warning_events
+        statement: mentions Kubernetes warning events or cluster events
+        threshold: 0.5
+        required: true
+      - name: event_details
+        statement: provides details about specific events or states there are no problematic events
+        threshold: 0.5
+        required: true

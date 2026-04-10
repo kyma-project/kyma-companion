@@ -32,7 +32,6 @@ from IPython.display import (
 from langchain_core.runnables.graph import MermaidDrawMethod
 
 from agents.graph import CompanionGraph
-from agents.k8s.agent import KubernetesAgent
 from agents.kyma.agent import KymaAgent
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
@@ -78,17 +77,4 @@ try:
 except Exception:
     raise
 
-print("kyma_agent.png generated")
 
-print("Generating graph diagram for the k8s agent...")
-k8s_agent = KubernetesAgent(models[MAIN_MODEL_NAME])
-try:
-    png_bytes = Image(
-        k8s_agent.graph.get_graph().draw_mermaid_png(draw_method=MermaidDrawMethod.API, max_retries=5, retry_delay=2.0)
-    )
-    # store the image in a file
-    with open("k8s_agent.png", "wb") as f:
-        f.write(png_bytes.data)
-except Exception:
-    raise
-print("k8s_agent.png generated")

@@ -1,0 +1,49 @@
+id: test-cluster-27 # format: test-<resource_kind>-<test_id>
+description: Ask for a general cluster health check. The agent should invoke cluster diagnostics covering warning events, node resources, and Kyma module health.
+queries:
+  - user_query: What is wrong with my cluster?
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_warnings
+        statement: mentions cluster warning events or that it checked for warnings
+        threshold: 0.5
+        required: true
+      - name: mentions_node_health
+        statement: mentions node health, node resources, or node conditions
+        threshold: 0.5
+        required: true
+      - name: mentions_module_health
+        statement: mentions Kyma module health or module status
+        threshold: 0.5
+        required: true
+      - name: structured_report
+        statement: provides a structured diagnostic report with distinct sections
+        threshold: 0.5
+        required: false
+      - name: summary
+        statement: provides an overall summary or assessment of cluster health
+        threshold: 0.5
+        required: false
+  - user_query: Check the health of my cluster
+    resource:
+      kind: Cluster
+      api_version: ""
+      name: ""
+      namespace: ""
+    expectations:
+      - name: mentions_warnings
+        statement: mentions cluster warning events or that it checked for warnings
+        threshold: 0.5
+        required: true
+      - name: mentions_node_health
+        statement: mentions node health, node resources, or node conditions
+        threshold: 0.5
+        required: true
+      - name: mentions_module_health
+        statement: mentions Kyma module health or module status
+        threshold: 0.5
+        required: true

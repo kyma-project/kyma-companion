@@ -110,7 +110,7 @@ class CompanionGraph:
         mini_model = models[MAIN_MODEL_MINI_NAME]
 
         self.kyma_agent = KymaAgent(models)
-        self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, main_model))
+        self._gatekeeper_chain = self._create_gatekeeper_chain(cast(IModel, mini_model))
         self._finalizer_chain_model = cast(IModel, mini_model)
         self.graph = self._build_graph()
 

@@ -48,6 +48,14 @@ KYMA_AGENT = "KymaAgent"
 
 KYMA_AGENT_TASK_DESCRIPTION = "Fetching data from Kyma"
 
+CLUSTER_DIAGNOSTICS_AGENT = "ClusterDiagnosticsAgent"
+
+CLUSTER_DIAGNOSTICS_AGENT_TASK_DESCRIPTION = "Diagnosing cluster health"
+
+MAX_TOOL_RESPONSE_CHARS = 30_000
+
+MAX_WARNING_EVENTS = 50
+
 RESPONSE_CONVERTER = "ResponseConverter"
 
 NEW_YAML = "New"

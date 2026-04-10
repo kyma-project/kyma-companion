@@ -21,6 +21,7 @@ class OpenAIModel:
             temperature=config.temperature,
             request_timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
             timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
+            reasoning_effort=config.reasoning_effort if config.reasoning_effort else None,
         )
 
     def invoke(self, content: str):  # noqa

@@ -15,6 +15,7 @@ class ModelConfig(BaseModel):
     name: str
     deployment_id: str
     temperature: float = 0.0
+    reasoning_effort: str | None = None
 
 
 class DataSanitizationConfig(BaseModel):
