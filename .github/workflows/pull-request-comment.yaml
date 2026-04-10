@@ -7,13 +7,21 @@ on:
       - "main"
       - "release-**"
 
-permissions:
-  pull-requests: write
+permissions: read-all
 
 jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check codeowner authorization
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+
   comment:
     name: Notes for PR
+    needs: authorize
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Check if PR author is a codeowner
         id: check-author
