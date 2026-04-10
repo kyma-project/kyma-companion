@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Check codeowner authorization
         uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+        with:
+          github-token: ${{ secrets.GIT_BOT_TOKEN }}
 
   build:
     needs: authorize
