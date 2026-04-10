@@ -52,13 +52,18 @@ runs:
           // Keep only the latest review state per reviewer (excludes comments).
           // This filters out stale approvals: if a reviewer approved and later
           // requested changes, only the CHANGES_REQUESTED state is kept.
+          // Approvals on older commits (stale due to new pushes) are excluded
+          // by requiring the review commit_id to match the current head SHA.
           const latestReviews = new Map();
           for (const review of allReviews) {
             if (review.state !== 'COMMENTED') {
               latestReviews.set(review.user.login, review);
             }
           }
-          const approvals = [...latestReviews.values()].filter(r => r.state === 'APPROVED');
+          const headSha = context.payload.pull_request.head.sha;
+          const approvals = [...latestReviews.values()].filter(
+            r => r.state === 'APPROVED' && r.commit_id === headSha
+          );
           for (const approval of approvals) {
             try {
               await github.rest.teams.getMembershipForUserInOrg({
