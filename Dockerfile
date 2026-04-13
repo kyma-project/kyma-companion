@@ -1,5 +1,5 @@
 # Build stage: install dependencies
-FROM ghcr.io/gardenlinux/gardenlinux:2150.0.0 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:2150.1.0 AS builder
 WORKDIR /app
 
 # Copy necessary files for dependency installation
@@ -25,7 +25,7 @@ RUN apt update && apt install -y --no-install-recommends build-essential gcc pyt
   && find . -name "*.so" -exec strip --strip-debug {} + 2>/dev/null || true
 
 # Runtime stage: fresh GardenLinux with only runtime files
-FROM ghcr.io/gardenlinux/gardenlinux:2150.0.0
+FROM ghcr.io/gardenlinux/gardenlinux:2150.1.0
 WORKDIR /app
 
 # Install Python runtime (needed for venv symlinks)
