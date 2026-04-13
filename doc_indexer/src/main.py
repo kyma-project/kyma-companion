@@ -40,7 +40,7 @@ def run_fetcher() -> None:
     )
     # run the fetcher
     fetcher.run()
-    # print the filtered documents
+    # print the filtered documents.
     try:
         subprocess.run(["tree", DOCS_PATH])
     except Exception:

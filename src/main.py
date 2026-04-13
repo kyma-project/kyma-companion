@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Only reconfigure logging when NOT running tests
     # During tests, logging is already configured by utils.logging on import
     if "pytest" not in sys.modules:
-        # Reconfigure logging after uvicorn has applied its config
+        # Reconfigure logging after uvicorn has applied its config.
         reconfigure_logging()
     yield
 
