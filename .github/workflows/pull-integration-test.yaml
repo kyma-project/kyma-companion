@@ -1,5 +1,8 @@
 name: Integration Test
 
+## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
+## integration-tests in the create-release.yml workflow as well.
+
 on:
   pull_request_target:
     types: [labeled, opened, synchronize, reopened, ready_for_review]
@@ -7,34 +10,42 @@ on:
       - "main"
       - "release-**"
 
-## **IMPORTANT**: If any changes are made to how to run the integration tests. Make sure to update the steps for
-## integration-tests in the create-release.yml workflow as well.
 permissions: read-all
 
 jobs:
-  integration-test:
-    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
+  authorize:
     runs-on: ubuntu-latest
     steps:
+      - name: Check codeowner authorization
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+        with:
+          github-token: ${{ secrets.GIT_BOT_TOKEN }}
+
+  integration-test:
+    needs: authorize
+    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Extract Python version
-        id: python-version
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
         run: poetry install --with dev
@@ -43,5 +54,5 @@ jobs:
         env:
           LOG_LEVEL: "DEBUG"
         run: |
-          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > $GITHUB_WORKSPACE/config/config.json
+          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
           poetry run poe test-integration

@@ -1,12 +1,18 @@
 name: "Check codeowner authorization"
 description: "Fails if PR author is not a codeowner and PR has no codeowner approval. Trusted bots are always authorized."
 
+inputs:
+  github-token:
+    description: "Token with read:org scope for team membership checks (use GIT_BOT_TOKEN)."
+    required: true
+
 runs:
   using: "composite"
   steps:
     - name: Check authorization
       uses: actions/github-script@v8
       with:
+        github-token: ${{ inputs.github-token }}
         script: |
           const TRUSTED_BOTS = [
             'renovate[bot]',
@@ -46,13 +52,18 @@ runs:
           // Keep only the latest review state per reviewer (excludes comments).
           // This filters out stale approvals: if a reviewer approved and later
           // requested changes, only the CHANGES_REQUESTED state is kept.
+          // Approvals on older commits (stale due to new pushes) are excluded
+          // by requiring the review commit_id to match the current head SHA.
           const latestReviews = new Map();
           for (const review of allReviews) {
             if (review.state !== 'COMMENTED') {
               latestReviews.set(review.user.login, review);
             }
           }
-          const approvals = [...latestReviews.values()].filter(r => r.state === 'APPROVED');
+          const headSha = context.payload.pull_request.head.sha;
+          const approvals = [...latestReviews.values()].filter(
+            r => r.state === 'APPROVED' && r.commit_id === headSha
+          );
           for (const approval of approvals) {
             try {
               await github.rest.teams.getMembershipForUserInOrg({
