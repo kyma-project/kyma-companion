@@ -13,17 +13,7 @@ on:
 permissions: read-all
 
 jobs:
-  authorize:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check codeowner authorization
-        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
-        with:
-          github-token: ${{ secrets.GIT_BOT_TOKEN }}
-
   integration-test:
-    needs: authorize
-    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
     permissions:
       contents: read
