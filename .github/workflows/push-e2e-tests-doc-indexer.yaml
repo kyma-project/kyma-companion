@@ -1,0 +1,68 @@
+name: Push E2E Tests for Indexer
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+    paths-ignore:
+      - ".github/**"
+      - ".reuse/**"
+      - "LICENSES/**"
+      - "config/**"
+      - "data/**"
+      - "docs/**"
+      - "scripts/**"
+      - "tests/**"
+      - "**/*.md"
+      - "src/**"
+      - "doc_indexer/.vscode/**"
+      - "doc_indexer/tests/**"
+      - CODEOWNERS
+      - LICENSE
+      - "sec-scanners-config.yaml"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - "renovate.json"
+      - ".gitignore"
+      - external-images.yaml
+
+permissions: read-all
+
+jobs:
+  wait-for-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: Wait for build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ github.sha }}
+          REPOSITORY_FULL_NAME: "${{ github.repository }}"
+          GIT_CHECK_RUN_NAME: "Push Build Image for Indexer / build"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+
+  e2e-tests:
+    needs: wait-for-build
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
+    secrets: inherit
+    with:
+      IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ github.ref_name }}"
+      DOCS_TABLE_NAME: "kc_push_${{ github.sha }}_e2e"
