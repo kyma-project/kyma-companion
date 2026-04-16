@@ -1,5 +1,5 @@
 ---
-name: update-deps
+name: update-py-deps
 description: Update all Python dependencies across the kyma-companion Poetry subprojects, one at a time. For each dependency: update to latest (fall back to minor/patch on conflicts), run pre-commit-check, fix issues, commit.
 ---
 
@@ -14,6 +14,8 @@ You are performing a systematic dependency update across the kyma-companion Poet
 **Do not do any setup or discovery steps.** Do not check for config files, do not explore the repo structure, do not read pyproject.toml before starting. The subproject layout is known (see below). Start immediately by reading `pyproject.toml` in the root subproject to identify the first dependency to update.
 
 **Batch as much work as possible into a single Bash call.** Never split into multiple Bash calls what can be done in one.
+
+**One dependency = one commit.** Never batch multiple deps into a single commit. The only exception is when updating dep X forces a co-update of dep Y due to conflicts — in that case update both in one `poetry add` call and one commit, and name both in the commit message.
 
 For each dependency update, use a single Bash call like this pattern:
 
@@ -51,7 +53,6 @@ Each subproject has a `poe pre-commit-check` target (sort, lint, typecheck, form
 ## Rules
 
 - Update to latest version when possible; fall back to latest minor/patch only on conflicts
-- If updating dep X requires also updating dep Y, update both in one `poetry add` call and one commit
 - Auto-fixes from ruff (format/lint) are applied by `pre-commit-check` automatically — `git add -A` picks them up
 - Never skip a failing check — fix it before moving on
 - Use `poetry add` not `poetry update`
@@ -66,6 +67,6 @@ Each subproject has a `poe pre-commit-check` target (sort, lint, typecheck, form
 
 `deps: update <package> from v<old> to v<new>`
 
-For multiple packages in one commit: `deps: update <pkg1> from v<old> to v<new>, <pkg2> from v<old> to v<new>`
+For forced co-updates: `deps: update <pkg1> from v<old> to v<new>, <pkg2> from v<old> to v<new>`
 
 $ARGUMENTS
