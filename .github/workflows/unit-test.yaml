@@ -16,11 +16,11 @@ jobs:
       run_tests: ${{ steps.determine.outputs.run_tests }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@v47.0.5
         with:
           files_ignore: | # do not use quotes
             - docs/**
@@ -56,14 +56,14 @@ jobs:
     if: needs.check-if-test-is-needed.outputs.run_tests == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract Python version
         id: python-version
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 

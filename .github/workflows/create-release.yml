@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # fetch all the branches and tags.
           ref: "main"
@@ -89,7 +89,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
@@ -103,7 +103,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -135,7 +135,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
@@ -149,7 +149,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -189,7 +189,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
@@ -203,7 +203,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -234,7 +234,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
@@ -248,7 +248,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -284,7 +284,7 @@ jobs:
       sha: ${{ steps.get_sha.outputs.sha }}
     steps:
       - name: Checkout target branch from another repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.REPOSITORY_FULL_NAME }}
           ref: ${{ env.RELEASE_BRANCH }}
@@ -319,7 +319,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
@@ -374,7 +374,7 @@ jobs:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # checkout the release branch. This is the branch where the release tag will be created.
           fetch-depth: 0 # fetch all the branches and tags.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
@@ -395,12 +395,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # release scripts are used from main branch.
           ref: main
 
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
           cache: "pip"
@@ -436,7 +436,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: # draft release is linked to the release tag. So we run the release scripts from main branch.
           fetch-depth: 0 # fetch all the branches and tags.
           ref: main
@@ -460,7 +460,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
 
@@ -507,7 +507,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
 

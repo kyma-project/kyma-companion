@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.TEST_REF }}
           repository: ${{ inputs.TEST_REPO_FULLNAME }}
@@ -172,7 +172,7 @@ jobs:
           ./../../scripts/shell/extract-python-version.sh
 
       - name: Evaluation Tests Setup - Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
