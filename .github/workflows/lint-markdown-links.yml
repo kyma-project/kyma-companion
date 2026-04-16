@@ -1,6 +1,8 @@
 name: Lint Markdown Links
 run-name: ${{github.event.pull_request.title}}
 on: [ pull_request ]
+permissions:
+  contents: read
 jobs:
   markdown-link-check:
     runs-on: ubuntu-latest
