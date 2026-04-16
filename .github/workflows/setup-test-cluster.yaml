@@ -29,30 +29,32 @@ jobs:
           # setup Gardener kubeconfig.
           mkdir -p "${HOME}/.gardener"
           export GARDENER_KUBECONFIG="${HOME}/.gardener/kubeconfig"
-          echo ${GARDENER_KYMATUNAS} | base64 --decode > ${GARDENER_KUBECONFIG}
-          echo "GARDENER_KUBECONFIG=${GARDENER_KUBECONFIG}" >> $GITHUB_ENV
+          echo "${GARDENER_KYMATUNAS}" | base64 --decode > "${GARDENER_KUBECONFIG}"
+          echo "GARDENER_KUBECONFIG=${GARDENER_KUBECONFIG}" >> "$GITHUB_ENV"
 
       - name: Export Github env
         run: |
           # set cluster name and export it to Github env to access it later
           export CLUSTER_NAME="comp-tests-0"
-          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=${CLUSTER_NAME}" >> "$GITHUB_ENV"
 
       - name: Create kubeconfig request
+        id: create-kubeconfig
         env:
           GARDENER_PROJECT_NAME: ${{ vars.GARDENER_PROJECT_NAME }}
         run: |
           # create kubeconfig request, that creates a Kubeconfig, which is valid for one day
           kubectl create --kubeconfig="${GARDENER_KUBECONFIG}" \
              -f <(printf '{"spec":{"expirationSeconds":86400}}') \
-             --raw /apis/core.gardener.cloud/v1beta1/namespaces/garden-${GARDENER_PROJECT_NAME}/shoots/${CLUSTER_NAME}/adminkubeconfig | \
+             --raw "/apis/core.gardener.cloud/v1beta1/namespaces/garden-${GARDENER_PROJECT_NAME}/shoots/${CLUSTER_NAME}/adminkubeconfig" | \
              jq -r ".status.kubeconfig" | \
-             base64 -d > ${CLUSTER_NAME}_kubeconfig.yaml
-          
+             base64 -d > "${CLUSTER_NAME}_kubeconfig.yaml"
+
           # merge with the existing kubeconfig settings
-          mkdir -p ~/.kube
-          KUBECONFIG="~/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
-          mv merged_kubeconfig.yaml ~/.kube/config
+          mkdir -p "$HOME/.kube"
+          KUBECONFIG="$HOME/.kube/config:${CLUSTER_NAME}_kubeconfig.yaml" kubectl config view --flatten --merge > merged_kubeconfig.yaml
+          mv merged_kubeconfig.yaml "$HOME/.kube/config"
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_OUTPUT"
 
       - name: Display cluster information
         run: |
@@ -78,7 +80,7 @@ jobs:
         run: |
           mkdir -p bin
           curl -L "https://github.com/kyma-project/cli/releases/download/${KYMA_VERSION}/kyma_$(uname -s)_$(uname -m).tar.gz" | tar -zxvf - -C bin kyma && mv bin/kyma bin/kyma@v2
-          echo "::set-output name=version::$(bin/kyma@v2 version)"
+          echo "version=$(bin/kyma@v2 version)" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: Check Kyma CLI version
