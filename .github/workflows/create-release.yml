@@ -7,6 +7,8 @@ run-name: Create release ${{ inputs.name }}
 # Required repository variables:
 # - GIT_BOT_EMAIL
 # - GIT_BOT_NAME
+# - COMPANION_IMAGE_NAME
+# - IMAGE_NAME_INDEXER
 
 # This workflow creates a release for kyma-companion.
 # The steps are:
@@ -40,8 +42,6 @@ permissions: write-all
 # global env variables.
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
-  IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion" # without tag.
-  IMAGE_NAME_INDEXER: "europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer" # without tag.
   RELEASE_TAG: "${{ inputs.name }}"
 
 jobs:
@@ -271,6 +271,7 @@ jobs:
           DOCS_TABLE_NAME: "kc_pr_release_${{ inputs.name }}"
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
+          export CONFIG_PATH="$GITHUB_WORKSPACE/config/config.json"
           echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
           poetry run poe test-integration
 
@@ -299,7 +300,7 @@ jobs:
     needs: get-image-sha
     secrets: inherit
     with:
-      IMAGE_NAME: europe-docker.pkg.dev/kyma-project/prod/kyma-companion:${{ needs.get-image-sha.outputs.sha }}
+      IMAGE_NAME: ${{ vars.COMPANION_IMAGE_NAME }}:${{ needs.get-image-sha.outputs.sha }}
       TEST_REPO_FULLNAME: ${{ github.repository }}
       TEST_REF: ${{ needs.get-image-sha.outputs.sha }}
 
@@ -342,6 +343,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
         run: |
           prs=$(gh pr list -A "${{ vars.GIT_BOT_NAME }}" --state open --json headRefName | jq -r '.[] | .headRefName')
+          prs=$(gh pr list -A ${{ vars.GIT_BOT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
           if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
             echo "PR already exists, no need to create a new one"
             echo "PR_NUMBER=$(gh pr list --search "base:${{ env.RELEASE_BRANCH }} head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
@@ -430,9 +432,18 @@ jobs:
         run: |
           python ./scripts/python/wait-for-commit-check/run.py
 
+  run-e2e-tests-indexer:
+    name: Run indexer e2e tests
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
+    needs: wait-for-build
+    secrets: inherit
+    with:
+      IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ inputs.name }}"
+      DOCS_TABLE_NAME: "kc_release_${{ inputs.name }}_e2e"
+
   create-draft:
     name: Create draft release
-    needs: wait-for-build
+    needs: [wait-for-build, run-e2e-tests-indexer]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -477,6 +488,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
         run: |
           prs=$(gh pr list -A "${{ vars.GIT_BOT_NAME }}" --state open --json headRefName | jq -r '.[] | .headRefName')
+          prs=$(gh pr list -A ${{ vars.GIT_BOT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
           if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
             echo "PR already exists, no need to create a new one"
             echo "PR_NUMBER=$(gh pr list --search "base:main head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
@@ -516,7 +528,7 @@ jobs:
 
       - name: Check pre-requisites before publishing release for Indexer
         env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME_INDEXER }}
+          IMAGE_NAME: ${{ vars.IMAGE_NAME_INDEXER }}
         run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
 
   upload-release-log:
