@@ -13,7 +13,7 @@
     "review": {
       "auto_generate_review": true,
       "auto_run_on_draft_pr": true,
-      "use_custom_review_focus": false
+      "use_custom_review_focus": true
     }
   }
 }
