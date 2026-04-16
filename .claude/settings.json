@@ -5,13 +5,12 @@
       "Bash(poetry show*)",
       "Bash(poetry lock*)",
       "Bash(poetry run poe*)",
-      "Bash(git add*)",
-      "Bash(git commit*)",
+      "Bash(git add -A)",
+      "Bash(git commit -m *)",
       "Bash(git log*)",
       "Bash(git diff*)",
       "Bash(git status*)",
       "Bash(ls*)",
-      "Bash(cat*)",
       "Bash(find*)"
     ]
   }

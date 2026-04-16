@@ -21,9 +21,9 @@ For each dependency update, use a single Bash call like this pattern:
 
 ```bash
 cd /path/to/subproject && \
-  OLD=$(poetry show <pkg> --no-ansi | awk '/^version/{print $3}') && \
+  OLD=$(poetry show <pkg> --no-ansi | grep "^ *version" | awk '{print $NF}') && \
   poetry add "<pkg>@latest" && \
-  NEW=$(poetry show <pkg> --no-ansi | awk '/^version/{print $3}') && \
+  NEW=$(poetry show <pkg> --no-ansi | grep "^ *version" | awk '{print $NF}') && \
   poetry run poe pre-commit-check && \
   git add -A && \
   git commit -m "deps: update <pkg> from v${OLD} to v${NEW}"
@@ -68,5 +68,3 @@ Each subproject has a `poe pre-commit-check` target (sort, lint, typecheck, form
 `deps: update <package> from v<old> to v<new>`
 
 For forced co-updates: `deps: update <pkg1> from v<old> to v<new>, <pkg2> from v<old> to v<new>`
-
-$ARGUMENTS
