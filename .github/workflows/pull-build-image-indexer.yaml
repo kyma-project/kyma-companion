@@ -5,27 +5,6 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
-    paths-ignore:
-      - ".github/**"
-      - ".reuse/**"
-      - "LICENSES/**"
-      - "config/**"
-      - "data/**"
-      - "docs/**"
-      - "scripts/**"
-      - "tests/**"
-      - "**/*.md"
-      - "src/**"
-      - "doc_indexer/.vscode/**"
-      - "doc_indexer/tests/**"
-      - CODEOWNERS
-      - LICENSE
-      - "sec-scanners-config.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "renovate.json"
-      - ".gitignore"
-      - external-images.yaml
 
 permissions: read-all
 
