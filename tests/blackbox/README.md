@@ -21,3 +21,4 @@ can be more or less complex, this boolean value is multiplied by a complexity fa
 evaluated multiple times so the idempotency performance of Kyma Companion can be calculated.
 
 Refer to the [Evaluation](./evaluation.md) documentation for more details.
+
