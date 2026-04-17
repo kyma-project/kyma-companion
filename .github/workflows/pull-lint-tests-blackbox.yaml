@@ -9,6 +9,9 @@ on:
     paths:
       - "tests/blackbox/**"
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
