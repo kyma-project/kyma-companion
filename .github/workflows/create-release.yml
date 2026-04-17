@@ -524,6 +524,8 @@ jobs:
           ref: main
 
       - name: Check pre-requisites before publishing release for Companion
+        env:
+          IMAGE_NAME: ${{ vars.COMPANION_IMAGE_NAME }}
         run: ./scripts/shell/check_publish_release_prerequisites.sh "${RELEASE_TAG}"
 
       - name: Check pre-requisites before publishing release for Indexer
