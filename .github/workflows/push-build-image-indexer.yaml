@@ -27,7 +27,7 @@ jobs:
             echo "${{ github.ref_name}}"
             echo EOF
           } >> "$GITHUB_OUTPUT"
-  build:
+  build-indexer:
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:

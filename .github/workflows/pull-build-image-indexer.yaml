@@ -17,7 +17,7 @@ jobs:
         with:
           github-token: ${{ secrets.GIT_BOT_TOKEN }}
 
-  build:
+  build-indexer:
     needs: authorize
     permissions:
       id-token: write # This is required for requesting the JWT token
