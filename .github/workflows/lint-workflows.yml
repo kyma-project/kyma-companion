@@ -1,5 +1,6 @@
 name: Lint GitHub Actions workflows
 
+# Runs actionlint against all workflow files on PRs that touch .github/workflows/.
 on:
   pull_request:
     branches:
