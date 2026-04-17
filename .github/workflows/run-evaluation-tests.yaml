@@ -12,6 +12,9 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
   evaluation:
     uses: kyma-project/kyma-companion/.github/workflows/evaluation-test-reusable.yaml@main
