@@ -2,6 +2,9 @@ name: "Setup Gardener Test Cluster"
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+
 env:
   KYMA_VERSION: "2.20.5" # Required Kyma version.
 
