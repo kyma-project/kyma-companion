@@ -91,4 +91,5 @@ test-integration-local = "pytest -n auto -v tests/integration -x --reruns=6 --re
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
 sort = "poetry sort"
-pre-commit-check = ["sort", "code-fix", "codecheck", "test-local"]
+lint-workflows = "bash scripts/shell/lint-workflows.sh"
+pre-commit-check = ["sort", "code-fix", "codecheck", "test-local", "lint-workflows"]
