@@ -98,6 +98,9 @@ def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
     print(f"Fetching check runs from {url}", flush=True)
     all_check_runs = []
     next_url = url
+    # GitHub's default page size is 30; repos with many parallel jobs can exceed that,
+    # causing the target check run to be silently missed. Fetch 100 per page (API max)
+    # and follow Link headers until all pages are consumed.
     params = {"per_page": 100}
     while next_url:
         response = requests.get(next_url, headers=req_headers, params=params)
@@ -106,7 +109,7 @@ def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
         data = response.json()
         all_check_runs.extend(data.get("check_runs", []))
         next_url = response.links.get("next", {}).get("url")
-        params = {}  # params are already encoded in the next URL
+        params = {}  # next URL already contains pagination params
 
     return {"check_runs": all_check_runs}
 
