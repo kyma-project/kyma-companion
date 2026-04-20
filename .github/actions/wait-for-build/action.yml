@@ -40,10 +40,10 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
-        GIT_REF: ${{ inputs.git-ref }}
-        REPOSITORY_FULL_NAME: ${{ github.repository }}
-        GIT_CHECK_RUN_NAME: ${{ inputs.check-run-name }}
-        INTERVAL: ${{ inputs.interval }}
-        TIMEOUT: ${{ inputs.timeout }}
+        GIT_REF: "${{ inputs.git-ref }}"
+        REPOSITORY_FULL_NAME: "${{ github.repository }}"
+        GIT_CHECK_RUN_NAME: "${{ inputs.check-run-name }}"
+        INTERVAL: "${{ inputs.interval }}"
+        TIMEOUT: "${{ inputs.timeout }}"
       run: |
         python ./scripts/python/wait-for-commit-check/run.py
