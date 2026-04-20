@@ -86,7 +86,7 @@ def print_inputs(inputs: dict) -> None:
 
 
 def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
-    """Fetches the check runs from GitHub."""
+    """Fetches the check runs from GitHub (all pages)."""
     # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#list-check-runs-for-a-git-reference
     url = f"https://api.github.com/repos/{repo}/commits/{git_ref}/check-runs"
     req_headers = {
@@ -96,11 +96,19 @@ def fetch_check_runs(repo: str, git_ref: str, token: str) -> dict:
     }
 
     print(f"Fetching check runs from {url}", flush=True)
-    response = requests.get(url, headers=req_headers)
+    all_check_runs = []
+    next_url = url
+    params = {"per_page": 100}
+    while next_url:
+        response = requests.get(next_url, headers=req_headers, params=params)
+        if response.status_code != HTTP_OK:
+            raise Exception(f"API call failed. Status code: {response.status_code}, {response.text}")
+        data = response.json()
+        all_check_runs.extend(data.get("check_runs", []))
+        next_url = response.links.get("next", {}).get("url")
+        params = {}  # params are already encoded in the next URL
 
-    if response.status_code != HTTP_OK:
-        raise Exception(f"API call failed. Status code: {response.status_code}, {response.text}")
-    return response.json()
+    return {"check_runs": all_check_runs}
 
 
 def get_latest_check_run(check_run_name: str, check_runs: dict) -> dict | None:
