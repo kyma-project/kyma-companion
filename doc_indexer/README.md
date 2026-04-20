@@ -1,6 +1,7 @@
 # Kyma Documentation Indexer
 
 Kyma Documentation Indexer
+<!-- test commit to verify indexer workflow path filters -->
 This project implements a documentation indexing system for Kyma that stores the indexed content in SAP HANA Cloud DB. 
 The system processes Markdown files, splits them into meaningful chunks based on headers, and creates searchable vector embeddings.
 
