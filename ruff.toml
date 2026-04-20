@@ -69,10 +69,12 @@ select = [
   "ANN205", # Missing return type annotation for staticmethod
   "ANN206", # Missing return type annotation for classmethod
   "E501",   # Ignore line too long errors
+  "PLR2004", # Magic values in assertions are acceptable in tests
 ]
 # ignore line too long for prompt files
 "**/prompts.py" = ["E501"]
 "**/prompt.py" = ["E501"]
+"**/new_prompts.py" = ["E501"]
 
 
 extend-safe-fixes = ["F601"]

@@ -246,7 +246,7 @@ class K8sClient:
     ca_temp_filename: str = ""
     client_cert_temp_filename: str = ""
     client_key_temp_filename: str = ""
-    _dynamic_client: dynamic.DynamicClient | None
+    _dynamic_client: dynamic.DynamicClient | None = None
     data_sanitizer: IDataSanitizer | None
     api_client: Any
 

@@ -1,5 +1,4 @@
-import json
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from kubernetes.client import ApiException
@@ -212,7 +211,8 @@ class TestConversation:
 
             # When:
             result = [
-                chunk async for chunk in conversation_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
+                chunk
+                async for chunk in conversation_service.handle_request(CONVERSATION_ID, TEST_MESSAGE, mock_k8s_client)
             ]
 
         # Then:

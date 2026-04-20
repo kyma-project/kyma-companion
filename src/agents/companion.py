@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import time
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -14,9 +12,9 @@ from agents.common.constants import ERROR_RESPONSE
 from agents.common.data import Message
 from agents.new_prompts import build_system_prompt
 from agents.tools import ToolRegistry
-from services.conversation_store import ConversationStore, IConversationStore
+from services.conversation_store import IConversationStore
 from services.k8s import IK8sClient
-from services.model_adapter import ChatResponse, IModelAdapter, UsageInfo
+from services.model_adapter import IModelAdapter, UsageInfo
 from services.response_converter import ResponseConverter
 from utils.logging import get_logger
 from utils.streaming import (
@@ -63,6 +61,7 @@ class CompanionAgent:
         conversation_id: str,
         message: Message,
         k8s_client: IK8sClient,
+        history: list[dict] | None = None,
     ) -> AsyncGenerator[bytes]:
         """Handle a single user message, streaming SSE events.
 
@@ -70,12 +69,13 @@ class CompanionAgent:
             conversation_id: Unique conversation thread ID.
             message: User message with resource context.
             k8s_client: K8s client for the current request.
+            history: Pre-loaded conversation history (skips Redis read if provided).
 
         Yields:
             SSE event bytes.
         """
         try:
-            async for chunk in self._run(conversation_id, message, k8s_client):
+            async for chunk in self._run(conversation_id, message, k8s_client, history):
                 yield chunk
         except Exception:
             logger.exception("Error in CompanionAgent.handle_message")
@@ -86,10 +86,13 @@ class CompanionAgent:
         conversation_id: str,
         message: Message,
         k8s_client: IK8sClient,
+        preloaded_history: list[dict] | None = None,
     ) -> AsyncGenerator[bytes]:
         """Core agent loop."""
-        # 1. Load conversation history
-        history = await self._store.load_messages(conversation_id)
+        # 1. Load conversation history (skip if already loaded by caller)
+        history = (
+            preloaded_history if preloaded_history is not None else await self._store.load_messages(conversation_id)
+        )
 
         # 2. Build system prompt — split into static + dynamic for prompt caching
         static_prompt, resource_context = build_system_prompt(
@@ -124,7 +127,7 @@ class CompanionAgent:
         tool_calls_made: list[dict] = []
         total_usage = UsageInfo()
 
-        for round_num in range(MAX_TOOL_ROUNDS):
+        for _ in range(MAX_TOOL_ROUNDS):
             # Call LLM with tools
             response = await self._adapter.generate_with_tools(messages, tool_schemas)
 
@@ -172,13 +175,12 @@ class CompanionAgent:
             messages.append(assistant_msg)
 
             # Execute all tool calls concurrently
-            results = await asyncio.gather(*[
-                self._tools.execute_tool(tc.name, tc.arguments, k8s_client)
-                for tc in response.tool_calls
-            ])
+            results = await asyncio.gather(
+                *[self._tools.execute_tool(tc.name, tc.arguments, k8s_client) for tc in response.tool_calls]
+            )
 
             # Append results to messages in order (must match tool_call order)
-            for tc, result in zip(response.tool_calls, results):
+            for tc, result in zip(response.tool_calls, results, strict=True):
                 messages.append(
                     {
                         "role": "tool",
@@ -196,9 +198,7 @@ class CompanionAgent:
                 )
 
         # If we exhausted all rounds, return what we have
-        logger.warning(
-            f"CompanionAgent exhausted {MAX_TOOL_ROUNDS} tool rounds for conversation {conversation_id}"
-        )
+        logger.warning(f"CompanionAgent exhausted {MAX_TOOL_ROUNDS} tool rounds for conversation {conversation_id}")
         # Make a final call without tools to get the response
         response = await self._adapter.generate(messages)
         final_content = response.content or "I was unable to complete the analysis within the allowed steps."
@@ -223,10 +223,7 @@ class CompanionAgent:
         if not history:
             return history
 
-        total_tokens = sum(
-            len(self._encoding.encode(str(msg.get("content", ""))))
-            for msg in history
-        )
+        total_tokens = sum(len(self._encoding.encode(str(msg.get("content", "")))) for msg in history)
 
         if total_tokens <= HISTORY_TOKEN_LIMIT:
             return history
@@ -235,17 +232,13 @@ class CompanionAgent:
         truncated = list(history)
         while truncated and total_tokens > HISTORY_TOKEN_LIMIT:
             removed = truncated.pop(0)
-            total_tokens -= len(
-                self._encoding.encode(str(removed.get("content", "")))
-            )
+            total_tokens -= len(self._encoding.encode(str(removed.get("content", ""))))
             # If we removed an assistant message with tool_calls,
             # also remove the following tool messages
             if removed.get("role") == "assistant" and removed.get("tool_calls"):
                 while truncated and truncated[0].get("role") == "tool":
                     tool_msg = truncated.pop(0)
-                    total_tokens -= len(
-                        self._encoding.encode(str(tool_msg.get("content", "")))
-                    )
+                    total_tokens -= len(self._encoding.encode(str(tool_msg.get("content", ""))))
 
         # Ensure we don't start with a tool message
         while truncated and truncated[0].get("role") == "tool":

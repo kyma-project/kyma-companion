@@ -95,7 +95,7 @@ class TestDetectPII:
         email_match = [r for r in results if r["type"] == REDACTED_EMAIL][0]
         assert email_match["start"] == 7
         assert email_match["end"] == 20
-        assert text[email_match["start"]:email_match["end"]] == "user@test.com"
+        assert text[email_match["start"] : email_match["end"]] == "user@test.com"
 
     def test_detect_empty_string(self):
         assert detect_pii("") == []

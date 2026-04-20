@@ -87,9 +87,7 @@ class TestToolRegistryDispatch:
     @pytest.mark.asyncio
     async def test_dispatch_k8s_query(self, registry, mock_k8s_client):
         """k8s_query_tool dispatches to execute_get_api_request."""
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            return_value={"kind": "Pod"}
-        )
+        mock_k8s_client.execute_get_api_request = AsyncMock(return_value={"kind": "Pod"})
         result = await registry.execute_tool(
             "k8s_query_tool",
             {"uri": "/api/v1/namespaces/default/pods"},
@@ -97,16 +95,12 @@ class TestToolRegistryDispatch:
         )
         parsed = json.loads(result)
         assert parsed["kind"] == "Pod"
-        mock_k8s_client.execute_get_api_request.assert_called_once_with(
-            "/api/v1/namespaces/default/pods"
-        )
+        mock_k8s_client.execute_get_api_request.assert_called_once_with("/api/v1/namespaces/default/pods")
 
     @pytest.mark.asyncio
     async def test_dispatch_kyma_query(self, registry, mock_k8s_client):
         """kyma_query_tool dispatches to execute_get_api_request."""
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            return_value={"kind": "Function"}
-        )
+        mock_k8s_client.execute_get_api_request = AsyncMock(return_value={"kind": "Function"})
         result = await registry.execute_tool(
             "kyma_query_tool",
             {"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
@@ -118,9 +112,7 @@ class TestToolRegistryDispatch:
     @pytest.mark.asyncio
     async def test_dispatch_fetch_resource_version(self, registry, mock_k8s_client):
         """fetch_kyma_resource_version dispatches to get_resource_version."""
-        mock_k8s_client.get_resource_version = AsyncMock(
-            return_value="serverless.kyma-project.io/v1alpha2"
-        )
+        mock_k8s_client.get_resource_version = AsyncMock(return_value="serverless.kyma-project.io/v1alpha2")
         result = await registry.execute_tool(
             "fetch_kyma_resource_version",
             {"resource_kind": "Function"},
@@ -138,9 +130,7 @@ class TestToolRegistryDispatch:
         )
         parsed = json.loads(result)
         assert "logs" in parsed
-        mock_k8s_client.fetch_pod_logs.assert_called_once_with(
-            "my-pod", "default", "app", POD_LOGS_TAIL_LINES_LIMIT
-        )
+        mock_k8s_client.fetch_pod_logs.assert_called_once_with("my-pod", "default", "app", POD_LOGS_TAIL_LINES_LIMIT)
 
     @pytest.mark.asyncio
     async def test_dispatch_k8s_overview_query(self, registry, mock_k8s_client):
@@ -164,9 +154,7 @@ class TestToolRegistryErrorHandling:
     @pytest.mark.asyncio
     async def test_unknown_tool_returns_error(self, registry, mock_k8s_client):
         """Unknown tool name returns JSON error."""
-        result = await registry.execute_tool(
-            "nonexistent_tool", {}, mock_k8s_client
-        )
+        result = await registry.execute_tool("nonexistent_tool", {}, mock_k8s_client)
         parsed = json.loads(result)
         assert "error" in parsed
         assert "Unknown tool" in parsed["error"]
@@ -175,13 +163,9 @@ class TestToolRegistryErrorHandling:
     async def test_k8s_client_error_returned_as_json(self, registry, mock_k8s_client):
         """K8sClientError is caught and returned as JSON."""
         mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=K8sClientError(
-                message="Not found", status_code=404, uri="/api/v1/pods"
-            )
+            side_effect=K8sClientError(message="Not found", status_code=404, uri="/api/v1/pods")
         )
-        result = await registry.execute_tool(
-            "k8s_query_tool", {"uri": "/api/v1/pods"}, mock_k8s_client
-        )
+        result = await registry.execute_tool("k8s_query_tool", {"uri": "/api/v1/pods"}, mock_k8s_client)
         parsed = json.loads(result)
         assert "error" in parsed
 
@@ -207,12 +191,8 @@ class TestToolRegistryErrorHandling:
     @pytest.mark.asyncio
     async def test_generic_exception_returned_as_json(self, registry, mock_k8s_client):
         """Generic exceptions are caught and returned as JSON error."""
-        mock_k8s_client.execute_get_api_request = AsyncMock(
-            side_effect=RuntimeError("unexpected")
-        )
-        result = await registry.execute_tool(
-            "k8s_query_tool", {"uri": "/api/v1/pods"}, mock_k8s_client
-        )
+        mock_k8s_client.execute_get_api_request = AsyncMock(side_effect=RuntimeError("unexpected"))
+        result = await registry.execute_tool("k8s_query_tool", {"uri": "/api/v1/pods"}, mock_k8s_client)
         parsed = json.loads(result)
         assert "error" in parsed
 
@@ -223,9 +203,7 @@ class TestToolRegistrySearchKymaDoc:
     @pytest.mark.asyncio
     async def test_search_without_rag_system(self, registry, mock_k8s_client):
         """Without RAG system, returns unavailable message."""
-        result = await registry.execute_tool(
-            "search_kyma_doc", {"query": "what is function"}, mock_k8s_client
-        )
+        result = await registry.execute_tool("search_kyma_doc", {"query": "what is function"}, mock_k8s_client)
         assert "not available" in result.lower()
 
     @pytest.mark.asyncio
@@ -238,9 +216,7 @@ class TestToolRegistrySearchKymaDoc:
 
         registry = ToolRegistry(rag_system=mock_rag)
         with patch("rag.system.Query", autospec=True):
-            result = await registry.execute_tool(
-                "search_kyma_doc", {"query": "what is function"}, mock_k8s_client
-            )
+            result = await registry.execute_tool("search_kyma_doc", {"query": "what is function"}, mock_k8s_client)
         assert "serverless functions" in result
 
     @pytest.mark.asyncio
@@ -251,7 +227,5 @@ class TestToolRegistrySearchKymaDoc:
 
         registry = ToolRegistry(rag_system=mock_rag)
         with patch("rag.system.Query", autospec=True):
-            result = await registry.execute_tool(
-                "search_kyma_doc", {"query": "nonexistent topic"}, mock_k8s_client
-            )
+            result = await registry.execute_tool("search_kyma_doc", {"query": "nonexistent topic"}, mock_k8s_client)
         assert "No relevant documentation found" in result

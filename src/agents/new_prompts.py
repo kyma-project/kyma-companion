@@ -84,10 +84,7 @@ def build_system_prompt(
         context_parts.append(f"- Related To: {resource_related_to}")
 
     if context_parts:
-        resource_context = (
-            "The user is currently viewing the following resource:\n"
-            + "\n".join(context_parts)
-        )
+        resource_context = "The user is currently viewing the following resource:\n" + "\n".join(context_parts)
     else:
         resource_context = "No specific resource context is provided."
 

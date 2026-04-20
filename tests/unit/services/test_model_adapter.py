@@ -1,6 +1,6 @@
 """Tests for model adapter interface, tool call normalization, and helpers."""
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -80,15 +80,17 @@ class TestDictsToLangchainMessages:
         assert msgs[0].content == "Hi"
 
     def test_assistant_message_with_tool_calls(self):
-        msgs = _dicts_to_langchain_messages([
-            {
-                "role": "assistant",
-                "content": "",
-                "tool_calls": [
-                    {"id": "call_1", "name": "my_tool", "arguments": {"key": "val"}},
-                ],
-            }
-        ])
+        msgs = _dicts_to_langchain_messages(
+            [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {"id": "call_1", "name": "my_tool", "arguments": {"key": "val"}},
+                    ],
+                }
+            ]
+        )
         assert len(msgs) == 1
         ai_msg = msgs[0]
         assert len(ai_msg.tool_calls) == 1
@@ -96,19 +98,23 @@ class TestDictsToLangchainMessages:
         assert ai_msg.tool_calls[0]["args"] == {"key": "val"}
 
     def test_tool_message(self):
-        msgs = _dicts_to_langchain_messages([
-            {"role": "tool", "content": "result", "tool_call_id": "call_1"},
-        ])
+        msgs = _dicts_to_langchain_messages(
+            [
+                {"role": "tool", "content": "result", "tool_call_id": "call_1"},
+            ]
+        )
         assert len(msgs) == 1
         assert msgs[0].content == "result"
 
     def test_mixed_messages(self):
-        msgs = _dicts_to_langchain_messages([
-            {"role": "system", "content": "sys"},
-            {"role": "user", "content": "usr"},
-            {"role": "assistant", "content": "ast"},
-            {"role": "tool", "content": "res", "tool_call_id": "c1"},
-        ])
+        msgs = _dicts_to_langchain_messages(
+            [
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": "usr"},
+                {"role": "assistant", "content": "ast"},
+                {"role": "tool", "content": "res", "tool_call_id": "c1"},
+            ]
+        )
         assert len(msgs) == 4
 
     def test_missing_content_defaults_to_empty(self):
@@ -308,32 +314,40 @@ class TestAnthropicAdapter:
 
     def test_extract_content_list_with_text_block(self):
         adapter = self._make_adapter()
-        response = AIMessage(content=[
-            {"type": "text", "text": "Here is my analysis."},
-        ])
+        response = AIMessage(
+            content=[
+                {"type": "text", "text": "Here is my analysis."},
+            ]
+        )
         assert adapter._extract_content(response) == "Here is my analysis."
 
     def test_extract_content_list_with_text_and_tool_use(self):
         adapter = self._make_adapter()
-        response = AIMessage(content=[
-            {"type": "text", "text": "Let me check that."},
-            {"type": "tool_use", "name": "k8s_query_tool", "input": {"uri": "/api/v1/pods"}},
-        ])
+        response = AIMessage(
+            content=[
+                {"type": "text", "text": "Let me check that."},
+                {"type": "tool_use", "name": "k8s_query_tool", "input": {"uri": "/api/v1/pods"}},
+            ]
+        )
         assert adapter._extract_content(response) == "Let me check that."
 
     def test_extract_content_list_with_only_tool_use(self):
         adapter = self._make_adapter()
-        response = AIMessage(content=[
-            {"type": "tool_use", "name": "k8s_query_tool", "input": {"uri": "/api/v1/pods"}},
-        ])
+        response = AIMessage(
+            content=[
+                {"type": "tool_use", "name": "k8s_query_tool", "input": {"uri": "/api/v1/pods"}},
+            ]
+        )
         assert adapter._extract_content(response) is None
 
     def test_extract_content_list_multiple_text_blocks(self):
         adapter = self._make_adapter()
-        response = AIMessage(content=[
-            {"type": "text", "text": "First part."},
-            {"type": "text", "text": "Second part."},
-        ])
+        response = AIMessage(
+            content=[
+                {"type": "text", "text": "First part."},
+                {"type": "text", "text": "Second part."},
+            ]
+        )
         assert adapter._extract_content(response) == "First part.\nSecond part."
 
     @pytest.mark.asyncio

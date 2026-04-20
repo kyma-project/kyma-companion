@@ -6,12 +6,16 @@ from http import HTTPStatus
 from typing import Protocol, cast
 
 from kubernetes.client import ApiException
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langfuse.langchain import CallbackHandler
 
 from agents.common.constants import ERROR_RESPONSE
 from agents.common.data import Message
 from agents.companion import CompanionAgent
+from agents.hooks.category import CategoryHook
+from agents.hooks.chain import HookChain
+from agents.hooks.security import SecurityHook
 from agents.tools import ToolRegistry
 from followup_questions.followup_questions import (
     FollowUpQuestionsHandler,
@@ -39,7 +43,7 @@ from utils.settings import (
     TOKEN_USAGE_RESET_INTERVAL,
 )
 from utils.singleton_meta import SingletonMeta
-from utils.streaming import make_error_event
+from utils.streaming import make_error_event, make_gatekeeper_event
 
 logger = get_logger(__name__)
 
@@ -122,9 +126,17 @@ class ConversationService(metaclass=SingletonMeta):
         # Set up tool registry
         self._tool_registry = ToolRegistry(rag_system=rag_system)
 
-    def _build_callbacks(self, cluster_id: str, conversation_id: str, user_id: str) -> list:
+        # Set up pre-hook chain (security + category checks before CompanionAgent)
+        self._hook_chain = HookChain(
+            [
+                SecurityHook(model_mini),
+                CategoryHook(model_mini),
+            ]
+        )
+
+    def _build_callbacks(self, cluster_id: str, conversation_id: str, user_id: str) -> list[BaseCallbackHandler]:
         """Build LangChain callbacks for a request (Langfuse tracing + usage tracking)."""
-        callbacks = []
+        callbacks: list[BaseCallbackHandler] = []
 
         # Langfuse tracing callback — one trace per conversation turn
         if self._langfuse.enabled:
@@ -208,8 +220,17 @@ class ConversationService(metaclass=SingletonMeta):
         k8s_client: IK8sClient,
         cluster_id: str = "",
     ) -> AsyncGenerator[bytes]:
-        """Handle a request by delegating to CompanionAgent."""
+        """Handle a request by running the hook chain then delegating to CompanionAgent."""
         try:
+            # Load history early so hooks can inspect it and CompanionAgent reuses it
+            history = await self._conversation_store.load_messages(conversation_id)
+
+            # Run pre-hook chain; short-circuit if any hook blocks the request
+            hook_result = await self._hook_chain.run(message.query, history)
+            if hook_result.blocked:
+                yield make_gatekeeper_event(hook_result.direct_response)
+                return
+
             # Build per-request callbacks for Langfuse tracing and usage tracking
             callbacks = self._build_callbacks(
                 cluster_id=cluster_id,
@@ -237,7 +258,7 @@ class ConversationService(metaclass=SingletonMeta):
                 response_converter=response_converter,
             )
 
-            async for chunk in agent.handle_message(conversation_id, message, k8s_client):
+            async for chunk in agent.handle_message(conversation_id, message, k8s_client, history=history):
                 yield chunk
         except Exception:
             logger.exception("Error during streaming")

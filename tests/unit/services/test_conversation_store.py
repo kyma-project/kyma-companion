@@ -1,7 +1,5 @@
 """Tests for Redis-backed conversation message store."""
 
-import json
-
 import fakeredis.aioredis
 import pytest
 

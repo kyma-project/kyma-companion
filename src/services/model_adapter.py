@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -51,9 +50,7 @@ class IModelAdapter(Protocol):
         """Generate a response without tools."""
         ...
 
-    async def generate_with_tools(
-        self, messages: list[dict], tools: list[dict]
-    ) -> ChatResponse:
+    async def generate_with_tools(self, messages: list[dict], tools: list[dict]) -> ChatResponse:
         """Generate a response with tool-calling capability."""
         ...
 
@@ -81,9 +78,7 @@ def _dicts_to_langchain_messages(
                     }
                     for tc in tool_calls
                 ]
-                lc_messages.append(
-                    AIMessage(content=content or "", tool_calls=lc_tool_calls)
-                )
+                lc_messages.append(AIMessage(content=content or "", tool_calls=lc_tool_calls))
             else:
                 lc_messages.append(AIMessage(content=content or ""))
         elif role == "tool":
@@ -115,8 +110,7 @@ def _extract_usage_from_response(response: AIMessage) -> UsageInfo | None:
 
     return UsageInfo(
         input_tokens=usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0),
-        output_tokens=usage.get("completion_tokens", 0)
-        or usage.get("output_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0) or usage.get("output_tokens", 0),
         total_tokens=usage.get("total_tokens", 0),
     )
 
@@ -127,7 +121,7 @@ def _normalize_tool_calls(response: AIMessage) -> list[ToolCall]:
         return []
     return [
         ToolCall(
-            id=tc.get("id", ""),
+            id=tc.get("id") or "",
             name=tc.get("name", ""),
             arguments=tc.get("args", {}),
         )
@@ -139,7 +133,7 @@ class OpenAIAdapter:
     """Wraps ChatOpenAI from SAP AI SDK."""
 
     def __init__(self, model: IModel, callbacks: list | None = None, metadata: dict | None = None):
-        self._llm: ChatOpenAI = model.llm  # type: ignore[assignment]
+        self._llm: ChatOpenAI = model.llm
         self._callbacks = callbacks or []
         self._metadata = metadata or {}
 
@@ -151,24 +145,20 @@ class OpenAIAdapter:
         return config
 
     async def generate(self, messages: list[dict]) -> ChatResponse:
+        """Generate a response without tools."""
         lc_messages = _dicts_to_langchain_messages(messages)
-        response: AIMessage = await self._llm.ainvoke(
-            lc_messages, config=self._make_config()
-        )
+        response: AIMessage = await self._llm.ainvoke(lc_messages, config=self._make_config())
         return ChatResponse(
             content=str(response.content) if response.content else None,
             tool_calls=_normalize_tool_calls(response),
             usage=_extract_usage_from_response(response),
         )
 
-    async def generate_with_tools(
-        self, messages: list[dict], tools: list[dict]
-    ) -> ChatResponse:
+    async def generate_with_tools(self, messages: list[dict], tools: list[dict]) -> ChatResponse:
+        """Generate a response with tool-calling capability."""
         llm_with_tools = self._llm.bind_tools(tools)
         lc_messages = _dicts_to_langchain_messages(messages)
-        response: AIMessage = await llm_with_tools.ainvoke(
-            lc_messages, config=self._make_config()
-        )
+        response: AIMessage = await llm_with_tools.ainvoke(lc_messages, config=self._make_config())
         return ChatResponse(
             content=str(response.content) if response.content else None,
             tool_calls=_normalize_tool_calls(response),
@@ -180,13 +170,11 @@ class GeminiAdapter:
     """Wraps GoogleGenAIClient from SAP AI SDK."""
 
     def __init__(self, model: IModel, callbacks: list | None = None):
-        self._client: GoogleGenAIClient = model.llm  # type: ignore[assignment]
+        self._client: GoogleGenAIClient = model.llm
         self._model_name = model.name
         self._callbacks = callbacks or []
 
-    def _convert_messages_for_gemini(
-        self, messages: list[dict]
-    ) -> tuple[str | None, list[dict]]:
+    def _convert_messages_for_gemini(self, messages: list[dict]) -> tuple[str | None, list[dict]]:
         """Convert messages to Gemini format, extracting system instruction."""
         system_instruction = None
         contents = []
@@ -254,9 +242,7 @@ class GeminiAdapter:
 
         if hasattr(response, "candidates") and response.candidates:
             candidate = response.candidates[0]
-            if hasattr(candidate, "content") and hasattr(
-                candidate.content, "parts"
-            ):
+            if hasattr(candidate, "content") and hasattr(candidate.content, "parts"):
                 for part in candidate.content.parts:
                     if hasattr(part, "text") and part.text:
                         content = part.text
@@ -282,6 +268,7 @@ class GeminiAdapter:
         return ChatResponse(content=content, tool_calls=tool_calls, usage=usage)
 
     async def generate(self, messages: list[dict]) -> ChatResponse:
+        """Generate a response without tools."""
         system_instruction, contents = self._convert_messages_for_gemini(messages)
         config: dict[str, Any] = {}
         if system_instruction:
@@ -294,9 +281,8 @@ class GeminiAdapter:
         )
         return self._parse_gemini_response(response)
 
-    async def generate_with_tools(
-        self, messages: list[dict], tools: list[dict]
-    ) -> ChatResponse:
+    async def generate_with_tools(self, messages: list[dict], tools: list[dict]) -> ChatResponse:
+        """Generate a response with tool-calling capability."""
         system_instruction, contents = self._convert_messages_for_gemini(messages)
         gemini_tools = self._tools_to_gemini_format(tools)
         config: dict[str, Any] = {"tools": gemini_tools}
@@ -351,24 +337,20 @@ class AnthropicAdapter:
         return str(raw) if raw else None
 
     async def generate(self, messages: list[dict]) -> ChatResponse:
+        """Generate a response without tools."""
         lc_messages = _dicts_to_langchain_messages(messages)
-        response: AIMessage = await self._llm.ainvoke(
-            lc_messages, config=self._make_config()
-        )
+        response: AIMessage = await self._llm.ainvoke(lc_messages, config=self._make_config())
         return ChatResponse(
             content=self._extract_content(response),
             tool_calls=_normalize_tool_calls(response),
             usage=_extract_usage_from_response(response),
         )
 
-    async def generate_with_tools(
-        self, messages: list[dict], tools: list[dict]
-    ) -> ChatResponse:
+    async def generate_with_tools(self, messages: list[dict], tools: list[dict]) -> ChatResponse:
+        """Generate a response with tool-calling capability."""
         llm_with_tools = self._llm.bind_tools(tools)
         lc_messages = _dicts_to_langchain_messages(messages)
-        response: AIMessage = await llm_with_tools.ainvoke(
-            lc_messages, config=self._make_config()
-        )
+        response: AIMessage = await llm_with_tools.ainvoke(lc_messages, config=self._make_config())
         return ChatResponse(
             content=self._extract_content(response),
             tool_calls=_normalize_tool_calls(response),
@@ -376,16 +358,14 @@ class AnthropicAdapter:
         )
 
 
-def create_model_adapter(
-    model: IModel, callbacks: list | None = None, metadata: dict | None = None
-) -> IModelAdapter:
+def create_model_adapter(model: IModel, callbacks: list | None = None, metadata: dict | None = None) -> IModelAdapter:
     """Factory function to create the right adapter based on model name."""
     name = model.name
     if name.startswith(ModelPrefix.GPT):
-        return OpenAIAdapter(model, callbacks, metadata)  # type: ignore[return-value]
+        return OpenAIAdapter(model, callbacks, metadata)
     elif name.startswith(ModelPrefix.ANTHROPIC):
-        return AnthropicAdapter(model, callbacks, metadata)  # type: ignore[return-value]
+        return AnthropicAdapter(model, callbacks, metadata)
     elif name.startswith(ModelPrefix.GEMINI):
-        return GeminiAdapter(model, callbacks)  # type: ignore[return-value]
+        return GeminiAdapter(model, callbacks)
     else:
         raise ValueError(f"Unsupported model for adapter: {name}")

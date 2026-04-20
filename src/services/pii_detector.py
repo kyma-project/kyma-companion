@@ -5,9 +5,7 @@ from __future__ import annotations
 import re
 
 # Compiled PII patterns
-_EMAIL_PATTERN = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-)
+_EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
 _PHONE_PATTERN = re.compile(
     r"(?<!\w)"  # not preceded by a word char (avoids matching inside hashes/tokens)
@@ -29,20 +27,18 @@ _CC_PATTERN = re.compile(
     r"|"
     r"5[1-5]\d{2}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}"  # Mastercard
     r"|"
-    r"3[47]\d{1}[-\s]?\d{6}[-\s]?\d{5}"  # Amex
+    r"3[47]\d{1,2}[-\s]?\d{6}[-\s]?\d{5}"  # Amex (3-6-5 or 4-6-5 format)
     r"|"
     r"6(?:011|5\d{2})[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}"  # Discover
     r")\b"
 )
 
-_SSN_PATTERN = re.compile(
-    r"\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b"
-)
+_SSN_PATTERN = re.compile(r"\b(?!000|666|9\d{2})\d{3}[-\s]?(?!00)\d{2}[-\s]?(?!0000)\d{4}\b")
 
 REDACTED_EMAIL = "{{EMAIL}}"
 REDACTED_PHONE = "{{PHONE}}"
 REDACTED_CC = "{{CREDIT_CARD}}"
-REDACTED_SSN = "{{SSN}}"
+REDACTED_SSN = "{{SOCIAL_SECURITY_NUMBER}}"
 
 _ALL_PATTERNS: list[tuple[re.Pattern, str]] = [
     (_CC_PATTERN, REDACTED_CC),

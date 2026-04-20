@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Protocol
+from typing import Protocol
 
 from redis.asyncio import Redis as AsyncRedis
 
@@ -53,7 +53,8 @@ class ConversationStore:
         data = await self._conn.get(key)
         if data is None:
             return []
-        return json.loads(data)
+        result: list[dict] = json.loads(data)
+        return result
 
     async def save_messages(self, conversation_id: str, messages: list[dict]) -> None:
         """Save messages for a conversation (replaces existing)."""

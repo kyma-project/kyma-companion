@@ -29,13 +29,15 @@ logger = get_logger(__name__)
 POD_LOGS_TAIL_LINES_LIMIT: int = 10
 
 # HTTP status codes worth retrying (transient failures)
-_RETRYABLE_STATUS_CODES = frozenset({
-    HTTPStatus.TOO_MANY_REQUESTS,  # 429
-    HTTPStatus.INTERNAL_SERVER_ERROR,  # 500
-    HTTPStatus.BAD_GATEWAY,  # 502
-    HTTPStatus.SERVICE_UNAVAILABLE,  # 503
-    HTTPStatus.GATEWAY_TIMEOUT,  # 504
-})
+_RETRYABLE_STATUS_CODES = frozenset(
+    {
+        HTTPStatus.TOO_MANY_REQUESTS,  # 429
+        HTTPStatus.INTERNAL_SERVER_ERROR,  # 500
+        HTTPStatus.BAD_GATEWAY,  # 502
+        HTTPStatus.SERVICE_UNAVAILABLE,  # 503
+        HTTPStatus.GATEWAY_TIMEOUT,  # 504
+    }
+)
 
 
 def _is_retryable(exc: BaseException) -> bool:
@@ -65,7 +67,7 @@ class ToolDef:
     parameters: dict[str, Any]
     required: list[str]
     handler: Callable[..., Coroutine]
-    enabled: Callable[["ToolRegistry"], bool] = field(default=lambda _: True)
+    enabled: Callable[[ToolRegistry], bool] = field(default=lambda _: True)
 
     def schema(self) -> dict:
         """Return the OpenAI function-calling schema for this tool."""
@@ -113,7 +115,7 @@ class ToolRegistry:
         description: str,
         parameters: dict[str, Any],
         required: list[str] | None = None,
-        enabled: Callable[["ToolRegistry"], bool] | None = None,
+        enabled: Callable[[ToolRegistry], bool] | None = None,
         with_retry: bool = False,
     ) -> Callable:
         """Decorator to register a tool.
@@ -145,11 +147,7 @@ class ToolRegistry:
 
     def get_tool_schemas(self) -> list[dict]:
         """Return schemas for all enabled tools."""
-        return [
-            td.schema()
-            for td in self._tools.values()
-            if td.enabled(self)
-        ]
+        return [td.schema() for td in self._tools.values() if td.enabled(self)]
 
     async def execute_tool(
         self,
@@ -171,7 +169,7 @@ class ToolRegistry:
             logger.exception(f"Tool '{name}' execution failed")
             return json.dumps({"error": f"Tool execution failed: {e}"}, default=str)
 
-    def _register_builtin_tools(self) -> None:
+    def _register_builtin_tools(self) -> None:  # noqa: C901
         """Register all built-in tools."""
 
         @self.tool(
@@ -290,9 +288,7 @@ class ToolRegistry:
             try:
                 return await k8s_client.get_resource_version(resource_kind)
             except Exception as e:
-                raise K8sClientError.from_exception(
-                    exception=e, tool_name="fetch_kyma_resource_version"
-                ) from e
+                raise K8sClientError.from_exception(exception=e, tool_name="fetch_kyma_resource_version") from e
 
         @self.tool(
             name="fetch_pod_logs_tool",

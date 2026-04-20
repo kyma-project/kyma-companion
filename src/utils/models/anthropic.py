@@ -1,3 +1,5 @@
+from typing import Any
+
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.langchain import init_llm
 
@@ -33,6 +35,6 @@ class AnthropicModel:
         return self._name
 
     @property
-    def llm(self):
+    def llm(self) -> Any:
         """Returns the instance of Anthropic model."""
         return self._llm

@@ -1,11 +1,11 @@
 """Tests for CompanionAgent: tool-use loop, streaming output, history truncation."""
 
 import json
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agents.companion import CompanionAgent, HISTORY_TOKEN_LIMIT, MAX_TOOL_ROUNDS
+from agents.companion import MAX_TOOL_ROUNDS, CompanionAgent
 from services.model_adapter import ChatResponse, ToolCall, UsageInfo
 
 
@@ -94,13 +94,9 @@ class TestCompanionAgentDirectAnswer:
         assert events[1]["data"]["answer"]["next"] == "__end__"
 
     @pytest.mark.asyncio
-    async def test_direct_answer_saves_history(
-        self, agent, mock_adapter, mock_store, mock_k8s_client, message
-    ):
+    async def test_direct_answer_saves_history(self, agent, mock_adapter, mock_store, mock_k8s_client, message):
         """After a direct answer, history is saved with user + assistant messages."""
-        mock_adapter.generate_with_tools = AsyncMock(
-            return_value=ChatResponse(content="Response text.", tool_calls=[])
-        )
+        mock_adapter.generate_with_tools = AsyncMock(return_value=ChatResponse(content="Response text.", tool_calls=[]))
         async for _ in agent.handle_message("conv-1", message, mock_k8s_client):
             pass
 
@@ -132,9 +128,7 @@ class TestCompanionAgentToolLoop:
             tool_calls=[],
             usage=UsageInfo(input_tokens=20, output_tokens=10, total_tokens=30),
         )
-        mock_adapter.generate_with_tools = AsyncMock(
-            side_effect=[tool_call_response, final_response]
-        )
+        mock_adapter.generate_with_tools = AsyncMock(side_effect=[tool_call_response, final_response])
 
         events = []
         async for chunk in agent.handle_message("conv-1", message, mock_k8s_client):
@@ -275,13 +269,9 @@ class TestCompanionAgentErrorHandling:
     """Tests for error handling in handle_message."""
 
     @pytest.mark.asyncio
-    async def test_exception_yields_error_event(
-        self, agent, mock_adapter, mock_store, mock_k8s_client, message
-    ):
+    async def test_exception_yields_error_event(self, agent, mock_adapter, mock_store, mock_k8s_client, message):
         """When the agent loop raises, an error event is yielded."""
-        mock_adapter.generate_with_tools = AsyncMock(
-            side_effect=RuntimeError("LLM down")
-        )
+        mock_adapter.generate_with_tools = AsyncMock(side_effect=RuntimeError("LLM down"))
         events = []
         async for chunk in agent.handle_message("conv-1", message, mock_k8s_client):
             events.append(json.loads(chunk))
@@ -309,9 +299,7 @@ class TestCompanionAgentUsageAccumulation:
             tool_calls=[],
             usage=UsageInfo(input_tokens=20, output_tokens=10, total_tokens=30),
         )
-        mock_adapter.generate_with_tools = AsyncMock(
-            side_effect=[tc_response, final_response]
-        )
+        mock_adapter.generate_with_tools = AsyncMock(side_effect=[tc_response, final_response])
 
         # Just run to completion; usage is accumulated internally
         async for _ in agent.handle_message("conv-1", message, mock_k8s_client):
@@ -380,17 +368,13 @@ class TestCompanionAgentHistoryLoading:
     """Tests for conversation history loading and saving."""
 
     @pytest.mark.asyncio
-    async def test_loads_existing_history(
-        self, agent, mock_adapter, mock_store, mock_k8s_client, message
-    ):
+    async def test_loads_existing_history(self, agent, mock_adapter, mock_store, mock_k8s_client, message):
         """Existing history is loaded and included in the LLM call."""
         mock_store.load_messages.return_value = [
             {"role": "user", "content": "previous question"},
             {"role": "assistant", "content": "previous answer"},
         ]
-        mock_adapter.generate_with_tools = AsyncMock(
-            return_value=ChatResponse(content="New answer.", tool_calls=[])
-        )
+        mock_adapter.generate_with_tools = AsyncMock(return_value=ChatResponse(content="New answer.", tool_calls=[]))
 
         async for _ in agent.handle_message("conv-1", message, mock_k8s_client):
             pass

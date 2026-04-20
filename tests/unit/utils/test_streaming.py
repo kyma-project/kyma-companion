@@ -233,8 +233,7 @@ class TestBuildTasksList:
     )
     def test_task_ids_sequential(self, tool_calls_count):
         tool_calls = [
-            {"name": f"tool_{i}", "task_title": f"Task {i}", "agent": f"tool_{i}"}
-            for i in range(tool_calls_count)
+            {"name": f"tool_{i}", "task_title": f"Task {i}", "agent": f"tool_{i}"} for i in range(tool_calls_count)
         ]
         tasks = build_tasks_list(tool_calls)
         for i, task in enumerate(tasks):

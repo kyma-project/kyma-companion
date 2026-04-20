@@ -91,6 +91,22 @@ def make_final_event(
     )
 
 
+def make_gatekeeper_event(content: str) -> bytes:
+    """Create an SSE event for a direct gatekeeper response (no agent needed)."""
+    return format_sse_event(
+        "agent_action",
+        {
+            "agent": "Gatekeeper",
+            "error": None,
+            "answer": {
+                "content": content,
+                "tasks": [],
+                "next": "__end__",
+            },
+        },
+    )
+
+
 def make_error_event(error_message: str) -> bytes:
     """Create an error SSE event."""
     return format_sse_event(

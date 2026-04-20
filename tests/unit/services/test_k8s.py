@@ -416,6 +416,7 @@ class TestK8sClient:
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
             k8s_client.client_ssl_context = None
+            k8s_client._dynamic_client = None
             return k8s_client
 
     def test_model_dump(self, k8s_client):
@@ -817,7 +818,8 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_list_resources(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
+    @pytest.mark.asyncio
+    async def test_list_resources(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
@@ -831,7 +833,7 @@ class TestK8sClient:
         k8s_client._dynamic_client = mock_dynamic_client
 
         # when
-        result = k8s_client.list_resources("v1", "Pod", "default")
+        result = await k8s_client.list_resources("v1", "Pod", "default")
 
         # then
         if data_sanitizer:
@@ -855,7 +857,8 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_get_resource(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
+    @pytest.mark.asyncio
+    async def test_get_resource(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
@@ -864,7 +867,7 @@ class TestK8sClient:
         k8s_client._dynamic_client = mock_dynamic_client
 
         # when
-        result = k8s_client.get_resource("v1", "Pod", "test-pod", "default")
+        result = await k8s_client.get_resource("v1", "Pod", "test-pod", "default")
 
         # then
         if data_sanitizer:
@@ -890,7 +893,8 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_describe_resource(
+    @pytest.mark.asyncio
+    async def test_describe_resource(
         self,
         k8s_client,
         test_description,
@@ -902,16 +906,17 @@ class TestK8sClient:
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
-        # Mock get_resource and list_k8s_events_for_resource
+        # Mock _get_resource_sync and _list_k8s_events_for_resource_sync (sync internals)
         with (
-            patch.object(k8s_client, "get_resource") as mock_get_resource,
-            patch.object(k8s_client, "list_k8s_events_for_resource") as mock_list_events,
+            patch.object(k8s_client, "_get_resource_sync", new=Mock(return_value=raw_data)),
+            patch.object(
+                k8s_client,
+                "_list_k8s_events_for_resource_sync",
+                new=Mock(return_value=raw_events),
+            ),
         ):
-            mock_get_resource.return_value = raw_data
-            mock_list_events.return_value = raw_events
-
             # when
-            result = k8s_client.describe_resource("v1", "Pod", "test-pod", "default")
+            result = await k8s_client.describe_resource("v1", "Pod", "test-pod", "default")
 
         # then
         if data_sanitizer:
@@ -935,7 +940,8 @@ class TestK8sClient:
             ),
         ],
     )
-    def test_list_k8s_events(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
+    @pytest.mark.asyncio
+    async def test_list_k8s_events(self, k8s_client, test_description, data_sanitizer, raw_data, expected_result):
         # given
         k8s_client.data_sanitizer = data_sanitizer
 
@@ -949,7 +955,7 @@ class TestK8sClient:
         k8s_client._dynamic_client = mock_dynamic_client
 
         # when
-        result = k8s_client.list_k8s_events("default")
+        result = await k8s_client.list_k8s_events("default")
 
         # then
         if data_sanitizer:
@@ -1691,7 +1697,7 @@ class TestK8sClient:
                 "count": 1,
             },
         ]
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", AsyncMock(return_value=mock_events))
 
         # Mock pod description (must include events since describe_resource now returns them)
         mock_pod_description = {
@@ -1717,7 +1723,7 @@ class TestK8sClient:
             },
             "events": mock_events,
         }
-        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+        monkeypatch.setattr(k8s_client, "describe_resource", AsyncMock(return_value=mock_pod_description))
 
         error_message = '{"message": "container app is in CrashLoopBackOff state"}'
 
@@ -1780,7 +1786,7 @@ class TestK8sClient:
 
         # Mock pod events (empty for this test)
         mock_events = []
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=mock_events))
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", AsyncMock(return_value=mock_events))
 
         # Mock pod description with failed init container (must include events)
         expected_init_exit_code = 2
@@ -1808,7 +1814,7 @@ class TestK8sClient:
             },
             "events": mock_events,
         }
-        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=mock_pod_description))
+        monkeypatch.setattr(k8s_client, "describe_resource", AsyncMock(return_value=mock_pod_description))
 
         error_message = '{"message": "container is waiting to start"}'
 
@@ -1864,8 +1870,8 @@ class TestK8sClient:
         k8s_client.data_sanitizer = None
 
         # Mock empty/missing data
-        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
-        monkeypatch.setattr(k8s_client, "describe_resource", Mock(return_value=None))
+        monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", AsyncMock(return_value=[]))
+        monkeypatch.setattr(k8s_client, "describe_resource", AsyncMock(return_value=None))
 
         error_message = '{"message": "pod not found"}'
 
@@ -1928,7 +1934,7 @@ class TestK8sClient:
             aio_mock_response.get(previous_url, body=error_message, status=HTTPStatus.BAD_REQUEST)
 
             # Mock describe_resource to return pod with valid containers
-            k8s_client.describe_resource = Mock(
+            k8s_client.describe_resource = AsyncMock(
                 return_value={
                     "events": [],
                     "status": {
@@ -2264,7 +2270,7 @@ class TestFormatPodEventsForDiagnostic:
         # Given: No events available for pod
         with patch("services.k8s.K8sClient.__init__", return_value=None):
             k8s_client = K8sClient()
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=[]))
 
             # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
@@ -2285,7 +2291,7 @@ class TestFormatPodEventsForDiagnostic:
                     "count": 1,
                 }
             ]
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=events))
 
             # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
@@ -2308,7 +2314,7 @@ class TestFormatPodEventsForDiagnostic:
                     "count": expected_event_count,
                 }
             ]
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=events))
 
             # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
@@ -2338,7 +2344,7 @@ class TestFormatPodEventsForDiagnostic:
                 }
                 for i in range(expected_total_events)
             ]
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=events))
 
             # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
@@ -2376,7 +2382,7 @@ class TestFormatPodEventsForDiagnostic:
                 }
                 for i in range(expected_total_events)
             ]
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=events))
 
             # When: Format pod events with tail limit of 3
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", expected_tail_limit)
@@ -2400,7 +2406,7 @@ class TestFormatPodEventsForDiagnostic:
                     # Missing reason, message, and count
                 }
             ]
-            monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=events))
+            monkeypatch.setattr(k8s_client, "_list_k8s_events_for_resource_sync", Mock(return_value=events))
 
             # When: Format pod events for diagnostic
             result = k8s_client._format_pod_events_for_diagnostic("test-pod", "default", 100)
