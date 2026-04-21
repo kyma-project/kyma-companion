@@ -1,0 +1,83 @@
+name: "Wait for build"
+description: "Waits for a GitHub check run to complete successfully before proceeding."
+
+inputs:
+  git-ref:
+    description: "The commit SHA to poll."
+    required: true
+  check-run-name:
+    description: "The name of the check run to wait for (e.g. 'build / Build image')."
+    required: true
+  interval:
+    description: "Polling interval in seconds."
+    required: false
+    default: "60"
+  timeout:
+    description: "Maximum wait time in seconds."
+    required: false
+    default: "900"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Wait for build
+      shell: bash
+      env:
+        GH_TOKEN: "${{ github.token }}"
+        GIT_REF: "${{ inputs.git-ref }}"
+        REPOSITORY_FULL_NAME: "${{ github.repository }}"
+        GIT_CHECK_RUN_NAME: "${{ inputs.check-run-name }}"
+        INTERVAL: "${{ inputs.interval }}"
+        TIMEOUT: "${{ inputs.timeout }}"
+      run: |
+        echo "Repository:     $REPOSITORY_FULL_NAME"
+        echo "Git ref:        $GIT_REF"
+        echo "Check run name: $GIT_CHECK_RUN_NAME"
+        echo "Timeout:        ${TIMEOUT}s / Interval: ${INTERVAL}s"
+
+        start=$(date +%s)
+
+        while true; do
+          elapsed=$(( $(date +%s) - start ))
+          echo "--- elapsed: ${elapsed}s / timeout: ${TIMEOUT}s ---"
+          if [ "$elapsed" -gt "$TIMEOUT" ]; then
+            echo "Error: timed out waiting for '$GIT_CHECK_RUN_NAME'"
+            exit 1
+          fi
+
+          # gh api --paginate fetches all pages automatically
+          run=$(gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${REPOSITORY_FULL_NAME}/commits/${GIT_REF}/check-runs" \
+            --jq ".check_runs[] | select(.name == $ENV.GIT_CHECK_RUN_NAME)" \
+            | jq -s 'sort_by(.started_at) | last') \
+            || { echo "API call failed, retrying..."; sleep "$INTERVAL"; continue; }
+
+          if [ -z "$run" ] || [ "$run" = "null" ]; then
+            echo "Check run '$GIT_CHECK_RUN_NAME' not found yet. Waiting..."
+            sleep "$INTERVAL"
+            continue
+          fi
+
+          status=$(echo "$run" | jq -r '.status')
+          conclusion=$(echo "$run" | jq -r '.conclusion')
+          url=$(echo "$run" | jq -r '.html_url')
+          echo "Found: $url"
+          echo "Status: $status / Conclusion: $conclusion"
+
+          if [ "$status" != "completed" ]; then
+            echo "Not completed yet. Waiting..."
+            sleep "$INTERVAL"
+            continue
+          fi
+
+          if [ "$conclusion" = "success" ]; then
+            echo "Check run completed with success."
+            exit 0
+          fi
+
+          echo "Check run completed with failure (conclusion: $conclusion)."
+          exit 1
+        done
