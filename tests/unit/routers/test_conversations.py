@@ -1370,7 +1370,13 @@ def test_messages_sync_endpoint_returns_500_when_no_answer_produced(sync_client_
 
     response = test_client.post(
         f"/api/conversations/{uuid.uuid4()}/messages/sync",
-        json={"query": "test", "resource_kind": "Cluster", "resource_api_version": "", "resource_name": "", "namespace": ""},
+        json={
+            "query": "test",
+            "resource_kind": "Cluster",
+            "resource_api_version": "",
+            "resource_name": "",
+            "namespace": "",
+        },
     )
 
     app.dependency_overrides.clear()

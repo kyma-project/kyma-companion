@@ -14,7 +14,7 @@ from common.config import Config
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT = 300  # seconds; sync endpoint waits for the full response
+TIMEOUT = 300  # seconds; sync endpoint drains the full LLM response before returning
 
 
 @pytest.fixture(scope="module")
@@ -96,7 +96,7 @@ class TestConversationsSyncAPI:
             timeout=TIMEOUT,
         )
 
-        assert response.status_code >= HTTPStatus.BAD_REQUEST
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
     def test_sync_with_invalid_conversation_id_returns_422(
         self,

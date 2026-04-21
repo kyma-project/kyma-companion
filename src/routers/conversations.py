@@ -323,8 +323,10 @@ async def messages_sync(
             content = chunk_data.get("answer", {}).get("content", "")
             if content:
                 final_answer = content
-        except (json.JSONDecodeError, AttributeError):
-            pass
+        except json.JSONDecodeError:
+            logger.warning(f"Unexpected non-JSON chunk from pipeline: {chunk_response!r}")
+        except AttributeError:
+            logger.warning(f"Unexpected chunk structure from pipeline: {chunk_response!r}")
 
     if not final_answer:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
