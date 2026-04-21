@@ -309,7 +309,7 @@ async def messages_sync(
     else:
         message.resource_scope = CLUSTER
 
-    # Collect the full response by draining the stream and keeping the last non-empty answer.
+    # Collect the full response by draining the stream and concatenating all answer chunks.
     final_answer = ""
     async for chunk in conversation_service.handle_request(str(conversation_id), message, k8s_client):
         chunk_response = prepare_chunk_response(chunk)
@@ -318,11 +318,11 @@ async def messages_sync(
         try:
             data = json.loads(chunk_response)
             chunk_data = data.get("data", {})
-            if chunk_data.get("error"):
+            if chunk_data.get("error") is not None:
                 continue
-            content = chunk_data.get("answer", {}).get("content", "")
+            content = (chunk_data.get("answer") or {}).get("content", "")
             if content:
-                final_answer = content
+                final_answer += content
         except json.JSONDecodeError:
             logger.warning(f"Unexpected non-JSON chunk from pipeline: {chunk_response!r}")
         except AttributeError:

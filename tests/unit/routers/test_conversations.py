@@ -1149,8 +1149,9 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
 
 @pytest.fixture(scope="function")
 def sync_client_factory():
-    def _create_client(mock_k8s_client=None, expected_error=None):
-        mock_service = MockService(expected_error)
+    def _create_client(mock_k8s_client=None, expected_error=None, mock_service=None):
+        if mock_service is None:
+            mock_service = MockService(expected_error)
         if mock_k8s_client is None:
             mock_k8s_client = MockK8sClient()
 
@@ -1163,7 +1164,8 @@ def sync_client_factory():
 
     yield _create_client
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(init_conversation_service, None)
+    app.dependency_overrides.pop(init_k8s_client, None)
 
 
 def _make_k8s_client_for_cert() -> MockK8sClient:
@@ -1208,7 +1210,8 @@ def _make_k8s_client_for_exceeded(token: str) -> MockK8sClient:
             {
                 "status_code": 200,
                 "content-type": "application/json",
-                "answer": "To create a kubernetes deployment",
+                "answer": "To create an API Rule in Kyma to expose a service externally"
+                "To create a kubernetes deployment",
             },
         ),
         (
@@ -1225,7 +1228,8 @@ def _make_k8s_client_for_exceeded(token: str) -> MockK8sClient:
             {
                 "status_code": 200,
                 "content-type": "application/json",
-                "answer": "To create a kubernetes deployment",
+                "answer": "To create an API Rule in Kyma to expose a service externally"
+                "To create a kubernetes deployment",
             },
         ),
         (
@@ -1358,15 +1362,7 @@ def test_messages_sync_endpoint_returns_500_when_no_answer_produced(sync_client_
         async def handle_request(self, conversation_id, message, k8s_client):
             yield b'{"error": {"error": "pipeline failed"}}'
 
-    mock_service = ErrorOnlyService()
-    mock_k8s_client = MockK8sClient()
-
-    async def get_mock_k8s_client():
-        return mock_k8s_client
-
-    app.dependency_overrides[init_conversation_service] = lambda: mock_service
-    app.dependency_overrides[init_k8s_client] = get_mock_k8s_client
-    test_client = TestClient(app)
+    test_client = sync_client_factory(mock_service=ErrorOnlyService())
 
     response = test_client.post(
         f"/api/conversations/{uuid.uuid4()}/messages/sync",
@@ -1378,7 +1374,5 @@ def test_messages_sync_endpoint_returns_500_when_no_answer_produced(sync_client_
             "namespace": "",
         },
     )
-
-    app.dependency_overrides.clear()
 
     assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
