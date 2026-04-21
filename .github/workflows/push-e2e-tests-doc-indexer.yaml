@@ -5,27 +5,11 @@ on:
     branches:
       - "main"
       - "release-*"
-    paths-ignore:
-      - ".github/**"
-      - ".reuse/**"
-      - "LICENSES/**"
-      - "config/**"
-      - "data/**"
-      - "docs/**"
-      - "scripts/**"
-      - "tests/**"
-      - "**/*.md"
-      - "src/**"
-      - "doc_indexer/.vscode/**"
-      - "doc_indexer/tests/**"
-      - CODEOWNERS
-      - LICENSE
-      - "sec-scanners-config.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "renovate.json"
-      - ".gitignore"
-      - external-images.yaml
+    paths:
+      - "doc_indexer/**"
+      - ".github/workflows/push-e2e-tests-doc-indexer.yaml"
+      - ".github/workflows/push-build-image-indexer.yaml"
+      - ".github/workflows/e2e-tests-doc-indexer-reusable.yaml"
 
 permissions: read-all
 
@@ -53,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ github.sha }}
           REPOSITORY_FULL_NAME: "${{ github.repository }}"
-          GIT_CHECK_RUN_NAME: "Push Build Image for Indexer / build"
+          GIT_CHECK_RUN_NAME: "build-indexer / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
