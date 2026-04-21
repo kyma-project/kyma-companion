@@ -5,27 +5,9 @@ on:
     branches:
       - "main"
       - "release-*"
-    paths-ignore:
-      - ".github/**"
-      - ".reuse/**"
-      - "LICENSES/**"
-      - "config/**"
-      - "data/**"
-      - "docs/**"
-      - "scripts/**"
-      - "tests/**"
-      - "**/*.md"
-      - "src/**"
-      - "doc_indexer/.vscode/**"
-      - "doc_indexer/tests/**"
-      - CODEOWNERS
-      - LICENSE
-      - "sec-scanners-config.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "renovate.json"
-      - ".gitignore"
-      - external-images.yaml
+    paths:
+      - "doc_indexer/**"
+      - ".github/workflows/push-build-image-indexer.yaml"
 
 permissions:
   id-token: write # This is required for requesting the JWT token
@@ -38,7 +20,7 @@ jobs:
       tags: ${{ steps.get_tag.outputs.TAGS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Get the latest tag
         id: get_tag
         run: |
@@ -48,7 +30,7 @@ jobs:
             echo "${{ github.ref_name}}"
             echo EOF
           } >> "$GITHUB_OUTPUT"
-  build:
+  build-indexer:
     needs: compute-tags
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:

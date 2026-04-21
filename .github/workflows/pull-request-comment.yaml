@@ -46,7 +46,7 @@ jobs:
         uses: shmokmt/actions-setup-github-comment@v2.1.1
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Post comment (codeowner)
         if: steps.check-author.outputs.is-codeowner == 'true'

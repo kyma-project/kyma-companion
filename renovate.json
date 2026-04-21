@@ -7,7 +7,8 @@
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
-    "tests/blackbox/pyproject.toml"
+    "tests/blackbox/pyproject.toml",
+    ".github/workflows/**"
   ],
   "extends": [
     "config:recommended",
@@ -16,7 +17,8 @@
     ":semanticCommitScopeDisabled"
   ],
   "enabledManagers": [
-    "poetry"
+    "poetry",
+    "github-actions"
   ],
   "packageRules": [
     {
@@ -51,6 +53,15 @@
         "tests/blackbox/pyproject.toml"
       ],
       "groupName": "Dependencies in tests/blackbox/pyproject.toml",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions",
       "addLabels": [
         "dependencies"
       ]

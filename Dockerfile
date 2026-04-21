@@ -1,5 +1,5 @@
 # Build stage: install dependencies
-FROM ghcr.io/gardenlinux/gardenlinux:2150.0.0 AS builder
+FROM ghcr.io/gardenlinux/gardenlinux:2150.1.0 AS builder
 WORKDIR /app
 
 # Copy necessary files for dependency installation
@@ -8,12 +8,13 @@ COPY src ./src
 COPY config ./config
 
 # Install dependencies with Poetry and aggressively clean up
-RUN apt update && apt install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv \
+RUN apt update && apt upgrade -y \
+  && apt install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv \
   && python3.13 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.in-project true \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
-  && cd /.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
+  && cd /app/.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
   && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
   && find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true \
   && find . -type d -name "test" -exec rm -rf {} + 2>/dev/null || true \
@@ -25,11 +26,12 @@ RUN apt update && apt install -y --no-install-recommends build-essential gcc pyt
   && find . -name "*.so" -exec strip --strip-debug {} + 2>/dev/null || true
 
 # Runtime stage: fresh GardenLinux with only runtime files
-FROM ghcr.io/gardenlinux/gardenlinux:2150.0.0
+FROM ghcr.io/gardenlinux/gardenlinux:2150.1.0
 WORKDIR /app
 
 # Install Python runtime (needed for venv symlinks)
-RUN apt update && apt install -y --no-install-recommends python3.13 \
+RUN apt update && apt upgrade -y \
+  && apt install -y --no-install-recommends python3.13 \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder (Poetry creates .venv with in-project)
