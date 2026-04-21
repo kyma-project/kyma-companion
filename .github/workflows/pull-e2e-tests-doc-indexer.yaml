@@ -9,6 +9,7 @@ on:
     paths:
       - "doc_indexer/**"
       - ".github/workflows/pull-e2e-tests-doc-indexer.yaml"
+      - ".github/workflows/pull-build-image-indexer.yaml"
       - ".github/workflows/e2e-tests-doc-indexer-reusable.yaml"
 
 permissions: read-all
@@ -47,7 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GIT_REF: ${{ github.event.pull_request.head.sha }}
           REPOSITORY_FULL_NAME: "${{ github.repository }}"
-          GIT_CHECK_RUN_NAME: "build / Build image"
+          GIT_CHECK_RUN_NAME: "build-indexer / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
