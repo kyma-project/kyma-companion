@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Annotated
@@ -16,6 +17,8 @@ from routers.common import (
     FollowUpQuestionsResponse,
     InitConversationBody,
     InitialQuestionsResponse,
+    SyncMessageResponse,
+    init_k8s_client,
 )
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
@@ -270,6 +273,57 @@ async def messages(
         ),
         media_type="text/event-stream",
     )
+
+
+@router.post("/{conversation_id}/messages/sync", response_model=SyncMessageResponse)
+async def messages_sync(
+    conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
+    message: Annotated[Message, Body(title="The message to send")],
+    conversation_service: Annotated[IService, Depends(init_conversation_service)],
+    k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
+    _: Annotated[None, Depends(enforce_query_token_limit)] = None,
+) -> JSONResponse:
+    """Endpoint to send a message to the Kyma companion and receive the complete response synchronously."""
+
+    logger.info(f"Handling sync conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
+
+    # Authorize the user to access the conversation.
+    # get_auth_headers() returns the resolved headers (decrypted if encrypted auth was used).
+    message.user_identifier = extract_user_identifier(k8s_client.get_auth_headers())
+    await authorize_user(str(conversation_id), message.user_identifier, conversation_service)
+
+    # Check rate limitation.
+    await check_token_usage(k8s_client.get_api_server(), conversation_service)
+
+    # Validate the k8s resource context.
+    if not message.is_cluster_overview_query():
+        try:
+            resource_kind_details = await K8sResourceDiscovery(k8s_client).get_resource_kind(
+                str(message.resource_api_version), str(message.resource_kind)
+            )
+            message.add_details(resource_kind_details)
+        except Exception as e:
+            logger.warning(f"Invalid resource context info: {str(e)}")
+            message.resource_kind = UNKNOWN
+            message.resource_api_version = UNKNOWN
+    else:
+        message.resource_scope = CLUSTER
+
+    # Collect the full response by draining the stream and keeping the last non-empty answer.
+    final_answer = ""
+    async for chunk in conversation_service.handle_request(str(conversation_id), message, k8s_client):
+        chunk_response = prepare_chunk_response(chunk)
+        if chunk_response is None:
+            continue
+        try:
+            data = json.loads(chunk_response)
+            content = data.get("data", {}).get("answer", {}).get("content", "")
+            if content:
+                final_answer = content
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    return JSONResponse(content=jsonable_encoder(SyncMessageResponse(answer=final_answer)))
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

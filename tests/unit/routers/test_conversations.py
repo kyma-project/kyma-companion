@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from agents.common.constants import ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from main import app
+from routers.common import init_k8s_client
 from routers.conversations import (
     authorize_user,
     check_token_usage,
@@ -91,8 +92,20 @@ class MockService(IService):
 class MockK8sClient:
     """Mock for the K8sClient class."""
 
+    def __init__(self, token: str = SAMPLE_JWT_TOKEN):
+        self._token = token
+
     def get_api_server(self) -> str:
-        return "http://localhost:8080"
+        return "http://api.k8s.example.com"
+
+    def get_auth_headers(self):
+        from services.k8s import K8sAuthHeaders
+
+        return K8sAuthHeaders(
+            x_cluster_url="http://api.k8s.example.com",
+            x_cluster_certificate_authority_data="non-empty-ca-data",
+            x_k8s_authorization=self._token,
+        )
 
     def model_dump(self) -> None:
         return None
@@ -1132,3 +1145,195 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
             assert exc_info.value.detail == "Input Query exceeds the allowed token limit."
         else:
             enforce_query_token_limit(message)  # Should not raise
+
+
+@pytest.fixture(scope="function")
+def sync_client_factory():
+    def _create_client(mock_k8s_client=None, expected_error=None):
+        mock_service = MockService(expected_error)
+        if mock_k8s_client is None:
+            mock_k8s_client = MockK8sClient()
+
+        async def get_mock_k8s_client():
+            return mock_k8s_client
+
+        app.dependency_overrides[init_conversation_service] = lambda: mock_service
+        app.dependency_overrides[init_k8s_client] = get_mock_k8s_client
+        return TestClient(app)
+
+    yield _create_client
+
+    app.dependency_overrides.clear()
+
+
+def _make_k8s_client_for_cert() -> MockK8sClient:
+    """Return a MockK8sClient that identifies via client certificate."""
+    from services.k8s import K8sAuthHeaders
+
+    client = MockK8sClient(token=SAMPLE_JWT_TOKEN)
+
+    def get_auth_headers_cert():
+        return K8sAuthHeaders(
+            x_cluster_url="http://api.k8s.example.com",
+            x_cluster_certificate_authority_data="non-empty-ca-data",
+            x_client_certificate_data=SAMPLE_CLIENT_CERTIFICATE_DATA,
+            x_client_key_data="non-empty-client-key-data",
+        )
+
+    client.get_auth_headers = get_auth_headers_cert  # type: ignore[method-assign]
+    return client
+
+
+def _make_k8s_client_for_exceeded(token: str) -> MockK8sClient:
+    """Return a MockK8sClient whose cluster URL triggers the rate-limit check."""
+    client = MockK8sClient(token=token)
+    client.get_api_server = lambda: "http://api.EXCEEDED.example.com"  # type: ignore[method-assign]
+    return client
+
+
+@pytest.mark.parametrize(
+    "test_description, mock_k8s_client, conversation_id, input_message, expected_output",
+    [
+        (
+            "should return final answer for a cluster overview query",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN),
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 200,
+                "content-type": "application/json",
+                "answer": "To create a kubernetes deployment",
+            },
+        ),
+        (
+            "should return final answer when client certificate is provided",
+            _make_k8s_client_for_cert(),
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 200,
+                "content-type": "application/json",
+                "answer": "To create a kubernetes deployment",
+            },
+        ),
+        (
+            "should return 401 when no auth token is provided",
+            MockK8sClient(token=""),
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Pod",
+                "resource_api_version": "v1",
+                "resource_name": "my-pod",
+                "namespace": "default",
+            },
+            {
+                "status_code": 401,
+                "content-type": "application/json",
+            },
+        ),
+        (
+            "should return 403 when user is not authorized",
+            MockK8sClient(token=jwt.encode({"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256")),
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 403,
+                "content-type": "application/json",
+            },
+        ),
+        (
+            "should return token usage exceeded error",
+            _make_k8s_client_for_exceeded(SAMPLE_JWT_TOKEN),
+            uuid.uuid4(),
+            {
+                "query": "Test query",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "current_usage": 1000,
+                    "error": "Token usage limit exceeded",
+                    "limit": 1000,
+                    "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
+                    "fair usage, Joule controls the number of requests a "
+                    "cluster can make within 24 hours.",
+                    "time_remaining_seconds": 60,
+                },
+            },
+        ),
+        (
+            "should return 422 when conversation_id is not a valid uuid",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN),
+            "abcdef",
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 422,
+                "content-type": "application/json",
+            },
+        ),
+    ],
+)
+def test_messages_sync_endpoint(
+    sync_client_factory,
+    test_description,
+    mock_k8s_client,
+    conversation_id,
+    input_message,
+    expected_output,
+):
+    test_client = sync_client_factory(mock_k8s_client=mock_k8s_client)
+
+    # save metrics before request.
+    metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+    metric_labels = {
+        "method": "POST",
+        "status": str(expected_output["status_code"]),
+        "path": "/api/conversations/{conversation_id}/messages/sync",
+    }
+    before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels) or 0.0
+
+    response = test_client.post(
+        f"/api/conversations/{conversation_id}/messages/sync",
+        json=input_message,
+    )
+
+    assert response.status_code == expected_output["status_code"]
+    assert response.headers["content-type"] == expected_output["content-type"]
+
+    after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
+    assert after_metric_value > before_metric_value
+
+    if expected_output["status_code"] == HTTPStatus.OK:
+        assert json.loads(response.content)["answer"] == expected_output["answer"]
+    elif "body" in expected_output:
+        assert json.loads(response.content) == expected_output["body"]
