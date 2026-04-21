@@ -20,30 +20,63 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
-      with:
-        ref: main
-
-    - name: Setup python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.10"
-        cache: "pip"
-
-    - name: Install requirements
-      shell: bash
-      run: |
-        pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
-
     - name: Wait for build
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ github.token }}
+        GH_TOKEN: "${{ github.token }}"
         GIT_REF: "${{ inputs.git-ref }}"
         REPOSITORY_FULL_NAME: "${{ github.repository }}"
         GIT_CHECK_RUN_NAME: "${{ inputs.check-run-name }}"
         INTERVAL: "${{ inputs.interval }}"
         TIMEOUT: "${{ inputs.timeout }}"
       run: |
-        python ./scripts/python/wait-for-commit-check/run.py
+        echo "Repository:     $REPOSITORY_FULL_NAME"
+        echo "Git ref:        $GIT_REF"
+        echo "Check run name: $GIT_CHECK_RUN_NAME"
+        echo "Timeout:        ${TIMEOUT}s / Interval: ${INTERVAL}s"
+
+        start=$(date +%s)
+
+        while true; do
+          sleep "$INTERVAL"
+
+          elapsed=$(( $(date +%s) - start ))
+          echo "--- elapsed: ${elapsed}s / timeout: ${TIMEOUT}s ---"
+          if [ "$elapsed" -gt "$TIMEOUT" ]; then
+            echo "Error: timed out waiting for '$GIT_CHECK_RUN_NAME'"
+            exit 1
+          fi
+
+          # gh api --paginate fetches all pages automatically
+          run=$(gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${REPOSITORY_FULL_NAME}/commits/${GIT_REF}/check-runs" \
+            --jq ".check_runs[] | select(.name == \"$GIT_CHECK_RUN_NAME\")" \
+            | jq -s 'sort_by(.started_at) | last')
+
+          if [ -z "$run" ] || [ "$run" = "null" ]; then
+            echo "Check run '$GIT_CHECK_RUN_NAME' not found yet. Waiting..."
+            continue
+          fi
+
+          status=$(echo "$run" | jq -r '.status')
+          conclusion=$(echo "$run" | jq -r '.conclusion')
+          url=$(echo "$run" | jq -r '.html_url')
+          echo "Found: $url"
+          echo "Status: $status / Conclusion: $conclusion"
+
+          if [ "$status" != "completed" ]; then
+            echo "Not completed yet. Waiting..."
+            continue
+          fi
+
+          if [ "$conclusion" = "success" ]; then
+            echo "Check run completed with success."
+            exit 0
+          fi
+
+          echo "Check run completed with failure (conclusion: $conclusion)."
+          exit 1
+        done
