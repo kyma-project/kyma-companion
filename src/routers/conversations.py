@@ -275,14 +275,14 @@ async def messages(
     )
 
 
-@router.post("/{conversation_id}/messages/sync", response_model=SyncMessageResponse)
+@router.post("/{conversation_id}/messages/sync")
 async def messages_sync(
     conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
     k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
     _: Annotated[None, Depends(enforce_query_token_limit)] = None,
-) -> JSONResponse:
+) -> SyncMessageResponse:
     """Endpoint to send a message to the Kyma companion and receive the complete response synchronously."""
 
     logger.info(f"Handling sync conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
@@ -317,13 +317,19 @@ async def messages_sync(
             continue
         try:
             data = json.loads(chunk_response)
-            content = data.get("data", {}).get("answer", {}).get("content", "")
+            chunk_data = data.get("data", {})
+            if chunk_data.get("error"):
+                continue
+            content = chunk_data.get("answer", {}).get("content", "")
             if content:
                 final_answer = content
         except (json.JSONDecodeError, AttributeError):
             pass
 
-    return JSONResponse(content=jsonable_encoder(SyncMessageResponse(answer=final_answer)))
+    if not final_answer:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
+
+    return SyncMessageResponse(answer=final_answer)
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

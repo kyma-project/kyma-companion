@@ -1337,3 +1337,42 @@ def test_messages_sync_endpoint(
         assert json.loads(response.content)["answer"] == expected_output["answer"]
     elif "body" in expected_output:
         assert json.loads(response.content) == expected_output["body"]
+
+
+def test_messages_sync_endpoint_returns_500_when_no_answer_produced(sync_client_factory):
+    """Endpoint must return 500 when the pipeline emits only error chunks."""
+
+    class ErrorOnlyService(IService):
+        async def new_conversation(self, k8s_client, message):
+            return []
+
+        async def handle_followup_questions(self, conversation_id):
+            return []
+
+        async def authorize_user(self, conversation_id, user_identifier):
+            return True
+
+        async def is_usage_limit_exceeded(self, cluster_id):
+            return None
+
+        async def handle_request(self, conversation_id, message, k8s_client):
+            yield b'{"error": {"error": "pipeline failed"}}'
+
+    mock_service = ErrorOnlyService()
+    mock_k8s_client = MockK8sClient()
+
+    async def get_mock_k8s_client():
+        return mock_k8s_client
+
+    app.dependency_overrides[init_conversation_service] = lambda: mock_service
+    app.dependency_overrides[init_k8s_client] = get_mock_k8s_client
+    test_client = TestClient(app)
+
+    response = test_client.post(
+        f"/api/conversations/{uuid.uuid4()}/messages/sync",
+        json={"query": "test", "resource_kind": "Cluster", "resource_api_version": "", "resource_name": "", "namespace": ""},
+    )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
