@@ -4,9 +4,9 @@ from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path, Query
 from fastapi.encoders import jsonable_encoder
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
@@ -17,8 +17,6 @@ from routers.common import (
     FollowUpQuestionsResponse,
     InitConversationBody,
     InitialQuestionsResponse,
-    SyncMessageResponse,
-    init_k8s_client,
 )
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
@@ -199,7 +197,7 @@ async def followup_questions(
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
-@router.post("/{conversation_id}/messages")
+@router.post("/{conversation_id}/messages", response_model=None)
 async def messages(
     conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
@@ -211,7 +209,11 @@ async def messages(
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     _: Annotated[None, Depends(enforce_query_token_limit)] = None,
-) -> StreamingResponse:
+    stream: Annotated[
+        bool,
+        Query(description="Stream the response as SSE. Set to false to receive the complete answer as plain text."),
+    ] = True,
+) -> StreamingResponse | PlainTextResponse:
     """Endpoint to send a message to the Kyma companion"""
 
     logger.info(f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
@@ -264,6 +266,9 @@ async def messages(
         # mark the message as a cluster overview query
         message.resource_scope = CLUSTER
 
+    if not stream:
+        return await _collect_answer(str(conversation_id), message, k8s_client, conversation_service)
+
     return StreamingResponse(
         (
             chunk_response + b"\n"
@@ -275,43 +280,15 @@ async def messages(
     )
 
 
-@router.post("/{conversation_id}/messages/sync")
-async def messages_sync(
-    conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
-    message: Annotated[Message, Body(title="The message to send")],
-    conversation_service: Annotated[IService, Depends(init_conversation_service)],
-    k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
-    _: Annotated[None, Depends(enforce_query_token_limit)] = None,
-) -> SyncMessageResponse:
-    """Endpoint to send a message to the Kyma companion and receive the complete response synchronously."""
-
-    logger.info(f"Handling sync conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
-
-    # Authorize the user to access the conversation.
-    # get_auth_headers() returns the resolved headers (decrypted if encrypted auth was used).
-    message.user_identifier = extract_user_identifier(k8s_client.get_auth_headers())
-    await authorize_user(str(conversation_id), message.user_identifier, conversation_service)
-
-    # Check rate limitation.
-    await check_token_usage(k8s_client.get_api_server(), conversation_service)
-
-    # Validate the k8s resource context.
-    if not message.is_cluster_overview_query():
-        try:
-            resource_kind_details = await K8sResourceDiscovery(k8s_client).get_resource_kind(
-                str(message.resource_api_version), str(message.resource_kind)
-            )
-            message.add_details(resource_kind_details)
-        except Exception as e:
-            logger.warning(f"Invalid resource context info: {str(e)}")
-            message.resource_kind = UNKNOWN
-            message.resource_api_version = UNKNOWN
-    else:
-        message.resource_scope = CLUSTER
-
-    # Collect the full response by draining the stream and concatenating all answer chunks.
+async def _collect_answer(
+    conversation_id: str,
+    message: Message,
+    k8s_client: IK8sClient,
+    conversation_service: IService,
+) -> PlainTextResponse:
+    """Drain the streaming pipeline and return the concatenated answer as plain text."""
     final_answer = ""
-    async for chunk in conversation_service.handle_request(str(conversation_id), message, k8s_client):
+    async for chunk in conversation_service.handle_request(conversation_id, message, k8s_client):
         chunk_response = prepare_chunk_response(chunk)
         if chunk_response is None:
             continue
@@ -331,7 +308,7 @@ async def messages_sync(
     if not final_answer:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
 
-    return SyncMessageResponse(answer=final_answer)
+    return PlainTextResponse(final_answer)
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

@@ -1,7 +1,7 @@
 """
-API tests for the synchronous messages endpoint.
+API tests for the non-streaming messages endpoint (?stream=false).
 
-These tests validate the POST /api/conversations/{id}/messages/sync endpoint by
+These tests validate the POST /api/conversations/{id}/messages?stream=false endpoint by
 making actual HTTP requests to a running Kyma Companion server instance.
 """
 
@@ -65,23 +65,21 @@ class TestConversationsSyncAPI:
         auth_headers: dict[str, str],
         conversation_id: str,
     ) -> None:
-        """Test that the sync endpoint returns a JSON object with a non-empty answer string."""
+        """Test that the sync endpoint returns a plain text non-empty answer string."""
         logger.info(f"Testing sync messages endpoint for conversation {conversation_id}")
 
         response = requests.post(
-            f"{base_api_url}/api/conversations/{conversation_id}/messages/sync",
+            f"{base_api_url}/api/conversations/{conversation_id}/messages?stream=false",
             json={"query": "What is Kyma?", "resource_kind": "Cluster"},
             headers=auth_headers,
             timeout=TIMEOUT,
         )
 
         assert response.status_code == HTTPStatus.OK
-        assert response.headers["content-type"].startswith("application/json")
-        data = response.json()
-        assert "answer" in data
-        assert isinstance(data["answer"], str)
-        assert len(data["answer"]) > 0
-        logger.info(f"Sync endpoint returned answer of length {len(data['answer'])}")
+        assert response.headers["content-type"].startswith("text/plain")
+        assert isinstance(response.text, str)
+        assert len(response.text) > 0
+        logger.info(f"Sync endpoint returned answer of length {len(response.text)}")
 
     def test_sync_without_auth_returns_error(
         self,
@@ -90,7 +88,7 @@ class TestConversationsSyncAPI:
     ) -> None:
         """Test that the sync endpoint returns an error when no auth headers are provided."""
         response = requests.post(
-            f"{base_api_url}/api/conversations/{conversation_id}/messages/sync",
+            f"{base_api_url}/api/conversations/{conversation_id}/messages?stream=false",
             json={"query": "What is Kyma?", "resource_kind": "Cluster"},
             headers={"Content-Type": "application/json"},
             timeout=TIMEOUT,
@@ -105,7 +103,7 @@ class TestConversationsSyncAPI:
     ) -> None:
         """Test that an invalid conversation ID returns 422."""
         response = requests.post(
-            f"{base_api_url}/api/conversations/not-a-uuid/messages/sync",
+            f"{base_api_url}/api/conversations/not-a-uuid/messages?stream=false",
             json={"query": "What is Kyma?", "resource_kind": "Cluster"},
             headers=auth_headers,
             timeout=TIMEOUT,

@@ -60,12 +60,6 @@ class FollowUpQuestionsResponse(BaseModel):
     questions: list[str] = []
 
 
-class SyncMessageResponse(BaseModel):
-    """Response body for synchronous messages endpoint"""
-
-    answer: str
-
-
 # ============================================================================
 # Health/Probe Models
 # ============================================================================

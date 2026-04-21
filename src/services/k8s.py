@@ -222,10 +222,6 @@ class IK8sClient(Protocol):
         """Return the data sanitizer instance"""
         ...
 
-    def get_auth_headers(self) -> K8sAuthHeaders:
-        """Return the K8s authentication headers."""
-        ...
-
 
 def get_url_for_paged_request(base_url: str, continue_token: str) -> str:
     """Construct the URL for paginated requests."""
@@ -322,10 +318,6 @@ class K8sClient:
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         return self.k8s_auth_headers.x_cluster_url
-
-    def get_auth_headers(self) -> K8sAuthHeaders:
-        """Return the K8s authentication headers."""
-        return self.k8s_auth_headers
 
     @property
     def dynamic_client(self) -> dynamic.DynamicClient:
