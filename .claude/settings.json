@@ -1,10 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(poetry add*)",
+      "Bash(bash .claude/skills/update-py-deps/update-dep.sh*)",
       "Bash(poetry show*)",
-      "Bash(poetry lock*)",
-      "Bash(poetry run poe*)",
+      "Bash(poetry run poe pre-commit-check*)",
       "Bash(git add -A)",
       "Bash(git commit -m *)",
       "Bash(git log*)",

@@ -13,23 +13,27 @@ You are performing a systematic dependency update across the kyma-companion Poet
 
 **Do not do any setup or discovery steps.** Do not check for config files, do not explore the repo structure, do not read pyproject.toml before starting. The subproject layout is known (see below). Start immediately by reading `pyproject.toml` in the root subproject to identify the first dependency to update.
 
-**Batch as much work as possible into a single Bash call.** Never split into multiple Bash calls what can be done in one.
-
 **One dependency = one commit.** Never batch multiple deps into a single commit. The only exception is when updating dep X forces a co-update of dep Y due to conflicts — in that case update both in one `poetry add` call and one commit, and name both in the commit message.
 
-For each dependency update, use a single Bash call like this pattern:
+For each dependency update, run the helper script (pre-approved, no prompt):
 
 ```bash
-cd /path/to/subproject && \
-  OLD=$(poetry show <pkg> --no-ansi | grep "^ *version" | awk '{print $NF}') && \
-  poetry add "<pkg>@latest" && \
-  NEW=$(poetry show <pkg> --no-ansi | grep "^ *version" | awk '{print $NF}') && \
-  poetry run poe pre-commit-check && \
-  git add -A && \
-  git commit -m "deps: update <pkg> from v${OLD} to v${NEW}"
+bash .claude/skills/update-py-deps/update-dep.sh <subproject_dir> <pkg>
+# with a group flag:
+bash .claude/skills/update-py-deps/update-dep.sh <subproject_dir> <pkg> --group test
+# with a specific version (conflict fallback):
+bash .claude/skills/update-py-deps/update-dep.sh <subproject_dir> "<pkg>@^1.2"
 ```
 
-If `pre-commit-check` fails due to source code issues, fix the files (Edit tool), then run a second single Bash call with `pre-commit-check && git add -A && git commit`.
+The script: captures old version, runs `poetry add <pkg>@latest [extra args]`, captures new version, runs `pre-commit-check`, commits with message `deps: update <pkg> from v<old> to v<new>`. Defaults to `@latest`; pass a version suffix to override (e.g. `"pkg@^1.2"`).
+
+If `pre-commit-check` fails due to source code issues, fix the files (Edit tool), then run:
+
+```bash
+bash .claude/skills/update-py-deps/update-dep.sh <subproject_dir> <pkg>
+```
+
+again from scratch (it re-adds and re-checks). If the fix only needs a re-check without re-adding (e.g. the dep is already added but pre-commit-check failed), run `update-dep.sh` anyway — `poetry add` will be a no-op if the version is already correct.
 
 ## Subprojects
 
@@ -45,9 +49,9 @@ Each subproject has a `poe pre-commit-check` target (sort, lint, typecheck, form
 
 ## Process — repeat for each dependency
 
-1. **Identify current + latest version** in one Bash call
-2. **Update + check + commit** in one Bash call (the pattern above)
-3. **Fix any source issues** with Edit tool if needed, then re-run check+commit in one Bash call
+1. **Read `pyproject.toml`** to find the next dependency to update
+2. **Update + check + commit**: run the helper script
+3. **Fix any source issues** with Edit tool if needed, then re-run `update-dep.sh`
 4. **Move to the next dependency**
 
 ## Rules
@@ -56,7 +60,7 @@ Each subproject has a `poe pre-commit-check` target (sort, lint, typecheck, form
 - Auto-fixes from ruff (format/lint) are applied by `pre-commit-check` automatically — `git add -A` picks them up
 - Never skip a failing check — fix it before moving on
 - Use `poetry add` not `poetry update`
-- If `poetry add <pkg>@latest` fails due to conflicts, try without `@latest` to let poetry resolve, or pin to latest compatible version
+- If `poetry add <pkg>@latest` fails due to conflicts, retry with a pinned version: `bash .claude/skills/update-py-deps/update-dep.sh <subproject_dir> "<pkg>@^X.Y"` (let poetry resolve the latest compatible)
 - Skip a dependency if it's already at latest (poetry reports "No dependencies to install or update" and version unchanged)
 
 ## Dependency order within each subproject
