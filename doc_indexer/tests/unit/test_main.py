@@ -67,3 +67,63 @@ def test_run_indexer_uses_injected_embeddings_and_connection(mock_embeddings, mo
     mock_get_config.assert_not_called()
     mock_create_conn.assert_not_called()
     mock_indexer_cls.assert_called_once()
+
+
+def test_run_drop_calls_drop_table_with_injected_connection(mock_hana_conn):
+    """run_drop calls drop_table with the injected connection and configured table name."""
+    from main import run_drop
+
+    with (
+        patch("main.drop_table") as mock_drop,
+        patch("main.DATABASE_USER", "test_user"),
+        patch("main.DOCS_TABLE_NAME", "test_table"),
+    ):
+        run_drop(hana_conn=mock_hana_conn)
+
+    mock_drop.assert_called_once_with(mock_hana_conn, "test_user", "test_table")
+
+
+def test_run_drop_accepts_explicit_table_name(mock_hana_conn):
+    """run_drop uses the explicitly provided table_name instead of the config default."""
+    from main import run_drop
+
+    with (
+        patch("main.drop_table") as mock_drop,
+        patch("main.DATABASE_USER", "test_user"),
+    ):
+        run_drop(hana_conn=mock_hana_conn, table_name="custom_table")
+
+    mock_drop.assert_called_once_with(mock_hana_conn, "test_user", "custom_table")
+
+
+def test_run_drop_creates_connection_when_not_injected():
+    """run_drop creates a HANA connection from config when none is injected."""
+    from main import run_drop
+
+    mock_conn = Mock()
+    with (
+        patch("main.create_hana_connection", return_value=mock_conn) as mock_create,
+        patch("main.drop_table") as mock_drop,
+        patch("main.DATABASE_URL", "hana.example.com"),
+        patch("main.DATABASE_PORT", 443),
+        patch("main.DATABASE_USER", "test_user"),
+        patch("main.DATABASE_PASSWORD", "secret"),
+    ):
+        run_drop()
+
+    mock_create.assert_called_once_with("hana.example.com", 443, "test_user", "secret")
+    mock_drop.assert_called_once()
+
+
+def test_run_drop_raises_when_connection_fails():
+    """run_drop raises RuntimeError when the HANA connection cannot be established."""
+    from main import run_drop
+
+    with (
+        patch("main.create_hana_connection", return_value=None),
+        patch("main.drop_table") as mock_drop,
+    ):
+        with pytest.raises(RuntimeError, match="Failed to connect to the database"):
+            run_drop()
+
+    mock_drop.assert_not_called()
