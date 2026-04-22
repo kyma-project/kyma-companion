@@ -32,7 +32,8 @@ def list_tables(connection: dbapi.Connection, db_user: str) -> list[tuple[str, i
     )
     with connection.cursor() as cursor:
         cursor.execute(sql, (db_user,))
-        return cursor.fetchall()
+        rows: list[tuple[str, int, int]] = cursor.fetchall()
+        return rows
 
 
 def drop_table(connection: dbapi.Connection, db_user: str, table_name: str) -> None:
