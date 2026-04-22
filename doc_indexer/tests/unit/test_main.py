@@ -121,9 +121,9 @@ def test_run_drop_raises_when_connection_fails():
     with (
         patch("main.create_hana_connection", return_value=None),
         patch("main.drop_table") as mock_drop,
+        pytest.raises(RuntimeError, match="Failed to connect to the database"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to connect to the database"):
-            run_drop()
+        run_drop()
 
     mock_drop.assert_not_called()
 
@@ -148,8 +148,8 @@ def test_run_list_tables_raises_when_connection_fails():
     with (
         patch("main.create_hana_connection", return_value=None),
         patch("main.list_tables") as mock_list,
+        pytest.raises(RuntimeError, match="Failed to connect to the database"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to connect to the database"):
-            run_list_tables()
+        run_list_tables()
 
     mock_list.assert_not_called()
