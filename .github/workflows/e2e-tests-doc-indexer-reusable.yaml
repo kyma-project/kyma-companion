@@ -202,7 +202,10 @@ jobs:
                     secretName: doc-indexer-config
           EOF
           kubectl wait --for=condition=complete job/doc-indexer-drop \
-            -n "${{ env.NAMESPACE }}" --timeout=120s
+            -n "${{ env.NAMESPACE }}" --timeout=120s || \
+          kubectl wait --for=condition=failed job/doc-indexer-drop \
+            -n "${{ env.NAMESPACE }}" --timeout=10s && \
+          { kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-drop --tail=50 || true; exit 1; }
 
       - name: List HANA tables
         if: always()
@@ -238,5 +241,8 @@ jobs:
                     secretName: doc-indexer-config
           EOF
           kubectl wait --for=condition=complete job/doc-indexer-tables \
-            -n "${{ env.NAMESPACE }}" --timeout=120s
+            -n "${{ env.NAMESPACE }}" --timeout=120s || \
+          kubectl wait --for=condition=failed job/doc-indexer-tables \
+            -n "${{ env.NAMESPACE }}" --timeout=10s && \
+          { kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-tables --tail=50 || true; exit 1; }
           kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-tables --tail=50 || true
