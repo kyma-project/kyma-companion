@@ -26,10 +26,7 @@ def create_hana_connection(url: str, port: int, user: str, password: str) -> dba
 
 def list_tables(connection: dbapi.Connection, db_user: str) -> list[tuple[str, int, int]]:
     """Return all tables owned by db_user as (name, row_count, size_bytes) tuples."""
-    sql = (
-        "SELECT TABLE_NAME, RECORD_COUNT, TABLE_SIZE FROM M_TABLES "
-        "WHERE SCHEMA_NAME = ? ORDER BY TABLE_NAME"
-    )
+    sql = "SELECT TABLE_NAME, RECORD_COUNT, TABLE_SIZE FROM M_TABLES WHERE SCHEMA_NAME = ? ORDER BY TABLE_NAME"
     with connection.cursor() as cursor:
         cursor.execute(sql, (db_user,))
         rows: list[tuple[str, int, int]] = cursor.fetchall()
