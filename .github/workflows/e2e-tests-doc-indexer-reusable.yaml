@@ -203,3 +203,40 @@ jobs:
           EOF
           kubectl wait --for=condition=complete job/doc-indexer-drop \
             -n "${{ env.NAMESPACE }}" --timeout=120s
+
+      - name: List HANA tables
+        if: always()
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-tables
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "tables"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+          EOF
+          kubectl wait --for=condition=complete job/doc-indexer-tables \
+            -n "${{ env.NAMESPACE }}" --timeout=120s
+          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-tables --tail=50 || true

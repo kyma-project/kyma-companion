@@ -76,9 +76,8 @@ def test_run_drop_calls_drop_table_with_injected_connection(mock_hana_conn):
     with (
         patch("main.drop_table") as mock_drop,
         patch("main.DATABASE_USER", "test_user"),
-        patch("main.DOCS_TABLE_NAME", "test_table"),
     ):
-        run_drop(hana_conn=mock_hana_conn)
+        run_drop(hana_conn=mock_hana_conn, table_name="test_table")
 
     mock_drop.assert_called_once_with(mock_hana_conn, "test_user", "test_table")
 
@@ -127,3 +126,30 @@ def test_run_drop_raises_when_connection_fails():
             run_drop()
 
     mock_drop.assert_not_called()
+
+
+def test_run_list_tables_calls_list_tables_with_injected_connection(mock_hana_conn):
+    """run_list_tables calls list_tables with the injected connection and DATABASE_USER."""
+    from main import run_list_tables
+
+    with (
+        patch("main.list_tables", return_value=[]) as mock_list,
+        patch("main.DATABASE_USER", "test_user"),
+    ):
+        run_list_tables(hana_conn=mock_hana_conn)
+
+    mock_list.assert_called_once_with(mock_hana_conn, "test_user")
+
+
+def test_run_list_tables_raises_when_connection_fails():
+    """run_list_tables raises RuntimeError when the HANA connection cannot be established."""
+    from main import run_list_tables
+
+    with (
+        patch("main.create_hana_connection", return_value=None),
+        patch("main.list_tables") as mock_list,
+    ):
+        with pytest.raises(RuntimeError, match="Failed to connect to the database"):
+            run_list_tables()
+
+    mock_list.assert_not_called()
