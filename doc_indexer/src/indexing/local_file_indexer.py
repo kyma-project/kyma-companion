@@ -2,8 +2,8 @@ import gc
 import hashlib
 import json
 import tarfile
-from datetime import UTC, datetime
 from collections.abc import Generator
+from datetime import UTC, datetime
 from pathlib import Path
 
 from indexing.adaptive_indexer import (

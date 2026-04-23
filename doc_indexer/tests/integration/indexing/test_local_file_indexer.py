@@ -23,6 +23,7 @@ import pytest
 pytestmark = pytest.mark.integration
 
 FASTEMBED_MODEL = "nomic-ai/nomic-embed-text-v1.5"
+VECTOR_DIM = 768  # output dimension of nomic-embed-text-v1.5
 E2E_DOCS_PATH = str(Path(__file__).parent.parent / "fixtures" / "e2e_docs" / "kyma-docs")
 
 
@@ -52,13 +53,13 @@ def real_embedding(require_local_deps):
 def test_fastembed_produces_768d_vectors(real_embedding):
     """nomic-embed-text-v1.5 must produce 768-dimensional vectors."""
     vectors = real_embedding.embed_documents(["Hello Kyma", "Serverless functions"])
-    assert len(vectors) == 2
-    assert len(vectors[0]) == 768, f"Expected 768-dim vectors, got {len(vectors[0])}"
+    assert len(vectors) == len(["Hello Kyma", "Serverless functions"])
+    assert len(vectors[0]) == VECTOR_DIM, f"Expected {VECTOR_DIM}-dim vectors, got {len(vectors[0])}"
 
 
 def test_fastembed_embed_query_matches_doc_dimension(real_embedding):
     vec = real_embedding.embed_query("what is Kyma?")
-    assert len(vec) == 768
+    assert len(vec) == VECTOR_DIM
     assert all(isinstance(x, float) for x in vec)
 
 
