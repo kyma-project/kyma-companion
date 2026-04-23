@@ -104,6 +104,8 @@ def test_run_local_file_indexer_creates_indexer_and_packages():
 
     with (
         patch("main.fastembed_embedding_creator"),
+        patch("main.INDEX_OUTPUT_DIR", "/tmp/test_index"),
+        patch("main.KYMA_VERSION", "test-version"),
         # LocalFileIndexer is lazily imported inside the function,
         # so we must patch it at its source module.
         patch("indexing.local_file_indexer.LocalFileIndexer") as mock_cls,
@@ -115,4 +117,4 @@ def test_run_local_file_indexer_creates_indexer_and_packages():
 
     mock_cls.assert_called_once()
     mock_instance.index.assert_called_once()
-    mock_cls.package.assert_called_once()
+    mock_cls.package.assert_called_once_with("/tmp/test_index", "kyma-docs-index-test-version.tar.gz")

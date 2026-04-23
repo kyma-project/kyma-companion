@@ -68,7 +68,7 @@ DATABASE_PORT = int(config("DATABASE_PORT", default=443))
 DATABASE_USER = str(config("DATABASE_USER", ""))
 DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
-INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
+INDEX_TO_FILE = config("INDEX_TO_FILE", default=False, cast=bool)
 INDEX_OUTPUT_DIR = str(
     config(
         "INDEX_OUTPUT_DIR",
@@ -76,9 +76,7 @@ INDEX_OUTPUT_DIR = str(
     )
 )
 KYMA_VERSION = str(config("KYMA_VERSION", default="latest"))
-LOCAL_EMBED_MODEL = str(
-    config("LOCAL_EMBED_MODEL", default="BAAI/bge-small-en-v1.5")
-)
+LOCAL_EMBED_MODEL = str(config("LOCAL_EMBED_MODEL", default="BAAI/bge-small-en-v1.5"))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:

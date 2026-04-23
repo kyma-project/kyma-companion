@@ -50,9 +50,7 @@ def run_fetcher() -> None:
     try:
         subprocess.run(["tree", DOCS_PATH])
     except Exception:
-        logger.warning(
-            "Fetcher Completed but Failed to print the documents list"
-        )
+        logger.warning("Fetcher Completed but Failed to print the documents list")
 
 
 def run_indexer(
@@ -82,16 +80,12 @@ def run_indexer(
         embeddings_model = create_embedding(embedding_model.name)
 
     if hana_conn is None:
-        hana_conn = create_hana_connection(
-            DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD
-        )
+        hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
         if not hana_conn:
             logger.error("Failed to connect to the database. Exiting.")
             raise RuntimeError("Failed to connect to the database.")
 
-    indexer = AdaptiveSplitMarkdownIndexer(
-        docs_path, embeddings_model, hana_conn, table_name
-    )
+    indexer = AdaptiveSplitMarkdownIndexer(docs_path, embeddings_model, hana_conn, table_name)
     indexer.index()
 
 
@@ -100,8 +94,7 @@ def _run_local_file_indexer(docs_path: str, collection_name: str) -> None:
     from indexing.local_file_indexer import LocalFileIndexer
 
     logger.info(
-        "INDEX_TO_FILE=true — building local ChromaDB index "
-        f"(model={LOCAL_EMBED_MODEL}, output={INDEX_OUTPUT_DIR})"
+        f"INDEX_TO_FILE=true — building local ChromaDB index (model={LOCAL_EMBED_MODEL}, output={INDEX_OUTPUT_DIR})"
     )
     embedding = fastembed_embedding_creator(LOCAL_EMBED_MODEL)
     indexer = LocalFileIndexer(
@@ -120,9 +113,7 @@ def _run_local_file_indexer(docs_path: str, collection_name: str) -> None:
 
 if __name__ == "__main__":
     # read command line argument.
-    parser = argparse.ArgumentParser(
-        description="Kyma Documentation Fetcher and Indexer."
-    )
+    parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
     parser.add_argument("task", choices=["index", "fetch"])
     args = parser.parse_args()
 

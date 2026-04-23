@@ -22,12 +22,12 @@ class FastEmbedEmbeddings(Embeddings):
         # threads limits ONNX Runtime intra-op threads to reduce peak memory
         self._model = TextEmbedding(model_name, threads=threads)
 
-    def embed_documents(
-        self, texts: list[str], batch_size: int = 8
-    ) -> list[list[float]]:
+    def embed_documents(self, texts: list[str], batch_size: int = 8) -> list[list[float]]:
+        """Embed a list of documents into vectors."""
         return [v.tolist() for v in self._model.embed(texts, batch_size=batch_size)]
 
     def embed_query(self, text: str) -> list[float]:
+        """Embed a single query string into a vector."""
         return next(self._model.embed([text])).tolist()
 
 

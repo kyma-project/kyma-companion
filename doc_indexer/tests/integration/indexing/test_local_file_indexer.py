@@ -23,9 +23,7 @@ import pytest
 pytestmark = pytest.mark.integration
 
 FASTEMBED_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-E2E_DOCS_PATH = str(
-    Path(__file__).parent.parent / "fixtures" / "e2e_docs" / "kyma-docs"
-)
+E2E_DOCS_PATH = str(Path(__file__).parent.parent / "fixtures" / "e2e_docs" / "kyma-docs")
 
 
 @pytest.fixture(scope="module")
@@ -35,9 +33,7 @@ def require_local_deps():
         import chromadb  # noqa: F401
         from fastembed import TextEmbedding  # noqa: F401
     except ImportError as exc:
-        pytest.skip(
-            f"Local deps not installed — run `poetry install --with local`: {exc}"
-        )
+        pytest.skip(f"Local deps not installed — run `poetry install --with local`: {exc}")
 
 
 @pytest.fixture(scope="module")
@@ -57,9 +53,7 @@ def test_fastembed_produces_768d_vectors(real_embedding):
     """nomic-embed-text-v1.5 must produce 768-dimensional vectors."""
     vectors = real_embedding.embed_documents(["Hello Kyma", "Serverless functions"])
     assert len(vectors) == 2
-    assert len(vectors[0]) == 768, (
-        f"Expected 768-dim vectors, got {len(vectors[0])}"
-    )
+    assert len(vectors[0]) == 768, f"Expected 768-dim vectors, got {len(vectors[0])}"
 
 
 def test_fastembed_embed_query_matches_doc_dimension(real_embedding):
@@ -165,9 +159,7 @@ def test_local_file_indexer_idempotent(real_embedding, tmp_path):
     indexer.index()
     count_second = chromadb.PersistentClient(path=output_dir).get_collection("kyma_docs").count()
 
-    assert count_first == count_second, (
-        f"Second run duplicated documents: {count_first} -> {count_second}"
-    )
+    assert count_first == count_second, f"Second run duplicated documents: {count_first} -> {count_second}"
 
 
 # ---------------------------------------------------------------------------
@@ -195,9 +187,7 @@ def test_package_creates_valid_targz(real_embedding, tmp_path):
     with tarfile.open(archive, "r:gz") as tar:
         names = tar.getnames()
 
-    assert any("sqlite3" in n for n in names), (
-        f"ChromaDB sqlite3 not found in archive. Members: {names}"
-    )
+    assert any("sqlite3" in n for n in names), f"ChromaDB sqlite3 not found in archive. Members: {names}"
 
 
 def test_packaged_archive_can_be_restored_and_queried(real_embedding, tmp_path):
@@ -230,6 +220,4 @@ def test_packaged_archive_can_be_restored_and_queried(real_embedding, tmp_path):
     client = chromadb.PersistentClient(path=str(restored_chroma))
     col = client.get_collection("kyma_docs")
 
-    assert col.count() == count_original, (
-        f"Restored count {col.count()} != original {count_original}"
-    )
+    assert col.count() == count_original, f"Restored count {col.count()} != original {count_original}"

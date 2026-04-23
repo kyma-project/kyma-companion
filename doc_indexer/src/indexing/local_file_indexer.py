@@ -1,6 +1,8 @@
 import gc
+import hashlib
 import json
 import tarfile
+from datetime import UTC, datetime
 from collections.abc import Generator
 from pathlib import Path
 
@@ -156,7 +158,7 @@ class LocalFileIndexer:
             batch = chunks[i : i + EMBED_BATCH_SIZE]
             texts = [doc.page_content for doc in batch]
             metadatas = [_clean_metadata(doc.metadata) for doc in batch]
-            ids = [str(i + j) for j in range(len(batch))]
+            ids = [hashlib.sha256(t.encode()).hexdigest() for t in texts]
             vectors = self.embedding.embed_documents(texts, batch_size=FASTEMBED_BATCH_SIZE)
             collection.add(
                 ids=ids,
@@ -173,8 +175,12 @@ class LocalFileIndexer:
 
         if self.embed_model_name:
             meta_path = Path(self.output_dir) / "meta.json"
-            meta_path.write_text(json.dumps({"embed_model": self.embed_model_name}))
-            logger.info(f"Wrote meta.json: embed_model={self.embed_model_name}")
+            meta = {
+                "embed_model": self.embed_model_name,
+                "build_date": datetime.now(UTC).strftime("%Y-%m-%d"),
+            }
+            meta_path.write_text(json.dumps(meta))
+            logger.info(f"Wrote meta.json: embed_model={self.embed_model_name}, build_date={meta['build_date']}")
 
     @staticmethod
     def package(output_dir: str, archive_path: str) -> None:
