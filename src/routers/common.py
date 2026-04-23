@@ -16,10 +16,10 @@ from services.encryption import Encryption
 from services.encryption_cache import EncryptionCache, get_encryption_cache
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
+from services.key_store import KeyStore
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
-from utils.settings import ENCRYPTION_PRIVATE_KEY_B64
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -71,6 +71,7 @@ class ReadinessModel(BaseModel):
     is_redis_initialized: bool
     is_hana_initialized: bool
     are_models_initialized: bool
+    is_key_store_initialized: bool
 
 
 class HealthModel(BaseModel):
@@ -79,6 +80,7 @@ class HealthModel(BaseModel):
     is_redis_healthy: bool
     is_hana_healthy: bool
     is_usage_tracker_healthy: bool
+    is_key_store_healthy: bool
     llms: dict[str, bool]
 
 
@@ -378,12 +380,6 @@ async def get_k8s_auth_headers_from_encrypted_payload(
                                 encrypted with the random AES-256 key.
     """
 
-    if not ENCRYPTION_PRIVATE_KEY_B64:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail="Encrypted Auth Headers are not enabled in companion",
-        )
-
     if not x_encrypted_key or not x_client_iv or not x_target_cluster_encrypted:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -391,8 +387,9 @@ async def get_k8s_auth_headers_from_encrypted_payload(
         )
 
     try:
+        private_key = KeyStore().get_private_key()
         # decrypt the payload using the encryption service.
-        encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64, encryption_cache)
+        encryption = Encryption(private_key, encryption_cache)
         payload = await encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
         # parse the payload as JSON and convert to a K8sAuthHeaders instance
         payload = json.loads(payload)

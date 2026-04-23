@@ -19,7 +19,7 @@ from services.data_sanitizer import IDataSanitizer
 from services.encryption_cache import IEncryptionCache
 from services.k8s import K8sAuthHeaders
 
-_PRIVATE_KEY_B64 = "fake-private-key-b64"
+_MOCK_PRIVATE_KEY = Mock()
 _VALID_PAYLOAD = {
     "x-cluster-url": "https://api.test-cluster.example.com",
     "x-cluster-certificate-authority-data": "dGVzdC1jYS1kYXRh",
@@ -260,7 +260,7 @@ class TestInitSearchTool:
     [
         pytest.param(
             "valid encrypted payload is decrypted and parsed into K8sAuthHeaders",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -276,21 +276,21 @@ class TestInitSearchTool:
             id="success",
         ),
         pytest.param(
-            "raises 500 when the server private key is not configured",
-            "",
+            "raises 422 when the server private key is not available",
+            RuntimeError("EC private key is not available"),
             "enc-key",
             "iv",
             "enc-data",
             None,
             None,
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            "Encrypted Auth Headers are not enabled in companion",
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+            "Failed to decrypt cluster authentication headers",
             None,
             id="private_key_not_configured",
         ),
         pytest.param(
             "raises 400 when x_encrypted_key header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "",
             "iv",
             "enc-data",
@@ -303,7 +303,7 @@ class TestInitSearchTool:
         ),
         pytest.param(
             "raises 400 when x_client_iv header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "",
             "enc-data",
@@ -316,7 +316,7 @@ class TestInitSearchTool:
         ),
         pytest.param(
             "raises 400 when x_target_cluster_encrypted header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "",
@@ -329,7 +329,7 @@ class TestInitSearchTool:
         ),
         pytest.param(
             "raises 400 when decryption raises a ValueError",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -342,7 +342,7 @@ class TestInitSearchTool:
         ),
         pytest.param(
             "raises 422 when decryption raises a generic exception",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -355,7 +355,7 @@ class TestInitSearchTool:
         ),
         pytest.param(
             "re-raises HTTPException from decryption unchanged",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -371,7 +371,7 @@ class TestInitSearchTool:
 async def test_get_k8s_auth_headers_from_encrypted_payload(
     monkeypatch: pytest.MonkeyPatch,
     description: str,
-    private_key_b64: str,
+    private_key_b64: object,
     x_encrypted_key: str,
     x_client_iv: str,
     x_target_cluster_encrypted: str,
@@ -382,7 +382,12 @@ async def test_get_k8s_auth_headers_from_encrypted_payload(
     expected_fields: dict | None,
 ):
     # Given:
-    monkeypatch.setattr("routers.common.ENCRYPTION_PRIVATE_KEY_B64", private_key_b64)
+    mock_key_store = Mock()
+    if isinstance(private_key_b64, Exception):
+        mock_key_store.get_private_key.side_effect = private_key_b64  # gitleaks:allow
+    else:
+        mock_key_store.get_private_key.return_value = private_key_b64  # gitleaks:allow
+    monkeypatch.setattr("routers.common.KeyStore", Mock(return_value=mock_key_store))
 
     mock_encryption_instance = Mock()
     mock_encryption_instance.decrypt = AsyncMock(side_effect=decrypt_effect, return_value=decrypt_return)
