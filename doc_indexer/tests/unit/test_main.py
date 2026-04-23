@@ -67,3 +67,52 @@ def test_run_indexer_uses_injected_embeddings_and_connection(mock_embeddings, mo
     mock_get_config.assert_not_called()
     mock_create_conn.assert_not_called()
     mock_indexer_cls.assert_called_once()
+
+
+def test_run_indexer_routes_to_local_when_index_to_file(mock_hana_conn):
+    """When INDEX_TO_FILE=true, run_indexer must use the local ChromaDB path."""
+    from main import run_indexer
+
+    with (
+        patch("main.INDEX_TO_FILE", True),
+        patch("main._run_local_file_indexer") as mock_local,
+    ):
+        run_indexer(hana_conn=mock_hana_conn)
+
+    mock_local.assert_called_once()
+
+
+def test_run_indexer_never_touches_hana_when_index_to_file():
+    """When INDEX_TO_FILE=true, no HANA connection must be created or used."""
+    from main import run_indexer
+
+    with (
+        patch("main.INDEX_TO_FILE", True),
+        patch("main._run_local_file_indexer"),
+        patch("main.create_hana_connection") as mock_create_conn,
+        patch("main.AdaptiveSplitMarkdownIndexer") as mock_adaptive,
+    ):
+        run_indexer()
+
+    mock_create_conn.assert_not_called()
+    mock_adaptive.assert_not_called()
+
+
+def test_run_local_file_indexer_creates_indexer_and_packages():
+    """_run_local_file_indexer must build a LocalFileIndexer and call package."""
+    from main import _run_local_file_indexer
+
+    with (
+        patch("main.fastembed_embedding_creator"),
+        # LocalFileIndexer is lazily imported inside the function,
+        # so we must patch it at its source module.
+        patch("indexing.local_file_indexer.LocalFileIndexer") as mock_cls,
+    ):
+        mock_instance = Mock()
+        mock_cls.return_value = mock_instance
+
+        _run_local_file_indexer(docs_path="/docs", collection_name="kyma_docs")
+
+    mock_cls.assert_called_once()
+    mock_instance.index.assert_called_once()
+    mock_cls.package.assert_called_once()

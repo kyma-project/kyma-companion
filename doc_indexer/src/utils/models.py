@@ -12,6 +12,30 @@ from utils.settings import get_embedding_model_config
 logger = get_logger(__name__)
 
 
+class FastEmbedEmbeddings(Embeddings):
+    """Langchain-compatible wrapper around fastembed.TextEmbedding."""
+
+    def __init__(self, model_name: str, threads: int = 2):
+        # imported lazily so fastembed is only required when INDEX_TO_FILE=true
+        from fastembed import TextEmbedding
+
+        # threads limits ONNX Runtime intra-op threads to reduce peak memory
+        self._model = TextEmbedding(model_name, threads=threads)
+
+    def embed_documents(
+        self, texts: list[str], batch_size: int = 8
+    ) -> list[list[float]]:
+        return [v.tolist() for v in self._model.embed(texts, batch_size=batch_size)]
+
+    def embed_query(self, text: str) -> list[float]:
+        return next(self._model.embed([text])).tolist()
+
+
+def fastembed_embedding_creator(model_name: str) -> Embeddings:
+    """Create a local fastembed embedding model (no external API required)."""
+    return FastEmbedEmbeddings(model_name)
+
+
 def create_embedding_factory(
     embedding_creator: Callable[[str], Embeddings],
 ) -> Callable[[str], Embeddings]:

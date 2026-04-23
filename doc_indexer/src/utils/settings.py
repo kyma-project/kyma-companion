@@ -69,6 +69,16 @@ DATABASE_USER = str(config("DATABASE_USER", ""))
 DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
+INDEX_OUTPUT_DIR = str(
+    config(
+        "INDEX_OUTPUT_DIR",
+        default=os.path.join(project_root, "chroma_index"),
+    )
+)
+KYMA_VERSION = str(config("KYMA_VERSION", default="latest"))
+LOCAL_EMBED_MODEL = str(
+    config("LOCAL_EMBED_MODEL", default="BAAI/bge-small-en-v1.5")
+)
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:

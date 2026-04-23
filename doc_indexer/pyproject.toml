@@ -27,6 +27,10 @@ dependencies = [
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.group.local.dependencies]
+chromadb = ">=0.6.0,<2.0.0"
+fastembed = ">=0.6.0,<1.0.0"
+
 [tool.poetry.group.test.dependencies]
 mypy = "^1.20.0"
 poethepoet = "^0.44.0"

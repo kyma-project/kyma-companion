@@ -1,0 +1,97 @@
+name: Build and Publish Local Kyma Docs Index
+
+on:
+  schedule:
+    - cron: "0 9 * * 6"  # Every Saturday at 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      kyma_version:
+        description: "Version string embedded in the archive name (default: latest)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  ROLLING_RELEASE_TAG: "docs-index-latest"
+
+jobs:
+  build-local-index:
+    name: Build local ChromaDB index and upload to rolling release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve Kyma version
+        id: resolve
+        run: |
+          KYMA_VER="${{ inputs.kyma_version }}"
+          if [ -z "$KYMA_VER" ]; then
+            KYMA_VER="latest"
+          fi
+          echo "kyma_version=$KYMA_VER" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies (including local index group)
+        working-directory: ./doc_indexer
+        run: poetry install --with local
+
+      - name: Ensure rolling release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "${{ env.ROLLING_RELEASE_TAG }}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            gh release create "${{ env.ROLLING_RELEASE_TAG }}" \
+              --repo "${{ github.repository }}" \
+              --title "Latest Kyma Docs Index" \
+              --notes "Auto-updated weekly. Contains the latest ChromaDB index of Kyma documentation for local use." \
+              --prerelease
+          fi
+
+      - name: Fetch Kyma documentation
+        working-directory: ./doc_indexer
+        env:
+          CONFIG_PATH: "${{ github.workspace }}/config/config.json"
+          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
+          DOCS_PATH: "./data"
+          LOG_LEVEL: "INFO"
+        run: |
+          mkdir -p config
+          echo '{}' > config/config.json
+          poetry run python src/main.py fetch
+
+      - name: Build local ChromaDB index
+        working-directory: ./doc_indexer
+        env:
+          CONFIG_PATH: "${{ github.workspace }}/config/config.json"
+          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
+          DOCS_PATH: "./data"
+          INDEX_TO_FILE: "true"
+          INDEX_OUTPUT_DIR: "./chroma_index"
+          KYMA_VERSION: ${{ steps.resolve.outputs.kyma_version }}
+          LOCAL_EMBED_MODEL: "BAAI/bge-base-en-v1.5"
+          LOG_LEVEL: "INFO"
+        run: poetry run python src/main.py index
+
+      - name: Upload index archive to rolling release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mv "doc_indexer/kyma-docs-index-${{ steps.resolve.outputs.kyma_version }}.tar.gz" "doc_indexer/kyma-docs-index.tar.gz"
+          gh release upload "${{ env.ROLLING_RELEASE_TAG }}" "doc_indexer/kyma-docs-index.tar.gz" --clobber
