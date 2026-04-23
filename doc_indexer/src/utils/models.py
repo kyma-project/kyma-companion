@@ -24,15 +24,17 @@ class FastEmbedEmbeddings(Embeddings):
 
     def embed_documents(self, texts: list[str], batch_size: int = 8) -> list[list[float]]:
         """Embed a list of documents into vectors."""
-        return [v.tolist() for v in self._model.embed(texts, batch_size=batch_size)]
+        result: list[list[float]] = [v.tolist() for v in self._model.embed(texts, batch_size=batch_size)]
+        return result
 
     def embed_query(self, text: str) -> list[float]:
         """Embed a single query string into a vector."""
-        return next(self._model.embed([text])).tolist()
+        result: list[float] = list(self._model.embed([text]))[0].tolist()
+        return result
 
 
-def fastembed_embedding_creator(model_name: str) -> Embeddings:
-    """Create a local fastembed embedding model (no external API required)."""
+def fastembed_embedding_creator(model_name: str) -> FastEmbedEmbeddings:
+    """Create a local fastembed embedding model (no external API required.)"""
     return FastEmbedEmbeddings(model_name)
 
 

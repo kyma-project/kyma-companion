@@ -13,11 +13,11 @@ from indexing.adaptive_indexer import (
     remove_header_brackets,
 )
 from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from utils.documents import load_documents
 
 from utils.logging import get_logger
+from utils.models import FastEmbedEmbeddings
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,7 @@ class LocalFileIndexer:
     def __init__(
         self,
         docs_path: str,
-        embedding: Embeddings,
+        embedding: FastEmbedEmbeddings,
         output_dir: str,
         embed_model_name: str = "",
         collection_name: str = COLLECTION_NAME,
@@ -164,7 +164,7 @@ class LocalFileIndexer:
                 ids=ids,
                 embeddings=vectors,
                 documents=texts,
-                metadatas=metadatas,
+                metadatas=metadatas,  # type: ignore[arg-type]
             )
             batch_num = i // EMBED_BATCH_SIZE + 1
             total_batches = (total - 1) // EMBED_BATCH_SIZE + 1
