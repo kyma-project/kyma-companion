@@ -572,17 +572,82 @@ class K8sClient:
         """Fetch logs of Kubernetes Pod - attempts both current and previous logs.
 
         Strategy:
-        1. Try fetching both current AND previous logs in parallel
-        2. Return structured response with current_container and previously_terminated_container logs
-        3. If current logs unavailable, include diagnostic_context
+        - If container_name is provided: fetch logs for that container only.
+        - If container_name is empty: discover all containers from the pod spec and
+          fetch logs for all of them in parallel.
 
         Returns:
-            PodLogsResult with logs and optional diagnostic_context
+            PodLogsResult with logs keyed by container name and optional diagnostic_context
 
         Raises:
             K8sClientError: For authentication (401) or authorization (403) errors
+            NoLogsAvailableError: When no logs or diagnostic info is available for any container
         """
-        # Step 1: Try fetching both current and previous logs in parallel
+        if container_name:
+            return await self._fetch_single_container_logs(name, namespace, container_name, tail_limit)
+
+        # Discover all containers from the pod spec
+        container_names = self._get_pod_container_names(name, namespace)
+        if not container_names:
+            # Fall back to fetching without a container name (k8s picks the first)
+            return await self._fetch_single_container_logs(name, namespace, "", tail_limit)
+
+        # Fetch logs for all containers in parallel
+        tasks = [
+            asyncio.create_task(self._fetch_single_container_logs(name, namespace, cname, tail_limit))
+            for cname in container_names
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        logs: dict[str, PodLogs] = {}
+        diagnostic_context: PodLogsDiagnosticContext | None = None
+        response_status_code: int = HTTPStatus.OK
+
+        for cname, result in zip(container_names, results, strict=False):
+            if isinstance(result, K8sClientError) and self._is_auth_error(result):
+                raise result
+            if isinstance(result, BaseException):
+                # Skip containers with no data, collect others
+                continue
+            logs[cname] = next(iter(result.logs.values()))
+            if result.diagnostic_context is not None and diagnostic_context is None:
+                diagnostic_context = result.diagnostic_context
+            if result.status_code != HTTPStatus.OK and response_status_code == HTTPStatus.OK:
+                response_status_code = result.status_code
+
+        if not logs:
+            raise NoLogsAvailableError(
+                message=f"No logs or diagnostic information available for pod '{name}' in namespace '{namespace}'",
+                pod=name,
+                namespace=namespace,
+                container="",
+            )
+
+        return PodLogsResult(
+            logs=logs,
+            diagnostic_context=diagnostic_context,
+            status_code=response_status_code,
+        )
+
+    def _get_pod_container_names(self, name: str, namespace: str) -> list[str]:
+        """Return the list of container names for a pod, or empty list on error."""
+        try:
+            pod = self.get_resource("v1", "Pod", name, namespace)
+            containers: list[dict] = pod.get("spec", {}).get("containers", [])
+            return [c["name"] for c in containers if c.get("name")]
+        except Exception:
+            logger.warning(f"Could not retrieve container list for pod '{name}' in namespace '{namespace}'")
+            return []
+
+    async def _fetch_single_container_logs(
+        self,
+        name: str,
+        namespace: str,
+        container_name: str,
+        tail_limit: int,
+    ) -> PodLogsResult:
+        """Fetch logs for a single container. Returns PodLogsResult with one entry in logs dict."""
+        # Try fetching both current and previous logs in parallel
         current_task = asyncio.create_task(
             self._try_fetch_logs(name, namespace, container_name, previous=False, tail_limit=tail_limit)
         )
@@ -593,34 +658,28 @@ class K8sClient:
         has_current_logs, current_logs, current_error = await current_task
         has_previous_logs, previous_logs, previous_error = await previous_task
 
-        # Step 2: Check for authentication/authorization errors - these should fail fast
-        # Check current logs error first as it's more critical
+        # Check for authentication/authorization errors - these should fail fast
         if current_error is not None and self._is_auth_error(current_error):
             raise current_error
-        # Also check previous logs error in case current succeeded but previous failed due to auth
         if previous_error is not None and self._is_auth_error(previous_error):
             raise previous_error
 
-        # Step 3: Build structured response
         current_container_logs: str
         previously_terminated_container_logs: str
         has_diagnostic_info = False
         diagnostic_context: PodLogsDiagnosticContext | None = None
-        response_status_code: int = HTTPStatus.OK  # Default to 200
+        response_status_code: int = HTTPStatus.OK
 
         # Current logs section
         if has_current_logs and current_logs is not None:
             current_container_logs = "\n".join(current_logs)
         else:
-            # Current logs failed - provide explanation
             current_container_logs = f"Logs not available. {self._get_error_reason(current_error)}"
 
-            # Add diagnostic context when current logs unavailable
             has_diagnostic_info, diagnostic_context = await self._gather_pod_diagnostic_context_structured(
                 name, namespace, container_name, tail_limit
             )
 
-            # Forward the status code from K8s API (e.g., 400 for invalid container)
             if isinstance(current_error, K8sClientError):
                 response_status_code = current_error.status_code
 
@@ -628,7 +687,6 @@ class K8sClient:
         if has_previous_logs and previous_logs is not None:
             previously_terminated_container_logs = "\n".join(previous_logs)
         else:
-            # Previous logs not available - this is often expected
             if isinstance(previous_error, K8sClientError):
                 if previous_error.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                     previously_terminated_container_logs = "Not available (container has not been restarted)"
@@ -637,7 +695,6 @@ class K8sClient:
             else:
                 previously_terminated_container_logs = f"Failed to fetch. {self._get_error_reason(previous_error)}"
 
-        # Check if we have any meaningful data - if not, raise exception
         has_any_data = has_current_logs or has_previous_logs or has_diagnostic_info
         if not has_any_data:
             raise NoLogsAvailableError(
@@ -647,11 +704,14 @@ class K8sClient:
                 container=container_name,
             )
 
+        log_key = container_name if container_name else name
         return PodLogsResult(
-            logs=PodLogs(
-                current_container=current_container_logs,
-                previously_terminated_container=previously_terminated_container_logs,
-            ),
+            logs={
+                log_key: PodLogs(
+                    current_container=current_container_logs,
+                    previously_terminated_container=previously_terminated_container_logs,
+                )
+            },
             diagnostic_context=diagnostic_context,
             status_code=response_status_code,
         )

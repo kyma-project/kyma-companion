@@ -30,8 +30,10 @@ class ToolTestState(TypedDict):
             None,
             {
                 "logs": {
-                    "current_container": "line 1\nline 2\nline 3",
-                    "previously_terminated_container": "Not available (container has not been restarted)",
+                    "my-container": {
+                        "current_container": "line 1\nline 2\nline 3",
+                        "previously_terminated_container": "Not available (container has not been restarted)",
+                    }
                 },
                 "diagnostic_context": None,
                 "status_code": 200,
@@ -77,10 +79,14 @@ async def test_fetch_pod_logs_tool(
         from services.k8s_models import PodLogs, PodLogsResult
 
         k8s_client.fetch_pod_logs.return_value = PodLogsResult(
-            logs=PodLogs(
-                current_container=expected_logs_dict["logs"]["current_container"],
-                previously_terminated_container=expected_logs_dict["logs"]["previously_terminated_container"],
-            ),
+            logs={
+                given_container_name: PodLogs(
+                    current_container=expected_logs_dict["logs"][given_container_name]["current_container"],
+                    previously_terminated_container=expected_logs_dict["logs"][given_container_name][
+                        "previously_terminated_container"
+                    ],
+                )
+            },
             diagnostic_context=expected_logs_dict["diagnostic_context"],
             status_code=expected_logs_dict["status_code"],
         )

@@ -123,9 +123,11 @@ class PodLogsRequest(BaseModel):
 class PodLogsResponse(BaseModel):
     """Response model for pod logs."""
 
-    logs: PodLogs = Field(
+    logs: dict[str, PodLogs] = Field(
         ...,
-        description="Container logs with current_container and previously_terminated_container",
+        description=(
+            "Container logs keyed by container name, each with current_container and previously_terminated_container"
+        ),
     )
     diagnostic_context: PodLogsDiagnosticContext | None = Field(
         default=None,
