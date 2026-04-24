@@ -1,11 +1,12 @@
+import json
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path, Query
 from fastapi.encoders import jsonable_encoder
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
@@ -196,7 +197,7 @@ async def followup_questions(
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
-@router.post("/{conversation_id}/messages")
+@router.post("/{conversation_id}/messages", response_model=None)
 async def messages(
     conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
@@ -208,7 +209,11 @@ async def messages(
     x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
     _: Annotated[None, Depends(enforce_query_token_limit)] = None,
-) -> StreamingResponse:
+    stream: Annotated[
+        bool,
+        Query(description="Stream the response as SSE. Set to false to receive the complete answer as plain text."),
+    ] = True,
+) -> StreamingResponse | PlainTextResponse:
     """Endpoint to send a message to the Kyma companion"""
 
     logger.info(f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
@@ -261,6 +266,9 @@ async def messages(
         # mark the message as a cluster overview query
         message.resource_scope = CLUSTER
 
+    if not stream:
+        return await _collect_answer(str(conversation_id), message, k8s_client, conversation_service)
+
     return StreamingResponse(
         (
             chunk_response + b"\n"
@@ -270,6 +278,37 @@ async def messages(
         ),
         media_type="text/event-stream",
     )
+
+
+async def _collect_answer(
+    conversation_id: str,
+    message: Message,
+    k8s_client: IK8sClient,
+    conversation_service: IService,
+) -> PlainTextResponse:
+    """Drain the streaming pipeline and return the concatenated answer as plain text."""
+    final_answer = ""
+    async for chunk in conversation_service.handle_request(conversation_id, message, k8s_client):
+        chunk_response = prepare_chunk_response(chunk)
+        if chunk_response is None:
+            continue
+        try:
+            data = json.loads(chunk_response)
+            chunk_data = data.get("data", {})
+            if chunk_data.get("error") is not None:
+                continue
+            content = (chunk_data.get("answer") or {}).get("content", "")
+            if content:
+                final_answer += content
+        except json.JSONDecodeError:
+            logger.warning(f"Unexpected non-JSON chunk from pipeline: {chunk_response!r}")
+        except AttributeError:
+            logger.warning(f"Unexpected chunk structure from pipeline: {chunk_response!r}")
+
+    if not final_answer:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
+
+    return PlainTextResponse(final_answer)
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

@@ -91,8 +91,12 @@ class MockService(IService):
 class MockK8sClient:
     """Mock for the K8sClient class."""
 
+    def __init__(self, token: str = SAMPLE_JWT_TOKEN, api_server: str = "http://api.k8s.example.com"):
+        self._token = token
+        self._api_server = api_server
+
     def get_api_server(self) -> str:
-        return "http://localhost:8080"
+        return self._api_server
 
     def model_dump(self) -> None:
         return None
@@ -1132,3 +1136,228 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
             assert exc_info.value.detail == "Input Query exceeds the allowed token limit."
         else:
             enforce_query_token_limit(message)  # Should not raise
+
+
+@pytest.mark.parametrize(
+    "test_description, mock_k8s_client, request_headers, conversation_id, input_message, expected_output",
+    [
+        (
+            "should return final answer for a cluster overview query",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN),
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "http://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 200,
+                "content-type": "text/plain; charset=utf-8",
+                "answer": "To create an API Rule in Kyma to expose a service externally"
+                "To create a kubernetes deployment",
+            },
+        ),
+        (
+            "should return final answer when client certificate is provided",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN),
+            {
+                "X-Client-Certificate-Data": SAMPLE_CLIENT_CERTIFICATE_DATA,
+                "X-Client-Key-Data": "non-empty-client-key-data",
+                "x-cluster-url": "http://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 200,
+                "content-type": "text/plain; charset=utf-8",
+                "answer": "To create an API Rule in Kyma to expose a service externally"
+                "To create a kubernetes deployment",
+            },
+        ),
+        (
+            "should return 401 when no auth token is provided",
+            MockK8sClient(token=""),
+            {
+                "x-k8s-authorization": "",
+                "x-cluster-url": "http://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Pod",
+                "resource_api_version": "v1",
+                "resource_name": "my-pod",
+                "namespace": "default",
+            },
+            {
+                "status_code": 401,
+                "content-type": "application/json",
+            },
+        ),
+        (
+            "should return 403 when user is not authorized",
+            MockK8sClient(token=jwt.encode({"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256")),
+            {
+                "x-k8s-authorization": jwt.encode({"sub": "UNAUTHORIZED"}, "secret", algorithm="HS256"),
+                "x-cluster-url": "http://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            uuid.uuid4(),
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 403,
+                "content-type": "application/json",
+            },
+        ),
+        (
+            "should return token usage exceeded error",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN, api_server="http://api.EXCEEDED.example.com"),
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "http://api.EXCEEDED.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            uuid.uuid4(),
+            {
+                "query": "Test query",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": ERROR_RATE_LIMIT_CODE,
+                "content-type": "application/json",
+                "body": {
+                    "current_usage": 1000,
+                    "error": "Token usage limit exceeded",
+                    "limit": 1000,
+                    "message": "Token usage limit of 1000 exceeded for this cluster. To ensure a "
+                    "fair usage, Joule controls the number of requests a "
+                    "cluster can make within 24 hours.",
+                    "time_remaining_seconds": 60,
+                },
+            },
+        ),
+        (
+            "should return 422 when conversation_id is not a valid uuid",
+            MockK8sClient(token=SAMPLE_JWT_TOKEN),
+            {
+                "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+                "x-cluster-url": "http://api.k8s.example.com",
+                "x-cluster-certificate-authority-data": "non-empty-ca-data",
+            },
+            "abcdef",
+            {
+                "query": "How to expose a Kyma application?",
+                "resource_kind": "Cluster",
+                "resource_api_version": "",
+                "resource_name": "",
+                "namespace": "",
+            },
+            {
+                "status_code": 422,
+                "content-type": "application/json",
+            },
+        ),
+    ],
+)
+def test_messages_stream_false(
+    client_factory,
+    test_description,
+    mock_k8s_client,
+    request_headers,
+    conversation_id,
+    input_message,
+    expected_output,
+):
+    with patch("services.k8s.K8sClient.new", return_value=mock_k8s_client):
+        test_client = client_factory()
+
+        metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+        metric_labels = {
+            "method": "POST",
+            "status": str(expected_output["status_code"]),
+            "path": "/api/conversations/{conversation_id}/messages",
+        }
+        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels) or 0.0
+
+        response = test_client.post(
+            f"/api/conversations/{conversation_id}/messages?stream=false",
+            json=input_message,
+            headers=request_headers,
+        )
+
+        assert response.status_code == expected_output["status_code"]
+        assert response.headers["content-type"] == expected_output["content-type"]
+
+        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
+        assert after_metric_value > before_metric_value
+
+        if expected_output["status_code"] == HTTPStatus.OK:
+            assert response.text == expected_output["answer"]
+        elif "body" in expected_output:
+            assert json.loads(response.content) == expected_output["body"]
+
+
+@patch("services.k8s.K8sClient.new", return_value=MockK8sClient())
+def test_messages_stream_false_returns_500_when_no_answer_produced(mock_init, client_factory):
+    """Endpoint must return 500 when the pipeline emits only error chunks."""
+
+    class ErrorOnlyService(IService):
+        async def new_conversation(self, k8s_client, message):
+            return []
+
+        async def handle_followup_questions(self, conversation_id):
+            return []
+
+        async def authorize_user(self, conversation_id, user_identifier):
+            return True
+
+        async def is_usage_limit_exceeded(self, cluster_id):
+            return None
+
+        async def handle_request(self, conversation_id, message, k8s_client):
+            yield b'{"error": {"error": "pipeline failed"}}'
+
+    test_client = client_factory(expected_error=None)
+    app.dependency_overrides[init_conversation_service] = lambda: ErrorOnlyService()
+
+    response = test_client.post(
+        f"/api/conversations/{uuid.uuid4()}/messages?stream=false",
+        json={
+            "query": "test",
+            "resource_kind": "Cluster",
+            "resource_api_version": "",
+            "resource_name": "",
+            "namespace": "",
+        },
+        headers={
+            "x-k8s-authorization": SAMPLE_JWT_TOKEN,
+            "x-cluster-url": "http://api.k8s.example.com",
+            "x-cluster-certificate-authority-data": "non-empty-ca-data",
+        },
+    )
+
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
