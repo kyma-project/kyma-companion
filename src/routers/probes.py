@@ -9,6 +9,7 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
 from services.k8s_resource_discovery import K8sResourceDiscovery
+from services.key_store import KeyStore
 from services.probes import (
     get_llm_probe,
     get_usage_tracker_probe,
@@ -139,6 +140,7 @@ async def healthz(
         is_hana_healthy=hana.is_connection_operational(),
         is_redis_healthy=await redis.is_connection_operational(),
         is_usage_tracker_healthy=usage_tracker_probe.is_healthy(),
+        is_key_store_healthy=KeyStore().is_healthy(),
         llms=llm_probe.get_llms_states(),
     )
 
@@ -175,6 +177,7 @@ async def readyz(
         is_hana_initialized=hana.has_connection(),
         is_redis_initialized=redis.has_connection(),
         are_models_initialized=llm_probe.has_models(),
+        is_key_store_initialized=KeyStore().is_healthy(),
     )
     status = HTTP_503_SERVICE_UNAVAILABLE
     if all_ready(response):
@@ -197,8 +200,14 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
             response.is_redis_healthy
             and response.is_hana_healthy
             and response.is_usage_tracker_healthy
+            and response.is_key_store_healthy
             and bool(response.llms)
             and all(response.llms.values())
         )
     if isinstance(response, ReadinessModel):
-        return response.is_redis_initialized and response.is_hana_initialized and response.are_models_initialized
+        return (
+            response.is_redis_initialized
+            and response.is_hana_initialized
+            and response.are_models_initialized
+            and response.is_key_store_initialized
+        )
