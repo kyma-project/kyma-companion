@@ -10,6 +10,7 @@ from utils.hana import create_hana_connection
 from utils.logging import get_logger
 from utils.models import (
     create_embedding_factory,
+    fastembed_embedding_creator,
     openai_embedding_creator,
 )
 from utils.settings import (
@@ -21,12 +22,17 @@ from utils.settings import (
     DOCS_SOURCES_FILE_PATH,
     DOCS_TABLE_NAME,
     EMBEDDING_MODEL_NAME,
+    INDEX_OUTPUT_DIR,
+    INDEX_TO_FILE,
+    KYMA_VERSION,
+    LOCAL_EMBED_MODEL,
     TMP_DIR,
     get_embedding_model_config,
 )
 
 TASK_FETCH = "fetch"
 TASK_INDEX = "index"
+
 logger = get_logger(__name__)
 
 
@@ -58,9 +64,16 @@ def run_indexer(
     Args:
         embeddings_model: Embedding model to use. If None, created from config.
         hana_conn: Hana DB connection to use. If None, created from config.
-        docs_path: Path to the documents to index. Defaults to DOCS_PATH from config.
-        table_name: Name of the table to index into. Defaults to DOCS_TABLE_NAME from config.
+            Ignored when INDEX_TO_FILE=true.
+        docs_path: Path to the documents to index.
+            Defaults to DOCS_PATH from config.
+        table_name: Name of the table to index into.
+            Defaults to DOCS_TABLE_NAME from config.
     """
+    if INDEX_TO_FILE:
+        _run_local_file_indexer(docs_path, table_name)
+        return
+
     if embeddings_model is None:
         embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
         create_embedding = create_embedding_factory(openai_embedding_creator)
@@ -74,6 +87,28 @@ def run_indexer(
 
     indexer = AdaptiveSplitMarkdownIndexer(docs_path, embeddings_model, hana_conn, table_name)
     indexer.index()
+
+
+def _run_local_file_indexer(docs_path: str, collection_name: str) -> None:
+    """Build a ChromaDB index from docs and package it as a .tar.gz archive."""
+    from indexing.local_file_indexer import LocalFileIndexer
+
+    logger.info(
+        f"INDEX_TO_FILE=true — building local ChromaDB index (model={LOCAL_EMBED_MODEL}, output={INDEX_OUTPUT_DIR})"
+    )
+    embedding = fastembed_embedding_creator(LOCAL_EMBED_MODEL)
+    indexer = LocalFileIndexer(
+        docs_path=docs_path,
+        embedding=embedding,
+        output_dir=INDEX_OUTPUT_DIR,
+        embed_model_name=LOCAL_EMBED_MODEL,
+        collection_name=collection_name,
+    )
+    indexer.index()
+
+    archive_name = f"kyma-docs-index-{KYMA_VERSION}.tar.gz"
+    LocalFileIndexer.package(INDEX_OUTPUT_DIR, archive_name)
+    logger.info(f"Local index ready: {archive_name}")
 
 
 if __name__ == "__main__":
