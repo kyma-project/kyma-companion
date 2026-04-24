@@ -41,6 +41,7 @@ def _load_private_key(data: bytes) -> EllipticCurvePrivateKey:
     try:
         key = load_pem_private_key(data, password=None)
     except (ValueError, TypeError):
+        logger.error("Failed to parse private key as PEM, trying DER format", exc_info=True)
         key = load_der_private_key(data, password=None)
 
     if not isinstance(key, EllipticCurvePrivateKey):
