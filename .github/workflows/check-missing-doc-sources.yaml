@@ -29,14 +29,20 @@ jobs:
         run: |
           python scripts/python/check_missing_sources.py --auto-add
           DRIFT=$(python scripts/python/check_source_drift.py --auto-fix 2>&1)
+          DRIFT_EXIT=$?
           echo "$DRIFT"
+          if [ $DRIFT_EXIT -ne 0 ]; then
+            echo "check_source_drift.py exited with code $DRIFT_EXIT — aborting."
+            exit $DRIFT_EXIT
+          fi
 
           if git diff --quiet doc_indexer/docs_sources.json; then
             echo "No changes to docs_sources.json — nothing to PR."
             exit 0
           fi
 
-          if gh pr list --state open --search "chore: doc sources update" \
+          if gh pr list --state open \
+              --search "\"chore: doc sources update — review and triage\" in:title" \
               --json number --jq '.[0].number' | grep -q .; then
             echo "A doc sources update PR is already open. Skipping."
             exit 0
