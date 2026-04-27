@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 
 from routers.common import API_PREFIX
 from services.encryption_cache import EncryptionCache, get_encryption_cache
+from services.key_store import KeyStore
 from utils.logging import get_logger
-from utils.settings import ENCRYPTION_PUBLIC_KEY_B64
 from utils.utils import create_session_id
 
 logger = get_logger(__name__)
@@ -32,16 +32,6 @@ router = APIRouter(
 )
 
 
-def _get_companion_public_key() -> str:
-    """Return companion public key configured for key exchange."""
-    if not ENCRYPTION_PUBLIC_KEY_B64:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail="Companion public key is not configured",
-        )
-    return str(ENCRYPTION_PUBLIC_KEY_B64)
-
-
 @router.post("/public-key", response_model=PublicKeyResponse)
 async def init_public_key(
     request: Annotated[PublicKeyRequest, Body()],
@@ -49,7 +39,7 @@ async def init_public_key(
 ) -> PublicKeyResponse:
     """Initialize a key exchange session by storing client public key in Redis."""
 
-    companion_public_key = _get_companion_public_key()
+    companion_public_key = KeyStore().get_public_key_str()
 
     session_id = create_session_id()
 

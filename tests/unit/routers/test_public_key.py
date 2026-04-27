@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,8 +45,8 @@ class MockEncryptionCache:
             id="redis_write_fails",
         ),
         pytest.param(
-            "returns 500 when the companion public key is not configured",
-            "",
+            "returns 500 when the companion public key is not available",
+            RuntimeError("EC private key is not available"),
             False,
             {"public_key": "request-public-key"},
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -77,10 +78,16 @@ def test_post_public_key(
 ):
     encryption_cache = MockEncryptionCache(should_fail=should_fail)
     monkeypatch.setitem(app.dependency_overrides, get_encryption_cache, lambda: encryption_cache)
-    monkeypatch.setattr(public_key, "ENCRYPTION_PUBLIC_KEY_B64", companion_key)
     monkeypatch.setattr(public_key, "create_session_id", lambda: "session-123")
 
-    client = TestClient(app)
+    mock_key_store = Mock()
+    if isinstance(companion_key, Exception):
+        mock_key_store.get_public_key_str.side_effect = companion_key
+    else:
+        mock_key_store.get_public_key_str.return_value = companion_key
+    monkeypatch.setattr(public_key, "KeyStore", Mock(return_value=mock_key_store))
+
+    client = TestClient(app, raise_server_exceptions=False)
     response = client.post("/api/public-key", json=request_body)
 
     assert response.status_code == expected_status, description
