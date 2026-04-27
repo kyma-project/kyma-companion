@@ -424,9 +424,8 @@ jobs:
       - name: wait for build indexer
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          GIT_REF: ${{ inputs.name }}
-          # The re-useable image-builder workflow from neighbors appends the "Build image" suffix to the check run name.
-          GIT_CHECK_RUN_NAME: "build-indexer-${{ inputs.name }} / Build image"
+          GIT_REF: ${{ needs.validate-input-params.outputs.release_branch }}
+          GIT_CHECK_RUN_NAME: "build-indexer / Build image"
           INTERVAL: 60
           TIMEOUT: 900
         run: |
@@ -435,10 +434,10 @@ jobs:
   run-e2e-tests-indexer:
     name: Run indexer e2e tests
     uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
-    needs: wait-for-build
+    needs: [wait-for-build, get-image-sha]
     secrets: inherit
     with:
-      IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ inputs.name }}"
+      IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ needs.get-image-sha.outputs.sha }}"
       DOCS_TABLE_NAME: "kc_release_${{ inputs.name }}_e2e"
 
   create-draft:
