@@ -21,9 +21,7 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
-SOURCES_DEFAULT = (
-    Path(__file__).parent.parent.parent / "doc_indexer/docs_sources.json"
-)
+SOURCES_DEFAULT = Path(__file__).parent.parent.parent / "doc_indexer/docs_sources.json"
 
 # Top-level doc directory roots worth scanning for drift.
 DOC_ROOTS = ["docs", "tutorials"]
@@ -40,18 +38,22 @@ _SKIP_DOC_SUBDIRS = {
     "images",
     "img",
     "figures",
-    "operator",      # platform-operator/admin guides, not end-user docs
-    "agents",        # AI-agent coding guides, developer-facing
-    "adr",           # Architecture Decision Records, developer-facing
-    "internal",      # internal architecture/design docs
+    "operator",  # platform-operator/admin guides, not end-user docs
+    "agents",  # AI-agent coding guides, developer-facing
+    "adr",  # Architecture Decision Records, developer-facing
+    "internal",  # internal architecture/design docs
     "contributing",  # contribution process docs, developer-facing
-    "governance",    # project governance, not product docs
-    "guidelines",    # development guidelines, developer-facing
-    "loadtest",      # load-testing tooling, developer-facing
+    "governance",  # project governance, not product docs
+    "guidelines",  # development guidelines, developer-facing
+    "loadtest",  # load-testing tooling, developer-facing
 }
+
+# Minimum path depth (number of components) for a file to be inside a subdir.
+_MIN_SUBDIR_DEPTH = 2
 
 
 def gh_json(endpoint: str) -> dict | list | None:
+    """Call the GitHub API and return parsed JSON, or None on error."""
     result = subprocess.run(
         ["gh", "api", endpoint],
         capture_output=True,
@@ -74,8 +76,7 @@ def get_repo_md_files(org: str, repo: str) -> list[str]:
     return [
         item["path"]
         for item in data.get("tree", [])
-        if item.get("type") == "blob"
-        and item["path"].lower().endswith(".md")
+        if item.get("type") == "blob" and item["path"].lower().endswith(".md")
     ]
 
 
@@ -87,6 +88,7 @@ def repo_name_from_url(url: str) -> tuple[str, str]:
 
 
 def is_covered(file_path: str, include_files: list[str] | None) -> bool:
+    """Return True if file_path matches at least one pattern in include_files."""
     if include_files is None:
         return True
     return any(fnmatch.fnmatch(file_path, p) for p in include_files)
@@ -110,22 +112,17 @@ def check_source(source: dict, all_md_files: list[str]) -> dict:
     doc_roots = infer_doc_roots(include_files)
 
     # Only look at files under relevant doc roots
-    candidate_files = [
-        f for f in all_md_files if f.split("/")[0] in doc_roots
-    ]
+    candidate_files = [f for f in all_md_files if f.split("/")[0] in doc_roots]
 
     # NEW_PATH: doc files not covered by include_files
-    uncovered = [
-        f for f in candidate_files
-        if not is_covered(f, include_files)
-    ]
+    uncovered = [f for f in candidate_files if not is_covered(f, include_files)]
     # Summarise by directory (avoid listing every individual file).
     # Skip non-user subdirs (e.g. docs/contributor/, docs/release-notes/) —
     # this repo indexes user docs only.
     uncovered_dirs: set[str] = set()
     for f in uncovered:
         parts = f.split("/")
-        if len(parts) >= 2 and parts[1] in _SKIP_DOC_SUBDIRS:
+        if len(parts) >= _MIN_SUBDIR_DEPTH and parts[1] in _SKIP_DOC_SUBDIRS:
             continue
         # Build a directory summary: strip the filename (parts[:-1]) and
         # cap at 3 levels so deep trees are collapsed to their top subdir.
@@ -166,10 +163,7 @@ def _deduplicate_patterns(patterns: list[str]) -> list[str]:
     result = []
     for p in patterns:
         representative = (p[:-1] + "x.md") if p.endswith("/*") else p
-        covered = any(
-            other != p and fnmatch.fnmatch(representative, other)
-            for other in patterns
-        )
+        covered = any(other != p and fnmatch.fnmatch(representative, other) for other in patterns)
         if not covered:
             result.append(p)
     return result
@@ -213,7 +207,44 @@ def apply_fixes(source: dict, findings: dict) -> dict:
     return updated
 
 
+def _format_findings(findings: dict) -> list[str]:
+    """Return printable report lines for a set of drift findings."""
+    lines = []
+    for d in findings["uncovered_dirs"]:
+        lines.append(f"    NEW_PATH  {d}")
+    for p in findings["dead_patterns"]:
+        lines.append(f"    DEAD      {p}")
+    for p in findings["broad_patterns"]:
+        lines.append(f"    BROAD     {p}  (docs/user/ exists — narrowed to docs/user/*)")
+    return lines
+
+
+def _process_source(source: dict, auto_fix: bool) -> tuple[dict, list[str]]:
+    """Fetch remote md files, check drift, and optionally apply fixes.
+
+    Returns (updated_source, report_lines). report_lines is empty when no
+    drift was found or the repo was inaccessible.
+    """
+    name = source["name"]
+    url = source.get("url", "")
+    try:
+        org, repo = repo_name_from_url(url)
+    except (IndexError, ValueError):
+        return source, []
+
+    all_md = get_repo_md_files(org, repo)
+    if not all_md:
+        print(f"  SKIP  {name}  (no files returned or repo inaccessible)")
+        return source, []
+
+    findings = check_source(source, all_md)
+    lines = _format_findings(findings)
+    updated = apply_fixes(source, findings) if auto_fix and lines else source
+    return updated, lines
+
+
 def main() -> None:
+    """Audit docs_sources.json entries for doc drift and optionally apply fixes."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--sources", default=str(SOURCES_DEFAULT))
     parser.add_argument("--repo", help="Audit a single repo by name")
@@ -242,43 +273,13 @@ def main() -> None:
     updated_sources = []
 
     for source in sources:
-        name = source["name"]
-        url = source.get("url", "")
-        try:
-            org, repo = repo_name_from_url(url)
-        except (IndexError, ValueError):
-            updated_sources.append(source)
-            continue
-
-        all_md = get_repo_md_files(org, repo)
-        if not all_md:
-            print(f"  SKIP  {name}  (no files returned or repo inaccessible)")
-            updated_sources.append(source)
-            continue
-
-        findings = check_source(source, all_md)
-
-        lines = []
-        for d in findings["uncovered_dirs"]:
-            lines.append(f"    NEW_PATH  {d}")
-        for p in findings["dead_patterns"]:
-            lines.append(f"    DEAD      {p}")
-        for p in findings["broad_patterns"]:
-            lines.append(
-                f"    BROAD     {p}"
-                "  (docs/user/ exists — narrowed to docs/user/*)"
-            )
-
+        updated, lines = _process_source(source, args.auto_fix)
+        updated_sources.append(updated)
         if lines:
             found_any = True
-            print(f"\n{name}")
+            print(f"\n{source['name']}")
             for line in lines:
                 print(line)
-
-        if args.auto_fix and lines:
-            updated_sources.append(apply_fixes(source, findings))
-        else:
-            updated_sources.append(source)
 
     if not found_any:
         print("\nNo drift found in any tracked source.")
@@ -288,15 +289,9 @@ def main() -> None:
                 json.dumps(updated_sources, indent=2) + "\n",
                 encoding="utf-8",
             )
-            print(
-                "\nAuto-fixed. Review changes with"
-                " /triage-companion-doc-sources before merging."
-            )
+            print("\nAuto-fixed. Review changes with /triage-companion-doc-sources before merging.")
         else:
-            print(
-                "\nRe-run with --auto-fix to apply these fixes"
-                " to docs_sources.json."
-            )
+            print("\nRe-run with --auto-fix to apply these fixes to docs_sources.json.")
 
 
 if __name__ == "__main__":

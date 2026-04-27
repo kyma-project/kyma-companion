@@ -72,6 +72,8 @@ _SKIP_DOC_LOOSE_FILES = {
     "_sidebar.md",
 }
 
+_MAX_SUBDIR_PREVIEW = 5  # max subdirectory names shown in discovery output
+
 
 def _is_internal(repo_name: str) -> bool:
     name = repo_name.lower()
@@ -120,13 +122,11 @@ def has_user_docs(md_files: list[str]) -> str | None:
     """Return the doc path type given the repo's full .md file list."""
     if any(f.startswith("docs/user/") for f in md_files):
         return "docs/user"
-    if any(f.startswith("docs/") for f in md_files):
-        # Only report as having docs if there are user-facing subdirs after
-        # skipping contributor/governance/internal dirs.  Repos whose docs/
-        # content is entirely under skipped paths (e.g. docs/contributor/)
-        # produce no useful user content and should be ignored.
-        if _doc_subdirs(md_files, "docs"):
-            return "docs"
+    # Only report docs/ if user-facing subdirs exist after skipping
+    # contributor/governance/internal paths — repos whose docs/ content is
+    # entirely under skipped paths produce no useful user content.
+    if any(f.startswith("docs/") for f in md_files) and _doc_subdirs(md_files, "docs"):
+        return "docs"
     if any(f.startswith("tutorials/") for f in md_files):
         return "tutorials"
     return None
@@ -196,6 +196,39 @@ def build_source_entry(
     return entry
 
 
+def _scan_missing(indexed_urls: set[str]) -> list[dict]:
+    """Scan kyma-project orgs and return repos with user-facing docs not yet indexed."""
+    missing = []
+    for org in ORGS:
+        repos = gh(f"orgs/{org}/repos?per_page=100&sort=pushed")
+        for repo in repos:
+            name = repo.get("name", "")
+            html_url = repo.get("html_url", "").rstrip("/")
+            if html_url in indexed_urls:
+                continue
+            if repo.get("archived") or repo.get("fork"):
+                continue
+            if _is_internal(name):
+                continue
+            md_files = get_repo_md_files(org, name)
+            doc_path = has_user_docs(md_files)
+            if doc_path:
+                subdirs = _doc_subdirs(md_files, doc_path)
+                tail = "..." if len(subdirs) > _MAX_SUBDIR_PREVIEW else ""
+                subdirs_str = ", ".join(subdirs[:_MAX_SUBDIR_PREVIEW]) + tail
+                print(f"  MISSING  {name:40s}  {doc_path}/  [{subdirs_str}]")
+                missing.append(
+                    {
+                        "name": name,
+                        "html_url": html_url,
+                        "doc_path": doc_path,
+                        "org": org,
+                        "md_files": md_files,
+                    }
+                )
+    return missing
+
+
 def main() -> None:
     """Entrypoint."""
     parser = argparse.ArgumentParser()
@@ -220,31 +253,7 @@ def main() -> None:
     print(f"Indexed sources: {len(indexed_urls)}\n")
     print("Scanning kyma-project org for repos with docs...\n")
 
-    missing = []
-    for org in ORGS:
-        repos = gh(f"orgs/{org}/repos?per_page=100&sort=pushed")
-        for repo in repos:
-            name = repo.get("name", "")
-            html_url = repo.get("html_url", "").rstrip("/")
-            if html_url in indexed_urls:
-                continue
-            if repo.get("archived") or repo.get("fork"):
-                continue
-            if _is_internal(name):
-                continue
-            md_files = get_repo_md_files(org, name)
-            doc_path = has_user_docs(md_files)
-            if doc_path:
-                subdirs = _doc_subdirs(md_files, doc_path)
-                subdirs_str = ", ".join(subdirs[:5]) + ("..." if len(subdirs) > 5 else "")
-                print(f"  MISSING  {name:40s}  {doc_path}/  [{subdirs_str}]")
-                missing.append({
-                    "name": name,
-                    "html_url": html_url,
-                    "doc_path": doc_path,
-                    "org": org,
-                    "md_files": md_files,
-                })
+    missing = _scan_missing(indexed_urls)
 
     if not missing:
         print("\nNo missing sources found.")
