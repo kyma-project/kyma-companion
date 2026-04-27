@@ -21,6 +21,8 @@ class TestProbesHana:
         """Clean up after each test."""
         app.dependency_overrides = {}
         Hana._reset_for_tests()
+        if hasattr(self, "_key_store_patcher"):
+            self._key_store_patcher.stop()
 
     def _setup_healthy_dependencies(self):
         """Set up all non-Hana dependencies as healthy."""
@@ -35,6 +37,11 @@ class TestProbesHana:
         mock_llm_probe = MagicMock(spec=ILLMProbe)
         mock_llm_probe.get_llms_states.return_value = {"model1": True}
         app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
+
+        self._mock_key_store = MagicMock()
+        self._mock_key_store.is_healthy.return_value = True
+        self._key_store_patcher = patch("routers.probes.KeyStore", return_value=self._mock_key_store)
+        self._key_store_patcher.start()
 
     def test_healthz_returns_200_when_query_succeeds(self):
         """Test that the healthz probe returns HTTP 200 when the database is fully operational.

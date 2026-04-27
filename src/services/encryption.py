@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.serialization import load_der_private_key
 
 from services.encryption_cache import IEncryptionCache
 
@@ -32,18 +31,16 @@ class Encryption:
     Generic ECDH + AES-256-GCM decryption service.
     """
 
-    def __init__(self, private_key_b64: str, encryption_cache: IEncryptionCache) -> None:
+    def __init__(self, private_key: EllipticCurvePrivateKey, encryption_cache: IEncryptionCache) -> None:
         """Load and validate the server EC private key.
 
-        :param private_key_b64: Base64-encoded DER/PKCS8 EC private key.
+        :param private_key: EC private key.
         :raises TypeError: If the key is not an EC private key.
-        :raises ValueError: If the key cannot be decoded or loaded.
         """
-        raw = base64.b64decode(private_key_b64)
-        key = load_der_private_key(raw, password=None)
-        if not isinstance(key, EllipticCurvePrivateKey):
-            raise TypeError("private_key_b64 is not an EC private key")
-        self._private_key: EllipticCurvePrivateKey = key
+        if not isinstance(private_key, EllipticCurvePrivateKey):
+            raise TypeError("private_key is not an EC private key")
+
+        self._private_key: EllipticCurvePrivateKey = private_key
         self._encryption_cache = encryption_cache
 
     # ------------------------------------------------------------------
