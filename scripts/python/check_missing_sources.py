@@ -217,13 +217,15 @@ def _scan_missing(indexed_urls: set[str]) -> list[dict]:
                 tail = "..." if len(subdirs) > _MAX_SUBDIR_PREVIEW else ""
                 subdirs_str = ", ".join(subdirs[:_MAX_SUBDIR_PREVIEW]) + tail
                 print(f"  MISSING  {name:40s}  {doc_path}/  [{subdirs_str}]")
-                missing.append({
-                    "name": name,
-                    "html_url": html_url,
-                    "doc_path": doc_path,
-                    "org": org,
-                    "md_files": md_files,
-                })
+                missing.append(
+                    {
+                        "name": name,
+                        "html_url": html_url,
+                        "doc_path": doc_path,
+                        "org": org,
+                        "md_files": md_files,
+                    }
+                )
     return missing
 
 
