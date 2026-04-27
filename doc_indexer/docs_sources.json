@@ -17,7 +17,7 @@
     "url": "https://github.com/kyma-project/eventing-manager.git",
     "include_files": [
       "README.md",
-      "docs/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
@@ -29,7 +29,7 @@
     "url": "https://github.com/kyma-project/nats-manager.git",
     "include_files": [
       "README.md",
-      "docs/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
@@ -40,14 +40,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/istio.git",
     "include_files": [
-      "docs/user/04-00-istio-custom-resource.md",
-      "docs/user/tutorials/01-10-external-authorization-provider.md",
-      "docs/user/tutorials/01-20-expose-httbin-gateway-api.md",
-      "docs/user/tutorials/01-50-send-requests-using-egress.md",
-      "docs/user/tutorials/01-55-send-requests-using-egress-and-mtls.md",
-      "docs/user/tutorials/01-60-enable-nlb-load-balancer.md",
-      "docs/user/technical-reference/05-00-istio-controller-parameters.md",
-      "docs/user/technical-reference/05-10-istio-controller-rbac.md"
+      "docs/user/*"
     ]
   },
   {
@@ -56,7 +49,7 @@
     "url": "https://github.com/kyma-project/warden.git",
     "include_files": [
       "README.md",
-      "docs/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
@@ -67,8 +60,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/cloud-manager.git",
     "include_files": [
-      "docs/user/resources/*",
-      "docs/user/tutorials/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "docs/user/resources/README.md",
@@ -80,20 +72,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/api-gateway.git",
     "include_files": [
-      "docs/user/custom-resources/apigateway/*",
-      "docs/user/custom-resources/apirule/04-10-apirule-custom-resource.md",
-      "docs/user/custom-resources/apirule/04-15-api-rule-access-strategies.md",
-      "docs/user/custom-resources/apirule/04-70-changes-in-apirule-v2.md",
-      "docs/user/custom-resources/ratelimit/*",
-      "docs/user/troubleshooting-guides/*",
-      "docs/user/tutorials/01-10-setup-custom-domain-for-workload.md",
-      "docs/user/tutorials/01-20-set-up-tls-gateway.md",
-      "docs/user/tutorials/01-30-set-up-mtls-gateway.md",
-      "docs/user/tutorials/01-70-local-rate-limit.md",
-      "docs/user/apirule-migration/01-81-retrieve-v1beta1-spec.md",
-      "docs/user/apirule-migration/01-82-migrate-allow-noop-no_auth-v1beta1-to-v2.md",
-      "docs/user/apirule-migration/01-83-migrate-jwt-v1beta1-to-v2.md",
-      "docs/user/apirule-migration/01-84-migrate-oauth2-v1beta1-to-v2.md"
+      "docs/user/*"
     ]
   },
   {
@@ -101,8 +80,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/telemetry-manager.git",
     "include_files": [
-      "docs/user/resources/*",
-      "docs/user/integration/*"
+      "docs/user/*"
     ]
   },
   {
@@ -110,8 +88,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/btp-manager.git",
     "include_files": [
-      "docs/user/resources/*",
-      "docs/user/tutorials/04-40-create-service-in-cluster.md"
+      "docs/user/*"
     ]
   },
   {
@@ -120,7 +97,7 @@
     "url": "https://github.com/kyma-project/application-connector-manager.git",
     "include_files": [
       "README.md",
-      "docs/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
@@ -131,8 +108,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/docker-registry.git",
     "include_files": [
-      "docs/user/resources/*",
-      "docs/user/tutorials/*"
+      "docs/user/*"
     ],
     "exclude_files": [
       "docs/user/tutorials/README.md",
@@ -144,8 +120,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/keda-manager.git",
     "include_files": [
-      "docs/user/04-10-footprint.md",
-      "docs/user/04-20-demo-applications.md"
+      "docs/user/*"
     ]
   },
   {
@@ -153,12 +128,7 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/serverless.git",
     "include_files": [
-      "docs/user/resources/*",
-      "docs/user/troubleshooting-guides/*",
-      "docs/user/technical-reference/*",
-      "docs/user/tutorials/*",
-      "docs/user/00-30-development-toolkit.md",
-      "docs/user/08-10-best-practices.md"
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/README.md",
@@ -171,7 +141,8 @@
     "url": "https://github.com/kyma-project/busola.git",
     "include_files": [
       "docs/resource-validation/*",
-      "docs/extensibility/*"
+      "docs/custom-extensions/*",
+      "docs/user/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
@@ -190,7 +161,60 @@
       "tutorials/cp-kyma-download-cli/cp-kyma-download-cli.md",
       "tutorials/cp-kyma-redis-function/cp-kyma-redis-function.md",
       "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
-      "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md"
+      "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md",
+      "tutorials/btp-app-logging-neo-getting-started/*",
+      "tutorials/btp-cf-buildpacks-java-create/*",
+      "tutorials/btp-cf-buildpacks-node-create/*",
+      "tutorials/btp-cf-buildpacks-python-create/*",
+      "tutorials/btp-cf-ext-s4hanacloud/*",
+      "tutorials/btp-cf-ext-successfactors/*",
+      "tutorials/btp-cli-setup-kyma-cluster/*",
+      "tutorials/btp-cockpit-cf-deploying-applications/*",
+      "tutorials/btp-cockpit-cf-getting-started-with-cf-env-and-cockpit/*",
+      "tutorials/btp-cockpit-cf-managing-deployed-applications/*",
+      "tutorials/btp-cockpit-cf-managing-org-members/*",
+      "tutorials/btp-cockpit-cf-managing-routes/*",
+      "tutorials/btp-cockpit-cf-managing-space-members/*",
+      "tutorials/btp-cockpit-cf-managing-user-provided-environment-variables/*",
+      "tutorials/btp-cockpit-cf-monitoring-apps-and-spaces-with-events-and-logs/*",
+      "tutorials/btp-cockpit-cf-understanding-environment-variables/*",
+      "tutorials/btp-cockpit-cf-understanding-security-groups/*",
+      "tutorials/btp-cockpit-cf-understanding-service-bindings/*",
+      "tutorials/btp-cockpit-cf-understanding-space-quotas/*",
+      "tutorials/btp-cockpit-cf-understanding-spaces/*",
+      "tutorials/btp-cockpit-entitlements/*",
+      "tutorials/btp-custom-domain-manager-getting-started/*",
+      "tutorials/btp-deploy-cap-app-with-ias-and-ams/*",
+      "tutorials/btp-hana-tenantdb-xsapp-create/*",
+      "tutorials/btp-hana-xs-app-create/*",
+      "tutorials/cicd-corporate-git/*",
+      "tutorials/cicd-start-cap/*",
+      "tutorials/cicd-start-fiori/*",
+      "tutorials/cicd-wdi5-cap/*",
+      "tutorials/cp-cf-security-xsuaa-create/*",
+      "tutorials/cp-cf-security-xsuaa-multi-tenant/*",
+      "tutorials/cp-ias-azure-ad/*",
+      "tutorials/cp-kyma-api-postgres-golang/*",
+      "tutorials/cp-kyma-create-function-cli/*",
+      "tutorials/cp-kyma-create-function-ui/*",
+      "tutorials/cp-kyma-enable-module/*",
+      "tutorials/cp-kyma-frontend-ui5-postgresql/*",
+      "tutorials/cp-kyma-gateway-api/*",
+      "tutorials/cp-kyma-mtls-requests-egress/*",
+      "tutorials/cp-kyma-postgres-seed/*",
+      "tutorials/cp-kyma-requests-egress/*",
+      "tutorials/cp-monitoring-alerts-onpremise/*",
+      "tutorials/cp-monitoring-dashboard/*",
+      "tutorials/cp-monitoring-notification/*",
+      "tutorials/cp-sapcp-getstarted/*",
+      "tutorials/cp-trial-entitlements/*",
+      "tutorials/private-link-aws-kyma/*",
+      "tutorials/private-link-aws/*",
+      "tutorials/private-link-azure-kyma/*",
+      "tutorials/private-link-kyma/*",
+      "tutorials/private-link-microsoft-azure/*",
+      "tutorials/private-link-onboarding/*",
+      "tutorials/private-link-service-onboarding-aws/*"
     ]
   },
   {
@@ -202,7 +226,169 @@
       "tutorials/deploy-to-kyma/deploy-to-kyma.md",
       "tutorials/user-role-assignment/user-role-assignment.md",
       "tutorials/integrate-with-work-zone-kymaruntime/integrate-with-work-zone-kymaruntime.md",
-      "tutorials/set-up-cicd-kyma/set-up-cicd-kyma.md"
+      "tutorials/set-up-cicd-kyma/set-up-cicd-kyma.md",
+      "tutorials/add-authorization/*",
+      "tutorials/add-custom-logic/*",
+      "tutorials/add-fiori-elements-uis/*",
+      "tutorials/add-test-cases/*",
+      "tutorials/build-cap-app/*",
+      "tutorials/deploy-to-cf/*",
+      "tutorials/integrate-with-work-zone/*",
+      "tutorials/introduction/*",
+      "tutorials/prep-for-prod/*",
+      "tutorials/prepare-btp-cf/*",
+      "tutorials/remote-service-configure-connectivity/*",
+      "tutorials/remote-service-deploy-to-cf/*",
+      "tutorials/remote-service-deploy-to-kyma/*",
+      "tutorials/remote-service-deploy-with-mock-cf/*",
+      "tutorials/remote-service-deploy-with-mock-kyma/*",
+      "tutorials/remote-service-extend/*",
+      "tutorials/remote-service-intro/*",
+      "tutorials/remote-service-run-dev-test/*",
+      "tutorials/remote-service-set-up-mock-cf/*",
+      "tutorials/remote-service-set-up-mock-kyma/*",
+      "tutorials/set-up-bas/*",
+      "tutorials/set-up-cicd/*",
+      "tutorials/use-local-launch-page/*"
+    ]
+  },
+  {
+    "name": "kyma-environment-broker",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/kyma-environment-broker.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "cli",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/cli.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "registry-proxy",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/registry-proxy.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "eventing-publisher-proxy",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/eventing-publisher-proxy.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "auditlog-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/auditlog-manager.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "modulectl",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/modulectl.git",
+    "include_files": [
+      "docs/user/*",
+      "docs/gen-docs/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "lifecycle-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/lifecycle-manager.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "community-modules",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/community-modules.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "kyma-infrastructure-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/kyma-infrastructure-manager.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "kyma",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/kyma.git",
+    "include_files": [
+      "README.md",
+      "docs/01-overview/*",
+      "docs/02-get-started/*",
+      "docs/03-tutorials/*",
+      "docs/04-operation-guides/*",
+      "docs/06-modules/*",
+      "docs/README.md",
+      "docs/glossary.md"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
+    "name": "ans-manager",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/ans-manager.git",
+    "include_files": [
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "docs/user/README.md",
+      "*/_sidebar.md"
     ]
   }
 ]
