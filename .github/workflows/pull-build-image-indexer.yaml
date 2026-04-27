@@ -7,6 +7,7 @@ on:
       - "main"
     paths:
       - "doc_indexer/**"
+      - ".github/workflows/pull-e2e-tests-doc-indexer.yaml"
       - ".github/workflows/pull-build-image-indexer.yaml"
       - ".github/workflows/e2e-tests-doc-indexer-reusable.yaml"
 
