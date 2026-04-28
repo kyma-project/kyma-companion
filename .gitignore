@@ -232,6 +232,9 @@ __pycache__
 *.vsix
 
 
+# Claude Code
+.claude/settings.local.json
+
 # Custom rules
 .secrets
 scripts/k8s/aicore-secret.yaml
