@@ -45,3 +45,6 @@
 
 # All files and subdirectories in /docs
 /docs/ @kyma-project/technical-writers
+
+# Skills and Claude configuration — reviewed by ai-force, not technical writers
+/.claude/ @kyma-project/ai-force
