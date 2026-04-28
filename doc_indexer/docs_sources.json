@@ -4,10 +4,14 @@
     "source_type": "Github",
     "url": "https://github.com/SAP-docs/btp-cloud-platform.git",
     "include_files": [
-      "docs/*"
+      "docs/10-concepts/*kyma*",
+      "docs/20-getting-started/*kyma*",
+      "docs/30-development/*kyma*",
+      "docs/40-extensions/*kyma*",
+      "docs/50-administration-and-ops/*kyma*",
+      "docs/60-security/*kyma*"
     ],
     "exclude_files": [
-      "*/_sidebar.md",
       "*/_*.md"
     ]
   },
@@ -160,40 +164,8 @@
       "tutorials/cp-kyma-mssql-deployment/cp-kyma-mssql-deployment.md",
       "tutorials/cp-kyma-download-cli/cp-kyma-download-cli.md",
       "tutorials/cp-kyma-redis-function/cp-kyma-redis-function.md",
-      "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
       "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md",
-      "tutorials/btp-app-logging-neo-getting-started/*",
-      "tutorials/btp-cf-buildpacks-java-create/*",
-      "tutorials/btp-cf-buildpacks-node-create/*",
-      "tutorials/btp-cf-buildpacks-python-create/*",
-      "tutorials/btp-cf-ext-s4hanacloud/*",
-      "tutorials/btp-cf-ext-successfactors/*",
       "tutorials/btp-cli-setup-kyma-cluster/*",
-      "tutorials/btp-cockpit-cf-deploying-applications/*",
-      "tutorials/btp-cockpit-cf-getting-started-with-cf-env-and-cockpit/*",
-      "tutorials/btp-cockpit-cf-managing-deployed-applications/*",
-      "tutorials/btp-cockpit-cf-managing-org-members/*",
-      "tutorials/btp-cockpit-cf-managing-routes/*",
-      "tutorials/btp-cockpit-cf-managing-space-members/*",
-      "tutorials/btp-cockpit-cf-managing-user-provided-environment-variables/*",
-      "tutorials/btp-cockpit-cf-monitoring-apps-and-spaces-with-events-and-logs/*",
-      "tutorials/btp-cockpit-cf-understanding-environment-variables/*",
-      "tutorials/btp-cockpit-cf-understanding-security-groups/*",
-      "tutorials/btp-cockpit-cf-understanding-service-bindings/*",
-      "tutorials/btp-cockpit-cf-understanding-space-quotas/*",
-      "tutorials/btp-cockpit-cf-understanding-spaces/*",
-      "tutorials/btp-cockpit-entitlements/*",
-      "tutorials/btp-custom-domain-manager-getting-started/*",
-      "tutorials/btp-deploy-cap-app-with-ias-and-ams/*",
-      "tutorials/btp-hana-tenantdb-xsapp-create/*",
-      "tutorials/btp-hana-xs-app-create/*",
-      "tutorials/cicd-corporate-git/*",
-      "tutorials/cicd-start-cap/*",
-      "tutorials/cicd-start-fiori/*",
-      "tutorials/cicd-wdi5-cap/*",
-      "tutorials/cp-cf-security-xsuaa-create/*",
-      "tutorials/cp-cf-security-xsuaa-multi-tenant/*",
-      "tutorials/cp-ias-azure-ad/*",
       "tutorials/cp-kyma-api-postgres-golang/*",
       "tutorials/cp-kyma-create-function-cli/*",
       "tutorials/cp-kyma-create-function-ui/*",
@@ -203,18 +175,9 @@
       "tutorials/cp-kyma-mtls-requests-egress/*",
       "tutorials/cp-kyma-postgres-seed/*",
       "tutorials/cp-kyma-requests-egress/*",
-      "tutorials/cp-monitoring-alerts-onpremise/*",
-      "tutorials/cp-monitoring-dashboard/*",
-      "tutorials/cp-monitoring-notification/*",
-      "tutorials/cp-sapcp-getstarted/*",
-      "tutorials/cp-trial-entitlements/*",
       "tutorials/private-link-aws-kyma/*",
-      "tutorials/private-link-aws/*",
       "tutorials/private-link-azure-kyma/*",
-      "tutorials/private-link-kyma/*",
-      "tutorials/private-link-microsoft-azure/*",
-      "tutorials/private-link-onboarding/*",
-      "tutorials/private-link-service-onboarding-aws/*"
+      "tutorials/private-link-kyma/*"
     ]
   },
   {
@@ -227,29 +190,9 @@
       "tutorials/user-role-assignment/user-role-assignment.md",
       "tutorials/integrate-with-work-zone-kymaruntime/integrate-with-work-zone-kymaruntime.md",
       "tutorials/set-up-cicd-kyma/set-up-cicd-kyma.md",
-      "tutorials/add-authorization/*",
-      "tutorials/add-custom-logic/*",
-      "tutorials/add-fiori-elements-uis/*",
-      "tutorials/add-test-cases/*",
-      "tutorials/build-cap-app/*",
-      "tutorials/deploy-to-cf/*",
-      "tutorials/integrate-with-work-zone/*",
-      "tutorials/introduction/*",
-      "tutorials/prep-for-prod/*",
-      "tutorials/prepare-btp-cf/*",
-      "tutorials/remote-service-configure-connectivity/*",
-      "tutorials/remote-service-deploy-to-cf/*",
       "tutorials/remote-service-deploy-to-kyma/*",
-      "tutorials/remote-service-deploy-with-mock-cf/*",
       "tutorials/remote-service-deploy-with-mock-kyma/*",
-      "tutorials/remote-service-extend/*",
-      "tutorials/remote-service-intro/*",
-      "tutorials/remote-service-run-dev-test/*",
-      "tutorials/remote-service-set-up-mock-cf/*",
-      "tutorials/remote-service-set-up-mock-kyma/*",
-      "tutorials/set-up-bas/*",
-      "tutorials/set-up-cicd/*",
-      "tutorials/use-local-launch-page/*"
+      "tutorials/remote-service-set-up-mock-kyma/*"
     ]
   },
   {
@@ -280,18 +223,6 @@
     "name": "registry-proxy",
     "source_type": "Github",
     "url": "https://github.com/kyma-project/registry-proxy.git",
-    "include_files": [
-      "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/README.md",
-      "*/_sidebar.md"
-    ]
-  },
-  {
-    "name": "eventing-publisher-proxy",
-    "source_type": "Github",
-    "url": "https://github.com/kyma-project/eventing-publisher-proxy.git",
     "include_files": [
       "docs/user/*"
     ],
