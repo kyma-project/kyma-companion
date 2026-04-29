@@ -17,31 +17,11 @@ jobs:
   wait-for-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          ref: main
-
-      - name: Setup python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install requirements
-        run: |
-          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
-
       - name: Wait for build
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GIT_REF: ${{ github.sha }}
-          REPOSITORY_FULL_NAME: "${{ github.repository }}"
-          GIT_CHECK_RUN_NAME: "build-indexer / Build image"
-          INTERVAL: 60
-          TIMEOUT: 900
-        run: |
-          python ./scripts/python/wait-for-commit-check/run.py
+        uses: kyma-project/kyma-companion/.github/actions/wait-for-build@main
+        with:
+          git-ref: ${{ github.sha }}
+          check-run-name: "build-indexer / Build image"
 
   e2e-tests:
     needs: wait-for-build
