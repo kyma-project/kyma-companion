@@ -154,9 +154,6 @@
     "include_files": [
       "tutorials/cp-kyma-microservice-trigger/cp-kyma-microservice-trigger.md",
       "tutorials/cp-kyma-mocks/cp-kyma-mocks.md",
-      "tutorials/cp-kyma-frontend-ui5-mssql/cp-kyma-frontend-ui5-mssql.md",
-      "tutorials/cp-kyma-api-mssql-golang/cp-kyma-api-mssql-golang.md",
-      "tutorials/cp-kyma-mssql-deployment/cp-kyma-mssql-deployment.md",
       "tutorials/cp-kyma-download-cli/cp-kyma-download-cli.md",
       "tutorials/cp-kyma-redis-function/cp-kyma-redis-function.md",
       "tutorials/cp-kyma-getting-started/cp-kyma-getting-started.md",
@@ -302,18 +299,6 @@
       "docs/glossary.md"
     ],
     "exclude_files": [
-      "*/_sidebar.md"
-    ]
-  },
-  {
-    "name": "ans-manager",
-    "source_type": "Github",
-    "url": "https://github.com/kyma-project/ans-manager.git",
-    "include_files": [
-      "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   }
