@@ -7,7 +7,7 @@
       "docs/*"
     ],
     "exclude_files": [
-      "*/_*.md"
+      "*/_sidebar.md"
     ]
   },
   {
@@ -193,10 +193,6 @@
     "url": "https://github.com/kyma-project/kyma-environment-broker.git",
     "include_files": [
       "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/README.md",
-      "*/_sidebar.md"
     ]
   },
   {
@@ -207,7 +203,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
@@ -219,7 +214,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
@@ -240,11 +234,9 @@
     "source_type": "Github",
     "url": "https://github.com/kyma-project/modulectl.git",
     "include_files": [
-      "docs/user/*",
       "docs/gen-docs/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
@@ -268,19 +260,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
-      "*/_sidebar.md"
-    ]
-  },
-  {
-    "name": "kyma-infrastructure-manager",
-    "source_type": "Github",
-    "url": "https://github.com/kyma-project/kyma-infrastructure-manager.git",
-    "include_files": [
-      "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
