@@ -60,10 +60,6 @@
     "url": "https://github.com/kyma-project/cloud-manager.git",
     "include_files": [
       "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/resources/README.md",
-      "docs/user/tutorials/README.md"
     ]
   },
   {
@@ -108,10 +104,6 @@
     "url": "https://github.com/kyma-project/docker-registry.git",
     "include_files": [
       "docs/user/*"
-    ],
-    "exclude_files": [
-      "docs/user/tutorials/README.md",
-      "docs/user/resources/README.md"
     ]
   },
   {
@@ -130,7 +122,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "*/README.md",
       "docs/user/tutorials/01-60-set-external-registry.md"
     ]
   },
@@ -225,7 +216,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
@@ -248,7 +238,6 @@
       "docs/user/*"
     ],
     "exclude_files": [
-      "docs/user/README.md",
       "*/_sidebar.md"
     ]
   },
