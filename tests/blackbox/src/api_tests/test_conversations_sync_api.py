@@ -65,7 +65,7 @@ class TestConversationsSyncAPI:
         auth_headers: dict[str, str],
         conversation_id: str,
     ) -> None:
-        """Test that the sync endpoint returns a plain text non-empty answer string."""
+        """Test that the sync endpoint returns a JSON object with a non-empty answer string."""
         logger.info(f"Testing sync messages endpoint for conversation {conversation_id}")
 
         response = requests.post(
@@ -76,10 +76,10 @@ class TestConversationsSyncAPI:
         )
 
         assert response.status_code == HTTPStatus.OK
-        assert response.headers["content-type"].startswith("text/plain")
-        assert isinstance(response.text, str)
-        assert len(response.text) > 0
-        logger.info(f"Sync endpoint returned answer of length {len(response.text)}")
+        assert response.headers["content-type"].startswith("application/json")
+        assert isinstance(response.json().get("answer"), str)
+        assert len(response.json()["answer"]) > 0
+        logger.info(f"Sync endpoint returned answer of length {len(response.json()['answer'])}")
 
     def test_sync_without_auth_returns_error(
         self,

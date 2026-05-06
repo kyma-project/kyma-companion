@@ -6,7 +6,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path, Query
 from fastapi.encoders import jsonable_encoder
-from starlette.responses import JSONResponse, PlainTextResponse, StreamingResponse
+from langgraph.constants import END
+from starlette.responses import JSONResponse, StreamingResponse
 
 from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
@@ -17,6 +18,8 @@ from routers.common import (
     FollowUpQuestionsResponse,
     InitConversationBody,
     InitialQuestionsResponse,
+    SyncMessageResponse,
+    init_k8s_client,
 )
 from services.conversation import ConversationService, IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
@@ -201,54 +204,24 @@ async def followup_questions(
 async def messages(
     conversation_id: Annotated[UUID, Path(title="The ID of the conversation to continue")],
     message: Annotated[Message, Body(title="The message to send")],
-    x_cluster_url: Annotated[str, Header()],
-    x_cluster_certificate_authority_data: Annotated[str, Header()],
     conversation_service: Annotated[IService, Depends(init_conversation_service)],
-    data_sanitizer: Annotated[IDataSanitizer, Depends(init_data_sanitizer)],
-    x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
-    x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
-    x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+    k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
     _: Annotated[None, Depends(enforce_query_token_limit)] = None,
     stream: Annotated[
         bool,
-        Query(description="Stream the response as SSE. Set to false to receive the complete answer as plain text."),
+        Query(description="Stream the response as SSE. Set to false to receive the complete answer as JSON."),
     ] = True,
-) -> StreamingResponse | PlainTextResponse:
+) -> StreamingResponse | JSONResponse:
     """Endpoint to send a message to the Kyma companion"""
 
     logger.info(f"Handling conversation: {str(conversation_id)}. Request data: {message.model_dump_json()}")
 
-    # Validate if all the required K8s headers are provided.
-    k8s_auth_headers = K8sAuthHeaders(
-        x_cluster_url=x_cluster_url,
-        x_cluster_certificate_authority_data=x_cluster_certificate_authority_data,
-        x_k8s_authorization=x_k8s_authorization,
-        x_client_certificate_data=x_client_certificate_data,
-        x_client_key_data=x_client_key_data,
-    )
-    try:
-        k8s_auth_headers.validate_headers()
-    except Exception as e:
-        raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(e)) from e
-
     # Authorize the user to access the conversation.
-    message.user_identifier = extract_user_identifier(k8s_auth_headers)
+    message.user_identifier = extract_user_identifier(k8s_client.k8s_auth_headers)
     await authorize_user(str(conversation_id), message.user_identifier, conversation_service)
 
     # Check rate limitation
-    await check_token_usage(x_cluster_url, conversation_service)
-
-    # Initialize k8s client for the request.
-    try:
-        k8s_client: IK8sClient = K8sClient.new(
-            k8s_auth_headers=k8s_auth_headers,
-            data_sanitizer=data_sanitizer,
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"failed to connect to the cluster: {str(e)}",
-        ) from e
+    await check_token_usage(k8s_client.k8s_auth_headers.x_cluster_url, conversation_service)
 
     # Validate the k8s resource context.
     if not message.is_cluster_overview_query():
@@ -285,9 +258,12 @@ async def _collect_answer(
     message: Message,
     k8s_client: IK8sClient,
     conversation_service: IService,
-) -> PlainTextResponse:
-    """Drain the streaming pipeline and return the concatenated answer as plain text."""
-    final_answer = ""
+) -> JSONResponse:
+    """Drain the streaming pipeline and return the final answer as JSON.
+
+    Only the chunk where answer.next == END is the synthesized final response.
+    All other chunks are intermediate agent status updates.
+    """
     async for chunk in conversation_service.handle_request(conversation_id, message, k8s_client):
         chunk_response = prepare_chunk_response(chunk)
         if chunk_response is None:
@@ -295,20 +271,20 @@ async def _collect_answer(
         try:
             data = json.loads(chunk_response)
             chunk_data = data.get("data", {})
+            if not isinstance(chunk_data, dict):
+                continue
             if chunk_data.get("error") is not None:
                 continue
-            content = (chunk_data.get("answer") or {}).get("content", "")
+            answer = chunk_data.get("answer") or {}
+            if answer.get("next") != END:
+                continue
+            content = answer.get("content", "")
             if content:
-                final_answer += content
+                return JSONResponse(content=jsonable_encoder(SyncMessageResponse(answer=content)))
         except json.JSONDecodeError:
             logger.warning(f"Unexpected non-JSON chunk from pipeline: {chunk_response!r}")
-        except AttributeError:
-            logger.warning(f"Unexpected chunk structure from pipeline: {chunk_response!r}")
 
-    if not final_answer:
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
-
-    return PlainTextResponse(final_answer)
+    raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="No answer was produced.")
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

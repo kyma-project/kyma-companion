@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from agents.common.constants import ERROR_RATE_LIMIT_CODE, UNKNOWN
 from agents.common.data import Message
 from main import app
+from routers.common import init_k8s_client
 from routers.conversations import (
     authorize_user,
     check_token_usage,
@@ -86,14 +87,30 @@ class MockService(IService):
             b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], '
             b'"usage_metadata": null}]}}'
         )
+        yield (
+            b'{"Supervisor": {"messages": [{"content": "Final synthesized answer", '
+            b'"additional_kwargs": {}, "response_metadata": {}, "type": "ai", "name": "Finalizer", '
+            b'"id": null, "example": false, "tool_calls": [], "invalid_tool_calls": [], '
+            b'"usage_metadata": null}], "next": "__end__"}}'
+        )
 
 
 class MockK8sClient:
     """Mock for the K8sClient class."""
 
-    def __init__(self, token: str = SAMPLE_JWT_TOKEN, api_server: str = "http://api.k8s.example.com"):
+    def __init__(
+        self,
+        token: str = SAMPLE_JWT_TOKEN,
+        api_server: str = "http://api.k8s.example.com",
+        k8s_auth_headers: K8sAuthHeaders | None = None,
+    ):
         self._token = token
         self._api_server = api_server
+        self.k8s_auth_headers = k8s_auth_headers or K8sAuthHeaders(
+            x_cluster_url=api_server,
+            x_cluster_certificate_authority_data="dGVzdA==",
+            x_k8s_authorization=token if token else None,
+        )
 
     def get_api_server(self) -> str:
         return self._api_server
@@ -163,13 +180,41 @@ class MockK8sClient:
 
 @pytest.fixture(scope="function")
 def client_factory():
-    def _create_client(expected_error=None):
+    def _create_client(expected_error=None, mock_k8s_client=None):
+        from typing import Annotated
+
+        from fastapi import Header, HTTPException
+
         mock_service = MockService(expected_error)
 
         def get_mock_service():
             return mock_service
 
+        async def get_mock_k8s_client(
+            x_cluster_url: Annotated[str, Header()] = None,  # type: ignore[assignment]
+            x_cluster_certificate_authority_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+            x_k8s_authorization: Annotated[str, Header()] = None,  # type: ignore[assignment]
+            x_client_certificate_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+            x_client_key_data: Annotated[str, Header()] = None,  # type: ignore[assignment]
+        ) -> IK8sClient:
+            headers = K8sAuthHeaders(
+                x_cluster_url=x_cluster_url or "",
+                x_cluster_certificate_authority_data=x_cluster_certificate_authority_data or "",
+                x_k8s_authorization=x_k8s_authorization,
+                x_client_certificate_data=x_client_certificate_data if x_client_certificate_data else None,
+                x_client_key_data=x_client_key_data if x_client_key_data else None,
+            )
+            try:
+                headers.validate_headers()
+            except Exception as e:
+                raise HTTPException(status_code=422, detail=str(e)) from e
+            if mock_k8s_client is not None:
+                mock_k8s_client.k8s_auth_headers = headers
+                return mock_k8s_client
+            return MockK8sClient(k8s_auth_headers=headers)
+
         app.dependency_overrides[init_conversation_service] = get_mock_service
+        app.dependency_overrides[init_k8s_client] = get_mock_k8s_client
         test_client = TestClient(app)
 
         return test_client
@@ -180,7 +225,6 @@ def client_factory():
     app.dependency_overrides.clear()
 
 
-@patch("services.k8s.K8sClient.new", return_value=MockK8sClient())
 @pytest.mark.parametrize(
     "request_headers, conversation_id, input_message, expected_output",
     [
@@ -413,7 +457,6 @@ def client_factory():
     ],
 )
 def test_messages_endpoint(
-    mock_init,
     client_factory,
     request_headers,
     conversation_id,
@@ -1159,9 +1202,8 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
             },
             {
                 "status_code": 200,
-                "content-type": "text/plain; charset=utf-8",
-                "answer": "To create an API Rule in Kyma to expose a service externally"
-                "To create a kubernetes deployment",
+                "content-type": "application/json",
+                "answer": "Final synthesized answer",
             },
         ),
         (
@@ -1183,9 +1225,8 @@ def test_enforce_query_token_limit(mock_token_count, should_raise_exception):
             },
             {
                 "status_code": 200,
-                "content-type": "text/plain; charset=utf-8",
-                "answer": "To create an API Rule in Kyma to expose a service externally"
-                "To create a kubernetes deployment",
+                "content-type": "application/json",
+                "answer": "Final synthesized answer",
             },
         ),
         (
@@ -1292,37 +1333,35 @@ def test_messages_stream_false(
     input_message,
     expected_output,
 ):
-    with patch("services.k8s.K8sClient.new", return_value=mock_k8s_client):
-        test_client = client_factory()
+    test_client = client_factory(mock_k8s_client=mock_k8s_client)
 
-        metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
-        metric_labels = {
-            "method": "POST",
-            "status": str(expected_output["status_code"]),
-            "path": "/api/conversations/{conversation_id}/messages",
-        }
-        before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels) or 0.0
+    metric_name = f"{REQUEST_LATENCY_METRIC_KEY}_count"
+    metric_labels = {
+        "method": "POST",
+        "status": str(expected_output["status_code"]),
+        "path": "/api/conversations/{conversation_id}/messages",
+    }
+    before_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels) or 0.0
 
-        response = test_client.post(
-            f"/api/conversations/{conversation_id}/messages?stream=false",
-            json=input_message,
-            headers=request_headers,
-        )
+    response = test_client.post(
+        f"/api/conversations/{conversation_id}/messages?stream=false",
+        json=input_message,
+        headers=request_headers,
+    )
 
-        assert response.status_code == expected_output["status_code"]
-        assert response.headers["content-type"] == expected_output["content-type"]
+    assert response.status_code == expected_output["status_code"]
+    assert response.headers["content-type"] == expected_output["content-type"]
 
-        after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
-        assert after_metric_value > before_metric_value
+    after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, metric_labels)
+    assert after_metric_value > before_metric_value
 
-        if expected_output["status_code"] == HTTPStatus.OK:
-            assert response.text == expected_output["answer"]
-        elif "body" in expected_output:
-            assert json.loads(response.content) == expected_output["body"]
+    if expected_output["status_code"] == HTTPStatus.OK:
+        assert response.json()["answer"] == expected_output["answer"]
+    elif "body" in expected_output:
+        assert json.loads(response.content) == expected_output["body"]
 
 
-@patch("services.k8s.K8sClient.new", return_value=MockK8sClient())
-def test_messages_stream_false_returns_500_when_no_answer_produced(mock_init, client_factory):
+def test_messages_stream_false_returns_500_when_no_answer_produced(client_factory):
     """Endpoint must return 500 when the pipeline emits only error chunks."""
 
     class ErrorOnlyService(IService):
