@@ -34,6 +34,7 @@ jobs:
   tests:
     needs: check-author
     if: needs.check-author.outputs.is-codeowner == 'true'
+    environment: e2e
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

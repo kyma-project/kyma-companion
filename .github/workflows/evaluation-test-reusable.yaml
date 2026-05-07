@@ -24,6 +24,9 @@ on:
         required: false
         type: string
         default: ""
+    secrets:
+      EVALUATION_TESTS_CONFIG:
+        required: true
 
 
 # global env variables.
@@ -35,6 +38,7 @@ jobs:
   evaluation-tests:
     name: Run evaluation tests
     runs-on: ubuntu-latest
+    environment: e2e
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
