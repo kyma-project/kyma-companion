@@ -5,34 +5,28 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - "main"
-    paths-ignore:
-      - ".github/**"
-      - ".reuse/**"
-      - "LICENSES/**"
-      - "config/**"
-      - "data/**"
-      - "docs/**"
-      - "scripts/**"
-      - "tests/**"
-      - "**/*.md"
-      - "src/**"
-      - "doc_indexer/.vscode/**"
-      - "doc_indexer/tests/**"
-      - CODEOWNERS
-      - LICENSE
-      - "sec-scanners-config.yaml"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "renovate.json"
-      - ".gitignore"
-      - external-images.yaml
+    paths:
+      - "doc_indexer/**"
+      - ".github/workflows/pull-e2e-tests-doc-indexer.yaml"
+      - ".github/workflows/pull-build-image-indexer.yaml"
+      - ".github/workflows/e2e-tests-doc-indexer-reusable.yaml"
 
-permissions:
-  id-token: write # This is required for requesting the JWT token
-  contents: read # This is required for actions/checkout
+permissions: read-all
 
 jobs:
-  build:
+  authorize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check codeowner authorization
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+        with:
+          github-token: ${{ secrets.GIT_BOT_TOKEN }}
+
+  build-indexer:
+    needs: authorize
+    permissions:
+      id-token: write # This is required for requesting the JWT token
+      contents: read # This is required for actions/checkout
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: kyma-companion-indexer

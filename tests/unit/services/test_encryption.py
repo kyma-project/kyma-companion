@@ -6,15 +6,13 @@ import re
 from unittest.mock import AsyncMock
 
 import pytest
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
-    NoEncryption,
-    PrivateFormat,
     PublicFormat,
 )
 
@@ -30,11 +28,6 @@ _AES_KEY_SIZE = 32
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _ec_private_key_b64(key: EllipticCurvePrivateKey) -> str:
-    """Encode an EC private key as base64-encoded DER/PKCS8."""
-    return base64.b64encode(key.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())).decode()
 
 
 def _ec_public_key_b64(key: EllipticCurvePrivateKey) -> str:
@@ -75,18 +68,11 @@ def _make_encrypted_payload(
 # ---------------------------------------------------------------------------
 
 _SERVER_KEY = ec.generate_private_key(_ECDH_CURVE)
-_SERVER_KEY_B64 = _ec_private_key_b64(_SERVER_KEY)
 
 _PLAINTEXT = b'{"x_cluster_url": "https://test.example.com"}'
 _VALID_ENCRYPTED_KEY, _VALID_IV, _VALID_ENCRYPTED_DATA, _CLIENT_PUBLIC_KEY_B64 = _make_encrypted_payload(
     _SERVER_KEY, _PLAINTEXT
 )
-
-_RSA_KEY_B64 = base64.b64encode(
-    rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
-        Encoding.DER, PrivateFormat.PKCS8, NoEncryption()
-    )
-).decode()
 
 _CORRUPTED_ENCRYPTED_KEY = base64.b64encode(os.urandom(60)).decode()
 
@@ -120,42 +106,42 @@ _ENCRYPTED_HELPER_DATA_B64 = base64.b64encode(
 
 class TestEncryption:
     @pytest.mark.parametrize(
-        "test_case, private_key_b64, expected_error, expected_error_msg",
+        "test_case, private_key, expected_error, expected_error_msg",
         [
             pytest.param(
-                "valid EC P-256 private key is loaded successfully",
-                _SERVER_KEY_B64,
+                "valid EC P-256 private key is accepted",
+                _SERVER_KEY,
                 None,
                 None,
                 id="valid_ec_key",
             ),
             pytest.param(
-                "RSA private key raises TypeError",
-                _RSA_KEY_B64,
+                "None raises TypeError",
+                None,
                 TypeError,
-                "private_key_b64 is not an EC private key",
-                id="rsa_key",
+                "private_key is not an EC private key",
+                id="none",
             ),
             pytest.param(
-                "invalid base64 string raises an exception",
-                "not-valid-base64!!!",
-                Exception,
-                None,
-                id="invalid_base64",
+                "string raises TypeError",
+                "not-an-ec-key",
+                TypeError,
+                "private_key is not an EC private key",
+                id="string",
             ),
             pytest.param(
-                "valid base64 but not a valid DER key raises an exception",
-                base64.b64encode(b"garbage data").decode(),
-                Exception,
-                None,
-                id="invalid_der",
+                "integer raises TypeError",
+                42,
+                TypeError,
+                "private_key is not an EC private key",
+                id="integer",
             ),
         ],
     )
     def test_init(
         self,
         test_case: str,
-        private_key_b64: str,
+        private_key: object,
         expected_error: type[Exception] | None,
         expected_error_msg: str | None,
     ):
@@ -163,14 +149,14 @@ class TestEncryption:
 
         if expected_error is None:
             # Given / When:
-            enc = Encryption(private_key_b64, mock_cache)
+            enc = Encryption(private_key, mock_cache)
 
             # Then:
             assert isinstance(enc._private_key, EllipticCurvePrivateKey), test_case
         else:
             match = re.escape(expected_error_msg) if expected_error_msg else None
             with pytest.raises(expected_error, match=match):
-                Encryption(private_key_b64, mock_cache)
+                Encryption(private_key, mock_cache)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -255,7 +241,7 @@ class TestEncryption:
         mock_cache.get_client_public_key.return_value = client_public_key
         mock_cache.is_nonce_allowed.return_value = nonce_allowed
 
-        enc = Encryption(_SERVER_KEY_B64, mock_cache)
+        enc = Encryption(_SERVER_KEY, mock_cache)
 
         if expected_error is None:
             # When:
@@ -295,7 +281,7 @@ class TestEncryption:
         # Given:
         mock_cache = AsyncMock(spec=IEncryptionCache)
         mock_cache.get_client_public_key.return_value = cache_return_value
-        enc = Encryption(_SERVER_KEY_B64, mock_cache)
+        enc = Encryption(_SERVER_KEY, mock_cache)
 
         # When:
         result = await enc._get_client_public_key("session-123")
@@ -337,7 +323,7 @@ class TestEncryption:
         expected_result: bytes | None,
         expected_error: type[Exception] | None,
     ):
-        enc = Encryption(_SERVER_KEY_B64, AsyncMock(spec=IEncryptionCache))
+        enc = Encryption(_SERVER_KEY, AsyncMock(spec=IEncryptionCache))
 
         if expected_error is None:
             # When:
@@ -387,7 +373,7 @@ class TestEncryption:
         expected_result: bytes | None,
         expected_error: type[Exception] | None,
     ):
-        enc = Encryption(_SERVER_KEY_B64, AsyncMock(spec=IEncryptionCache))
+        enc = Encryption(_SERVER_KEY, AsyncMock(spec=IEncryptionCache))
 
         if expected_error is None:
             # When:
@@ -454,7 +440,7 @@ class TestEncryption:
         expected_error: type[Exception] | None,
         expected_error_msg: str | None,
     ):
-        enc = Encryption(_SERVER_KEY_B64, AsyncMock(spec=IEncryptionCache))
+        enc = Encryption(_SERVER_KEY, AsyncMock(spec=IEncryptionCache))
 
         if expected_error is None:
             # When:

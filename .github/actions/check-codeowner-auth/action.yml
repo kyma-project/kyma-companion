@@ -1,0 +1,84 @@
+name: "Check codeowner authorization"
+description: "Fails if PR author is not a codeowner and PR has no codeowner approval. Trusted bots are always authorized."
+
+inputs:
+  github-token:
+    description: "Token with read:org scope for team membership checks (use GIT_BOT_TOKEN)."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check authorization
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const TRUSTED_BOTS = [
+            'renovate[bot]',
+          ];
+
+          const org = 'kyma-project';
+          const teamSlug = 'ai-force';
+          const prNumber = context.payload.pull_request.number;
+          const prAuthor = context.payload.pull_request.user.login;
+
+          // Trusted bots are always authorized
+          if (TRUSTED_BOTS.includes(prAuthor)) {
+            console.log(`Author ${prAuthor} is a trusted bot - authorized.`);
+            return;
+          }
+
+          // Check if PR author is a codeowner
+          try {
+            await github.rest.teams.getMembershipForUserInOrg({
+              org,
+              team_slug: teamSlug,
+              username: prAuthor,
+            });
+            console.log(`Author ${prAuthor} is a codeowner - authorized.`);
+            return;
+          } catch (e) {
+            if (e.status !== 404) throw e;
+          }
+
+          // Not a codeowner - check for a codeowner approval
+          const allReviews = await github.paginate(github.rest.pulls.listReviews, {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+            per_page: 100,
+          });
+          // Keep only the latest review state per reviewer (excludes comments).
+          // This filters out stale approvals: if a reviewer approved and later
+          // requested changes, only the CHANGES_REQUESTED state is kept.
+          // Approvals on older commits (stale due to new pushes) are excluded
+          // by requiring the review commit_id to match the current head SHA.
+          const latestReviews = new Map();
+          for (const review of allReviews) {
+            if (review.state !== 'COMMENTED') {
+              latestReviews.set(review.user.login, review);
+            }
+          }
+          const headSha = context.payload.pull_request.head.sha;
+          const approvals = [...latestReviews.values()].filter(
+            r => r.state === 'APPROVED' && r.commit_id === headSha
+          );
+          for (const approval of approvals) {
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org,
+                team_slug: teamSlug,
+                username: approval.user.login,
+              });
+              console.log(`PR approved by codeowner ${approval.user.login} - authorized.`);
+              return;
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+          }
+
+          core.setFailed(
+            `PR author ${prAuthor} is not a codeowner and the PR has no codeowner approval. ` +
+            `A codeowner must approve the PR to allow tests to run.`
+          );

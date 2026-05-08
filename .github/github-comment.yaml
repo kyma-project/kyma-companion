@@ -1,11 +1,23 @@
 post:
-  pr-notes:
+  pr-notes-codeowner:
     template: |
       ## Note(s) for PR Author:
       - The integration test will be skipped for the PR. You can trigger it manually after adding the label: `run-integration-test`.
       - The evaluation test will be skipped for the PR. You can trigger it manually after adding the label: `evaluation requested`.
-      - The doc-indexer tests run automatically if the PR author is a codeowner.
+      - The doc-indexer tests run automatically if the PR author is a codeowner or the PR is approved by a codeowner.
       - If any changes are made to the evaluation tests data, make sure that the integration tests are working as expected.
       - If any changes are made to how to run the unit tests, make sure to update the steps for unit-tests in the create-release.yml workflow as well.
       ## Note(s) for PR Reviewer(s):
       - Make sure that the integration and evaluation tests are working as expected.
+  pr-notes-external:
+    template: |
+      ## Note(s) for PR Author:
+      - You are an external contributor. Workflows that require secrets will fail by design.
+      - A codeowner must approve the PR to allow secret-dependent workflows to run.
+      - The integration test will be skipped for the PR. A codeowner can trigger it manually after adding the label: `run-integration-test`.
+      - The evaluation test will be skipped for the PR. A codeowner can trigger it manually after adding the label: `evaluation requested`.
+      - If any changes are made to the evaluation tests data, make sure that the integration tests are working as expected.
+      - If any changes are made to how to run the unit tests, make sure to update the steps for unit-tests in the create-release.yml workflow as well.
+      ## Note(s) for PR Reviewer(s):
+      - Make sure that the integration and evaluation tests are working as expected.
+      - If you trust this PR, approve it to allow secret-dependent workflows to run.

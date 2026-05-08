@@ -1,0 +1,255 @@
+name: "E2E Tests for Doc Indexer (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: "Full doc_indexer image name to run (e.g. europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:main)"
+      DOCS_TABLE_NAME:
+        required: true
+        type: string
+        description: "HANA table name to index into (must be unique, dropped automatically after the job)"
+    secrets:
+      DOC_INDEXER_TESTS_CONFIG:
+        required: true
+
+env:
+  K3D_VERSION: "v5.8.3"
+  NAMESPACE: "doc-indexer"
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Install Kubectl
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${K3D_VERSION} bash
+          k3d --version
+
+      - name: Create K3d cluster
+        run: |
+          k3d cluster create doc-indexer-e2e \
+            --verbose \
+            --agents=1
+
+      - name: Verify K3d context
+        run: |
+          context_name=$(kubectl config current-context)
+          if [ "$context_name" != "k3d-doc-indexer-e2e" ]; then
+            echo "K3d context is not correct. Expected: k3d-doc-indexer-e2e, got: $context_name"
+            exit 1
+          fi
+          echo "K3d context is correct: $context_name"
+
+      - name: Create namespace
+        run: kubectl create namespace "${{ env.NAMESPACE }}"
+
+      - name: Create config secret
+        env:
+          DOC_INDEXER_CONFIG_BASE64: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: doc-indexer-config
+            namespace: ${{ env.NAMESPACE }}
+          type: Opaque
+          data:
+            config.json: "$DOC_INDEXER_CONFIG_BASE64"
+          EOF
+
+      - name: Create doc sources ConfigMap
+        run: |
+          kubectl create configmap doc-indexer-sources \
+            --from-file=e2e_docs_sources.json=./doc_indexer/e2e_docs_sources.json \
+            -n "${{ env.NAMESPACE }}"
+
+      - name: Import doc_indexer image into K3d
+        run: |
+          echo "Pulling image: ${{ inputs.IMAGE_NAME }}"
+          docker pull "${{ inputs.IMAGE_NAME }}"
+          k3d image import "${{ inputs.IMAGE_NAME }}" -c doc-indexer-e2e
+
+      - name: Run fetch and index Job
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-e2e
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["sh", "-c", "python src/main.py fetch && python src/main.py index"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  - name: DOCS_SOURCES_FILE_PATH
+                    value: "/etc/doc-sources/e2e_docs_sources.json"
+                  - name: DOCS_PATH
+                    value: "/app/data"
+                  - name: DOCS_TABLE_NAME
+                    value: "${{ inputs.DOCS_TABLE_NAME }}"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                  - name: doc-sources
+                    mountPath: /etc/doc-sources
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+                - name: doc-sources
+                  configMap:
+                    name: doc-indexer-sources
+          EOF
+
+      - name: Wait for e2e Job to complete
+        run: |
+          echo "Waiting for job doc-indexer-e2e to finish (timeout 1200s)..."
+          deadline=$((SECONDS + 1200))
+          while [ $SECONDS -lt $deadline ]; do
+            complete=$(kubectl get job doc-indexer-e2e -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+            failed=$(kubectl get job doc-indexer-e2e -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+            if [ "$complete" = "True" ]; then
+              echo "Job completed successfully."
+              exit 0
+            fi
+            if [ "$failed" = "True" ]; then
+              echo "Job failed."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for job."
+          exit 1
+
+      - name: Print Job logs
+        if: always()
+        run: |
+          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-e2e --tail=200 || true
+
+      - name: Debug information on failure
+        if: failure()
+        run: |
+          echo "=== Jobs status ==="
+          kubectl get jobs -n "${{ env.NAMESPACE }}" -o wide || true
+          kubectl describe jobs -n "${{ env.NAMESPACE }}" || true
+          echo "=== Pod status ==="
+          kubectl get pods -n "${{ env.NAMESPACE }}" -o wide || true
+          kubectl describe pods -n "${{ env.NAMESPACE }}" || true
+
+      - name: Drop HANA table
+        if: always()
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-drop
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "drop"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  - name: DOCS_TABLE_NAME
+                    value: "${{ inputs.DOCS_TABLE_NAME }}"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+          EOF
+          if kubectl wait --for=condition=complete job/doc-indexer-drop \
+            -n "${{ env.NAMESPACE }}" --timeout=120s; then
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-drop --tail=50 || true
+          else
+            kubectl wait --for=condition=failed job/doc-indexer-drop \
+              -n "${{ env.NAMESPACE }}" --timeout=10s || true
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-drop --tail=50 || true
+            exit 1
+          fi
+
+      - name: List HANA tables
+        if: always()
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-tables
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "tables"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+          EOF
+          if kubectl wait --for=condition=complete job/doc-indexer-tables \
+            -n "${{ env.NAMESPACE }}" --timeout=120s; then
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-tables --tail=50 || true
+          else
+            kubectl wait --for=condition=failed job/doc-indexer-tables \
+              -n "${{ env.NAMESPACE }}" --timeout=10s || true
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-tables --tail=50 || true
+            exit 1
+          fi

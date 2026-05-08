@@ -123,8 +123,8 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 )  # Default 5 minutes
 
 # Encryption (Base64 encoded)
-ENCRYPTION_PUBLIC_KEY_B64 = config("ENCRYPTION_PUBLIC_KEY_B64", default="")
-ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="")
+ENCRYPTION_PRIVATE_KEY_PATH = config("ENCRYPTION_PRIVATE_KEY_PATH", default="", cast=str)
+ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="", cast=str)
 NONCE_REPLAY_WINDOW_SECONDS = config("NONCE_REPLAY_WINDOW_SECONDS", default=300, cast=int)  # 5 minutes
 
 # Token limits

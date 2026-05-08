@@ -9,12 +9,17 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi import HTTPException
 
-from routers.common import get_k8s_auth_headers_from_encrypted_payload, init_k8s_client, init_models_dict
+from routers.common import (
+    get_k8s_auth_headers_from_encrypted_payload,
+    init_k8s_client,
+    init_models_dict,
+    init_search_tool,
+)
 from services.data_sanitizer import IDataSanitizer
 from services.encryption_cache import IEncryptionCache
 from services.k8s import K8sAuthHeaders
 
-_PRIVATE_KEY_B64 = "fake-private-key-b64"
+_MOCK_PRIVATE_KEY = Mock()
 _VALID_PAYLOAD = {
     "x-cluster-url": "https://api.test-cluster.example.com",
     "x-cluster-certificate-authority-data": "dGVzdC1jYS1kYXRh",
@@ -156,12 +161,13 @@ class TestInitModelsDict:
 
     @pytest.fixture(autouse=True)
     def reset_cache(self):
-        """Reset the models cache before each test."""
-        from routers.common import _ModelsCache
+        """Reset the models registry before each test."""
+        from routers.common import _ModelsRegistry
+        from utils.singleton_meta import SingletonMeta
 
-        _ModelsCache._instance = None
+        SingletonMeta.reset_instance(_ModelsRegistry)
         yield
-        _ModelsCache._instance = None
+        SingletonMeta.reset_instance(_ModelsRegistry)
 
     def test_init_models_dict_caches_result(self, mock_config):
         """Test that init_models_dict caches models dict (singleton behavior)."""
@@ -194,13 +200,67 @@ class TestInitModelsDict:
             assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
+class TestInitSearchTool:
+    """Tests for init_search_tool dependency (caching behavior)."""
+
+    @pytest.fixture
+    def mock_models(self):
+        return {"gpt-4": Mock()}
+
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        """Reset the search tool registry before each test."""
+        from routers.common import _SearchToolRegistry
+        from utils.singleton_meta import SingletonMeta
+
+        SingletonMeta.reset_instance(_SearchToolRegistry)
+        yield
+        SingletonMeta.reset_instance(_SearchToolRegistry)
+
+    def test_init_search_tool_caches_result(self, mock_models):
+        """Test that init_search_tool caches the tool instance (singleton behavior)."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool = Mock()
+            mock_tool_class.return_value = mock_tool
+
+            result1 = init_search_tool(models=mock_models)
+            result2 = init_search_tool(models=mock_models)
+
+            assert result1 is result2
+            assert mock_tool_class.call_count == 1
+
+    def test_init_search_tool_raises_http_exception_on_error(self, mock_models):
+        """Test that init_search_tool raises HTTPException when tool creation fails."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool_class.side_effect = Exception("RAG initialization failed")
+
+            with pytest.raises(HTTPException) as exc_info:
+                init_search_tool(models=mock_models)
+
+            assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+
+    def test_init_search_tool_allows_retry_after_error(self, mock_models):
+        """Test that a failed init does not permanently cache a broken instance."""
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool_class.side_effect = Exception("transient error")
+            with pytest.raises(HTTPException):
+                init_search_tool(models=mock_models)
+
+        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+            mock_tool = Mock()
+            mock_tool_class.return_value = mock_tool
+
+            result = init_search_tool(models=mock_models)
+            assert result is mock_tool
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "description, private_key_b64, x_encrypted_key, x_client_iv, x_target_cluster_encrypted, decrypt_effect, decrypt_return, expected_status, expected_detail_fragment, expected_fields",
     [
         pytest.param(
             "valid encrypted payload is decrypted and parsed into K8sAuthHeaders",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -216,21 +276,21 @@ class TestInitModelsDict:
             id="success",
         ),
         pytest.param(
-            "raises 500 when the server private key is not configured",
-            "",
+            "raises 422 when the server private key is not available",
+            RuntimeError("EC private key is not available"),
             "enc-key",
             "iv",
             "enc-data",
             None,
             None,
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            "Encrypted Auth Headers are not enabled in companion",
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+            "Failed to decrypt cluster authentication headers",
             None,
             id="private_key_not_configured",
         ),
         pytest.param(
             "raises 400 when x_encrypted_key header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "",
             "iv",
             "enc-data",
@@ -243,7 +303,7 @@ class TestInitModelsDict:
         ),
         pytest.param(
             "raises 400 when x_client_iv header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "",
             "enc-data",
@@ -256,7 +316,7 @@ class TestInitModelsDict:
         ),
         pytest.param(
             "raises 400 when x_target_cluster_encrypted header is missing",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "",
@@ -269,7 +329,7 @@ class TestInitModelsDict:
         ),
         pytest.param(
             "raises 400 when decryption raises a ValueError",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -282,7 +342,7 @@ class TestInitModelsDict:
         ),
         pytest.param(
             "raises 422 when decryption raises a generic exception",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -295,7 +355,7 @@ class TestInitModelsDict:
         ),
         pytest.param(
             "re-raises HTTPException from decryption unchanged",
-            _PRIVATE_KEY_B64,
+            _MOCK_PRIVATE_KEY,
             "enc-key",
             "iv",
             "enc-data",
@@ -311,7 +371,7 @@ class TestInitModelsDict:
 async def test_get_k8s_auth_headers_from_encrypted_payload(
     monkeypatch: pytest.MonkeyPatch,
     description: str,
-    private_key_b64: str,
+    private_key_b64: object,
     x_encrypted_key: str,
     x_client_iv: str,
     x_target_cluster_encrypted: str,
@@ -322,7 +382,12 @@ async def test_get_k8s_auth_headers_from_encrypted_payload(
     expected_fields: dict | None,
 ):
     # Given:
-    monkeypatch.setattr("routers.common.ENCRYPTION_PRIVATE_KEY_B64", private_key_b64)
+    mock_key_store = Mock()
+    if isinstance(private_key_b64, Exception):
+        mock_key_store.get_private_key.side_effect = private_key_b64  # gitleaks:allow
+    else:
+        mock_key_store.get_private_key.return_value = private_key_b64  # gitleaks:allow
+    monkeypatch.setattr("routers.common.KeyStore", Mock(return_value=mock_key_store))
 
     mock_encryption_instance = Mock()
     mock_encryption_instance.decrypt = AsyncMock(side_effect=decrypt_effect, return_value=decrypt_return)

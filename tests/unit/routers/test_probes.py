@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,15 +12,16 @@ from services.redis import get_redis
 
 
 @pytest.mark.parametrize(
-    "test_case, hana_ready, redis_ready, usage_tracker_ready, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, usage_tracker_ready, llm_states, key_store_ready, expected_status",
     [
-        ("all ready", True, True, True, {"model1": True, "model2": True}, HTTP_200_OK),
+        ("all ready", True, True, True, {"model1": True, "model2": True}, True, HTTP_200_OK),
         (
             "Hana not ready",
             False,
             True,
             True,
             {"model1": True, "model2": True},
+            True,
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
         (
@@ -29,6 +30,7 @@ from services.redis import get_redis
             False,
             True,
             {"model1": True, "model2": True},
+            True,
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
         (
@@ -37,15 +39,26 @@ from services.redis import get_redis
             True,
             True,
             {"model1": False, "model2": True},
+            True,
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
-        ("no models", True, True, True, {}, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, True, {}, True, HTTP_503_SERVICE_UNAVAILABLE),
         (
             "usage_tracker not ready",
             True,
             True,
             False,
             {"model1": True, "model2": True},
+            True,
+            HTTP_503_SERVICE_UNAVAILABLE,
+        ),
+        (
+            "key_store not ready",
+            True,
+            True,
+            True,
+            {"model1": True, "model2": True},
+            False,
             HTTP_503_SERVICE_UNAVAILABLE,
         ),
     ],
@@ -56,6 +69,7 @@ def test_healthz_probe(
     redis_ready,
     usage_tracker_ready,
     llm_states,
+    key_store_ready,
     expected_status,
 ):
     """
@@ -78,28 +92,33 @@ def test_healthz_probe(
     mock_llm_probe.get_llms_states.return_value = llm_states
     app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
-    client = TestClient(app)
+    mock_key_store = MagicMock()
+    mock_key_store.is_healthy.return_value = key_store_ready
 
     # When:
-    response = client.get("/healthz")
+    with patch("routers.probes.KeyStore", return_value=mock_key_store):
+        client = TestClient(app)
+        response = client.get("/healthz")
 
     # Then:
     assert response.status_code == expected_status, test_case
+    assert response.json()["is_key_store_healthy"] == key_store_ready, test_case
 
     # Clean up.
     app.dependency_overrides = {}
 
 
 @pytest.mark.parametrize(
-    "test_case, hana_ready, redis_ready, llm_states, expected_status",
+    "test_case, hana_ready, redis_ready, llm_states, key_store_ready, expected_status",
     [
-        ("all ready", True, True, True, HTTP_200_OK),
-        ("no Hana connection", False, True, True, HTTP_503_SERVICE_UNAVAILABLE),
-        ("no Redis connection", True, False, True, HTTP_503_SERVICE_UNAVAILABLE),
-        ("no models", True, True, False, HTTP_503_SERVICE_UNAVAILABLE),
+        ("all ready", True, True, True, True, HTTP_200_OK),
+        ("no Hana connection", False, True, True, True, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no Redis connection", True, False, True, True, HTTP_503_SERVICE_UNAVAILABLE),
+        ("no models", True, True, False, True, HTTP_503_SERVICE_UNAVAILABLE),
+        ("key_store not ready", True, True, True, False, HTTP_503_SERVICE_UNAVAILABLE),
     ],
 )
-def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_status):
+def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, key_store_ready, expected_status):
     """
     Test the readiness probe endpoint. This test ensures that the endpoint returns the correct status code.
     """
@@ -116,13 +135,17 @@ def test_ready_probe(test_case, hana_ready, redis_ready, llm_states, expected_st
     mock_llm_probe.has_models.return_value = llm_states
     app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
-    client = TestClient(app)
+    mock_key_store = MagicMock()
+    mock_key_store.is_healthy.return_value = key_store_ready
 
     # When:
-    response = client.get("/readyz")
+    with patch("routers.probes.KeyStore", return_value=mock_key_store):
+        client = TestClient(app)
+        response = client.get("/readyz")
 
     # Then:
     assert response.status_code == expected_status, test_case
+    assert response.json()["is_key_store_initialized"] == key_store_ready, test_case
 
     # Clean up.
     app.dependency_overrides = {}

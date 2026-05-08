@@ -6,12 +6,22 @@ on:
     branches:
       - main
 
-permissions:
-  id-token: write # This is required for requesting the JWT token
-  contents: read # This is required for actions/checkout
+permissions: read-all
 
 jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check codeowner authorization
+        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
+        with:
+          github-token: ${{ secrets.GIT_BOT_TOKEN }}
+
   build:
+    needs: authorize
+    permissions:
+      id-token: write # This is required for requesting the JWT token
+      contents: read # This is required for actions/checkout
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: kyma-companion
@@ -25,7 +35,7 @@ jobs:
     needs: build
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install jq
         run: sudo apt-get install jq
@@ -33,7 +43,8 @@ jobs:
       - name: Extract image name from JSON
         id: extract-image
         run: |
-          echo "IMAGE_NAME=$(echo '${{ needs.build.outputs.images }}' | jq -r '.[0]')" >> $GITHUB_ENV
+          IMAGE_NAMES='${{ needs.build.outputs.images }}'
+          echo "IMAGE_NAME=$(echo "$IMAGE_NAMES" | jq -r '.[0]')" >> "$GITHUB_ENV"
 
       - name: Test image
         run: ./scripts/shell/run-and-check-container.sh "$IMAGE_NAME" PR-${{ github.event.number }}-container

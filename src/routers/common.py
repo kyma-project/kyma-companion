@@ -10,15 +10,17 @@ from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
 
+from agents.kyma.tools.search import SearchKymaDocTool
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.encryption import Encryption
 from services.encryption_cache import EncryptionCache, get_encryption_cache
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
+from services.key_store import KeyStore
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
-from utils.settings import ENCRYPTION_PRIVATE_KEY_B64
+from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
 
@@ -69,6 +71,7 @@ class ReadinessModel(BaseModel):
     is_redis_initialized: bool
     is_hana_initialized: bool
     are_models_initialized: bool
+    is_key_store_initialized: bool
 
 
 class HealthModel(BaseModel):
@@ -77,6 +80,7 @@ class HealthModel(BaseModel):
     is_redis_healthy: bool
     is_hana_healthy: bool
     is_usage_tracker_healthy: bool
+    is_key_store_healthy: bool
     llms: dict[str, bool]
 
 
@@ -245,10 +249,35 @@ def init_data_sanitizer(
     return DataSanitizer(config.sanitization_config)
 
 
-class _ModelsCache:
-    """Singleton cache for models dict to avoid using global statement."""
+class _ModelsRegistry(metaclass=SingletonMeta):
+    """Singleton registry for the models dictionary."""
 
-    _instance: dict[str, IModel | Embeddings] | None = None
+    def __init__(self, config: Config):
+        try:
+            model_factory = ModelFactory(config=config)
+            self.models: dict[str, IModel | Embeddings] = model_factory.create_models()
+        except Exception as e:
+            logger.exception("Failed to initialize models")
+            SingletonMeta.reset_instance(_ModelsRegistry)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize models: {str(e)}",
+            ) from e
+
+
+class _SearchToolRegistry(metaclass=SingletonMeta):
+    """Singleton registry for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
+
+    def __init__(self, models: dict[str, IModel | Embeddings]):
+        try:
+            self.tool = SearchKymaDocTool(models)
+        except Exception as e:
+            logger.exception("Failed to initialize search tool")
+            SingletonMeta.reset_instance(_SearchToolRegistry)
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize search tool: {str(e)}",
+            ) from e
 
 
 def init_models_dict(
@@ -259,20 +288,21 @@ def init_models_dict(
 
     Creates a dict of model_name -> model instance for use by tools
     that require LLM models and embeddings.
-    Uses a class-level cache to avoid recreating models on every request.
+    Uses SingletonMeta to avoid recreating models on every request.
     """
-    if _ModelsCache._instance is None:
-        try:
-            model_factory = ModelFactory(config=config)
-            _ModelsCache._instance = model_factory.create_models()
-        except Exception as e:
-            logger.exception("Failed to initialize models")
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=f"Failed to initialize models: {str(e)}",
-            ) from e
+    return _ModelsRegistry(config).models
 
-    return _ModelsCache._instance
+
+def init_search_tool(
+    models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
+) -> SearchKymaDocTool:
+    """
+    Initialize SearchKymaDocTool singleton.
+
+    Instantiates SearchKymaDocTool (and therefore RAGSystem) once and caches it.
+    Uses SingletonMeta to avoid reinitializing RAGSystem on every request.
+    """
+    return _SearchToolRegistry(models).tool
 
 
 async def init_k8s_client(
@@ -350,12 +380,6 @@ async def get_k8s_auth_headers_from_encrypted_payload(
                                 encrypted with the random AES-256 key.
     """
 
-    if not ENCRYPTION_PRIVATE_KEY_B64:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail="Encrypted Auth Headers are not enabled in companion",
-        )
-
     if not x_encrypted_key or not x_client_iv or not x_target_cluster_encrypted:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -363,8 +387,9 @@ async def get_k8s_auth_headers_from_encrypted_payload(
         )
 
     try:
+        private_key = KeyStore().get_private_key()
         # decrypt the payload using the encryption service.
-        encryption = Encryption(ENCRYPTION_PRIVATE_KEY_B64, encryption_cache)
+        encryption = Encryption(private_key, encryption_cache)
         payload = await encryption.decrypt(x_encrypted_key, x_client_iv, x_session_id, x_target_cluster_encrypted)
         # parse the payload as JSON and convert to a K8sAuthHeaders instance
         payload = json.loads(payload)
