@@ -129,6 +129,8 @@ class K8sAuthHeaders(BaseModel):
 class IK8sClient(Protocol):
     """Interface for the K8sClient class."""
 
+    k8s_auth_headers: K8sAuthHeaders
+
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
         ...

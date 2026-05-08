@@ -232,6 +232,12 @@ class SearchKymaDocResponse(BaseModel):
     query: str = Field(..., description="Original search query")
 
 
+class SyncMessageResponse(BaseModel):
+    """Response model for the synchronous messages endpoint."""
+
+    answer: str = Field(..., description="The complete answer from the pipeline")
+
+
 # ============================================================================
 # Shared Dependencies
 # ============================================================================
