@@ -40,6 +40,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 # Paths that log at DEBUG on 200 and WARNING on non-200, instead of INFO
 LOW_VERBOSITY_PATHS = frozenset(["/healthz", "/readyz", "/metrics"])
+MEDIA_TYPE_SSE = "text/event-stream"
 
 app = FastAPI(
     title="Joule",
@@ -62,8 +63,17 @@ SECURITY_HEADERS = {
 async def security_headers_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Inject baseline security HTTP headers on every response (SEC-390)."""
     response = await call_next(request)
+    content_type = response.headers.get("content-type", "")
+    is_sse = MEDIA_TYPE_SSE in content_type
+
     for header, value in SECURITY_HEADERS.items():
-        response.headers[header] = value
+        if header not in response.headers:
+            # SSE streams require Cache-Control: no-cache so intermediary
+            # proxies allow the stream to flow.  Skip overriding it with
+            # no-store to keep SSE compatible.
+            if is_sse and header == "Cache-Control":
+                continue
+            response.headers[header] = value
     return response
 
 

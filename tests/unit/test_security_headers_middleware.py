@@ -3,8 +3,9 @@ from unittest.mock import Mock
 
 import pytest
 from fastapi import Response
+from starlette.responses import StreamingResponse
 
-from main import SECURITY_HEADERS, security_headers_middleware
+from main import MEDIA_TYPE_SSE, SECURITY_HEADERS, security_headers_middleware
 
 
 @pytest.fixture
@@ -18,85 +19,197 @@ def mock_request():
     return request
 
 
+# ---------------------------------------------------------------------------
+# Helpers: response factories
+# ---------------------------------------------------------------------------
+
+def _make_call_next(
+    status_code=HTTPStatus.OK,
+    content=None,
+    media_type=None,
+    headers=None,
+):
+    """Create an async ``call_next`` returning the configured response."""
+
+    async def call_next(_request):
+        if media_type == MEDIA_TYPE_SSE:
+            async def stream():
+                yield b""
+
+            resp = StreamingResponse(stream(), media_type=media_type)
+        else:
+            kwargs = {"status_code": status_code}
+            if content is not None:
+                kwargs["content"] = content
+            if media_type is not None:
+                kwargs["media_type"] = media_type
+            resp = Response(**kwargs)
+        for k, v in (headers or {}).items():
+            resp.headers[k] = v
+        return resp
+
+    return call_next
+
+
+# ---------------------------------------------------------------------------
+# Helpers: assertion functions (one per logical check)
+# ---------------------------------------------------------------------------
+
+def _assert_all_default_headers(response):
+    """Every SECURITY_HEADERS entry is present with its default value."""
+    for header, value in SECURITY_HEADERS.items():
+        assert response.headers.get(header) == value, (
+            f"Expected '{header}: {value}', got '{response.headers.get(header)}'"
+        )
+
+
+def _verify_headers_on_status(status_code):
+    def verify(response):
+        assert response.status_code == status_code
+        _assert_all_default_headers(response)
+
+    return verify
+
+
+def _verify_csp_directives(response):
+    csp = response.headers["Content-Security-Policy"]
+    for directive in (
+        "default-src 'none'",
+        "frame-ancestors 'none'",
+        "form-action 'none'",
+        "base-uri 'none'",
+    ):
+        assert directive in csp, f"Missing CSP directive: {directive}"
+    for banned in ("unsafe-inline", "unsafe-eval"):
+        assert banned not in csp, f"CSP must not contain {banned}"
+
+
+def _verify_hsts(response):
+    hsts = response.headers["Strict-Transport-Security"]
+    assert "max-age=31536000" in hsts
+    assert "includeSubDomains" in hsts
+
+
+def _verify_body_preserved(response):
+    assert response.body == b"hello"
+
+
+def _verify_existing_header_not_overridden(response):
+    assert response.headers["Content-Security-Policy"] == "default-src 'self'"
+    for header, value in SECURITY_HEADERS.items():
+        if header == "Content-Security-Policy":
+            continue
+        assert response.headers.get(header) == value
+
+
+def _verify_required_header_keys(_response):
+    assert {
+        "Content-Security-Policy",
+        "Strict-Transport-Security",
+        "Referrer-Policy",
+        "X-Content-Type-Options",
+        "Cache-Control",
+        "Cross-Origin-Opener-Policy",
+        "Cross-Origin-Resource-Policy",
+    } == set(SECURITY_HEADERS.keys())
+
+
+def _verify_sse_skips_cache_control(response):
+    assert "no-store" not in response.headers.get("Cache-Control", "")
+    for header, value in SECURITY_HEADERS.items():
+        if header == "Cache-Control":
+            continue
+        assert response.headers.get(header) == value
+
+
+def _verify_non_sse_cache_control(response):
+    assert response.headers["Cache-Control"] == "no-store"
+
+
+# ---------------------------------------------------------------------------
+# Status codes exercised for the "all-headers-present" cases
+# ---------------------------------------------------------------------------
+
+_STATUS_CODES = [
+    HTTPStatus.OK,
+    HTTPStatus.CREATED,
+    HTTPStatus.BAD_REQUEST,
+    HTTPStatus.UNAUTHORIZED,
+    HTTPStatus.FORBIDDEN,
+    HTTPStatus.NOT_FOUND,
+    HTTPStatus.UNPROCESSABLE_ENTITY,
+    HTTPStatus.INTERNAL_SERVER_ERROR,
+    HTTPStatus.SERVICE_UNAVAILABLE,
+]
+
+
+# ---------------------------------------------------------------------------
+# Test
+# ---------------------------------------------------------------------------
+
 @pytest.mark.asyncio
 class TestSecurityHeadersMiddleware:
     """Tests for security_headers_middleware."""
 
     @pytest.mark.parametrize(
-        "status_code",
+        "description, call_next, verify",
         [
-            HTTPStatus.OK,
-            HTTPStatus.CREATED,
-            HTTPStatus.BAD_REQUEST,
-            HTTPStatus.UNAUTHORIZED,
-            HTTPStatus.FORBIDDEN,
-            HTTPStatus.NOT_FOUND,
-            HTTPStatus.UNPROCESSABLE_ENTITY,
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            HTTPStatus.SERVICE_UNAVAILABLE,
+            *[
+                pytest.param(
+                    f"All security headers are present on {sc} responses",
+                    _make_call_next(status_code=sc),
+                    _verify_headers_on_status(sc),
+                    id=f"all-headers-on-{sc}",
+                )
+                for sc in _STATUS_CODES
+            ],
+            pytest.param(
+                "CSP includes required directives and excludes unsafe ones",
+                _make_call_next(),
+                _verify_csp_directives,
+                id="csp-directives",
+            ),
+            pytest.param(
+                "HSTS includes max-age and includeSubDomains",
+                _make_call_next(),
+                _verify_hsts,
+                id="hsts-value",
+            ),
+            pytest.param(
+                "Middleware does not alter the response body",
+                _make_call_next(content=b"hello"),
+                _verify_body_preserved,
+                id="body-not-altered",
+            ),
+            pytest.param(
+                "Middleware does not override headers already set by downstream",
+                _make_call_next(
+                    headers={"Content-Security-Policy": "default-src 'self'"},
+                ),
+                _verify_existing_header_not_overridden,
+                id="existing-headers-preserved",
+            ),
+            pytest.param(
+                "SECURITY_HEADERS constant contains all required keys",
+                _make_call_next(),
+                _verify_required_header_keys,
+                id="constant-has-all-required-keys",
+            ),
+            pytest.param(
+                "SSE responses do not get Cache-Control overridden with no-store",
+                _make_call_next(media_type=MEDIA_TYPE_SSE),
+                _verify_sse_skips_cache_control,
+                id="sse-skips-cache-control",
+            ),
+            pytest.param(
+                "Non-SSE responses get Cache-Control: no-store",
+                _make_call_next(),
+                _verify_non_sse_cache_control,
+                id="non-sse-cache-control-no-store",
+            ),
         ],
     )
-    async def test_all_security_headers_present_on_all_status_codes(self, mock_request, status_code):
-        """All required security headers must be present regardless of status code."""
-
-        async def call_next(_request):
-            return Response(status_code=status_code)
-
+    async def test_security_headers_middleware(self, mock_request, description, call_next, verify):
+        """Verify security headers are correctly applied to every response."""
         response = await security_headers_middleware(mock_request, call_next)
-
-        assert response.status_code == status_code
-        for header, value in SECURITY_HEADERS.items():
-            assert response.headers.get(header) == value, (
-                f"Expected header '{header}: {value}' on {status_code} response"
-            )
-
-    async def test_content_security_policy_value(self, mock_request):
-        """CSP must include frame-ancestors, form-action, base-uri directives."""
-
-        async def call_next(_request):
-            return Response(status_code=HTTPStatus.OK)
-
-        response = await security_headers_middleware(mock_request, call_next)
-        csp = response.headers["Content-Security-Policy"]
-
-        assert "default-src 'none'" in csp
-        assert "frame-ancestors 'none'" in csp
-        assert "form-action 'none'" in csp
-        assert "base-uri 'none'" in csp
-        assert "unsafe-inline" not in csp
-        assert "unsafe-eval" not in csp
-
-    async def test_hsts_value(self, mock_request):
-        """HSTS must include max-age and includeSubDomains."""
-
-        async def call_next(_request):
-            return Response(status_code=HTTPStatus.OK)
-
-        response = await security_headers_middleware(mock_request, call_next)
-        hsts = response.headers["Strict-Transport-Security"]
-
-        assert "max-age=31536000" in hsts
-        assert "includeSubDomains" in hsts
-
-    async def test_does_not_override_existing_response_body(self, mock_request):
-        """Middleware must not alter the response body."""
-
-        async def call_next(_request):
-            return Response(content=b"hello", status_code=HTTPStatus.OK)
-
-        response = await security_headers_middleware(mock_request, call_next)
-
-        assert response.body == b"hello"
-
-    async def test_security_headers_constant_contains_all_required_headers(self):
-        """SECURITY_HEADERS dict must contain all required keys."""
-        required = {
-            "Content-Security-Policy",
-            "Strict-Transport-Security",
-            "Referrer-Policy",
-            "X-Content-Type-Options",
-            "Cache-Control",
-            "Cross-Origin-Opener-Policy",
-            "Cross-Origin-Resource-Policy",
-        }
-        assert required == set(SECURITY_HEADERS.keys())
+        verify(response)
