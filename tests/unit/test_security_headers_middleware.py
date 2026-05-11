@@ -23,6 +23,7 @@ def mock_request():
 # Helpers: response factories
 # ---------------------------------------------------------------------------
 
+
 def _make_call_next(
     status_code=HTTPStatus.OK,
     content=None,
@@ -33,6 +34,7 @@ def _make_call_next(
 
     async def call_next(_request):
         if media_type == MEDIA_TYPE_SSE:
+
             async def stream():
                 yield b""
 
@@ -54,6 +56,7 @@ def _make_call_next(
 # ---------------------------------------------------------------------------
 # Helpers: assertion functions (one per logical check)
 # ---------------------------------------------------------------------------
+
 
 def _assert_all_default_headers(response):
     """Every SECURITY_HEADERS entry is present with its default value."""
@@ -146,6 +149,7 @@ _STATUS_CODES = [
 # ---------------------------------------------------------------------------
 # Test
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 class TestSecurityHeadersMiddleware:

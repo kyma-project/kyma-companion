@@ -60,7 +60,9 @@ SECURITY_HEADERS = {
 
 
 @app.middleware("http")
-async def security_headers_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+async def security_headers_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     """Inject baseline security HTTP headers on every response (SEC-390)."""
     response = await call_next(request)
     content_type = response.headers.get("content-type", "")
