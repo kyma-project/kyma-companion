@@ -58,7 +58,8 @@ jobs:
     name: Run e2e tests
     uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
     needs: wait-for-build
-    secrets: inherit
+    secrets:
+      DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion-indexer:PR-${{ github.event.number }}"
       DOCS_TABLE_NAME: "kc_pr_${{ github.event.number }}_e2e"
