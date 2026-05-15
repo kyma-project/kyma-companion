@@ -58,6 +58,9 @@ SECURITY_HEADERS = {
     "Cross-Origin-Resource-Policy": "same-site",
 }
 
+# Paths that serve interactive documentation and need the relaxed CSP.
+RELAXED_PATHS = frozenset(["/docs"])
+
 
 @app.middleware("http")
 async def security_headers_middleware(
@@ -65,6 +68,9 @@ async def security_headers_middleware(
 ) -> Response:
     """Inject baseline security HTTP headers on every response (SEC-390)."""
     response = await call_next(request)
+    if request.url.path in RELAXED_PATHS:
+        return response
+
     content_type = response.headers.get("content-type", "")
     is_sse = MEDIA_TYPE_SSE in content_type
 

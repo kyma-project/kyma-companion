@@ -5,7 +5,7 @@ import pytest
 from fastapi import Response
 from starlette.responses import StreamingResponse
 
-from main import MEDIA_TYPE_SSE, SECURITY_HEADERS, security_headers_middleware
+from main import MEDIA_TYPE_SSE, RELAXED_PATHS, SECURITY_HEADERS, security_headers_middleware
 
 
 @pytest.fixture
@@ -129,6 +129,12 @@ def _verify_non_sse_cache_control(response):
     assert response.headers["Cache-Control"] == "no-store"
 
 
+def _verify_relaxed_path_skips_security_headers(response):
+    """For relaxed (docs) paths, no security headers should be injected."""
+    for header in SECURITY_HEADERS:
+        assert header not in response.headers, f"Security header '{header}' should not be present on relaxed path"
+
+
 # ---------------------------------------------------------------------------
 # Status codes exercised for the "all-headers-present" cases
 # ---------------------------------------------------------------------------
@@ -217,3 +223,11 @@ class TestSecurityHeadersMiddleware:
         """Verify security headers are correctly applied to every response."""
         response = await security_headers_middleware(mock_request, call_next)
         verify(response)
+
+    @pytest.mark.parametrize("path", list(RELAXED_PATHS), ids=[p.strip("/") for p in RELAXED_PATHS])
+    async def test_relaxed_paths_skip_security_headers(self, mock_request, path):
+        """Verify that relaxed (docs) paths return responses without any security headers."""
+        mock_request.url.path = path
+        call_next = _make_call_next()
+        response = await security_headers_middleware(mock_request, call_next)
+        _verify_relaxed_path_skips_security_headers(response)
