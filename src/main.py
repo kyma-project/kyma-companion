@@ -40,11 +40,49 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 # Paths that log at DEBUG on 200 and WARNING on non-200, instead of INFO
 LOW_VERBOSITY_PATHS = frozenset(["/healthz", "/readyz", "/metrics"])
+MEDIA_TYPE_SSE = "text/event-stream"
 
 app = FastAPI(
     title="Joule",
     lifespan=lifespan,
 )
+
+
+SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-site",
+}
+
+# Paths that serve interactive documentation and need the relaxed CSP.
+RELAXED_PATHS = frozenset(["/docs"])
+
+
+@app.middleware("http")
+async def security_headers_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Inject baseline security HTTP headers on every response (SEC-390)."""
+    response = await call_next(request)
+    if request.url.path in RELAXED_PATHS:
+        return response
+
+    content_type = response.headers.get("content-type", "")
+    is_sse = MEDIA_TYPE_SSE in content_type
+
+    for header, value in SECURITY_HEADERS.items():
+        if header not in response.headers:
+            # SSE streams require Cache-Control: no-cache so intermediary
+            # proxies allow the stream to flow.  Skip overriding it with
+            # no-store to keep SSE compatible.
+            if is_sse and header == "Cache-Control":
+                continue
+            response.headers[header] = value
+    return response
 
 
 @app.middleware("http")
