@@ -12,16 +12,7 @@ on:
 permissions: read-all
 
 jobs:
-  authorize:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check codeowner authorization
-        uses: kyma-project/kyma-companion/.github/actions/check-codeowner-auth@main
-        with:
-          github-token: ${{ secrets.GIT_BOT_TOKEN }}
-
   build-langfuse:
-    needs: authorize
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
@@ -34,7 +25,6 @@ jobs:
       platforms: |
         linux/amd64
   build-langfuse-worker:
-    needs: authorize
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
