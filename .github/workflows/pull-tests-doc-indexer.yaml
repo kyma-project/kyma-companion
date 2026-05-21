@@ -12,15 +12,11 @@ on:
 permissions: read-all
 
 jobs:
-  tests:
+  unit-test:
+    name: Tests (unit)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        test-type: [unit, integration]
-    name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -49,7 +45,6 @@ jobs:
         run: poetry install --with test
 
       - name: Run unit tests
-        if: matrix.test-type == 'unit'
         working-directory: ./doc_indexer
         env:
           LOG_LEVEL: "DEBUG"
@@ -59,8 +54,40 @@ jobs:
         run: |
           poetry run poe test-unit
 
+  integration-test:
+    name: Tests (integration)
+    runs-on: ubuntu-latest
+    environment: e2e
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Extract Python version
+        working-directory: ./doc_indexer
+        run: |
+          ../scripts/shell/extract-python-version.sh
+          echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        working-directory: ./doc_indexer
+        run: poetry install --with test
+
       - name: Run integration tests
-        if: matrix.test-type == 'integration'
         working-directory: ./doc_indexer
         env:
           LOG_LEVEL: "DEBUG"
