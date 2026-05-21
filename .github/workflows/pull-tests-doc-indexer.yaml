@@ -8,6 +8,7 @@ on:
       - "release-**"
     paths:
       - "doc_indexer/**"
+      - ".github/workflows/pull-tests-doc-indexer.yaml"
 
 permissions: read-all
 
