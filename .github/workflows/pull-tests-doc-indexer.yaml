@@ -8,18 +8,23 @@ on:
       - "release-**"
     paths:
       - "doc_indexer/**"
+      - ".github/workflows/pull-tests-doc-indexer.yaml"
 
 permissions: read-all
 
 jobs:
   tests:
     runs-on: ubuntu-latest
+    environment: ${{ matrix.env_name }}
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        test-type: [unit, integration]
+        include:
+          - test-type: unit
+          - test-type: integration
+            env_name: e2e
     name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code
