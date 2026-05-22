@@ -184,6 +184,7 @@ jobs:
     name: Run integration tests
     needs: validate-input-params
     runs-on: ubuntu-latest
+    environment: e2e
     permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
