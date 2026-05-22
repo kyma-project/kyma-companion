@@ -14,7 +14,13 @@ on:
 permissions: read-all
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    environment: e2e
+    steps:
+      - run: echo "environment gate passed"
   build-indexer:
+    needs: gate
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
