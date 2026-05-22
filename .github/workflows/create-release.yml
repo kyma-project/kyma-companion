@@ -308,6 +308,7 @@ jobs:
 
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
+    environment: e2e
     needs:
       [
         validate-input-params,
@@ -373,6 +374,7 @@ jobs:
     name: Create git tag for release
     needs: [validate-input-params, bump-sec-scanners-release-branch]
     runs-on: ubuntu-latest
+    environment: e2e
     env:
       GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
@@ -471,6 +473,7 @@ jobs:
     name: Bump image in sec-scanners-config
     needs: [validate-input-params, wait-for-build, create-draft]
     runs-on: ubuntu-latest
+    environment: e2e
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
