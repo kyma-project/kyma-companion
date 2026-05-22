@@ -10,8 +10,14 @@ on:
 permissions: read-all
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    environment: e2e
+    steps:
+      - run: echo "environment gate passed"
   comment:
     name: Notes for PR
+    needs: gate
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
