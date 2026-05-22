@@ -12,11 +12,16 @@ on:
 permissions: read-all
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    environment: e2e
+    steps:
+      - run: echo "environment gate passed"
   build-langfuse:
+    needs: gate
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
-    environment: e2e
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: external-langfuse
@@ -26,10 +31,10 @@ jobs:
       platforms: |
         linux/amd64
   build-langfuse-worker:
+    needs: gate
     permissions:
       id-token: write # This is required for requesting the JWT token
       contents: read # This is required for actions/checkout
-    environment: e2e
     uses: kyma-project/test-infra/.github/workflows/image-builder.yml@main
     with:
       name: external-langfuse-worker
