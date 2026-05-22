@@ -17,6 +17,7 @@ permissions: read-all
 jobs:
   wait-for-build:
     name: Wait for image build job
+    environment: e2e
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

@@ -13,6 +13,7 @@ jobs:
   wait-for-build:
     name: Wait for image build job
     if: contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    environment: e2e
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
