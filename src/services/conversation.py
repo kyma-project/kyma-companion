@@ -28,6 +28,7 @@ from utils.settings import (
     TOKEN_USAGE_RESET_INTERVAL,
 )
 from utils.singleton_meta import SingletonMeta
+from utils.utils import UserIdentifier
 
 logger = get_logger(__name__)
 
@@ -49,7 +50,7 @@ class IService(Protocol):
         """Handle a request for a conversation"""
         ...
 
-    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
+    async def authorize_user(self, conversation_id: str, user_identifier: UserIdentifier) -> bool:
         """Authorize the user to access the conversation."""
         ...
 
@@ -146,15 +147,21 @@ class ConversationService(metaclass=SingletonMeta):
             error_chunk = json.dumps({ERROR: {ERROR: ERROR_RESPONSE}})
             yield error_chunk.encode()
 
-    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
+    async def authorize_user(self, conversation_id: str, user_identifier: UserIdentifier) -> bool:
         """Authorize the user to access the conversation."""
         owner = await self._companion_graph.aget_thread_owner(conversation_id)
-        # If the owner is None, we can update the owner to the current user.
+        # New conversation: claim ownership under the SHA-384 hash.
         if owner is None:
-            await self._companion_graph.aupdate_thread_owner(conversation_id, user_identifier)
+            await self._companion_graph.aupdate_thread_owner(conversation_id, user_identifier.sha384)
             return True
-        # If the owner is the same as the user, we can authorize the user.
-        return owner == user_identifier
+        # Existing conversation owned by the same user (SHA-384 match).
+        if owner == user_identifier.sha384:
+            return True
+        # Legacy conversation owned under the old SHA-256 hash: migrate to SHA-384.
+        if owner == user_identifier.sha256:
+            await self._companion_graph.aupdate_thread_owner(conversation_id, user_identifier.sha384)
+            return True
+        return False
 
     async def is_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""

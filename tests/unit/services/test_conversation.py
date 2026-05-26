@@ -10,6 +10,7 @@ from agents.common.data import Message
 from services.conversation import TOKEN_LIMIT, ConversationService
 from services.usage import UsageExceedReport
 from utils.settings import MAIN_MODEL_MINI_NAME
+from utils.utils import UserIdentifier
 
 TIME_STAMP = 1.8
 QUESTIONS = ["question1?", "question2?", "question3?"]
@@ -216,22 +217,29 @@ class TestConversation:
             (
                 "owner is None, should update owner and authorize",
                 "conversation1",
-                "user1",
+                UserIdentifier(sha384="sha384-user1", sha256="sha256-user1"),
                 None,
                 True,
             ),
             (
-                "owner is the same as user, should authorize",
+                "owner is the same as user (sha384 match), should authorize",
                 "conversation2",
-                "user2",
-                "user2",
+                UserIdentifier(sha384="sha384-user2", sha256="sha256-user2"),
+                "sha384-user2",
+                True,
+            ),
+            (
+                "owner is legacy sha256 hash, should authorize and migrate",
+                "conversation3",
+                UserIdentifier(sha384="sha384-user3", sha256="sha256-user3"),
+                "sha256-user3",
                 True,
             ),
             (
                 "owner is different from user, should not authorize",
-                "conversation3",
-                "user3",
-                "user4",
+                "conversation4",
+                UserIdentifier(sha384="sha384-user4", sha256="sha256-user4"),
+                "sha384-other",
                 False,
             ),
         ],
@@ -262,7 +270,10 @@ class TestConversation:
         # Then
         assert result == expected_result
         if thread_owner is None:
-            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(conversation_id, user_identifier)
+            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(conversation_id, user_identifier.sha384)
+        elif thread_owner == user_identifier.sha256:
+            # Legacy migration: should update to sha384
+            mock_companion_graph.aupdate_thread_owner.assert_called_once_with(conversation_id, user_identifier.sha384)
         else:
             mock_companion_graph.aupdate_thread_owner.assert_not_called()
 

@@ -26,6 +26,7 @@ from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
+    UserIdentifier,
     create_session_id,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
@@ -227,8 +228,9 @@ async def messages(
         raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(e)) from e
 
     # Authorize the user to access the conversation.
-    message.user_identifier = extract_user_identifier(k8s_auth_headers)
-    await authorize_user(str(conversation_id), message.user_identifier, conversation_service)
+    user_identifier = extract_user_identifier(k8s_auth_headers)
+    message.user_identifier = user_identifier.sha384
+    await authorize_user(str(conversation_id), user_identifier, conversation_service)
 
     # Check rate limitation
     await check_token_usage(x_cluster_url, conversation_service)
@@ -295,37 +297,31 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
 
 def extract_user_identifier(
     k8s_auth_headers: K8sAuthHeaders,
-) -> str:
+) -> UserIdentifier:
     """Get the user identifier from the K8s auth headers."""
-    user_identifier = ""
     if k8s_auth_headers.x_k8s_authorization is not None:
         try:
-            user_identifier = get_user_identifier_from_token(k8s_auth_headers.x_k8s_authorization)
+            return get_user_identifier_from_token(k8s_auth_headers.x_k8s_authorization)
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=401, detail="Invalid token") from e
     elif k8s_auth_headers.x_client_certificate_data is not None:
         try:
-            user_identifier = get_user_identifier_from_client_certificate(
-                k8s_auth_headers.get_decoded_client_certificate_data()
-            )
+            return get_user_identifier_from_client_certificate(k8s_auth_headers.get_decoded_client_certificate_data())
         except Exception as e:
             logger.error(e)
             raise HTTPException(status_code=401, detail="Invalid client certificate") from e
 
-    if user_identifier == "":
-        raise HTTPException(
-            status_code=401,
-            detail="User not authorized to access the conversation. "
-            "Unable to get user identifier from the provided Authorization headers.",
-        )
-
-    return user_identifier
+    raise HTTPException(
+        status_code=401,
+        detail="User not authorized to access the conversation. "
+        "Unable to get user identifier from the provided Authorization headers.",
+    )
 
 
 async def authorize_user(
     conversation_id: str,
-    user_identifier: str,
+    user_identifier: UserIdentifier,
     conversation_service: IService,
 ) -> None:
     """Authorize the user to access the conversation."""

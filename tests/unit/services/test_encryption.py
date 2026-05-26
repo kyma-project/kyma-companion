@@ -9,7 +9,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.serialization import (
 from services.encryption import Encryption
 from services.encryption_cache import IEncryptionCache
 
-_ECDH_CURVE = ec.SECP256R1()
+_ECDH_CURVE = ec.SECP521R1()
 _HKDF_INFO = b"ecdh-key-exchange"
 _AES_GCM_NONCE_SIZE = 12
 _AES_KEY_SIZE = 32
@@ -46,7 +46,7 @@ def _make_encrypted_payload(
     client_key = ec.generate_private_key(_ECDH_CURVE)
 
     shared_secret = client_key.exchange(ec.ECDH(), server_private_key.public_key())
-    shared_key = HKDF(algorithm=SHA256(), length=32, salt=None, info=_HKDF_INFO).derive(shared_secret)
+    shared_key = HKDF(algorithm=SHA384(), length=32, salt=None, info=_HKDF_INFO).derive(shared_secret)
 
     aes_key = os.urandom(32)
     key_nonce = os.urandom(_AES_GCM_NONCE_SIZE)
@@ -80,7 +80,7 @@ _CORRUPTED_ENCRYPTED_KEY = base64.b64encode(os.urandom(60)).decode()
 # _derive_shared_key and _decrypt_aes_key in isolation.
 _CLIENT_KEY_HELPER = ec.generate_private_key(_ECDH_CURVE)
 _CLIENT_PUBLIC_KEY_HELPER_B64 = _ec_public_key_b64(_CLIENT_KEY_HELPER)
-_EXPECTED_SHARED_KEY = HKDF(algorithm=SHA256(), length=32, salt=None, info=_HKDF_INFO).derive(
+_EXPECTED_SHARED_KEY = HKDF(algorithm=SHA384(), length=32, salt=None, info=_HKDF_INFO).derive(
     _CLIENT_KEY_HELPER.exchange(ec.ECDH(), _SERVER_KEY.public_key())
 )
 
@@ -109,7 +109,7 @@ class TestEncryption:
         "test_case, private_key, expected_error, expected_error_msg",
         [
             pytest.param(
-                "valid EC P-256 private key is accepted",
+                "valid EC P-521 private key is accepted",
                 _SERVER_KEY,
                 None,
                 None,

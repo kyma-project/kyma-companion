@@ -21,8 +21,10 @@ from utils.utils import (
     JWT_TOKEN_EMAIL,
     JWT_TOKEN_SERVICE_ACCOUNT,
     JWT_TOKEN_SUB,
+    UserIdentifier,
     create_session_id,
     generate_sha256_hash,
+    generate_sha384_hash,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
     parse_k8s_token,
@@ -110,24 +112,24 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
 
 
 @pytest.mark.parametrize(
-    "test_description, token_payload, expected_result, expected_exception",
+    "test_description, token_payload, expected_sha384, expected_exception",
     [
         (
             "valid token with sub",
             {JWT_TOKEN_SUB: "user123"},
-            "e606e38b0d8c19b24cf0ee3808183162ea7cd63ff7912dbb22b5e803286b4446",
+            "37d750fce012e1eaa888d87286607db0adcdd0a52e6c298d2d82d37b1df4f3437b3bbd10255f82cb2822dc9442272ee2",
             None,
         ),
         (
             "valid token with email",
             {JWT_TOKEN_EMAIL: "user@example.com"},
-            "b4c9a289323b21a01c3e940f150eb9b8c542587f1abfd8f0e1cc1ffc5e475514",
+            "932c1566d0e77a011a6c86ac6b17c54be871c16da8807d5539d6f16be403cae45c3976bd224767da386186e99f56a882",
             None,
         ),
         (
             "valid token with service account name",
             {JWT_TOKEN_SERVICE_ACCOUNT: "service-account"},
-            "eb358b69ae30c7bea54b497b6ab1bcffb613bcf1e82099e6bb082047df8b4965",
+            "990d5b2d187539c050ba3ca12bfcd40e6fd1426fa2bf2b490c18e89f211fcf3930b7746916baf82f663240253b2fce86",
             None,
         ),
         (
@@ -144,14 +146,15 @@ def test_parse_k8s_token(test_description, token, expected_result, expected_exce
         ),
     ],
 )
-def test_get_user_identifier_from_token(test_description, token_payload, expected_result, expected_exception):
+def test_get_user_identifier_from_token(test_description, token_payload, expected_sha384, expected_exception):
     token = jwt.encode(token_payload, "secret", algorithm="HS256")
     if expected_exception:
         with pytest.raises(expected_exception, match="Failed to get user identifier from token"):
             get_user_identifier_from_token(token)
     else:
-        user_identifier = get_user_identifier_from_token(token)
-        assert user_identifier == expected_result, test_description
+        result = get_user_identifier_from_token(token)
+        assert isinstance(result, UserIdentifier), test_description
+        assert result.sha384 == expected_sha384, test_description
 
 
 # Sample PEM certificates for testing
@@ -199,14 +202,14 @@ def generate_pem_cert(common_name: str, serial_number: str) -> bytes:
             "Test case 1 Certificate with Common Name",
             # generated using generate_pem_cert("test_user", "12345")
             b"-----BEGIN CERTIFICATE-----\nMIICsjCCAZqgAwIBAgICMDkwDQYJKoZIhvcNAQELBQAwDzENMAsGA1UEAwwEdGVz\ndDAeFw0yNTA3MjgxNDQ3NDlaFw0yNjA3MjgxNDQ3NDlaMBQxEjAQBgNVBAMMCXRl\nc3RfdXNlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJX9BZd2A76C\nZy2sBjjZIaIFO2lF59h3bcqw9k0GXt5d8Jo372Kw1MdT6DTHuSv63SEmM2slXy2Z\nDOGSZg9nyoh+yTLEO5XS21f9o53j89XQ/dSAX0QsYvwmTeHvnJAksEuKhRDWQXLy\nD50BcmMyaT8mPrAVg4OMIzcFfpl4wwBSv6ftLcdG0whe7f9e7ke69FNJy2f7VG8i\nt0zDBijxtNVxFkeWYgZDvvIJuTgoJNw1lRoAXEkbbqPa+y4B9ShcpZqhZd/yT8Jx\nenxf3pVWZwKxx2opvwRQJ2tlMqln5+FITX+qKriEA96XGOie+EUGBBFGabf/pLKn\nILHPKP8vaW0CAwEAAaMTMBEwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsF\nAAOCAQEAX1r2GF8SVY9wey4bQ9Nn/1luSf60DMGUJfE8C/Lcq85MjpiAQ30qV/bb\nPOgNZ7LDISg5e06MP2ZCIqIhUMS6MfW/JX/g8XJo9RGgM3WWLhb43VesFb+SFi7Q\nKQ+LtvFlykaHyVmlLwnvnyG29vIt77cOngL9g5ESWAl7qGRa7pb2+w/YjLR5oOnU\nxqvtn8N2KAh1cwFslOi9IfgGEcwA+hd/rc6tlXDbmd8AZcWZo2pmBCYu+YZGSkGX\nTBIxLnQLRtaxwR8tENbb0x2PgiSK0cLAex86VOYlBNsb8Pt4FpSlupDFhKPtT0Va\nSUcAlZwnnepwKMSTCiTupOqi859+BA==\n-----END CERTIFICATE-----\n",
-            "1160130875fda0812c99c5e3f1a03516471a6370c4f97129b221938eb4763e63",
+            "1b18cc9bc452eade7102f2972972e2a2d0a3a6cb4aaf15a1f4759a78451e6be80641f16f7ee9e43b8ed6d1ba780a040f",
             None,
         ),
         (
             "Test case 2 Certificate without Common Name but with serial number",
             # generated using generate_pem_cert("", "67890")
             b"-----BEGIN CERTIFICATE-----\nMIICnzCCAYegAwIBAgIDAQkyMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNVBAMMBHRl\nc3QwHhcNMjUwNzI4MTQ0NzQ5WhcNMjYwNzI4MTQ0NzQ5WjAAMIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0KwcFwyPInr7IJfeH/15aSljGQjnSkPLoMun\nPqBv/fX2A7Ms/yoYOL6AwRzjZUhtq+qxQ5topKJPRbnk3US1vwv5CL32wxZIDbne\nDA0NWBqujtSSE3SdoA9TyW2wPj7RJVTuastrGZt9TAX4zuaIY3OeIUA99bHrckgn\nITUk+3mky5Bp6RvBdD/XlgcqtimBec2rETXnvk+hVOSLv1J/hem55cFNN16h6+El\nIRTo1ofVa7G+D3Slpgm0S5UZWoc/D133p0oL+9tqtWiZZcfJms4wlmFuVoYj+4AP\n3RFVsY58aTvTG51FoBQtODdvdF+gnVsc+T1BEavTNopHxERifwIDAQABoxMwETAP\nBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCBGARgbIMGYnBiw1pV\n5AFji0g1L1YmsTJC6W69CAi6GihvtzRtHMyTu8dyMvObVYxonzJ4CSmhEA4z6X0i\n4mKCRmjgSa4XkGBfBFJkbuq2iMDQZECgcE+nSZJgSw/tFcyjuTuhysuBuk66xN4i\niLDiLV4Z5qLYfcYnIoIBis6xkOHT3ynS9GC9Dp5Gu5grVqUQYXsEeITldjHaz79O\n8imuqZe74QX2NmXizpwASGPNrTyCe4D5jZ6b7aDo9Pg9JPuIHOKP+fVZMSzyfbmj\nwKslFuEecN1ORnGNE8PoEv9itGh18bQ2gnewqxLxWTsDzq9N7KsRf2OBiIxgpV1j\naDxa\n-----END CERTIFICATE-----\n",
-            "e2217d3e4e120c6a3372a1890f03e232b35ad659d71f7a62501a4ee204a3e66d",
+            "6988c291a83b05760b93263fc78e8feeca8ca4641b007c6978f644e08851b83efc0411a33a174e37065618585b7ba7d4",
             None,
         ),
         (
@@ -224,7 +227,9 @@ def test_get_user_identifier_from_client_certificate(
         with pytest.raises(ValueError):
             get_user_identifier_from_client_certificate(client_certificate_data)
     else:
-        assert get_user_identifier_from_client_certificate(client_certificate_data) == expected_user_identifier
+        result = get_user_identifier_from_client_certificate(client_certificate_data)
+        assert isinstance(result, UserIdentifier), test_description
+        assert result.sha384 == expected_user_identifier, test_description
 
 
 @pytest.mark.parametrize(
@@ -309,6 +314,34 @@ def test_to_sequence_messages(test_description, input_data, expected_output, exp
 )
 def test_generate_sha256_hash(input_data, expected_hash):
     assert generate_sha256_hash(input_data) == expected_hash
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_hash",
+    [
+        ("hello", "59e1748777448c69de6b800d7a33bbfb9ff1b463e44354c3553bcdb9c666fa90125a3c79f90397bdf5f6a13de828684f"),
+        ("", "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b"),
+        ("123456", "0a989ebc4a77b56a6e2bb7b19d995d185ce44090c13e2984b7ecc6d446d4b61ea9991b76a4c2f04b1b4d244841449454"),
+        (
+            "test string",
+            "e213dccb3221e0b8fdd995dcc1d04e218fc649981038bfac81abc98932369bac0efb758b92eccd80321df8eb64efae87",
+        ),
+        (
+            "test@email.com",
+            "9360eed5351c4387a49d7be43753dbd1374193c454afd0d5e1419410b886bf1f1c6528f3d400ce7b842ab56ad58604ee",
+        ),
+        (
+            "Person Name",
+            "009f1748ae83fa1947bc6a5fe29c2dbf39b7286e428dc589939095a2bbfda29fc30ea02ecad2e1b8ea87e1c09cb41925",
+        ),
+        (
+            "UNAUTHORIZED",
+            "ab5c38a5e39f0d8417bada101eeb648fa5b93a470dad1d7dbb836d102cc47979fcccc7c325c8118199b5c81ec64e7b57",
+        ),
+    ],
+)
+def test_generate_sha384_hash(input_data, expected_hash):
+    assert generate_sha384_hash(input_data) == expected_hash
 
 
 @pytest.fixture
