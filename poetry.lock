@@ -2675,21 +2675,22 @@ type = ["pygobject-stubs", "pytest-mypy (>=1.0.1)", "shtab", "types-pywin32"]
 
 [[package]]
 name = "kubernetes"
-version = "35.0.0"
+version = "36.0.1"
 description = "Kubernetes python client"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "kubernetes-35.0.0-py2.py3-none-any.whl", hash = "sha256:39e2b33b46e5834ef6c3985ebfe2047ab39135d41de51ce7641a7ca5b372a13d"},
-    {file = "kubernetes-35.0.0.tar.gz", hash = "sha256:3d00d344944239821458b9efd484d6df9f011da367ecb155dadf9513f05f09ee"},
+    {file = "kubernetes-36.0.1-py2.py3-none-any.whl", hash = "sha256:7631d11dd761f18658064a6ee91a36923cec3bef3cd92b99e08a53745b95f7d0"},
+    {file = "kubernetes-36.0.1.tar.gz", hash = "sha256:3eadd6ae1be3b742ae63bd382b139c9fd5171afb6e00771dcefaae2d49001992"},
 ]
 
 [package.dependencies]
+aiohttp = ">=3.13.5,<4.0.0"
 certifi = ">=14.5.14"
 durationpy = ">=0.7"
 python-dateutil = ">=2.5.3"
-pyyaml = ">=5.4.1"
+pyyaml = ">=6.0.3"
 requests = "*"
 requests-oauthlib = "*"
 six = ">=1.9.0"
@@ -2697,7 +2698,6 @@ urllib3 = ">=1.24.2,<2.6.0 || >2.6.0"
 websocket-client = ">=0.32.0,<0.40.0 || >0.40.0,<0.41.dev0 || >=0.43.dev0"
 
 [package.extras]
-adal = ["adal (>=1.0.2)"]
 google-auth = ["google-auth (>=1.0.1)"]
 
 [[package]]
@@ -8133,4 +8133,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "8c314f0d080fb36e947d5575bdca880ec9530c22c80628e0240cc9a2738acb97"
+content-hash = "db71a7f19f405d9f0797b51bc1156c06e8c66d7f79c755ea36172c1c30958445"
