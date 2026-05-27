@@ -55,10 +55,10 @@ types-pyyaml = "^6.0.12.20260518"
 cryptography = "^48.0.0"
 ipython = "^9.13.0"
 mypy = "^2.1.0"
-poethepoet = "^0.44.0"
+poethepoet = "^0.46.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.15.9"
-types-requests = "^2.33.0.20260408"
+ruff = "^0.15.14"
+types-requests = "^2.33.0.20260518"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
