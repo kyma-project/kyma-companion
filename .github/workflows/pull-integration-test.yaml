@@ -13,15 +13,8 @@ on:
 permissions: read-all
 
 jobs:
-  gate:
-    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
-    runs-on: ubuntu-latest
-    environment: e2e
-    steps:
-      - run: echo "environment gate passed"
   integration-test:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
-    needs: gate
     runs-on: ubuntu-latest
     environment: e2e
     permissions:

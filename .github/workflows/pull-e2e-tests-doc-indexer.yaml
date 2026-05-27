@@ -15,15 +15,10 @@ on:
 permissions: read-all
 
 jobs:
-  gate:
-    runs-on: ubuntu-latest
-    environment: e2e
-    steps:
-      - run: echo "environment gate passed"
   wait-for-build:
     name: Wait for image build job
-    needs: gate
     runs-on: ubuntu-latest
+    environment: e2e
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
