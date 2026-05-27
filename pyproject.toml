@@ -45,7 +45,7 @@ package-mode = false
 
 [tool.poetry.group.test.dependencies]
 deepeval = "^4.0.4"
-fakeredis = "^2.34.1"
+fakeredis = "^2.35.1"
 prettytable = "^3.17.0"
 pytest = "^9.0.3"
 pytest-aioresponses = "^0.3.0"
