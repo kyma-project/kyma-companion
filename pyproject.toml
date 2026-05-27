@@ -66,7 +66,7 @@ ipython = "^9.13.0"
 mypy = "^2.1.0"
 poethepoet = "^0.46.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.15.9"
+ruff = "^0.15.14"
 types-requests = "^2.33.0.20260408"
 
 [tool.pytest.ini_options]
