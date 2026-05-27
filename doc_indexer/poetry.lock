@@ -1686,14 +1686,14 @@ pydantic = ">=2.0.0,<3.0.0"
 
 [[package]]
 name = "langchain-hana"
-version = "1.0.2"
+version = "1.1.1"
 description = "An integration package connecting SAP HANA Cloud and LangChain"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "langchain_hana-1.0.2-py3-none-any.whl", hash = "sha256:d1734f2af225b472e6233aa18973fe821f232d7a07644d5d8d4758486c86aec9"},
-    {file = "langchain_hana-1.0.2.tar.gz", hash = "sha256:b9f6e5844c1bb55438cf5f6cd4e88882a51aeaf4e2c83e4a507cd999d67c8ca3"},
+    {file = "langchain_hana-1.1.1-py3-none-any.whl", hash = "sha256:9480ee004551b72607b4c2a4da784b5d8fec7ab76bd9167f354bc2ee89552bca"},
+    {file = "langchain_hana-1.1.1.tar.gz", hash = "sha256:1246669d9bbc188471f80104c8a0c6ea25acde59c0fcb264387a6c208fa034fa"},
 ]
 
 [package.dependencies]
@@ -4883,4 +4883,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "301ddf0aa3641093a5869232519d301a25df1c8fd7260c6680f531de76e7cf56"
+content-hash = "4d2212ea060483f1757e8fd24f4a755f6726756aa536f4d699a7fa37b3c92bdc"
