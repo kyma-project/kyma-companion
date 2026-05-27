@@ -21,7 +21,7 @@ dependencies = [
   "langchain-hana (>=1.1.1,<2.0.0)",
   "pydantic (>=2.13.4,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "sap-ai-sdk-gen[all] (>=6.7.0,<7.0.0)"
+  "sap-ai-sdk-gen[all] (>=6.10.0,<7.0.0)"
 ]
 
 [tool.poetry]
