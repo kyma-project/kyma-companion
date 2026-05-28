@@ -26,7 +26,7 @@ on:
         default: ""
     secrets:
       EVALUATION_TESTS_CONFIG:
-        required: true
+        required: false
 
 
 # global env variables.
