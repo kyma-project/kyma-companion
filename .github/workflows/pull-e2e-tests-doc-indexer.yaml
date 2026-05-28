@@ -15,15 +15,10 @@ on:
 permissions: read-all
 
 jobs:
-  gate:
-    runs-on: ubuntu-latest
-    environment: e2e
-    steps:
-      - run: echo "environment gate passed"
   wait-for-build:
     name: Wait for image build job
-    needs: gate
     runs-on: ubuntu-latest
+    environment: e2e
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -55,8 +50,6 @@ jobs:
     name: Run e2e tests
     uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
     needs: wait-for-build
-    secrets:
-      DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
     with:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion-indexer:PR-${{ github.event.number }}"
       DOCS_TABLE_NAME: "kc_pr_${{ github.event.number }}_e2e"
