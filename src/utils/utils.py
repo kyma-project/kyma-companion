@@ -2,7 +2,6 @@ import hashlib
 import json
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Any
 
 import jwt
@@ -14,18 +13,6 @@ JWT_TOKEN_SUB = "sub"
 JWT_TOKEN_EMAIL = "email"
 JWT_TOKEN_SERVICE_ACCOUNT = "kubernetes.io/serviceaccount/service-account.name"
 CN_KEYS = ["common_name", "commonName"]
-
-
-@dataclass
-class UserIdentifier:
-    """Holds both hash representations of a user identifier for migration purposes.
-
-    sha384 is the current (compliant) hash; sha256 is the legacy hash used for
-    transparent migration of existing Redis-stored identifiers.
-    """
-
-    sha384: str
-    sha256: str
 
 
 def create_ndjson_str(obj: dict) -> str:
@@ -116,8 +103,8 @@ def generate_sha384_hash(data: str) -> str:
     return sha384_hash.hexdigest()
 
 
-def get_user_identifier_from_token(token: str) -> UserIdentifier:
-    """Get the user identifier from the token. Returns both SHA384 and SHA256 hashes for migration."""
+def get_user_identifier_from_token(token: str) -> str:
+    """Get the user identifier from the token. The output is a SHA-384 hash of the user identifier."""
     try:
         payload = parse_k8s_token(token)
         if JWT_TOKEN_SUB in payload and payload[JWT_TOKEN_SUB] != "":
@@ -128,23 +115,21 @@ def get_user_identifier_from_token(token: str) -> UserIdentifier:
             raw = str(payload[JWT_TOKEN_SERVICE_ACCOUNT])
         else:
             raise ValueError("Invalid token: User identifier not found in token")
-        return UserIdentifier(sha384=generate_sha384_hash(raw), sha256=generate_sha256_hash(raw))
+        return generate_sha384_hash(raw)
     except Exception as e:
         raise ValueError("Failed to get user identifier from token") from e
 
 
-def get_user_identifier_from_client_certificate(client_certificate_data: bytes) -> UserIdentifier:
-    """Get the user identifier from the client certificate. Returns both SHA384 and SHA256 hashes for migration."""
+def get_user_identifier_from_client_certificate(client_certificate_data: bytes) -> str:
+    """Get the user identifier from the client certificate. The output is a SHA-384 hash of the user identifier."""
     try:
         cert = x509.load_pem_x509_certificate(client_certificate_data, default_backend())
         # check if the Common Name (CN) is present in the subject.
         for name in cert.subject:
             if name.oid._name in CN_KEYS and name.value != "":
-                raw = str(name.value)
-                return UserIdentifier(sha384=generate_sha384_hash(raw), sha256=generate_sha256_hash(raw))
+                return generate_sha384_hash(str(name.value))
         if str(cert.serial_number) != "":
-            raw = str(cert.serial_number)
-            return UserIdentifier(sha384=generate_sha384_hash(raw), sha256=generate_sha256_hash(raw))
+            return generate_sha384_hash(str(cert.serial_number))
         raise ValueError("Invalid client certificate: User identifier not found in certificate")
     except Exception as e:
         raise ValueError("Failed to get user identifier from client certificate") from e

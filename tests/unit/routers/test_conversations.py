@@ -23,7 +23,6 @@ from services.conversation import IService
 from services.k8s import IK8sClient, K8sAuthHeaders
 from services.metrics import REQUEST_LATENCY_METRIC_KEY, CustomMetrics
 from services.usage import UsageExceedReport
-from utils.utils import UserIdentifier
 
 SAMPLE_JWT_TOKEN = jwt.encode({"sub": "user123"}, "secret", algorithm="HS256")
 SAMPLE_CLIENT_CERTIFICATE_DATA = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJrakNDQVRlZ0F3SUJBZ0lJTmpJSzErZmhrZUF3Q2dZSUtvWkl6ajBFQXdJd0l6RWhNQjhHQTFVRUF3d1kKYXpOekxXTnNhV1Z1ZEMxallVQXhOelF4TXpReE1qRXlNQjRYRFRJMU1ETXdOekE1TlRNek1sb1hEVEkyTURNdwpOekE1TlRNek1sb3dNREVYTUJVR0ExVUVDaE1PYzNsemRHVnRPbTFoYzNSbGNuTXhGVEFUQmdOVkJBTVRESE41CmMzUmxiVHBoWkcxcGJqQlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VIQTBJQUJFcFcwQlQrQW9DSDF3WnkKc1VjUjYzK2tXQ3FtU0NOVUo5Z1RTWnljajc3bmhSTVpwRHJPQU9XN2prRy9hVG9JOTlVRVdnT0N2VlVFZFk5YQpWZ3NpUGlhalNEQkdNQTRHQTFVZER3RUIvd1FFQXdJRm9EQVRCZ05WSFNVRUREQUtCZ2dyQmdFRkJRY0RBakFmCkJnTlZIU01FR0RBV2dCUlBzdVROVW01NHlGZ1ZvbXdkUFFnZXJGS1R5REFLQmdncWhrak9QUVFEQWdOSkFEQkcKQWlFQW5OS21uZzlnSlBncVJNcDdDRUU3TVltNTY1T054RklxaFZWWUVBVVNqNDRDSVFDc2dwTlN4Q2xuTDVlWgp3eTFYM2l1MXpLZzU2Q20wblk3aitTNjBIUHE2c1E9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlCZHpDQ0FSMmdBd0lCQWdJQkFEQUtCZ2dxaGtqT1BRUURBakFqTVNFd0h3WURWUVFEREJock0zTXRZMnhwClpXNTBMV05oUURFM05ERXpOREV5TVRJd0hoY05NalV3TXpBM01EazFNek15V2hjTk16VXdNekExTURrMU16TXkKV2pBak1TRXdId1lEVlFRRERCaHJNM010WTJ4cFpXNTBMV05oUURFM05ERXpOREV5TVRJd1dUQVRCZ2NxaGtqTwpQUUlCQmdncWhrak9QUU1CQndOQ0FBU0VITTc2bURNTVZJOFZRRnVPL2N1RGNzbjJYbXZoZHRidGdMU2ZFQ2ozCm44VTR1QnNka1B5dVZvdFlpOG5kU1plNzlrRk45a1MwelM4dHV5YzZiWDVabzBJd1FEQU9CZ05WSFE4QkFmOEUKQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QWRCZ05WSFE0RUZnUVVUN0xrelZKdWVNaFlGYUpzSFQwSQpIcXhTazhnd0NnWUlLb1pJemowRUF3SURTQUF3UlFJaEFNOVlDNEtmKy8wSyszaGlOQzBlaXlHWmwwZVJxeUZkClZXRXZpYXlMR0tRNUFpQTdya0d6QmlMMkNoU3pSOUdkQzVycVBCMi95T2s4Qml3SDF1VHM0TFJqTEE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
@@ -48,9 +47,9 @@ class MockService(IService):
             "Test follow-up question 3",
         ]
 
-    async def authorize_user(self, conversation_id: str, user_identifier: "UserIdentifier") -> bool:
+    async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
         return (
-            user_identifier.sha384
+            user_identifier
             != "ab5c38a5e39f0d8417bada101eeb648fa5b93a470dad1d7dbb836d102cc47979fcccc7c325c8118199b5c81ec64e7b57"
         )
 
@@ -1002,17 +1001,14 @@ async def test_check_token_usage(cluster_url, usage_report, expected_exception):
         (
             "user authorized",
             "conversation1",
-            UserIdentifier(
-                sha384="c6d73ec37c081fafa129ffdbf7364a3a36a9ba90f15e9612bf59d6edced4386d1a230c315025d6bf86bbc27168ee214d",
-                sha256="0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
-            ),
+            "c6d73ec37c081fafa129ffdbf7364a3a36a9ba90f15e9612bf59d6edced4386d1a230c315025d6bf86bbc27168ee214d",
             True,
             None,
         ),
         (
             "user not authorized",
             "conversation2",
-            UserIdentifier(sha384="deadbeef", sha256="deadbeef"),
+            "deadbeef",
             False,
             HTTPException,
         ),
@@ -1106,8 +1102,8 @@ def test_extract_user_identifier(
             extract_user_identifier(k8s_auth_headers)
     else:
         result = extract_user_identifier(k8s_auth_headers)
-        assert isinstance(result, UserIdentifier), test_description
-        assert result.sha384 == expected_sha384, test_description
+        assert isinstance(result, str), test_description
+        assert result == expected_sha384, test_description
 
 
 @pytest.mark.parametrize(

@@ -26,7 +26,6 @@ from utils.logging import get_logger
 from utils.response import prepare_chunk_response
 from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
-    UserIdentifier,
     create_session_id,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
@@ -229,7 +228,7 @@ async def messages(
 
     # Authorize the user to access the conversation.
     user_identifier = extract_user_identifier(k8s_auth_headers)
-    message.user_identifier = user_identifier.sha384
+    message.user_identifier = user_identifier
     await authorize_user(str(conversation_id), user_identifier, conversation_service)
 
     # Check rate limitation
@@ -297,7 +296,7 @@ async def check_token_usage(x_cluster_url: str, conversation_service: IService) 
 
 def extract_user_identifier(
     k8s_auth_headers: K8sAuthHeaders,
-) -> UserIdentifier:
+) -> str:
     """Get the user identifier from the K8s auth headers."""
     if k8s_auth_headers.x_k8s_authorization is not None:
         try:
@@ -321,7 +320,7 @@ def extract_user_identifier(
 
 async def authorize_user(
     conversation_id: str,
-    user_identifier: UserIdentifier,
+    user_identifier: str,
     conversation_service: IService,
 ) -> None:
     """Authorize the user to access the conversation."""

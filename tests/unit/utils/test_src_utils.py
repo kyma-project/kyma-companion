@@ -21,7 +21,6 @@ from utils.utils import (
     JWT_TOKEN_EMAIL,
     JWT_TOKEN_SERVICE_ACCOUNT,
     JWT_TOKEN_SUB,
-    UserIdentifier,
     create_session_id,
     generate_sha256_hash,
     generate_sha384_hash,
@@ -153,8 +152,8 @@ def test_get_user_identifier_from_token(test_description, token_payload, expecte
             get_user_identifier_from_token(token)
     else:
         result = get_user_identifier_from_token(token)
-        assert isinstance(result, UserIdentifier), test_description
-        assert result.sha384 == expected_sha384, test_description
+        assert isinstance(result, str), test_description
+        assert result == expected_sha384, test_description
 
 
 # Sample PEM certificates for testing
@@ -228,8 +227,8 @@ def test_get_user_identifier_from_client_certificate(
             get_user_identifier_from_client_certificate(client_certificate_data)
     else:
         result = get_user_identifier_from_client_certificate(client_certificate_data)
-        assert isinstance(result, UserIdentifier), test_description
-        assert result.sha384 == expected_user_identifier, test_description
+        assert isinstance(result, str), test_description
+        assert result == expected_user_identifier, test_description
 
 
 @pytest.mark.parametrize(
