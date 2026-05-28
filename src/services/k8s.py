@@ -274,6 +274,8 @@ class K8sClient:
             ca_file.write(self.k8s_auth_headers.get_decoded_certificate_authority_data())
         self.ca_temp_filename = ca_file.name
         self.client_ssl_context = ssl.create_default_context(cafile=self.ca_temp_filename)
+        self.client_ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        self.client_ssl_context.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20")
 
         if self.k8s_auth_headers.get_auth_type() == AuthType.CLIENT_CERTIFICATE:
             # Write the client certificate data to a temporary file.
