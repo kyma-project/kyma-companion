@@ -10,7 +10,7 @@ from threading import Thread
 # (is_multiple_completion_supported); we never use Vertex AI, so a dummy class is sufficient.
 if "langchain_community.chat_models.vertexai" not in sys.modules:
     _stub = types.ModuleType("langchain_community.chat_models.vertexai")
-    setattr(_stub, "ChatVertexAI", type("ChatVertexAI", (), {}))
+    _stub.ChatVertexAI = type("ChatVertexAI", (), {})  # type: ignore[attr-defined]
     sys.modules["langchain_community.chat_models.vertexai"] = _stub
 
 import pytest
