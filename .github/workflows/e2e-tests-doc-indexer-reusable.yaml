@@ -11,9 +11,6 @@ on:
         required: true
         type: string
         description: "HANA table name to index into (must be unique, dropped automatically after the job)"
-    secrets:
-      DOC_INDEXER_TESTS_CONFIG:
-        required: false
 
 env:
   K3D_VERSION: "v5.8.3"
