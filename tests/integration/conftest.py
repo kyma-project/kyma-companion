@@ -1,6 +1,17 @@
 import socket
+import sys
+import types
 from collections.abc import Sequence
 from threading import Thread
+
+# langchain-community 0.4.x removed chat_models.vertexai (moved to langchain-google-vertexai).
+# ragas 0.4.x still imports from the old path at module load time. Install a compat stub so
+# the import succeeds. ChatVertexAI is only used for isinstance checks inside ragas internals
+# (is_multiple_completion_supported); we never use Vertex AI, so a dummy class is sufficient.
+if "langchain_community.chat_models.vertexai" not in sys.modules:
+    _stub = types.ModuleType("langchain_community.chat_models.vertexai")
+    setattr(_stub, "ChatVertexAI", type("ChatVertexAI", (), {}))
+    sys.modules["langchain_community.chat_models.vertexai"] = _stub
 
 import pytest
 from deepeval.metrics import AnswerRelevancyMetric, GEval
