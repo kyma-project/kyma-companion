@@ -1,7 +1,7 @@
 import json
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class SourceType(StrEnum):
@@ -19,6 +19,13 @@ class DocumentsSource(BaseModel):
     include_files: list[str] | None = None
     exclude_files: list[str] | None = None
     filter_file_types: list[str] = ["md"]
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if ".." in v or "/" in v or "\\" in v:
+            raise ValueError(f"Invalid source name {v!r}: must not contain path separators or '..'")
+        return v
 
 
 def get_documents_sources(path: str) -> list[DocumentsSource]:
