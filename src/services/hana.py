@@ -34,10 +34,10 @@ class Hana(metaclass=SingletonMeta):
         try:
             self.connection = connection_factory() if connection_factory else _get_hana_connection()
         except dbapi.Error as e:
-            logger.error(f"Connection to Hana Cloud failed: {e}")
+            logger.error("Connection to Hana Cloud failed.", exc_info=e)
             self.connection = None
         except Exception as e:
-            logger.error(f"Unknown error occurred: {e}")
+            logger.error("Unknown error occurred.", exc_info=e)
             self.connection = None
 
     def is_connection_operational(self) -> bool:
@@ -73,7 +73,7 @@ class Hana(metaclass=SingletonMeta):
             self._last_health_state = True
             return True
         except Exception as e:
-            logger.error(f"Error while connecting to HANA DB: {e}")
+            logger.error("Error while connecting to HANA DB.", exc_info=e)
             self._last_health_check = now
             self._last_health_state = False
             return False
