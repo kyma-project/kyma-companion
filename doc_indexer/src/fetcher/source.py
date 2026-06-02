@@ -23,7 +23,9 @@ class DocumentsSource(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        if ".." in v or "/" in v or "\\" in v:
+        if not v or not v.strip():
+            raise ValueError(f"Invalid source name {v!r}: must not be empty or blank")
+        if ".." in v or "/" in v or "\\" in v or v == ".":
             raise ValueError(f"Invalid source name {v!r}: must not contain path separators or '..'")
         return v
 
