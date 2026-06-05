@@ -13,13 +13,7 @@ on:
 permissions: read-all
 
 jobs:
-  gate:
-    runs-on: ubuntu-latest
-    environment: e2e
-    steps:
-      - run: echo "environment gate passed"
   tests:
-    needs: gate
     runs-on: ubuntu-latest
     environment: ${{ matrix.env_name }}
     permissions:
