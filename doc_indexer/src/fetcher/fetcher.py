@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 from fetcher.scroller import Scroller
@@ -6,7 +7,7 @@ from fetcher.source import DocumentsSource, SourceType, get_documents_sources
 
 from utils.logging import get_logger
 from utils.utils import clone_repo
-import re
+
 logger = get_logger(__name__)
 
 
@@ -46,7 +47,7 @@ class DocumentsFetcher:
 
         if not re.fullmatch(r"[A-Za-z0-9_-]+", source.name):
             raise ValueError(f"Invalid source name: {source.name}")
-        
+
         module_output_dir = os.path.join(self.output_dir, source.name)
         logger.debug(f"Creating a temporary directory: {module_output_dir}")
         os.makedirs(module_output_dir, exist_ok=True)
