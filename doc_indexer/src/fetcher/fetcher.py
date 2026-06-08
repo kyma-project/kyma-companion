@@ -38,15 +38,15 @@ class DocumentsFetcher:
         """Fetch the documents from the source."""
         logger.info(f"******* Fetching documents for: {source.name}")
 
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", source.name):
+            raise ValueError(f"Invalid source name: {source.name}")
+
         if source.source_type == SourceType.GITHUB:
             logger.debug(f"Cloning repository: {source.url}")
             # clone the git repository.
             repo_dir = clone_repo(source.url, self.tmp_dir)
         else:
             raise ValueError(f"unsupported source_type: {source.source_type}")
-
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", source.name):
-            raise ValueError(f"Invalid source name: {source.name}")
 
         module_output_dir = os.path.join(self.output_dir, source.name)
         logger.debug(f"Creating a temporary directory: {module_output_dir}")
