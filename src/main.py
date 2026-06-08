@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     yield
 
 
-# Paths that log at DEBUG on 200 and WARNING on non-200, instead of INFO
+# Path that log at DEBUG on 200 and WARNING on non-200, instead of INFO
 LOW_VERBOSITY_PATHS = frozenset(["/healthz", "/readyz", "/metrics"])
 MEDIA_TYPE_SSE = "text/event-stream"
 
