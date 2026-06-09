@@ -156,13 +156,13 @@ class TestDocumentsFetcher:
             patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
             patch("fetcher.fetcher.Scroller") as scroller_mock,
             patch("os.makedirs") as makedirs_mock,
-            pytest.raises(ValueError, match=r"Invalid source name"),
         ):
-            fetcher.fetch_documents(invalid_source)
+            with pytest.raises(ValueError, match=r"Invalid source name"):
+                fetcher.fetch_documents(invalid_source)
 
-        clone_repo_mock.assert_not_called()
-        scroller_mock.assert_not_called()
-        makedirs_mock.assert_not_called()
+            clone_repo_mock.assert_not_called()
+            scroller_mock.assert_not_called()
+            makedirs_mock.assert_not_called()
 
     @pytest.mark.parametrize(
         "valid_name",
