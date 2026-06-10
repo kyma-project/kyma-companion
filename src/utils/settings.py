@@ -124,7 +124,7 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 )  # Default 5 minutes
 
 # Encryption (Base64 encoded)
-default_private_key_path = config_path.parent / "config" / "encryption_key.pem"
+default_private_key_path = config_path.parent / "encryption_key.pem"
 ENCRYPTION_PRIVATE_KEY_PATH = config("ENCRYPTION_PRIVATE_KEY_PATH", default=default_private_key_path, cast=str)
 NONCE_REPLAY_WINDOW_SECONDS = config("NONCE_REPLAY_WINDOW_SECONDS", default=300, cast=int)  # 5 minutes
 
