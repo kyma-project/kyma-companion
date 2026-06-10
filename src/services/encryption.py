@@ -93,7 +93,7 @@ class Encryption:
         shared_secret = self._private_key.exchange(ec.ECDH(), client_public_key)
         return HKDF(
             algorithm=SHA384(),
-            length=32, # For AES-256-GCM, which requires exactly a 32-byte (256-bit) key.
+            length=32,  # For AES-256-GCM, which requires exactly a 32-byte (256-bit) key.
             salt=None,
             info=_HKDF_INFO,
         ).derive(shared_secret)

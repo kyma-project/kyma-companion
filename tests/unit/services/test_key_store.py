@@ -38,11 +38,6 @@ def _ec_key_pem_bytes(key: EllipticCurvePrivateKey) -> bytes:
     return key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
 
 
-def _ec_key_der_bytes(key: EllipticCurvePrivateKey) -> bytes:
-    """Encode an EC private key as DER/PKCS8 bytes."""
-    return key.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
-
-
 def _ec_public_key_b64(key: EllipticCurvePrivateKey) -> str:
     """Encode the uncompressed public point of an EC key as base64."""
     return base64.b64encode(key.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)).decode()
@@ -54,11 +49,10 @@ def _ec_public_key_b64(key: EllipticCurvePrivateKey) -> str:
 
 _SERVER_KEY = ec.generate_private_key(_ECDH_CURVE)
 _SERVER_KEY_PEM = _ec_key_pem_bytes(_SERVER_KEY)
-_SERVER_KEY_DER = _ec_key_der_bytes(_SERVER_KEY)
 _SERVER_PUBLIC_KEY_B64 = _ec_public_key_b64(_SERVER_KEY)
 
 _RSA_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-_RSA_KEY_DER = _RSA_KEY.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+_RSA_KEY_PEM = _RSA_KEY.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption())
 
 
 # ---------------------------------------------------------------------------
@@ -78,15 +72,8 @@ class TestLoadPrivateKey:
                 id="pem_ec_key",
             ),
             pytest.param(
-                "DER-encoded EC key is loaded successfully",
-                _SERVER_KEY_DER,
-                None,
-                None,
-                id="der_ec_key",
-            ),
-            pytest.param(
-                "RSA DER key raises TypeError",
-                _RSA_KEY_DER,
+                "RSA PEM key raises TypeError",
+                _RSA_KEY_PEM,
                 TypeError,
                 "Key is not an EC private key",
                 id="rsa_key",
@@ -140,13 +127,6 @@ class TestLoadPrivateKey:
             None,
             None,
             id="pem_file",
-        ),
-        pytest.param(
-            "DER file is loaded successfully",
-            _SERVER_KEY_DER,
-            None,
-            None,
-            id="der_file",
         ),
         pytest.param(
             "missing file raises FileNotFoundError",
@@ -220,13 +200,6 @@ class TestKeyStore:
                 id="pem_file",
             ),
             pytest.param(
-                "DER key file is loaded successfully",
-                _SERVER_KEY_DER,
-                None,
-                None,
-                id="der_file",
-            ),
-            pytest.param(
                 "missing file raises FileNotFoundError",
                 None,
                 FileNotFoundError,
@@ -241,8 +214,8 @@ class TestKeyStore:
                 id="garbage_file",
             ),
             pytest.param(
-                "RSA key file raises TypeError",
-                _RSA_KEY_DER,
+                "RSA PEM key file raises TypeError",
+                _RSA_KEY_PEM,
                 TypeError,
                 "Key is not an EC private key",
                 id="rsa_key_file",
@@ -305,13 +278,6 @@ class TestKeyStore:
                 None,
                 None,
                 id="valid_pem",
-            ),
-            pytest.param(
-                "returns the EC private key when the file is valid DER",
-                _SERVER_KEY_DER,
-                None,
-                None,
-                id="valid_der",
             ),
         ],
     )

@@ -14,7 +14,6 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     PublicFormat,
-    load_der_private_key,
     load_pem_private_key,
 )
 
@@ -35,7 +34,6 @@ def _load_private_key(data: bytes) -> EllipticCurvePrivateKey:
     :raises ValueError: If the data cannot be decoded or parsed as a private key.
     """
 
-    # load Private key in PEM format.
     key = load_pem_private_key(data, password=None)
     if not isinstance(key, EllipticCurvePrivateKey):
         raise TypeError("Key is not an EC private key")
