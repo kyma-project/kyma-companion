@@ -99,7 +99,7 @@ class KeyStore(metaclass=SingletonMeta):
 
         :raises RuntimeError: If the key cannot be loaded.
         """
-        # Extract the raw uncompressed EC point (65 bytes: 04 || X || Y)
+        # Extract the raw uncompressed EC point.
         raw_point = self.get_public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
 
         # return the Base64-encoded raw point as a string

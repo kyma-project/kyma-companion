@@ -23,8 +23,8 @@ from services.key_store import (
     _load_private_key_from_file,
 )
 
-_ECDH_CURVE = ec.SECP256R1()
-_UNCOMPRESSED_EC_POINT_LENGTH = 65  # 04 || X(32) || Y(32)
+_ECDH_CURVE = ec.SECP521R1()
+_UNCOMPRESSED_EC_POINT_LENGTH = 133  # 04 || X(66) || Y(66)
 _UNCOMPRESSED_EC_POINT_PREFIX = 0x04
 
 
@@ -363,7 +363,7 @@ class TestKeyStore:
         # Then:
         assert result == _SERVER_PUBLIC_KEY_B64
         raw = base64.b64decode(result)
-        # Uncompressed EC point for P-256: 04 || X(32) || Y(32) = 65 bytes.
+        # Uncompressed EC point for P-521: 04 || X(66) || Y(66) = 133 bytes.
         assert len(raw) == _UNCOMPRESSED_EC_POINT_LENGTH
         assert raw[0] == _UNCOMPRESSED_EC_POINT_PREFIX
 
