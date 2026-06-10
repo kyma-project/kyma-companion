@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from utils.logging import get_logger
-from utils.settings import ENCRYPTION_PRIVATE_KEY_B64, ENCRYPTION_PRIVATE_KEY_PATH
+from utils.settings import ENCRYPTION_PRIVATE_KEY_PATH
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -30,20 +30,13 @@ _RELOAD_INTERVAL_SECONDS = 30 * 60  # 30 minutes
 def _load_private_key(data: bytes) -> EllipticCurvePrivateKey:
     """Decode key data and return a validated EC private key.
 
-    Supports both PEM and raw DER formats (after base64 decoding).
-
-    :param data: Raw private key bytes in PEM or DER format.
+    :param data: Raw private key bytes in PEM format.
     :raises TypeError: If the key is not an EC private key.
     :raises ValueError: If the data cannot be decoded or parsed as a private key.
     """
 
-    # Try PEM first (has header line), fall back to DER.
-    try:
-        key = load_pem_private_key(data, password=None)
-    except (ValueError, TypeError):
-        logger.error("Failed to parse private key as PEM, trying DER format", exc_info=True)
-        key = load_der_private_key(data, password=None)
-
+    # load Private key in PEM format.
+    key = load_pem_private_key(data, password=None)
     if not isinstance(key, EllipticCurvePrivateKey):
         raise TypeError("Key is not an EC private key")
     return key
@@ -51,8 +44,6 @@ def _load_private_key(data: bytes) -> EllipticCurvePrivateKey:
 
 def _load_private_key_from_file(path: Path) -> EllipticCurvePrivateKey:
     """Read the key file and return a validated EC private key.
-
-    Supports both PEM and raw DER formats.
 
     :raises FileNotFoundError: If *path* does not exist.
     :raises TypeError: If the key is not an EC private key.
@@ -155,20 +146,14 @@ class KeyStore(metaclass=SingletonMeta):
     def _load_key(self) -> None:
         """Load (or reload) the private key.
 
-        Reads from the file at ``ENCRYPTION_PRIVATE_KEY_PATH`` when set,
-        otherwise falls back to the ``ENCRYPTION_PRIVATE_KEY_B64`` config value.
+        Reads from the file at ``ENCRYPTION_PRIVATE_KEY_PATH``.
 
         :raises FileNotFoundError: If the key file path is set but does not exist.
         :raises TypeError: If the key is not an EC private key.
         :raises ValueError: If the key data cannot be decoded or parsed.
         """
         if not self._path:
-            logger.warning(
-                "ENCRYPTION_PRIVATE_KEY_PATH is not set, reading from configuration value ENCRYPTION_PRIVATE_KEY_B64"
-            )
-            self._key = _load_private_key(base64.b64decode(str(ENCRYPTION_PRIVATE_KEY_B64)))
-            self._loaded_at = time.monotonic()
-            return
+            raise ValueError("key file path is not set")
         self._key = _load_private_key_from_file(Path(self._path))
         self._loaded_at = time.monotonic()
         logger.info("EC private key loaded from %s", self._path)

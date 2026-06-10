@@ -488,15 +488,3 @@ class TestKeyStore:
 
         # Then:
         assert result is expected_result, test_case
-
-    # -- fallback to ENCRYPTION_PRIVATE_KEY_B64 -----------------------------
-
-    def test_load_key_falls_back_to_b64_config(self, monkeypatch):
-        """When path is empty, _load_key reads from ENCRYPTION_PRIVATE_KEY_B64."""
-        b64_value = base64.b64encode(_SERVER_KEY_DER).decode()
-        monkeypatch.setattr("services.key_store.ENCRYPTION_PRIVATE_KEY_B64", b64_value)
-        monkeypatch.setattr("services.key_store.ENCRYPTION_PRIVATE_KEY_PATH", "")
-
-        store = KeyStore()
-
-        assert isinstance(store.get_private_key(), EllipticCurvePrivateKey)

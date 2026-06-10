@@ -17,8 +17,8 @@ class LangfuseMaskingModes(StrEnum):
     REDACTED = "REDACTED"  # Everything is redacted.
 
 
-def load_env_from_json() -> None:
-    """Load the configuration from the config.json file."""
+def load_env_from_json() -> Path:
+    """Load the configuration from the config.json file. Returns the path to the config file used."""
     # if running tests with pytest, use config_test.json
     if "pytest" in sys.modules:
         test_config_path = Path(__file__).parent.parent.parent / "config" / "config.test.json"
@@ -47,6 +47,7 @@ def load_env_from_json() -> None:
                     os.environ[key] = json.dumps(value)
                 else:
                     os.environ[key] = str(value)
+        return config_path
     except json.JSONDecodeError as e:
         logging.error(f"Invalid JSON format in config file {config_path}: {e}")
         raise
@@ -62,7 +63,7 @@ def load_env_from_json() -> None:
 
 
 # Load the environment variables from the json file.
-load_env_from_json()
+config_path = load_env_from_json()
 
 # Read the configs.
 # Logging configuration - can be set in config.json or via environment variables
@@ -123,8 +124,8 @@ HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
 )  # Default 5 minutes
 
 # Encryption (Base64 encoded)
-ENCRYPTION_PRIVATE_KEY_PATH = config("ENCRYPTION_PRIVATE_KEY_PATH", default="", cast=str)
-ENCRYPTION_PRIVATE_KEY_B64 = config("ENCRYPTION_PRIVATE_KEY_B64", default="", cast=str)
+default_private_key_path = config_path.parent / "config" / "encryption_key.pem"
+ENCRYPTION_PRIVATE_KEY_PATH = config("ENCRYPTION_PRIVATE_KEY_PATH", default=default_private_key_path, cast=str)
 NONCE_REPLAY_WINDOW_SECONDS = config("NONCE_REPLAY_WINDOW_SECONDS", default=300, cast=int)  # 5 minutes
 
 # Token limits

@@ -136,6 +136,7 @@ venv.bak/
 
 # Configuration
 config/config.json
+config/encryption_key.pem
 config/k8s-clusters.json
 
 # Spyder project settings
