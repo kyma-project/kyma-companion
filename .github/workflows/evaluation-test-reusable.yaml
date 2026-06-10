@@ -121,6 +121,13 @@ jobs:
           kubectl create namespace ai-system
           ./scripts/k8s/create-secret.sh
 
+      - name: Companion Deploy - Create encryption cert secret
+        env:
+          ENCRYPTION_KEY_PEM: ${{ secrets.ENCRYPTION_KEY_PEM }}
+        run: |
+          export COMPANION_ENCRYPTION_KEY_BASE64=$(echo -n "$ENCRYPTION_KEY_PEM" | base64 -w 0)
+          ./scripts/k8s/create-encryption-cert-secret.sh
+
       - name: Companion Deploy - Apply companion manifests
         run: |
           kubectl apply -f scripts/k8s/companion-k3d-manifest.yaml
