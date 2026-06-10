@@ -116,8 +116,9 @@ jobs:
 
       - name: Companion Deploy - Create secret
         env:
-          COMPANION_CONFIG_BASE64: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
+          export COMPANION_CONFIG_BASE64=$(echo -n "$EVALUATION_TESTS_CONFIG" | base64 -w 0)
           kubectl create namespace ai-system
           ./scripts/k8s/create-secret.sh
 
@@ -198,9 +199,10 @@ jobs:
         env:
           LOG_LEVEL: "DEBUG"
           COMPANION_API_URL: "http://localhost:32000"
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
+          echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
           echo "saved config to $CONFIG_PATH! Running API tests against Companion at $COMPANION_API_URL"
           poetry run pytest src/api_tests/ -v
 
@@ -213,9 +215,10 @@ jobs:
           COMPANION_API_URL: "http://localhost:32000"
           REDIS_URL: "redis://localhost:32100"
           KC_EVAL_RETRIES: "5"
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.EVALUATION_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
+          echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
           echo "saved config to $CONFIG_PATH!"
           poetry run python src/run_evaluation.py
 
