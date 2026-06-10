@@ -116,7 +116,7 @@ jobs:
 
       - name: Companion Deploy - Create secret
         env:
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
         run: |
           COMPANION_CONFIG_BASE64=$(echo -n "$EVALUATION_TESTS_CONFIG" | base64 -w 0)
           export COMPANION_CONFIG_BASE64
@@ -201,7 +201,7 @@ jobs:
         env:
           LOG_LEVEL: "DEBUG"
           COMPANION_API_URL: "http://localhost:32000"
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
@@ -217,7 +217,7 @@ jobs:
           COMPANION_API_URL: "http://localhost:32000"
           REDIS_URL: "redis://localhost:32100"
           KC_EVAL_RETRIES: "5"
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
