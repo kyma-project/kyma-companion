@@ -82,7 +82,7 @@ class LangfuseService(metaclass=SingletonMeta):
 
         try:
             return CallbackHandler()
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to create Langfuse callback handler")
             return None
 

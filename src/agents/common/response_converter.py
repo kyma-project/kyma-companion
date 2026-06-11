@@ -84,7 +84,7 @@ class ResponseConverter:
                 # Parse raw string
                 parsed_yaml = yaml.safe_load(yaml_config)
 
-        except Exception as e:
+        except Exception:
             logger.exception(f"Error while parsing the yaml : {yaml_config}")
 
             return None

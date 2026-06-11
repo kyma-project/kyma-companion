@@ -30,7 +30,7 @@ class Redis(metaclass=SingletonMeta):
     def __init__(self, connection_factory: Callable[[], AsyncRedis] | None = None) -> None:
         try:
             self.connection = connection_factory() if connection_factory else _get_redis_connection()
-        except Exception as e:
+        except Exception:
             logger.exception("Error with Redis connection")
             self.connection = None
 
@@ -46,7 +46,7 @@ class Redis(metaclass=SingletonMeta):
             if await self.connection.ping():  # type: ignore[misc]
                 logger.debug("Redis connection is ready.")
                 return True
-        except Exception as e:
+        except Exception:
             logger.exception("Redis connection failed")
             return False
         logger.info("Redis connection is not ready.")
