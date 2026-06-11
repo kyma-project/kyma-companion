@@ -89,41 +89,41 @@ def parse_k8s_token(token: str) -> Any:
         raise ValueError("Failed to parse k8s token") from e
 
 
-def generate_sha256_hash(data: str) -> str:
-    """Generate a SHA256 hash of the input string."""
-    # Create a new sha256 hash object
-    sha256_hash = hashlib.sha256()
+def generate_sha384_hash(data: str) -> str:
+    """Generate a SHA384 hash of the input string."""
+    # Create a new sha384 hash object
+    sha384_hash = hashlib.sha384()
     # Update the hash object with the bytes-like object (encoded string)
-    sha256_hash.update(data.encode())
+    sha384_hash.update(data.encode())
     # Return the hexadecimal digest of the hash
-    return sha256_hash.hexdigest()
+    return sha384_hash.hexdigest()
 
 
 def get_user_identifier_from_token(token: str) -> str:
-    """Get the user identifier from the token. The output is a SHA256 hash of the user identifier."""
+    """Get the user identifier from the token. The output is a SHA384 hash of the user identifier."""
     try:
         payload = parse_k8s_token(token)
         if JWT_TOKEN_SUB in payload and payload[JWT_TOKEN_SUB] != "":
-            return generate_sha256_hash(str(payload[JWT_TOKEN_SUB]))
+            return generate_sha384_hash(str(payload[JWT_TOKEN_SUB]))
         elif JWT_TOKEN_EMAIL in payload and payload[JWT_TOKEN_EMAIL] != "":
-            return generate_sha256_hash(str(payload[JWT_TOKEN_EMAIL]))
+            return generate_sha384_hash(str(payload[JWT_TOKEN_EMAIL]))
         elif JWT_TOKEN_SERVICE_ACCOUNT in payload and payload[JWT_TOKEN_SERVICE_ACCOUNT] != "":
-            return generate_sha256_hash(str(payload[JWT_TOKEN_SERVICE_ACCOUNT]))
+            return generate_sha384_hash(str(payload[JWT_TOKEN_SERVICE_ACCOUNT]))
         raise ValueError("Invalid token: User identifier not found in token")
     except Exception as e:
         raise ValueError("Failed to get user identifier from token") from e
 
 
 def get_user_identifier_from_client_certificate(client_certificate_data: bytes) -> str:
-    """Get the user identifier from the client certificate. The output is a SHA256 hash of the user identifier."""
+    """Get the user identifier from the client certificate. The output is a SHA384 hash of the user identifier."""
     try:
         cert = x509.load_pem_x509_certificate(client_certificate_data, default_backend())
         # check if the Common Name (CN) is present in the subject.
         for name in cert.subject:
             if name.oid._name in CN_KEYS and name.value != "":
-                return generate_sha256_hash(str(name.value))
+                return generate_sha384_hash(str(name.value))
         if str(cert.serial_number) != "":
-            return generate_sha256_hash(str(cert.serial_number))
+            return generate_sha384_hash(str(cert.serial_number))
         raise ValueError("Invalid client certificate: User identifier not found in certificate")
     except Exception as e:
         raise ValueError("Failed to get user identifier from client certificate") from e
