@@ -117,3 +117,90 @@ class TestDocumentsFetcher:
         scroller_mock.return_value.scroll.assert_called_once()
         # should have deleted the temporary repo directory.
         rmtree_mock.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "invalid_name",
+        [
+            "invalid/name",
+            "invalid\\name",
+            "invalid name",
+            "invalid.name",
+            "invalid@name",
+            "invalid#name",
+            "invalid$name",
+            "../traversal",
+            "name with spaces",
+            "special!chars",
+            "semi;colon",
+            "",
+        ],
+    )
+    def test_fetch_documents_various_invalid_source_names(self, docs_sources_file_path, invalid_name):
+        # given
+        given_output_dir = "test/output_dir"
+        given_tmp_dir = "test/tmp_dir"
+        with patch("shutil.rmtree"), patch("os.makedirs"):
+            fetcher = DocumentsFetcher(
+                source_file=docs_sources_file_path,
+                output_dir=given_output_dir,
+                tmp_dir=given_tmp_dir,
+            )
+
+        invalid_source = Mock()
+        invalid_source.name = invalid_name
+        invalid_source.source_type = fetcher.sources[0].source_type
+        invalid_source.url = "https://example.com/repo.git"
+
+        # when / then
+        with (
+            patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
+            patch("fetcher.fetcher.Scroller") as scroller_mock,
+            patch("os.makedirs") as makedirs_mock,
+        ):
+            with pytest.raises(ValueError, match=r"Invalid source name"):
+                fetcher.fetch_documents(invalid_source)
+
+            clone_repo_mock.assert_not_called()
+            scroller_mock.assert_not_called()
+            makedirs_mock.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "valid_name",
+        [
+            "valid-name",
+            "valid_name",
+            "ValidName",
+            "validname123",
+            "UPPERCASE",
+            "a",
+            "test-repo_v2",
+        ],
+    )
+    def test_fetch_documents_valid_source_names(self, docs_sources_file_path, valid_name):
+        # given
+        given_output_dir = "test/output_dir"
+        given_tmp_dir = "test/tmp_dir"
+        with patch("shutil.rmtree"), patch("os.makedirs"):
+            fetcher = DocumentsFetcher(
+                source_file=docs_sources_file_path,
+                output_dir=given_output_dir,
+                tmp_dir=given_tmp_dir,
+            )
+
+        valid_source = Mock()
+        valid_source.name = valid_name
+        valid_source.source_type = fetcher.sources[0].source_type
+        valid_source.url = "https://example.com/repo.git"
+
+        # when / then - should not raise ValueError
+        with (
+            patch("shutil.rmtree"),
+            patch("os.makedirs"),
+            patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
+            patch("fetcher.fetcher.Scroller") as scroller_mock,
+        ):
+            fetcher.fetch_documents(valid_source)
+
+        clone_repo_mock.assert_called_once_with(valid_source.url, given_tmp_dir)
+        scroller_mock.assert_called_once()
+        scroller_mock.return_value.scroll.assert_called_once()

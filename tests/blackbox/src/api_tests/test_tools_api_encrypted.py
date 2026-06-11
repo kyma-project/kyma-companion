@@ -24,7 +24,7 @@ import requests
 from common.config import Config
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 MIN_ERROR_STATUS_CODE = 400
 TIMEOUT = 120  # seconds
 
-_ECDH_CURVE = ec.SECP256R1()
+_ECDH_CURVE = ec.SECP521R1()
 _HKDF_INFO = b"ecdh-key-exchange"
 _AES_GCM_NONCE_SIZE = 12
 
@@ -61,7 +61,7 @@ def _encrypt_cluster_payload(
     )
     shared_secret = client_private_key.exchange(ec.ECDH(), companion_public_key)
     shared_key = HKDF(
-        algorithm=SHA256(),
+        algorithm=SHA384(),
         length=32,
         salt=None,
         info=_HKDF_INFO,
