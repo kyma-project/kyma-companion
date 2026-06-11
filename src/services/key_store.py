@@ -154,7 +154,7 @@ class KeyStore(metaclass=SingletonMeta):
             raise ValueError("key file path is not set")
         self._key = _load_private_key_from_file(Path(self._path))
         self._loaded_at = time.monotonic()
-        logger.info("EC private key loaded from %s", self._path)
+        logger.info("EC private key loaded successfully from %s", self._path)
 
     # ---- test helpers -----------------------------------------------------
 
