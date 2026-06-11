@@ -217,5 +217,5 @@ class K8sResourceDiscovery:
             # If static lookup fails, try dynamic lookup.
             return await self.get_resource_kind_dynamic(group_version, kind)
         except Exception as e:
-            logger.error(f"Error while getting resource (group_version: {group_version}, kind: {kind}): {e}")
+            logger.exception(f"Error while getting resource (group_version: {group_version}, kind: {kind})")
             raise

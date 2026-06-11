@@ -73,10 +73,10 @@ async def query_kyma_resource(
             },
         ) from e
     except Exception as e:
-        logger.exception(f"Unexpected eror during Kyma query: {str(e)}")
+        logger.exception("Unexpected error during Kyma query")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Kyma query failed: {str(e)}",
+            detail="Kyma query failed",
         ) from e
 
 
@@ -115,11 +115,10 @@ async def get_resource_version(
             detail=f"Failed to fetch resource version: {e.message}",
         ) from e
     except Exception as e:
-        error_msg = f"Unexpected error fetching resource version: {str(e)}"
-        logger.exception(error_msg)
+        logger.exception("Unexpected error fetching resource version")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch resource version: {str(e)}",
+            detail="Failed to fetch resource version",
         ) from e
 
 
@@ -141,8 +140,8 @@ async def search_kyma_documentation(
             query=request.query,
         )
     except Exception as e:
-        logger.exception(f"Error during documentation search: {str(e)}")
+        logger.exception("Error during documentation search")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Documentation search failed: {str(e)}",
+            detail="Documentation search failed",
         ) from e

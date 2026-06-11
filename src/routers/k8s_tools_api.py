@@ -68,10 +68,10 @@ async def query_k8s_resource(
             detail=f"Kubernetes API error: {e.message}",
         ) from e
     except Exception as e:
-        logger.exception(f"Error during K8s query for uri={request.uri}: {str(e)}")
+        logger.exception(f"Error during K8s query for uri={request.uri}")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"K8s query failed: {str(e)}",
+            detail="K8s query failed",
         ) from e
 
 
@@ -125,10 +125,10 @@ async def get_pod_logs(
             detail=f"Kubernetes error: {e.message}",
         ) from e
     except Exception as e:
-        logger.exception(f"Error fetching logs for pod={request.name}, namespace={request.namespace}: {str(e)}")
+        logger.exception(f"Error fetching logs for pod={request.name}, namespace={request.namespace}")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch pod logs: {str(e)}",
+            detail="Failed to fetch pod logs",
         ) from e
 
     return PodLogsResponse(
@@ -173,9 +173,9 @@ async def get_k8s_overview(
         ) from e
     except Exception as e:
         logger.exception(
-            f"Error getting overview for namespace={request.namespace}, resource_kind={request.resource_kind}: {str(e)}"
+            f"Error getting overview for namespace={request.namespace}, resource_kind={request.resource_kind}"
         )
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get K8s overview: {str(e)}",
+            detail="Failed to get K8s overview",
         ) from e

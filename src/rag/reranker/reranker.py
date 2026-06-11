@@ -82,7 +82,7 @@ class LLMReranker(IReranker):
             # Use the LLM model to rerank the documents with limit output_limit.
             return await self._chain_ainvoke(docs, queries, output_limit)
         except Exception as e:
-            logger.error(f"Failed to rerank documents, return top {output_limit} unique documents: {e}")
+            logger.exception(f"Failed to rerank documents, return top {output_limit} unique documents")
             return docs[:output_limit]
 
     async def _chain_ainvoke(self, docs: list[Document], queries: list[str], limit: int) -> list[Document]:

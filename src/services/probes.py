@@ -37,7 +37,7 @@ class LLMProbe(metaclass=SingletonMeta):
         try:
             self._models = model_factory() if model_factory else _get_models()
         except Exception as e:
-            logger.exception(f"Unknown error occurred: {e}")
+            logger.exception("Unknown error occurred")
             self._models = {}
 
         self._model_states = {name: False for name in self._models}
@@ -91,7 +91,7 @@ class LLMProbe(metaclass=SingletonMeta):
                     all_ready = False
 
             except Exception as e:
-                logger.error(f"{name} connection has an error: {e}")
+                logger.exception(f"{name} connection has an error")
                 all_ready = False
 
         return all_ready

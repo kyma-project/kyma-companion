@@ -483,7 +483,7 @@ class K8sClient:
             # Return the API version
             return str(resource.group_version)
         except Exception as e:
-            logger.error(f"Failed to get resource version for kind '{kind}': {str(e)}")
+            logger.exception(f"Failed to get resource version for kind '{kind}'")
             raise ValueError(f"Failed to get resource version for kind '{kind}'") from e
 
     def describe_resource(
