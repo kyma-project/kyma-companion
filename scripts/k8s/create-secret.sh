@@ -3,6 +3,7 @@
 # Check if the COMPANION_CONFIG_BASE64 env is set.
 if [ -z "$COMPANION_CONFIG_BASE64" ]; then
   echo "Error: COMPANION_CONFIG_BASE64 is not set."
+  exit 1
 fi
 
 echo "Creating secret companion-config in ai-system namespace."
