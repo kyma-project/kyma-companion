@@ -16,12 +16,12 @@ import base64
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from services.encryption_cache import IEncryptionCache
 
-_ECDH_CURVE = ec.SECP256R1()
+_ECDH_CURVE = ec.SECP521R1()
 _HKDF_INFO = b"ecdh-key-exchange"
 _AES_GCM_NONCE_SIZE = 12
 
@@ -81,10 +81,10 @@ class Encryption:
         return await self._encryption_cache.get_client_public_key(client_public_key_id)
 
     def _derive_shared_key(self, client_public_key_b64: str) -> bytes:
-        """Perform ECDH and derive a 256-bit symmetric key via HKDF-SHA256.
+        """Perform ECDH and derive a 256-bit symmetric key via HKDF-SHA384.
 
         The client public key must be the raw uncompressed EC point
-        (65 bytes for P-256), base64-encoded.
+        (133 bytes for P-521), base64-encoded.
         """
         client_public_key = ec.EllipticCurvePublicKey.from_encoded_point(
             _ECDH_CURVE,
@@ -92,8 +92,8 @@ class Encryption:
         )
         shared_secret = self._private_key.exchange(ec.ECDH(), client_public_key)
         return HKDF(
-            algorithm=SHA256(),
-            length=32,
+            algorithm=SHA384(),
+            length=32,  # For AES-256-GCM, which requires exactly a 32-byte (256-bit) key.
             salt=None,
             info=_HKDF_INFO,
         ).derive(shared_secret)
