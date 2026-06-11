@@ -102,17 +102,21 @@ jobs:
           kubectl version
           echo "::endgroup::"
 
-      - name: Redis Setup - Deploy Redis using Helm
+      - name: Redis Setup - Generate TLS certificates
+        run: ./scripts/k8s/create-redis-tls-certs.sh /tmp/redis-tls
+
+      - name: Redis Setup - Deploy Redis with TLS
         run: |
           kubectl create namespace redis
-          helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
-          echo "Installing Redis using Helm..."
-          helm install --wait redis-stack redis-stack/redis-stack --set auth.enabled=false -n redis
 
-      - name: Redis Setup - Change NodePort
-        run: |
-          kubectl patch service redis-stack -n redis --type='json' -p='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value": 32100}]'
-          kubectl get svc -n redis redis-stack -o yaml
+          # TLS certs secret for Redis server
+          kubectl create secret generic redis-tls-certs -n redis \
+            --from-file=ca.crt=/tmp/redis-tls/ca.crt \
+            --from-file=redis.crt=/tmp/redis-tls/redis.crt \
+            --from-file=redis.key=/tmp/redis-tls/redis.key
+
+          kubectl apply -f scripts/k8s/redis-tls-manifest.yaml
+          kubectl rollout status deployment/redis -n redis --timeout=120s
 
       - name: Companion Deploy - Create secret
         env:
@@ -130,6 +134,11 @@ jobs:
           COMPANION_ENCRYPTION_KEY_BASE64=$(echo -n "$ENCRYPTION_KEY_PEM" | base64 -w 0)
           export COMPANION_ENCRYPTION_KEY_BASE64
           ./scripts/k8s/create-encryption-cert-secret.sh
+
+      - name: Companion Deploy - Create Redis CA cert secret
+        run: |
+          kubectl create secret generic redis-ca-cert -n ai-system \
+            --from-file=ca.crt=/tmp/redis-tls/ca.crt
 
       - name: Companion Deploy - Apply companion manifests
         run: |
@@ -215,7 +224,7 @@ jobs:
           LOG_LEVEL: "DEBUG"
           TEST_DATA_PATH: "./data"
           COMPANION_API_URL: "http://localhost:32000"
-          REDIS_URL: "redis://localhost:32100"
+          REDIS_URL: "rediss://localhost:32100"
           KC_EVAL_RETRIES: "5"
           EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
         run: |

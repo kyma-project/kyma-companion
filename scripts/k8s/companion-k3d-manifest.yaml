@@ -78,12 +78,21 @@ spec:
           value: "INFO"
         - name: CONFIG_PATH
           value: "/etc/secret/companion-config.json"
+        - name: REDIS_HOST
+          value: "redis.redis.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6380"
+        - name: REDIS_SSL_ENABLED
+          value: "true"
         volumeMounts:
           - name: companion-config
             mountPath: /etc/secret/companion-config.json
             subPath: companion-config.json
           - mountPath: /etc/secret/encryption-cert
             name: encryption-cert
+          - name: redis-ca-cert
+            mountPath: /etc/secret/ca.crt
+            subPath: ca.crt
       volumes:
         - name: companion-config
           secret:
@@ -92,3 +101,6 @@ spec:
           secret:
             defaultMode: 420
             secretName: kyma-companion-encryption-cert
+        - name: redis-ca-cert
+          secret:
+            secretName: redis-ca-cert
