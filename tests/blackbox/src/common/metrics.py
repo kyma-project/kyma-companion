@@ -4,7 +4,7 @@ from typing import Any
 class Metrics:
     """Singleton class to store metrics."""
 
-    __instance = None
+    __instance: "Metrics | None" = None
     init_conversation_response_times_sec: list[float] = []
     conversation_response_times_sec: list[float] = []
 
