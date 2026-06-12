@@ -82,8 +82,8 @@ class LangfuseService(metaclass=SingletonMeta):
 
         try:
             return CallbackHandler()
-        except Exception as e:
-            logger.error(f"Failed to create Langfuse callback handler: {e}")
+        except Exception:
+            logger.exception("Failed to create Langfuse callback handler")
             return None
 
     def masking_production_data(self, *, data: Any, **kwargs: dict[str, Any]) -> Any:

@@ -38,8 +38,8 @@ def token_counting_error_handler(func: Callable) -> Callable:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Failed to compute token count: {e}")
+        except Exception:
+            logger.exception("Failed to compute token count")
             return 0  # Return 0 to indicate token counting failed
 
     return wrapper
