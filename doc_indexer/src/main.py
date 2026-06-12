@@ -113,11 +113,11 @@ def run_list_tables(
 
     rows = list_tables(hana_conn, DATABASE_USER)
     if not rows:
-        logger.info(f"No tables found for user {DATABASE_USER}.")
+        logger.info("No tables found.")
         return
     header = f"{'TABLE_NAME':<60} {'ROWS':>10} {'SIZE (bytes)':>14}"
     separator = "-" * 88
-    logger.info(f"HANA tables for user {DATABASE_USER}:\n{header}\n{separator}")
+    logger.info(f"HANA tables:\n{header}\n{separator}")
     for name, records, size in rows:
         logger.info(f"{name:<60} {records:>10} {size:>14}")
     logger.info(f"{len(rows)} table(s) total.")
