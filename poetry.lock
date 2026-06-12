@@ -1775,60 +1775,61 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "google-auth"
-version = "2.48.0"
+version = "2.54.0"
 description = "Google Authentication Library"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_auth-2.48.0-py3-none-any.whl", hash = "sha256:2e2a537873d449434252a9632c28bfc268b0adb1e53f9fb62afc5333a975903f"},
-    {file = "google_auth-2.48.0.tar.gz", hash = "sha256:4f7e706b0cd3208a3d940a19a822c37a476ddba5450156c3e6624a71f7c841ce"},
+    {file = "google_auth-2.54.0-py3-none-any.whl", hash = "sha256:784e9837f92244141250470d47c893df50cbab485ce491aca5e9deb558ad2b48"},
+    {file = "google_auth-2.54.0.tar.gz", hash = "sha256:130f6fd5e3f497fdad897a23ed9489973437edf561238c4b92a4d02c435f8af9"},
 ]
 
 [package.dependencies]
 cryptography = ">=38.0.3"
 pyasn1-modules = ">=0.2.1"
 requests = {version = ">=2.20.0,<3.0.0", optional = true, markers = "extra == \"requests\""}
-rsa = ">=3.1.4,<5"
 
 [package.extras]
-aiohttp = ["aiohttp (>=3.6.2,<4.0.0)", "requests (>=2.20.0,<3.0.0)"]
+aiohttp = ["aiohttp (>=3.8.0,<4.0.0)", "requests (>=2.20.0,<3.0.0)"]
 cryptography = ["cryptography (>=38.0.3)"]
 enterprise-cert = ["pyopenssl"]
 pyjwt = ["pyjwt (>=2.0)"]
 pyopenssl = ["pyopenssl (>=20.0.0)"]
 reauth = ["pyu2f (>=0.1.5)"]
 requests = ["requests (>=2.20.0,<3.0.0)"]
-testing = ["aiohttp (<3.10.0)", "aiohttp (>=3.6.2,<4.0.0)", "aioresponses", "flask", "freezegun", "grpcio", "oauth2client", "packaging", "pyjwt (>=2.0)", "pyopenssl (<24.3.0)", "pyopenssl (>=20.0.0)", "pytest", "pytest-asyncio", "pytest-cov", "pytest-localserver", "pyu2f (>=0.1.5)", "requests (>=2.20.0,<3.0.0)", "responses", "urllib3"]
+rsa = ["rsa (>=3.1.4,<5)"]
+testing = ["aiohttp (<3.10.0)", "aiohttp (>=3.8.0,<4.0.0)", "aioresponses", "flask", "freezegun", "grpcio", "packaging", "pyjwt (>=2.0)", "pyopenssl (<24.3.0)", "pyopenssl (>=20.0.0)", "pytest", "pytest-asyncio", "pytest-cov", "pytest-localserver", "pyu2f (>=0.1.5)", "requests (>=2.20.0,<3.0.0)", "responses", "urllib3"]
 urllib3 = ["packaging", "urllib3"]
 
 [[package]]
 name = "google-genai"
-version = "1.60.0"
+version = "1.73.1"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_genai-1.60.0-py3-none-any.whl", hash = "sha256:967338378ffecebec19a8ed90cf8797b26818bacbefd7846a9280beb1099f7f3"},
-    {file = "google_genai-1.60.0.tar.gz", hash = "sha256:9768061775fddfaecfefb0d6d7a6cabefb3952ebd246cd5f65247151c07d33d1"},
+    {file = "google_genai-1.73.1-py3-none-any.whl", hash = "sha256:af2d2287d25e42a187de19811ef33beb2e347c7e2bdb4dc8c467d78254e43a2c"},
+    {file = "google_genai-1.73.1.tar.gz", hash = "sha256:b637e3a3b9e2eccc46f27136d470165803de84eca52abfed2e7352081a4d5a15"},
 ]
 
 [package.dependencies]
 anyio = ">=4.8.0,<5.0.0"
 distro = ">=1.7.0,<2"
-google-auth = {version = ">=2.47.0,<3.0.0", extras = ["requests"]}
+google-auth = {version = ">=2.48.1,<3.0.0", extras = ["requests"]}
 httpx = ">=0.28.1,<1.0.0"
 pydantic = ">=2.9.0,<3.0.0"
 requests = ">=2.28.1,<3.0.0"
 sniffio = "*"
 tenacity = ">=8.2.3,<9.2.0"
-typing-extensions = ">=4.11.0,<5.0.0"
-websockets = ">=13.0.0,<15.1.0"
+typing-extensions = ">=4.14.0,<5.0.0"
+websockets = ">=13.0.0,<17.0"
 
 [package.extras]
-aiohttp = ["aiohttp (<3.13.3)"]
+aiohttp = ["aiohttp (>=3.10.11,<4.0.0)"]
 local-tokenizer = ["protobuf", "sentencepiece (>=0.2.0)"]
+pyopenssl = ["pyopenssl"]
 
 [[package]]
 name = "googleapis-common-protos"
@@ -6217,21 +6218,6 @@ files = [
 ]
 
 [[package]]
-name = "rsa"
-version = "4.9.1"
-description = "Pure-Python RSA implementation"
-optional = false
-python-versions = "<4,>=3.6"
-groups = ["main"]
-files = [
-    {file = "rsa-4.9.1-py3-none-any.whl", hash = "sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762"},
-    {file = "rsa-4.9.1.tar.gz", hash = "sha256:e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75"},
-]
-
-[package.dependencies]
-pyasn1 = ">=0.1.3"
-
-[[package]]
 name = "ruff"
 version = "0.15.9"
 description = "An extremely fast Python linter and code formatter, written in Rust."
@@ -6310,13 +6296,13 @@ sap-ai-sdk-base = ">=3.4,<4.0"
 
 [[package]]
 name = "sap-ai-sdk-gen"
-version = "6.7.0"
+version = "6.10.0"
 description = "SAP Cloud SDK for AI (Python): generative AI SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_gen-6.7.0-py3-none-any.whl", hash = "sha256:5bc3c54b6bb36039db59a4c35069d6bc91409e8f8219654e707082e2cab74a4f"},
+    {file = "sap_ai_sdk_gen-6.10.0-py3-none-any.whl", hash = "sha256:4547c58639a2d84db4ce190ff3e0fec5bbad17aaf67a3c666ff885b3ab98a4ab"},
 ]
 
 [package.dependencies]
@@ -6324,17 +6310,17 @@ aiobotocore = {version = ">=3.2.0", optional = true, markers = "extra == \"all\"
 boto3 = {version = ">=1.40.61", optional = true, markers = "extra == \"all\""}
 click = ">=8.1.7"
 dacite = ">=1.8.1"
-google-genai = {version = ">=1.60.0,<1.61.0", optional = true, markers = "extra == \"all\""}
+google-genai = {version = ">=1.73.1,<1.74.0", optional = true, markers = "extra == \"all\""}
 h11 = ">=0.16.0"
 httpx = ">=0.27.0"
-langchain = ">=1.2.10,<1.3.0"
+langchain = ">=1.2.14,<1.3.0"
 langchain-aws = {version = ">=1.4.0,<1.5.0", optional = true, markers = "extra == \"all\""}
 langchain-classic = ">=1.0.0,<1.1.0"
 langchain-community = ">=0.4.1,<0.5.0"
 langchain-google-genai = {version = ">=4.2.0,<4.3.0", optional = true, markers = "extra == \"all\""}
 langchain-openai = ">=1.1.0,<1.2.0"
 langcodes = ">=3.5.1,<3.6.0"
-openai = ">=1.58.1"
+openai = ">=1.66.0"
 overloading = "0.5.0"
 packaging = ">=23.2"
 pandas = ">=2.2.0"
@@ -6342,9 +6328,9 @@ pydantic = ">=2.12,<3.0"
 sap-ai-sdk-core = ">=3.3.0"
 
 [package.extras]
-all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=1.60.0,<1.61.0)", "langchain-aws (>=1.4.0,<1.5.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
+all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=1.73.1,<1.74.0)", "langchain-aws (>=1.4.0,<1.5.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
 amazon = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "langchain-aws (>=1.4.0,<1.5.0)"]
-google = ["google-genai (>=1.60.0,<1.61.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
+google = ["google-genai (>=1.73.1,<1.74.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
 
 [[package]]
 name = "scikit-learn"
