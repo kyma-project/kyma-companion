@@ -17,6 +17,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
     environment: e2e
+
     permissions:
       contents: read
     steps:
