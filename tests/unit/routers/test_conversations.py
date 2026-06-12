@@ -48,7 +48,10 @@ class MockService(IService):
         ]
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
-        return user_identifier != "87a5e00b7c0b4287fea96bbeabc05fdfdaacba5346b606366be40fbf3046cc9a"
+        return (
+            user_identifier
+            != "ab5c38a5e39f0d8417bada101eeb648fa5b93a470dad1d7dbb836d102cc47979fcccc7c325c8118199b5c81ec64e7b57"
+        )
 
     async def is_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
@@ -1040,7 +1043,7 @@ async def test_authorize_user(
             "conversation1",
             jwt.encode({"sub": "user1"}, "secret", algorithm="HS256"),
             None,
-            "0a041b9462caa4a31bac3567e0b6e6fd9100787db2ab433d96f6d178cabfce90",
+            "c6d73ec37c081fafa129ffdbf7364a3a36a9ba90f15e9612bf59d6edced4386d1a230c315025d6bf86bbc27168ee214d",
             None,
         ),
         (
@@ -1048,7 +1051,7 @@ async def test_authorize_user(
             "conversation2",
             jwt.encode({"sub": "user2"}, "secret", algorithm="HS256"),
             None,
-            "6025d18fe48abd45168528f18a82e265dd98d421a7084aa09f61b341703901a3",
+            "67fd7ba5f933544fc36eab0d6671ca47729b8e9b42401b700931f6ef529a3d7f43f3cc239678b81bf4f340e01fd16da3",
             None,
         ),
         (
@@ -1064,7 +1067,7 @@ async def test_authorize_user(
             "conversation1",
             None,
             SAMPLE_CLIENT_CERTIFICATE_DATA,
-            "259c31ec6667be354fc6d007a452e2d09002bc396b2b6da976980b0cca0b8ced",
+            "d96b58c3b81c1ebd891bf1c775133cc6820d51370eedc2c46c6b4fa8952f202b0d2eb69f800f834f9a8030e510431a1d",
             None,
         ),
         (
