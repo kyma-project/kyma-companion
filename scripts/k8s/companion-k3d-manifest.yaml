@@ -82,7 +82,13 @@ spec:
           - name: companion-config
             mountPath: /etc/secret/companion-config.json
             subPath: companion-config.json
+          - mountPath: /etc/secret/encryption-cert
+            name: encryption-cert
       volumes:
         - name: companion-config
           secret:
             secretName: companion-config
+        - name: encryption-cert
+          secret:
+            defaultMode: 420
+            secretName: kyma-companion-encryption-cert
