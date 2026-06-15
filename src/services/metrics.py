@@ -95,8 +95,21 @@ class CustomMetrics(metaclass=SingletonMeta):
         path = ""
         for route in req.app.routes:
             match, _ = route.matches(req.scope)
-            if match == Match.FULL:
+            if match != Match.FULL:
+                continue
+            if hasattr(route, "path"):
                 path = route.path
+                break
+            # FastAPI 0.137+ wraps included routers in _IncludedRouter which has no .path.
+            # Drill into original_router to find the matching inner route and prepend the prefix.
+            if hasattr(route, "original_router") and hasattr(route, "include_context"):
+                prefix = route.include_context.prefix or ""
+                for inner_route in route.original_router.routes:
+                    inner_match, _ = inner_route.matches(req.scope)
+                    if inner_match == Match.FULL and hasattr(inner_route, "path"):
+                        path = prefix + inner_route.path
+                        break
+            if path:
                 break
 
         # wait for the response.
