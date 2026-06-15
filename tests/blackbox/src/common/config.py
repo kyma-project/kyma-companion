@@ -77,7 +77,7 @@ class Config:
                         os.environ[key] = str(value)
                     else:
                         self.models = value
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             logging.exception(f"Invalid JSON format in config file {config_path}")
             raise
         except FileNotFoundError:
