@@ -43,7 +43,7 @@ class Redis(metaclass=SingletonMeta):
             return False
 
         try:
-            if await self.connection.ping():  # type: ignore[misc]
+            if await self.connection.ping():
                 logger.debug("Redis connection is ready.")
                 return True
         except Exception:
