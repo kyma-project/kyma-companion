@@ -109,8 +109,8 @@ class CustomMetrics(metaclass=SingletonMeta):
                     if inner_match == Match.FULL and hasattr(inner_route, "path"):
                         path = prefix + inner_route.path
                         break
-            if path:
-                break
+                if path:
+                    break
 
         # wait for the response.
         start_time = time.perf_counter()

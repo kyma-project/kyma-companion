@@ -12,6 +12,9 @@ from utils.settings import (
 
 # aioresponses 0.7.8 does not pass stream_writer to ClientResponse.__init__,
 # which became required in aiohttp 3.14.0. Patch until aioresponses releases a fix.
+# This is intentionally applied at module level rather than in a session-scoped fixture
+# to guarantee the patch is active before any test module is imported or collected,
+# since aioresponses is used at import time in some test modules.
 _original_client_response_init = ClientResponse.__init__
 
 
