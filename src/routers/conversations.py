@@ -115,7 +115,7 @@ async def init_conversation(
             data_sanitizer=data_sanitizer,
         )
     except Exception as e:
-        logger.error(e)
+        logger.exception("Failed to initialize Kubernetes client")
         raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
 
     # Check rate limitation
@@ -141,7 +141,7 @@ async def init_conversation(
             headers={SESSION_ID_HEADER: session_id},
         )
     except Exception as e:
-        logger.error(e)
+        logger.exception("Failed to create initial questions")
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"{str(e)}, Request data: {message.model_dump_json()}",
@@ -192,7 +192,7 @@ async def followup_questions(
             content=jsonable_encoder(response),
         )
     except Exception as e:
-        logger.error(e)
+        logger.exception("Failed to create follow-up questions")
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
@@ -302,7 +302,7 @@ def extract_user_identifier(
         try:
             user_identifier = get_user_identifier_from_token(k8s_auth_headers.x_k8s_authorization)
         except Exception as e:
-            logger.error(e)
+            logger.exception("Failed to get user identifier from token")
             raise HTTPException(status_code=401, detail="Invalid token") from e
     elif k8s_auth_headers.x_client_certificate_data is not None:
         try:
@@ -310,7 +310,7 @@ def extract_user_identifier(
                 k8s_auth_headers.get_decoded_client_certificate_data()
             )
         except Exception as e:
-            logger.error(e)
+            logger.exception("Failed to get user identifier from client certificate")
             raise HTTPException(status_code=401, detail="Invalid client certificate") from e
 
     if user_identifier == "":
