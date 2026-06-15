@@ -86,7 +86,7 @@ class Config:
                 f"{default_config_path} or set the CONFIG_PATH environment variable."
             )
             raise
-        except Exception as e:
+        except Exception:
             logging.exception(f"Error loading config from {config_path}")
             raise
 
