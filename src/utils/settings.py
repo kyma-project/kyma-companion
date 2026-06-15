@@ -48,8 +48,8 @@ def load_env_from_json() -> Path:
                 else:
                     os.environ[key] = str(value)
         return config_path
-    except json.JSONDecodeError as e:
-        logging.error(f"Invalid JSON format in config file {config_path}: {e}")
+    except json.JSONDecodeError:
+        logging.exception(f"Invalid JSON format in config file {config_path}")
         raise
     except FileNotFoundError:
         logging.error(
@@ -57,8 +57,8 @@ def load_env_from_json() -> Path:
             f"{default_config_path} or set the CONFIG_PATH environment variable."
         )
         raise
-    except Exception as e:
-        logging.error(f"Error loading config from {config_path}: {e}")
+    except Exception:
+        logging.exception(f"Error loading config from {config_path}")
         raise
 
 
