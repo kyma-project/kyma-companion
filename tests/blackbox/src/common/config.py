@@ -78,7 +78,7 @@ class Config:
                     else:
                         self.models = value
         except json.JSONDecodeError as e:
-            logging.error(f"Invalid JSON format in config file {config_path}: {e}")
+            logging.exception(f"Invalid JSON format in config file {config_path}")
             raise
         except FileNotFoundError:
             logging.error(
@@ -87,7 +87,7 @@ class Config:
             )
             raise
         except Exception as e:
-            logging.error(f"Error loading config from {config_path}: {e}")
+            logging.exception(f"Error loading config from {config_path}")
             raise
 
     def get_model_config(self, model_name: str) -> dict:
