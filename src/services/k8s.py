@@ -343,8 +343,8 @@ class K8sClient:
             conf.cert_file = self.client_cert_temp_filename
             conf.key_file = self.client_key_temp_filename
         elif self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN:
-            conf.api_key_prefix["authorization"] = "Bearer"
-            conf.api_key["authorization"] = self.k8s_auth_headers.x_k8s_authorization
+            conf.api_key_prefix["BearerToken"] = "Bearer"
+            conf.api_key["BearerToken"] = self.k8s_auth_headers.x_k8s_authorization
         else:
             raise ValueError("Unknown authentication type.")
 
