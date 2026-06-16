@@ -4,7 +4,7 @@ from services.data_sanitizer import REDACTED_VALUE, DataSanitizer, redact_pii
 from utils.config import DataSanitizationConfig
 
 
-class TestScrubPii:
+class TestRedactPii:
     """Unit tests for the redact_pii function covering each detector type."""
 
     # --- email ---
