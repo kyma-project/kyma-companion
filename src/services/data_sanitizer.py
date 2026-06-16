@@ -168,11 +168,15 @@ def scrub_pii(text: str) -> str:
 
     text = _RE_TWITTER.sub("{{TWITTER}}", text)
 
+    # Collect all phone spans across all regions on the original text, then
+    # replace in a single reverse-sorted pass so earlier offsets stay valid.
+    spans: list[tuple[int, int]] = []
     for region in _PHONE_REGIONS:
-        matches = list(phonenumbers.PhoneNumberMatcher(text, region))
-        # Replace from the end to preserve offsets.
-        for match in reversed(matches):
-            text = text[: match.start] + "{{PHONE}}" + text[match.end :]
+        for match in phonenumbers.PhoneNumberMatcher(text, region):
+            spans.append((match.start, match.end))
+    # Remove duplicates and sort descending so replacements don't shift offsets.
+    for start, end in sorted(set(spans), reverse=True):
+        text = text[:start] + "{{PHONE}}" + text[end:]
 
     return text
 
