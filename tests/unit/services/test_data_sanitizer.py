@@ -1,7 +1,116 @@
 import pytest
 
-from services.data_sanitizer import REDACTED_VALUE, DataSanitizer
+from services.data_sanitizer import REDACTED_VALUE, DataSanitizer, scrub_pii
 from utils.config import DataSanitizationConfig
+
+
+class TestScrubPii:
+    """Unit tests for the scrub_pii function covering each detector type."""
+
+    # --- email ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("contact john.doe@example.com please", "contact {{EMAIL}} please"),
+            ("no email here", "no email here"),
+            ("two emails a@b.com and c@d.org here", "two emails {{EMAIL}} and {{EMAIL}} here"),
+            # 'at' spelling variant
+            ("john at example.com", "{{EMAIL}}"),
+        ],
+    )
+    def test_email(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- SSN ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("SSN: 123-45-6789", "SSN: {{SOCIAL_SECURITY_NUMBER}}"),
+            ("ssn 123 45 6789 end", "ssn {{SOCIAL_SECURITY_NUMBER}} end"),
+            ("ssn 123.45.6789 end", "ssn {{SOCIAL_SECURITY_NUMBER}} end"),
+            # not an SSN -- too few digits
+            ("123-45-678", "123-45-678"),
+            # not an SSN -- too many digits; phonenumbers may still match it as a phone
+            ("123-456-7890", "{{PHONE}}"),
+        ],
+    )
+    def test_ssn(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- credit card (Luhn-validated) ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            # Valid Visa (passes Luhn)
+            (" 4111111111111111 end", " {{CREDIT_CARD}} end"),
+            # Valid Mastercard
+            (" 5500005555555559 end", " {{CREDIT_CARD}} end"),
+            # Valid Amex (15-digit)
+            (" 378282246310005 end", " {{CREDIT_CARD}} end"),
+            # Fails Luhn -- should not be redacted
+            (" 4111111111111112 end", " 4111111111111112 end"),
+            # no leading space -- pattern requires it
+            ("4111111111111111", "4111111111111111"),
+        ],
+    )
+    def test_credit_card(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- phone ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("call +1 800 555 0199", "call {{PHONE}}"),
+            ("reach us at +49 30 12345678", "reach us at {{PHONE}}"),
+            ("no number here", "no number here"),
+        ],
+    )
+    def test_phone(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- GB postcode ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("send to SW1A 1AA thanks", "send to {{POSTCODE}} thanks"),
+            ("postcode EC1A 1BB here", "postcode {{POSTCODE}} here"),
+            # base64-like string should not match
+            ("YWRtaW46YWRtaW4=", "YWRtaW46YWRtaW4="),
+            ("no postcode", "no postcode"),
+        ],
+    )
+    def test_gb_postcode(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- Twitter ---
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("follow @kymaproject for updates", "follow {{TWITTER}} for updates"),
+            ("email admin@example.com is not a handle", "email {{EMAIL}} is not a handle"),
+            # reserved handles not matched
+            ("@twitter and @admin are reserved", "@twitter and @admin are reserved"),
+            ("no handle here", "no handle here"),
+        ],
+    )
+    def test_twitter(self, text, expected):
+        assert scrub_pii(text) == expected
+
+    # --- Luhn helper ---
+    @pytest.mark.parametrize(
+        "digits,expected",
+        [
+            ("4111111111111111", True),  # Visa test card
+            ("5500005555555559", True),  # Mastercard test card
+            ("378282246310005", True),  # Amex test card
+            ("4111111111111112", False),  # invalid -- off by one
+            ("1234567890123456", False),  # random invalid number
+        ],
+    )
+    def test_luhn(self, digits, expected):
+        from services.data_sanitizer import _luhn_valid
+
+        assert _luhn_valid(digits) == expected
 
 
 class TestDataSanitizer:
