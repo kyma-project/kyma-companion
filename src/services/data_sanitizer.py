@@ -88,15 +88,14 @@ _RE_SSN = re.compile(
 )
 
 # Matches Visa, MasterCard (including 2-series), Amex, Diners, Discover, JCB.
-# Requires a preceding whitespace boundary to reduce false positives.
+# Word boundaries prevent matching inside longer digit sequences.
 _RE_CREDIT_CARD = re.compile(
-    r"(?<=\s)"
-    r"(?:4[0-9]{12}(?:[0-9]{3})?"
+    r"\b(?:4[0-9]{12}(?:[0-9]{3})?"
     r"|(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}"
     r"|3[47][0-9]{13}"
     r"|3(?:0[0-5]|[68][0-9])[0-9]{11}"
     r"|6(?:011|5[0-9]{2})[0-9]{12}"
-    r"|(?:2131|1800|35\d{3})\d{11})",
+    r"|(?:2131|1800|35\d{3})\d{11})\b",
 )
 
 # GB postcodes only.
@@ -165,8 +164,9 @@ def redact_pii(text: str) -> str:
 
     text = _RE_TWITTER.sub("{{TWITTER}}", text)
 
-    # Collect all phone spans across all regions on the original text, then
-    # replace in a single reverse-sorted pass so earlier offsets stay valid.
+    # Collect all phone spans across all regions (text has already had other PII
+    # replaced above), then replace in a single reverse-sorted pass so earlier
+    # offsets stay valid.
     spans: list[tuple[int, int]] = []
     for region in _PHONE_REGIONS:
         for match in phonenumbers.PhoneNumberMatcher(text, region):

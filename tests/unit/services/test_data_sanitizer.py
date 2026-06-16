@@ -49,8 +49,10 @@ class TestRedactPii:
             (" 378282246310005 end", " {{CREDIT_CARD}} end"),
             # Fails Luhn -- should not be redacted
             (" 4111111111111112 end", " 4111111111111112 end"),
-            # no leading space -- pattern requires it
-            ("4111111111111111", "4111111111111111"),
+            # no leading space -- word boundary still matches
+            ("4111111111111111", "{{CREDIT_CARD}}"),
+            # quoted (as in JSON-serialized dict value)
+            ('"4111111111111111"', '"{{CREDIT_CARD}}"'),
         ],
     )
     def test_credit_card(self, text, expected):
