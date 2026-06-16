@@ -75,8 +75,6 @@ DEFAULT_REGEX_PATTERNS = [
     r"(?i)(user_name)\s*[=:]\s*[^\s\n]+",  # Usernames
 ]
 
-# PII patterns replacing scrubadub built-in detectors.
-# Sourced from scrubadub and presidio; see issue #1218.
 _RE_EMAIL = re.compile(
     r"\b[a-z0-9!#$%&'*+\/=?^_`{|}~-]"
     r"(?:[\.a-z0-9!#$%&'*+\/=?^_`{|}~-]{0,62}[a-z0-9!#$%&'*+\/=?^_`{|}~-])?"
@@ -90,7 +88,7 @@ _RE_SSN = re.compile(
 )
 
 # Matches Visa, MasterCard (including 2-series), Amex, Diners, Discover, JCB.
-# Requires a preceding whitespace boundary (scrubadub behaviour) to reduce false positives.
+# Requires a preceding whitespace boundary to reduce false positives.
 _RE_CREDIT_CARD = re.compile(
     r"(?<=\s)"
     r"(?:4[0-9]{12}(?:[0-9]{3})?"
@@ -101,7 +99,7 @@ _RE_CREDIT_CARD = re.compile(
     r"|(?:2131|1800|35\d{3})\d{11})",
 )
 
-# GB postcodes only (matches scrubadub's PostalCodeDetector coverage).
+# GB postcodes only.
 # \b anchors prevent matching inside base64 or other dense alphanumeric strings.
 _RE_GB_POSTCODE = re.compile(
     r"""\b(
@@ -148,9 +146,8 @@ def _luhn_valid(digits: str) -> bool:
 def redact_pii(text: str) -> str:
     """Replace PII in text with typed placeholder tokens.
 
-    Replicates the behaviour of scrubadub's default active detectors
-    (email, credit card, SSN, phone, GB postcode, Twitter) without
-    pulling in scrubadub's heavy transitive dependencies.
+    Detects and replaces email, SSN, credit card, phone, GB postcode, and Twitter handles
+    with typed placeholder tokens (e.g. {{EMAIL}}, {{PHONE}}).
     """
     text = _RE_EMAIL.sub("{{EMAIL}}", text)
 
