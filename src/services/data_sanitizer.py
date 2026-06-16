@@ -145,7 +145,7 @@ def _luhn_valid(digits: str) -> bool:
     return total % 10 == 0
 
 
-def scrub_pii(text: str) -> str:
+def redact_pii(text: str) -> str:
     """Replace PII in text with typed placeholder tokens.
 
     Replicates the behaviour of scrubadub's default active detectors
@@ -222,7 +222,7 @@ class DataSanitizer(metaclass=SingletonMeta):
     def _sanitize_raw_string_data(self, raw_text: str, replacement_text: str = "{{REDACTED}}") -> str:
         """Sanitize raw string data by replacing PII and credentials."""
         # First pass: PII patterns (email, SSN, credit card, phone, postcode, Twitter)
-        sanitized_text = scrub_pii(raw_text)
+        sanitized_text = redact_pii(raw_text)
 
         # Second pass: credential patterns (passwords, API keys, tokens, etc.)
         for pattern in self.config.regex_patterns:
@@ -336,7 +336,7 @@ class DataSanitizer(metaclass=SingletonMeta):
 
     def _clean_personal_information(self, data: dict) -> dict:
         """Cleans PII from a dict by serialising to JSON, scrubbing, then deserialising."""
-        return dict(json.loads(scrub_pii(json.dumps(data))))
+        return dict(json.loads(redact_pii(json.dumps(data))))
 
     @staticmethod
     def _remove_last_applied_configuration(data: dict) -> dict:

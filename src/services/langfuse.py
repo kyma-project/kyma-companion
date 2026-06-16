@@ -11,7 +11,7 @@ from langfuse.langchain import CallbackHandler
 from agents.common.state import GraphInput
 from agents.kyma.tools.query import fetch_kyma_resource_version
 from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
-from services.data_sanitizer import scrub_pii
+from services.data_sanitizer import redact_pii
 from services.k8s import IK8sClient, K8sClient
 from utils.logging import get_logger
 from utils.settings import (
@@ -130,7 +130,7 @@ class LangfuseService(metaclass=SingletonMeta):
         if isinstance(data, GraphInput):
             output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
             if output:
-                return scrub_pii(output)
+                return redact_pii(output)
 
         return REDACTED
 
@@ -148,10 +148,10 @@ class LangfuseService(metaclass=SingletonMeta):
             # If data is a GraphInput, sanitize the messages in reverse order for better readability.
             if isinstance(data, GraphInput):
                 output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-                return scrub_pii(output if output else REDACTED)
+                return redact_pii(output if output else REDACTED)
             # If data is a string, sanitize it directly.
             elif isinstance(data, str):
-                return scrub_pii(copy.copy(data))
+                return redact_pii(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
                 data = copy.deepcopy(data)
                 data.content = REDACTED
@@ -163,7 +163,7 @@ class LangfuseService(metaclass=SingletonMeta):
             elif isinstance(data, dict) and "content" in data and "role" in data:
                 # If data is a dictionary with role and content, sanitize the content.
                 data = copy.deepcopy(data)
-                data["content"] = scrub_pii(data["content"]) if data["role"] != "tool" else REDACTED
+                data["content"] = redact_pii(data["content"]) if data["role"] != "tool" else REDACTED
                 return data
             elif isinstance(data, dict):
                 result = {}
@@ -193,5 +193,5 @@ class LangfuseService(metaclass=SingletonMeta):
         Helper function to clean the content of a message.
         """
         if isinstance(content, str):
-            return scrub_pii(content)
+            return redact_pii(content)
         return f"Error while masking message content: content (type: {type(content)}) is not a string."

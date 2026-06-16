@@ -1,11 +1,11 @@
 import pytest
 
-from services.data_sanitizer import REDACTED_VALUE, DataSanitizer, scrub_pii
+from services.data_sanitizer import REDACTED_VALUE, DataSanitizer, redact_pii
 from utils.config import DataSanitizationConfig
 
 
 class TestScrubPii:
-    """Unit tests for the scrub_pii function covering each detector type."""
+    """Unit tests for the redact_pii function covering each detector type."""
 
     # --- email ---
     @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ class TestScrubPii:
         ],
     )
     def test_email(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- SSN ---
     @pytest.mark.parametrize(
@@ -35,7 +35,7 @@ class TestScrubPii:
         ],
     )
     def test_ssn(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- credit card (Luhn-validated) ---
     @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ class TestScrubPii:
         ],
     )
     def test_credit_card(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- phone ---
     @pytest.mark.parametrize(
@@ -66,7 +66,7 @@ class TestScrubPii:
         ],
     )
     def test_phone(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- GB postcode ---
     @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ class TestScrubPii:
         ],
     )
     def test_gb_postcode(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- Twitter ---
     @pytest.mark.parametrize(
@@ -94,7 +94,7 @@ class TestScrubPii:
         ],
     )
     def test_twitter(self, text, expected):
-        assert scrub_pii(text) == expected
+        assert redact_pii(text) == expected
 
     # --- Luhn helper ---
     @pytest.mark.parametrize(
