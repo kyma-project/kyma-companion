@@ -1,6 +1,5 @@
-import json
 import re
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import phonenumbers
 
@@ -332,8 +331,18 @@ class DataSanitizer(metaclass=SingletonMeta):
         return result
 
     def _clean_personal_information(self, data: dict) -> dict:
-        """Cleans PII from a dict by serialising to JSON, scrubbing, then deserialising."""
-        return dict(json.loads(redact_pii(json.dumps(data))))
+        """Recursively redact PII from string values in a dict."""
+        return cast(dict, self._redact_pii_in_value(data))
+
+    def _redact_pii_in_value(self, value: Any) -> Any:
+        """Recursively walk a value and apply redact_pii to any strings."""
+        if isinstance(value, str):
+            return redact_pii(value)
+        elif isinstance(value, dict):
+            return {k: self._redact_pii_in_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [self._redact_pii_in_value(item) for item in value]
+        return value
 
     @staticmethod
     def _remove_last_applied_configuration(data: dict) -> dict:
