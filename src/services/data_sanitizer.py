@@ -1,8 +1,7 @@
-import json
 import re
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
-import scrubadub
+import phonenumbers
 
 from utils.config import DataSanitizationConfig
 from utils.singleton_meta import SingletonMeta
@@ -75,6 +74,109 @@ DEFAULT_REGEX_PATTERNS = [
     r"(?i)(user_name)\s*[=:]\s*[^\s\n]+",  # Usernames
 ]
 
+_RE_EMAIL = re.compile(
+    r"\b[a-z0-9!#$%&'*+\/=?^_`{|}~-]"
+    r"(?:[\.a-z0-9!#$%&'*+\/=?^_`{|}~-]{0,62}[a-z0-9!#$%&'*+\/=?^_`{|}~-])?"
+    r"(?:@|\sat\s)"
+    r"[a-z0-9](?:(?=[a-z0-9-]*(\.|\sdot\s))(?:\.|\sdot\s|[a-z0-9-]){0,251}[a-z0-9])+\b",
+    re.IGNORECASE,
+)
+
+_RE_SSN = re.compile(
+    r"\b([0-9]{3})[- .]([0-9]{2})[- .]([0-9]{4})\b",
+)
+
+# Matches Visa, MasterCard (including 2-series), Amex, Diners, Discover, JCB.
+# Word boundaries prevent matching inside longer digit sequences.
+_RE_CREDIT_CARD = re.compile(
+    r"\b(?:4[0-9]{12}(?:[0-9]{3})?"
+    r"|(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}"
+    r"|3[47][0-9]{13}"
+    r"|3(?:0[0-5]|[68][0-9])[0-9]{11}"
+    r"|6(?:011|5[0-9]{2})[0-9]{12}"
+    r"|(?:2131|1800|35\d{3})\d{11})\b",
+)
+
+# GB postcodes only.
+# \b anchors prevent matching inside base64 or other dense alphanumeric strings.
+_RE_GB_POSTCODE = re.compile(
+    r"""\b(
+        (?:[gG][iI][rR] {0,}0[aA]{2})|
+        (?:(?:[aA][sS][cC][nN]|[sS][tT][hH][lL]|[tT][dD][cC][uU]|[bB][bB][nN][dD]|
+              [bB][iI][qQ][qQ]|[fF][iI][qQ][qQ]|[pP][cC][rR][nN]|[sS][iI][qQ][qQ]|
+              [iT][kK][cC][aA])\ {0,}1[zZ]{2})|
+        (?:(?:KY[0-9]|MSR|VG|AI)[ -]{0,}[0-9]{4})|
+        (?:[Bb][Ff][Pp][Oo]\ {0,}[0-9]{1,4})|
+        (?:(?:(?:[Ww][Cc][0-9][abehmnprvwxyABEHMNPRVWXY])|
+              (?:[Ee][Cc][1-4][abehmnprvwxyABEHMNPRVWXY])|
+              (?:[Nn][Ww]1[Ww])|(?:[Ss][Ee]1[Pp])|
+              (?:[Ss][Ww]1[abehmnprvwxyABEHMNPRVWXY])|
+              (?:[EeNnWw]1[a-hjkpstuwA-HJKPSTUW])|
+              (?:[BbEeGgLlMmNnSsWw][0-9][0-9]?)|
+              (?:[a-pr-uwyzA-PR-UWYZ][a-hk-yxA-HK-XY][0-9][0-9]?))
+            \ {0,}[0-9][abd-hjlnp-uw-zABD-HJLNP-UW-Z]{2})
+    )\b""",
+    re.VERBOSE,
+)
+
+_RE_TWITTER = re.compile(
+    r"(?<!\w)@((?!((admin)|(twitter)))[a-z0-9_]){2,15}\b",
+    re.IGNORECASE,
+)
+
+_PHONE_REGIONS = ("US", "GB", "DE", "FR", "IN", "CA", "BR")
+_LUHN_DOUBLE_THRESHOLD = 9
+
+
+def _luhn_valid(digits: str) -> bool:
+    """Return True if the digit string passes the Luhn checksum."""
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        n = int(d)
+        if i % 2 == 1:
+            n *= 2
+            if n > _LUHN_DOUBLE_THRESHOLD:
+                n -= _LUHN_DOUBLE_THRESHOLD
+        total += n
+    return total % 10 == 0
+
+
+def redact_pii(text: str) -> str:
+    """Replace PII in text with typed placeholder tokens.
+
+    Detects and replaces email, SSN, credit card, phone, GB postcode, and Twitter handles
+    with typed placeholder tokens (e.g. {{EMAIL}}, {{PHONE}}).
+    """
+    text = _RE_EMAIL.sub("{{EMAIL}}", text)
+
+    text = _RE_SSN.sub("{{SOCIAL_SECURITY_NUMBER}}", text)
+
+    def _replace_card(m: re.Match) -> str:
+        digits = re.sub(r"\D", "", m.group(0))
+        if _luhn_valid(digits):
+            return "{{CREDIT_CARD}}"
+        return str(m.group(0))
+
+    text = _RE_CREDIT_CARD.sub(_replace_card, text)
+
+    text = _RE_GB_POSTCODE.sub("{{POSTCODE}}", text)
+
+    text = _RE_TWITTER.sub("{{TWITTER}}", text)
+
+    # Collect all phone spans across all regions (text has already had other PII
+    # replaced above), then replace in a single reverse-sorted pass so earlier
+    # offsets stay valid.
+    spans: list[tuple[int, int]] = []
+    for region in _PHONE_REGIONS:
+        for match in phonenumbers.PhoneNumberMatcher(text, region):
+            spans.append((match.start, match.end))
+    # Remove duplicates and sort descending so replacements don't shift offsets.
+    for start, end in sorted(set(spans), reverse=True):
+        text = text[:start] + "{{PHONE}}" + text[end:]
+
+    return text
+
+
 REDACTED_VALUE = "[REDACTED]"
 SECRET_LIST_KIND_NAME = "SecretList"
 SECRET_KIND_NAME = "Secret"
@@ -99,8 +201,6 @@ class DataSanitizer(metaclass=SingletonMeta):
             sensitive_field_to_exclude=DEFAULT_SENSITIVE_FIELD_TO_EXCLUDE,
             regex_patterns=DEFAULT_REGEX_PATTERNS,
         )
-        self.scrubber = scrubadub.Scrubber()
-        self.scrubber.remove_detector(scrubadub.detectors.UrlDetector)
 
     def sanitize(self, data: str | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
@@ -116,18 +216,15 @@ class DataSanitizer(metaclass=SingletonMeta):
         raise ValueError("Data must be a string or list or dictionary.")
 
     def _sanitize_raw_string_data(self, raw_text: str, replacement_text: str = "{{REDACTED}}") -> str:
-        """
-        Sanitize raw string data by replacing personal information and credentials.
-        """
+        """Sanitize raw string data by replacing PII and credentials."""
+        # First pass: PII patterns (email, SSN, credit card, phone, postcode, Twitter)
+        sanitized_text = redact_pii(raw_text)
 
-        # First pass: Use scrubadub for standard PII
-        sanitized_text = self.scrubber.clean(raw_text)
-
-        # Second pass: Apply custom credential patterns
+        # Second pass: credential patterns (passwords, API keys, tokens, etc.)
         for pattern in self.config.regex_patterns:
             sanitized_text = re.sub(pattern, replacement_text, sanitized_text, flags=re.IGNORECASE)
 
-        return str(sanitized_text)
+        return sanitized_text
 
     def _sanitize_object(self, obj: dict) -> dict:
         """Sanitize a single object."""
@@ -234,12 +331,18 @@ class DataSanitizer(metaclass=SingletonMeta):
         return result
 
     def _clean_personal_information(self, data: dict) -> dict:
-        """Cleans personal information from a string."""
-        data_str = json.dumps(data)
+        """Recursively redact PII from string values in a dict."""
+        return cast(dict, self._redact_pii_in_value(data))
 
-        sanitized_data_str = self.scrubber.clean(data_str)
-
-        return dict(json.loads(sanitized_data_str))
+    def _redact_pii_in_value(self, value: Any) -> Any:
+        """Recursively walk a value and apply redact_pii to any strings."""
+        if isinstance(value, str):
+            return redact_pii(value)
+        elif isinstance(value, dict):
+            return {k: self._redact_pii_in_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [self._redact_pii_in_value(item) for item in value]
+        return value
 
     @staticmethod
     def _remove_last_applied_configuration(data: dict) -> dict:
