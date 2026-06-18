@@ -6,7 +6,6 @@ Fetches the Runtime CR for a given shoot-id from the local Kubernetes cluster
 in Redis for 3 days.
 """
 
-import json
 from http import HTTPStatus
 
 from kubernetes import client, config, dynamic
@@ -89,7 +88,7 @@ async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
             cached = await redis.get_connection().get(_cache_key(shoot_id))
             if cached:
                 logger.debug(f"Cache hit for shoot_id={shoot_id}")
-                return ClusterRegionResponse(**json.loads(cached))
+                return ClusterRegionResponse.model_validate_json(cached)
         except Exception:
             logger.warning(f"Redis read failed for shoot_id={shoot_id}, proceeding without cache")
 
