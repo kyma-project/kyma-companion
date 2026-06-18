@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from starlette.responses import JSONResponse
 
 from agents.common.constants import ERROR_RATE_LIMIT_CODE
+from routers.cluster_region_api import router as cluster_region_router
 from routers.conversations import router as conversations_router
 from routers.k8s_tools_api import router as k8s_tools_router
 from routers.kyma_tools_api import router as kyma_tools_router
@@ -229,6 +230,7 @@ def handle_http_exception(
 app.include_router(conversations_router)
 app.include_router(k8s_tools_router)
 app.include_router(kyma_tools_router)
+app.include_router(cluster_region_router)
 app.include_router(public_key_router)
 app.include_router(probes_router)
 
