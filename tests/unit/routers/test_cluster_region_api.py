@@ -73,9 +73,7 @@ class TestClusterRegionEndpoint:
     )
     @patch("routers.cluster_region_api.get_cluster_region", new_callable=AsyncMock)
     def test_eu_access_flag(self, mock_get, platform_region, expected, test_client):
-        mock_get.return_value = _make_response(
-            platformRegion=platform_region, isEUAccessOnly=expected
-        )
+        mock_get.return_value = _make_response(platformRegion=platform_region, isEUAccessOnly=expected)
 
         response = test_client.get("/api/tools/cluster-region/test-shoot")
 
