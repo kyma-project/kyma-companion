@@ -371,7 +371,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         checkpoint_key = await self._aget_checkpoint_key(self.conn, thread_id, checkpoint_ns, checkpoint_id)
         if not checkpoint_key:
             return None
-        checkpoint_data: dict[bytes, bytes] = await self._redis_call(self.conn.hgetall(checkpoint_key))  # type: ignore[arg-type]
+        checkpoint_data: dict[bytes, bytes] = await self._redis_call(self.conn.hgetall(checkpoint_key))
 
         # load pending writes
         checkpoint_id = checkpoint_id or _parse_redis_checkpoint_key(checkpoint_key)["checkpoint_id"]
@@ -408,7 +408,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         pattern = _make_redis_checkpoint_key(thread_id, checkpoint_ns, "*")
         keys = _filter_keys(await self.conn.keys(pattern), before, limit)
         for key in keys:
-            data: dict[bytes, bytes] = await self._redis_call(self.conn.hgetall(_safe_decode(key)))  # type: ignore[arg-type]
+            data: dict[bytes, bytes] = await self._redis_call(self.conn.hgetall(_safe_decode(key)))
             if data and b"checkpoint" in data and b"metadata" in data:
                 checkpoint_id = _parse_redis_checkpoint_key(_safe_decode(key))["checkpoint_id"]
                 pending_writes = await self._aload_pending_writes(thread_id, checkpoint_ns, checkpoint_id)
@@ -424,7 +424,7 @@ class AsyncRedisSaver(BaseCheckpointSaver):
         pending_writes = _load_writes(
             self.serde,
             {
-                (parsed_key["task_id"], parsed_key["idx"]): await self._redis_call(self.conn.hgetall(key))  # type: ignore[arg-type]
+                (parsed_key["task_id"], parsed_key["idx"]): await self._redis_call(self.conn.hgetall(key))
                 for key, parsed_key in sorted(
                     zip(matching_keys, parsed_keys, strict=False),
                     key=lambda x: x[1]["idx"],
