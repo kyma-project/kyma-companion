@@ -7,6 +7,7 @@ from langchain_core.messages import (
     SystemMessage,
 )
 from langgraph.graph import add_messages
+from langgraph.graph.message import Messages
 from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
@@ -289,10 +290,7 @@ class CompanionState(BaseModel):
             return to_sequence_messages(
                 add_messages(
                     SystemMessage(content=self.messages_summary),
-                    cast(
-                        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]],
-                        self.messages,
-                    ),
+                    cast(Messages, self.messages),
                 )
             )
         return self.messages
@@ -322,10 +320,7 @@ class BaseAgentState(BaseModel):
             return to_sequence_messages(
                 add_messages(
                     SystemMessage(content=self.agent_messages_summary),
-                    cast(
-                        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]],
-                        self.agent_messages,
-                    ),
+                    cast(Messages, self.agent_messages),
                 )
             )
         return self.agent_messages

@@ -57,10 +57,10 @@ def string_to_bool(value: str) -> bool:
 
 def to_sequence_messages(
     messages: (
-        list[BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]]
+        list[BaseMessage | list[str] | tuple[str, str | list[str | dict[str, Any]]] | str | dict[str, Any]]
         | BaseMessage
         | list[str]
-        | tuple[str, str]
+        | tuple[str, str | list[str | dict[str, Any]]]
         | str
         | dict[str, Any]
     ),
