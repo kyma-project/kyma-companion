@@ -60,11 +60,12 @@ def _build_response(shoot_id: str, labels: dict) -> ClusterRegionResponse:
 
 def _get_dynamic_client() -> dynamic.DynamicClient:
     """Load k8s config (in-cluster when deployed, local kubeconfig otherwise)."""
+    conf = client.Configuration()
     try:
-        config.load_incluster_config()
+        config.load_incluster_config(client_configuration=conf)
     except config.ConfigException:
-        config.load_kube_config()
-    return dynamic.DynamicClient(client.ApiClient())
+        config.load_kube_config(client_configuration=conf)
+    return dynamic.DynamicClient(client.ApiClient(configuration=conf))
 
 
 async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
