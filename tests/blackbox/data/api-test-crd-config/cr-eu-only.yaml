@@ -1,0 +1,131 @@
+apiVersion: infrastructuremanager.kyma-project.io/v1
+kind: Runtime
+metadata:
+  labels:
+    kyma-project.io/instance-id: 7d4e9c12-a3b5-4f8e-b2c1-6a9d0e3f7b5c
+    kyma-project.io/runtime-id: b2c3d4e5-f6a7-8901-bcde-f23456789012
+    kyma-project.io/broker-plan-id: 8d0b6c4e-3f2a-5b9d-c4e7-0f8a1b3c5d7e
+    kyma-project.io/broker-plan-name: aws
+    kyma-project.io/global-account-id: 5f8e2a1b-c4d7-4e9f-a6b3-8d0c1e2f3a4b
+    kyma-project.io/subaccount-id: 2a4c6e80-b1d3-5f7a-9c0e-2b4d6f8a1c3e
+    kyma-project.io/shoot-name: c-b2c3d4e
+    kyma-project.io/region: eu-west-1
+    kyma-project.io/platform-region: cf-eu11
+    kyma-project.io/provider: aws
+    operator.kyma-project.io/kyma-name: my-kyma-runtime-eu
+  name: b2c3d4e5-f6a7-8901-bcde-f23456789012
+  namespace: kcp-system
+spec:
+  shoot:
+    # spec.shoot.name is required
+    name: c-b2c3d4e
+    # spec.shoot.purpose is required
+    purpose: production
+    # spec.shoot.region is required
+    region: eu-west-1
+    # spec.shoot.platformRegion is required
+    platformRegion: "cf-eu11"
+    # spec.shoot.secretBindingName is required
+    secretBindingName: "my-aws-secret-binding-eu"
+    # spec.shoot.enforceSeedLocation is optional ; it allows to make sure the seed cluster will be located in the same region as the runtime
+    enforceSeedLocation: true
+    # spec.shoot.enableNvidiaOpenshell is optional ; when set to true, enables the shoot-nvidia-openshell Gardener extension for GPU support
+    # enableNvidiaOpenshell: true
+    kubernetes:
+      # spec.shoot.kubernetes.version is optional, when not provided default will be used
+      # Will be modified by the SRE
+      version: "1.28.7"
+      kubeAPIServer:
+        # spec.shoot.kubernetes.kubeAPIServer.oidcConfig is required
+        oidcConfig:
+          clientID: 23456789-bcde-fghi-jklm-234567890123 #gitleaks:allow
+          groupsClaim: groups
+          issuerURL: https://kyma.accounts.ondemand.com
+          signingAlgs:
+            - RS256
+          usernameClaim: sub
+        # spec.shoot.kubernetes.kubeAPIServer.additionalOidcConfig is optional, not implemented in the first KIM release
+        additionalOidcConfig:
+          - clientID: 98765432-edcb-ihgf-mlkj-321098765432 #gitleaks:allow
+            groupsClaim: groups
+            issuerURL: https://additional.auth.mycompany.com
+            signingAlgs:
+              - RS256
+            usernameClaim: sub
+            usernamePrefix: 'mycompany'
+        # spec.shoot.kubernetes.kubeAPIServer.acl is optional, if not provided, no restrictions to API server will be applied
+        acl:
+          allowedCIDRs:
+            - "10.0.0.1/32"
+            - "172.16.0.0/24"
+            - "192.168.1.0/16"
+    provider:
+      # spec.shoot.provider.type is required
+      type: aws
+      # spec.shoot.provider.workers is required
+      workers:
+        - machine:
+            # spec.shoot.workers.machine.type is required
+            type: m6i.large
+            # spec.shoot.workers.machine.image is optional, when not provider default will be used
+            # Will be modified by the SRE
+            image:
+              name: gardenlinux
+              version: 1312.3.0
+          # spec.shoot.workers.volume is required for the first release
+          # Probably can be moved into KIM, as it is hardcoded in KEB, and not dependent on plan
+          volume:
+            type: gp2
+            size: 50Gi
+          # spec.shoot.workers.zones is required
+          zones:
+            - eu-west-1a
+            - eu-west-1b
+            - eu-west-1c
+          # spec.shoot.workers.name is optional, if not provided default will be used
+          name: cpu-worker-0
+          # spec.shoot.workers.minimum is required
+          minimum: 3
+          # spec.shoot.workers.maximum is required
+          maximum: 20
+          # spec.shoot.workers.maxSurge is required in the first release.
+          # It can be optional in the future, as it equals to zone count
+          maxSurge: 3
+          # spec.shoot.workers.maxUnavailable is required in the first release.
+          # It can be optional in the future, as it is always set to 0
+          maxUnavailable: 0
+          # enabling gVisor container runtime for this worker pool
+          cri:
+            name: containerd
+            containerRuntimes:
+            # See configuration options for gVisor container runtime at https://github.com/gardener/gardener-extension-runtime-gvisor
+              - type: gvisor 
+                providerConfig:
+                  apiVersion: gvisor.runtime.extensions.config.gardener.cloud/v1alpha1
+                  kind: GVisorConfiguration
+                  configFlags:
+                    debug: "false"
+                    net-raw: "false"
+                    nvproxy: "false"
+    # spec.shoot.Networking is required
+    networking:
+      pods: 100.64.0.0/12
+      nodes: 10.250.0.0/16
+      services: 100.104.0.0/13
+    # spec.shoot.controlPlane is required
+    controlPlane:
+      highAvailability:
+        failureTolerance:
+          type: zone
+  security:
+    networking:
+      filter:
+        # spec.security.networking.filter.egress.enabled is required
+        egress:
+          enabled: false
+        # spec.security.networking.filter.ingress.enabled is optional (default=false), not implemented in the first KIM release
+        ingress:
+          enabled: true
+    # spec.security.administrators is required
+    administrators:
+      - admin@mycompany.com
