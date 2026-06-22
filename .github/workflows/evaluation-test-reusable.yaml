@@ -102,6 +102,16 @@ jobs:
           kubectl version
           echo "::endgroup::"
 
+      - name: KIM CRD Setup - Install Runtime CRD
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kyma-project/kyma-infrastructure-manager/refs/heads/main/config/crd/bases/infrastructuremanager.kyma-project.io_runtimes.yaml
+
+      - name: KIM CRD Setup - Create kcp-system namespace and apply test Runtime CRs
+        run: |
+          kubectl create namespace kcp-system
+          kubectl apply -f tests/blackbox/data/api-test-crd-config/cr-general.yaml
+          kubectl apply -f tests/blackbox/data/api-test-crd-config/cr-eu-only.yaml
+
       - name: Redis Setup - Deploy Redis using Helm
         run: |
           kubectl create namespace redis
