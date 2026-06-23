@@ -9,7 +9,8 @@ Address review comments on GitHub pull requests using the `gh` CLI.
 
 ## Prerequisites
 
-- There are not uncommitted changes in the working directory.
+- There are no uncommitted changes in the working directory.
+
 - There are no unpushed commits in the current branch.
 - The branch is uptodate from remote (e.g., `git pull origin <branch>`).
 
