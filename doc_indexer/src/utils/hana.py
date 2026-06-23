@@ -22,7 +22,9 @@ def create_hana_connection(url: str, port: int, user: str, password: str) -> dba
     except dbapi.Error:
         logger.exception("Connection to Hana Cloud failed.", extra={"url": url, "port": port, "user": user})
     except Exception:
-        logger.exception("Unknown error while connecting to Hana Cloud.", extra={"url": url, "port": port, "user": user})
+        logger.exception(
+            "Unknown error while connecting to Hana Cloud.", extra={"url": url, "port": port, "user": user}
+        )
     return None
 
 
