@@ -23,7 +23,7 @@ Check the current changes in the working directory.
 
 ### 2. Select files to commit
 
-Ask the user if they want to commit all changes or select which files they want to include in the commit. If there are untracked files.
+Ask the user if they want to commit all changes or select which files they want to include in the commit. If there are untracked files, ask the user if they should be included.
 
 ### 3. Check for any secrets in the files.
 

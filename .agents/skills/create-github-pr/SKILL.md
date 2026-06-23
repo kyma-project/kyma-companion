@@ -62,7 +62,7 @@ git push -u origin HEAD
 
 ### Generate PR title and description
 
-Follow the skill `.agents/skills/pr-description/SKILL.md` guildelines to generate a PR title and description.
+Follow the skill `.agents/skills/pr-description/SKILL.md` guidelines to generate a PR title and description.
    
 ### Target a Different Branch
 
