@@ -27,5 +27,6 @@ Changes proposed in this pull request and why:
   - [ ] Integration tests (add label `run-integration-test` to the PR to run)
   - [ ] Evaluation tests (add label `evaluation requested` to the PR to run)
   - [ ] API tests (add label `api-tests` to the PR to run)
-  - [ ] Acceptance Criterias (ACs) mentioned in the issue.
+  - [ ] Acceptance Criteria (ACs) mentioned in the issue.
+
 
