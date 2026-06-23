@@ -267,3 +267,6 @@ doc_indexer/data/*
 /tests/.deepeval_telemetry.txt
 tests/blackbox/.deepeval_telemetry.txt
 tmp
+
+modg.yaml
+.claude/cve-triage
