@@ -22,7 +22,6 @@ def _configure_logging() -> None:
 
     root = logging.getLogger()
     root.setLevel(LOG_LEVEL)
-    root.handlers.clear()
     root.addHandler(handler)
 
 

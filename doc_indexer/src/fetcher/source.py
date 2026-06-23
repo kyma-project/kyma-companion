@@ -33,5 +33,5 @@ def get_documents_sources(path: str) -> list[DocumentsSource]:
         json_obj = json.load(f)
         for item in json_obj:
             sources.append(DocumentsSource(**item))
-    logger.info(f"Loaded {len(sources)} document source(s)", extra={"path": path})
+    logger.info("Loaded document sources", extra={"path": path, "count": len(sources)})
     return sources
