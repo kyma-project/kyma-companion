@@ -277,6 +277,7 @@ class AdaptiveSplitMarkdownIndexer:
                         batch = []
 
                         # Wait before processing next batch
+                        logger.debug("Rate limiting: sleeping 3s before next batch")
                         time.sleep(3)
 
                 # Process any remaining documents in the final batch

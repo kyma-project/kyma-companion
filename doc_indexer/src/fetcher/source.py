@@ -3,6 +3,10 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
+from utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class SourceType(StrEnum):
     """Enum for the documents source type."""
@@ -23,9 +27,11 @@ class DocumentsSource(BaseModel):
 
 def get_documents_sources(path: str) -> list[DocumentsSource]:
     """Reads the documents sources from the json file."""
+    logger.info("Loading document sources", extra={"path": path})
     sources = []
     with open(path) as f:
         json_obj = json.load(f)
         for item in json_obj:
             sources.append(DocumentsSource(**item))
+    logger.info(f"Loaded {len(sources)} document source(s)", extra={"path": path})
     return sources
