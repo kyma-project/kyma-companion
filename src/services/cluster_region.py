@@ -124,6 +124,13 @@ async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
             detail=f"Runtime CR not found for shoot-id '{shoot_id}'",
         )
 
+    if len(items) > 1:
+        logger.error(f"Multiple Runtime CRs found for shoot_id={shoot_id} (count={len(items)})")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f"Multiple Runtime CRs found for shoot-id '{shoot_id}'",
+        )
+
     labels: dict = items[0].get("metadata", {}).get("labels", {}) or {}
     response = _build_response(shoot_id, labels)
 

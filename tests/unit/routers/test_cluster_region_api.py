@@ -94,6 +94,45 @@ class TestClusterRegionEndpoint:
 # ---------------------------------------------------------------------------
 
 
+class TestClusterRegionShootIdValidation:
+    @pytest.mark.parametrize(
+        "shoot_id",
+        [
+            "valid-shoot",
+            "a",
+            "A1",
+            "shoot.name_1-x",
+            "a" * 63,
+        ],
+    )
+    @patch("routers.cluster_region_api.get_cluster_region", new_callable=AsyncMock)
+    def test_valid_shoot_ids_pass(self, mock_get, shoot_id, test_client):
+        mock_get.return_value = _make_response(**{"shoot-id": shoot_id})
+
+        response = test_client.get(f"/api/tools/cluster-region/{shoot_id}")
+
+        assert response.status_code == HTTPStatus.OK
+
+    @pytest.mark.parametrize(
+        "shoot_id",
+        [
+            "a" * 64,  # too long
+            "shoot,other",  # comma — selector injection
+            "!shoot",  # leading ! — selector injection
+            "shoot id",  # space
+            "-shoot",  # leading dash
+            "shoot-",  # trailing dash
+            "shoot=value",  # equals sign
+        ],
+    )
+    @patch("routers.cluster_region_api.get_cluster_region", new_callable=AsyncMock)
+    def test_invalid_shoot_ids_rejected(self, mock_get, shoot_id, test_client):
+        response = test_client.get(f"/api/tools/cluster-region/{shoot_id}")
+
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        mock_get.assert_not_called()
+
+
 class TestClusterRegionErrorHandling:
     @patch("routers.cluster_region_api.get_cluster_region", new_callable=AsyncMock)
     def test_not_found(self, mock_get, test_client):

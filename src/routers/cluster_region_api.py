@@ -7,8 +7,9 @@ from the caller — the pod's in-cluster service account is used.
 """
 
 from http import HTTPStatus
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path
 
 from routers.common import API_PREFIX, ClusterRegionResponse
 from services.cluster_region import get_cluster_region
@@ -24,7 +25,16 @@ router = APIRouter(
 
 
 @router.get("/cluster-region/{shoot_id}", response_model=ClusterRegionResponse)
-async def cluster_region(shoot_id: str) -> ClusterRegionResponse:
+async def cluster_region(
+    shoot_id: Annotated[
+        str,
+        Path(
+            min_length=1,
+            max_length=63,
+            pattern=r"^[A-Za-z0-9]([A-Za-z0-9._-]{0,61}[A-Za-z0-9])?$",
+        ),
+    ],
+) -> ClusterRegionResponse:
     """
     Return region information for the SKR identified by the given shoot-id.
 
