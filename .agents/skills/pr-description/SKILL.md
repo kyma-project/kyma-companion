@@ -28,9 +28,9 @@ Read `.github/pull-request-template.md` from the repository root.
 Run the following commands to understand what changed:
 
 ```bash
-git log main..HEAD --oneline
-git diff main...HEAD --stat
-git diff main...HEAD
+git log <base-branch>..HEAD --oneline
+git diff <base-branch>...HEAD --stat
+git diff <base-branch>...HEAD
 ```
 
 Use the commit messages and diff to understand the nature and scope of the changes.
