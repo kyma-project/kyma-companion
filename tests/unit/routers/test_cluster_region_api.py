@@ -123,6 +123,11 @@ class TestClusterRegionShootIdValidation:
             "-shoot",  # leading dash
             "shoot-",  # trailing dash
             "shoot=value",  # equals sign
+            "shoot,!env=prod",  # comma + negation clause
+            "s1,s2,s3",  # multiple comma-separated selectors
+            "shoot notExist",  # space-separated injection attempt
+            "shoot!=value",  # not-equal operator
+            "shoot(notin)",  # set-based operator attempt
         ],
     )
     @patch("routers.cluster_region_api.get_cluster_region", new_callable=AsyncMock)
