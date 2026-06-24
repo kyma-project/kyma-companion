@@ -32,7 +32,6 @@ _KCP_NAMESPACE = "kcp-system"
 # Runtime CR group/version/plural
 _RUNTIME_GROUP = "infrastructuremanager.kyma-project.io"
 _RUNTIME_VERSION = "v1"
-_RUNTIME_PLURAL = "runtimes"
 
 # Redis cache TTL: 3 days in seconds
 _CACHE_TTL_SECONDS = 3 * 24 * 60 * 60
