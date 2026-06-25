@@ -82,6 +82,46 @@ else
   CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
 fi
 
+# collect merged PRs since the previous release and group by conventional commit prefix.
+FEATURES=""
+FIXES=""
+OTHER=""
+if [ -n "${PREVIOUS_TAG:-}" ]; then
+  echo "Fetching commits between ${PREVIOUS_TAG} and ${RELEASE_TAG}..."
+  compare_response=$(curl -sL \
+    -H "Accept: application/vnd.github+json" \
+    -H "${GITHUB_AUTH_HEADER}" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "${GITHUB_URL}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}")
+  compare_status=$(echo "${compare_response}" | jq -r '.status // empty')
+  if [ -n "${compare_status}" ]; then
+    echo "Warning: Failed to fetch compare (status: ${compare_status}). Sections will be empty."
+  else
+    # extract first line of each commit message, deduplicate by PR number.
+    while IFS= read -r msg; do
+      # skip merge commits and bump commits.
+      if echo "${msg}" | grep -qE '^(Merge |Bump )'; then
+        continue
+      fi
+      # extract PR number from trailing (#NNN).
+      pr_num=$(echo "${msg}" | grep -oE '\(#[0-9]+\)$' | tr -d '()')
+      # strip the conventional commit prefix (e.g. "feat: ", "fix(scope): ").
+      title=$(echo "${msg}" | sed -E 's/^[a-z]+\([^)]*\): //' | sed -E 's/^[a-z]+: //' | sed -E 's/ \(#[0-9]+\)$//')
+      if [ -z "${pr_num}" ]; then
+        entry="* ${title}"
+      else
+        entry="* ${title} (${pr_num})"
+      fi
+      prefix=$(echo "${msg}" | grep -oE '^[a-z]+(\([^)]*\))?:' | grep -oE '^[a-z]+' || true)
+      case "${prefix}" in
+        feat)    FEATURES="${FEATURES}${entry}\n" ;;
+        fix|sec) FIXES="${FIXES}${entry}\n" ;;
+        *)       OTHER="${OTHER}${entry}\n" ;;
+      esac
+    done < <(echo "${compare_response}" | jq -r '.commits[] | .commit.message | split("\n")[0]')
+  fi
+fi
+
 # build the release body using the Kyma release notes template.
 RELEASE_BODY="# Release Notes — v${RELEASE_TAG}
 
@@ -89,8 +129,13 @@ RELEASE_BODY="# Release Notes — v${RELEASE_TAG}
 
 ## New Features
 
+$(printf '%b' "${FEATURES}")
 ## Bug Fixes
 
+$(printf '%b' "${FIXES}")
+## Other
+
+$(printf '%b' "${OTHER}")
 ## Full Changelog
 
 Compare changes between versions: [Changelog](${CHANGELOG_LINK})"
