@@ -48,3 +48,5 @@
 
 # Skills and Claude configuration — reviewed by ai-force, not technical writers
 /.claude/ @kyma-project/ai-force
+CLAUDE.md @kyma-project/ai-force
+AGENTS.md @kyma-project/ai-force
