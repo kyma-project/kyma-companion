@@ -110,7 +110,8 @@ if [ -n "${PREVIOUS_TAG:-}" ]; then
       if [ -z "${pr_num}" ]; then
         entry="* ${title}"
       else
-        entry="* ${title} (${pr_num})"
+        pr_link="[${pr_num}](https://github.com/${REPOSITORY_FULL_NAME}/pull/${pr_num#\#})"
+        entry="* ${title} (${pr_link})"
       fi
       prefix=$(echo "${msg}" | grep -oE '^[a-z]+(\([^)]*\))?:' | grep -oE '^[a-z]+' || true)
       case "${prefix}" in
