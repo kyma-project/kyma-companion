@@ -63,17 +63,23 @@ GITHUB_AUTH_HEADER="Authorization: Bearer ${GITHUB_TOKEN}"
 
 # fetch the latest published release tag to build the changelog link.
 echo "Fetching the latest published release tag..."
-PREVIOUS_TAG=$(curl -sL \
+latest_release_response=$(curl -sL \
   -H "Accept: application/vnd.github+json" \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "${GITHUB_AUTH_HEADER}" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/${REPOSITORY_FULL_NAME}/releases/latest" | jq -r '.tag_name // empty')
-if [ -n "${PREVIOUS_TAG}" ]; then
-  echo "Previous release tag: ${PREVIOUS_TAG}"
-  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
-else
+  "${GITHUB_URL}/releases/latest")
+latest_release_status=$(echo "${latest_release_response}" | jq -r '.status // empty')
+if [ "${latest_release_status}" == "404" ]; then
   echo "No previous release found."
   CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/releases/tag/${RELEASE_TAG}"
+elif [ -n "${latest_release_status}" ]; then
+  echo "Error: Failed to fetch latest release (status: ${latest_release_status})."
+  echo "${latest_release_response}" | jq
+  exit 1
+else
+  PREVIOUS_TAG=$(echo "${latest_release_response}" | jq -r '.tag_name // empty')
+  echo "Previous release tag: ${PREVIOUS_TAG}"
+  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
 fi
 
 # build the release body using the Kyma release notes template.
