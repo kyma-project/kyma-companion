@@ -233,6 +233,25 @@ class SearchKymaDocResponse(BaseModel):
 
 
 # ============================================================================
+# Cluster Region Models
+# ============================================================================
+
+
+class ClusterRegionResponse(BaseModel):
+    """Response model for cluster region info."""
+
+    shoot_id: str = Field(..., alias="shoot-id", description="Shoot cluster identifier")
+    region: str = Field(..., description="Cloud provider region (e.g. us-east-1)")
+    platform_region: str = Field(..., alias="platformRegion", description="SAP BTP platform region")
+    provider: str = Field(..., description="Cloud provider (e.g. AWS, GCP, Azure)")
+    is_eu_access_only: bool = Field(
+        ..., alias="isEUAccessOnly", description="True if the cluster is EU-Access restricted"
+    )
+
+    model_config = {"populate_by_name": True}
+
+
+# ============================================================================
 # Shared Dependencies
 # ============================================================================
 
