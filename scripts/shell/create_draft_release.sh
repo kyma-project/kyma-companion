@@ -97,14 +97,14 @@ if [ -n "${PREVIOUS_TAG:-}" ]; then
   if [ -n "${compare_status}" ]; then
     echo "Warning: Failed to fetch compare (status: ${compare_status}). Sections will be empty."
   else
-    # extract first line of each commit message, deduplicate by PR number.
+    # extract first line of each commit message and group by conventional commit prefix.
     while IFS= read -r msg; do
       # skip merge commits and bump commits.
       if echo "${msg}" | grep -qE '^(Merge |Bump )'; then
         continue
       fi
-      # extract PR number from trailing (#NNN).
-      pr_num=$(echo "${msg}" | grep -oE '\(#[0-9]+\)$' | tr -d '()')
+      # extract PR number from trailing (#NNN); non-fatal if absent.
+      pr_num=$(echo "${msg}" | grep -oE '\(#[0-9]+\)$' | tr -d '()' || true)
       # strip the conventional commit prefix (e.g. "feat: ", "fix(scope): ").
       title=$(echo "${msg}" | sed -E 's/^[a-z]+\([^)]*\): //' | sed -E 's/^[a-z]+: //' | sed -E 's/ \(#[0-9]+\)$//')
       if [ -z "${pr_num}" ]; then
