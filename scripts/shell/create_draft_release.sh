@@ -61,16 +61,96 @@ echo "**************************************************************************
 GITHUB_URL=https://api.github.com/repos/${REPOSITORY_FULL_NAME}
 GITHUB_AUTH_HEADER="Authorization: Bearer ${GITHUB_TOKEN}"
 
+# fetch the latest published release tag to build the changelog link.
+echo "Fetching the latest published release tag..."
+latest_release_response=$(curl -sL \
+  -H "Accept: application/vnd.github+json" \
+  -H "${GITHUB_AUTH_HEADER}" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "${GITHUB_URL}/releases/latest")
+latest_release_status=$(echo "${latest_release_response}" | jq -r '.status // empty')
+if [ "${latest_release_status}" == "404" ]; then
+  echo "No previous release found."
+  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/releases/tag/${RELEASE_TAG}"
+elif [ -n "${latest_release_status}" ]; then
+  echo "Error: Failed to fetch latest release (status: ${latest_release_status})."
+  echo "${latest_release_response}" | jq
+  exit 1
+else
+  PREVIOUS_TAG=$(echo "${latest_release_response}" | jq -r '.tag_name // empty')
+  echo "Previous release tag: ${PREVIOUS_TAG}"
+  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
+fi
+
+# collect merged PRs since the previous release and group by conventional commit prefix.
+FEATURES=""
+FIXES=""
+OTHER=""
+if [ -n "${PREVIOUS_TAG:-}" ]; then
+  echo "Fetching commits between ${PREVIOUS_TAG} and ${RELEASE_TAG}..."
+  compare_response=$(curl -sL \
+    -H "Accept: application/vnd.github+json" \
+    -H "${GITHUB_AUTH_HEADER}" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "${GITHUB_URL}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}")
+  compare_status=$(echo "${compare_response}" | jq -r '.status // empty')
+  if [ -n "${compare_status}" ]; then
+    echo "Warning: Failed to fetch compare (status: ${compare_status}). Sections will be empty."
+  else
+    # extract first line of each commit message and group by conventional commit prefix.
+    while IFS= read -r msg; do
+      # skip merge commits and bump commits.
+      if echo "${msg}" | grep -qE '^(Merge |Bump )'; then
+        continue
+      fi
+      # extract PR number from trailing (#NNN); non-fatal if absent.
+      pr_num=$(echo "${msg}" | grep -oE '\(#[0-9]+\)$' | tr -d '()' || true)
+      # strip the conventional commit prefix (e.g. "feat: ", "fix(scope): ").
+      title=$(echo "${msg}" | sed -E 's/^[a-z]+\([^)]*\): //' | sed -E 's/^[a-z]+: //' | sed -E 's/ \(#[0-9]+\)$//')
+      if [ -z "${pr_num}" ]; then
+        entry="* ${title}"
+      else
+        pr_link="[${pr_num}](https://github.com/${REPOSITORY_FULL_NAME}/pull/${pr_num#\#})"
+        entry="* ${title} (${pr_link})"
+      fi
+      prefix=$(echo "${msg}" | grep -oE '^[a-z]+(\([^)]*\))?:' | grep -oE '^[a-z]+' || true)
+      case "${prefix}" in
+        feat)    FEATURES="${FEATURES}${entry}\n" ;;
+        fix|sec) FIXES="${FIXES}${entry}\n" ;;
+        *)       OTHER="${OTHER}${entry}\n" ;;
+      esac
+    done < <(echo "${compare_response}" | jq -r '.commits[] | .commit.message | split("\n")[0]')
+  fi
+fi
+
+# build the release body using the Kyma release notes template.
+RELEASE_BODY="# Release Notes — v${RELEASE_TAG}
+
+## Deprecations/Breaking Changes
+
+## New Features
+
+$(printf '%b' "${FEATURES}")
+## Bug Fixes
+
+$(printf '%b' "${FIXES}")
+## Other
+
+$(printf '%b' "${OTHER}")
+## Full Changelog
+
+Compare changes between versions: [Changelog](${CHANGELOG_LINK})"
+
 echo "Creating a draft release for tag ${RELEASE_TAG}..."
-# it will create a draft release for the specified release tag.
 JSON_PAYLOAD=$(jq -n \
   --arg tag_name "$RELEASE_TAG" \
   --arg name "$RELEASE_TAG" \
+  --arg body "$RELEASE_BODY" \
   '{
     "tag_name": $tag_name,
     "name": $name,
-    "draft": true,
-    "generate_release_notes": true
+    "body": $body,
+    "draft": true
   }')
 
 CURL_RESPONSE=$(curl -L \
