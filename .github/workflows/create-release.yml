@@ -314,6 +314,7 @@ jobs:
     with:
       IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ needs.get-image-sha.outputs.sha }}"
       DOCS_TABLE_NAME: "kc_release_${{ inputs.name }}_e2e_pre"
+      CHECKOUT_REF: ${{ needs.get-image-sha.outputs.sha }}
 
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
