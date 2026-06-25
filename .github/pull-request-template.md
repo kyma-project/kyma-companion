@@ -9,7 +9,7 @@ If the pull request requires a decision, follow the [decision-making process](ht
 
 **Description**
 
-Changes proposed in this pull request:
+Changes proposed in this pull request and why:
 
 - ...
 - ...
@@ -17,3 +17,16 @@ Changes proposed in this pull request:
 
 **Related issue(s)**
 <!-- If you refer to a particular issue, provide its number. For example, `Resolves #123`, `Fixes #43`, or `See also #33`. -->
+
+**Definition of done**
+
+- [ ] The PR is linked to a GitHub issue.
+- [ ] Related issues are linked. To link internal trackers, use the issue IDs like `ai-force#4567` or `joule-capability#4321`.
+- [ ] All necessary steps are delivered, for example, tests, documentation, merging.
+  - [ ] Unit tests
+  - [ ] Integration tests (add label `run-integration-test` to the PR to run)
+  - [ ] Evaluation tests (add label `evaluation requested` to the PR to run)
+  - [ ] API tests (add label `api-tests` to the PR to run)
+  - [ ] Acceptance Criteria (ACs) mentioned in the issue.
+
+
