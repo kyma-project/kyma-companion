@@ -61,16 +61,44 @@ echo "**************************************************************************
 GITHUB_URL=https://api.github.com/repos/${REPOSITORY_FULL_NAME}
 GITHUB_AUTH_HEADER="Authorization: Bearer ${GITHUB_TOKEN}"
 
+# fetch the latest published release tag to build the changelog link.
+echo "Fetching the latest published release tag..."
+PREVIOUS_TAG=$(curl -sL \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/${REPOSITORY_FULL_NAME}/releases/latest" | jq -r '.tag_name // empty')
+if [ -n "${PREVIOUS_TAG}" ]; then
+  echo "Previous release tag: ${PREVIOUS_TAG}"
+  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
+else
+  echo "No previous release found."
+  CHANGELOG_LINK="https://github.com/${REPOSITORY_FULL_NAME}/releases/tag/${RELEASE_TAG}"
+fi
+
+# build the release body using the Kyma release notes template.
+RELEASE_BODY="# Release Notes — v${RELEASE_TAG}
+
+## Deprecations/Breaking Changes
+
+## New Features
+
+## Bug Fixes
+
+## Full Changelog
+
+Compare changes between versions: [Changelog](${CHANGELOG_LINK})"
+
 echo "Creating a draft release for tag ${RELEASE_TAG}..."
-# it will create a draft release for the specified release tag.
 JSON_PAYLOAD=$(jq -n \
   --arg tag_name "$RELEASE_TAG" \
   --arg name "$RELEASE_TAG" \
+  --arg body "$RELEASE_BODY" \
   '{
     "tag_name": $tag_name,
     "name": $name,
-    "draft": true,
-    "generate_release_notes": true
+    "body": $body,
+    "draft": true
   }')
 
 CURL_RESPONSE=$(curl -L \
