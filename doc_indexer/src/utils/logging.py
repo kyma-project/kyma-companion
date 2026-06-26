@@ -1,24 +1,34 @@
-from logging import Formatter, Logger, StreamHandler, getLogger
+import logging
+import sys
+from logging import Logger as LoggerType
+from logging import getLogger
+
+from pythonjsonlogger.json import JsonFormatter
 
 from utils.settings import LOG_LEVEL
 
+_logging_configured = False
 
-def get_logger(name: str) -> Logger:
-    """
-    Get a configured logger instance.
-    Args:
-        name: The name of the logger, typically __name__ from the calling module
-    Returns:
-        A configured logger instance
-    """
-    logger = getLogger(name)
-    formatter = Formatter(
-        fmt="{asctime} - {levelname} - {name} : {message}",
-        style="{",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    console_handler = StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.setLevel(LOG_LEVEL)
-    return logger
+
+def _configure_logging() -> None:
+    global _logging_configured  # noqa: PLW0603
+    if _logging_configured:
+        return
+    _logging_configured = True
+
+    formatter = JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+
+    root = logging.getLogger()
+    root.setLevel(LOG_LEVEL)
+    root.addHandler(handler)
+
+
+_configure_logging()
+
+
+def get_logger(name: str) -> LoggerType:
+    """Return a logger that inherits from the root logger configuration."""
+    _configure_logging()
+    return getLogger(name)

@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+import time
 
 from fetcher.fetcher import DocumentsFetcher
 from hdbcli import dbapi
@@ -34,15 +35,15 @@ logger = get_logger(__name__)
 
 def run_fetcher() -> None:
     """Entry function to run the document fetcher."""
-    # create an instance of the fetcher.
+    logger.info("Starting fetch task")
+    start = time.monotonic()
     fetcher = DocumentsFetcher(
         source_file=DOCS_SOURCES_FILE_PATH,
         output_dir=DOCS_PATH,
         tmp_dir=TMP_DIR,
     )
-    # run the fetcher
     fetcher.run()
-    # print the filtered documents
+    logger.info(f"Fetch completed in {time.monotonic() - start:.1f}s")
     try:
         subprocess.run(["tree", DOCS_PATH])
     except Exception:
@@ -63,6 +64,9 @@ def run_indexer(
         docs_path: Path to the documents to index. Defaults to DOCS_PATH from config.
         table_name: Name of the table to index into. Defaults to DOCS_TABLE_NAME from config.
     """
+    logger.info("Starting index task")
+    start = time.monotonic()
+
     if embeddings_model is None:
         embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
         create_embedding = create_embedding_factory(openai_embedding_creator)
@@ -76,6 +80,7 @@ def run_indexer(
 
     indexer = AdaptiveSplitMarkdownIndexer(docs_path, embeddings_model, hana_conn, table_name)
     indexer.index()
+    logger.info(f"Index completed in {time.monotonic() - start:.1f}s")
 
 
 def run_drop(
@@ -88,6 +93,7 @@ def run_drop(
         hana_conn: Hana DB connection to use. If None, created from config.
         table_name: Name of the table to drop. Defaults to DOCS_TABLE_NAME from config.
     """
+    logger.info("Starting drop task", extra={"table": table_name})
     if hana_conn is None:
         hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
         if not hana_conn:
@@ -124,12 +130,12 @@ def run_list_tables(
 
 
 if __name__ == "__main__":
-    # read command line argument.
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
     parser.add_argument("task", choices=["index", "fetch", "drop", "tables"])
     args = parser.parse_args()
 
-    # run the specified task.
+    logger.info("Indexer job starting", extra={"task": args.task})
+
     if args.task == TASK_FETCH:
         run_fetcher()
     elif args.task == TASK_INDEX:

@@ -48,6 +48,7 @@ def test_clone_repo(
 ):
     # Given
     mock_os_path_exists.return_value = given_dir_exists
+    mock_subprocess_run.return_value.returncode = 0
 
     # When
     repo_path = clone_repo(given_repo_url, given_clone_dir)
