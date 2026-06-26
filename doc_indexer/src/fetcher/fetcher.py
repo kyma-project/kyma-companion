@@ -36,7 +36,7 @@ class DocumentsFetcher:
 
     def fetch_documents(self, source: DocumentsSource) -> None:
         """Fetch the documents from the source."""
-        logger.info(f"******* Fetching documents for: {source.name}")
+        logger.info("Fetching documents", extra={"source": source.name, "url": source.url})
 
         if not re.fullmatch(r"[A-Za-z0-9_-]+", source.name):
             raise ValueError(f"Invalid source name: {source.name}")

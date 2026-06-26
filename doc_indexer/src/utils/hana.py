@@ -9,6 +9,7 @@ _ERR_SQL_INV_TABLE = 259  # HANA error code for invalid/missing table name
 
 def create_hana_connection(url: str, port: int, user: str, password: str) -> dbapi.Connection | None:
     """Create a connection to the Hana Cloud DB."""
+    logger.info("Connecting to HANA Cloud", extra={"url": url, "port": port, "user": user})
     try:
         connection = dbapi.connect(
             address=url,
@@ -16,11 +17,14 @@ def create_hana_connection(url: str, port: int, user: str, password: str) -> dba
             user=user,
             password=password,
         )
+        logger.info("Connected to HANA Cloud", extra={"url": url, "port": port, "user": user})
         return connection
     except dbapi.Error:
-        logger.exception("Connection to Hana Cloud failed.")
+        logger.exception("Connection to Hana Cloud failed.", extra={"url": url, "port": port, "user": user})
     except Exception:
-        logger.exception("Unknown error occurred.")
+        logger.exception(
+            "Unknown error while connecting to Hana Cloud.", extra={"url": url, "port": port, "user": user}
+        )
     return None
 
 

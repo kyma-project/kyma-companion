@@ -18,6 +18,7 @@ def load_documents(docs_path: str) -> list[Document]:
     try:
         loader = DirectoryLoader(docs_path, loader_cls=TextLoader, recursive=True)
         docs = loader.load()
+        logger.info(f"Loaded {len(docs)} document(s)", extra={"path": docs_path})
         return docs
     except FileNotFoundError:
         logger.exception("Directory %s not found", docs_path)
