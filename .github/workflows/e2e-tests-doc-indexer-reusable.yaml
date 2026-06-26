@@ -11,6 +11,11 @@ on:
         required: true
         type: string
         description: "HANA table name to index into (must be unique, dropped automatically after the job)"
+      CHECKOUT_REF:
+        required: false
+        type: string
+        default: "main"
+        description: "Git ref to checkout for test assets (e.g. release branch SHA). Defaults to main."
 
 env:
   K3D_VERSION: "v5.8.3"
@@ -24,7 +29,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          ref: main
+          ref: ${{ inputs.CHECKOUT_REF }}
 
       - name: Install Kubectl
         run: |

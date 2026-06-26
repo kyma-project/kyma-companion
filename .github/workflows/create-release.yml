@@ -306,6 +306,16 @@ jobs:
       TEST_REPO_FULLNAME: ${{ github.repository }}
       TEST_REF: ${{ needs.get-image-sha.outputs.sha }}
 
+  run-e2e-tests-indexer-prerelease:
+    name: Run indexer e2e tests (pre-release)
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-doc-indexer-reusable.yaml@main
+    needs: get-image-sha
+    secrets: inherit
+    with:
+      IMAGE_NAME: "${{ vars.IMAGE_NAME_INDEXER }}:${{ needs.get-image-sha.outputs.sha }}"
+      DOCS_TABLE_NAME: "kc_release_${{ inputs.name }}_e2e_pre"
+      CHECKOUT_REF: ${{ needs.get-image-sha.outputs.sha }}
+
   bump-sec-scanners-release-branch:
     name: Bump image in sec-scanners-config on release branch
     environment: e2e
@@ -315,6 +325,7 @@ jobs:
         run-unit-tests,
         run-integration-tests,
         run-evaluation-tests,
+        run-e2e-tests-indexer-prerelease,
         run-integration-tests-indexer,
         run-unit-tests-indexer,
       ]
