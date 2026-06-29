@@ -412,14 +412,14 @@ class AsyncRedisSaver(BaseCheckpointSaver):
                 checkpoint_id = _parse_redis_checkpoint_key(_safe_decode(key))["checkpoint_id"]
                 pending_writes = await self._aload_pending_writes(thread_id, checkpoint_ns, checkpoint_id)
                 if result := _parse_redis_checkpoint_data(
-                    self.serde, key.decode(), data, pending_writes=pending_writes
+                    self.serde, _safe_decode(key), data, pending_writes=pending_writes
                 ):
                     yield result
 
     async def _aload_pending_writes(self, thread_id: str, checkpoint_ns: str, checkpoint_id: str) -> list[PendingWrite]:
         writes_key = _make_redis_checkpoint_writes_key(thread_id, checkpoint_ns, checkpoint_id, "*", None)
         matching_keys = await self.conn.keys(pattern=writes_key)
-        parsed_keys = [_parse_redis_checkpoint_writes_key(key.decode()) for key in matching_keys]
+        parsed_keys = [_parse_redis_checkpoint_writes_key(_safe_decode(key)) for key in matching_keys]
         pending_writes = _load_writes(
             self.serde,
             {
