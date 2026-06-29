@@ -45,6 +45,7 @@ dependencies = [
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
+aioresponses = ">=0.7.6,<0.7.9"
 deepeval = "^4.0.7"
 fakeredis = "^2.36.2"
 prettytable = "^3.18.0"
