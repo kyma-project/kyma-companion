@@ -1,4 +1,4 @@
-FROM langfuse/langfuse-worker:3.174.1
+FROM langfuse/langfuse-worker:3.200.0
 
 # ---- Override OCI labels (remove emojis) ----
 LABEL org.opencontainers.image.title="langfuse-worker" \

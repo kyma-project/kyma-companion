@@ -93,24 +93,17 @@ class CustomMetrics(metaclass=SingletonMeta):
         method = req.method
         # get the path of the request (without path parameters injected).
         path = ""
-        for route in req.app.routes:
+        routes = list(req.app.routes)
+        while routes:
+            route = routes.pop(0)
             match, _ = route.matches(req.scope)
-            if match != Match.FULL:
-                continue
-            if hasattr(route, "path"):
-                path = route.path
-                break
-            # FastAPI 0.137+ wraps included routers in _IncludedRouter which has no .path.
-            # Drill into original_router to find the matching inner route and prepend the prefix.
-            if hasattr(route, "original_router") and hasattr(route, "include_context"):
-                prefix = route.include_context.prefix or ""
-                for inner_route in route.original_router.routes:
-                    inner_match, _ = inner_route.matches(req.scope)
-                    if inner_match == Match.FULL and hasattr(inner_route, "path"):
-                        path = prefix + inner_route.path
-                        break
-                if path:
+            if match == Match.FULL:
+                if hasattr(route, "path"):
+                    path = route.path
                     break
+                # FastAPI 0.137+: _IncludedRouter wraps sub-routers; descend into them
+                if hasattr(route, "original_router") and hasattr(route.original_router, "routes"):
+                    routes = list(route.original_router.routes) + routes
 
         # wait for the response.
         start_time = time.perf_counter()
