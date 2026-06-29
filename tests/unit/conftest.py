@@ -1,3 +1,4 @@
+import inspect
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -15,11 +16,16 @@ from utils.settings import (
 # This is intentionally applied at module level rather than in a session-scoped fixture
 # to guarantee the patch is active before any test module is imported or collected,
 # since aioresponses is used at import time in some test modules.
+#
+# Only inject stream_writer when the installed aiohttp actually accepts it (>= 3.14.0).
+# On older aiohttp (< 3.14.0) the parameter does not exist and passing it would raise
+# a TypeError, so we gate the injection on an inspection of the original signature.
 _original_client_response_init = ClientResponse.__init__
+_stream_writer_required = "stream_writer" in inspect.signature(_original_client_response_init).parameters
 
 
 def _patched_client_response_init(self, *args, **kwargs):
-    if "stream_writer" not in kwargs:
+    if _stream_writer_required and "stream_writer" not in kwargs:
         mock_stream_writer = Mock()
         mock_stream_writer.output_size = 0
         kwargs["stream_writer"] = mock_stream_writer
