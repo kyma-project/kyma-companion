@@ -105,7 +105,7 @@ async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
             label_selector=f"{_LABEL_SHOOT_NAME}={shoot_id}",
         )
     except ApiException as e:
-        logger.error(f"Kubernetes API error fetching Runtime CR for shoot_id={shoot_id}: {e}")
+        logger.exception(f"Kubernetes API error fetching Runtime CR for shoot_id={shoot_id}")
         raise HTTPException(
             status_code=e.status if isinstance(e.status, int) else HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch Runtime CR: {e.reason}",
