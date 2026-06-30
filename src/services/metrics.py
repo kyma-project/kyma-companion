@@ -1,4 +1,5 @@
 import time
+from collections import deque
 from enum import Enum
 from http import HTTPStatus
 from typing import Any
@@ -93,24 +94,20 @@ class CustomMetrics(metaclass=SingletonMeta):
         method = req.method
         # get the path of the request (without path parameters injected).
         path = ""
-        for route in req.app.routes:
+        # Use a deque of (route, prefix) pairs so sub-router descent preserves the include prefix.
+        # deque.popleft() is O(1) unlike list.pop(0).
+        queue: deque[tuple[Any, str]] = deque((r, "") for r in req.app.routes)
+        while queue:
+            route, prefix = queue.popleft()
             match, _ = route.matches(req.scope)
-            if match != Match.FULL:
-                continue
-            if hasattr(route, "path"):
-                path = route.path
-                break
-            # FastAPI 0.137+ wraps included routers in _IncludedRouter which has no .path.
-            # Drill into original_router to find the matching inner route and prepend the prefix.
-            if hasattr(route, "original_router") and hasattr(route, "include_context"):
-                prefix = route.include_context.prefix or ""
-                for inner_route in route.original_router.routes:
-                    inner_match, _ = inner_route.matches(req.scope)
-                    if inner_match == Match.FULL and hasattr(inner_route, "path"):
-                        path = prefix + inner_route.path
-                        break
-                if path:
+            if match == Match.FULL:
+                if hasattr(route, "path"):
+                    path = prefix + route.path
                     break
+                # FastAPI 0.137+: _IncludedRouter wraps sub-routers; descend with prefix
+                if hasattr(route, "original_router") and hasattr(route.original_router, "routes"):
+                    route_prefix = getattr(route, "prefix", "") or ""
+                    queue.extendleft((r, prefix + route_prefix) for r in reversed(route.original_router.routes))
 
         # wait for the response.
         start_time = time.perf_counter()
