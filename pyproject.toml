@@ -19,7 +19,7 @@ requires-python = "==3.13.*"
 dependencies = [
   "aiohttp (>=3.13.5,<3.14.0)",
   "cryptography (>=49.0.0,<50.0.0)",
-  "fastapi[standard] (>=0.138.1,<0.139.0)",
+  "fastapi[standard] (>=0.138.2,<0.139.0)",
   "hdbcli (>=2.29.23,<3.0.0)",
   "kubernetes (>=36.0.2,<37.0.0)",
   "langchain (>=1.2,<2.0)",
