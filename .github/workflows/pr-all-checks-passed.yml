@@ -29,4 +29,3 @@ jobs:
           delay: "1" # minutes
           retries: "44"
           polling_interval: "1" # minutes
-          ignore_checks: "All Checks Passed"
