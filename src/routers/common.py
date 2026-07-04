@@ -10,6 +10,7 @@ from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
 from pydantic import BaseModel, Field
 
+from agents.kyma.react_agent import KymaReActAgent
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.encryption import Encryption
@@ -232,6 +233,25 @@ class SearchKymaDocResponse(BaseModel):
     query: str = Field(..., description="Original search query")
 
 
+class KymaAgentRequest(BaseModel):
+    """Request model for the Kyma ReAct agent endpoint."""
+
+    query: str = Field(
+        ...,
+        description="The question or task for the Kyma agent",
+        examples=[
+            "Why is my Kyma Function not starting?",
+            "What are the available APIRule versions?",
+        ],
+    )
+
+
+class KymaAgentResponse(BaseModel):
+    """Response model for the Kyma ReAct agent endpoint."""
+
+    answer: str = Field(..., description="The agent's final answer")
+
+
 # ============================================================================
 # Cluster Region Models
 # ============================================================================
@@ -427,3 +447,17 @@ async def get_k8s_auth_headers_from_encrypted_payload(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Failed to decrypt cluster authentication headers",
         ) from e
+
+
+async def init_kyma_react_agent(
+    models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
+    k8s_client: Annotated[IK8sClient, Depends(init_k8s_client)],
+) -> KymaReActAgent:
+    """
+    Initialize a KymaReActAgent for the current request.
+
+    The k8s_client is request-scoped (different callers may target different clusters),
+    so the agent is constructed per request. Models are shared via the singleton
+    _ModelsRegistry so LLM/embedding initialization only happens once.
+    """
+    return KymaReActAgent(models=models, k8s_client=k8s_client)
