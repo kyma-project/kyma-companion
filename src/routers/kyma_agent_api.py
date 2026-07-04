@@ -10,7 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from agents.kyma.react_agent import KymaReActAgent
+from agents.kyma.react_agent import KymaReActAgent, UINavigationContext
 from routers.common import (
     API_PREFIX,
     KymaAgentRequest,
@@ -46,7 +46,13 @@ async def kyma_agent_chat(
     logger.info(f"Kyma agent chat request: query={request.query!r}")
 
     try:
-        answer = await agent.ainvoke(request.query)
+        ui_context = UINavigationContext(
+            resource_kind=request.resource_kind,
+            resource_name=request.resource_name,
+            resource_api_version=request.resource_api_version,
+            namespace=request.namespace,
+        )
+        answer = await agent.ainvoke(request.query, ui_context=ui_context)
         logger.info("Kyma agent chat completed successfully")
         return KymaAgentResponse(answer=answer)
     except K8sClientError as e:

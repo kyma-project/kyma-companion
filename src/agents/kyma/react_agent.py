@@ -11,7 +11,7 @@ Usage::
     print(result)
 """
 
-from typing import Any
+from typing import Any, cast
 
 from langchain.agents import create_agent
 from langchain_core.embeddings import Embeddings
@@ -26,8 +26,32 @@ from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
 from utils.models.factory import IModel
+from utils.settings import MAIN_MODEL_NAME
 
 SYSTEM_PROMPT = f"{KYMA_AGENT_PROMPT}\n\n{KYMA_AGENT_INSTRUCTIONS}"
+
+
+class UINavigationContext(BaseModel):
+    """Busola UI navigation context — the resource the user is currently viewing."""
+
+    resource_kind: str
+    resource_name: str = ""
+    resource_api_version: str = ""
+    namespace: str = ""
+
+    def as_context_message(self) -> str:
+        """Return a human-readable context string to prepend to the user query."""
+        parts = [f"Resource kind: {self.resource_kind}"]
+        if self.resource_name:
+            parts.append(f"Resource name: {self.resource_name}")
+        if self.resource_api_version:
+            parts.append(f"API version: {self.resource_api_version}")
+        if self.namespace:
+            parts.append(f"Namespace: {self.namespace}")
+        return (
+            "[Busola UI navigation context — the user is currently viewing this resource in the Kyma dashboard. "
+            "Their question may or may not be about this resource.]\n" + "\n".join(parts)
+        )
 
 
 def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
@@ -110,7 +134,7 @@ class KymaReActAgent:
         search_kyma_doc_tool = SearchKymaDocTool(models)
         tools: list[BaseTool] = [*_make_bound_tools(k8s_client), search_kyma_doc_tool]
 
-        llm: BaseChatModel = models["main_model"]  # type: ignore[assignment]
+        llm: BaseChatModel = cast(IModel, models[MAIN_MODEL_NAME]).llm
         self._graph = create_agent(
             model=llm,
             tools=tools,
@@ -121,9 +145,13 @@ class KymaReActAgent:
         self,
         query: str,
         chat_history: list[BaseMessage] | None = None,
+        ui_context: UINavigationContext | None = None,
     ) -> str:
         """Run the ReAct loop and return the final answer as a string."""
-        messages = [*(chat_history or []), HumanMessage(content=query)]
+        human_content = query
+        if ui_context is not None:
+            human_content = f"{ui_context.as_context_message()}\n\n{query}"
+        messages = [*(chat_history or []), HumanMessage(content=human_content)]
         payload: Any = {"messages": messages}
         result = await self._graph.ainvoke(payload)
         last = result["messages"][-1]

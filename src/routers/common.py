@@ -244,6 +244,21 @@ class KymaAgentRequest(BaseModel):
             "What are the available APIRule versions?",
         ],
     )
+    resource_kind: str = Field(
+        description="Kyma/K8s resource kind the user is currently viewing in Busola UI (navigation context)",
+    )
+    resource_name: str = Field(
+        default="",
+        description="Name of the resource the user is currently viewing in Busola UI (navigation context)",
+    )
+    resource_api_version: str = Field(
+        default="",
+        description="API version of the resource currently viewed in Busola UI (navigation context)",
+    )
+    namespace: str = Field(
+        default="",
+        description="Namespace of the resource the user is currently viewing in Busola UI (navigation context)",
+    )
 
 
 class KymaAgentResponse(BaseModel):
