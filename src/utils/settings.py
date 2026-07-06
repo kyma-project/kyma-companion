@@ -150,7 +150,9 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
-# set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
+# ALLOWED_K8S_DOMAINS must be set to a non-empty JSON list of allowed domain suffixes.
+# Leaving it empty disables all cluster URL access (fail-closed).
+# Example: ALLOWED_K8S_DOMAINS='["my-company.internal", "k8s.example.com"]'
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
 
 if "pytest" in sys.modules:
