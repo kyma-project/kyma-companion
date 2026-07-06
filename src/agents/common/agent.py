@@ -52,8 +52,18 @@ from utils.settings import (
 
 logger = get_logger(__name__)
 
-
+TOOL_OUTPUT_MAX_CHARS = 20_000
 AGENT_STEPS_NUMBER = 3
+
+
+def _wrap_tool_output(raw: str) -> str:
+    """Wrap tool output in explicit delimiters and truncate to a safe size.
+
+    Delimiting prevents the LLM from treating Kubernetes resource data
+    (e.g. annotations, log lines) as instructions.
+    """
+    truncated = raw[:TOOL_OUTPUT_MAX_CHARS]
+    return f"<tool_output>\n{truncated}\n</tool_output>"
 
 
 def subtask_selector_edge(state: BaseAgentState) -> Literal["agent", "finalizer"]:
@@ -210,8 +220,10 @@ class BaseAgent:
 
         for message in reversed(state.agent_messages):
             if isinstance(message, ToolMessage):
-                # Use decorated method for parsing with error handling
-                tool_response_object = self._parse_tool_message(str(message.content))
+                # Wrap the raw tool output before parsing to prevent prompt injection
+                # from Kubernetes resource data (e.g. annotations, log lines).
+                safe_content = _wrap_tool_output(str(message.content))
+                tool_response_object = self._parse_tool_message(safe_content)
                 if tool_response_object is not None:  # None indicates parsing failed
                     if isinstance(tool_response_object, list):
                         tool_responses.extend(tool_response_object)
