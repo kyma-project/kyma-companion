@@ -13,6 +13,7 @@ import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel, ConfigDict, Field
 
+import utils.settings as _settings
 from services.data_sanitizer import IDataSanitizer
 from services.k8s_constants import (
     ContainerStateType,
@@ -33,7 +34,6 @@ from utils.settings import (
     K8S_API_PAGINATION_LIMIT,
     K8S_API_PAGINATION_MAX_PAGE,
 )
-import utils.settings as _settings
 
 logger = logging.get_logger(__name__)
 
