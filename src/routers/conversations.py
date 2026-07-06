@@ -1,6 +1,7 @@
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
@@ -27,6 +28,7 @@ from utils.response import prepare_chunk_response
 from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
     create_session_id,
+    generate_sha384_hash,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
 )
@@ -108,6 +110,13 @@ async def init_conversation(
     # Initialize with the session_id. Create a new session_id if not provided.
     session_id = session_id if session_id else create_session_id()
 
+    # Bind ownership at creation time so no other caller can claim this session.
+    user_identifier = extract_user_identifier(k8s_auth_headers)
+    await authorize_user(session_id, user_identifier, conversation_service)
+
+    # Check rate limitation (after URL is validated by validate_headers above).
+    await check_token_usage(x_cluster_url, conversation_service)
+
     # Initialize k8s client for the request.
     try:
         k8s_client: IK8sClient = K8sClient(
@@ -117,9 +126,6 @@ async def init_conversation(
     except Exception as e:
         logger.exception("Failed to initialize Kubernetes client")
         raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
-
-    # Check rate limitation
-    await check_token_usage(x_cluster_url, conversation_service)
 
     try:
         # Create initial questions.
@@ -274,7 +280,8 @@ async def messages(
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:
     """Check if the token usage limit is exceeded for the cluster."""
-    cluster_id = x_cluster_url.split(".")[1]
+    parsed = urlparse(x_cluster_url)
+    cluster_id = generate_sha384_hash(parsed.hostname or x_cluster_url)
 
     report = await conversation_service.is_usage_limit_exceeded(cluster_id)
     if report is not None:
