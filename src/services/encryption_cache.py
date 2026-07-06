@@ -1,4 +1,3 @@
-import time
 from typing import Annotated, Protocol, cast, runtime_checkable
 from urllib.parse import quote
 
@@ -6,7 +5,7 @@ from fastapi import Depends
 from redis.asyncio import Redis as AsyncRedis
 
 from services.redis import Redis, get_redis
-from utils.settings import NONCE_REPLAY_WINDOW_SECONDS, REDIS_TTL
+from utils.settings import REDIS_TTL
 
 _ENCRYPTION_CACHE_KEY_PREFIX = "encryption:session_id:"
 _NONCE_KEY_PREFIX = "encryption:nonce:"
@@ -64,18 +63,12 @@ class EncryptionCache:
     async def is_nonce_allowed(self, session_id: str, nonce: str) -> bool:
         """Check whether a nonce is allowed for the given session.
 
-        On first use the nonce is stored with its timestamp and REDIS_TTL.
-        Subsequent uses within NONCE_REPLAY_WINDOW_SECONDS are permitted
-        (agents may legitimately resend the same headers). Uses beyond that
-        window are rejected as replay attacks.
+        Uses an atomic SET NX (set-if-not-exists) operation so each nonce is
+        accepted exactly once. Clients must generate a fresh nonce per request.
         """
         key = f"{_NONCE_KEY_PREFIX}{quote(session_id, safe='')}:{quote(nonce, safe='')}"
-        raw = cast(str | None, await self._redis.get_connection().get(key))
-        if raw is None:
-            await self._redis.get_connection().set(key, str(time.time()), ex=REDIS_TTL)
-            return True
-        first_seen = float(raw)
-        return bool((time.time() - first_seen) <= NONCE_REPLAY_WINDOW_SECONDS)
+        was_set = await self._redis.get_connection().set(key, "1", ex=REDIS_TTL, nx=True)
+        return bool(was_set)
 
 
 def get_encryption_cache(
