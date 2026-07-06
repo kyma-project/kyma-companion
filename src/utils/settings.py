@@ -153,6 +153,9 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
 # set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
 
+# Enable verification of K8s JWT tokens (requires K8s CA certificate).
+K8S_VERIFY_TOKEN_SIGNATURE = config("K8S_VERIFY_TOKEN_SIGNATURE", default=True, cast=bool)
+
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
     TEST_CLUSTER_CA_DATA = config("TEST_CLUSTER_CA_DATA", default="")

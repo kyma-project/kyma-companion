@@ -82,8 +82,8 @@ class K8sAuthHeaders(BaseModel):
     def is_cluster_url_allowed(self) -> bool:
         """Check if the cluster URL is allowed based on the allowed domains."""
         if len(self.allowed_domains) == 0:
-            logger.warning("ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation.")
-            return True
+            logger.error("ALLOWED_K8S_DOMAINS is not configured. Rejecting all cluster URLs.")
+            return False
 
         try:
             # parse the URL to get the domain
