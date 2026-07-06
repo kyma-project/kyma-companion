@@ -125,7 +125,8 @@ async def init_conversation(
         )
     except Exception as e:
         logger.exception("Failed to initialize Kubernetes client")
-        raise HTTPException(status_code=400, detail=f"failed to connect to the cluster: {str(e)}") from e
+        logger.exception("Failed to initialize Kubernetes client")
+        raise HTTPException(status_code=400, detail="failed to connect to the cluster") from e
 
     try:
         # Create initial questions.
