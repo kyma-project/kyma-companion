@@ -43,8 +43,8 @@ class DocumentsFetcher:
 
         if source.source_type == SourceType.GITHUB:
             logger.debug(f"Cloning repository: {source.url}")
-            # clone the git repository.
-            repo_dir = clone_repo(source.url, self.tmp_dir)
+            # clone the git repository, pinned to commit_sha when set.
+            repo_dir = clone_repo(source.url, self.tmp_dir, commit_sha=source.commit_sha)
         else:
             raise ValueError(f"unsupported source_type: {source.source_type}")
 

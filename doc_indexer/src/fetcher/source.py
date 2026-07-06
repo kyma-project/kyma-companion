@@ -23,6 +23,7 @@ class DocumentsSource(BaseModel):
     include_files: list[str] | None = None
     exclude_files: list[str] | None = None
     filter_file_types: list[str] = ["md"]
+    commit_sha: str | None = None
 
 
 def get_documents_sources(path: str) -> list[DocumentsSource]:

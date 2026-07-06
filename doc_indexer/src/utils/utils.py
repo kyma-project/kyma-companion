@@ -8,8 +8,13 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def clone_repo(repo_url: str, clone_dir: str) -> str:
-    """Clones the git repository and returns the path."""
+def clone_repo(repo_url: str, clone_dir: str, commit_sha: str | None = None) -> str:
+    """Clones the git repository and returns the path.
+
+    If *commit_sha* is provided the repository is checked out at that exact
+    commit after cloning, preventing a compromised upstream default branch from
+    poisoning the indexed documentation.
+    """
     repo_name = repo_url.split("/")[-1].replace(".git", "")
     repo_path = os.path.join(clone_dir, repo_name)
 
@@ -20,6 +25,13 @@ def clone_repo(repo_url: str, clone_dir: str) -> str:
     result = subprocess.run(["git", "clone", repo_url, repo_path])
     if result.returncode != 0:
         raise RuntimeError(f"git clone failed for {repo_url} (exit {result.returncode})")
+
+    if commit_sha:
+        logger.info("Pinning repository to commit", extra={"url": repo_url, "sha": commit_sha})
+        checkout = subprocess.run(["git", "-C", repo_path, "checkout", commit_sha])
+        if checkout.returncode != 0:
+            raise RuntimeError(f"git checkout {commit_sha} failed for {repo_url} (exit {checkout.returncode})")
+
     logger.info("Repository cloned successfully", extra={"url": repo_url, "dest": repo_path})
 
     return repo_path

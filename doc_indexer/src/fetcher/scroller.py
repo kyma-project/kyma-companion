@@ -26,6 +26,18 @@ class Scroller:
         """Saves the file to the output directory."""
         source_file_path = os.path.join(self.dir_path, file_dir, file_name)
 
+        # Reject symlinks to prevent traversal outside the cloned repository.
+        if os.path.islink(source_file_path):
+            logger.warning(f"Skipping symlink: {source_file_path}")
+            return
+
+        # Verify the resolved path stays within the cloned repo root.
+        real_path = os.path.realpath(source_file_path)
+        real_base = os.path.realpath(self.dir_path)
+        if not real_path.startswith(real_base + os.sep):
+            logger.warning(f"Skipping out-of-bounds path: {real_path}")
+            return
+
         target_dir = os.path.join(self.output_dir, file_dir)
         os.makedirs(target_dir, exist_ok=True)
 
