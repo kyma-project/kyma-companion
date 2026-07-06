@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 class PublicKeyRequest(BaseModel):
     """Request model for storing a client public key for a session."""
 
-    public_key: str = Field(..., min_length=1, description="Client public key")
+    public_key: str = Field(..., min_length=1, max_length=512, description="Base64-encoded client EC public key")
 
 
 class PublicKeyResponse(BaseModel):

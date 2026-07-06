@@ -210,6 +210,7 @@ class SearchKymaDocRequest(BaseModel):
 
     query: str = Field(
         ...,
+        max_length=2000,
         description="Search query for Kyma documentation",
         examples=[
             "Help me get started with kyma",
@@ -221,7 +222,7 @@ class SearchKymaDocRequest(BaseModel):
         default=5,
         description="Number of top documents to return",
         ge=1,
-        le=50,
+        le=10,
     )
 
 
