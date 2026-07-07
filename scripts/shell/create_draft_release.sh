@@ -94,7 +94,7 @@ if [ -n "${PREVIOUS_TAG:-}" ]; then
     -H "X-GitHub-Api-Version: 2022-11-28" \
     "${GITHUB_URL}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}")
   compare_status=$(echo "${compare_response}" | jq -r '.status // empty')
-  if [ -n "${compare_status}" ]; then
+  if echo "${compare_status}" | grep -qE '^[0-9]+$'; then
     echo "Warning: Failed to fetch compare (status: ${compare_status}). Sections will be empty."
   else
     # extract first line of each commit message and group by conventional commit prefix.
