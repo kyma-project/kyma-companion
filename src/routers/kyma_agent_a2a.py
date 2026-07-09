@@ -28,12 +28,11 @@ from starlette.routing import Route
 from agents.kyma.react_agent import KymaReActAgent, UINavigationContext
 from routers.common import (
     _ModelsRegistry,
+    _SearchToolRegistry,
     get_k8s_auth_headers_from_encrypted_payload,
     init_config,
-)
-from routers.kyma_agent_api import (
-    _load_conversation_history,
-    _save_conversation_history,
+    load_conversation_history,
+    save_conversation_history,
 )
 from services.data_sanitizer import DataSanitizer
 from services.encryption_cache import EncryptionCache
@@ -92,13 +91,16 @@ class KymaAgentExecutor(AgentExecutor):
         if not query:
             raise InvalidParamsError(message="Empty or missing text in message parts")
 
+        # Use the A2A context_id as the session key for conversation history.
+        # If absent, generate a new one and echo it back in the response so the
+        # caller can continue the same conversation in subsequent requests.
+        session_id = message.context_id or create_session_id()
+
         # metadata lives in params.message.metadata (protobuf Struct), not
         # params.metadata (request-level, always empty for message/send calls)
         metadata: dict[str, Any] = json_format.MessageToDict(message.metadata) if message.HasField("metadata") else {}
         # Merge with request-level metadata as fallback
         metadata = {**context.metadata, **metadata}
-        raw_session_id = str(metadata.get("x-session-id", ""))
-        session_id = raw_session_id or create_session_id()
 
         logger.info(f"A2A Kyma agent request: query={query!r}, session_id={session_id}")
 
@@ -109,7 +111,7 @@ class KymaAgentExecutor(AgentExecutor):
             k8s_auth_headers = await get_k8s_auth_headers_from_encrypted_payload(
                 x_encrypted_key=str(metadata.get("x-encrypted-key", "")),
                 x_client_iv=str(metadata.get("x-client-iv", "")),
-                x_session_id=session_id,
+                x_session_id=str(metadata.get("x-session-id", "")),
                 x_target_cluster_encrypted=str(metadata.get("x-target-cluster-encrypted", "")),
                 encryption_cache=encryption_cache,
             )
@@ -117,9 +119,9 @@ class KymaAgentExecutor(AgentExecutor):
             k8s_client = K8sClient(k8s_auth_headers=k8s_auth_headers, data_sanitizer=data_sanitizer)
 
             models = _ModelsRegistry(config).models
-            agent = KymaReActAgent(models=models, k8s_client=k8s_client)
+            agent = KymaReActAgent(models=models, k8s_client=k8s_client, search_tool=_SearchToolRegistry(models).tool)
 
-            chat_history = await _load_conversation_history(redis_conn, session_id)
+            chat_history = await load_conversation_history(redis_conn, session_id)
             ui_context = UINavigationContext(
                 resource_kind=str(metadata.get("resourceType", "")),
                 resource_name=str(metadata.get("resourceName", "")),
@@ -131,13 +133,13 @@ class KymaAgentExecutor(AgentExecutor):
 
             human_content = _build_human_content(query, ui_context)
             new_messages = [*chat_history, HumanMessage(content=human_content), AIMessage(content=answer)]
-            await _save_conversation_history(redis_conn, session_id, new_messages)
+            await save_conversation_history(redis_conn, session_id, new_messages)
 
             response_message = Message(
                 role=Role.ROLE_AGENT,
                 parts=[Part(text=answer)],
                 message_id=message.message_id or "",
-                context_id=message.context_id or "",
+                context_id=session_id,
                 task_id=message.task_id or "",
             )
             await event_queue.enqueue_event(response_message)

@@ -129,9 +129,11 @@ class KymaReActAgent:
         self,
         models: dict[str, IModel | Embeddings],
         k8s_client: IK8sClient,
+        search_tool: SearchKymaDocTool | None = None,
     ) -> None:
-        search_kyma_doc_tool = SearchKymaDocTool(models)
-        tools: list[BaseTool] = [*_make_bound_tools(k8s_client), search_kyma_doc_tool]
+        """Initialize the agent with the given models, k8s_client, and search_tool."""
+        resolved_search_tool = search_tool if search_tool is not None else SearchKymaDocTool(models)
+        tools: list[BaseTool] = [*_make_bound_tools(k8s_client), resolved_search_tool]
 
         llm: BaseChatModel = cast(IModel, models[MAIN_MODEL_NAME]).llm
         self._graph = create_agent(

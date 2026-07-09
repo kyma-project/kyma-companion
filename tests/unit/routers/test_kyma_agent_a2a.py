@@ -142,9 +142,10 @@ class TestKymaAgentExecutorExecute:
             patch("routers.kyma_agent_a2a.DataSanitizer") as mock_sanitizer_cls,
             patch("routers.kyma_agent_a2a.K8sClient") as mock_k8s_cls,
             patch("routers.kyma_agent_a2a._ModelsRegistry") as mock_models_cls,
+            patch("routers.kyma_agent_a2a._SearchToolRegistry") as mock_search_registry_cls,
             patch("routers.kyma_agent_a2a.KymaReActAgent") as mock_agent_cls,
-            patch("routers.kyma_agent_a2a._load_conversation_history", new_callable=AsyncMock) as mock_load,
-            patch("routers.kyma_agent_a2a._save_conversation_history", new_callable=AsyncMock),
+            patch("routers.kyma_agent_a2a.load_conversation_history", new_callable=AsyncMock) as mock_load,
+            patch("routers.kyma_agent_a2a.save_conversation_history", new_callable=AsyncMock),
         ):
             mock_config.return_value = MagicMock(sanitization_config=None)
             mock_redis_cls.return_value = MagicMock()
@@ -153,6 +154,7 @@ class TestKymaAgentExecutorExecute:
             mock_sanitizer_cls.return_value = MagicMock()
             mock_k8s_cls.return_value = MagicMock()
             mock_models_cls.return_value = MagicMock(models={})
+            mock_search_registry_cls.return_value = MagicMock(tool=MagicMock())
             mock_load.return_value = []
 
             mock_agent_instance = AsyncMock()
@@ -212,16 +214,18 @@ class TestKymaAgentExecutorExecute:
             await executor.execute(ctx, event_queue)
 
     @pytest.mark.asyncio
-    async def test_session_id_generated_when_missing(self, executor, event_queue):
-        """Execute should generate a session ID when x-session-id is missing."""
+    async def test_context_id_echoed_in_response(self, executor, event_queue):
+        """Execute should echo the incoming context_id back in the response message."""
         ctx = _make_request_context(
             text="list pods",
             metadata={
+                "x-session-id": "sess-123",
                 "x-encrypted-key": "k",
                 "x-client-iv": "iv",
                 "x-target-cluster-encrypted": "enc",
             },
         )
+        # ctx.message.context_id == "ctx-1" (set by _make_request_context)
 
         with (
             patch("routers.kyma_agent_a2a.init_config") as mock_config,
@@ -233,14 +237,61 @@ class TestKymaAgentExecutorExecute:
             patch("routers.kyma_agent_a2a.DataSanitizer"),
             patch("routers.kyma_agent_a2a.K8sClient"),
             patch("routers.kyma_agent_a2a._ModelsRegistry") as mock_models_cls,
+            patch("routers.kyma_agent_a2a._SearchToolRegistry") as mock_search_registry_cls,
             patch("routers.kyma_agent_a2a.KymaReActAgent") as mock_agent_cls,
-            patch("routers.kyma_agent_a2a._load_conversation_history", new_callable=AsyncMock) as mock_load,
-            patch("routers.kyma_agent_a2a._save_conversation_history", new_callable=AsyncMock),
+            patch("routers.kyma_agent_a2a.load_conversation_history", new_callable=AsyncMock) as mock_load,
+            patch("routers.kyma_agent_a2a.save_conversation_history", new_callable=AsyncMock),
+        ):
+            mock_config.return_value = MagicMock(sanitization_config=None)
+            mock_headers.return_value = MagicMock()
+            mock_models_cls.return_value = MagicMock(models={})
+            mock_search_registry_cls.return_value = MagicMock(tool=MagicMock())
+            mock_load.return_value = []
+            mock_agent_instance = AsyncMock()
+            mock_agent_instance.ainvoke = AsyncMock(return_value="answer")
+            mock_agent_cls.return_value = mock_agent_instance
+
+            await executor.execute(ctx, event_queue)
+
+        event = await event_queue.dequeue_event()
+        assert isinstance(event, Message)
+        assert event.context_id == "ctx-1"
+
+    @pytest.mark.asyncio
+    async def test_new_context_id_generated_and_echoed_when_missing(self, executor, event_queue):
+        """Execute should generate and echo a new context_id when none is provided."""
+        message = Message(
+            role=Role.ROLE_USER,
+            parts=[Part(text="list pods")],
+            message_id="msg-1",
+            context_id="",  # no context_id
+            task_id="task-1",
+        )
+        ctx = MagicMock(spec=RequestContext)
+        ctx.message = message
+        ctx.get_user_input.return_value = "list pods"
+        ctx.metadata = {"x-encrypted-key": "k", "x-client-iv": "iv", "x-target-cluster-encrypted": "enc"}
+
+        with (
+            patch("routers.kyma_agent_a2a.init_config") as mock_config,
+            patch("routers.kyma_agent_a2a.Redis"),
+            patch("routers.kyma_agent_a2a.EncryptionCache"),
+            patch(
+                "routers.kyma_agent_a2a.get_k8s_auth_headers_from_encrypted_payload", new_callable=AsyncMock
+            ) as mock_headers,
+            patch("routers.kyma_agent_a2a.DataSanitizer"),
+            patch("routers.kyma_agent_a2a.K8sClient"),
+            patch("routers.kyma_agent_a2a._ModelsRegistry") as mock_models_cls,
+            patch("routers.kyma_agent_a2a._SearchToolRegistry") as mock_search_registry_cls,
+            patch("routers.kyma_agent_a2a.KymaReActAgent") as mock_agent_cls,
+            patch("routers.kyma_agent_a2a.load_conversation_history", new_callable=AsyncMock) as mock_load,
+            patch("routers.kyma_agent_a2a.save_conversation_history", new_callable=AsyncMock),
             patch("routers.kyma_agent_a2a.create_session_id", return_value="generated-uuid") as mock_create_sid,
         ):
             mock_config.return_value = MagicMock(sanitization_config=None)
             mock_headers.return_value = MagicMock()
             mock_models_cls.return_value = MagicMock(models={})
+            mock_search_registry_cls.return_value = MagicMock(tool=MagicMock())
             mock_load.return_value = []
             mock_agent_instance = AsyncMock()
             mock_agent_instance.ainvoke = AsyncMock(return_value="answer")
@@ -249,9 +300,10 @@ class TestKymaAgentExecutorExecute:
             await executor.execute(ctx, event_queue)
 
             mock_create_sid.assert_called_once()
-            # Verify the generated session ID was used
-            call_kwargs = mock_headers.call_args.kwargs
-            assert call_kwargs["x_session_id"] == "generated-uuid"
+
+        event = await event_queue.dequeue_event()
+        assert isinstance(event, Message)
+        assert event.context_id == "generated-uuid"
 
 
 # ---------------------------------------------------------------------------
