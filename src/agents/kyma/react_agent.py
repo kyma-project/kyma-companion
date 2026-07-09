@@ -8,7 +8,6 @@ Usage::
 
     agent = KymaReActAgent(models=models, k8s_client=k8s_client)
     result = await agent.ainvoke("Why is my Kyma Function not starting?")
-    print(result)
 """
 
 from typing import Any, cast
