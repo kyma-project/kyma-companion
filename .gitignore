@@ -270,3 +270,8 @@ tmp
 
 modg.yaml
 .claude/cve-triage
+
+# pi agent
+.pi-subagents
+.crit
+.pi
