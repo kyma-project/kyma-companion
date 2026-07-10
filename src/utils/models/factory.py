@@ -4,11 +4,13 @@ from typing import Protocol, cast, runtime_checkable
 
 from gen_ai_hub.proxy.core.base import BaseProxyClient
 from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
+from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI, OpenAIEmbeddings
 from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
 from langchain_core.embeddings import Embeddings
 
 from utils.config import Config
+from utils.models.anthropic import AnthropicModel
 from utils.models.exceptions import ModelNotFoundError, UnsupportedModelError
 from utils.models.gemini import GeminiModel
 from utils.models.openai import OpenAIModel
@@ -20,6 +22,7 @@ class ModelPrefix:
     GPT = "gpt"
     GEMINI = "gemini"
     TEXT_EMBEDDING = "text-embedding"
+    ANTHROPIC = "anthropic"
 
 
 class EmbeddingModelPrefix:
@@ -61,7 +64,7 @@ class IModel(Protocol):
     """The name of the model."""
 
     @property
-    def llm(self) -> ChatOpenAI | GoogleGenAIClient:
+    def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
         """The instance of the model."""
         ...
 
@@ -111,6 +114,7 @@ class ModelFactory:
         model_prefix_dispatch = {
             ModelPrefix.GPT: lambda: OpenAIModel(model_config, self._proxy_client),
             ModelPrefix.GEMINI: lambda: GeminiModel(model_config, self._proxy_client),
+            ModelPrefix.ANTHROPIC: lambda: AnthropicModel(model_config, self._proxy_client),
             ModelPrefix.TEXT_EMBEDDING: lambda: cast(
                 Embeddings,
                 OpenAIEmbeddings(
