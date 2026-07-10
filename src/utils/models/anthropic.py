@@ -3,7 +3,6 @@ from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
 from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
 
-from utils import settings
 from utils.config import ModelConfig
 
 
