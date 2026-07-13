@@ -66,7 +66,8 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         uri: str = Field(
             description="Kubernetes API URI path. Must follow the format of Kubernetes API paths. "
             "Examples for Kyma resources: '/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions'. "
-            "Examples for K8s resources: '/api/v1/namespaces/default/pods', '/apis/apps/v1/namespaces/default/deployments'."
+            "Examples for K8s resources: 1. '/api/v1/namespaces/default/pods', "
+            "2. '/apis/apps/v1/namespaces/default/deployments'."
         )
 
     class ResourceVersionArgs(BaseModel):
@@ -99,7 +100,8 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
     async def k8s_query_tool(uri: str) -> dict | list[dict] | str:
         """Query any Kubernetes or Kyma resource using the provided URI.
         The URI must follow the Kubernetes API path format.
-        Use this for both Kyma resources (Function, APIRule, etc.) and standard K8s resources (Pod, Deployment, Service, etc.).
+        Use this for both Kyma resources (Function, APIRule, etc.) and standard K8s resources
+        (Pod, Deployment, Service, etc.).
         The returned data is sanitized to remove sensitive information (e.g. Secret data fields).
         If you get a 404, use fetch_resource_version to look up the correct API version and retry."""
         try:
@@ -154,7 +156,9 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
             dumped = result.model_dump(mode="json", by_alias=True)
             return str(dumped)
         except Exception as e:
-            return f"Tool error fetching logs for pod={name!r}, namespace={namespace!r}, container={container_name!r}: {e}"
+            return (
+                f"Tool error fetching logs for pod={name!r}, namespace={namespace!r}, container={container_name!r}: {e}"
+            )
 
     return [fetch_resource_version, k8s_query_tool, k8s_overview_tool, fetch_pod_logs_tool]
 
