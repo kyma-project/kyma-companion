@@ -13,9 +13,11 @@ Usage::
 from typing import Any, cast
 
 from langchain.agents import create_agent
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
@@ -147,6 +149,7 @@ class KymaReActAgent:
         query: str,
         chat_history: list[BaseMessage] | None = None,
         ui_context: UINavigationContext | None = None,
+        callbacks: list[BaseCallbackHandler] | None = None,
     ) -> str:
         """Run the ReAct loop and return the final answer as a string."""
         human_content = query
@@ -154,6 +157,7 @@ class KymaReActAgent:
             human_content = f"{ui_context.as_context_message()}\n\n{query}"
         messages = [*(chat_history or []), HumanMessage(content=human_content)]
         payload: Any = {"messages": messages}
-        result = await self._graph.ainvoke(payload)
+        run_config = RunnableConfig(callbacks=callbacks) if callbacks else None
+        result = await self._graph.ainvoke(payload, config=run_config)
         last = result["messages"][-1]
         return str(last.content)

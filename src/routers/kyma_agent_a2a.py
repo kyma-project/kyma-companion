@@ -9,7 +9,7 @@ Exposed routes (relative to the mount point /api/agent/kyma):
   POST /chat                         – A2A JSON-RPC endpoint
 """
 
-from typing import Any
+from typing import Any, cast
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
@@ -21,11 +21,13 @@ from a2a.types.a2a_pb2 import Message, Part, Role
 from a2a.utils.errors import InternalError, InvalidParamsError, UnsupportedOperationError
 from fastapi import HTTPException
 from google.protobuf import json_format
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage
 from starlette.applications import Starlette
 from starlette.routing import Route
 
 from agents.kyma.react_agent import KymaReActAgent, UINavigationContext
+from agents.memory.async_redis_checkpointer import AsyncRedisSaver, IUsageMemory
 from routers.common import (
     _ModelsRegistry,
     _SearchToolRegistry,
@@ -38,6 +40,7 @@ from services.data_sanitizer import DataSanitizer
 from services.encryption_cache import EncryptionCache
 from services.k8s import K8sClient
 from services.redis import Redis
+from services.usage import UsageTrackerCallback
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.utils import create_session_id
@@ -102,8 +105,6 @@ class KymaAgentExecutor(AgentExecutor):
         # Merge with request-level metadata as fallback
         metadata = {**context.metadata, **metadata}
 
-        logger.info(f"A2A Kyma agent request: query={query!r}, session_id={session_id}")
-
         try:
             config = init_config()
             redis_conn = Redis()
@@ -129,7 +130,13 @@ class KymaAgentExecutor(AgentExecutor):
                 namespace=str(metadata.get("namespace", "")),
             )
 
-            answer = await agent.ainvoke(query, chat_history=chat_history, ui_context=ui_context)
+            cluster_id = k8s_client.get_api_server().split(".")[1]
+            usage_memory = AsyncRedisSaver(redis_conn.get_connection())
+            callbacks: list[BaseCallbackHandler] = [
+                UsageTrackerCallback(cluster_id, cast(IUsageMemory, usage_memory)),
+            ]
+
+            answer = await agent.ainvoke(query, chat_history=chat_history, ui_context=ui_context, callbacks=callbacks)
 
             human_content = _build_human_content(query, ui_context)
             new_messages = [*chat_history, HumanMessage(content=human_content), AIMessage(content=answer)]
