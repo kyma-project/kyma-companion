@@ -78,9 +78,7 @@ def _get_a2a_response(
 
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            logger.debug(
-                f"Sending A2A query for scenario {scenario.id}: {query.user_query!r}"
-            )
+            logger.debug(f"Sending A2A query for scenario {scenario.id}: {query.user_query!r}")
             answer, new_context_id = a2a_client.send_message(
                 query=query.user_query,
                 resource_kind=query.resource.kind,
@@ -97,20 +95,14 @@ def _get_a2a_response(
         except Exception as exc:
             last_error = exc
             logger.warning(
-                f"A2A request failed for scenario {scenario.id}. "
-                f"Retrying in {retry_wait_time}s. Error: {exc}"
+                f"A2A request failed for scenario {scenario.id}. Retrying in {retry_wait_time}s. Error: {exc}"
             )
             time.sleep(retry_wait_time)
             retry_wait_time += config.retry_wait_time
 
     query.test_status = TestStatus.FAILED
-    query.test_status_reason = (
-        f"A2A request failed after multiple retries: {last_error}"
-    )
-    logger.error(
-        f"Skipping scenario {scenario.id}: A2A request exhausted retries. "
-        f"Error: {last_error}"
-    )
+    query.test_status_reason = f"A2A request failed after multiple retries: {last_error}"
+    logger.error(f"Skipping scenario {scenario.id}: A2A request exhausted retries. Error: {last_error}")
     return False
 
 
@@ -130,26 +122,21 @@ def _evaluate_query(
 
     while retry_wait_time <= config.retry_max_wait_time:
         try:
-            logger.debug(
-                f"Evaluating A2A response for scenario {scenario.id}, "
-                f"query: {query.user_query!r}"
-            )
+            logger.debug(f"Evaluating A2A response for scenario {scenario.id}, query: {query.user_query!r}")
             query.evaluation_result = validator.get_deepeval_evaluate(query)
             return True
 
         except Exception as exc:
             last_error = exc
             logger.warning(
-                f"Evaluation failed for scenario {scenario.id}. "
-                f"Retrying in {retry_wait_time}s. Error: {exc}"
+                f"Evaluation failed for scenario {scenario.id}. Retrying in {retry_wait_time}s. Error: {exc}"
             )
             time.sleep(retry_wait_time)
             retry_wait_time += config.retry_wait_time
 
     query.test_status = TestStatus.FAILED
     error_msg = (
-        f"Evaluation exhausted retries for scenario {scenario.id}, "
-        f"query: {query.user_query!r}. Error: {last_error}"
+        f"Evaluation exhausted retries for scenario {scenario.id}, query: {query.user_query!r}. Error: {last_error}"
     )
     query.test_status_reason += error_msg
     logger.error(error_msg)

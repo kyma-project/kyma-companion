@@ -225,9 +225,7 @@ class A2AClient:
         Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
 
         if response.status_code != HTTPStatus.OK:
-            raise ValueError(
-                f"A2A request failed (status {response.status_code}): {response.text}"
-            )
+            raise ValueError(f"A2A request failed (status {response.status_code}): {response.text}")
 
         body = response.json()
 
@@ -253,7 +251,7 @@ class A2AClient:
         for part in parts:
             text = part.get("text", "")
             if text:
-                return text
+                return str(text)
         raise ValueError(f"No text content found in A2A result: {result}")
 
     @staticmethod
@@ -267,4 +265,5 @@ class A2AClient:
 
         status = result.get("status", {})
         message = status.get("message", {})
-        return message.get("contextId")
+        context_id = message.get("contextId")
+        return str(context_id) if context_id is not None else None
