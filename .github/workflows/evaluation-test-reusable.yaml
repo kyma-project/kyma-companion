@@ -41,6 +41,9 @@ jobs:
         with:
           ref: ${{ inputs.TEST_REF }}
           repository: ${{ inputs.TEST_REPO_FULLNAME }}
+          # Safe: the `environment: e2e` gate above requires codeowner approval before
+          # this job runs, so secrets are never exposed to unreviewed fork code.
+          allow-unsafe-pr-checkout: true
 
       - name: K3d Setup - Install Kubectl CLI
         run: |
