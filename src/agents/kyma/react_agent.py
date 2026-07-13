@@ -159,5 +159,9 @@ class KymaReActAgent:
         payload: Any = {"messages": messages}
         run_config = RunnableConfig(callbacks=callbacks) if callbacks else None
         result = await self._graph.ainvoke(payload, config=run_config)
-        last = result["messages"][-1]
+        messages_out = result.get("messages", [])
+        if not messages_out:
+            raise ValueError("KymaReActAgent: graph returned no messages")
+        last = messages_out[-1]
+        return str(last.content)
         return str(last.content)
