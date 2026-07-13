@@ -231,8 +231,8 @@ jobs:
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
           echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
-          echo "saved config to $CONFIG_PATH!"
-          poetry run python src/run_evaluation.py
+          echo "saved config to $CONFIG_PATH! Running A2A Kyma Agent tests"
+          poetry run python src/run_a2a_evaluation.py
 
       - name: Evaluation Tests - Debug information
         if: failure() && inputs.RUN_EVALUATION_TESTS
