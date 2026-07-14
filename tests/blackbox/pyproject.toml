@@ -79,3 +79,4 @@ code-fix = ["format-fix", "lint-fix"]
 sort = "poetry sort"
 pre-commit-check = ["sort", "code-fix", "codecheck"]
 run-evaluation = "python src/run_evaluation.py"
+run-a2a-evaluation = "python src/run_a2a_evaluation.py"

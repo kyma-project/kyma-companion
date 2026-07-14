@@ -76,6 +76,7 @@ DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 # Server configuration - host and port for uvicorn
 HOST = config("HOST", default="0.0.0.0")
 PORT = config("PORT", default=8000, cast=int)
+KYMA_A2A_BASE_URL = config("KYMA_A2A_BASE_URL", default=f"https://{HOST}/api/agent/kyma")
 
 # Initialization of the main chat LLM models and main embedding model.
 MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
@@ -95,6 +96,7 @@ user_part = f"{REDIS_USER}" if REDIS_USER else ""
 auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD else ""
 REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
+KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 
 # Langfuse

@@ -1,5 +1,6 @@
 import json
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -55,6 +56,7 @@ def find_config_file(start_path: Path, target: str) -> Path:
     raise FileNotFoundError(f"{target} not found in any parent directories of {start_path}")
 
 
+@lru_cache(maxsize=1)
 def get_config() -> Config:
     """
     Get the model configuration of the application by automatically locating the config file.

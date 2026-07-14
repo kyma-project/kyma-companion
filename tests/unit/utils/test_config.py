@@ -145,6 +145,7 @@ from utils.config import Config, DataSanitizationConfig, ModelConfig, get_config
 )
 def test_get_config(json_content, expected_config):
     # Mock `Path.is_file` to always return True for the config file
+    get_config.cache_clear()
     with (
         patch.object(Path, "open", mock_open(read_data=json_content)),
         patch.object(Path, "is_file", return_value=True),

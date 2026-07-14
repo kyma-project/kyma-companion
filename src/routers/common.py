@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from pydantic import BaseModel, Field
 
 from agents.kyma.tools.search import SearchKymaDocTool
@@ -17,9 +18,11 @@ from services.encryption_cache import EncryptionCache, get_encryption_cache
 from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
 from services.k8s_models import PodLogs, PodLogsDiagnosticContext
 from services.key_store import KeyStore
+from services.redis import Redis
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import KYMA_AGENT_CONVERSATION_TTL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -232,6 +235,40 @@ class SearchKymaDocResponse(BaseModel):
     query: str = Field(..., description="Original search query")
 
 
+class KymaAgentRequest(BaseModel):
+    """Request model for the Kyma ReAct agent endpoint."""
+
+    query: str = Field(
+        ...,
+        description="The question or task for the Kyma agent",
+        examples=[
+            "Why is my Kyma Function not starting?",
+            "What are the available APIRule versions?",
+        ],
+    )
+    resource_kind: str = Field(
+        description="Kyma/K8s resource kind the user is currently viewing in Busola UI (navigation context)",
+    )
+    resource_name: str = Field(
+        default="",
+        description="Name of the resource the user is currently viewing in Busola UI (navigation context)",
+    )
+    resource_api_version: str = Field(
+        default="",
+        description="API version of the resource currently viewed in Busola UI (navigation context)",
+    )
+    namespace: str = Field(
+        default="",
+        description="Namespace of the resource the user is currently viewing in Busola UI (navigation context)",
+    )
+
+
+class KymaAgentResponse(BaseModel):
+    """Response model for the Kyma ReAct agent endpoint."""
+
+    answer: str = Field(..., description="The agent's final answer")
+
+
 # ============================================================================
 # Cluster Region Models
 # ============================================================================
@@ -427,3 +464,84 @@ async def get_k8s_auth_headers_from_encrypted_payload(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail="Failed to decrypt cluster authentication headers",
         ) from e
+
+
+# ============================================================================
+# Conversation History Helpers
+# ============================================================================
+
+KYMA_AGENT_CONVERSATION_PREFIX = "kyma_agent_conversation:"
+
+
+def _serialize_message(message: BaseMessage) -> dict:
+    """Serialize a BaseMessage to a JSON-serializable dictionary."""
+    if isinstance(message, HumanMessage):
+        return {"type": "human", "content": message.content}
+    elif isinstance(message, AIMessage):
+        return {
+            "type": "ai",
+            "content": message.content,
+            "tool_calls": getattr(message, "tool_calls", []),
+            "name": getattr(message, "name", None),
+        }
+    else:
+        return {"type": type(message).__name__, "content": str(message)}
+
+
+def _deserialize_messages(messages_data: list[dict]) -> list[BaseMessage]:
+    """Deserialize a list of message dictionaries back into BaseMessage instances."""
+    messages: list[BaseMessage] = []
+    for msg_data in messages_data:
+        msg_type = msg_data.get("type")
+        content = msg_data.get("content", "")
+
+        if msg_type == "human":
+            messages.append(HumanMessage(content=content))
+        elif msg_type == "ai":
+            ai_msg = AIMessage(content=content)
+            if msg_data.get("tool_calls"):
+                ai_msg.tool_calls = msg_data["tool_calls"]
+            if msg_data.get("name"):
+                ai_msg.name = msg_data["name"]
+            messages.append(ai_msg)
+
+    return messages
+
+
+async def load_conversation_history(redis_conn: Redis, session_id: str) -> list[BaseMessage]:
+    """Load conversation history from Redis for the given session_id.
+
+    Returns an empty list if no history exists or Redis is unavailable.
+    """
+    if not redis_conn.has_connection():
+        return []
+
+    try:
+        key = f"{KYMA_AGENT_CONVERSATION_PREFIX}{session_id}"
+        raw = await redis_conn.get_connection().get(key)
+        if raw is None:
+            return []
+
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+
+        return _deserialize_messages(json.loads(raw))
+    except Exception:
+        logger.exception("Failed to load conversation history from Redis")
+        return []
+
+
+async def save_conversation_history(redis_conn: Redis, session_id: str, messages: list[BaseMessage]) -> None:
+    """Save conversation history to Redis for the given session_id.
+
+    Overwrites the previous history with the updated message list.
+    """
+    if not redis_conn.has_connection():
+        return
+
+    try:
+        key = f"{KYMA_AGENT_CONVERSATION_PREFIX}{session_id}"
+        messages_data = [_serialize_message(msg) for msg in messages]
+        await redis_conn.get_connection().set(key, json.dumps(messages_data), ex=KYMA_AGENT_CONVERSATION_TTL)
+    except Exception:
+        logger.exception("Failed to save conversation history to Redis")
