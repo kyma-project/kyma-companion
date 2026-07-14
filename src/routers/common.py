@@ -21,6 +21,7 @@ from services.key_store import KeyStore
 from services.redis import Redis
 from utils.config import Config, get_config
 from utils.logging import get_logger
+from utils.settings import KYMA_AGENT_CONVERSATION_TTL
 from utils.models.factory import IModel, ModelFactory
 from utils.singleton_meta import SingletonMeta
 
@@ -541,6 +542,6 @@ async def save_conversation_history(redis_conn: Redis, session_id: str, messages
     try:
         key = f"{KYMA_AGENT_CONVERSATION_PREFIX}{session_id}"
         messages_data = [_serialize_message(msg) for msg in messages]
-        await redis_conn.get_connection().set(key, json.dumps(messages_data), ex=86400)
+        await redis_conn.get_connection().set(key, json.dumps(messages_data), ex=KYMA_AGENT_CONVERSATION_TTL)
     except Exception:
         logger.exception("Failed to save conversation history to Redis")
