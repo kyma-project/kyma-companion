@@ -3,7 +3,7 @@
 Encrypt K8s headers via ECDH + AES-256-GCM and print the 4 encrypted values.
 
 Usage:
-    python3 scripts/encrypt_k8s_headers.py
+    python3 scripts/python/encrypt_k8s_headers.py
 
 Required environment variables:
     TEST_CLUSTER_URL

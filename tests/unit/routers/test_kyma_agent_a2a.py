@@ -71,9 +71,7 @@ class TestBuildHumanContent:
         query = "list all namespaces"
         ui_context = UINavigationContext(resource_kind="")
         result = _build_human_content(query, ui_context)
-        # The context message will say "Resource kind: " with empty value,
-        # but the method just concatenates; check query is present
-        assert query in result
+        assert result == query
 
 
 # ---------------------------------------------------------------------------

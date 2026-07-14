@@ -5,7 +5,7 @@ KymaReActAgent, extracting K8s authentication and resource context from
 message metadata.
 
 Exposed routes (relative to the mount point /api/agent/kyma):
-  POST /.well-known/agent-card.json  – agent card discovery
+  GET /.well-known/agent-card.json   – agent card discovery
   POST /chat                         – A2A JSON-RPC endpoint
 """
 

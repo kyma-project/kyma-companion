@@ -45,6 +45,8 @@ def process_a2a_scenario(scenario: Scenario, config: Config, validator: IValidat
 
     for query in scenario.queries:
         if not _get_a2a_response(a2a_client, config, logger, query, scenario, context_id):
+            scenario.test_status = TestStatus.FAILED
+            scenario.test_status_reason = query.test_status_reason
             return
 
         # Carry the context_id forward for multi-turn conversations.
@@ -52,6 +54,8 @@ def process_a2a_scenario(scenario: Scenario, config: Config, validator: IValidat
         context_id = getattr(query, "_a2a_context_id", context_id)
 
         if not _evaluate_query(validator, config, logger, query, scenario):
+            scenario.test_status = TestStatus.FAILED
+            scenario.test_status_reason = query.test_status_reason
             return
 
         print_detailed_query_results(scenario, query)
