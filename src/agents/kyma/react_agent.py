@@ -168,7 +168,7 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
 
 
 class KymaReActAgent:
-    """Stateless ReAct agent using the same tools and prompts as KymaAgent.
+    """ReAct agent using the same tools and prompts as KymaAgent.
 
     Unlike the graph-based KymaAgent this class:
     - Requires no LangGraph state, supervisor, or subgraph wiring

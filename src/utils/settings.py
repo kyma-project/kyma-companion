@@ -76,6 +76,7 @@ DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 # Server configuration - host and port for uvicorn
 HOST = config("HOST", default="0.0.0.0")
 PORT = config("PORT", default=8000, cast=int)
+KYMA_A2A_BASE_URL = config("KYMA_A2A_BASE_URL", default=f"https://{HOST}/api/agent/kyma")
 
 # Initialization of the main chat LLM models and main embedding model.
 MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
