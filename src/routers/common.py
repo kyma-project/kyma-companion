@@ -21,8 +21,8 @@ from services.key_store import KeyStore
 from services.redis import Redis
 from utils.config import Config, get_config
 from utils.logging import get_logger
-from utils.settings import KYMA_AGENT_CONVERSATION_TTL
 from utils.models.factory import IModel, ModelFactory
+from utils.settings import KYMA_AGENT_CONVERSATION_TTL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
