@@ -44,13 +44,17 @@ class UINavigationContext(BaseModel):
 
     def as_context_message(self) -> str:
         """Return a human-readable context string to prepend to the user query."""
-        parts = [f"Resource kind: {self.resource_kind}"]
+        parts = []
+        if self.resource_kind:
+            parts.append(f"Resource kind: {self.resource_kind}")
         if self.resource_name:
             parts.append(f"Resource name: {self.resource_name}")
         if self.resource_api_version:
             parts.append(f"API version: {self.resource_api_version}")
         if self.namespace:
             parts.append(f"Namespace: {self.namespace}")
+        if not parts:
+            return ""
         return (
             "[Busola UI navigation context — the user is currently viewing this resource in the Kyma dashboard. "
             "Their question may or may not be about this resource.]\n" + "\n".join(parts)
