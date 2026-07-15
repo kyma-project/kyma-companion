@@ -23,6 +23,7 @@ from utils.settings import (
     TEST_CLUSTER_CLIENT_KEY_DATA,
     TEST_CLUSTER_URL,
 )
+from utils.utils import get_text_content
 
 AGENT_STEPS_NUMBER = 25
 TOOL_ACCURACY_THRESHOLD = 0.5
@@ -118,6 +119,9 @@ def convert_agent_messages_to_ragas(agent_messages, metadata: bool = False):
     """Normalize tool call metadata so Ragas can parse tool calls."""
     messages = copy.deepcopy(agent_messages)
     for msg in messages:
+        # Normalize Bedrock list content to plain string before ragas conversion.
+        if isinstance(msg, AIMessage) and isinstance(msg.content, list):
+            msg.content = get_text_content(msg.content)
         if isinstance(msg, AIMessage) and msg.tool_calls:
             if msg.additional_kwargs is None:
                 msg.additional_kwargs = {}

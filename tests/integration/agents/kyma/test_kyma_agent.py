@@ -32,6 +32,7 @@ from integration.agents.fixtures.serverless_function import (
 )
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
+from utils.utils import get_text_content
 
 AGENT_STEPS_NUMBER = 25
 
@@ -660,7 +661,7 @@ async def test_invoke_chain(
             # for content response cases, verify using deepeval metrics
             test_case = LLMTestCase(
                 input=state.my_task.description,
-                actual_output=response.content,
+                actual_output=get_text_content(response.content),
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
@@ -951,7 +952,7 @@ async def test_tool_calling(
             # for content response cases, verify using deepeval metrics
             test_case = LLMTestCase(
                 input=state.my_task.description,
-                actual_output=response.content,
+                actual_output=get_text_content(response.content),
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )

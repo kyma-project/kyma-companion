@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from ragas.dataset_schema import SingleTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 from ragas.llms import LangchainLLMWrapper
@@ -21,6 +21,7 @@ from utils.settings import (
     TEST_CLUSTER_CLIENT_KEY_DATA,
     TEST_CLUSTER_URL,
 )
+from utils.utils import get_text_content
 
 AGENT_STEPS_NUMBER = 25
 GOAL_ACCURACY_THRESHOLD = 7
@@ -118,6 +119,10 @@ def goal_accuracy_metric(evaluator_llm):
 
 async def call_kyma_agent(kyma_agent, state):
     response = await kyma_agent.agent_node().ainvoke(state)
+    # Normalize AIMessage content from Bedrock list format to plain string before ragas conversion.
+    for msg in response.get("agent_messages", []):
+        if isinstance(msg, AIMessage) and isinstance(msg.content, list):
+            msg.content = get_text_content(msg.content)
     return response
 
 
