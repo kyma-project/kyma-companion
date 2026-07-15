@@ -32,6 +32,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
+          allow-unsafe-pr-checkout: true
 
       - name: Extract Python version
         working-directory: ./doc_indexer
