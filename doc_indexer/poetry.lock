@@ -1318,20 +1318,20 @@ files = [
 
 [[package]]
 name = "hdbcli"
-version = "2.29.23"
+version = "2.29.25"
 description = "SAP HANA Python Client"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "hdbcli-2.29.23-cp310-abi3-macosx_13_0_arm64.whl", hash = "sha256:ad83b110c6e6ca5de87bdd7390e168e852c57712e66c85f6b96f3f2eb35f1e16"},
-    {file = "hdbcli-2.29.23-cp310-abi3-macosx_13_0_x86_64.whl", hash = "sha256:be0d2810a387999463a21a4a7b681342a2162e6dc9f9e9d9fa42cf6b888d4946"},
-    {file = "hdbcli-2.29.23-cp310-abi3-manylinux2014_aarch64.whl", hash = "sha256:0a03c320ad915d50e892b9885e3ffbe20f35862e53b34b7fb481ef01aa008e60"},
-    {file = "hdbcli-2.29.23-cp310-abi3-manylinux2014_ppc64le.whl", hash = "sha256:16357c0110e7625cb80aeec558ff9e1b30837d0a35b8c8e21f6f2d3fea10cb89"},
-    {file = "hdbcli-2.29.23-cp310-abi3-manylinux2014_x86_64.whl", hash = "sha256:d34962d35a0811ca24a7c02d92af3981b3503a80626c4423a497cd00d615b68f"},
-    {file = "hdbcli-2.29.23-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:d8c30b1d6cc53cfe6f05fffa49c9e5dda3c0eee829d13632f67a80181f9dcd1c"},
-    {file = "hdbcli-2.29.23-cp310-abi3-win32.whl", hash = "sha256:850bab92deeac7575f5bdf5d23bf1169e8c4ce40e9db805e6015b929c6f5dc8d"},
-    {file = "hdbcli-2.29.23-cp310-abi3-win_amd64.whl", hash = "sha256:0381c40ffdf026faff5f67901c400382a0890feebfccf40819fdaaa62f5ae872"},
+    {file = "hdbcli-2.29.25-cp310-abi3-macosx_13_0_arm64.whl", hash = "sha256:c08c985d943e56863714aa4b03a9336ae4ea867af089bf8a9c5ae32c52644196"},
+    {file = "hdbcli-2.29.25-cp310-abi3-macosx_13_0_x86_64.whl", hash = "sha256:d3b90f6536048f9d0087673f100a1a7e9fd2c52dcec8e0a38d7f84e14ec70d6b"},
+    {file = "hdbcli-2.29.25-cp310-abi3-manylinux2014_aarch64.whl", hash = "sha256:44a0424d094eefb43caa41dbf903c8f1d68e0a7fc8f1e3f3e641710175017341"},
+    {file = "hdbcli-2.29.25-cp310-abi3-manylinux2014_ppc64le.whl", hash = "sha256:89a077e792df20bdc17e484af28370d3a52c7c8fb2e4099a1543ab8f95ea3996"},
+    {file = "hdbcli-2.29.25-cp310-abi3-manylinux2014_x86_64.whl", hash = "sha256:bb2fdcd712ce10098610d2e386e9797661f98f4fa322d88fc8a9fb8615c10ba6"},
+    {file = "hdbcli-2.29.25-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:22a574f9ed3b5f075f084ad289d127e79a6e0a08a0a1aee09efac0c4b7094394"},
+    {file = "hdbcli-2.29.25-cp310-abi3-win32.whl", hash = "sha256:44dff5b4cb6e1e2bf21773f2fc75de9368c84f892883acfabba2aa7b59d3a23f"},
+    {file = "hdbcli-2.29.25-cp310-abi3-win_amd64.whl", hash = "sha256:7d588b44a4baaf285c78baa3600960eac775b4e7286f4f5e0bd609dd4e3cf876"},
 ]
 
 [[package]]
@@ -5118,4 +5118,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "872ff2ac55955803e41b5523b4050270032ba4ded4533032f64583664f8bc1d9"
+content-hash = "52e72aca34393346d920ab8b8ee896b570b6b0f5d9563bf1d44a5fbf03c06000"
