@@ -1169,14 +1169,14 @@ files = [
 
 [[package]]
 name = "deepeval"
-version = "4.0.7"
+version = "4.1.0"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-4.0.7-py3-none-any.whl", hash = "sha256:f45aee57e7743b8b9e7746753881220ac7d938e4f1afc66a4a9dabbdf09177d0"},
-    {file = "deepeval-4.0.7.tar.gz", hash = "sha256:b776b78138675a445eba8c07af781150206f83f534c25e7aec4df58525e82e39"},
+    {file = "deepeval-4.1.0-py3-none-any.whl", hash = "sha256:d493d80ac298eaa4336fd92a61539a7da836c0a8ee5870fb4075c30bd4d13dd6"},
+    {file = "deepeval-4.1.0.tar.gz", hash = "sha256:03c5206a4258c6831affdb92aee1a4b131d37daf92df8af122c745f482d85268"},
 ]
 
 [package.dependencies]
@@ -1199,6 +1199,7 @@ pytest-repeat = "*"
 pytest-rerunfailures = "*"
 pytest-xdist = "*"
 python-dotenv = ">=1.1.1,<2.0.0"
+questionary = ">=2.0.0,<3.0.0"
 requests = ">=2.31.0,<3.0.0"
 rich = ">=13.6.0,<15.0.0"
 sentry-sdk = "*"
@@ -4867,7 +4868,7 @@ version = "3.0.52"
 description = "Library for building powerful interactive command lines in Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["dev"]
+groups = ["dev", "test"]
 files = [
     {file = "prompt_toolkit-3.0.52-py3-none-any.whl", hash = "sha256:9aac639a3bbd33284347de5ad8d68ecc044b91a762dc39b7c21095fcd6a19955"},
     {file = "prompt_toolkit-3.0.52.tar.gz", hash = "sha256:28cde192929c8e7321de85de1ddbe736f1375148b02f2e17edd840042b1be855"},
@@ -5922,6 +5923,21 @@ files = [
     {file = "pyyaml-6.0.3-cp39-cp39-win_amd64.whl", hash = "sha256:2e71d11abed7344e42a8849600193d15b6def118602c4c176f748e4583246007"},
     {file = "pyyaml-6.0.3.tar.gz", hash = "sha256:d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f"},
 ]
+
+[[package]]
+name = "questionary"
+version = "2.1.1"
+description = "Python library to build pretty command line user prompts ⭐️"
+optional = false
+python-versions = ">=3.9"
+groups = ["test"]
+files = [
+    {file = "questionary-2.1.1-py3-none-any.whl", hash = "sha256:a51af13f345f1cdea62347589fbb6df3b290306ab8930713bfae4d475a7d4a59"},
+    {file = "questionary-2.1.1.tar.gz", hash = "sha256:3d7e980292bb0107abaa79c68dd3eee3c561b83a0f89ae482860b181c8bd412d"},
+]
+
+[package.dependencies]
+prompt_toolkit = ">=2.0,<4.0"
 
 [[package]]
 name = "ragas"
@@ -8472,4 +8488,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "1b80a5d2ab24380eabc88de6c0b8ae371f5c56c1ad8bae461a6d1b9454f047b8"
+content-hash = "a594be6ee2c594d85633f136862f6c1406776e0282da0e0de74b77ff133cac26"

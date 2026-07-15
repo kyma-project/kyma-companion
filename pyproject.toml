@@ -47,7 +47,7 @@ package-mode = false
 
 [tool.poetry.group.test.dependencies]
 aioresponses = ">=0.7.9,<0.7.10"
-deepeval = "^4.0.7"
+deepeval = "^4.1.0"
 fakeredis = "^2.36.2"
 prettytable = "^3.18.0"
 pytest = "^9.1.0"
