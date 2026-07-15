@@ -54,7 +54,7 @@ types-pyyaml = "^6.0.12.20260518"
 [tool.poetry.group.dev.dependencies]
 cryptography = "^49.0.0"
 ipython = "^9.15.0"
-mypy = "^2.1.0"
+mypy = "^2.3.0"
 poethepoet = "^0.47.0"
 poetry-plugin-sort = "^0.3.0"
 ruff = "^0.15.20"
