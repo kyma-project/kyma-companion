@@ -44,10 +44,13 @@ Typical flow for a K8s issue:
 
 ### For Non Troubleshooting Queries
 
-Only use `search_kyma_doc` if :
+Use `search_kyma_doc` directly (do NOT call `fetch_resource_version` or `k8s_query_tool` first) if:
 
-* The user asks questions about Kyma.
+* The user asks "how to create / configure / enable / set up / use" a Kyma resource or feature.
+* The user asks conceptual or procedural questions about Kyma (e.g. "Show how to create an API Rule", "How to enable a Kyma module").
 * General Kyma concept explanations are needed.
+
+These are documentation queries, not resource inspection queries — skip the tool-calling flow and go straight to `search_kyma_doc`.
 
 {TOOL_CALLING_ERROR_HANDLING}
 
