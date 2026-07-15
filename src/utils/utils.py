@@ -55,14 +55,14 @@ def string_to_bool(value: str) -> bool:
     raise ValueError(f"{value} is not a valid boolean value.")
 
 
-def get_text_content(content: str | list) -> str:
+def get_text_content(content: str | list | None) -> str:
     """Extract plain text from an AIMessage content that may be a string or a list of content blocks.
 
     Bedrock Converse returns content as a list of dicts like [{'type': 'text', 'text': '...'}].
     This normalises both formats to a plain string.
     """
     if isinstance(content, list):
-        return "".join(block.get("text", "") for block in content if isinstance(block, dict))
+        return "".join(block if isinstance(block, str) else block.get("text", "") for block in content)
     return content or ""
 
 
