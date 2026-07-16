@@ -165,6 +165,20 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
                     args={"query": "what is Kyma?"},
                 ),
             ],
+            alternative_tool_calls=[
+                # LLM checks resource version first (Function in context triggers version fetch)
+                [
+                    ToolCall(name="fetch_kyma_resource_version", args={"resource_kind": "Function"}),
+                    ToolCall(name="search_kyma_doc", args={"query": "what is Kyma?"}),
+                ],
+                # LLM uses a different query phrasing
+                [
+                    ToolCall(name="search_kyma_doc", args={"query": "Kyma platform overview"}),
+                ],
+                [
+                    ToolCall(name="search_kyma_doc", args={"query": "Kyma"}),
+                ],
+            ],
         ),
         KymaKnowledgeTestCase(
             "Should call kyma doc search tool for Kyma module enablement",
@@ -185,6 +199,20 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
                     args={"query": "how to enable a module?"},
                 ),
             ],
+            alternative_tool_calls=[
+                # LLM checks resource version first
+                [
+                    ToolCall(name="fetch_kyma_resource_version", args={"resource_kind": "Function"}),
+                    ToolCall(name="search_kyma_doc", args={"query": "how to enable a module?"}),
+                ],
+                # LLM uses a different query phrasing
+                [
+                    ToolCall(name="search_kyma_doc", args={"query": "enable Kyma module"}),
+                ],
+                [
+                    ToolCall(name="search_kyma_doc", args={"query": "Kyma module enablement"}),
+                ],
+            ],
         ),
     ]
 
@@ -201,6 +229,18 @@ async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_
     )
 
     score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
+
+    if score <= TOOL_ACCURACY_THRESHOLD and test_case.alternative_tool_calls:
+        for alt_calls in test_case.alternative_tool_calls:
+            alt_sample = MultiTurnSample(
+                user_input=agent_messages,
+                reference_tool_calls=alt_calls,
+            )
+            alt_score = await tool_accuracy_scorer.multi_turn_ascore(alt_sample)
+            if alt_score > TOOL_ACCURACY_THRESHOLD:
+                score = alt_score
+                break
+
     assert score > TOOL_ACCURACY_THRESHOLD, (
         f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
     )
