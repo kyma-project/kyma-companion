@@ -754,9 +754,10 @@ async def test_invoke_chain(
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),  # context
             None,  # retrieval_context
-            """I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.
-
-<SOME TROUBLESHOOTING TIPS HERE>""",  # expected_result
+            "I encountered an error while retrieving the information about the Function 'func1' in the namespace "
+            "'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose "
+            "the issue directly. I cannot complete this request at this time due to repeated tool failures. "
+            "Please try again later or seek help from the Kyma community or support channels.",  # expected_result
             None,  # expected_tool_call
             False,  # should_raise
         ),
