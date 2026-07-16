@@ -452,7 +452,7 @@ def kyma_agent(app_models):
                 is_last_step=False,
                 remaining_steps=AGENT_STEPS_NUMBER,
             ),
-            "",
+            RETRIEVAL_CONTEXT,
             EXPECTED_BTP_MANAGER_RESPONSE,
             None,
             False,
