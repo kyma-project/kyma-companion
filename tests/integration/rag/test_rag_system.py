@@ -35,15 +35,10 @@ def contextual_relevancy_metric(evaluator_model):
 
 
 @pytest.fixture(scope="module")
-def evaluation_metrics(evaluator_model, contextual_relevancy_metric):
+def evaluation_metrics(contextual_relevancy_metric):
     # test the reranking of the retrieved documents
     # calculates how much retrieved context aligns with the expected output
-    contextual_recall = ContextualRecallMetric(threshold=0.5, model=evaluator_model, include_reason=True)
-
-    return [
-        contextual_recall,
-        contextual_relevancy_metric,
-    ]
+    return [contextual_relevancy_metric]
 
 
 @pytest.fixture(scope="session")
@@ -89,6 +84,6 @@ async def test_rag_system(
     contextual_recall = ContextualRecallMetric(
         threshold=answer_relevancy_threshold, model=evaluator_model, include_reason=True
     )
-    metrics = [contextual_recall, *evaluation_metrics[1:]]
+    metrics = [contextual_recall, *evaluation_metrics]
     # evaluate the test case using deepeval metrics
     assert_test(test_case, metrics)
