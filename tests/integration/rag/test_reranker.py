@@ -1,13 +1,13 @@
 import os
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics.contextual_precision.contextual_precision import (
     ContextualPrecisionMetric,
 )
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.documents import Document
 
-from integration.conftest import async_assert_test
 from rag.reranker.reranker import (
     LLMReranker,
     format_documents,
@@ -278,7 +278,7 @@ async def test_chain_ainvoke(
     # Assert that the expected documents are in the actual list of documents.
     assert set(expected_docs_titles).issubset(set(actual_docs_titles)), "Expected documents not found in actual output"
     # Assert that the contextual precision is above the threshold.
-    await async_assert_test(test_case, [contextual_precision(threshold)])
+    assert_test(test_case, [contextual_precision(threshold)], run_async=False)
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:

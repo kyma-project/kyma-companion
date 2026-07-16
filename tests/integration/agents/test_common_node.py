@@ -1,8 +1,9 @@
 import pytest
+from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from integration.conftest import async_assert_test, create_mock_state
+from integration.conftest import create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -46,4 +47,4 @@ async def test_invoke_common_node(messages, expected_answer, companion_graph, an
         actual_output=result,
         expected_output=expected_answer,
     )
-    await async_assert_test(test_case, [answer_relevancy_metric])
+    assert_test(test_case, [answer_relevancy_metric], run_async=False)

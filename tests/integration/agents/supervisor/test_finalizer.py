@@ -1,11 +1,11 @@
 from textwrap import dedent
 
 import pytest
+from deepeval import assert_test
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from integration.agents.test_common_node import create_mock_state
-from integration.conftest import async_assert_test
 
 
 @pytest.mark.parametrize(
@@ -519,4 +519,4 @@ async def test_generate_final_response(test_case, messages, expected_answer, com
         expected_output=expected_answer,
     )
 
-    await async_assert_test(test_case, [goal_accuracy_metric])
+    assert_test(test_case, [goal_accuracy_metric], run_async=False)

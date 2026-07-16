@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
@@ -12,7 +13,6 @@ from integration.agents.fixtures.k8_query_tool_response import (
     sample_pods_tool_response,
     sample_services_tool_response,
 )
-from integration.conftest import async_assert_test
 from utils.settings import MAIN_MODEL_NAME
 
 
@@ -43,7 +43,6 @@ def tool_response_summarization_metric(evaluator_model):
             LLMTestCaseParams.INPUT,
             LLMTestCaseParams.ACTUAL_OUTPUT,
         ],
-        async_mode=False,
         verbose_mode=True,
     )
 
@@ -176,4 +175,4 @@ async def test_summarize_tool_response_integration(
         actual_output=generated_summary,
     )
 
-    await async_assert_test(llm_test_case, [tool_response_summarization_metric])
+    assert_test(llm_test_case, [tool_response_summarization_metric], run_async=False)

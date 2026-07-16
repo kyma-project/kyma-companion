@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import patch
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -9,7 +10,6 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
 from followup_questions.followup_questions import FollowUpQuestionsHandler
-from integration.conftest import async_assert_test
 from services.conversation import ConversationService
 from utils.settings import MAIN_MODEL_MINI_NAME
 
@@ -32,12 +32,9 @@ def followup_correctness_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.5,
-        # async_mode=False ensures deepeval executes this metric synchronously inside
         # a_execute_test_cases.  This is the per-metric equivalent of the old
-        # run_async=False argument that was previously passed to assert_test at the
         # call site.  The two settings are equivalent: a_execute_test_cases respects
         # each metric's async_mode flag, so no separate run_async guard is needed.
-        async_mode=False,
     )
 
 
@@ -134,4 +131,4 @@ async def test_followup_questions(messages, conversation_service, followup_corre
         input=messages[-1].content,
         actual_output=got_questions,
     )
-    await async_assert_test(test_case, [followup_correctness_metric])
+    assert_test(test_case, [followup_correctness_metric], run_async=False)

@@ -1,4 +1,5 @@
 import pytest
+from deepeval import assert_test
 from deepeval.test_case.llm_test_case import LLMTestCase
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -8,7 +9,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_6,
     conversation_sample_7,
 )
-from integration.conftest import async_assert_test, convert_dict_to_messages, create_mock_state
+from integration.conftest import convert_dict_to_messages, create_mock_state
 
 
 @pytest.mark.parametrize(
@@ -418,7 +419,7 @@ async def test_invoke_gatekeeper_node(
             actual_output=actual_response.direct_response,
             expected_output=expected_answer,
         )
-        await async_assert_test(test_case, [goal_accuracy_metric])
+        assert_test(test_case, [goal_accuracy_metric], run_async=False)
 
 
 @pytest.mark.parametrize(
@@ -809,4 +810,4 @@ async def test_gatekeeper_with_conversation_history(
             actual_output=result.direct_response,
             expected_output=expected_answer,
         )
-        await async_assert_test(test_case, [goal_accuracy_metric])
+        assert_test(test_case, [goal_accuracy_metric], run_async=False)

@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
@@ -11,7 +12,6 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from agents.common.state import SubTask
 from agents.k8s.agent import KubernetesAgent
 from agents.k8s.state import KubernetesAgentState
-from integration.conftest import async_assert_test
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE, MAIN_MODEL_NAME
 
@@ -134,7 +134,7 @@ async def test_invoke_chain(
             retrieval_context=([retrieval_context] if retrieval_context else []),
         )
         # evaluate if the gotten response is semantically similar and faithful to the expected response
-        await async_assert_test(test_case, [correctness_metric, faithfulness_metric])
+        assert_test(test_case, [correctness_metric, faithfulness_metric], run_async=False)
 
 
 @pytest.mark.parametrize(

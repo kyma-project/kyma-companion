@@ -1,10 +1,10 @@
 import json
 
 import pytest
+from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
-from integration.conftest import async_assert_test
 from rag.query_generator import Queries, QueryGenerator
 from utils.settings import MAIN_MODEL_NAME
 
@@ -24,7 +24,6 @@ def correctness_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.7,
-        async_mode=False,
     )
 
 
@@ -94,4 +93,4 @@ async def test_generate_queries(input_query, expected_queries, query_generator, 
         expected_output=expected_json,
     )
 
-    await async_assert_test(test_case, [correctness_metric])
+    assert_test(test_case, [correctness_metric], run_async=False)
