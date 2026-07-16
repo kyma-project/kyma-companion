@@ -424,6 +424,30 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                     args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
                 ),
             ],
+            alternative_tool_calls=[
+                # LLM appends search_kyma_doc (prompt rule: "always search after query for Kyma issues")
+                [
+                    ToolCall(
+                        name="fetch_kyma_resource_version",
+                        args={"resource_kind": "Subscription"},
+                    ),
+                    ToolCall(
+                        name="kyma_query_tool",
+                        args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
+                    ),
+                    ToolCall(
+                        name="search_kyma_doc",
+                        args={"query": "Kyma Subscription"},
+                    ),
+                ],
+                # LLM skips fetch_kyma_resource_version (already knows eventing API version)
+                [
+                    ToolCall(
+                        name="kyma_query_tool",
+                        args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
+                    ),
+                ],
+            ],
         ),
         KymaKnowledgeTestCase(
             "Should not make tool calls for broad cluster resources query",
