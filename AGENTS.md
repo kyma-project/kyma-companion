@@ -134,3 +134,37 @@ Add these labels to a PR to trigger additional test suites:
 | `run-integration-test` | Integration tests |
 | `evaluation requested` | Evaluation tests (deepeval/ragas) |
 | `api-tests` | API tests |
+
+## Gate approvals
+
+The `e2e` GitHub environment requires manual approval from an `ai-force` team member before integration-test jobs run. Use the helper script to approve all pending gates for a PR in one command:
+
+```bash
+./scripts/shell/approve-integration-gates.sh <pr-number>
+# e.g.
+./scripts/shell/approve-integration-gates.sh 1265
+```
+
+The script finds every workflow run associated with the PR, checks each for pending deployments, and approves any environment where `current_user_can_approve` is true. It prints a summary of what was approved and exits non-zero if no runs are found.
+
+To approve gates for a fork of the repo, pass the full `org/repo` as a second argument:
+
+```bash
+./scripts/shell/approve-integration-gates.sh 1265 kyma-project/kyma-companion
+```
+
+**Manual fallback** (for a single run):
+
+```bash
+# 1. Find pending runs
+gh pr checks <pr-number> --repo kyma-project/kyma-companion 2>&1 | grep pending
+
+# 2. Check which environments need approval
+gh api repos/kyma-project/kyma-companion/actions/runs/<run-id>/pending_deployments
+
+# 3. Approve (environment ID from step 2)
+gh api --method POST repos/kyma-project/kyma-companion/actions/runs/<run-id>/pending_deployments \
+  --input - <<'EOF'
+{"environment_ids":[<env-id>],"state":"approved","comment":"Approved"}
+EOF
+```
