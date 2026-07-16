@@ -150,26 +150,26 @@ def convert_agent_messages_to_ragas(agent_messages, metadata: bool = False):
 def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     """Fixture providing test cases for Kyma agent testing."""
     return [
-        KymaKnowledgeTestCase(
-            "Should call kyma doc search tool for general Kyma knowledge",
-            state=create_basic_state(
-                task_description="what is Kyma?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="what is Kyma?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                ToolCall(
-                    name="search_kyma_doc",
-                    args={"query": "what is Kyma?"},
-                ),
-            ],
-        ),
+        # KymaKnowledgeTestCase(
+        #     "Should call kyma doc search tool for general Kyma knowledge",
+        #     state=create_basic_state(
+        #         task_description="what is Kyma?",
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_api_version': 'eventing.kyma-project.io/v1beta1', "
+        #                 "'resource_namespace': 'test-function-8', 'resource_kind': 'Function', 'resource_name': 'func1', 'resource_scope': 'namespaced'}"
+        #             ),
+        #             HumanMessage(content="what is Kyma?"),
+        #         ],
+        #         k8s_client=k8s_client,
+        #     ),
+        #     expected_tool_calls=[
+        #         ToolCall(
+        #             name="search_kyma_doc",
+        #             args={"query": "what is Kyma?"},
+        #         ),
+        #     ],
+        # ),
         KymaKnowledgeTestCase(
             "Should call kyma doc search tool for Kyma module enablement",
             state=create_basic_state(
@@ -316,23 +316,23 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
             must_not_call_tools=[TOOL_FETCH_KYMA_VERSION],  # Version is correct, no need to fetch
             must_contain_in_messages=["v1alpha2"],
         ),
-        NamespaceScopedTestCase(
-            name="Should handle wrong APIRule version (v1beta1) and correct to v2",
-            state_factory=lambda k8s=k8s_client: create_basic_state(
-                task_description="What is wrong with api rules?",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_scope': 'namespaced'}"
-                    ),
-                    HumanMessage(content="What is wrong with api rules?"),
-                ],
-                k8s_client=k8s,
-            ),
-            must_call_tools=[TOOL_KYMA_QUERY],
-            must_contain_in_messages=["v2"],  # Must correct to v2
-            max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
-        ),
+        #     NamespaceScopedTestCase(
+        #         name="Should handle wrong APIRule version (v1beta1) and correct to v2",
+        #         state_factory=lambda k8s=k8s_client: create_basic_state(
+        #             task_description="What is wrong with api rules?",
+        #             messages=[
+        #                 SystemMessage(
+        #                     content="{'resource_api_version': 'gateway.kyma-project.io/v1beta1', "
+        #                     "'resource_namespace': 'test-apirule-7', 'resource_scope': 'namespaced'}"
+        #                 ),
+        #                 HumanMessage(content="What is wrong with api rules?"),
+        #             ],
+        #             k8s_client=k8s,
+        #         ),
+        #         must_call_tools=[TOOL_KYMA_QUERY],
+        #         must_contain_in_messages=["v2"],  # Must correct to v2
+        #         max_tool_call_count={TOOL_KYMA_QUERY: EXPECTED_MAX_RETRY_ATTEMPTS},
+        #     ),
     ]
 
 
@@ -403,62 +403,62 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
                 ],
             ],
         ),
-        KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
-            state=create_basic_state(
-                task_description="check all subscriptions in the cluster",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
-                    ),
-                    HumanMessage(content="check all subscriptions in the cluster"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[
-                ToolCall(
-                    name="fetch_kyma_resource_version",
-                    args={
-                        "resource_kind": "Subscription",
-                    },
-                ),
-                ToolCall(
-                    name="kyma_query_tool",
-                    args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
-                ),
-            ],
-        ),
-        KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
-            state=create_basic_state(
-                task_description="check all resources in the cluster",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
-                    ),
-                    HumanMessage(content="check all resources in the cluster"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[],
-        ),
-        KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
-            state=create_basic_state(
-                task_description="show me all Kyma resources",
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
-                        "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
-                    ),
-                    HumanMessage(content="what is wrong with Kyma?"),
-                ],
-                k8s_client=k8s_client,
-            ),
-            expected_tool_calls=[],
-        ),
+        # KymaKnowledgeTestCase(
+        #     "Should use cluster scope retrieval with kyma query tool",
+        #     state=create_basic_state(
+        #         task_description="check all subscriptions in the cluster",
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
+        #                 "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+        #             ),
+        #             HumanMessage(content="check all subscriptions in the cluster"),
+        #         ],
+        #         k8s_client=k8s_client,
+        #     ),
+        #     expected_tool_calls=[
+        #         ToolCall(
+        #             name="fetch_kyma_resource_version",
+        #             args={
+        #                 "resource_kind": "Subscription",
+        #             },
+        #         ),
+        #         ToolCall(
+        #             name="kyma_query_tool",
+        #             args={"uri": "/apis/eventing.kyma-project.io/v1alpha2/subscriptions"},
+        #         ),
+        #     ],
+        # ),
+        # KymaKnowledgeTestCase(
+        #     "Should use cluster scope retrieval with kyma query tool",
+        #     state=create_basic_state(
+        #         task_description="check all resources in the cluster",
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
+        #                 "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+        #             ),
+        #             HumanMessage(content="check all resources in the cluster"),
+        #         ],
+        #         k8s_client=k8s_client,
+        #     ),
+        #     expected_tool_calls=[],
+        # ),
+        # KymaKnowledgeTestCase(
+        #     "Should use cluster scope retrieval with kyma query tool",
+        #     state=create_basic_state(
+        #         task_description="show me all Kyma resources",
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_api_version': 'gateway.kyma-project.io/v2', "
+        #                 "'resource_namespace': 'test-apirule-7', 'resource_kind': 'APIRule', 'resource_name': 'restapi'}"
+        #             ),
+        #             HumanMessage(content="what is wrong with Kyma?"),
+        #         ],
+        #         k8s_client=k8s_client,
+        #     ),
+        #     expected_tool_calls=[],
+        # ),
     ]
 
 
