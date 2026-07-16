@@ -38,7 +38,8 @@ class KymaAgentTestCase:
     should_raise: bool = False
 
 
-def create_k8s_client():
+def create_k8s_client() -> IK8sClient:
+    """Create a K8s client using configured cluster credentials."""
     data_sanitizer = DataSanitizer()
     k8s_auth_headers = K8sAuthHeaders(
         x_cluster_url=TEST_CLUSTER_URL,
@@ -47,7 +48,6 @@ def create_k8s_client():
         x_client_certificate_data=TEST_CLUSTER_CLIENT_CERTIFICATE_DATA,
         x_client_key_data=TEST_CLUSTER_CLIENT_KEY_DATA,
     )
-    # Initialize k8s client for the request.
     k8s_client: IK8sClient = K8sClient.new(
         k8s_auth_headers=k8s_auth_headers,
         data_sanitizer=data_sanitizer,
@@ -55,15 +55,21 @@ def create_k8s_client():
     return k8s_client
 
 
+@pytest.fixture(scope="session")
+def k8s_client_session() -> IK8sClient:
+    """Session-scoped K8s client fixture. Created once per test session."""
+    return create_k8s_client()
+
+
 @pytest.fixture
-def k8s_client():
-    # Initialize k8s client for the request.
-    k8s_client: IK8sClient = create_k8s_client()
-    return k8s_client
+def k8s_client(k8s_client_session: IK8sClient) -> IK8sClient:
+    """Function-scoped alias for the session K8s client."""
+    return k8s_client_session
 
 
 @pytest.fixture
 def kyma_agent(app_models):
+    """Create a KymaAgent instance."""
     return KymaAgent(app_models)
 
 
@@ -102,12 +108,14 @@ def create_basic_state(
 
 @pytest.fixture
 def evaluator_llm(app_models):
+    """Create a LangchainLLMWrapper for the main model."""
     main_model = app_models[MAIN_MODEL_NAME]
     return LangchainLLMWrapper(main_model.llm)
 
 
 @pytest.fixture
 def goal_accuracy_metric(evaluator_llm):
+    """Create a SimpleCriteriaScore metric for goal accuracy evaluation."""
     scorer = SimpleCriteriaScore(
         name="course_grained_score",
         definition="Score 0 to 10 by similarity",
@@ -117,12 +125,13 @@ def goal_accuracy_metric(evaluator_llm):
 
 
 async def call_kyma_agent(kyma_agent, state):
+    """Invoke the Kyma agent and return the response."""
     response = await kyma_agent.agent_node().ainvoke(state)
     return response
 
 
-def create_test_cases(k8s_client: IK8sClient):
-    """Fixture providing test cases for Kyma agent testing."""
+def create_test_cases(k8s_client: IK8sClient) -> list[KymaAgentTestCase]:
+    """Build the list of goal-accuracy test cases."""
     return [
         KymaAgentTestCase(
             "Should find javascript Dates syntax error in Kyma function",
@@ -219,10 +228,31 @@ def create_test_cases(k8s_client: IK8sClient):
     ]
 
 
-TEST_CASES = create_test_cases(create_k8s_client())
+# Test case names used to generate stable parametrize IDs without constructing a k8s client.
+_TEST_CASE_NAMES = [
+    "Should find javascript Dates syntax error in Kyma function",
+    "Should ask more information from user for queries about Kyma resources status",
+    "Should ask more information from user for queries about all Kyma resources in cluster",
+    "Should ask more information from user for queries about Kyma resources health",
+    "Should ask more information from user for queries about all Kyma resources in cluster",
+    "Should ask more information from user for queries about showing all Kyma resources",
+    "Should ask more information from user for queries about all Kyma resources in cluster",
+    "Should ask more information from user for queries about Kyma cluster state",
+]
 
 
-@pytest.mark.parametrize("test_case", TEST_CASES, ids=[tc.name for tc in TEST_CASES])
+def pytest_generate_tests(metafunc):
+    """Parametrize test_case lazily so collection never calls create_k8s_client()."""
+    if "test_case" in metafunc.fixturenames and metafunc.function.__name__ == "test_kyma_agent":
+        metafunc.parametrize("test_case", range(len(_TEST_CASE_NAMES)), ids=_TEST_CASE_NAMES, indirect=True)
+
+
+@pytest.fixture
+def test_case(request, k8s_client_session):
+    """Resolve a test-case index into a KymaAgentTestCase, building it with the real k8s client."""
+    return create_test_cases(k8s_client_session)[request.param]
+
+
 @pytest.mark.asyncio
 async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgentTestCase):
     """

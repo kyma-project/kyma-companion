@@ -34,7 +34,8 @@ TOOL_FETCH_KYMA_VERSION = "fetch_kyma_resource_version"
 TOOL_SEARCH_KYMA_DOC = "search_kyma_doc"
 
 
-def create_k8s_client():
+def create_k8s_client() -> IK8sClient:
+    """Create a K8s client using configured cluster credentials."""
     data_sanitizer = DataSanitizer()
     k8s_auth_headers = K8sAuthHeaders(
         x_cluster_url=TEST_CLUSTER_URL,
@@ -43,7 +44,6 @@ def create_k8s_client():
         x_client_certificate_data=TEST_CLUSTER_CLIENT_CERTIFICATE_DATA,
         x_client_key_data=TEST_CLUSTER_CLIENT_KEY_DATA,
     )
-    # Initialize k8s client for the request.
     k8s_client: IK8sClient = K8sClient.new(
         k8s_auth_headers=k8s_auth_headers,
         data_sanitizer=data_sanitizer,
@@ -51,15 +51,21 @@ def create_k8s_client():
     return k8s_client
 
 
+@pytest.fixture(scope="session")
+def k8s_client_session() -> IK8sClient:
+    """Session-scoped K8s client fixture. Created once per test session."""
+    return create_k8s_client()
+
+
 @pytest.fixture
-def k8s_client():
-    # Initialize k8s client for the request.
-    k8s_client: IK8sClient = create_k8s_client()
-    return k8s_client
+def k8s_client(k8s_client_session: IK8sClient) -> IK8sClient:
+    """Function-scoped alias for the session K8s client."""
+    return k8s_client_session
 
 
 @pytest.fixture
 def kyma_agent(app_models):
+    """Create a KymaAgent instance."""
     return KymaAgent(app_models)
 
 
@@ -92,6 +98,8 @@ def create_basic_state(
 
 @dataclass
 class KymaKnowledgeTestCase:
+    """Test case for Kyma knowledge and cluster-scoped tool accuracy testing."""
+
     name: str
     state: KymaAgentState
     expected_tool_calls: list[ToolCall] | None = None
@@ -103,13 +111,14 @@ class KymaKnowledgeTestCase:
 
 @pytest.fixture
 def tool_accuracy_scorer():
+    """Create a ToolCallAccuracy scorer with string similarity metric."""
     metric = ToolCallAccuracy()
     metric.arg_comparison_metric = NonLLMStringSimilarity()
     return metric
 
 
 async def call_kyma_agent(kyma_agent, state):
-    # Invokes kyma agent subgraph.
+    """Invoke the Kyma agent subgraph and return the response."""
     response = await kyma_agent.agent_node().ainvoke(state)
     return response
 
@@ -143,8 +152,13 @@ def convert_agent_messages_to_ragas(agent_messages, metadata: bool = False):
     return convert_to_ragas_messages(messages, metadata=metadata)
 
 
-def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
-    """Fixture providing test cases for Kyma agent testing."""
+# ---------------------------------------------------------------------------
+# Kyma knowledge tests
+# ---------------------------------------------------------------------------
+
+
+def create_test_cases_kyma_knowledge(k8s_client: IK8sClient) -> list[KymaKnowledgeTestCase]:
+    """Build the list of Kyma-knowledge tool-accuracy test cases."""
     return [
         KymaKnowledgeTestCase(
             "Should call kyma doc search tool for general Kyma knowledge",
@@ -189,21 +203,15 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_kyma_knowledge(create_k8s_client()), ids=lambda tc: tc.name)
-@pytest.mark.asyncio
-async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
-    agent_response = await call_kyma_agent(kyma_agent, test_case.state)
-    agent_messages = convert_agent_messages_to_ragas(agent_response["agent_messages"], metadata=True)
+_KYMA_KNOWLEDGE_TEST_CASE_NAMES = [
+    "Should call kyma doc search tool for general Kyma knowledge",
+    "Should call kyma doc search tool for Kyma module enablement",
+]
 
-    test_case_sample = MultiTurnSample(
-        user_input=agent_messages,
-        reference_tool_calls=test_case.expected_tool_calls,
-    )
 
-    score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
-    assert score > TOOL_ACCURACY_THRESHOLD, (
-        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
-    )
+# ---------------------------------------------------------------------------
+# Namespace-scoped tests
+# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -274,7 +282,7 @@ def assert_outcome_invariants(test_case: NamespaceScopedTestCase, agent_messages
         assert actual_count <= max_count, f"Tool '{tool_name}' called {actual_count} times, exceeds max of {max_count}"
 
 
-def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
+def create_test_cases_namespace_scoped(k8s_client: IK8sClient) -> list[NamespaceScopedTestCase]:
     """Create table of namespace-scoped test cases with invariants."""
     return [
         NamespaceScopedTestCase(
@@ -332,30 +340,20 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    create_test_cases_namespace_scoped(create_k8s_client()),
-    ids=lambda tc: tc.name,
-)
-@pytest.mark.asyncio
-async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScopedTestCase):
-    """Test agent behavior by verifying outcomes and invariants."""
-    # Build a fresh state on every invocation so reruns start clean.
-    state = test_case.state_factory()
-
-    # When: Agent processes the request
-    result = await call_kyma_agent(kyma_agent, state)
-
-    # Then: Agent should have made tool calls
-    agent_messages = result.get("agent_messages", [])
-    assert len(agent_messages) > 0, "Agent should have made tool calls"
-
-    # Then: Assert all invariants defined in the test case
-    assert_outcome_invariants(test_case, agent_messages)
+_NAMESPACE_SCOPED_TEST_CASE_NAMES = [
+    "Should handle wrong Subscription API version and correct it",
+    "Should handle correct Function API version without fetching version",
+    "Should handle wrong APIRule version (v1beta1) and correct to v2",
+]
 
 
-def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
-    """Fixture providing test cases for Kyma agent testing."""
+# ---------------------------------------------------------------------------
+# Cluster-scoped tests
+# ---------------------------------------------------------------------------
+
+
+def create_test_cases_cluster_scoped(k8s_client: IK8sClient) -> list[KymaKnowledgeTestCase]:
+    """Build the list of cluster-scoped tool-accuracy test cases."""
     return [
         KymaKnowledgeTestCase(
             "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
@@ -458,9 +456,104 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
     ]
 
 
-@pytest.mark.parametrize("test_case", create_test_cases_cluster_scoped(create_k8s_client()), ids=lambda tc: tc.name)
+_CLUSTER_SCOPED_TEST_CASE_NAMES = [
+    "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
+    "Should use cluster scope retrieval with kyma query tool",
+    "Should use cluster scope retrieval with kyma query tool",
+    "Should use cluster scope retrieval with kyma query tool",
+]
+
+
+# ---------------------------------------------------------------------------
+# pytest_generate_tests -- defers all parametrize calls until fixture time
+# ---------------------------------------------------------------------------
+
+
+def pytest_generate_tests(metafunc):
+    """Parametrize all test functions lazily to avoid module-level client construction."""
+    if "test_case" not in metafunc.fixturenames:
+        return
+
+    fn = metafunc.function.__name__
+    if fn == "test_kyma_agent_kyma_knowledge":
+        metafunc.parametrize(
+            "test_case",
+            range(len(_KYMA_KNOWLEDGE_TEST_CASE_NAMES)),
+            ids=_KYMA_KNOWLEDGE_TEST_CASE_NAMES,
+            indirect=True,
+        )
+    elif fn == "test_kyma_agent_namespace_scoped":
+        metafunc.parametrize(
+            "test_case",
+            range(len(_NAMESPACE_SCOPED_TEST_CASE_NAMES)),
+            ids=_NAMESPACE_SCOPED_TEST_CASE_NAMES,
+            indirect=True,
+        )
+    elif fn == "test_kyma_agent_cluster_scoped":
+        metafunc.parametrize(
+            "test_case",
+            range(len(_CLUSTER_SCOPED_TEST_CASE_NAMES)),
+            ids=_CLUSTER_SCOPED_TEST_CASE_NAMES,
+            indirect=True,
+        )
+
+
+@pytest.fixture
+def test_case(request, k8s_client_session):
+    """Resolve a test-case index into the appropriate test case, built with the real k8s client."""
+    fn = request.node.originalname
+    idx = request.param
+    if fn == "test_kyma_agent_kyma_knowledge":
+        return create_test_cases_kyma_knowledge(k8s_client_session)[idx]
+    if fn == "test_kyma_agent_namespace_scoped":
+        return create_test_cases_namespace_scoped(k8s_client_session)[idx]
+    if fn == "test_kyma_agent_cluster_scoped":
+        return create_test_cases_cluster_scoped(k8s_client_session)[idx]
+    raise ValueError(f"Unknown test function: {fn}")
+
+
+# ---------------------------------------------------------------------------
+# Test functions
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_kyma_agent_kyma_knowledge(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
+    """Test that the Kyma agent calls the correct tools for Kyma knowledge queries."""
+    agent_response = await call_kyma_agent(kyma_agent, test_case.state)
+    agent_messages = convert_agent_messages_to_ragas(agent_response["agent_messages"], metadata=True)
+
+    test_case_sample = MultiTurnSample(
+        user_input=agent_messages,
+        reference_tool_calls=test_case.expected_tool_calls,
+    )
+
+    score = await tool_accuracy_scorer.multi_turn_ascore(test_case_sample)
+    assert score > TOOL_ACCURACY_THRESHOLD, (
+        f"Tool call accuracy ({score:.2f}) is below the acceptable threshold of {TOOL_ACCURACY_THRESHOLD}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_kyma_agent_namespace_scoped(kyma_agent, test_case: NamespaceScopedTestCase):
+    """Test agent behavior by verifying outcomes and invariants."""
+    # Build a fresh state on every invocation so reruns start clean.
+    state = test_case.state_factory()
+
+    # When: Agent processes the request
+    result = await call_kyma_agent(kyma_agent, state)
+
+    # Then: Agent should have made tool calls
+    agent_messages = result.get("agent_messages", [])
+    assert len(agent_messages) > 0, "Agent should have made tool calls"
+
+    # Then: Assert all invariants defined in the test case
+    assert_outcome_invariants(test_case, agent_messages)
+
+
 @pytest.mark.asyncio
 async def test_kyma_agent_cluster_scoped(kyma_agent, tool_accuracy_scorer, test_case: KymaKnowledgeTestCase):
+    """Test that the Kyma agent uses the correct cluster-scoped tool call sequence."""
     response = await call_kyma_agent(kyma_agent, test_case.state)
     ragas_messages = convert_agent_messages_to_ragas(response["agent_messages"])
 
