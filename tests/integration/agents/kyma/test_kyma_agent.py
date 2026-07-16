@@ -664,8 +664,12 @@ async def test_invoke_chain(
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
-            # evaluate if the gotten response is semantically similar and faithful to the expected response
-            assert_test(test_case, [correctness_metric, faithfulness_metric])
+            # Only include FaithfulnessMetric when retrieval_context is non-empty;
+            # faithfulness against no context is undefined and produces random scores.
+            metrics = [correctness_metric]
+            if retrieval_context:
+                metrics.append(faithfulness_metric)
+            assert_test(test_case, metrics)
 
 
 @pytest.mark.parametrize(
@@ -955,5 +959,9 @@ async def test_tool_calling(
                 expected_output=expected_result if expected_result else None,
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
-            # evaluate if the gotten response is semantically similar and faithful to the expected response
-            assert_test(test_case, [correctness_metric, faithfulness_metric])
+            # Only include FaithfulnessMetric when retrieval_context is non-empty;
+            # faithfulness against no context is undefined and produces random scores.
+            metrics = [correctness_metric]
+            if retrieval_context:
+                metrics.append(faithfulness_metric)
+            assert_test(test_case, metrics)
