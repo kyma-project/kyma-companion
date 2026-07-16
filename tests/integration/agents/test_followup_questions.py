@@ -32,9 +32,6 @@ def followup_correctness_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.5,
-        # a_execute_test_cases.  This is the per-metric equivalent of the old
-        # call site.  The two settings are equivalent: a_execute_test_cases respects
-        # each metric's async_mode flag, so no separate run_async guard is needed.
     )
 
 
@@ -131,4 +128,7 @@ async def test_followup_questions(messages, conversation_service, followup_corre
         input=messages[-1].content,
         actual_output=got_questions,
     )
+    # run_async=False is required here: assert_test's default (run_async=True) wraps
+    # a_execute_test_cases in loop.run_until_complete(), which crashes inside an already-running
+    # pytest-asyncio event loop. The sync path (run_async=False) never touches the event loop.
     assert_test(test_case, [followup_correctness_metric], run_async=False)
