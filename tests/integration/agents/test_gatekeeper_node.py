@@ -308,7 +308,7 @@ from integration.conftest import async_assert_test, convert_dict_to_messages, cr
             False,
         ),
         (
-            "correctly forward the query",
+            "correctly forward deployment problem query",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="What is problem with my deployment?"),
@@ -317,7 +317,7 @@ from integration.conftest import async_assert_test, convert_dict_to_messages, cr
             True,
         ),
         (
-            "correctly forward the query",
+            "correctly forward kyma function deployment query",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="how to deploy a kyma function?"),
@@ -326,7 +326,7 @@ from integration.conftest import async_assert_test, convert_dict_to_messages, cr
             True,
         ),
         (
-            "correctly forward the query",
+            "correctly forward api status query",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my api"),
@@ -335,7 +335,7 @@ from integration.conftest import async_assert_test, convert_dict_to_messages, cr
             True,
         ),
         (
-            "correctly forward the query",
+            "correctly forward pod status query",
             [
                 SystemMessage(content="{'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}"),
                 HumanMessage(content="what is the status of my pod"),
@@ -561,7 +561,7 @@ async def test_gatekeeper_categorization(
     "test_description, conversation_history, user_query, expected_answer, expected_query_forwarding",
     [
         (
-            "answer the question based on the conversation history",
+            "answer question about issue based on conversation history with serverless function context",
             conversation_sample_2,
             "what was the issue?",
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
@@ -571,7 +571,7 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about what was wrong based on conversation history with serverless function context",
             conversation_sample_2,
             "what was wrong?",
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
@@ -581,7 +581,7 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about what was the problem based on conversation history with serverless function context",
             conversation_sample_2,
             "what was the problem?",
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "
@@ -591,7 +591,7 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about cause based on conversation history with pod permissions context",
             conversation_sample_5,
             "what was the cause?",
             "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
@@ -602,7 +602,7 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about reason based on conversation history with pod permissions context",
             conversation_sample_5,
             "what was the reason?",
             "The cause of the Pod `pod-check` being in an error state is likely due to insufficient permissions "
@@ -613,7 +613,7 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about issue based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "what was the issue?",
             "The issue with the function in the `test-function-8` namespace was a syntax error in the JavaScript code.\n"
@@ -622,49 +622,49 @@ async def test_gatekeeper_categorization(
             False,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about function issue based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "what is the issue with function?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about any problem with function based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "any problem with function?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about finding issue with function based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "find issue with function?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about error in tracing pipeline based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "any error in tracing pipeline?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about anything wrong with api rules based on conversation history with javascript syntax error context",
             conversation_sample_7,
             "anything wrong with api rules?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "forward query about function issue based on conversation history with serverless function context",
             conversation_sample_2,
             "what is the issue with function?",
             "",
             True,
         ),
         (
-            "answer the question based on the conversation history",
+            "answer question about implicit issue reference based on conversation history with serverless function context",
             conversation_sample_2,
             "what is the issue?",  # this is implicitly referring to the conversation history
             "The issue with the serverless Function `func1` in the namespace `kyma-serverless-function-no-replicas` not being ready "

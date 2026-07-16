@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from ragas.dataset_schema import SingleTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 from ragas.llms import LangchainLLMWrapper
@@ -21,7 +21,6 @@ from utils.settings import (
     TEST_CLUSTER_CLIENT_KEY_DATA,
     TEST_CLUSTER_URL,
 )
-from utils.utils import get_text_content
 
 AGENT_STEPS_NUMBER = 25
 GOAL_ACCURACY_THRESHOLD = 7
@@ -119,10 +118,6 @@ def goal_accuracy_metric(evaluator_llm):
 
 async def call_kyma_agent(kyma_agent, state):
     response = await kyma_agent.agent_node().ainvoke(state)
-    # Normalize AIMessage content from Bedrock list format to plain string before ragas conversion.
-    for msg in response.get("agent_messages", []):
-        if isinstance(msg, AIMessage) and isinstance(msg.content, list):
-            msg.content = get_text_content(msg.content)
     return response
 
 
@@ -144,63 +139,63 @@ def create_test_cases(k8s_client: IK8sClient):
             ),
             expected_goal="There is a syntax error in the JavaScript code. Date must be used instead of Dates.",
         ),
-        # KymaAgentTestCase(
-        #     "Should ask more information from user for queries about Kyma resources status",
-        #     state=create_basic_state(
-        #         task_description="what is the status of all Kyma resources?",
-        #         messages=[
-        #             HumanMessage(content="what is the status of all Kyma resources?"),
-        #         ],
-        #         k8s_client=k8s_client,
-        #     ),
-        #     expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
-        # ),
-        # # KymaAgentTestCase(
-        #     "Should ask more information from user for queries about all Kyma resources in cluster",
-        #     state=create_basic_state(
-        #         task_description="check all Kyma resources",
-        #         messages=[
-        #             HumanMessage(content="check all Kyma resources"),
-        #         ],
-        #         k8s_client=k8s_client,
-        #     ),
-        #     expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
-        # ),
-        # KymaAgentTestCase(
-        #     "Should ask more information from user for queries about Kyma resources health",
-        #     state=create_basic_state(
-        #         task_description="are all Kyma resources healthy?",
-        #         messages=[
-        #             HumanMessage(content="are all Kyma resources healthy?"),
-        #         ],
-        #         k8s_client=k8s_client,
-        #     ),
-        #     expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
-        # ),
-        # # KymaAgentTestCase(
-        #     "Should ask more information from user for queries about all Kyma resources in cluster",
-        #     state=create_basic_state(
-        #         task_description="is there anything wrong with Kyma resources?",
-        #         messages=[
-        #             HumanMessage(content="is there anything wrong with Kyma resources?"),
-        #         ],
-        #         k8s_client=k8s_client,
-        #     ),
-        #     expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
-        # ),
-        # KymaAgentTestCase(
-        #     "Should ask more information from user for queries about showing all Kyma resources",
-        #     state=create_basic_state(
-        #         task_description="show me all Kyma resources",
-        #         messages=[
-        #             HumanMessage(content="show me all Kyma resources"),
-        #         ],
-        #         k8s_client=k8s_client,
-        #     ),
-        #     expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
-        # ),
+        KymaAgentTestCase(
+            "Should ask more information from user for queries about Kyma resources status",
+            state=create_basic_state(
+                task_description="what is the status of all Kyma resources?",
+                messages=[
+                    HumanMessage(content="what is the status of all Kyma resources?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
+        ),
         KymaAgentTestCase(
             "Should ask more information from user for queries about all Kyma resources in cluster",
+            state=create_basic_state(
+                task_description="check all Kyma resources",
+                messages=[
+                    HumanMessage(content="check all Kyma resources"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
+        ),
+        KymaAgentTestCase(
+            "Should ask more information from user for queries about Kyma resources health",
+            state=create_basic_state(
+                task_description="are all Kyma resources healthy?",
+                messages=[
+                    HumanMessage(content="are all Kyma resources healthy?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
+        ),
+        KymaAgentTestCase(
+            "Should ask more information from user for queries about whether Kyma resources have issues",
+            state=create_basic_state(
+                task_description="is there anything wrong with Kyma resources?",
+                messages=[
+                    HumanMessage(content="is there anything wrong with Kyma resources?"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
+        ),
+        KymaAgentTestCase(
+            "Should ask more information from user for queries about showing all Kyma resources",
+            state=create_basic_state(
+                task_description="show me all Kyma resources",
+                messages=[
+                    HumanMessage(content="show me all Kyma resources"),
+                ],
+                k8s_client=k8s_client,
+            ),
+            expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
+        ),
+        KymaAgentTestCase(
+            "Should ask more information from user for queries about what is wrong with Kyma",
             state=create_basic_state(
                 task_description="what is wrong with Kyma?",
                 messages=[
