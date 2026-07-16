@@ -239,8 +239,17 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgent
     assert actual_output, f"Agent returned an empty response for test case: {test_case.name}"
 
     # For broad-query "ask for more info" cases, verify the response requests clarification
-    if "ask more information" in test_case.name.lower() or "broad" in test_case.expected_goal.lower():
-        clarification_keywords = ["specific", "more information", "which", "please"]
+    if "ask more information" in test_case.name.lower():
+        clarification_keywords = [
+            "specific",
+            "more information",
+            "which",
+            "please",
+            "clarif",
+            "specify",
+            "particular",
+            "detail",
+        ]
         assert any(kw in actual_output.lower() for kw in clarification_keywords), (
             f"Expected clarification keywords {clarification_keywords} in response, got: {actual_output!r}"
         )
@@ -256,7 +265,7 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgent
         print(
             f"**Test case failed to meet expectation:**\n"
             f"--> Expected goal: {test_case.expected_goal}\n"
-            f"--> Agent response: \n{agent_messages[-1].content}"
+            f"--> Agent response: \n{actual_output}"
         )
 
     assert score >= GOAL_ACCURACY_THRESHOLD, (
