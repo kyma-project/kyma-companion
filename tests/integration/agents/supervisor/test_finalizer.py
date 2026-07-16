@@ -505,9 +505,13 @@ async def test_generate_final_response(test_case, messages, expected_answer, com
     actual_output = result["messages"][0].content
     assert actual_output, f"Finalizer returned an empty response for test case: {test_case}"
 
-    # For "should not answer itself" cases, verify the response declines rather than answers
+    # For "should not answer itself" cases, verify the response declines rather than answers.
+    # Keywords cover common LLM phrasings for "I have no information to synthesize".
     if "do not answer the question itself" in test_case.lower():
-        refuse_keywords = ["not able", "cannot", "unable", "did not provide", "sorry"]
+        refuse_keywords = [
+            "not able", "cannot", "unable", "did not provide", "sorry",
+            "no further", "not provide", "was not provided", "no information", "no details",
+        ]
         assert any(kw in actual_output.lower() for kw in refuse_keywords), (
             f"Expected refusal keywords {refuse_keywords} in response, got: {actual_output!r}"
         )
