@@ -32,9 +32,9 @@ class KymaAgentTestCase:
 
     name: str
     state: KymaAgentState
-    expected_tool_calls: list[ToolCall] = None
-    expected_response: str = None
-    expected_goal: str = None
+    expected_tool_calls: list[ToolCall] | None = None
+    expected_response: str | None = None
+    expected_goal: str | None = None
     should_raise: bool = False
 
 
@@ -68,7 +68,7 @@ def k8s_client(k8s_client_session: IK8sClient) -> IK8sClient:
 
 
 @pytest.fixture
-def kyma_agent(app_models):
+def kyma_agent(app_models) -> KymaAgent:
     """Create a KymaAgent instance."""
     return KymaAgent(app_models)
 
@@ -160,7 +160,7 @@ def create_test_cases(k8s_client: IK8sClient) -> list[KymaAgentTestCase]:
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         KymaAgentTestCase(
-            "Should ask more information from user for queries about all Kyma resources in cluster",
+            "Should ask more information -- check all Kyma resources",
             state=create_basic_state(
                 task_description="check all Kyma resources",
                 messages=[
@@ -182,7 +182,7 @@ def create_test_cases(k8s_client: IK8sClient) -> list[KymaAgentTestCase]:
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         KymaAgentTestCase(
-            "Should ask more information from user for queries about all Kyma resources in cluster",
+            "Should ask more information -- is there anything wrong with Kyma resources",
             state=create_basic_state(
                 task_description="is there anything wrong with Kyma resources?",
                 messages=[
@@ -204,7 +204,7 @@ def create_test_cases(k8s_client: IK8sClient) -> list[KymaAgentTestCase]:
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         KymaAgentTestCase(
-            "Should ask more information from user for queries about all Kyma resources in cluster",
+            "Should ask more information -- what is wrong with Kyma",
             state=create_basic_state(
                 task_description="what is wrong with Kyma?",
                 messages=[
@@ -228,17 +228,11 @@ def create_test_cases(k8s_client: IK8sClient) -> list[KymaAgentTestCase]:
     ]
 
 
-# Test case names used to generate stable parametrize IDs without constructing a k8s client.
-_TEST_CASE_NAMES = [
-    "Should find javascript Dates syntax error in Kyma function",
-    "Should ask more information from user for queries about Kyma resources status",
-    "Should ask more information from user for queries about all Kyma resources in cluster",
-    "Should ask more information from user for queries about Kyma resources health",
-    "Should ask more information from user for queries about all Kyma resources in cluster",
-    "Should ask more information from user for queries about showing all Kyma resources",
-    "Should ask more information from user for queries about all Kyma resources in cluster",
-    "Should ask more information from user for queries about Kyma cluster state",
-]
+# Derive parametrize IDs directly from the test case definitions so there is
+# a single source of truth.  None is a safe sentinel: create_test_cases uses
+# the client only to populate KymaAgentState.k8s_client, which is not accessed
+# during name extraction.
+_TEST_CASE_NAMES: list[str] = [tc.name for tc in create_test_cases(None)]  # type: ignore[arg-type]
 
 
 def pytest_generate_tests(metafunc):
@@ -248,7 +242,7 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def test_case(request, k8s_client_session):
+def test_case(request: pytest.FixtureRequest, k8s_client_session: IK8sClient) -> KymaAgentTestCase:
     """Resolve a test-case index into a KymaAgentTestCase, building it with the real k8s client."""
     return create_test_cases(k8s_client_session)[request.param]
 

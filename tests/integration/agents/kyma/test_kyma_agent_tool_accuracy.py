@@ -64,7 +64,7 @@ def k8s_client(k8s_client_session: IK8sClient) -> IK8sClient:
 
 
 @pytest.fixture
-def kyma_agent(app_models):
+def kyma_agent(app_models) -> KymaAgent:
     """Create a KymaAgent instance."""
     return KymaAgent(app_models)
 
@@ -203,9 +203,9 @@ def create_test_cases_kyma_knowledge(k8s_client: IK8sClient) -> list[KymaKnowled
     ]
 
 
-_KYMA_KNOWLEDGE_TEST_CASE_NAMES = [
-    "Should call kyma doc search tool for general Kyma knowledge",
-    "Should call kyma doc search tool for Kyma module enablement",
+_KYMA_KNOWLEDGE_TEST_CASE_NAMES: list[str] = [
+    tc.name
+    for tc in create_test_cases_kyma_knowledge(None)  # type: ignore[arg-type]
 ]
 
 
@@ -340,10 +340,9 @@ def create_test_cases_namespace_scoped(k8s_client: IK8sClient) -> list[Namespace
     ]
 
 
-_NAMESPACE_SCOPED_TEST_CASE_NAMES = [
-    "Should handle wrong Subscription API version and correct it",
-    "Should handle correct Function API version without fetching version",
-    "Should handle wrong APIRule version (v1beta1) and correct to v2",
+_NAMESPACE_SCOPED_TEST_CASE_NAMES: list[str] = [
+    tc.name
+    for tc in create_test_cases_namespace_scoped(None)  # type: ignore[arg-type]
 ]
 
 
@@ -398,7 +397,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient) -> list[KymaKnowled
             ],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should retrieve all subscriptions cluster-wide",
             state=create_basic_state(
                 task_description="check all subscriptions in the cluster",
                 messages=[
@@ -424,7 +423,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient) -> list[KymaKnowled
             ],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should decline to enumerate all resources cluster-wide",
             state=create_basic_state(
                 task_description="check all resources in the cluster",
                 messages=[
@@ -439,7 +438,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient) -> list[KymaKnowled
             expected_tool_calls=[],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should decline broad show-all-Kyma-resources query",
             state=create_basic_state(
                 task_description="show me all Kyma resources",
                 messages=[
@@ -456,11 +455,9 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient) -> list[KymaKnowled
     ]
 
 
-_CLUSTER_SCOPED_TEST_CASE_NAMES = [
-    "Should use Kyma Resource Query and then Kyma Doc Search Tool Calls sequentially",
-    "Should use cluster scope retrieval with kyma query tool",
-    "Should use cluster scope retrieval with kyma query tool",
-    "Should use cluster scope retrieval with kyma query tool",
+_CLUSTER_SCOPED_TEST_CASE_NAMES: list[str] = [
+    tc.name
+    for tc in create_test_cases_cluster_scoped(None)  # type: ignore[arg-type]
 ]
 
 
@@ -499,7 +496,9 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture
-def test_case(request, k8s_client_session):
+def test_case(
+    request: pytest.FixtureRequest, k8s_client_session: IK8sClient
+) -> KymaKnowledgeTestCase | NamespaceScopedTestCase:
     """Resolve a test-case index into the appropriate test case, built with the real k8s client."""
     fn = request.node.originalname
     idx = request.param
