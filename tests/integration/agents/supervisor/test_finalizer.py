@@ -499,10 +499,23 @@ async def test_generate_final_response(test_case, messages, expected_answer, com
     # When: The Finalizer generates a final response
     assert state.input is not None
     result = await companion_graph.supervisor_agent._generate_final_response(state)
+
+    # Pre-check: verify structural response before invoking the judge
+    assert result["messages"], f"Finalizer returned no messages for test case: {test_case}"
+    actual_output = result["messages"][0].content
+    assert actual_output, f"Finalizer returned an empty response for test case: {test_case}"
+
+    # For "should not answer itself" cases, verify the response declines rather than answers
+    if "do not answer the question itself" in test_case.lower():
+        refuse_keywords = ["not able", "cannot", "unable", "did not provide", "sorry"]
+        assert any(kw in actual_output.lower() for kw in refuse_keywords), (
+            f"Expected refusal keywords {refuse_keywords} in response, got: {actual_output!r}"
+        )
+
     latest_human_message = HumanMessage(content=state.input.query)
     test_case = LLMTestCase(
         input=str(latest_human_message),
-        actual_output=result["messages"][0].content,
+        actual_output=actual_output,
         expected_output=expected_answer,
     )
 

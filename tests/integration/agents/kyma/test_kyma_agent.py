@@ -663,6 +663,9 @@ async def test_invoke_chain(
             else:
                 assert tool_call.get("name") == expected_tool_call
         else:
+            # Pre-check: verify structural response before invoking the judge
+            assert response.content, f"KymaAgent returned an empty response for test case: {test_case}"
+
             # for content response cases, verify using deepeval metrics
             test_case = LLMTestCase(
                 input=state.my_task.description,
@@ -958,6 +961,9 @@ async def test_tool_calling(
             else:
                 assert tool_call.get("name") == expected_tool_call
         else:
+            # Pre-check: verify structural response before invoking the judge
+            assert response.content, f"KymaAgent returned an empty response for test case: {test_case}"
+
             # for content response cases, verify using deepeval metrics
             test_case = LLMTestCase(
                 input=state.my_task.description,

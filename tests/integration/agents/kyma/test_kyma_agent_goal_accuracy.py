@@ -238,9 +238,30 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgent
     agent_response = await call_kyma_agent(kyma_agent, test_case.state)
     agent_messages = convert_to_ragas_messages(agent_response["agent_messages"])
 
+    # Pre-check: verify structural response before invoking the judge
+    assert len(agent_messages) > 0, f"Agent produced no messages for test case: {test_case.name}"
+    actual_output = agent_messages[-1].content
+    assert actual_output, f"Agent returned an empty response for test case: {test_case.name}"
+
+    # For broad-query "ask for more info" cases, verify the response requests clarification
+    if "ask more information" in test_case.name.lower():
+        clarification_keywords = [
+            "specific",
+            "more information",
+            "which",
+            "please",
+            "clarif",
+            "specify",
+            "particular",
+            "detail",
+        ]
+        assert any(kw in actual_output.lower() for kw in clarification_keywords), (
+            f"Expected clarification keywords {clarification_keywords} in response, got: {actual_output!r}"
+        )
+
     sample = SingleTurnSample(
         user_input=user_query,
-        response=agent_messages[-1].content,
+        response=actual_output,
         reference=test_case.expected_goal,
     )
 
@@ -249,7 +270,7 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgent
         print(
             f"**Test case failed to meet expectation:**\n"
             f"--> Expected goal: {test_case.expected_goal}\n"
-            f"--> Agent response: \n{agent_messages[-1].content}"
+            f"--> Agent response: \n{actual_output}"
         )
 
     assert score >= GOAL_ACCURACY_THRESHOLD, (
