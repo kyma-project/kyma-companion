@@ -180,12 +180,20 @@ jobs:
   run-integration-tests:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
     ## in the release-workflow, make sure to update
-    ## in the run-integration-test.yaml workflow as well.
-    name: Run integration tests
+    ## in the pull-integration-test.yaml workflow as well.
+    name: "Run integration tests / ${{ matrix.subset.name }}"
     needs: validate-input-params
     runs-on: ubuntu-latest
     environment: e2e
     permissions: read-all
+    strategy:
+      fail-fast: false  # keep other subsets running if one fails
+      matrix:
+        subset:
+          - name: kyma-agent
+          - name: k8s-supervisor
+          - name: gatekeeper
+          - name: rag-services
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
@@ -216,12 +224,12 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run integration tests
+      - name: Run integration tests (${{ matrix.subset.name }})
         env:
           LOG_LEVEL: "DEBUG"
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
-          poetry run poe test-integration
+          poetry run poe test-integration-${{ matrix.subset.name }}
 
   run-integration-tests-indexer:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
