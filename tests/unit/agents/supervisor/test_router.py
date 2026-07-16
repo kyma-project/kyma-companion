@@ -1,11 +1,31 @@
+from unittest.mock import MagicMock
+
 import pytest
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import SystemMessage
 
 from agents.common.constants import COMMON
 from agents.common.state import SubTask
 from agents.k8s.agent import K8S_AGENT
 from agents.kyma.agent import KYMA_AGENT
-from integration.agents.test_common_node import create_mock_state
+from agents.supervisor.agent import FINALIZER, SupervisorAgent
+from agents.supervisor.state import SupervisorState
+from utils.models.factory import IModel
+from utils.settings import (
+    MAIN_EMBEDDING_MODEL_NAME,
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+)
+
+
+@pytest.fixture
+def supervisor_agent():
+    mock_models = {
+        MAIN_MODEL_MINI_NAME: MagicMock(spec=IModel),
+        MAIN_MODEL_NAME: MagicMock(spec=IModel),
+        MAIN_EMBEDDING_MODEL_NAME: MagicMock(spec=Embeddings),
+    }
+    return SupervisorAgent(models=mock_models, members=[K8S_AGENT, KYMA_AGENT, COMMON, FINALIZER])
 
 
 @pytest.mark.parametrize(
@@ -223,15 +243,13 @@ from integration.agents.test_common_node import create_mock_state
         ),
     ],
 )
-def test_route(messages, subtasks, expected_answer, companion_graph):
-    """Tests the router method of CompanionGraph."""
-    # Given: A conversation state with messages and subtasks
-    state = create_mock_state(messages, subtasks)
+def test_route(messages, subtasks, expected_answer, supervisor_agent):
+    """Tests the _route method of SupervisorAgent."""
+    # Given: A supervisor state with messages and subtasks
+    state = SupervisorState(messages=messages, subtasks=subtasks)
 
-    # When: The supervisor agent's route method is invoked
-    result = companion_graph.supervisor_agent._route(state)
+    # When: The supervisor agent's _route method is invoked
+    result = supervisor_agent._route(state)
 
     # Then: We verify the routing matches the expected output
-    actual_output = result["next"]
-    expected_output = expected_answer
-    assert actual_output == expected_output, "Router did not return expected next step"
+    assert result["next"] == expected_answer, "Router did not return expected next step"
