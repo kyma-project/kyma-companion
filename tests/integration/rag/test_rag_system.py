@@ -1,11 +1,11 @@
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import (
     ContextualRecallMetric,
     GEval,
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
+from integration.conftest import async_assert_test
 from integration.rag.datasets.eventing import cases as eventing_cases
 from integration.rag.datasets.istio import cases as istio_cases
 from integration.rag.datasets.serverless import cases as serverless_cases
@@ -83,4 +83,4 @@ async def test_rag_system(
         expected_output=expected_output,
     )
     # evaluate the test case using deepeval metrics
-    assert_test(test_case, evaluation_metrics)
+    await async_assert_test(test_case, evaluation_metrics)

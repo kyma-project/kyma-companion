@@ -1,10 +1,9 @@
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from integration.conftest import create_mock_state
+from integration.conftest import async_assert_test, create_mock_state
 
 
 # Correctness metric for not general queries that needs planning
@@ -247,4 +246,4 @@ async def test_gatekeeper_security(
         actual_output=actual_response.direct_response,
         expected_output=expected_answer,
     )
-    assert_test(test_case, [gatekeeper_correctness_metric])
+    await async_assert_test(test_case, [gatekeeper_correctness_metric])

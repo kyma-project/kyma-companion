@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import (
     FaithfulnessMetric,
     GEval,
@@ -30,6 +29,7 @@ from integration.agents.fixtures.serverless_function import (
     KYMADOC_FUNCTION_TROUBLESHOOTING,
     SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
+from integration.conftest import async_assert_test
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
 from utils.utils import get_text_content
@@ -666,7 +666,7 @@ async def test_invoke_chain(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            assert_test(test_case, [correctness_metric, faithfulness_metric])
+            await async_assert_test(test_case, [correctness_metric, faithfulness_metric])
 
 
 @pytest.mark.parametrize(
@@ -956,4 +956,4 @@ async def test_tool_calling(
                 retrieval_context=([retrieval_context] if retrieval_context else []),
             )
             # evaluate if the gotten response is semantically similar and faithful to the expected response
-            assert_test(test_case, [correctness_metric, faithfulness_metric])
+            await async_assert_test(test_case, [correctness_metric, faithfulness_metric])

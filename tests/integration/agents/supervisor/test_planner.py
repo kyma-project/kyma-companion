@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -9,7 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from integration.agents.fixtures.messages import (
     conversation_sample_6,
 )
-from integration.conftest import convert_dict_to_messages, create_mock_state
+from integration.conftest import async_assert_test, convert_dict_to_messages, create_mock_state
 
 
 # Correctness metric for not general queries that needs planning
@@ -269,7 +268,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        assert_test(test_case, [planner_correctness_metric(threshold)])
+        await async_assert_test(test_case, [planner_correctness_metric(threshold)])
     else:
         # For general queries, check answer relevancy where planner directly answers
         # Then: We evaluate the response using deepeval metrics
@@ -280,7 +279,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        assert_test(test_case, [answer_relevancy_metric])
+        await async_assert_test(test_case, [answer_relevancy_metric])
 
 
 @pytest.fixture
@@ -369,4 +368,4 @@ async def test_planner_with_conversation_history(
         expected_output=str(expected_subtasks),
     )
 
-    assert_test(test_case, [planner_conversation_history_metric(threshold)])
+    await async_assert_test(test_case, [planner_conversation_history_metric(threshold)])
