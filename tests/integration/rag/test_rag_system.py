@@ -13,7 +13,7 @@ from integration.rag.datasets.telemetry import cases as telemetry_cases
 from rag.system import Query, RAGSystem
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def contextual_relevancy_metric(evaluator_model):
     return GEval(
         name="ContextualRelevancy",
@@ -34,7 +34,7 @@ def contextual_relevancy_metric(evaluator_model):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def evaluation_metrics(evaluator_model, contextual_relevancy_metric):
     # test the reranking of the retrieved documents
     # calculates how much retrieved context aligns with the expected output
@@ -52,11 +52,12 @@ def rag_system(app_models):
 
 
 @pytest.mark.parametrize(
-    "user_query, expected_output",
+    "user_query, expected_output, answer_relevancy_threshold",
     [
         pytest.param(
             case["input"],
             case["expected_output"],
+            case["answer_relevancy_threshold"],
             id=case["input"],
         )
         for case in (istio_cases + serverless_cases + telemetry_cases + eventing_cases)
@@ -66,8 +67,10 @@ def rag_system(app_models):
 async def test_rag_system(
     user_query,
     expected_output,
+    answer_relevancy_threshold,
     rag_system,
     evaluation_metrics,
+    evaluator_model,
 ):
     query = Query(text=user_query)
     retrieved_docs = await rag_system.aretrieve(query, 10)
@@ -82,5 +85,10 @@ async def test_rag_system(
         retrieval_context=retrieved_docs_content,
         expected_output=expected_output,
     )
+    # build per-case metrics using the threshold defined in each dataset case
+    contextual_recall = ContextualRecallMetric(
+        threshold=answer_relevancy_threshold, model=evaluator_model, include_reason=True
+    )
+    metrics = [contextual_recall, *evaluation_metrics[1:]]
     # evaluate the test case using deepeval metrics
-    assert_test(test_case, evaluation_metrics)
+    assert_test(test_case, metrics)
