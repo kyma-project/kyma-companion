@@ -184,27 +184,16 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         context = yaml.dump_all(await asyncio.to_thread(k8s_client.list_k8s_warning_events, namespace=namespace))
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
-        # Describe a specific resource and fetch related events concurrently.
+        # Describe a specific resource; describe_resource already embeds related events internally.
         logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
-        resources_raw, events_raw = await asyncio.gather(
-            asyncio.to_thread(
-                k8s_client.describe_resource,
-                api_version=api_version,
-                kind=kind,
-                name=name,
-                namespace=namespace,
-            ),
-            asyncio.to_thread(
-                k8s_client.list_k8s_events_for_resource,
-                kind=kind,
-                name=name,
-                namespace=namespace,
-            ),
+        resources_raw = await asyncio.to_thread(
+            k8s_client.describe_resource,
+            api_version=api_version,
+            kind=kind,
+            name=name,
+            namespace=namespace,
         )
-        resources = yaml.dump(resources_raw)
-        events = yaml.dump_all(events_raw)
-
-        context = f"{resources}\n{events}"
+        context = yaml.dump(resources_raw)
 
     else:
         raise Exception("Invalid message provided.")

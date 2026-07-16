@@ -30,8 +30,10 @@ class Hana(metaclass=SingletonMeta):
     _last_health_check: datetime | None = None
     _last_health_state: bool = False
     _health_check_ttl: timedelta = timedelta(seconds=HANA_HEALTH_CHECK_CACHE_TTL_SECONDS)
+    _lock: asyncio.Lock
 
     def __init__(self, connection_factory: Callable[[], dbapi.Connection] | None = None) -> None:
+        self._lock = asyncio.Lock()
         try:
             self.connection = connection_factory() if connection_factory else _get_hana_connection()
         except dbapi.Error:
@@ -52,36 +54,37 @@ class Hana(metaclass=SingletonMeta):
         Returns:
             bool: True if HANA is ready, False otherwise.
         """
-        # Return cached state if last check was within TTL
-        now = datetime.now()
-        if self._last_health_check and (now - self._last_health_check) < self._health_check_ttl:
-            logger.debug(f"Returning cached HANA health state: {self._last_health_state}")
-            return self._last_health_state
+        async with self._lock:
+            # Return cached state if last check was within TTL
+            now = datetime.now()
+            if self._last_health_check and (now - self._last_health_check) < self._health_check_ttl:
+                logger.debug(f"Returning cached HANA health state: {self._last_health_state}")
+                return self._last_health_state
 
-        # Perform actual health check
-        if not self.connection:
-            logger.warning("HANA DB connection is not initialized.")
-            self._last_health_check = now
-            self._last_health_state = False
-            return False
+            # Perform actual health check
+            if not self.connection:
+                logger.warning("HANA DB connection is not initialized.")
+                self._last_health_check = now
+                self._last_health_state = False
+                return False
 
-        try:
+            try:
 
-            def _run_query() -> None:
-                with self.connection.cursor() as cursor:
-                    cursor.execute("SELECT 1 FROM DUMMY")
-                    cursor.fetchone()
+                def _run_query() -> None:
+                    with self.connection.cursor() as cursor:
+                        cursor.execute("SELECT 1 FROM DUMMY")
+                        cursor.fetchone()
 
-            await asyncio.to_thread(_run_query)
-            logger.debug("HANA DB connection is ready.")
-            self._last_health_check = now
-            self._last_health_state = True
-            return True
-        except Exception:
-            logger.exception("Error while connecting to HANA DB.")
-            self._last_health_check = now
-            self._last_health_state = False
-            return False
+                await asyncio.to_thread(_run_query)
+                logger.debug("HANA DB connection is ready.")
+                self._last_health_check = now
+                self._last_health_state = True
+                return True
+            except Exception:
+                logger.exception("Error while connecting to HANA DB.")
+                self._last_health_check = now
+                self._last_health_state = False
+                return False
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""

@@ -98,9 +98,12 @@ async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
     logger.info(f"Cache miss for shoot_id={shoot_id}, fetching Runtime CR")
     try:
         dynamic_client = await asyncio.to_thread(_get_dynamic_client)
-        resource_api = dynamic_client.resources.get(
-            api_version=f"{_RUNTIME_GROUP}/{_RUNTIME_VERSION}",
-            kind="Runtime",
+        resource_api = await asyncio.to_thread(
+            functools.partial(
+                dynamic_client.resources.get,
+                api_version=f"{_RUNTIME_GROUP}/{_RUNTIME_VERSION}",
+                kind="Runtime",
+            )
         )
         result = await asyncio.to_thread(
             functools.partial(

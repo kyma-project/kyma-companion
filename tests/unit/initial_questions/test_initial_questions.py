@@ -87,7 +87,7 @@ def mock_k8s_client():
         MOCK_DICT,
     ]
     mock.get_resource.return_value = {KEY: GET_RESOURCE}
-    mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE}
+    mock.describe_resource.return_value = {KEY: DESCRIBE_RESOURCE, "events": [{KEY: LIST_K8S_EVENTS_FOR_RESOURCE}]}
     mock.get_data_sanitizer.return_value = None
     return mock
 

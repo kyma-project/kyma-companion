@@ -386,6 +386,24 @@ async def test_cluster_overview_sanitization(mock_k8s_client, input_context, exp
         assert pattern not in result, f"Sensitive data '{pattern}' should be redacted"
 
 
+@pytest.mark.asyncio
+async def test_cluster_overview_all_three_calls_made(mock_k8s_client):
+    """All three concurrent gather arms are actually invoked for the cluster-overview path."""
+    message = Message(
+        query="test",
+        namespace="",
+        resource_kind="cluster",
+        resource_name="",
+        resource_api_version="",
+    )
+
+    await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
+
+    mock_k8s_client.list_not_running_pods.assert_called_once_with(namespace="")
+    mock_k8s_client.list_nodes_metrics.assert_called_once()
+    mock_k8s_client.list_k8s_warning_events.assert_called_once_with(namespace="")
+
+
 @pytest.mark.parametrize(
     "input_context,expected_patterns",
     [
