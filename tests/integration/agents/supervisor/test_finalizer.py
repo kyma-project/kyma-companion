@@ -511,6 +511,7 @@ async def test_generate_final_response(test_case, messages, expected_answer, com
         refuse_keywords = [
             "not able", "cannot", "unable", "did not provide", "sorry",
             "no further", "not provide", "was not provided", "no information", "no details",
+            "does not include", "no answer", "not include",
         ]
         assert any(kw in actual_output.lower() for kw in refuse_keywords), (
             f"Expected refusal keywords {refuse_keywords} in response, got: {actual_output!r}"

@@ -1,8 +1,14 @@
+import logging
 import socket
 import sys
 import types
 from collections.abc import Sequence
 from threading import Thread
+
+# Suppress noisy telemetry/HTTP debug logs from deepeval's posthog client and
+# underlying HTTP libraries -- these flood test output at LOG_LEVEL=DEBUG.
+for _noisy_logger in ("posthog", "httpcore", "httpx", "urllib3", "openai._base_client"):
+    logging.getLogger(_noisy_logger).setLevel(logging.WARNING)
 
 # langchain-community 0.4.x removed chat_models.vertexai (moved to langchain-google-vertexai).
 # ragas 0.4.x still imports from the old path at module load time. Install a compat stub so
