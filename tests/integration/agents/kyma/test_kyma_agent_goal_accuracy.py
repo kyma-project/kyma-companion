@@ -173,7 +173,7 @@ def create_test_cases(k8s_client: IK8sClient):
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         KymaAgentTestCase(
-            "Should ask more information from user for queries about all Kyma resources in cluster",
+            "Should ask more information from user for queries about whether Kyma resources have issues",
             state=create_basic_state(
                 task_description="is there anything wrong with Kyma resources?",
                 messages=[
@@ -195,7 +195,7 @@ def create_test_cases(k8s_client: IK8sClient):
             expected_goal="Agent response should explain that user query is very broad and ask user to provide specific details",
         ),
         KymaAgentTestCase(
-            "Should ask more information from user for queries about all Kyma resources in cluster",
+            "Should ask more information from user for queries about what is wrong with Kyma",
             state=create_basic_state(
                 task_description="what is wrong with Kyma?",
                 messages=[

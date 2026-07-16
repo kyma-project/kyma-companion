@@ -400,7 +400,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             ],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should use cluster scope retrieval to check all subscriptions in the cluster",
             state=create_basic_state(
                 task_description="check all subscriptions in the cluster",
                 messages=[
@@ -426,7 +426,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             ],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should not make tool calls for broad cluster resources query",
             state=create_basic_state(
                 task_description="check all resources in the cluster",
                 messages=[
@@ -441,7 +441,7 @@ def create_test_cases_cluster_scoped(k8s_client: IK8sClient):
             expected_tool_calls=[],
         ),
         KymaKnowledgeTestCase(
-            "Should use cluster scope retrieval with kyma query tool",
+            "Should not make tool calls for broad show all Kyma resources query",
             state=create_basic_state(
                 task_description="show me all Kyma resources",
                 messages=[

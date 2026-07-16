@@ -812,7 +812,7 @@ async def test_invoke_chain(
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
-            "Should return use search_kyma_doc tool for Kyma question",
+            "Should use search_kyma_doc tool for query about creating Kyma application",
             KymaAgentState(
                 agent_messages=[],
                 messages=[
@@ -849,7 +849,7 @@ async def test_invoke_chain(
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
-            "Should return use search_kyma_doc tool for Kyma question",
+            "Should use search_kyma_doc tool for query about enabling a Kyma module",
             KymaAgentState(
                 agent_messages=[],
                 messages=[
@@ -880,7 +880,7 @@ async def test_invoke_chain(
         ),
         # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
-            "Should return use search_kyma_doc tool for Kyma question",
+            "Should use search_kyma_doc tool for query about creating an API Rule",
             KymaAgentState(
                 agent_messages=[],
                 messages=[
