@@ -19,7 +19,8 @@ from utils.settings import (
 
 
 @pytest.fixture
-def supervisor_agent():
+def supervisor_agent() -> SupervisorAgent:
+    """Create a SupervisorAgent with mocked models for unit testing."""
     mock_models = {
         MAIN_MODEL_MINI_NAME: MagicMock(spec=IModel),
         MAIN_MODEL_NAME: MagicMock(spec=IModel),
@@ -241,6 +242,43 @@ def supervisor_agent():
             ],
             COMMON,
         ),
+        # All subtasks completed: Finalizer is 'Next' agent
+        (
+            [
+                SystemMessage(
+                    content="""
+                {'resource_api_version': 'v1', 'resource_namespace': 'nginx-oom'}
+                """
+                )
+            ],
+            [
+                SubTask(
+                    description="Task 1",
+                    task_title="Task 1",
+                    assigned_to=K8S_AGENT,
+                    status="completed",
+                ),
+                SubTask(
+                    description="Task 2",
+                    task_title="Task 2",
+                    assigned_to=KYMA_AGENT,
+                    status="completed",
+                ),
+            ],
+            FINALIZER,
+        ),
+    ],
+    ids=[
+        "single_k8s_pending",
+        "single_kyma_pending",
+        "single_common_pending",
+        "multi_all_pending_first_k8s",
+        "multi_all_pending_first_kyma",
+        "multi_all_pending_first_common",
+        "multi_first_completed_k8s_next",
+        "multi_first_completed_kyma_next",
+        "multi_first_completed_common_next",
+        "all_completed_finalizer",
     ],
 )
 def test_route(messages, subtasks, expected_answer, supervisor_agent):
