@@ -9,46 +9,123 @@ on:
     branches:
       - "main"
       - "release-**"
+  workflow_dispatch:
+    inputs:
+      subset:
+        description: "Test subset to run (leave empty to run all: kyma-agent | k8s-supervisor | gatekeeper | rag-services)"
+        required: false
+        default: ""
 
 permissions: read-all
 
 jobs:
   integration-test:
-    if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
+    # pull_request_target: run when run-integration-test label (or a subset label) is present.
+    # workflow_dispatch: always run (subset filter applied per-job below).
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration-test') ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration-test-kyma') ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration-test-k8s-supervisor') ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration-test-gatekeeper') ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration-test-rag-services')
+
     runs-on: ubuntu-latest
     environment: e2e
 
+    strategy:
+      fail-fast: false  # keep other subsets running if one fails
+      matrix:
+        subset:
+          - name: kyma-agent
+            paths: tests/integration/agents/kyma
+          - name: k8s-supervisor
+            # space-separated list; the poe task expands it
+            paths: >-
+              tests/integration/agents/k8s
+              tests/integration/agents/supervisor
+              tests/integration/agents/test_common_node.py
+              tests/integration/agents/test_followup_questions.py
+          - name: gatekeeper
+            paths: >-
+              tests/integration/agents/test_gatekeeper_node.py
+              tests/integration/agents/test_gatekeeper_security.py
+              tests/integration/agents/summarization
+              tests/integration/agents/common
+          - name: rag-services
+            paths: >-
+              tests/integration/rag
+              tests/integration/services
+
+    name: "integration-test / ${{ matrix.subset.name }}"
+
     permissions:
       contents: read
+
     steps:
+      - name: Check if this subset should run
+        id: check
+        run: |
+          name="${{ matrix.subset.name }}"
+          event="${{ github.event_name }}"
+          dispatch_subset="${{ github.event.inputs.subset }}"
+          pr_labels="${{ join(github.event.pull_request.labels.*.name, ' ') }}"
+
+          if [ "$event" = "workflow_dispatch" ]; then
+            # Run all when no subset requested; run only the matching one otherwise.
+            if [ -z "$dispatch_subset" ] || [ "$dispatch_subset" = "$name" ]; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            # Run if the all-subsets label is present OR this subset's specific label is present.
+            if echo " $pr_labels " | grep -qw "run-integration-test" || \
+               echo " $pr_labels " | grep -qw "run-integration-test-$name"; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Checkout code
+        if: steps.check.outputs.run == 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           # Safe: the `environment: e2e` gate above requires codeowner approval before
           # this job runs, so secrets are never exposed to unreviewed fork code.
           allow-unsafe-pr-checkout: true
 
       - name: Extract Python version
+        if: steps.check.outputs.run == 'true'
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
+        if: steps.check.outputs.run == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
+        if: steps.check.outputs.run == 'true'
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
+        if: steps.check.outputs.run == 'true'
         run: poetry install --with dev
 
-      - name: Run integration tests
+      - name: Run integration tests (${{ matrix.subset.name }})
+        if: steps.check.outputs.run == 'true'
         env:
           LOG_LEVEL: "DEBUG"
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
-          poetry run poe test-integration
+          poetry run poe test-integration-${{ matrix.subset.name }}
+
+      - name: Subset skipped
+        if: steps.check.outputs.run != 'true'
+        run: echo "Subset '${{ matrix.subset.name }}' not selected -- skipping."
