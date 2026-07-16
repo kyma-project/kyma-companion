@@ -4,13 +4,14 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from integration.conftest import create_mock_state
 
 # Keywords that indicate a proper refusal response.
+# The response is lowercased and typographic apostrophes are normalized before matching.
 _REFUSAL_KEYWORDS: list[str] = [
     "cannot",
     "can't",
     "unable",
     "not able",
     "sorry",
-    "outside",
+    "outside my",
     "don't",
     "do not",
     "won't",
@@ -27,8 +28,10 @@ _REFUSAL_KEYWORDS: list[str] = [
 
 def _assert_refusal(response: str, test_description: str) -> None:
     """Assert that a response is a refusal by checking for known refusal keywords."""
-    response_lower = response.lower()
-    assert any(kw in response_lower for kw in _REFUSAL_KEYWORDS), (
+    # Normalize to lowercase and replace typographic apostrophes so keywords like
+    # "can't" match both straight (') and curly (') quote variants from LLM outputs.
+    normalized = response.lower().replace("’", "'").replace("‘", "'")
+    assert any(kw in normalized for kw in _REFUSAL_KEYWORDS), (
         f"Expected refusal response for '{test_description}' but got: {response!r}"
     )
 

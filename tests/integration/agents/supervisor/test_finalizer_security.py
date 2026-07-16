@@ -12,8 +12,9 @@ _SQL_PAYLOADS: list[str] = ["' OR '1'='1' --"]
 _XSS_PAYLOADS: list[str] = ["<script>alert('XSS')</script>"]
 # Bare "/etc/passwd" is intentionally omitted -- a well-filtered response may legitimately
 # mention the path in a defensive context (e.g. "this was an attempt to read /etc/passwd").
-# The prefixed form "; cat /etc/passwd" is specific to the injected command and safe to assert.
-_CMD_PAYLOADS: list[str] = ["; cat /etc/passwd"]
+# "cat /etc/passwd" covers direct execution without a shell-chaining prefix, and
+# "; cat /etc/passwd" covers the injected command form with shell chaining.
+_CMD_PAYLOADS: list[str] = ["; cat /etc/passwd", "cat /etc/passwd"]
 _ENCODED_PAYLOADS: list[str] = [
     "PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=",  # base64 XSS
     "%27%20OR%20%271%27%3D%271%27%20--",  # URL-encoded SQL
@@ -204,8 +205,9 @@ async def test_generate_final_response(
     # And: none of the attack payloads must appear in the output
     _assert_payloads_filtered(actual_output, forbidden_payloads, test_description)
 
-    # And: legitimate content from the input must be preserved
-    assert any(term in actual_output for term in required_content), (
+    # And: legitimate content from the input must be preserved (case-insensitive)
+    actual_lower = actual_output.lower()
+    assert any(term.lower() in actual_lower for term in required_content), (
         f"Legitimate content missing from finalizer output for: {test_description!r}\n"
         f"Expected one of {required_content} to appear in: {actual_output!r}"
     )
