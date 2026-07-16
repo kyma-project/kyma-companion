@@ -680,8 +680,12 @@ class K8sClient:
 
         # Try to get pod description (which includes events) and statuses
         try:
-            pod_description = self.describe_resource(
-                api_version="v1", kind=K8sResourceKind.POD, name=name, namespace=namespace
+            pod_description = await asyncio.to_thread(
+                self.describe_resource,
+                api_version="v1",
+                kind=K8sResourceKind.POD,
+                name=name,
+                namespace=namespace,
             )
 
             if pod_description:
@@ -700,7 +704,7 @@ class K8sClient:
         except Exception:
             # Pod doesn't exist or can't be accessed - try to get events directly
             try:
-                events = self._format_pod_events_for_diagnostic(name, namespace, tail_limit)
+                events = await asyncio.to_thread(self._format_pod_events_for_diagnostic, name, namespace, tail_limit)
             except Exception:
                 events = "No pod events available"
 

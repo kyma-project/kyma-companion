@@ -91,7 +91,7 @@ async def get_resource_version(
     logger.info(f"Resource version request: kind={request.resource_kind}")
 
     try:
-        result = fetch_kyma_resource_version.invoke(
+        result = await fetch_kyma_resource_version.ainvoke(
             {
                 "resource_kind": request.resource_kind,
                 "k8s_client": k8s_client,

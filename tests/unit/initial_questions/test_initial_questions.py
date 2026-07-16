@@ -45,26 +45,27 @@ def test_apply_token_limit():
     "initial_questions.inital_questions.InitialQuestionsHandler.__init__",
     return_value=None,
 )
-def test_generate_questions(mock_init):
+@pytest.mark.asyncio
+async def test_generate_questions(mock_init):
     # The purpose of this test to verify that the generate_questions method
-    # calls the chain.invoke method with the correct context.
+    # calls the chain.ainvoke method with the correct context.
 
     # Given:
     given_context = "This is a sample context with k8s data"
     expected_output = "question1\nquestion2\nquestion3"
 
     class MockChain:
-        def invoke(self, inputs: dict):
+        async def ainvoke(self, inputs: dict):
             if inputs["context"] == given_context:
                 return expected_output
             raise ValueError("context was not passed correctly")
 
     given_handler = InitialQuestionsHandler(model=Mock())
 
-    # Mock the invoke method.
+    # Mock the ainvoke method.
     given_handler._chain = MockChain()
     # When:
-    result = given_handler.generate_questions(given_context)
+    result = await given_handler.generate_questions(given_context)
 
     # Then:
     assert result == expected_output

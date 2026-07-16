@@ -57,7 +57,7 @@ class IHana(Protocol):
 
     connection: IHanaConnection
 
-    def is_connection_operational(self) -> bool:
+    async def is_connection_operational(self) -> bool:
         """
         Check if the Hana service is operational.
         """
@@ -104,7 +104,7 @@ class ILLMProbe(Protocol):
     Protocol for probing the readiness of LLMs (Large Language Models).
     """
 
-    def get_llms_states(self) -> dict[str, bool]:
+    async def get_llms_states(self) -> dict[str, bool]:
         """
         Retrieve the readiness states of all LLMs.
 
@@ -137,11 +137,11 @@ async def healthz(
 
     logger.debug("Health probe called.")
     response = HealthModel(
-        is_hana_healthy=hana.is_connection_operational(),
+        is_hana_healthy=await hana.is_connection_operational(),
         is_redis_healthy=await redis.is_connection_operational(),
         is_usage_tracker_healthy=usage_tracker_probe.is_healthy(),
         is_key_store_healthy=KeyStore().is_healthy(),
-        llms=llm_probe.get_llms_states(),
+        llms=await llm_probe.get_llms_states(),
     )
 
     status = HTTP_503_SERVICE_UNAVAILABLE

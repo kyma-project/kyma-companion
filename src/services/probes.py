@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 
 from langchain_core.embeddings import Embeddings
@@ -51,7 +52,7 @@ class LLMProbe(metaclass=SingletonMeta):
         """
         return bool(self._models) and len(self._models or {}) > 0
 
-    def are_llms_ready(self) -> bool:
+    async def are_llms_ready(self) -> bool:
         """
         Check if all LLMs (Large Language Models) are ready.
         Once a model is successfully checked, it will not be checked again
@@ -72,15 +73,15 @@ class LLMProbe(metaclass=SingletonMeta):
                 continue
 
             try:
-                # Check if the model is an implementation of IModel or an embedding and test accordingly,
-                # if they are operational.
-
                 logger.info(
                     f"Invoking the mode: {name} to check its accessibility. "
                     f"This should only be done once. If you see this log message multiple "
                     f"times, please open a bug report."
                 )
-                response = model.invoke("Test.") if isinstance(model, IModel) else model.embed_query("Test.")
+                if isinstance(model, IModel):
+                    response = await asyncio.to_thread(model.invoke, "Test.")
+                else:
+                    response = await asyncio.to_thread(model.embed_query, "Test.")
                 # If we got a response, we will store the state of the corresponding model.
                 self._model_states[name] = bool(response)
                 if response:
@@ -96,7 +97,7 @@ class LLMProbe(metaclass=SingletonMeta):
 
         return all_ready
 
-    def get_llms_states(self) -> dict[str, bool]:
+    async def get_llms_states(self) -> dict[str, bool]:
         """
         Get the readiness states of all LLMs.
 
@@ -104,7 +105,7 @@ class LLMProbe(metaclass=SingletonMeta):
             dict[str, bool]: A dictionary where keys are LLM names and values
             are their readiness states.
         """
-        self.are_llms_ready()
+        await self.are_llms_ready()
         return self._model_states or {}
 
     @classmethod

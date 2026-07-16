@@ -120,7 +120,7 @@ class ConversationService(metaclass=SingletonMeta):
         k8s_context = self._init_questions_handler.apply_token_limit(k8s_context, TOKEN_LIMIT)
 
         # Pass the context to the initial question handler to generate the questions.
-        questions = self._init_questions_handler.generate_questions(context=k8s_context)
+        questions = await self._init_questions_handler.generate_questions(context=k8s_context)
 
         return questions
 
@@ -132,7 +132,7 @@ class ConversationService(metaclass=SingletonMeta):
         # Fetch the conversation history from the LangGraph.
         messages = await self._companion_graph.aget_messages(conversation_id)
         # Generate follow-up questions based on the conversation history.
-        return self._followup_questions_handler.generate_questions(messages=messages)
+        return await self._followup_questions_handler.generate_questions(messages=messages)
 
     async def handle_request(
         self, conversation_id: str, message: Message, k8s_client: IK8sClient

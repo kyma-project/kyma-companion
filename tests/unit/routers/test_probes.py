@@ -77,7 +77,7 @@ def test_healthz_probe(
     """
     # Given:
     mock_hana_conn = MagicMock(spec=IHana)
-    mock_hana_conn.is_connection_operational = MagicMock(return_value=hana_ready)
+    mock_hana_conn.is_connection_operational = AsyncMock(return_value=hana_ready)
     app.dependency_overrides[get_hana] = lambda: mock_hana_conn
 
     mock_redis = MagicMock(spec=IRedis)
@@ -89,7 +89,7 @@ def test_healthz_probe(
     app.dependency_overrides[get_usage_tracker_probe] = lambda: usage_tracker_probe
 
     mock_llm_probe = MagicMock(spec=ILLMProbe)
-    mock_llm_probe.get_llms_states.return_value = llm_states
+    mock_llm_probe.get_llms_states = AsyncMock(return_value=llm_states)
     app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
     mock_key_store = MagicMock()

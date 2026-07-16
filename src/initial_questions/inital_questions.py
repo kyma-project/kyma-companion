@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 class IInitialQuestionsHandler(Protocol):
     """Protocol for InitialQuestionsHandler."""
 
-    def generate_questions(self, context: str) -> list[str]:
+    async def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
         ...
 
@@ -92,10 +92,10 @@ class InitialQuestionsHandler:
 
         return self._tokenizer.decode(tokens=tokens_text)
 
-    def generate_questions(self, context: str) -> list[str]:
+    async def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
         # Format prompt and send to llm.
-        return self._chain.invoke({"context": context})  # type: ignore
+        return await self._chain.ainvoke({"context": context})  # type: ignore
 
     async def fetch_relevant_data_from_k8s_cluster(self, message: Message, k8s_client: IK8sClient) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""

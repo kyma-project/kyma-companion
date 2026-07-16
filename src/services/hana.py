@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
@@ -40,7 +41,7 @@ class Hana(metaclass=SingletonMeta):
             logger.exception("Unknown error occurred.")
             self.connection = None
 
-    def is_connection_operational(self) -> bool:
+    async def is_connection_operational(self) -> bool:
         """
         Check if the HANA database is ready by executing a test query.
 
@@ -65,9 +66,13 @@ class Hana(metaclass=SingletonMeta):
             return False
 
         try:
-            with self.connection.cursor() as cursor:
-                cursor.execute("SELECT 1 FROM DUMMY")
-                cursor.fetchone()
+
+            def _run_query() -> None:
+                with self.connection.cursor() as cursor:
+                    cursor.execute("SELECT 1 FROM DUMMY")
+                    cursor.fetchone()
+
+            await asyncio.to_thread(_run_query)
             logger.debug("HANA DB connection is ready.")
             self._last_health_check = now
             self._last_health_state = True

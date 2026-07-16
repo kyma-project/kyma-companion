@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import json
 from collections.abc import Sequence
 from typing import Any
@@ -163,41 +164,45 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
     context = ""
 
     if is_empty_str(namespace) and kind.lower() == CLUSTER:
-        # Get an overview of the cluster
-        # by fetching all not running pods, all K8s Nodes metrics,
-        # and all K8s events with warning type.
+        # Get an overview of the cluster by fetching all not running pods, all K8s Nodes metrics,
+        # and all K8s events with warning type. Fan out the three independent calls concurrently.
         logger.info("Fetching all not running Pods, Node metrics, and K8s Events with warning type")
-        pods = yaml.dump_all(k8s_client.list_not_running_pods(namespace=namespace))
-        metrics = yaml.dump_all(await k8s_client.list_nodes_metrics())
-        events = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
+        pods_raw, metrics_raw, events_raw = await asyncio.gather(
+            asyncio.to_thread(k8s_client.list_not_running_pods, namespace=namespace),
+            k8s_client.list_nodes_metrics(),
+            asyncio.to_thread(k8s_client.list_k8s_warning_events, namespace=namespace),
+        )
+        pods = yaml.dump_all(pods_raw)
+        metrics = yaml.dump_all(metrics_raw)
+        events = yaml.dump_all(events_raw)
 
         context = f"{pods}\n{metrics}\n{events}"
 
     elif is_non_empty_str(namespace) and kind.lower() == "namespace":
-        # Get an overview of the namespace
-        # by fetching all K8s events with warning type.
+        # Get an overview of the namespace by fetching all K8s events with warning type.
         logger.debug("Fetching all K8s Events with warning type")
-        context = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
+        context = yaml.dump_all(await asyncio.to_thread(k8s_client.list_k8s_warning_events, namespace=namespace))
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
-        # Describe a specific resource. Not-namespaced resources need the namespace
-        # field to be empty. Finally, get all events related to given resource.
+        # Describe a specific resource and fetch related events concurrently.
         logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
-        resources = yaml.dump(
-            k8s_client.describe_resource(
+        resources_raw, events_raw = await asyncio.gather(
+            asyncio.to_thread(
+                k8s_client.describe_resource,
                 api_version=api_version,
                 kind=kind,
                 name=name,
                 namespace=namespace,
-            )
-        )
-        events = yaml.dump_all(
-            k8s_client.list_k8s_events_for_resource(
+            ),
+            asyncio.to_thread(
+                k8s_client.list_k8s_events_for_resource,
                 kind=kind,
                 name=name,
                 namespace=namespace,
-            )
+            ),
         )
+        resources = yaml.dump(resources_raw)
+        events = yaml.dump_all(events_raw)
 
         context = f"{resources}\n{events}"
 
