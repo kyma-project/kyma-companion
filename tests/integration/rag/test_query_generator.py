@@ -24,6 +24,7 @@ def correctness_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.7,
+        async_mode=False,
     )
 
 

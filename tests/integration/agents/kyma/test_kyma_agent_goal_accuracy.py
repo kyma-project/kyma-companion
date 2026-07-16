@@ -238,12 +238,12 @@ async def test_kyma_agent(kyma_agent, goal_accuracy_metric, test_case: KymaAgent
     actual_output = agent_messages[-1].content
     assert actual_output, f"Agent returned an empty response for test case: {test_case.name}"
 
-    # For broad-query "ask for more info" cases, verify the response requests clarification
+    # For broad-query "ask for more info" cases, verify the response requests clarification.
+    # Avoid overly common words like "which" that appear in non-clarification responses.
     if "ask more information" in test_case.name.lower():
         clarification_keywords = [
             "specific",
             "more information",
-            "which",
             "please",
             "clarif",
             "specify",

@@ -852,6 +852,10 @@ async def test_invoke_chain(
             ),  # context
             None,  # retrieval_context
             "",  # expected_result
+            # Both search_kyma_doc and fetch_kyma_resource_version are valid first tools here.
+            # For "create an application + register an external service", the LLM may reasonably
+            # check the current Kyma API version before searching docs. CI analysis confirmed the
+            # model consistently picks fetch_kyma_resource_version for this query across branches.
             ["search_kyma_doc", "fetch_kyma_resource_version"],  # expected_tool_call
             False,  # should_raise
         ),
