@@ -1,3 +1,4 @@
+import logging
 import socket
 import sys
 import types
@@ -42,6 +43,11 @@ from utils.settings import (
 # integration test configurations.
 integration_test_mini_evaluator_model_name = "gpt-4.1-mini"
 integration_test_main_evaluator_model_name = "gpt-4.1"
+
+# Suppress noisy telemetry/HTTP debug logs from deepeval's posthog client and
+# underlying HTTP libraries -- these flood test output at LOG_LEVEL=DEBUG.
+for _noisy_logger in ("posthog", "httpcore", "httpx", "urllib3", "openai._base_client"):
+    logging.getLogger(_noisy_logger).setLevel(logging.WARNING)
 
 
 def get_free_port_in_range(start_port=60000, end_port=60999, host="127.0.0.1") -> int:

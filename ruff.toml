@@ -69,6 +69,7 @@ select = [
   "ANN205", # Missing return type annotation for staticmethod
   "ANN206", # Missing return type annotation for classmethod
   "E501",   # Ignore line too long errors
+  "PLR2004", # Magic value in comparison -- numeric literals are fine in test assertions
 ]
 # ignore line too long for prompt files
 "**/prompts.py" = ["E501"]

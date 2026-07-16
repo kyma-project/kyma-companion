@@ -29,7 +29,6 @@ def contextual_relevancy_metric(evaluator_model):
             LLMTestCaseParams.INPUT,
             LLMTestCaseParams.RETRIEVAL_CONTEXT,
         ],
-        async_mode=False,
         verbose_mode=True,
     )
 
@@ -83,4 +82,4 @@ async def test_rag_system(
         expected_output=expected_output,
     )
     # evaluate the test case using deepeval metrics
-    assert_test(test_case, evaluation_metrics)
+    assert_test(test_case, evaluation_metrics, run_async=False)

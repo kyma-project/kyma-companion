@@ -278,7 +278,7 @@ async def test_chain_ainvoke(
     # Assert that the expected documents are in the actual list of documents.
     assert set(expected_docs_titles).issubset(set(actual_docs_titles)), "Expected documents not found in actual output"
     # Assert that the contextual precision is above the threshold.
-    assert_test(test_case, [contextual_precision(threshold)])
+    assert_test(test_case, [contextual_precision(threshold)], run_async=False)
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:

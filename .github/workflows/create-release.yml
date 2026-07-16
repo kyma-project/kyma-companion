@@ -170,7 +170,7 @@ jobs:
       - name: Run tests
         working-directory: ./doc_indexer
         env:
-          LOG_LEVEL: "DEBUG"
+          LOG_LEVEL: "WARNING"
           # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
@@ -218,7 +218,7 @@ jobs:
 
       - name: Run integration tests
         env:
-          LOG_LEVEL: "DEBUG"
+          LOG_LEVEL: "WARNING"
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
           poetry run poe test-integration
@@ -266,7 +266,7 @@ jobs:
       - name: Run integration tests
         working-directory: ./doc_indexer
         env:
-          LOG_LEVEL: "DEBUG"
+          LOG_LEVEL: "WARNING"
           # Kyma docs path.
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"

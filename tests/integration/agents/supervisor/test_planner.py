@@ -269,7 +269,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        assert_test(test_case, [planner_correctness_metric(threshold)])
+        assert_test(test_case, [planner_correctness_metric(threshold)], run_async=False)
     else:
         # For general queries, check answer relevancy where planner directly answers
         # Then: We evaluate the response using deepeval metrics
@@ -280,7 +280,7 @@ async def test_invoke_planner(
             expected_output=expected_answer,
         )
 
-        assert_test(test_case, [answer_relevancy_metric])
+        assert_test(test_case, [answer_relevancy_metric], run_async=False)
 
 
 @pytest.fixture
@@ -299,7 +299,6 @@ def planner_conversation_history_metric(evaluator_model):
             ],
             model=evaluator_model,
             threshold=threshold,
-            async_mode=False,
             verbose_mode=True,
         )
 
@@ -369,4 +368,4 @@ async def test_planner_with_conversation_history(
         expected_output=str(expected_subtasks),
     )
 
-    assert_test(test_case, [planner_conversation_history_metric(threshold)])
+    assert_test(test_case, [planner_conversation_history_metric(threshold)], run_async=False)

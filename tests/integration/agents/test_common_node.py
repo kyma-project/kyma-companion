@@ -38,10 +38,13 @@ async def test_invoke_common_node(messages, expected_answer, companion_graph, an
     # When: the common node's invoke_common_node method is invoked
     result = await companion_graph._invoke_common_node(state, messages[-1].content)
 
+    # Pre-check: verify structural response before invoking the judge
+    assert result, f"Common node returned an empty response for input: {messages[-1].content!r}"
+
     # Then: we evaluate the response using deepeval metrics
     test_case = LLMTestCase(
         input=messages[-1].content,
         actual_output=result,
         expected_output=expected_answer,
     )
-    assert_test(test_case, [answer_relevancy_metric])
+    assert_test(test_case, [answer_relevancy_metric], run_async=False)

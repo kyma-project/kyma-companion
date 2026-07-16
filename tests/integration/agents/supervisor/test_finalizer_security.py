@@ -217,4 +217,4 @@ async def test_generate_final_response(messages, expected_answer, companion_grap
         expected_output=expected_answer,
     )
 
-    assert_test(test_case, [security_metric])
+    assert_test(test_case, [security_metric], run_async=False)

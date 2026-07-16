@@ -35,7 +35,6 @@ def summarization_metric(evaluator_model):
             f"The summary should follow the following given instructions:\n {MESSAGES_SUMMARIZATION_INSTRUCTIONS}",
         ],
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
-        async_mode=False,
         verbose_mode=True,
     )
 
@@ -87,4 +86,4 @@ async def test_get_summary(
         actual_output=generated_summary,
     )
 
-    assert_test(test_case, [summarization_metric])
+    assert_test(test_case, [summarization_metric], run_async=False)

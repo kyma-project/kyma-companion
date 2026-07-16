@@ -123,6 +123,9 @@ async def test_invoke_chain(
         assert tool_call.get("type") == "tool_call"
         assert tool_call.get("name") == expected_tool_call
     else:
+        # Pre-check: verify structural response before invoking the judge
+        assert response.content, f"KubernetesAgent returned an empty response for test case: {test_case}"
+
         # for content response cases, verify using deepeval metrics
         test_case = LLMTestCase(
             input=state.my_task.description,
@@ -131,7 +134,7 @@ async def test_invoke_chain(
             retrieval_context=([retrieval_context] if retrieval_context else []),
         )
         # evaluate if the gotten response is semantically similar and faithful to the expected response
-        assert_test(test_case, [correctness_metric, faithfulness_metric]), test_case
+        assert_test(test_case, [correctness_metric, faithfulness_metric], run_async=False)
 
 
 @pytest.mark.parametrize(

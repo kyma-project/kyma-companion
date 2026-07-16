@@ -247,4 +247,4 @@ async def test_gatekeeper_security(
         actual_output=actual_response.direct_response,
         expected_output=expected_answer,
     )
-    assert_test(test_case, [gatekeeper_correctness_metric])
+    assert_test(test_case, [gatekeeper_correctness_metric], run_async=False)
