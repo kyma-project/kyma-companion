@@ -132,19 +132,21 @@ async def async_assert_test(
     )
     cache_config = CacheConfig(write_cache=get_is_running_deepeval(), use_cache=should_use_cache())
 
-    test_result = (
-        await a_execute_test_cases(
-            [test_case],
-            metrics,
-            error_config=error_config,
-            display_config=display_config,
-            async_config=async_config,
-            cache_config=cache_config,
-            identifier=get_identifier(),
-            _use_bar_indicator=True,
-            _is_assert_test=True,
-        )
-    )[0]
+    results = await a_execute_test_cases(
+        [test_case],
+        metrics,
+        error_config=error_config,
+        display_config=display_config,
+        async_config=async_config,
+        cache_config=cache_config,
+        identifier=get_identifier(),
+        _use_bar_indicator=True,
+        _is_assert_test=True,
+    )
+
+    if not results:
+        raise AssertionError("a_execute_test_cases returned no results -- deepeval internal API may have changed")
+    test_result = results[0]
 
     if not test_result.success:
         failed_metrics_data = []
