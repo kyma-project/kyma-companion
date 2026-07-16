@@ -65,7 +65,7 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
     """Return tool instances with k8s_client pre-bound (avoids InjectedState outside LangGraph)."""
 
     class K8sQueryArgs(BaseModel):
-        """Arguments for k8s_query_tool."""
+        """Arguments for kyma_query_tool."""
 
         uri: str = Field(
             description="Kubernetes API URI path. Must follow the format of Kubernetes API paths. "
@@ -75,7 +75,7 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         )
 
     class ResourceVersionArgs(BaseModel):
-        """Arguments for fetch_resource_version."""
+        """Arguments for fetch_kyma_resource_version."""
 
         resource_kind: str = Field(
             description="Kind of Kyma resource to get the API version for (e.g., 'Function', 'APIRule'). "
@@ -101,28 +101,28 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         container_name: str = Field(description="Name of the container whose logs to fetch.")
 
     @tool(args_schema=K8sQueryArgs)
-    async def k8s_query_tool(uri: str) -> dict | list[dict] | str:
+    async def kyma_query_tool(uri: str) -> dict | list[dict] | str:
         """Query any Kubernetes or Kyma resource using the provided URI.
         The URI must follow the Kubernetes API path format.
         Use this for both Kyma resources (Function, APIRule, etc.) and standard K8s resources
         (Pod, Deployment, Service, etc.).
         The returned data is sanitized to remove sensitive information (e.g. Secret data fields).
-        If you get a 404, use fetch_resource_version to look up the correct API version and retry."""
+        If you get a 404, use fetch_kyma_resource_version to look up the correct API version and retry."""
         try:
             return await k8s_client.execute_get_api_request(uri)
         except Exception as e:
             return (
                 f"Tool error ({e}). "
-                "The API version or URI may be wrong — use fetch_resource_version "
+                "The API version or URI may be wrong — use fetch_kyma_resource_version "
                 "to look up the correct API version for the resource kind and retry."
             )
 
     @tool(args_schema=ResourceVersionArgs)
-    def fetch_resource_version(resource_kind: str) -> str:
+    def fetch_kyma_resource_version(resource_kind: str) -> str:
         """Fetch the API version for a given Kyma resource kind.
         Example resource kinds: Function, APIRule, TracePipeline, etc.
         Use this when the resource version is not known, needs to be verified,
-        or k8s_query_tool returns 404 not found."""
+        or kyma_query_tool returns 404 not found."""
         try:
             version = k8s_client.get_resource_version(resource_kind)
             if version in DEPRECATED_API_VERSIONS:
@@ -164,7 +164,7 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
                 f"Tool error fetching logs for pod={name!r}, namespace={namespace!r}, container={container_name!r}: {e}"
             )
 
-    return [fetch_resource_version, k8s_query_tool, k8s_overview_tool, fetch_pod_logs_tool]
+    return [fetch_kyma_resource_version, kyma_query_tool, k8s_overview_tool, fetch_pod_logs_tool]
 
 
 class KymaReActAgent:

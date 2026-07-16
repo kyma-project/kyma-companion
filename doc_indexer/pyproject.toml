@@ -17,7 +17,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = "==3.13.*"
 dependencies = [
-  "hdbcli (>=2.29.23,<3.0.0)",
+  "hdbcli (>=2.29.25,<3.0.0)",
   "langchain-hana (>=1.1.1,<2.0.0)",
   "pydantic (>=2.13.4,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
@@ -29,11 +29,11 @@ dependencies = [
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-mypy = "^2.1.0"
-poethepoet = "^0.47.0"
+mypy = "^2.3.0"
+poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
 pytest = "^9.1.1"
-ruff = "^0.15.20"
+ruff = "^0.15.21"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

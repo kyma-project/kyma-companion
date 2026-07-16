@@ -49,6 +49,7 @@ from utils.settings import (
     TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
     TOTAL_CHUNKS_LIMIT,
 )
+from utils.utils import get_text_content
 
 logger = get_logger(__name__)
 
@@ -405,7 +406,7 @@ class BaseAgent:
             and state.agent_messages[-1]
             and hasattr(state.agent_messages[-1], "content")
         ):
-            current_content = state.agent_messages[-1].content or ""
+            current_content = get_text_content(state.agent_messages[-1].content)
             state.agent_messages[-1].content = agent_pre_message + current_content
 
         # clean all agent messages to avoid populating the checkpoint with unnecessary messages.
