@@ -13,6 +13,7 @@ import aiohttp
 from kubernetes import client, dynamic
 from pydantic import BaseModel, ConfigDict, Field
 
+import utils.settings as _settings
 from services.data_sanitizer import IDataSanitizer
 from services.k8s_constants import (
     ContainerStateType,
@@ -30,7 +31,6 @@ from services.k8s_models import (
 from utils import logging
 from utils.exceptions import K8sClientError, NoLogsAvailableError, parse_k8s_error_response
 from utils.settings import (
-    ALLOWED_K8S_DOMAINS,
     K8S_API_PAGINATION_LIMIT,
     K8S_API_PAGINATION_MAX_PAGE,
 )
@@ -61,7 +61,7 @@ class K8sAuthHeaders(BaseModel):
     x_k8s_authorization: str | None = Field(default=None, validation_alias="x-k8s-authorization")
     x_client_certificate_data: str | None = Field(default=None, validation_alias="x-client-certificate-data")
     x_client_key_data: str | None = Field(default=None, validation_alias="x-client-key-data")
-    allowed_domains: list[str] = ALLOWED_K8S_DOMAINS
+    allowed_domains: list[str] = Field(default_factory=lambda: _settings.ALLOWED_K8S_DOMAINS)
 
     def validate_headers(self) -> None:
         """Validate the Kubernetes API authentication headers."""
@@ -82,8 +82,10 @@ class K8sAuthHeaders(BaseModel):
     def is_cluster_url_allowed(self) -> bool:
         """Check if the cluster URL is allowed based on the allowed domains."""
         if len(self.allowed_domains) == 0:
-            logger.warning("ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation.")
-            return True
+            raise ValueError(
+                "ALLOWED_K8S_DOMAINS is not configured. "
+                "Set ALLOWED_K8S_DOMAINS to a non-empty list of allowed domains to enable cluster URL validation."
+            )
 
         try:
             # parse the URL to get the domain

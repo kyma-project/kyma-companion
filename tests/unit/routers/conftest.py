@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+import utils.settings
 from main import app
 from routers.common import init_models_dict
 from routers.k8s_tools_api import init_k8s_client as init_k8s_client_k8s
@@ -25,6 +26,13 @@ from utils.exceptions import K8sClientError, NoLogsAvailableError
 SAMPLE_BEARER_TOKEN = "test-token-123"
 SAMPLE_CLUSTER_URL = "https://api.test-cluster.example.com"
 SAMPLE_CA_DATA = "LS0tLS1CRUdJTi1DRVJUSUZJQ0FURS0tLS0tCg=="
+
+
+@pytest.fixture(autouse=True)
+def allowed_k8s_domains():
+    """Patch ALLOWED_K8S_DOMAINS so cluster URL validation passes for test domains."""
+    with patch.object(utils.settings, "ALLOWED_K8S_DOMAINS", ["example.com"]):
+        yield
 
 
 def get_sample_headers() -> dict[str, str]:

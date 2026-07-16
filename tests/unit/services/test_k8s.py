@@ -192,6 +192,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data="abc",
+                    allowed_domains=["example.com"],
                 ),
                 None,
             ),
@@ -203,6 +204,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data=None,
                     x_client_key_data=None,
+                    allowed_domains=["example.com"],
                 ),
                 None,
             ),
@@ -214,6 +216,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization=None,
                     x_client_certificate_data="abc",
                     x_client_key_data="abc",
+                    allowed_domains=["example.com"],
                 ),
                 None,
             ),
@@ -225,6 +228,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data="abc",
+                    allowed_domains=["example.com"],
                 ),
                 "x-cluster-url header is required.",
             ),
@@ -236,6 +240,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data="abc",
+                    allowed_domains=["example.com"],
                 ),
                 "x-cluster-certificate-authority-data header is required.",
             ),
@@ -247,6 +252,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
                     x_client_key_data=None,
+                    allowed_domains=["example.com"],
                 ),
                 "Either x-k8s-authorization header or "
                 + "x-client-certificate-data and x-client-key-data headers are required.",
@@ -259,6 +265,7 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization=None,
                     x_client_certificate_data=None,
                     x_client_key_data="abc",
+                    allowed_domains=["example.com"],
                 ),
                 "Either x-k8s-authorization header or "
                 + "x-client-certificate-data and x-client-key-data headers are required.",
@@ -271,21 +278,22 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization=None,
                     x_client_certificate_data="abc",
                     x_client_key_data=None,
+                    allowed_domains=["example.com"],
                 ),
                 "Either x-k8s-authorization header or "
                 + "x-client-certificate-data and x-client-key-data headers are required.",
             ),
             (
-                "all domains allowed for x_cluster_url",
+                "no allowed domains configured for x_cluster_url",
                 K8sAuthHeaders(
                     x_cluster_url="https://api.example.com",
                     x_cluster_certificate_authority_data="abc",
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data=None,
-                    allowed_domains=[],  # No domains specified, should allow all
+                    allowed_domains=[],  # Empty domains must be rejected (fail-closed)
                 ),
-                None,
+                "ALLOWED_K8S_DOMAINS is not configured.",
             ),
             (
                 "allowed x_cluster_url domain",
@@ -348,11 +356,11 @@ class TestK8sAuthHeaders:
                 None,
             ),
             (
-                "No allowed domains (should skip validation and allow)",
+                "No allowed domains (should raise ValueError)",
                 "https://api.anything.com",
                 [],
-                True,
-                None,
+                False,
+                ValueError,
             ),
             (
                 "Malformed URL (should raise ValueError)",
