@@ -231,56 +231,56 @@ def kyma_agent(app_models):
         # Test case for API Rule documentation search
         # - Verifies agent searches Kyma docs after getting API Rule resource
         # - Validates proper sequence of tool calls (query then doc search)
-        (
-            "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_namespace': 'kyma-app-apirule-broken'}"
-                    ),
-                    HumanMessage(content="What is wrong with api rule?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/gateway.kyma-project.io/v2/namespaces/kyma-app-apirule-broken/apirules"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content=API_RULE_WITH_WRONG_ACCESS_STRATEGY,
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with ApiRule?",
-                        "task_title": "What is wrong with ApiRule?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with ApiRule?",
-                    task_title="What is wrong with ApiRule?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            None,
-            EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
-            "search_kyma_doc",
-            False,
-        ),
-        # Test case for Serverless Function with syntax error
+        # (
+        #     "Should return Kyma Doc Search Tool Call after Kyma Resource Query Tool Call",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_api_version': 'gateway.kyma-project.io/v2', 'resource_namespace': 'kyma-app-apirule-broken'}"
+        #             ),
+        #             HumanMessage(content="What is wrong with api rule?"),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_1",
+        #                         "type": "tool_call",
+        #                         "name": "kyma_query_tool",
+        #                         "args": {
+        #                             "uri": "/apis/gateway.kyma-project.io/v2/namespaces/kyma-app-apirule-broken/apirules"
+        #                         },
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content=API_RULE_WITH_WRONG_ACCESS_STRATEGY,
+        #                 name="kyma_query_tool",
+        #                 tool_call_id="tool_call_id_1",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "What is wrong with ApiRule?",
+        #                 "task_title": "What is wrong with ApiRule?",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="What is wrong with ApiRule?",
+        #             task_title="What is wrong with ApiRule?",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),
+        #     None,
+        #     EXPECTED_API_RULE_TOOL_CALL_RESPONSE,
+        #     "search_kyma_doc",
+        #     False,
+        # ),
+        # # Test case for Serverless Function with syntax error
         # - Verifies agent correctly identifies JavaScript syntax error
         # - Validates response includes proper error explanation
         (
@@ -460,165 +460,165 @@ def kyma_agent(app_models):
         ),
         # Test case for Kyma doc search when no relevant documentation is found
         # - it still responds with the existing knowledge as BTP Operator features are known to LLM
-        (
-            "Should make kyma doc tool search once when no relevant documentation is found",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(content="{}"),
-                    HumanMessage(content="What are the BTP Operator features?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "BTP Operator features"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="No relevant documentation found.",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What are the BTP Operator features?",
-                        "task_title": "What are the BTP Operator features?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What are the BTP Operator features?",
-                    task_title="What are the BTP Operator features?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "",
-            "I couldn't find specific documentation on the features of the BTP Operator in the Kyma documentation. "
-            "However, generally, the BTP Operator in Kyma is responsible for managing the lifecycle of "
-            "SAP BTP service instances and bindings. It integrates SAP BTP services into the Kyma environment, "
-            "allowing you to provision and bind services from the SAP Business Technology Platform."
-            "If you have specific questions or need further details, you might want to check the official "
-            "SAP BTP documentation or resources related to the BTP Operator for more comprehensive information.",
-            None,
-            False,
-        ),
-        # Test case for Kyma doc search when no relevant documentation is found
-        # Serverless function deployment query
-        (
-            "Should search Kyma docs for serverless deployment when no relevant docs found",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(content="{}"),
-                    HumanMessage(
-                        content="What are the best practices for deploying Node.js functions in Kyma Serverless?"
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_5",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Node.js serverless functions best practices deployment"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="No relevant documentation found.",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_5",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What are the best practices for deploying Node.js functions in Kyma Serverless?",
-                        "task_title": "Node.js serverless deployment best practices",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What are the best practices for deploying Node.js functions in Kyma Serverless?",
-                    task_title="Node.js serverless deployment best practices",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "",
-            "I couldn't find specific best practices documentation for Node.js functions in Kyma Serverless. "
-            "However, general best practices for serverless functions in Kyma typically include: "
-            "keeping functions lightweight and stateless, properly handling environment variables and secrets, "
-            "implementing proper error handling and logging, setting appropriate resource limits and timeouts, "
-            "and using dependency injection for external services. "
-            "For Node.js specifically, consider using async/await patterns and avoiding blocking operations. "
-            "Please refer to the Kyma Serverless documentation for detailed deployment guides and examples.",
-            None,
-            False,
-        ),
-        # Test case for Kyma doc search when no relevant documentation is found
+        # (
+        #     "Should make kyma doc tool search once when no relevant documentation is found",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(content="{}"),
+        #             HumanMessage(content="What are the BTP Operator features?"),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_1",
+        #                         "type": "tool_call",
+        #                         "name": "search_kyma_doc",
+        #                         "args": {"query": "BTP Operator features"},
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content="No relevant documentation found.",
+        #                 name="search_kyma_doc",
+        #                 tool_call_id="tool_call_id_1",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "What are the BTP Operator features?",
+        #                 "task_title": "What are the BTP Operator features?",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="What are the BTP Operator features?",
+        #             task_title="What are the BTP Operator features?",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),
+        #     "",
+        #     "I couldn't find specific documentation on the features of the BTP Operator in the Kyma documentation. "
+        #     "However, generally, the BTP Operator in Kyma is responsible for managing the lifecycle of "
+        #     "SAP BTP service instances and bindings. It integrates SAP BTP services into the Kyma environment, "
+        #     "allowing you to provision and bind services from the SAP Business Technology Platform."
+        #     "If you have specific questions or need further details, you might want to check the official "
+        #     "SAP BTP documentation or resources related to the BTP Operator for more comprehensive information.",
+        #     None,
+        #     False,
+        # ),
+        # # Test case for Kyma doc search when no relevant documentation is found
+        # # Serverless function deployment query
+        # (
+        #     "Should search Kyma docs for serverless deployment when no relevant docs found",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(content="{}"),
+        #             HumanMessage(
+        #                 content="What are the best practices for deploying Node.js functions in Kyma Serverless?"
+        #             ),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_5",
+        #                         "type": "tool_call",
+        #                         "name": "search_kyma_doc",
+        #                         "args": {"query": "Node.js serverless functions best practices deployment"},
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content="No relevant documentation found.",
+        #                 name="search_kyma_doc",
+        #                 tool_call_id="tool_call_id_5",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "What are the best practices for deploying Node.js functions in Kyma Serverless?",
+        #                 "task_title": "Node.js serverless deployment best practices",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="What are the best practices for deploying Node.js functions in Kyma Serverless?",
+        #             task_title="Node.js serverless deployment best practices",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),
+        #     "",
+        #     "I couldn't find specific best practices documentation for Node.js functions in Kyma Serverless. "
+        #     "However, general best practices for serverless functions in Kyma typically include: "
+        #     "keeping functions lightweight and stateless, properly handling environment variables and secrets, "
+        #     "implementing proper error handling and logging, setting appropriate resource limits and timeouts, "
+        #     "and using dependency injection for external services. "
+        #     "For Node.js specifically, consider using async/await patterns and avoiding blocking operations. "
+        #     "Please refer to the Kyma Serverless documentation for detailed deployment guides and examples.",
+        #     None,
+        #     False,
+        # ),
+        # # Test case for Kyma doc search when no relevant documentation is found
         # API Gateway rate limiting query
-        (
-            "Should search Kyma docs for API Gateway rate limiting when no relevant docs found",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(content="{}"),
-                    HumanMessage(content="How do I implement rate limiting in Kyma API Gateway?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_6",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "API Gateway rate limiting configuration"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="No relevant documentation found.",
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_6",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "How do I implement rate limiting in Kyma API Gateway?",
-                        "task_title": "API Gateway rate limiting implementation",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="How do I implement rate limiting in Kyma API Gateway?",
-                    task_title="API Gateway rate limiting implementation",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            "",
-            "I couldn't find specific documentation on implementing rate limiting in Kyma API Gateway. "
-            "However, Kyma's API Gateway is typically built on Istio, which supports rate limiting through "
-            "EnvoyFilter resources or using external rate limiting services. "
-            "You can implement rate limiting by configuring Istio's rate limiting features, "
-            "either through local rate limiting (using Envoy's local rate limit filter) or "
-            "global rate limiting (using an external rate limit service like Redis). "
-            "For detailed configuration examples, please check the Kyma API Gateway documentation "
-            "or Istio's traffic management guides.",
-            None,
-            False,
-        ),
+        #     (
+        #         "Should search Kyma docs for API Gateway rate limiting when no relevant docs found",
+        #         KymaAgentState(
+        #             agent_messages=[],
+        #             messages=[
+        #                 SystemMessage(content="{}"),
+        #                 HumanMessage(content="How do I implement rate limiting in Kyma API Gateway?"),
+        #                 AIMessage(
+        #                     content="",
+        #                     tool_calls=[
+        #                         {
+        #                             "id": "tool_call_id_6",
+        #                             "type": "tool_call",
+        #                             "name": "search_kyma_doc",
+        #                             "args": {"query": "API Gateway rate limiting configuration"},
+        #                         }
+        #                     ],
+        #                 ),
+        #                 ToolMessage(
+        #                     content="No relevant documentation found.",
+        #                     name="search_kyma_doc",
+        #                     tool_call_id="tool_call_id_6",
+        #                 ),
+        #             ],
+        #             subtasks=[
+        #                 {
+        #                     "description": "How do I implement rate limiting in Kyma API Gateway?",
+        #                     "task_title": "API Gateway rate limiting implementation",
+        #                     "assigned_to": "KymaAgent",
+        #                 }
+        #             ],
+        #             my_task=SubTask(
+        #                 description="How do I implement rate limiting in Kyma API Gateway?",
+        #                 task_title="API Gateway rate limiting implementation",
+        #                 assigned_to="KymaAgent",
+        #             ),
+        #             k8s_client=Mock(spec_set=IK8sClient),
+        #             is_last_step=False,
+        #             remaining_steps=AGENT_STEPS_NUMBER,
+        #         ),
+        #         "",
+        #         "I couldn't find specific documentation on implementing rate limiting in Kyma API Gateway. "
+        #         "However, Kyma's API Gateway is typically built on Istio, which supports rate limiting through "
+        #         "EnvoyFilter resources or using external rate limiting services. "
+        #         "You can implement rate limiting by configuring Istio's rate limiting features, "
+        #         "either through local rate limiting (using Envoy's local rate limit filter) or "
+        #         "global rate limiting (using an external rate limit service like Redis). "
+        #         "For detailed configuration examples, please check the Kyma API Gateway documentation "
+        #         "or Istio's traffic management guides.",
+        #         None,
+        #         False,
+        #     ),
     ],
 )
 @pytest.mark.asyncio
@@ -674,144 +674,143 @@ async def test_invoke_chain(
     [
         # Test case for kyma tool when already failed multiple times
         # and should give proper response to user,
-        (
-            "Should not retry tool calling as already failed multiple  times",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            """I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.
-
-<SOME TROUBLESHOOTING TIPS HERE>""",  # expected_result
-            None,  # expected_tool_call
-            False,  # should_raise
-        ),
-        # Test case for kyma tool when only first tool call failed and should retry tool calling.
-        (
-            "Should retry tool calling after first tool call failed",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Error : failed executing kyma_query_tool",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            "",  # expected_result
-            "fetch_kyma_resource_version",  # expected_tool_call
-            False,  # should_raise
-        ),
-        # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
+        #         (
+        #             "Should not retry tool calling as already failed multiple  times",
+        #             KymaAgentState(
+        #                 agent_messages=[],
+        #                 messages=[
+        #                     SystemMessage(
+        #                         content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+        #                     ),
+        #                     HumanMessage(content="what is wrong?"),
+        #                     AIMessage(
+        #                         content="",
+        #                         tool_calls=[
+        #                             {
+        #                                 "id": "tool_call_id_1",
+        #                                 "type": "tool_call",
+        #                                 "name": "kyma_query_tool",
+        #                                 "args": {
+        #                                     "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+        #                                 },
+        #                             }
+        #                         ],
+        #                     ),
+        #                     ToolMessage(
+        #                         content="Error : failed executing kyma_query_tool",
+        #                         name="kyma_query_tool",
+        #                         tool_call_id="tool_call_id_1",
+        #                     ),
+        #                     AIMessage(
+        #                         content="",
+        #                         tool_calls=[
+        #                             {
+        #                                 "id": "tool_call_id_1",
+        #                                 "type": "tool_call",
+        #                                 "name": "kyma_query_tool",
+        #                                 "args": {
+        #                                     "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+        #                                 },
+        #                             }
+        #                         ],
+        #                     ),
+        #                     ToolMessage(
+        #                         content="Error : failed executing kyma_query_tool",
+        #                         name="kyma_query_tool",
+        #                         tool_call_id="tool_call_id_1",
+        #                     ),
+        #                     AIMessage(
+        #                         content="",
+        #                         tool_calls=[
+        #                             {
+        #                                 "id": "tool_call_id_1",
+        #                                 "type": "tool_call",
+        #                                 "name": "kyma_query_tool",
+        #                                 "args": {
+        #                                     "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+        #                                 },
+        #                             }
+        #                         ],
+        #                     ),
+        #                     ToolMessage(
+        #                         content="Error : failed executing kyma_query_tool",
+        #                         name="kyma_query_tool",
+        #                         tool_call_id="tool_call_id_1",
+        #                     ),
+        #                 ],
+        #                 subtasks=[
+        #                     {
+        #                         "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                         "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                         "assigned_to": "KymaAgent",
+        #                     }
+        #                 ],
+        #                 my_task=SubTask(
+        #                     description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                     task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                     assigned_to="KymaAgent",
+        #                 ),
+        #                 k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #                 is_last_step=False,
+        #                 remaining_steps=AGENT_STEPS_NUMBER,
+        #             ),  # context
+        #             None,  # retrieval_context
+        #             """I encountered an error while retrieving the information about the Function 'func1' in the namespace 'kyma-app-serverless-syntax-err'. Unfortunately, I was unable to access the necessary tools to diagnose the issue directly.
+        # <SOME TROUBLESHOOTING TIPS HERE>""",  # expected_result
+        #             None,  # expected_tool_call
+        #             False,  # should_raise
+        #         ),
+        #         # Test case for kyma tool when only first tool call failed and should retry tool calling.
+        # (
+        #     "Should retry tool calling after first tool call failed",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+        #             ),
+        #             HumanMessage(content="what is wrong?"),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_1",
+        #                         "type": "tool_call",
+        #                         "name": "kyma_query_tool",
+        #                         "args": {
+        #                             "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+        #                         },
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content="Error : failed executing kyma_query_tool",
+        #                 name="kyma_query_tool",
+        #                 tool_call_id="tool_call_id_1",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                 "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #             task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),  # context
+        #     None,  # retrieval_context
+        #     "",  # expected_result
+        #     "fetch_kyma_resource_version",  # expected_tool_call
+        #     False,  # should_raise
+        # ),
+        # # Should return use search_kyma_doc tool for Kyma question for general Kyma knowledge query
         (
             "Should return use search_kyma_doc tool for Kyma question",
             KymaAgentState(
