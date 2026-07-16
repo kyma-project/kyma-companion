@@ -32,6 +32,11 @@ def followup_correctness_metric(evaluator_model):
         ],
         model=evaluator_model,
         threshold=0.5,
+        # async_mode=False ensures deepeval executes this metric synchronously inside
+        # a_execute_test_cases.  This is the per-metric equivalent of the old
+        # run_async=False argument that was previously passed to assert_test at the
+        # call site.  The two settings are equivalent: a_execute_test_cases respects
+        # each metric's async_mode flag, so no separate run_async guard is needed.
         async_mode=False,
     )
 

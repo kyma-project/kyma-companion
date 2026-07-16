@@ -14,6 +14,14 @@ if "langchain_community.chat_models.vertexai" not in sys.modules:
     sys.modules["langchain_community.chat_models.vertexai"] = _stub
 
 import pytest
+
+# deepeval internal API usage notice:
+# The imports below (deepeval.evaluate.execute.a_execute_test_cases and
+# deepeval.evaluate.configs.*) are not part of deepeval's public API.  They were
+# verified against deepeval==4.0.7.  deepeval is pinned to ^4.0.7 in pyproject.toml,
+# which allows 4.x minor upgrades.  If deepeval is upgraded and these imports break,
+# update this wrapper to match the new internal API or propose an upstream
+# async_assert_test to avoid relying on internals.
 from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig, ErrorConfig
 from deepeval.evaluate.execute import a_execute_test_cases
 from deepeval.metrics import AnswerRelevancyMetric, GEval
@@ -104,6 +112,17 @@ async def async_assert_test(
     event loop (via nest_asyncio), which then leaves cleanup coroutines pending.
     When pytest tears down the loop those coroutines raise "event loop is closed"
     errors. Awaiting a_execute_test_cases() directly avoids that problem entirely.
+
+    Note on run_async=False callers: some tests previously passed run_async=False to
+    assert_test to suppress async metric execution.  Those tests now use async_mode=False
+    on the GEval fixture itself, which controls per-metric execution inside deepeval and is
+    sufficient: a_execute_test_cases respects each metric's async_mode flag, so setting it
+    to False on the fixture is equivalent to the old run_async=False guard at the call site.
+
+    Note on cache_config: write_cache is tied to get_is_running_deepeval() (True only when
+    tests are invoked via deepeval's own CLI runner, not plain pytest).  This replicates
+    deepeval's own internal logic: caching is disabled in normal pytest runs, matching the
+    behaviour of the original assert_test call.
     """
     async_config = AsyncConfig(throttle_value=0, max_concurrent=100)
     display_config = DisplayConfig(verbose_mode=should_verbose_print(), show_indicator=True)
@@ -128,7 +147,13 @@ async def async_assert_test(
     )[0]
 
     if not test_result.success:
-        failed_metrics_data = [md for md in test_result.metrics_data if md.error is not None or not md.success]
+        failed_metrics_data = []
+        for md in test_result.metrics_data:
+            try:
+                if md.error is not None or not md.success:
+                    failed_metrics_data.append(md)
+            except Exception:  # noqa: BLE001
+                failed_metrics_data.append(md)
         failed_metrics_str = ", ".join(
             f"{md.name} (score: {md.score}, threshold: {md.threshold}, "
             f"strict: {md.strict_mode}, error: {md.error}, reason: {md.reason})"
