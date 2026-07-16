@@ -14,9 +14,20 @@ if "langchain_community.chat_models.vertexai" not in sys.modules:
     sys.modules["langchain_community.chat_models.vertexai"] = _stub
 
 import pytest
+from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig, ErrorConfig
+from deepeval.evaluate.execute import a_execute_test_cases
 from deepeval.metrics import AnswerRelevancyMetric, GEval
+from deepeval.metrics.base_metric import BaseMetric
 from deepeval.models import DeepEvalBaseLLM
-from deepeval.test_case import LLMTestCaseParams
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+from deepeval.utils import (
+    get_identifier,
+    get_is_running_deepeval,
+    should_ignore_errors,
+    should_skip_on_missing_params,
+    should_use_cache,
+    should_verbose_print,
+)
 from fakeredis import TcpFakeServer
 from langchain_core.messages import (
     AIMessage,
@@ -80,6 +91,50 @@ class LangChainOpenAI(DeepEvalBaseLLM):
 
     def get_model_name(self):
         return "Custom Azure OpenAI Model"
+
+
+async def async_assert_test(
+    test_case: LLMTestCase,
+    metrics: list[BaseMetric],
+) -> None:
+    """Async replacement for deepeval's assert_test.
+
+    Calling the synchronous assert_test() inside an @pytest.mark.asyncio test
+    body causes it to call loop.run_until_complete() on the already-running
+    event loop (via nest_asyncio), which then leaves cleanup coroutines pending.
+    When pytest tears down the loop those coroutines raise "event loop is closed"
+    errors. Awaiting a_execute_test_cases() directly avoids that problem entirely.
+    """
+    async_config = AsyncConfig(throttle_value=0, max_concurrent=100)
+    display_config = DisplayConfig(verbose_mode=should_verbose_print(), show_indicator=True)
+    error_config = ErrorConfig(
+        ignore_errors=should_ignore_errors(),
+        skip_on_missing_params=should_skip_on_missing_params(),
+    )
+    cache_config = CacheConfig(write_cache=get_is_running_deepeval(), use_cache=should_use_cache())
+
+    test_result = (
+        await a_execute_test_cases(
+            [test_case],
+            metrics,
+            error_config=error_config,
+            display_config=display_config,
+            async_config=async_config,
+            cache_config=cache_config,
+            identifier=get_identifier(),
+            _use_bar_indicator=True,
+            _is_assert_test=True,
+        )
+    )[0]
+
+    if not test_result.success:
+        failed_metrics_data = [md for md in test_result.metrics_data if md.error is not None or not md.success]
+        failed_metrics_str = ", ".join(
+            f"{md.name} (score: {md.score}, threshold: {md.threshold}, "
+            f"strict: {md.strict_mode}, error: {md.error}, reason: {md.reason})"
+            for md in failed_metrics_data
+        )
+        raise AssertionError(f"Metrics: {failed_metrics_str} failed.")
 
 
 @pytest.fixture(scope="session")

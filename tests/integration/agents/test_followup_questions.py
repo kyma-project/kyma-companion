@@ -2,7 +2,6 @@ import uuid
 from unittest.mock import patch
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -10,6 +9,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StateSnapshot
 
 from followup_questions.followup_questions import FollowUpQuestionsHandler
+from integration.conftest import async_assert_test
 from services.conversation import ConversationService
 from utils.settings import MAIN_MODEL_MINI_NAME
 
@@ -129,4 +129,4 @@ async def test_followup_questions(messages, conversation_service, followup_corre
         input=messages[-1].content,
         actual_output=got_questions,
     )
-    assert_test(test_case, [followup_correctness_metric], run_async=False)
+    await async_assert_test(test_case, [followup_correctness_metric])

@@ -1,5 +1,4 @@
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import (
     LLMTestCase,
@@ -17,6 +16,7 @@ from integration.agents.fixtures.messages import (
     conversation_sample_3,
     conversation_sample_4,
 )
+from integration.conftest import async_assert_test
 from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME
 
 
@@ -87,4 +87,4 @@ async def test_get_summary(
         actual_output=generated_summary,
     )
 
-    assert_test(test_case, [summarization_metric])
+    await async_assert_test(test_case, [summarization_metric])
