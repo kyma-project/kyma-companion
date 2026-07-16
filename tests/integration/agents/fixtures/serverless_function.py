@@ -275,8 +275,27 @@ FUNCTION_NO_REPLICAS = """
 """
 
 KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY = """
-# Failing Function Container  
-## Symptom  
+# Function Pod Not Ready - No Replicas Configured
+## Symptom
+The serverless Function pod is not ready, or no pods are being created for the Function.
+## Cause
+The Function spec has `replicas: 0`. With zero replicas configured, the Function controller creates no Deployment pods, so the Function is never scheduled or run.
+## Remedy
+Update the Function spec to set `replicas` to a value greater than 0:
+```yaml
+spec:
+  replicas: 1
+```
+Apply the change with:
+```bash
+kubectl edit function <function-name> -n <namespace>
+```
+or patch it directly:
+```bash
+kubectl patch function <function-name> -n <namespace> --type=merge -p '{"spec":{"replicas":1}}'
+```
+# Failing Function Container
+## Symptom
 The container suddenly fails when you use the `kyma run function` command with these flags:  
 - `runtime=nodejs20`
 - `debug=true`

@@ -23,6 +23,7 @@ from utils.utils import (
     JWT_TOKEN_SUB,
     create_session_id,
     generate_sha384_hash,
+    get_text_content,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
     parse_k8s_token,
@@ -31,6 +32,23 @@ from utils.utils import (
 
 UUID4_LENGTH = 32
 UUID4_FORMAT_REGEX = "^[0-9a-f]{32}$"
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        ("hello world", "hello world"),
+        ("", ""),
+        (None, ""),
+        ([{"type": "text", "text": "hello"}, {"type": "text", "text": " world"}], "hello world"),
+        (["hello", " world"], "hello world"),
+        (["hello", {"type": "text", "text": " world"}], "hello world"),
+        ([{"type": "image"}], ""),
+        ([], ""),
+    ],
+)
+def test_get_text_content(content, expected):
+    assert get_text_content(content) == expected
 
 
 def test_create_session_id():
