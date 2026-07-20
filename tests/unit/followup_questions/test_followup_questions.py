@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import tiktoken
@@ -46,7 +46,8 @@ class TestFollowUpQuestionsHandler:
         "followup_questions.followup_questions.FollowUpQuestionsHandler.__init__",
         return_value=None,
     )
-    def test_generate_questions(self, mock, dummy_conversation_history):
+    @pytest.mark.asyncio
+    async def test_generate_questions(self, mock, dummy_conversation_history):
         """Test generate_questions method."""
         # given
         # initialize FollowUpQuestionsHandler instance.
@@ -56,18 +57,18 @@ class TestFollowUpQuestionsHandler:
         filtered_history = dummy_conversation_history[:2]
         given_handler._get_filtered_history = Mock(return_value=filtered_history)
 
-        # define mock for _chain.invoke method.
+        # define mock for _chain.ainvoke method.
         given_handler._chain = Mock()
         dummy_questions = ["question1", "question2", "question3"]
-        given_handler._chain.invoke = Mock(return_value=dummy_questions)
+        given_handler._chain.ainvoke = AsyncMock(return_value=dummy_questions)
 
         # when
-        got_questions = given_handler.generate_questions(dummy_conversation_history)
+        got_questions = await given_handler.generate_questions(dummy_conversation_history)
 
         # then
         assert got_questions == dummy_questions
         given_handler._get_filtered_history.assert_called_once_with(dummy_conversation_history)
-        given_handler._chain.invoke.assert_called_once_with({"history": filtered_history})
+        given_handler._chain.ainvoke.assert_called_once_with({"history": filtered_history})
 
     @patch(
         "followup_questions.followup_questions.FollowUpQuestionsHandler.__init__",

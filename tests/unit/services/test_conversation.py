@@ -107,9 +107,7 @@ class TestConversation:
         mock_handler = Mock()
         mock_handler.fetch_relevant_data_from_k8s_cluster = fetch_relevant_data_from_k8s_cluster_mock
         mock_handler.apply_token_limit = Mock(return_value=k8s_context)
-        mock_handler.generate_questions = Mock(return_value=QUESTIONS)
-
-        # Reset singleton instances to ensure test isolation.
+        mock_handler.generate_questions = AsyncMock(return_value=QUESTIONS)
         ConversationService._instances = {}
         conversation_service = ConversationService(
             config=mock_config,
@@ -150,7 +148,7 @@ class TestConversation:
         ]
         # define mock for FollowUpQuestionsHandler.
         mock_handler = Mock()
-        mock_handler.generate_questions = Mock(return_value=QUESTIONS)
+        mock_handler.generate_questions = AsyncMock(return_value=QUESTIONS)
         # initialize ConversationService instance.
         conversation_service = ConversationService(
             config=mock_config,

@@ -60,7 +60,8 @@ class TestLLMReadinessProbe:
             ),
         ],
     )
-    def test_llm_readiness_probe(
+    @pytest.mark.asyncio
+    async def test_llm_readiness_probe(
         self,
         test_case,
         model_factory,
@@ -83,13 +84,14 @@ class TestLLMReadinessProbe:
 
         # Then:
         assert probe.has_models() == expected_has_models, test_case
-        assert probe.are_llms_ready() == expected_are_llms_ready, test_case
-        assert probe.get_llms_states() == expected_states, test_case
+        assert await probe.are_llms_ready() == expected_are_llms_ready, test_case
+        assert await probe.get_llms_states() == expected_states, test_case
 
         # Clean up by resetting the instance:
         LLMProbe()._reset_for_tests()
 
-    def test_llm_readiness_probe_model_tested_once(self):
+    @pytest.mark.asyncio
+    async def test_llm_readiness_probe_model_tested_once(self):
         """
         Test the readiness probe for LLMs ensures that models are tested only once, if they return readiness.
 
@@ -112,7 +114,7 @@ class TestLLMReadinessProbe:
 
         # When:
         # Call `are_llms_ready` to evaluate the readiness of the models.
-        overall_state = probe.are_llms_ready()
+        overall_state = await probe.are_llms_ready()
 
         # Then:
         # The overall state should match the model's state.
@@ -124,7 +126,7 @@ class TestLLMReadinessProbe:
 
         # When:
         # Call `are_llms_ready` again.
-        overall_state = probe.are_llms_ready()
+        overall_state = await probe.are_llms_ready()
 
         # Then:
         # The overall state should still match the model's state.

@@ -33,7 +33,8 @@ class TestHana:
             ),
         ],
     )
-    def test_is_hana_ready_with_query(self, test_case, cursor_behavior, expected):
+    @pytest.mark.asyncio
+    async def test_is_hana_ready_with_query(self, test_case, cursor_behavior, expected):
         """
         Test the `is_connection_operational` method executes test query.
 
@@ -63,7 +64,7 @@ class TestHana:
 
         # When:
         hana = Hana(connection_factory)
-        result = hana.is_connection_operational()
+        result = await hana.is_connection_operational()
 
         # Then:
         assert result == expected, f"Failed test case: {test_case}"
@@ -80,14 +81,15 @@ class TestHana:
         # Clean up by resetting the instance.
         hana._reset_for_tests()
 
-    def test_is_hana_ready_no_connection(self):
+    @pytest.mark.asyncio
+    async def test_is_hana_ready_no_connection(self):
         """Test that is_connection_operational returns False when no connection."""
         # Given: No connection
         connection_factory = MagicMock(return_value=None)
 
         # When:
         hana = Hana(connection_factory)
-        result = hana.is_connection_operational()
+        result = await hana.is_connection_operational()
 
         # Then:
         assert result is False
@@ -95,14 +97,15 @@ class TestHana:
         # Clean up
         hana._reset_for_tests()
 
-    def test_is_hana_ready_connection_fails_during_init(self):
+    @pytest.mark.asyncio
+    async def test_is_hana_ready_connection_fails_during_init(self):
         """Test that is_connection_operational returns False when connection init fails."""
         # Given: Connection factory that raises exception
         connection_factory = MagicMock(side_effect=Exception("Connection error"))
 
         # When:
         hana = Hana(connection_factory)
-        result = hana.is_connection_operational()
+        result = await hana.is_connection_operational()
 
         # Then:
         assert result is False
@@ -158,7 +161,8 @@ class TestHana:
 
         hana2._reset_for_tests()
 
-    def test_health_check_caching(self):
+    @pytest.mark.asyncio
+    async def test_health_check_caching(self):
         """
         Test that is_connection_operational caches results within TTL.
 
@@ -184,26 +188,27 @@ class TestHana:
         with patch("services.hana.datetime") as mock_datetime:
             # First call - should execute query
             mock_datetime.now.return_value = base_time
-            result1 = hana.is_connection_operational()
+            result1 = await hana.is_connection_operational()
             assert result1 is True
             assert mock_cursor.execute.call_count == 1
 
             # Second call within TTL - should use cache
             mock_datetime.now.return_value = base_time + timedelta(seconds=60)
-            result2 = hana.is_connection_operational()
+            result2 = await hana.is_connection_operational()
             assert result2 is True
             assert mock_cursor.execute.call_count == 1  # Still 1, cache was used
 
             # Third call after TTL expires - should execute query again
             mock_datetime.now.return_value = base_time + timedelta(seconds=301)
-            result3 = hana.is_connection_operational()
+            result3 = await hana.is_connection_operational()
             assert result3 is True
             assert mock_cursor.execute.call_count == expected_query_count_after_cache_expiry
 
         # Clean up
         hana._reset_for_tests()
 
-    def test_health_check_caches_failure_state(self):
+    @pytest.mark.asyncio
+    async def test_health_check_caches_failure_state(self):
         """
         Test that is_connection_operational caches failure state as well.
 
@@ -227,13 +232,13 @@ class TestHana:
         with patch("services.hana.datetime") as mock_datetime:
             # First call - should execute query and fail
             mock_datetime.now.return_value = base_time
-            result1 = hana.is_connection_operational()
+            result1 = await hana.is_connection_operational()
             assert result1 is False
             assert mock_cursor.execute.call_count == 1
 
             # Second call within TTL - should use cached failure state
             mock_datetime.now.return_value = base_time + timedelta(seconds=60)
-            result2 = hana.is_connection_operational()
+            result2 = await hana.is_connection_operational()
             assert result2 is False
             assert mock_cursor.execute.call_count == 1  # Still 1, cache was used
 

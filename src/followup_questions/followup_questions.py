@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 class IFollowUpQuestionsHandler(Protocol):
     """Protocol for IFollowUpQuestionsHandler."""
 
-    def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
+    async def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
         """Generates follow-up questions given the conversation history."""
         ...
 
@@ -60,7 +60,7 @@ class FollowUpQuestionsHandler:
             logger.warning(f"Model '{self._model.name}' not recognized by tiktoken, using cl100k_base encoding")
             self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
-    def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
+    async def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
         """Generates follow-up questions given the conversation history."""
         if len(messages) == 0:
             return []
@@ -68,7 +68,7 @@ class FollowUpQuestionsHandler:
         # filter down the conversation history to limit the token count.
         history = self._get_filtered_history(messages)
         # invoke the chain to generate follow-up questions.
-        return self._chain.invoke({"history": history})  # type: ignore
+        return await self._chain.ainvoke({"history": history})  # type: ignore
 
     def _get_prompt_template_token_count(self) -> int:
         """Computes the token count of the prompt template."""

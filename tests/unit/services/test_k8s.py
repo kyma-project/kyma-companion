@@ -1957,6 +1957,42 @@ class TestK8sClient:
             assert result.diagnostic_context is not None
             assert "nginx" in result.diagnostic_context.container_statuses
 
+    @pytest.mark.asyncio
+    async def test_gather_pod_diagnostic_context_structured_fallback(self, k8s_client):
+        """Test that when describe_resource raises, the fallback to _format_pod_events_for_diagnostic is used."""
+        k8s_client.data_sanitizer = None
+
+        fallback_events = "event1\nevent2"
+        k8s_client.describe_resource = Mock(side_effect=Exception("pod not found"))
+        k8s_client._format_pod_events_for_diagnostic = Mock(return_value=fallback_events)
+
+        has_useful_info, diagnostic_context = await k8s_client._gather_pod_diagnostic_context_structured(
+            name="missing-pod", namespace="default", container_name="app", tail_limit=20
+        )
+
+        assert has_useful_info is True
+        assert diagnostic_context is not None
+        assert diagnostic_context.events == fallback_events
+        assert diagnostic_context.container_statuses is None
+        assert diagnostic_context.init_container_statuses is None
+        k8s_client._format_pod_events_for_diagnostic.assert_called_once_with("missing-pod", "default", 20)
+
+    @pytest.mark.asyncio
+    async def test_gather_pod_diagnostic_context_structured_both_fail(self, k8s_client):
+        """Test that when both describe_resource and _format_pod_events_for_diagnostic raise, events is the fallback string."""
+        k8s_client.data_sanitizer = None
+
+        k8s_client.describe_resource = Mock(side_effect=Exception("pod not found"))
+        k8s_client._format_pod_events_for_diagnostic = Mock(side_effect=Exception("events not found"))
+
+        has_useful_info, diagnostic_context = await k8s_client._gather_pod_diagnostic_context_structured(
+            name="missing-pod", namespace="default", container_name="app", tail_limit=20
+        )
+
+        assert has_useful_info is False
+        assert diagnostic_context is not None
+        assert diagnostic_context.events == "No pod events available"
+
 
 class TestParseContainerState:
     """Test _parse_container_state helper method."""
