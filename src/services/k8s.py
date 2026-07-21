@@ -369,6 +369,7 @@ class K8sClient:
             page_count = 0
             all_items: list[dict] = []
             continue_token = ""
+            response_kind: str | None = None
 
             # loop until all items are fetched or continue token is empty.
             while True:
@@ -400,13 +401,24 @@ class K8sClient:
                     if "items" not in result:
                         return all_items if len(all_items) else result
 
+                    # Preserve the list kind from the first page so the sanitizer can
+                    # dispatch correctly (e.g. SecretList items must be sanitized as secrets).
+                    if response_kind is None:
+                        response_kind = result.get("kind")
+
                     if len(result["items"]) > 0:
                         all_items.extend(result["items"])
 
                     # Check for continue token
                     continue_token = result.get("metadata", {}).get("continue", "")
                     if not continue_token:
-                        return all_items if len(all_items) else result
+                        if not all_items:
+                            return result
+                        # Re-wrap items with the list kind so the sanitizer can dispatch
+                        # on kind (e.g. SecretList) instead of receiving bare item dicts.
+                        if response_kind:
+                            return {"kind": response_kind, "items": all_items}
+                        return all_items
 
     async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API"""
@@ -425,6 +437,10 @@ class K8sClient:
 
         if self.data_sanitizer:
             result = self.data_sanitizer.sanitize(result)
+            # _paginated_api_request re-wraps accumulated items in {"kind": ..., "items": [...]}
+            # so the sanitizer can dispatch on kind. Unwrap back to a flat list for callers.
+            if isinstance(result, dict) and "items" in result and "kind" in result:
+                return result["items"]
         return result
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:

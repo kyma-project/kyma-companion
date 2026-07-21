@@ -656,6 +656,73 @@ class TestK8sClient:
                 [{"raw": "data"}],
                 "single-page",
             ),
+            # Bug: paginated list strips the outer SecretList dict (which has `kind`),
+            # returning a bare list of items. Real K8s list items do NOT carry `kind`,
+            # so _sanitize_object never dispatches to _sanitize_secret and secret data
+            # passes through unsanitized.
+            (
+                "should sanitize secret data for single-page SecretList response",
+                DataSanitizer(),
+                [
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "my-secret"},
+                                "data": {"password": "c3VwZXItc2VjcmV0"},
+                            }
+                        ],
+                        "metadata": {},
+                    }
+                ],
+                [
+                    {
+                        "metadata": {"name": "my-secret"},
+                        "data": {},
+                    }
+                ],
+                "single-page",
+            ),
+            (
+                "should sanitize secret data for multi-page SecretList response",
+                DataSanitizer(),
+                [
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "secret-1"},
+                                "data": {"password": "c2VjcmV0LTE="},
+                            }
+                        ],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "secret-2"},
+                                "data": {"token": "c2VjcmV0LTI="},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                ],
+                [
+                    {
+                        "metadata": {"name": "secret-1"},
+                        "data": {},
+                    },
+                    {
+                        "metadata": {"name": "secret-2"},
+                        "data": {},
+                    },
+                ],
+                "multi-page",
+            ),
         ],
     )
     async def test_get_api_request_list_with_pagination(
@@ -707,7 +774,7 @@ class TestK8sClient:
             result = await k8s_client.execute_get_api_request("/test/uri")
 
         # then
-        if data_sanitizer:
+        if data_sanitizer and isinstance(data_sanitizer, Mock):
             assert data_sanitizer.sanitize.call_count == 1
 
         assert result == expected_result
