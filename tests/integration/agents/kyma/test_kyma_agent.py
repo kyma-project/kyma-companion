@@ -46,7 +46,7 @@ def correctness_metric(evaluator_model):
             LLMTestCaseParams.EXPECTED_OUTPUT,
         ],
         evaluation_steps=[
-            "Evaluate whether two answers are semantically similar or convey the same meaning."
+            "Evaluate whether two answers are semantically similar or convey the same meaning.",
             "Check whether the facts in 'actual output' contradict any facts in 'expected output'",
             "Lightly penalize omissions of detail, focusing on the main idea",
             "Vague language are permissible",

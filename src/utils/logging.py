@@ -1,8 +1,13 @@
 import json
-import logging
-import logging.config
 import sys
-from logging import Formatter, Logger, LogRecord, getLogger
+from logging import (
+    CRITICAL,
+    Formatter,
+    Logger,
+    LogRecord,
+    StreamHandler,
+    getLogger,
+)
 
 from tenacity import RetryCallState
 
@@ -72,34 +77,34 @@ def _configure_logging() -> None:
                 "WARNING: LOG_FORMAT=json specified but python-json-logger not installed. "
                 "Run 'poetry install' to enable JSON logging. Using standard format.\n"
             )
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     elif format_type == "pretty":
         # Pretty-printed JSON for development (no external deps needed)
         formatter = PrettyJSONFormatter()
     else:
         # Standard human-readable format
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Configure console handler
-    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler = StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
     # Configure root logger
-    root_logger = logging.getLogger()
+    root_logger = getLogger()
     root_logger.setLevel(LOG_LEVEL)
     # Clear existing handlers to prevent duplicates when reconfiguring
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
 
     # Disable uvicorn.access logger (handled by middleware)
-    uvicorn_access = logging.getLogger("uvicorn.access")
+    uvicorn_access = getLogger("uvicorn.access")
     uvicorn_access.handlers.clear()  # Clear handlers properly
-    uvicorn_access.setLevel(logging.CRITICAL)
+    uvicorn_access.setLevel(CRITICAL)
     uvicorn_access.propagate = False
 
     # Configure other uvicorn loggers to use our handler
     for logger_name in ["uvicorn", "uvicorn.error"]:
-        uvicorn_logger = logging.getLogger(logger_name)
+        uvicorn_logger = getLogger(logger_name)
         uvicorn_logger.handlers = [console_handler]
         uvicorn_logger.propagate = False
 
