@@ -25,6 +25,7 @@ select = [
   "SIM",
   # flake8-pie
   "PIE",
+  "PIE790", # unnecessary placeholder (... or pass after docstring)
   # isort
   "I",
   # docstring
