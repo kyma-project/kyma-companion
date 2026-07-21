@@ -1,6 +1,6 @@
 import copy
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -13,7 +13,7 @@ from utils.settings import LangfuseMaskingModes
 
 def create_k8s_client():
     with patch("services.k8s.K8sClient.__init__", return_value=None):
-        return K8sClient()
+        return K8sClient(Mock())
 
 
 @pytest.mark.parametrize(
