@@ -1,8 +1,13 @@
 import json
-import logging
-import logging.config
 import sys
-from logging import Formatter, Logger, LogRecord, getLogger
+from logging import (
+    CRITICAL,
+    Formatter,
+    Logger,
+    LogRecord,
+    StreamHandler,
+    getLogger,
+)
 
 from tenacity import RetryCallState
 
@@ -42,23 +47,20 @@ class PrettyJSONFormatter(Formatter):
         return json.dumps(log_data, indent=2, sort_keys=False)
 
 
-# Flag to track if logging has been configured
-_logging_configured = False
-
-
 # Configure logging programmatically
+_logging_configured: list[bool] = [False]
+
+
 def _configure_logging() -> None:
     """Configure logging based on LOG_LEVEL and LOG_FORMAT settings.
 
-    Can be called multiple times safely - only configures once unless force=True.
+    Can be called multiple times safely -- only configures once.
+    Use reconfigure_logging() to force reconfiguration.
     """
-    global _logging_configured  # noqa: PLW0603
-
-    # Prevent duplicate configuration
-    if _logging_configured:
+    if _logging_configured[0]:
         return
 
-    _logging_configured = True
+    _logging_configured[0] = True
 
     # Determine formatter based on LOG_FORMAT
     format_type = LOG_FORMAT.lower()
@@ -75,34 +77,34 @@ def _configure_logging() -> None:
                 "WARNING: LOG_FORMAT=json specified but python-json-logger not installed. "
                 "Run 'poetry install' to enable JSON logging. Using standard format.\n"
             )
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     elif format_type == "pretty":
         # Pretty-printed JSON for development (no external deps needed)
         formatter = PrettyJSONFormatter()
     else:
         # Standard human-readable format
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Configure console handler
-    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler = StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
     # Configure root logger
-    root_logger = logging.getLogger()
+    root_logger = getLogger()
     root_logger.setLevel(LOG_LEVEL)
     # Clear existing handlers to prevent duplicates when reconfiguring
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
 
     # Disable uvicorn.access logger (handled by middleware)
-    uvicorn_access = logging.getLogger("uvicorn.access")
+    uvicorn_access = getLogger("uvicorn.access")
     uvicorn_access.handlers.clear()  # Clear handlers properly
-    uvicorn_access.setLevel(logging.CRITICAL)
+    uvicorn_access.setLevel(CRITICAL)
     uvicorn_access.propagate = False
 
     # Configure other uvicorn loggers to use our handler
     for logger_name in ["uvicorn", "uvicorn.error"]:
-        uvicorn_logger = logging.getLogger(logger_name)
+        uvicorn_logger = getLogger(logger_name)
         uvicorn_logger.handlers = [console_handler]
         uvicorn_logger.propagate = False
 
@@ -120,8 +122,7 @@ def get_logger(name: str) -> Logger:
 
 def reconfigure_logging() -> None:
     """Force reconfiguration of logging (useful for testing or hot reload)."""
-    global _logging_configured  # noqa: PLW0603
-    _logging_configured = False
+    _logging_configured[0] = False
     _configure_logging()
 
 

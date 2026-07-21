@@ -25,7 +25,6 @@ class IQueryGenerator(Protocol):
 
     async def agenerate_queries(self, query: str) -> Queries:
         """Generate multiple queries based on the input query."""
-        ...
 
 
 class QueryGenerator:

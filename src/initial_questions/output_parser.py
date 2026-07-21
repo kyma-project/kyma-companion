@@ -16,7 +16,6 @@ class IOutputParser(Protocol):
 
     def parse(self, output: str) -> list[str]:
         """Parse the output and return the questions."""
-        ...
 
 
 class QuestionOutputParser(BaseOutputParser):

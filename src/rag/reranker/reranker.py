@@ -41,7 +41,6 @@ class IReranker(Protocol):
         output_limit: int = 4,
     ) -> list[Document]:
         """Rerank the documents based on which documents are most relevant to the given queries."""
-        ...
 
 
 class LLMReranker(IReranker):

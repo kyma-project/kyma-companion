@@ -516,10 +516,12 @@ def test_replace_yaml_with_html(response_converter, finalizer_response, replacem
             UPDATE_YAML,
             [
                 """invalid: :""",
-                '<div class="yaml-block"> <div class="yaml"> ```yaml apiVersion: apps/v1 '
-                "kind: Service metadata: name: test-svc namespace: test-ns ``` </div> <div "
-                'class="link" link-type="Update"> '
-                "[Apply](/namespaces/test-ns/Service/test-svc) </div> </div>",
+                (
+                    '<div class="yaml-block"> <div class="yaml"> ```yaml apiVersion: apps/v1 '
+                    + "kind: Service metadata: name: test-svc namespace: test-ns ``` </div> <div "
+                    + 'class="link" link-type="Update"> '
+                    + "[Apply](/namespaces/test-ns/Service/test-svc) </div> </div>"
+                ),
             ],
         ),
         ([], NEW_YAML, []),

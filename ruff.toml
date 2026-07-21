@@ -23,7 +23,7 @@ select = [
   "B",
   # flake8-simplify
   "SIM",
-  # flake8-pie
+  # flake8-pie (PIE790: unnecessary placeholder -- ... or pass after docstring)
   "PIE",
   # isort
   "I",

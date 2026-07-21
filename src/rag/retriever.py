@@ -57,7 +57,6 @@ class IRetriever(Protocol):
 
     async def aretrieve(self, query: str, top_k: int = 3) -> list[Document]:
         """Retrieve relevant documents based on the query."""
-        ...
 
 
 class HanaDBRetriever:

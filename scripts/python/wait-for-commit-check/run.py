@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 import time
 
 import requests
@@ -31,19 +32,19 @@ def read_inputs() -> dict:
     """Returns the dict with configs read from the environment variables."""
     github_token = os.environ.get("GITHUB_TOKEN")
     if github_token is None or github_token == "":
-        exit("ERROR: Env GITHUB_TOKEN is missing")
+        sys.exit("ERROR: Env GITHUB_TOKEN is missing")
 
     repository_full_name = os.environ.get("REPOSITORY_FULL_NAME")
     if repository_full_name is None or repository_full_name == "":
-        exit("ERROR: Env REPOSITORY_FULL_NAME is missing")
+        sys.exit("ERROR: Env REPOSITORY_FULL_NAME is missing")
 
     git_ref = os.environ.get("GIT_REF")
     if git_ref is None or git_ref == "":
-        exit("ERROR: Env GIT_REF is missing")
+        sys.exit("ERROR: Env GIT_REF is missing")
 
     git_check_run_name = os.environ.get("GIT_CHECK_RUN_NAME")
     if git_check_run_name is None or git_check_run_name == "":
-        exit("ERROR: Env GIT_CHECK_RUN_NAME is missing")
+        sys.exit("ERROR: Env GIT_CHECK_RUN_NAME is missing")
 
     # read and convert to integer.
     timeout_str = os.environ.get("TIMEOUT")  # seconds
@@ -51,9 +52,9 @@ def read_inputs() -> dict:
         if timeout_str is not None:
             timeout = int(timeout_str)
         else:
-            exit("ERROR: Env TIMEOUT is missing")
-    except Exception:
-        exit("ERROR: Env TIMEOUT is not an integer")
+            sys.exit("ERROR: Env TIMEOUT is missing")
+    except ValueError:
+        sys.exit("ERROR: Env TIMEOUT is not an integer")
 
     # read and convert to integer.
     interval_str = os.environ.get("INTERVAL")  # seconds
@@ -61,9 +62,9 @@ def read_inputs() -> dict:
         if interval_str is not None:
             interval = int(interval_str)
         else:
-            exit("ERROR: Env INTERVAL is missing")
-    except Exception:
-        exit("ERROR: Env INTERVAL is missing or not an integer")
+            sys.exit("ERROR: Env INTERVAL is missing")
+    except ValueError:
+        sys.exit("ERROR: Env INTERVAL is missing or not an integer")
 
     return {
         "token": github_token,
@@ -151,7 +152,7 @@ def main() -> None:
         )
         if elapsed_time > inputs["timeout"]:
             print("Error: Timed out!", flush=True)
-            exit(1)
+            sys.exit(1)
 
         # fetch check runs from GitHub.
         check_runs = fetch_check_runs(inputs["repository_full_name"], inputs["git_ref"], inputs["token"])
@@ -181,7 +182,7 @@ def main() -> None:
 
         if latest_check_run["conclusion"] == "success":
             print("Check run completed with success.", flush=True)
-            exit(0)
+            sys.exit(0)
 
         # https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#list-check-runs-for-a-git-reference
         if latest_check_run["conclusion"] in [
@@ -192,7 +193,7 @@ def main() -> None:
             "timed_out",
         ]:
             print("Check run completed with failure.", flush=True)
-            exit(1)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

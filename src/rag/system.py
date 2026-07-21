@@ -31,7 +31,6 @@ class IRAGSystem(Protocol):
 
     async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query."""
-        ...
 
 
 class RAGSystem:
