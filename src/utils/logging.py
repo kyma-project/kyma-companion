@@ -42,23 +42,19 @@ class PrettyJSONFormatter(Formatter):
         return json.dumps(log_data, indent=2, sort_keys=False)
 
 
-# Flag to track if logging has been configured
-_logging_configured = False
-
-
 # Configure logging programmatically
+_logging_configured: list[bool] = [False]
+
+
 def _configure_logging() -> None:
     """Configure logging based on LOG_LEVEL and LOG_FORMAT settings.
 
     Can be called multiple times safely - only configures once unless force=True.
     """
-    global _logging_configured  # noqa: PLW0603
-
-    # Prevent duplicate configuration
-    if _logging_configured:
+    if _logging_configured[0]:
         return
 
-    _logging_configured = True
+    _logging_configured[0] = True
 
     # Determine formatter based on LOG_FORMAT
     format_type = LOG_FORMAT.lower()
@@ -107,6 +103,7 @@ def _configure_logging() -> None:
         uvicorn_logger.propagate = False
 
 
+
 # Initialize logging when module is imported
 _configure_logging()
 
@@ -120,8 +117,7 @@ def get_logger(name: str) -> Logger:
 
 def reconfigure_logging() -> None:
     """Force reconfiguration of logging (useful for testing or hot reload)."""
-    global _logging_configured  # noqa: PLW0603
-    _logging_configured = False
+    _logging_configured[0] = False
     _configure_logging()
 
 
