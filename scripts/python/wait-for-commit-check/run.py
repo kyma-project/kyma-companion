@@ -53,7 +53,7 @@ def read_inputs() -> dict:
             timeout = int(timeout_str)
         else:
             sys.exit("ERROR: Env TIMEOUT is missing")
-    except Exception:
+    except ValueError:
         sys.exit("ERROR: Env TIMEOUT is not an integer")
 
     # read and convert to integer.
@@ -63,7 +63,7 @@ def read_inputs() -> dict:
             interval = int(interval_str)
         else:
             sys.exit("ERROR: Env INTERVAL is missing")
-    except Exception:
+    except ValueError:
         sys.exit("ERROR: Env INTERVAL is missing or not an integer")
 
     return {

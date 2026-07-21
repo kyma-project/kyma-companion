@@ -49,7 +49,8 @@ _logging_configured: list[bool] = [False]
 def _configure_logging() -> None:
     """Configure logging based on LOG_LEVEL and LOG_FORMAT settings.
 
-    Can be called multiple times safely - only configures once unless force=True.
+    Can be called multiple times safely -- only configures once.
+    Use reconfigure_logging() to force reconfiguration.
     """
     if _logging_configured[0]:
         return
