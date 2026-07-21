@@ -26,7 +26,6 @@ class IToolResponseSummarizer(Protocol):
         nums_of_chunks: int,
     ) -> str:
         """summarize each chunk and return final summarized response."""
-        ...
 
 
 class ToolResponseSummarizer:

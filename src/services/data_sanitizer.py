@@ -187,7 +187,6 @@ class IDataSanitizer(Protocol):
 
     def sanitize(self, data: str | dict | list[dict]) -> dict | list[dict] | Any:
         """Sanitize the data by removing sensitive information."""
-        ...
 
 
 class DataSanitizer(metaclass=SingletonMeta):

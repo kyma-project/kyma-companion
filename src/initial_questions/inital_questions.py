@@ -20,16 +20,13 @@ class IInitialQuestionsHandler(Protocol):
 
     def generate_questions(self, context: str) -> list[str]:
         """Generates initial questions given a context with cluster data."""
-        ...
 
     async def fetch_relevant_data_from_k8s_cluster(self, message: Message, k8s_client: IK8sClient) -> str:
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
-        ...
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
         """Reduces the amount of tokens of a string by truncating exeeding tokens.
         Takes the template into account."""
-        ...
 
 
 class IEncoding(Protocol):
@@ -37,11 +34,9 @@ class IEncoding(Protocol):
 
     def encode(self, text: str) -> list[int]:
         """Encodes strings to tokens;"""
-        ...
 
     def decode(self, tokens: list[int]) -> str:
         """Decodes tokens to strings."""
-        ...
 
 
 class InitialQuestionsHandler:

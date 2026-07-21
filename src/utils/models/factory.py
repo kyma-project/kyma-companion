@@ -59,14 +59,12 @@ class IModel(Protocol):
     @property
     def name(self) -> str:
         """The name of the model."""
-        ...
 
     """The name of the model."""
 
     @property
     def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
         """The instance of the model."""
-        ...
 
 
 @lru_cache(maxsize=1)
@@ -80,11 +78,9 @@ class IModelFactory(Protocol):
 
     def create_model(self, name: str) -> IModel | Embeddings:
         """Create a model."""
-        ...
 
     def create_models(self) -> dict[str, IModel | Embeddings]:
         """Create all models."""
-        ...
 
 
 class ModelFactory:

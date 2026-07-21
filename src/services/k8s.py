@@ -131,19 +131,15 @@ class IK8sClient(Protocol):
 
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
-        ...
 
     def model_dump(self) -> None:
         """Dump the model without any confidential data."""
-        ...
 
     async def execute_get_api_request(self, uri: str) -> dict | list[dict]:
         """Execute a GET request to the Kubernetes API."""
-        ...
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list:
         """List resources of a specific kind in a namespace."""
-        ...
 
     def get_resource(
         self,
@@ -153,11 +149,9 @@ class IK8sClient(Protocol):
         namespace: str,
     ) -> dict:
         """Get a specific resource by name in a namespace."""
-        ...
 
     def get_resource_version(self, kind: str) -> str:
         """Get the resource version for a given kind."""
-        ...
 
     def describe_resource(
         self,
@@ -167,27 +161,21 @@ class IK8sClient(Protocol):
         namespace: str,
     ) -> dict:
         """Describe a specific resource by name in a namespace. This includes the resource and its events."""
-        ...
 
     def list_not_running_pods(self, namespace: str) -> list[dict]:
         """List all pods that are not in the Running phase"""
-        ...
 
     async def list_nodes_metrics(self) -> list[dict]:
         """List all node metrics."""
-        ...
 
     def list_k8s_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes events."""
-        ...
 
     def list_k8s_warning_events(self, namespace: str) -> list[dict]:
         """List all Kubernetes warning events."""
-        ...
 
     def list_k8s_events_for_resource(self, kind: str, name: str, namespace: str) -> list[dict]:
         """List all Kubernetes events for a specific resource."""
-        ...
 
     async def fetch_pod_logs(
         self,
@@ -197,7 +185,6 @@ class IK8sClient(Protocol):
         tail_limit: int,
     ) -> PodLogsResult:
         """Fetch logs of Kubernetes Pod."""
-        ...
 
     async def get_namespace(self, name: str) -> dict:
         """
@@ -212,15 +199,12 @@ class IK8sClient(Protocol):
         Raises:
             ValueError: If the namespace is not found or the API call fails.
         """
-        ...
 
     async def get_group_version(self, group_version: str) -> dict:
         """Get the group version of the Kubernetes API."""
-        ...
 
     def get_data_sanitizer(self) -> IDataSanitizer | None:
         """Return the data sanitizer instance"""
-        ...
 
 
 def get_url_for_paged_request(base_url: str, continue_token: str) -> str:

@@ -39,23 +39,18 @@ class IService(Protocol):
 
     async def new_conversation(self, k8s_client: IK8sClient, message: Message) -> list[str]:
         """Initialize a new conversation."""
-        ...
 
     async def handle_followup_questions(self, conversation_id: str) -> list[str]:
         """Generate follow-up questions for a conversation."""
-        ...
 
     def handle_request(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncGenerator[bytes]:
         """Handle a request for a conversation"""
-        ...
 
     async def authorize_user(self, conversation_id: str, user_identifier: str) -> bool:
         """Authorize the user to access the conversation."""
-        ...
 
     async def is_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
-        ...
 
 
 class ConversationService(metaclass=SingletonMeta):

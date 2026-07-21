@@ -25,7 +25,6 @@ class IFollowUpQuestionsHandler(Protocol):
 
     def generate_questions(self, messages: list[BaseMessage]) -> list[str]:
         """Generates follow-up questions given the conversation history."""
-        ...
 
 
 class FollowUpQuestionsHandler:
