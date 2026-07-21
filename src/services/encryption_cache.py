@@ -17,7 +17,6 @@ class IRedisService(Protocol):
 
     def get_connection(self) -> AsyncRedis:
         """Return an active Redis connection."""
-        ...
 
 
 @runtime_checkable
@@ -26,15 +25,12 @@ class IEncryptionCache(Protocol):
 
     async def save_client_public_key(self, session_id: str, public_key: str) -> None:
         """Persist a client public key."""
-        ...
 
     async def get_client_public_key(self, session_id: str) -> str | None:
         """Retrieve a client public key, or None if not found."""
-        ...
 
     async def is_nonce_allowed(self, session_id: str, nonce: str) -> bool:
         """Return True if the nonce is allowed (first use or within replay window)."""
-        ...
 
 
 class EncryptionCache:

@@ -414,7 +414,7 @@ class TestK8sClient:
     @pytest.fixture
     def k8s_client(self):
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             k8s_client.client_ssl_context = None
             return k8s_client
 
@@ -429,7 +429,7 @@ class TestK8sClient:
 
             # Create K8sClient instance
             with patch("services.k8s.K8sClient.__init__", return_value=None):
-                k8s_client = K8sClient()
+                k8s_client = K8sClient(Mock())
                 k8s_client._dynamic_client = None  # Simulate lazy initialization state
                 k8s_client._create_dynamic_client = mock_create
 
@@ -1966,7 +1966,7 @@ class TestParseContainerState:
         """Test parsing waiting state with reason and message."""
         # Given: Container in waiting state with reason and message
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {
                 "waiting": {
                     "reason": "CrashLoopBackOff",
@@ -1990,7 +1990,7 @@ class TestParseContainerState:
         expected_exit_code = 137
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {
                 "terminated": {
                     "reason": "OOMKilled",
@@ -2013,7 +2013,7 @@ class TestParseContainerState:
         """Test parsing running state."""
         # Given: Container in running state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {"running": {}}
 
             # When: Parse the container state
@@ -2030,7 +2030,7 @@ class TestParseContainerState:
         """Test parsing unknown/empty state."""
         # Given: Empty container state dictionary
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {}
 
             # When: Parse the container state
@@ -2047,7 +2047,7 @@ class TestParseContainerState:
         """Test parsing waiting state when message is missing."""
         # Given: Container waiting with reason but no message
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {
                 "waiting": {
                     "reason": "ImagePullBackOff",
@@ -2068,7 +2068,7 @@ class TestParseContainerState:
         """Test parsing terminated state when optional fields are missing."""
         # Given: Container terminated with minimal fields
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             state = {
                 "terminated": {
                     "reason": "Error",
@@ -2093,7 +2093,7 @@ class TestFormatEventsForDiagnostic:
         """Test formatting with empty event list."""
         # Given: Empty event list
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = []
             tail_limit = 100
 
@@ -2108,7 +2108,7 @@ class TestFormatEventsForDiagnostic:
         """Test formatting a single event."""
         # Given: Single event with count of 1
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": "Started",
@@ -2133,7 +2133,7 @@ class TestFormatEventsForDiagnostic:
         expected_count = 15
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": "BackOff",
@@ -2157,7 +2157,7 @@ class TestFormatEventsForDiagnostic:
         expected_line_count = 11  # header + 10 events
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": f"Event{i}",
@@ -2189,7 +2189,7 @@ class TestFormatEventsForDiagnostic:
         expected_line_count = 4  # header + 3 events
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": f"Event{i}",
@@ -2216,7 +2216,7 @@ class TestFormatEventsForDiagnostic:
         """Test formatting event with missing reason, message, and count."""
         # Given: Event with all fields missing
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     # Missing all fields
@@ -2236,7 +2236,7 @@ class TestFormatEventsForDiagnostic:
         """Test that events are displayed in reverse chronological order (most recent first)."""
         # Given: Multiple events in chronological order
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {"reason": "Event1", "message": "Message 1", "count": 1},
                 {"reason": "Event2", "message": "Message 2", "count": 1},
@@ -2263,7 +2263,7 @@ class TestFormatPodEventsForDiagnostic:
         """Test formatting when no events are available."""
         # Given: No events available for pod
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             monkeypatch.setattr(k8s_client, "list_k8s_events_for_resource", Mock(return_value=[]))
 
             # When: Format pod events for diagnostic
@@ -2277,7 +2277,7 @@ class TestFormatPodEventsForDiagnostic:
         """Test formatting with a single event."""
         # Given: Pod with single event
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": "Started",
@@ -2300,7 +2300,7 @@ class TestFormatPodEventsForDiagnostic:
         # Given: Pod event with count greater than 1
         expected_event_count = 5
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": "BackOff",
@@ -2329,7 +2329,7 @@ class TestFormatPodEventsForDiagnostic:
         expected_newest_hidden_event_index = 0
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": f"Event{i}",
@@ -2367,7 +2367,7 @@ class TestFormatPodEventsForDiagnostic:
         expected_hidden_event_index = 6
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     "reason": f"Event{i}",
@@ -2394,7 +2394,7 @@ class TestFormatPodEventsForDiagnostic:
         """Test formatting handles missing event fields gracefully."""
         # Given: Pod event with missing fields
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             events = [
                 {
                     # Missing reason, message, and count
@@ -2417,7 +2417,7 @@ class TestFormatContainerStatusesStructured:
         """Test when pod has no container statuses."""
         # Given: Pod with no container statuses
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
         pod_description = {"status": {}}
 
         # When: Format container statuses structured
@@ -2431,7 +2431,7 @@ class TestFormatContainerStatusesStructured:
         """Test container in waiting state."""
         # Given: Container in waiting state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
         pod_description = {
             "status": {
                 "containerStatuses": [
@@ -2469,7 +2469,7 @@ class TestFormatContainerStatusesStructured:
         expected_restart_count = 3
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "containerStatuses": [
@@ -2505,7 +2505,7 @@ class TestFormatContainerStatusesStructured:
         """Test container in running state."""
         # Given: Container in running state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "containerStatuses": [
@@ -2536,7 +2536,7 @@ class TestFormatContainerStatusesStructured:
         expected_oom_exit_code = 137
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "containerStatuses": [
@@ -2574,7 +2574,7 @@ class TestFormatContainerStatusesStructured:
         expected_sidecar_restart_count = 5
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "containerStatuses": [
@@ -2613,7 +2613,7 @@ class TestFormatContainerStatusesStructured:
         """Test container with missing name defaults to 'unknown'."""
         # Given: Container status with missing name
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "containerStatuses": [
@@ -2642,7 +2642,7 @@ class TestFormatInitContainerStatusesStructured:
         """Test when pod has no init container statuses."""
         # Given: Pod with no init container statuses
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {"status": {}}
 
             # When: Format init container statuses structured
@@ -2658,7 +2658,7 @@ class TestFormatInitContainerStatusesStructured:
         expected_restart_count = 3
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "initContainerStatuses": [
@@ -2694,7 +2694,7 @@ class TestFormatInitContainerStatusesStructured:
         """Test init container in terminated state."""
         # Given: Init container in terminated state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "initContainerStatuses": [
@@ -2729,7 +2729,7 @@ class TestFormatInitContainerStatusesStructured:
         """Test init container in running state."""
         # Given: Init container in running state
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "initContainerStatuses": [
@@ -2761,7 +2761,7 @@ class TestFormatInitContainerStatusesStructured:
         expected_cache_restart_count = 2
 
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "initContainerStatuses": [
@@ -2799,7 +2799,7 @@ class TestFormatInitContainerStatusesStructured:
         """Test init container with missing name defaults to 'unknown'."""
         # Given: Init container status with missing name
         with patch("services.k8s.K8sClient.__init__", return_value=None):
-            k8s_client = K8sClient()
+            k8s_client = K8sClient(Mock())
             pod_description = {
                 "status": {
                     "initContainerStatuses": [

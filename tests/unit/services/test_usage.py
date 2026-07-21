@@ -37,7 +37,8 @@ class TestUsageTrackerCallback:
 
         # Then
         assert run_id in usage_tracker_callback.llm_start_times
-        assert usage_tracker_callback.llm_start_times.pop(run_id) > 0
+        start_time = usage_tracker_callback.llm_start_times.pop(run_id)
+        assert start_time > 0
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(

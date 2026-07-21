@@ -82,7 +82,6 @@ def save_all_groups_with_resources(k8s_client: K8sClient, file_path: Path) -> No
 
 if __name__ == "__main__":
     # Validate if all the required K8s headers are provided.
-    config_path = Path(__file__).parent.parent.parent / "config" / "config.json"
     result_file = Path(__file__).parent.parent.parent / "config" / "api_resources.json"
 
     # check required envs are set or not.

@@ -191,7 +191,7 @@ class TestK8sClientError:
                 "get_pod",
                 "/api/v1/pods/test",
                 HTTPStatus.NOT_FOUND,
-                lambda msg: "Pod not found" in msg,
+                lambda msg: "Pod not found" in str(msg),
             ),
             # ApiException with invalid status - non-numeric
             (
@@ -200,7 +200,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # ApiException with out of range status
             (
@@ -209,7 +209,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # ApiException below minimum range
             (
@@ -218,7 +218,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # ApiException above maximum range
             (
@@ -227,7 +227,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # ApiException without http_resp
             (
@@ -240,7 +240,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # ApiException with boundary status codes
             (
@@ -253,7 +253,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.CONTINUE,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             (
                 "api_exception",
@@ -261,7 +261,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 599,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             (
                 "api_exception",
@@ -269,7 +269,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.OK,
-                lambda msg: "Error" in msg,
+                lambda msg: "Error" in str(msg),
             ),
             # Generic exception
             (
@@ -287,7 +287,7 @@ class TestK8sClientError:
                 "test_tool",
                 "",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                lambda msg: "Custom error" in msg,
+                lambda msg: "Custom error" in str(msg),
             ),
         ],
     )

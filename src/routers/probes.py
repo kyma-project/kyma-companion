@@ -28,15 +28,12 @@ class IUsageTrackerProbe(Protocol):
 
     def reset_failure_count(self) -> None:
         """Sets the failure count back to 0."""
-        ...
 
     def increase_failure_count(self) -> None:
         """Increases the failure count by 1."""
-        ...
 
     def is_healthy(self) -> bool:
         """Checks if the failure count is equal or greater than the threshold."""
-        ...
 
 
 class IHanaConnection(Protocol):
@@ -44,7 +41,6 @@ class IHanaConnection(Protocol):
 
     def isconnected(self) -> bool:
         """Verifies if a connection to a Hana database is ready."""
-        ...
 
 
 class IHana(Protocol):
@@ -61,11 +57,9 @@ class IHana(Protocol):
         """
         Check if the Hana service is operational.
         """
-        ...
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""
-        ...
 
 
 class IRedisConnection(Protocol):
@@ -75,7 +69,6 @@ class IRedisConnection(Protocol):
 
     def ping(self, **kwargs) -> ResponseT:  # noqa
         """Ping the Redis server."""
-        ...
 
 
 class IRedis(Protocol):
@@ -92,11 +85,9 @@ class IRedis(Protocol):
         """
         Check if the Redis service is operational.
         """
-        ...
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""
-        ...
 
 
 class ILLMProbe(Protocol):
@@ -112,7 +103,6 @@ class ILLMProbe(Protocol):
             A dictionary where the keys are LLM names and the values are booleans
             indicating whether each LLM is ready.
         """
-        ...
 
     def has_models(self) -> bool:
         """
@@ -121,7 +111,6 @@ class ILLMProbe(Protocol):
         Returns:
             bool: True if models are available, False otherwise.
         """
-        ...
 
 
 @router.get("/healthz")
@@ -211,3 +200,4 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
             and response.are_models_initialized
             and response.is_key_store_initialized
         )
+    return False

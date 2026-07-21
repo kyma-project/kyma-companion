@@ -120,11 +120,9 @@ class IGraph(Protocol):
 
     def astream(self, conversation_id: str, message: Message, k8s_client: IK8sClient) -> AsyncIterator[str]:
         """Stream the output to the caller asynchronously."""
-        ...
 
     async def aget_messages(self, conversation_id: str) -> list[BaseMessage]:
         """Get messages from the graph state."""
-        ...
 
 
 class CompanionGraph:
