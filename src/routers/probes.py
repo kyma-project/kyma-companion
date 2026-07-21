@@ -200,3 +200,4 @@ def all_ready(response: HealthModel | ReadinessModel) -> bool:
             and response.are_models_initialized
             and response.is_key_store_initialized
         )
+    return False

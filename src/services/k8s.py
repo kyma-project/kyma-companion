@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import contextlib
 import copy
 import os
 import ssl
@@ -279,25 +280,20 @@ class K8sClient:
 
         self.data_sanitizer = data_sanitizer
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Destructor to remove the temporary file containing certificates data."""
-        if self.ca_temp_filename != "":
-            try:
-                os.remove(self.ca_temp_filename)
-            except FileNotFoundError:
-                return
+        self._cleanup_temp_files()
 
-        if self.client_cert_temp_filename != "":
-            try:
-                os.remove(self.client_cert_temp_filename)
-            except FileNotFoundError:
-                return
-
-        if self.client_key_temp_filename != "":
-            try:
-                os.remove(self.client_key_temp_filename)
-            except FileNotFoundError:
-                return
+    def _cleanup_temp_files(self) -> None:
+        """Remove temporary certificate files created during initialization."""
+        for filename in (
+            getattr(self, "ca_temp_filename", ""),
+            getattr(self, "client_cert_temp_filename", ""),
+            getattr(self, "client_key_temp_filename", ""),
+        ):
+            if filename:
+                with contextlib.suppress(FileNotFoundError):
+                    os.remove(filename)
 
     def get_api_server(self) -> str:
         """Returns the URL of the Kubernetes cluster."""
