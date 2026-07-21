@@ -109,7 +109,6 @@ def _configure_logging() -> None:
         uvicorn_logger.propagate = False
 
 
-
 # Initialize logging when module is imported
 _configure_logging()
 
