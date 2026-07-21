@@ -60,8 +60,6 @@ class IModel(Protocol):
     def name(self) -> str:
         """The name of the model."""
 
-    """The name of the model."""
-
     @property
     def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
         """The instance of the model."""
