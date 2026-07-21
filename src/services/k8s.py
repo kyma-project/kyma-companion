@@ -282,7 +282,8 @@ class K8sClient:
 
     def __del__(self) -> None:
         """Destructor to remove the temporary file containing certificates data."""
-        self._cleanup_temp_files()
+        with contextlib.suppress(Exception):
+            self._cleanup_temp_files()
 
     def _cleanup_temp_files(self) -> None:
         """Remove temporary certificate files created during initialization."""
