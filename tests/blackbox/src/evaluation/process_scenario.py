@@ -102,17 +102,16 @@ def initialize_conversation(
             retry_wait_time += config.retry_wait_time
 
     # If we run out of retries, we set the scenario status to failed.
-    else:
-        scenario.test_status = TestStatus.FAILED
-        scenario.test_status_reason = (
-            f"failed to call initialize conversation endpoint after multiple retries. {companion_error}"
-        )
-        logger.error(
-            f"skipping scenario because failed to call initialize conversation endpoint "
-            f"after multiple retries. Error: {companion_error}"
-        )
-        # We return None to indicate that the initialization failed.
-        return None
+    scenario.test_status = TestStatus.FAILED
+    scenario.test_status_reason = (
+        f"failed to call initialize conversation endpoint after multiple retries. {companion_error}"
+    )
+    logger.error(
+        f"skipping scenario because failed to call initialize conversation endpoint "
+        f"after multiple retries. Error: {companion_error}"
+    )
+    # We return None to indicate that the initialization failed.
+    return None
 
 
 def get_companion_responses(
