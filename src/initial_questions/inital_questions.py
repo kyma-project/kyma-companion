@@ -25,7 +25,7 @@ class IInitialQuestionsHandler(Protocol):
         """Fetch the relevant data from Kubernetes cluster based on specified K8s resource in message."""
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
-        """Reduces the amount of tokens of a string by truncating exeeding tokens.
+        """Reduces the amount of tokens of a string by truncating exceeding tokens.
         Takes the template into account."""
 
 
@@ -70,7 +70,7 @@ class InitialQuestionsHandler:
             self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def apply_token_limit(self, text: str, token_limit: int) -> str:
-        """Reduces the amount of tokens of a string by truncating exeeding tokens.
+        """Reduces the amount of tokens of a string by truncating exceeding tokens.
         Takes the template into account."""
 
         tokens_template = self._tokenizer.encode(text=self._template)
