@@ -20,7 +20,7 @@ _MIN_URL_PATH_PARTS = 2
 def _parse_github_repo(repo_url: str) -> tuple[str, str]:
     """Extract (owner, repo) from a GitHub URL, rejecting anything else."""
     parsed = urlparse(repo_url)
-    if parsed.scheme not in ("https", "http") or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
+    if parsed.scheme != "https" or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
         raise ValueError(f"unsupported repository URL (only github.com is allowed): {repo_url}")
     parts = parsed.path.removesuffix(".git").strip("/").split("/")
     if len(parts) < _MIN_URL_PATH_PARTS or not all(parts[:_MIN_URL_PATH_PARTS]):
