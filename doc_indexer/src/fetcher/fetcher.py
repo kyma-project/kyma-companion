@@ -11,6 +11,23 @@ from utils.utils import download_repo
 logger = get_logger(__name__)
 
 
+def _empty_dir(path: str) -> None:
+    """Remove everything *inside* a directory, leaving the directory itself.
+
+    Deleting the directory itself would require write access to its parent,
+    which the non-root container user does not have for /app-rooted paths
+    (see the doc_indexer Dockerfile). Emptying the contents only needs write
+    access to the directory, which the user does have.
+    """
+    if not os.path.isdir(path):
+        return
+    for entry in os.scandir(path):
+        if entry.is_dir(follow_symlinks=False):
+            shutil.rmtree(entry.path, ignore_errors=True)
+        else:
+            os.remove(entry.path)
+
+
 class DocumentsFetcher:
     """Class to fetch the documents from the specified sources"""
 
@@ -23,16 +40,16 @@ class DocumentsFetcher:
         self.output_dir = output_dir
         self.tmp_dir = tmp_dir
 
-        # delete the directories if they exist
-        shutil.rmtree(self.output_dir, ignore_errors=True)
-        shutil.rmtree(self.tmp_dir, ignore_errors=True)
+        # Create the directories if they don't exist, then clear their contents.
+        # Emptying (rather than removing) the dirs keeps them usable by a non-root
+        # user that lacks write access to the parent directory.
+        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.tmp_dir, exist_ok=True)
+        _empty_dir(self.output_dir)
+        _empty_dir(self.tmp_dir)
 
         # read the documents sources from the json file.
         self.sources = get_documents_sources(source_file)
-
-        # Create directories if they don't exist
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.tmp_dir, exist_ok=True)
 
     def fetch_documents(self, source: DocumentsSource) -> None:
         """Fetch the documents from the source."""
@@ -75,4 +92,4 @@ class DocumentsFetcher:
 
     def clean(self) -> None:
         """Clean the temporary files."""
-        shutil.rmtree(self.tmp_dir, ignore_errors=False)
+        _empty_dir(self.tmp_dir)

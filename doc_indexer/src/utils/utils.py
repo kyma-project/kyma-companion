@@ -39,7 +39,10 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> str:
     owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
     if os.path.exists(repo_path):
-        shutil.rmtree(repo_path, ignore_errors=True)
+        # Let rmtree raise on failure: a leftover repo_path would make the
+        # shutil.move below nest the extract inside it (<dest>/<repo>/<repo>-<sha>),
+        # silently breaking the layout the Scroller expects.
+        shutil.rmtree(repo_path)
 
     tar_url = f"https://{_CODELOAD_HOST}/{owner}/{repo}/tar.gz/{ref}"
     logger.info("Downloading repository", extra={"url": tar_url, "dest": repo_path})

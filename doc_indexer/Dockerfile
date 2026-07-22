@@ -69,6 +69,14 @@ RUN set -eux; \
       fi; \
     done
 
+# Stage the runtime-writable working dirs (DOCS_PATH=/app/data, TMP_DIR=/app/tmp)
+# owned by the non-root user. Distroless runs as an arbitrary uid but always with
+# gid 0, so we use the OpenShift arbitrary-uid idiom — own by gid 0 with group
+# write — which the runtime user can write into. The fetch task only writes into
+# and empties these dirs (it no longer removes the dirs themselves), so group
+# write on the dirs is sufficient; ownership of the parent /app is not required.
+RUN install -d -o 10001 -g 0 -m 0775 /writable/data /writable/tmp
+
 # Runtime stage: distroless C/C++ base (glibc + libstdc++, no shell, no apt,
 # no perl/util-linux/coreutils). The :debug tag adds busybox so orchestrator
 # manifests that invoke `sh -c "... && ..."` keep working unchanged.
@@ -89,6 +97,10 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /app/.venv ./venv
 COPY src ./src
 COPY docs_sources.json ./
+
+# Writable working dirs, group-owned by gid 0 with group write (see builder note).
+COPY --from=builder --chown=10001:0 /writable/data ./data
+COPY --from=builder --chown=10001:0 /writable/tmp ./tmp
 
 # Non-root numeric user (distroless has no useradd; uid matches the prior image).
 USER 10001

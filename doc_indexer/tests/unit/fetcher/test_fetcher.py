@@ -21,7 +21,7 @@ class TestDocumentsFetcher:
 
         # when
         with (
-            patch("shutil.rmtree") as rmtree_mock,
+            patch("fetcher.fetcher._empty_dir") as empty_dir_mock,
             patch("os.makedirs") as makedirs_mock,
         ):
             fetcher = DocumentsFetcher(
@@ -36,19 +36,19 @@ class TestDocumentsFetcher:
         assert fetcher.tmp_dir == given_tmp_dir
         assert len(fetcher.sources) > 0
 
-        # the constructor should have called the rmtree functions.
-        rmtree_mock.assert_any_call(given_output_dir, ignore_errors=True)
-        rmtree_mock.assert_any_call(given_tmp_dir, ignore_errors=True)
-
-        # the constructor should have called the makedirs functions.
+        # the constructor should have created the directories.
         makedirs_mock.assert_any_call(given_output_dir, exist_ok=True)
         makedirs_mock.assert_any_call(given_tmp_dir, exist_ok=True)
+
+        # the constructor should have emptied the directory contents.
+        empty_dir_mock.assert_any_call(given_output_dir)
+        empty_dir_mock.assert_any_call(given_tmp_dir)
 
     def test_clean(self, docs_sources_file_path):
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
@@ -56,11 +56,11 @@ class TestDocumentsFetcher:
             )
 
         # when
-        with patch("shutil.rmtree") as rmtree_mock:
+        with patch("fetcher.fetcher._empty_dir") as empty_dir_mock:
             fetcher.clean()
 
         # then
-        rmtree_mock.assert_called_with(given_tmp_dir, ignore_errors=False)
+        empty_dir_mock.assert_called_with(given_tmp_dir)
 
     def test_run(self, docs_sources_file_path):
         # given
