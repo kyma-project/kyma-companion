@@ -6,7 +6,7 @@ from fetcher.scroller import Scroller
 from fetcher.source import DocumentsSource, SourceType, get_documents_sources
 
 from utils.logging import get_logger
-from utils.utils import clone_repo
+from utils.utils import download_repo
 
 logger = get_logger(__name__)
 
@@ -42,9 +42,9 @@ class DocumentsFetcher:
             raise ValueError(f"Invalid source name: {source.name}")
 
         if source.source_type == SourceType.GITHUB:
-            logger.debug(f"Cloning repository: {source.url}")
-            # clone the git repository.
-            repo_dir = clone_repo(source.url, self.tmp_dir)
+            logger.debug(f"Downloading repository: {source.url}")
+            # download and extract the repository tarball (no git required).
+            repo_dir = download_repo(source.url, self.tmp_dir)
         else:
             raise ValueError(f"unsupported source_type: {source.source_type}")
 
