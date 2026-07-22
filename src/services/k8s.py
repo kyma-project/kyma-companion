@@ -437,10 +437,11 @@ class K8sClient:
 
         if self.data_sanitizer:
             result = self.data_sanitizer.sanitize(result)
-            # _paginated_api_request re-wraps accumulated items in {"kind": ..., "items": [...]}
-            # so the sanitizer can dispatch on kind. Unwrap back to a flat list for callers.
-            if isinstance(result, dict) and "items" in result and "kind" in result:
-                return result["items"]
+
+        # _paginated_api_request re-wraps accumulated items in {"kind": ..., "items": [...]}
+        # so the sanitizer can dispatch on kind. Unwrap back to a flat list for callers.
+        if isinstance(result, dict) and "items" in result and "kind" in result:
+            return result["items"]
         return result
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:

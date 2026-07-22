@@ -723,6 +723,69 @@ class TestK8sClient:
                 ],
                 "multi-page",
             ),
+            (
+                "should return flat item list for single-page SecretList response without sanitizer",
+                None,
+                [
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "my-secret"},
+                                "data": {"password": "c3VwZXItc2VjcmV0"},
+                            }
+                        ],
+                        "metadata": {},
+                    }
+                ],
+                [
+                    {
+                        "metadata": {"name": "my-secret"},
+                        "data": {"password": "c3VwZXItc2VjcmV0"},
+                    }
+                ],
+                "single-page",
+            ),
+            (
+                "should return flat item list for multi-page SecretList response without sanitizer",
+                None,
+                [
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "secret-1"},
+                                "data": {"password": "c2VjcmV0LTE="},
+                            }
+                        ],
+                        "metadata": {"continue": "token123"},
+                    },
+                    {
+                        "kind": "SecretList",
+                        "apiVersion": "v1",
+                        "items": [
+                            {
+                                "metadata": {"name": "secret-2"},
+                                "data": {"token": "c2VjcmV0LTI="},
+                            }
+                        ],
+                        "metadata": {},
+                    },
+                ],
+                [
+                    {
+                        "metadata": {"name": "secret-1"},
+                        "data": {"password": "c2VjcmV0LTE="},
+                    },
+                    {
+                        "metadata": {"name": "secret-2"},
+                        "data": {"token": "c2VjcmV0LTI="},
+                    },
+                ],
+                "multi-page",
+            ),
         ],
     )
     async def test_get_api_request_list_with_pagination(
