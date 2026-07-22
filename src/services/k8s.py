@@ -377,7 +377,7 @@ class K8sClient:
                             uri=base_url,
                         )
 
-                    result = await response.json()
+                    result: dict[str, Any] = await response.json()
                     if "items" not in result:
                         return all_items if len(all_items) else result
 
@@ -421,8 +421,8 @@ class K8sClient:
         # _paginated_api_request re-wraps accumulated items in {"kind": ..., "items": [...]}
         # so the sanitizer can dispatch on kind. Unwrap back to a flat list for callers.
         if isinstance(result, dict) and "items" in result and "kind" in result:
-            return result["items"]
-        return result
+            return cast(list[dict[Any, Any]], result["items"])
+        return cast(dict[Any, Any] | list[dict[Any, Any]], result)
 
     def list_resources(self, api_version: str, kind: str, namespace: str) -> list[dict]:
         """List resources of a specific kind in a namespace.
