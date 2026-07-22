@@ -48,8 +48,11 @@ def test_fetcher(new_tmp_dir):
     fetcher.run()
 
     # then
-    # should have deleted the tmp directory.
-    assert not os.path.exists(given_tmp_dir)
+    # should have emptied (not removed) the tmp directory: clean() only clears
+    # the contents so the dir stays usable by the non-root container user, which
+    # lacks write access to the parent to recreate it (see DocumentsFetcher).
+    assert os.path.isdir(given_tmp_dir)
+    assert os.listdir(given_tmp_dir) == []
     # should have created the output directory.
     assert os.path.exists(given_output_dir)
 
