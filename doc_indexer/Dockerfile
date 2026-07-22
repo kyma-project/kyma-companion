@@ -1,5 +1,5 @@
 # Build stage: install dependencies
-FROM ghcr.io/gardenlinux/gardenlinux:2150.7.0 AS builder
+FROM python:3.13-slim-bookworm AS builder
 WORKDIR /app
 
 # Copy necessary files for dependency installation
@@ -8,10 +8,10 @@ COPY src ./src
 COPY docs_sources.json ./
 
 # Install dependencies with Poetry and aggressively clean up
-RUN apt update && apt upgrade -y \
-  && apt install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv git \
-  && python3.13 -m venv ./venv \
-  && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends build-essential gcc git \
+  && python -m venv ./venv \
+  && ./venv/bin/pip install --no-cache-dir "poetry>=2.1" \
   && ./venv/bin/poetry config virtualenvs.in-project true \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
   && cd /app/.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
@@ -23,15 +23,15 @@ RUN apt update && apt upgrade -y \
   && rm -rf ./lib/python3.13/site-packages/pip* \
   && rm -rf ./lib/python3.13/site-packages/setuptools* \
   && rm -rf ./lib/python3.13/site-packages/wheel* \
-  && find . -name "*.so" -exec strip --strip-debug {} + 2>/dev/null || true
+  && find . -name "*.so" -not -path "*.libs/*" -exec strip --strip-debug {} + 2>/dev/null || true
 
-# Runtime stage: fresh GardenLinux with only runtime files
-FROM ghcr.io/gardenlinux/gardenlinux:2150.7.0
+# Runtime stage: fresh slim image with only runtime files
+FROM python:3.13-slim-bookworm
 WORKDIR /app
 
-# Install Python runtime and git (needed for runtime)
-RUN apt update && apt upgrade -y \
-  && apt install -y --no-install-recommends python3.13 git \
+# Install git (needed by the fetch task) and CA certificates for outbound HTTPS
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends git ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder (Poetry creates .venv with in-project)
