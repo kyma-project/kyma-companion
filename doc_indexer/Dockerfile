@@ -11,7 +11,7 @@ COPY docs_sources.json ./
 RUN apt-get update && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends build-essential gcc git \
   && python -m venv ./venv \
-  && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
+  && ./venv/bin/pip install --no-cache-dir "poetry>=2.1" \
   && ./venv/bin/poetry config virtualenvs.in-project true \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
   && cd /app/.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
