@@ -23,7 +23,7 @@ def _empty_dir(path: str) -> None:
         return
     for entry in os.scandir(path):
         if entry.is_dir(follow_symlinks=False):
-            shutil.rmtree(entry.path, ignore_errors=True)
+            shutil.rmtree(entry.path)
         else:
             os.remove(entry.path)
 

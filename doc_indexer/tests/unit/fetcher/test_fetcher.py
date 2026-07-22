@@ -108,7 +108,7 @@ class TestDocumentsFetcher:
             fetcher.fetch_documents(fetcher.sources[0])
 
         # then
-        # should have cloned the repo.
+        # should have downloaded the repo tarball.
         download_repo_mock.assert_called_once_with(fetcher.sources[0].url, given_tmp_dir)
         # should have created the module directory for output.
         makedirs_mock.assert_called_once_with(os.path.join(given_output_dir, fetcher.sources[0].name), exist_ok=True)
