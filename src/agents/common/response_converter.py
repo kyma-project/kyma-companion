@@ -25,7 +25,6 @@ class IResponseConverter(Protocol):
         """
         Main conversion method that orchestrates the entire YAML to HTML conversion process.
         """
-        ...
 
 
 class ResponseConverter:

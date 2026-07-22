@@ -77,12 +77,10 @@ class IAgent(Protocol):
 
     def agent_node(self) -> CompiledStateGraph:
         """Main agent function."""
-        ...
 
     @property
     def name(self) -> str:
         """Agent name."""
-        ...
 
 
 class BaseAgent:
