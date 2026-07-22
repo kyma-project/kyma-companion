@@ -420,7 +420,7 @@ class K8sClient:
 
         # _paginated_api_request re-wraps accumulated items in {"kind": ..., "items": [...]}
         # so the sanitizer can dispatch on kind. Unwrap back to a flat list for callers.
-        if isinstance(result, dict) and "items" in result and "kind" in result:
+        if isinstance(result, dict) and set(result.keys()) == {"kind", "items"}:
             return cast(list[dict[Any, Any]], result["items"])
         return cast(dict[Any, Any] | list[dict[Any, Any]], result)
 
