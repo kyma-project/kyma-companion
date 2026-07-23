@@ -694,7 +694,7 @@ class TestK8sClient:
                         "items": [
                             {
                                 "metadata": {"name": "secret-1"},
-                                "data": {"password": "c2VjcmV0LTE="},
+                                "data": {"ca.crt": "c2VjcmV0LTE="},
                             }
                         ],
                         "metadata": {"continue": "token123"},
@@ -705,7 +705,7 @@ class TestK8sClient:
                         "items": [
                             {
                                 "metadata": {"name": "secret-2"},
-                                "data": {"token": "c2VjcmV0LTI="},
+                                "data": {".dockerconfigjson": "c2VjcmV0LTI="},
                             }
                         ],
                         "metadata": {},
