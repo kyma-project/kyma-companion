@@ -670,7 +670,7 @@ class TestK8sClient:
                         "items": [
                             {
                                 "metadata": {"name": "my-secret"},
-                                "data": {"password": "c3VwZXItc2VjcmV0"},
+                                "data": {".dockerconfigjson": "c3VwZXItc2VjcmV0"},
                             }
                         ],
                         "metadata": {},
