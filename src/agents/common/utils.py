@@ -167,17 +167,36 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         # by fetching all not running pods, all K8s Nodes metrics,
         # and all K8s events with warning type.
         logger.info("Fetching all not running Pods, Node metrics, and K8s Events with warning type")
-        pods = yaml.dump_all(k8s_client.list_not_running_pods(namespace=namespace))
-        metrics = yaml.dump_all(await k8s_client.list_nodes_metrics())
-        events = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
+        not_running_pods = k8s_client.list_not_running_pods(namespace=namespace)
+        node_metrics = await k8s_client.list_nodes_metrics()
+        warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
 
-        context = f"{pods}\n{metrics}\n{events}"
+        pods_section = (
+            yaml.dump_all(not_running_pods)
+            if not_running_pods
+            else "No non-running pods were found in the cluster."
+        )
+        metrics_section = (
+            yaml.dump_all(node_metrics) if node_metrics else "No node metrics are available for the cluster."
+        )
+        events_section = (
+            yaml.dump_all(warning_events)
+            if warning_events
+            else "No warning or error events were found in the cluster."
+        )
+
+        context = f"{pods_section}\n{metrics_section}\n{events_section}"
 
     elif is_non_empty_str(namespace) and kind.lower() == "namespace":
         # Get an overview of the namespace
         # by fetching all K8s events with warning type.
         logger.debug("Fetching all K8s Events with warning type")
-        context = yaml.dump_all(k8s_client.list_k8s_warning_events(namespace=namespace))
+        warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
+        context = (
+            yaml.dump_all(warning_events)
+            if warning_events
+            else f"Namespace '{namespace}' exists, but no warning or error events were found."
+        )
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
         # Describe a specific resource. Not-namespaced resources need the namespace
