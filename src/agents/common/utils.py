@@ -190,7 +190,7 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         try:
             await k8s_client.get_namespace(namespace)
             namespace_exists = True
-        except ValueError:
+        except Exception:
             namespace_exists = False
 
         if not namespace_exists:
