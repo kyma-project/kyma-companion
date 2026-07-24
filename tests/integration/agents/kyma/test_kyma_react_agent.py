@@ -205,6 +205,7 @@ def correctness_metric(evaluator_model):
             "Check whether the facts in 'actual output' contradict any facts in 'expected output'",
             "Lightly penalize omissions of detail, focusing on the main idea",
             "Vague language are permissible",
+            "Additional details in 'actual output' that are not in 'expected output' are permissible as long as they do not contradict the expected answer",
         ],
         model=evaluator_model,
         threshold=CORRECTNESS_THRESHOLD,
@@ -332,6 +333,84 @@ def create_tool_selection_test_cases() -> list[ReactAgentTestCase]:
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
             must_not_call_tools=[TOOL_SEARCH_KYMA_DOC],
+            max_tool_calls=3,
+        ),
+        # ---- CASE A: broad request without a specific resource ----
+        ReactAgentTestCase(
+            name="CASE A - broad 'what is wrong with my Kyma' should not call any tool",
+            query="What is wrong with my Kyma?",
+            must_not_call_tools=[
+                TOOL_KYMA_QUERY,
+                TOOL_K8S_OVERVIEW,
+                TOOL_SEARCH_KYMA_DOC,
+                TOOL_FETCH_KYMA_VERSION,
+                TOOL_FETCH_POD_LOGS,
+            ],
+            max_tool_calls=0,
+            expected_goal="The agent should ask the user to provide a specific resource kind, name, and namespace instead of running any tool.",
+        ),
+        ReactAgentTestCase(
+            name="CASE A - 'check every resource one by one' is broad, no tools",
+            query="Please check every single resource in my cluster one by one and tell me if any of them has an issue.",
+            must_not_call_tools=[
+                TOOL_KYMA_QUERY,
+                TOOL_K8S_OVERVIEW,
+                TOOL_SEARCH_KYMA_DOC,
+                TOOL_FETCH_KYMA_VERSION,
+                TOOL_FETCH_POD_LOGS,
+            ],
+            max_tool_calls=0,
+            expected_goal="The agent should treat this as a broad request and ask the user to narrow down to specific resources rather than iterating over everything.",
+        ),
+        # ---- CASE B: cluster overview uses k8s_overview_tool ONLY ----
+        ReactAgentTestCase(
+            name="CASE B - cluster overview uses only k8s_overview_tool, never kyma_query_tool",
+            query="Give me an overview of the whole cluster.",
+            must_call_tools=[TOOL_K8S_OVERVIEW],
+            must_not_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_POD_LOGS, TOOL_FETCH_KYMA_VERSION],
+            max_tool_calls=3,
+        ),
+        ReactAgentTestCase(
+            name="CASE B - namespace overview must not chain kyma_query_tool",
+            query="Give me an overview of namespace test-function-8.",
+            must_call_tools=[TOOL_K8S_OVERVIEW],
+            must_not_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_POD_LOGS],
+            max_tool_calls=3,
+        ),
+        # ---- CASE C 3.2: Kyma resource with UNKNOWN api version ----
+        ReactAgentTestCase(
+            name="CASE C - unknown api version triggers fetch_kyma_resource_version first",
+            query="What is the status of function func1 in namespace test-function-8?",
+            ui_context=UINavigationContext(
+                resource_kind="Function",
+                resource_name="func1",
+                namespace="test-function-8",
+                # api_version intentionally omitted
+            ),
+            must_call_tools=[TOOL_FETCH_KYMA_VERSION, TOOL_KYMA_QUERY],
+            expected_order=[TOOL_FETCH_KYMA_VERSION, TOOL_KYMA_QUERY],
+            max_tool_calls=5,
+        ),
+        # ---- CASE C 3.3: K8s pod crash should trigger fetch_pod_logs_tool ----
+        ReactAgentTestCase(
+            name="CASE C - failing Pod triggers kyma_query_tool then fetch_pod_logs_tool",
+            query="Why is pod pod-check failing?",
+            ui_context=UINavigationContext(
+                resource_kind="Pod",
+                resource_name="pod-check",
+                namespace="test-pod-1",
+                resource_api_version="v1",
+            ),
+            must_call_tools=[TOOL_KYMA_QUERY, TOOL_FETCH_POD_LOGS],
+            expected_order=[TOOL_KYMA_QUERY, TOOL_FETCH_POD_LOGS],
+            max_tool_calls=6,
+        ),
+        # ---- CASE D: concept question uses search_kyma_doc ONLY ----
+        ReactAgentTestCase(
+            name="CASE D - concept 'how does Kyma eventing work' calls only search_kyma_doc",
+            query="How does Kyma eventing work?",
+            must_call_tools=[TOOL_SEARCH_KYMA_DOC],
+            must_not_call_tools=[TOOL_KYMA_QUERY, TOOL_K8S_OVERVIEW, TOOL_FETCH_POD_LOGS, TOOL_FETCH_KYMA_VERSION],
             max_tool_calls=3,
         ),
     ]
@@ -480,6 +559,30 @@ CHAT_HISTORY_TEST_CASES = [
         query="What is Kyma?",
         chat_history=None,
         min_response_length=50,
+    ),
+    # ---- STEP 3.1: prefer answering from history over new tool calls ----
+    ReactAgentTestCase(
+        name="Answer resolvable from history should not trigger tool calls",
+        query="Remind me: which namespace was func1 in?",
+        chat_history=[
+            HumanMessage(content="What is wrong with function func1 in namespace test-function-8?"),
+            AIMessage(
+                content=(
+                    "Function `func1` in namespace `test-function-8` has a syntax error in the "
+                    "JavaScript source: `Dates` is used instead of `Date`."
+                )
+            ),
+        ],
+        must_not_call_tools=[
+            TOOL_KYMA_QUERY,
+            TOOL_K8S_OVERVIEW,
+            TOOL_SEARCH_KYMA_DOC,
+            TOOL_FETCH_KYMA_VERSION,
+            TOOL_FETCH_POD_LOGS,
+        ],
+        max_tool_calls=0,
+        expected_goal="The agent should answer directly from the chat history that func1 is in namespace test-function-8, without invoking any tool.",
+        min_response_length=10,
     ),
 ]
 
