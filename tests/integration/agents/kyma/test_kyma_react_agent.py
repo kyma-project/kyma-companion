@@ -223,7 +223,7 @@ def evaluator_llm(app_models):
 def goal_accuracy_metric(evaluator_llm):
     """Ragas SimpleCriteriaScore for goal accuracy (same as goal_accuracy test)."""
     return SimpleCriteriaScore(
-        name="course_grained_score",
+        name="coarse_grained_score",
         definition="Score 0 to 10 by similarity",
         llm=evaluator_llm,
     )
@@ -409,6 +409,13 @@ def create_tool_selection_test_cases() -> list[ReactAgentTestCase]:
         ReactAgentTestCase(
             name="CASE D - concept 'how does Kyma eventing work' calls only search_kyma_doc",
             query="How does Kyma eventing work?",
+            must_call_tools=[TOOL_SEARCH_KYMA_DOC],
+            must_not_call_tools=[TOOL_KYMA_QUERY, TOOL_K8S_OVERVIEW, TOOL_FETCH_POD_LOGS, TOOL_FETCH_KYMA_VERSION],
+            max_tool_calls=3,
+        ),
+        ReactAgentTestCase(
+            name="CASE D - concept 'How can I use Istio in Kyma?' calls only search_kyma_doc",
+            query="How can I use Istio in Kyma?",
             must_call_tools=[TOOL_SEARCH_KYMA_DOC],
             must_not_call_tools=[TOOL_KYMA_QUERY, TOOL_K8S_OVERVIEW, TOOL_FETCH_POD_LOGS, TOOL_FETCH_KYMA_VERSION],
             max_tool_calls=3,

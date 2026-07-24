@@ -186,13 +186,23 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
     elif is_non_empty_str(namespace) and kind.lower() == "namespace":
         # Get an overview of the namespace
         # by fetching all K8s events with warning type.
-        logger.debug("Fetching all K8s Events with warning type")
-        warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
-        context = (
-            yaml.dump_all(warning_events)
-            if warning_events
-            else f"Namespace '{namespace}' exists, but no warning or error events were found."
-        )
+        logger.debug(f"Verifying that namespace '{namespace}' exists")
+        try:
+            await k8s_client.get_namespace(namespace)
+            namespace_exists = True
+        except ValueError:
+            namespace_exists = False
+
+        if not namespace_exists:
+            context = f"Namespace '{namespace}' was not found in the cluster."
+        else:
+            logger.debug("Fetching all K8s Events with warning type")
+            warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
+            context = (
+                yaml.dump_all(warning_events)
+                if warning_events
+                else f"Namespace '{namespace}' exists, but no warning or error events were found."
+            )
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
         # Describe a specific resource. Not-namespaced resources need the namespace
