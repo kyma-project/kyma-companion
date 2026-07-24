@@ -172,17 +172,13 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
 
         pods_section = (
-            yaml.dump_all(not_running_pods)
-            if not_running_pods
-            else "No non-running pods were found in the cluster."
+            yaml.dump_all(not_running_pods) if not_running_pods else "No non-running pods were found in the cluster."
         )
         metrics_section = (
             yaml.dump_all(node_metrics) if node_metrics else "No node metrics are available for the cluster."
         )
         events_section = (
-            yaml.dump_all(warning_events)
-            if warning_events
-            else "No warning or error events were found in the cluster."
+            yaml.dump_all(warning_events) if warning_events else "No warning or error events were found in the cluster."
         )
 
         context = f"{pods_section}\n{metrics_section}\n{events_section}"
