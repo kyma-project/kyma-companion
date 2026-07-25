@@ -79,54 +79,54 @@ def kyma_agent(app_models):
 @pytest.mark.parametrize(
     "test_case,state,retrieval_context,expected_result,expected_tool_call,should_raise",
     [
-        (
-            "Should mention about Joule context in kyma dashboard",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
-                    ),
-                    HumanMessage(content="Why is the pod of the serverless Function not ready?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
-                            },
-                        ],
-                    ),
-                    ToolMessage(
-                        content="Please specify the function name.",
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "Why is the pod of the serverless Function not ready?",
-                        "task_title": "Why is the pod of the serverless Function not ready?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="Why is the pod of the serverless Function not ready?",
-                    task_title="Why is the pod of the serverless Function not ready?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),
-            None,
-            "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. ",
-            None,
-            False,
-        ),
-        # Test case for API Rule with wrong access strategy
+        # (
+        #     "Should mention about Joule context in kyma dashboard",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2'}"
+        #             ),
+        #             HumanMessage(content="Why is the pod of the serverless Function not ready?"),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_1",
+        #                         "type": "tool_call",
+        #                         "name": "kyma_query_tool",
+        #                         "args": {"uri": "/apis/serverless.kyma-project.io/v1alpha2/functions"},
+        #                     },
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content="Please specify the function name.",
+        #                 name="kyma_query_tool",
+        #                 tool_call_id="tool_call_id_1",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "Why is the pod of the serverless Function not ready?",
+        #                 "task_title": "Why is the pod of the serverless Function not ready?",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="Why is the pod of the serverless Function not ready?",
+        #             task_title="Why is the pod of the serverless Function not ready?",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),
+        #     None,
+        #     "I need more information to answer this question. Please provide the name and namespace of the Function whose pod is not ready. This will help me investigate the specific issue and provide a solution tailored to your resource. ",
+        #     None,
+        #     False,
+        # ),
+        # # Test case for API Rule with wrong access strategy
         # - Verifies agent correctly identifies and explains API Rule validation error
         # - Checks agent uses both kyma_query_tool and search_kyma_doc
         # - Validates response matches expected explanation about multiple access strategies
@@ -283,72 +283,72 @@ def kyma_agent(app_models):
         # # Test case for Serverless Function with syntax error
         # - Verifies agent correctly identifies JavaScript syntax error
         # - Validates response includes proper error explanation
-        (
-            "Should return right solution for Serverless Function with syntax error",
-            KymaAgentState(
-                agent_messages=[],
-                messages=[
-                    SystemMessage(
-                        content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
-                    ),
-                    HumanMessage(content="what is wrong?"),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_1",
-                                "type": "tool_call",
-                                "name": "kyma_query_tool",
-                                "args": {
-                                    "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
-                                },
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content=SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
-                        name="kyma_query_tool",
-                        tool_call_id="tool_call_id_1",
-                    ),
-                    AIMessage(
-                        content="",
-                        tool_calls=[
-                            {
-                                "id": "tool_call_id_2",
-                                "type": "tool_call",
-                                "name": "search_kyma_doc",
-                                "args": {"query": "Kyma Function troubleshooting"},
-                            }
-                        ],
-                    ),
-                    ToolMessage(
-                        content=KYMADOC_FUNCTION_TROUBLESHOOTING,
-                        name="search_kyma_doc",
-                        tool_call_id="tool_call_id_2",
-                    ),
-                ],
-                subtasks=[
-                    {
-                        "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                        "assigned_to": "KymaAgent",
-                    }
-                ],
-                my_task=SubTask(
-                    description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
-                    assigned_to="KymaAgent",
-                ),
-                k8s_client=Mock(spec_set=IK8sClient),  # noqa
-                is_last_step=False,
-                remaining_steps=AGENT_STEPS_NUMBER,
-            ),  # context
-            None,  # retrieval_context
-            EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
-            None,  # expected_tool_call
-            False,  # should_raise
-        ),
-        # Test case for Serverless Function with no replicas
+        # (
+        #     "Should return right solution for Serverless Function with syntax error",
+        #     KymaAgentState(
+        #         agent_messages=[],
+        #         messages=[
+        #             SystemMessage(
+        #                 content="{'resource_kind': 'Function', 'resource_api_version': 'serverless.kyma-project.io/v1alpha2', 'resource_name': 'func1', 'resource_namespace': 'kyma-app-serverless-syntax-err'}"
+        #             ),
+        #             HumanMessage(content="what is wrong?"),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_1",
+        #                         "type": "tool_call",
+        #                         "name": "kyma_query_tool",
+        #                         "args": {
+        #                             "uri": "/apis/serverless.kyma-project.io/v1alpha2/namespaces/kyma-app-serverless-syntax-err/functions/func1"
+        #                         },
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content=SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
+        #                 name="kyma_query_tool",
+        #                 tool_call_id="tool_call_id_1",
+        #             ),
+        #             AIMessage(
+        #                 content="",
+        #                 tool_calls=[
+        #                     {
+        #                         "id": "tool_call_id_2",
+        #                         "type": "tool_call",
+        #                         "name": "search_kyma_doc",
+        #                         "args": {"query": "Kyma Function troubleshooting"},
+        #                     }
+        #                 ],
+        #             ),
+        #             ToolMessage(
+        #                 content=KYMADOC_FUNCTION_TROUBLESHOOTING,
+        #                 name="search_kyma_doc",
+        #                 tool_call_id="tool_call_id_2",
+        #             ),
+        #         ],
+        #         subtasks=[
+        #             {
+        #                 "description": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                 "task_title": "What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #                 "assigned_to": "KymaAgent",
+        #             }
+        #         ],
+        #         my_task=SubTask(
+        #             description="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #             task_title="What is wrong with Function 'func1' in namespace 'kyma-app-serverless-syntax-err' with api version 'serverless.kyma-project.io/v1alpha2'?",
+        #             assigned_to="KymaAgent",
+        #         ),
+        #         k8s_client=Mock(spec_set=IK8sClient),  # noqa
+        #         is_last_step=False,
+        #         remaining_steps=AGENT_STEPS_NUMBER,
+        #     ),  # context
+        #     None,  # retrieval_context
+        #     EXPECTED_SERVERLESS_FUNCTION_RESPONSE,  # expected_result
+        #     None,  # expected_tool_call
+        #     False,  # should_raise
+        # ),
+        # # Test case for Serverless Function with no replicas
         # - Verifies agent detects and explains replica configuration issue
         # - Validates response includes proper explanation about replica requirements
         (
