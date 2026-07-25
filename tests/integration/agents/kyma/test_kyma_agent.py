@@ -23,12 +23,9 @@ from integration.agents.fixtures.btp_manager import (
     RETRIEVAL_CONTEXT,
 )
 from integration.agents.fixtures.serverless_function import (
-    EXPECTED_SERVERLESS_FUNCTION_RESPONSE,
     EXPECTED_SERVERLESS_FUNCTION_RESPONSE_NO_REPLICAS,
     FUNCTION_NO_REPLICAS,
     KYMADOC_FOR_SERVERLESS_FUNCTION_POD_NOT_READY,
-    KYMADOC_FUNCTION_TROUBLESHOOTING,
-    SERVERLESS_FUNCTION_WITH_SYNTAX_ERROR,
 )
 from services.k8s import IK8sClient
 from utils.settings import DEEPEVAL_TESTCASE_VERBOSE
