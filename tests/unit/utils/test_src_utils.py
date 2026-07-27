@@ -17,6 +17,7 @@ from agents.common.utils import get_relevant_context_from_k8s_cluster
 from services.data_sanitizer import DataSanitizer
 from services.k8s import IK8sClient
 from utils import utils
+from utils.exceptions import K8sClientError
 from utils.utils import (
     JWT_TOKEN_EMAIL,
     JWT_TOKEN_SERVICE_ACCOUNT,
@@ -339,6 +340,9 @@ def mock_k8s_client():
     client.list_k8s_warning_events = Mock(return_value=[])
     client.describe_resource = Mock(return_value={})
     client.list_k8s_events_for_resource = Mock(return_value=[])
+    # `get_namespace` is awaited before fetching warning events for a namespace
+    # overview; by default the namespace exists.
+    client.get_namespace = AsyncMock(return_value={"metadata": {"name": "default"}})
     return client
 
 
@@ -452,6 +456,60 @@ async def test_namespace_overview_sanitization(mock_k8s_client, input_context, e
     # Verify
     assert mock_k8s_client.get_data_sanitizer.called
     assert "{{REDACTED}}" in result
+    # `get_namespace` must be awaited to verify the namespace exists before
+    # fetching warning events.
+    mock_k8s_client.get_namespace.assert_awaited_once_with("default")
+    assert mock_k8s_client.list_k8s_warning_events.called
+
+
+@pytest.mark.parametrize(
+    "namespace,namespace_exists,expected_result,expects_events_fetch",
+    [
+        (
+            "missing-ns",
+            False,
+            "Namespace 'missing-ns' was not found in the cluster.",
+            False,
+        ),
+        (
+            "default",
+            True,
+            "Namespace 'default' exists, but no warning or error events were found.",
+            True,
+        ),
+    ],
+    ids=["namespace_does_not_exist", "namespace_exists_no_events"],
+)
+@pytest.mark.asyncio
+async def test_namespace_overview(mock_k8s_client, namespace, namespace_exists, expected_result, expects_events_fetch):
+    """Namespace overview should:
+    - return a not-found message and skip fetching warning events when
+      `get_namespace` raises K8sClientError with status 404;
+    - return a no-events placeholder when the namespace exists but has no
+      warning events.
+    """
+    # Setup
+    message = Message(
+        query="test",
+        namespace=namespace,
+        resource_kind="namespace",
+        resource_name="",
+        resource_api_version="",
+    )
+    if not namespace_exists:
+        mock_k8s_client.get_namespace.side_effect = K8sClientError("namespace not found", status_code=404)
+    mock_k8s_client.list_k8s_warning_events.return_value = []
+
+    # Execute
+    result = await get_relevant_context_from_k8s_cluster(message, mock_k8s_client)
+
+    # Verify
+    mock_k8s_client.get_namespace.assert_awaited_once_with(namespace)
+    assert result == expected_result
+    if expects_events_fetch:
+        assert mock_k8s_client.list_k8s_warning_events.called
+    else:
+        mock_k8s_client.list_k8s_warning_events.assert_not_called()
 
 
 @pytest.mark.parametrize(

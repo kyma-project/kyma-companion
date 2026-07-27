@@ -23,15 +23,15 @@ from pydantic import BaseModel, Field
 
 from agents.common.data import Message
 from agents.common.utils import get_relevant_context_from_k8s_cluster
-from agents.common.constants import POD_LOGS_TAIL_LINES_LIMIT
-from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
+from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT
+from agents.kyma.prompts import REACT_AGENT_INSTRUCTIONS, REACT_AGENT_PROMPT
 from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
 from utils.settings import MAIN_MODEL_NAME
 
-SYSTEM_PROMPT = f"{KYMA_AGENT_PROMPT}\n\n{KYMA_AGENT_INSTRUCTIONS}"
+SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
 
 class UINavigationContext(BaseModel):
