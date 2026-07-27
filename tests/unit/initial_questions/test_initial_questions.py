@@ -76,6 +76,7 @@ def mock_k8s_client():
     mock.list_not_running_pods.return_value = [{KEY: LIST_NOT_RUNNING_PODS}, MOCK_DICT]
     mock.list_nodes_metrics = AsyncMock()
     mock.list_nodes_metrics.return_value = [{KEY: LIST_NODES_METRICS}, MOCK_DICT]
+    mock.get_namespace = AsyncMock(return_value={"metadata": {"name": "default"}})
     mock.list_k8s_warning_events.return_value = [
         {KEY: LIST_K8S_WARNING_EVENTS},
         MOCK_DICT,
