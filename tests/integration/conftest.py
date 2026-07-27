@@ -25,8 +25,6 @@ from langchain_core.messages import (
     SystemMessage,
 )
 
-from agents.common.state import CompanionState, UserInput
-from agents.graph import CompanionGraph
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory
@@ -151,17 +149,6 @@ def start_fake_redis():
     t.join(timeout=5)
 
 
-@pytest.fixture(scope="session")
-def companion_graph(app_models, start_fake_redis):
-    redis_port = start_fake_redis.server_address[1]
-    memory = AsyncRedisSaver.from_conn_info(
-        host=REDIS_HOST,
-        port=redis_port,
-        db=REDIS_DB_NUMBER,
-        password=REDIS_PASSWORD,
-    )
-    graph = CompanionGraph(app_models, memory)
-    return graph
 
 
 @pytest.fixture
@@ -255,28 +242,3 @@ def convert_dict_to_messages(messages: dict) -> list[BaseMessage]:
         for message in messages
     ]
 
-
-def create_mock_state(messages: Sequence[BaseMessage], subtasks=None) -> CompanionState:
-    """Create a mock langgraph state for tests."""
-    if subtasks is None:
-        subtasks = []
-
-    # find the last human message and use its content as user query.
-    last_human_message = next((msg for msg in reversed(messages) if isinstance(msg, HumanMessage)), None)
-
-    # if no human message is found, use the last message's content.
-    user_input = UserInput(
-        query=(last_human_message.content if last_human_message else messages[-1].content),
-        resource_kind=None,
-        resource_api_version=None,
-        resource_name=None,
-        namespace=None,
-    )
-
-    return CompanionState(
-        input=user_input,
-        messages=messages,
-        next="",
-        subtasks=subtasks,
-        error=None,
-    )

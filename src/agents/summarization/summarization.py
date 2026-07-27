@@ -20,7 +20,6 @@ from agents.common.utils import (
     filter_valid_messages,
 )
 from agents.summarization.prompts import MESSAGES_SUMMARIZATION_PROMPT
-from agents.supervisor.agent import SUPERVISOR
 from utils import logging
 from utils.chain import ainvoke_chain
 from utils.models.factory import IModel
@@ -100,52 +99,3 @@ class MessageSummarizer:
         )
         logger.debug("Messages summary completed")
         return f"Summary of previous chat:\n {res.content}"
-
-    async def summarization_node(self, state: BaseModel, config: RunnableConfig) -> dict[str, Any]:
-        """Summarization node to summarize the conversation."""
-        logger.debug("Summarization node started")
-        state_messages = getattr(state, self._messages_key)
-
-        state_messages_summary = getattr(state, self._messages_summary_key)
-
-        all_messages = state_messages
-        if state_messages_summary != "":
-            # if there is a summary, prepend it to the messages.
-            all_messages = [SystemMessage(content=state_messages_summary)] + state_messages
-
-        token_count = self.get_messages_token_count(all_messages)
-        if token_count <= self.get_token_upper_limit():
-            return {
-                ERROR: None,
-                self._messages_key: [],
-            }
-
-        # filter out messages that can be kept within the token limit.
-        latest_messages_within_token_limit = self.filter_messages_by_token_limit(all_messages)
-
-        if len(latest_messages_within_token_limit) == len(all_messages):
-            return {
-                ERROR: None,
-                self._messages_key: [],
-            }
-
-        # summarize the remaining old messages
-        old_msgs_to_summarize = all_messages[: -len(latest_messages_within_token_limit)]
-        try:
-            logger.debug("Getting summary for messages")
-            summary = await self.get_summary(old_msgs_to_summarize, config)
-        except Exception:
-            logger.exception("Error while summarizing messages.")
-            return {
-                ERROR: "Unexpected error while processing the request. Please try again later.",
-            }
-        # remove excluded messages from state.
-        msgs_to_remove = state_messages[: -len(latest_messages_within_token_limit)]
-        delete_messages = [RemoveMessage(id=m.id) for m in msgs_to_remove]
-
-        return {
-            ERROR: None,
-            self._messages_summary_key: summary,
-            self._messages_key: delete_messages,
-            NEXT: SUPERVISOR,
-        }

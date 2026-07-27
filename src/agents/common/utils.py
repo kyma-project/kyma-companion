@@ -26,7 +26,6 @@ from agents.common.constants import (
     UNKNOWN,
 )
 from agents.common.data import Message
-from agents.common.state import SubTask, UserInput
 from services.k8s import IK8sClient
 from utils.logging import get_logger
 from utils.utils import is_empty_str, is_non_empty_str
@@ -84,29 +83,6 @@ def filter_valid_messages(
     return filtered
 
 
-def create_node_output(
-    message: BaseMessage | None = None,
-    next: str | None = None,
-    subtasks: list[SubTask] | None = None,
-    error: str | None = None,
-) -> dict[str, Any]:
-    """
-    This function is used to create the output of a LangGraph node centrally.
-
-    Args:
-        message: BaseMessage | None: message to be sent to the user
-        next: str | None: next LangGraph node to be called
-        subtasks: list[SubTask] | None: different steps/subtasks to follow
-        final_response: str | None: final response to the user
-        error: str | None: error message if error occurred
-    """
-    return {
-        MESSAGES: [message] if message else [],
-        NEXT: next,
-        SUBTASKS: subtasks,
-        ERROR: error,
-    }
-
 
 def compute_string_token_count(text: str, model_type: str) -> int:
     """Returns the token count of the string."""
@@ -133,20 +109,6 @@ def should_continue(state: BaseModel) -> str:
         return END
     return CONTINUE
 
-
-def get_resource_context_message(user_input: UserInput) -> SystemMessage | None:
-    """Get the resource context message based on the user input."""
-    if user_input.resource_kind == UNKNOWN:
-        return SystemMessage(
-            content="Resource information is not available. "
-            "Ask the user, if you need resource information like kind, name or namespace."
-        )
-
-    resource_context = user_input.get_resource_information()
-    if resource_context and len(resource_context) > 0:
-        return SystemMessage(content=str(resource_context))
-
-    return None
 
 
 async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK8sClient) -> str:

@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 from agents.common.data import Message
 from agents.common.utils import get_relevant_context_from_k8s_cluster
-from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT
+from agents.common.constants import POD_LOGS_TAIL_LINES_LIMIT
 from agents.kyma.prompts import KYMA_AGENT_INSTRUCTIONS, KYMA_AGENT_PROMPT
 from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
