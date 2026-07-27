@@ -1,32 +1,15 @@
 from functools import lru_cache
-from http import HTTPStatus
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Path
-from fastapi.encoders import jsonable_encoder
-from starlette.responses import JSONResponse, StreamingResponse
+from fastapi import Depends, HTTPException
 
-from agents.common.constants import CLUSTER, ERROR_RATE_LIMIT_CODE, UNKNOWN
-from agents.common.data import Message
-from agents.common.utils import compute_string_token_count
-from routers.common import (
-    API_PREFIX,
-    SESSION_ID_HEADER,
-    FollowUpQuestionsResponse,
-    InitConversationBody,
-    InitialQuestionsResponse,
-)
-from services.conversation import ConversationService, IService
+from agents.common.constants import ERROR_RATE_LIMIT_CODE
+from services.conversation import IService
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
-from services.k8s import IK8sClient, K8sAuthHeaders, K8sClient
-from services.k8s_resource_discovery import K8sResourceDiscovery
+from services.k8s import K8sAuthHeaders
 from utils.config import Config, get_config
 from utils.logging import get_logger
-from utils.response import prepare_chunk_response
-from utils.settings import MAIN_MODEL_NAME, MAX_TOKEN_LIMIT_INPUT_QUERY
 from utils.utils import (
-    create_session_id,
     get_user_identifier_from_client_certificate,
     get_user_identifier_from_token,
 )
@@ -45,7 +28,6 @@ def init_data_sanitizer(
 ) -> IDataSanitizer:
     """Initialize the data sanitizer instance"""
     return DataSanitizer(config.sanitization_config)
-
 
 
 async def check_token_usage(x_cluster_url: str, conversation_service: IService) -> None:

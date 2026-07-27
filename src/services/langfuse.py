@@ -8,7 +8,6 @@ from langchain_core.messages import BaseMessage, ToolMessage
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
-from agents.common.state import GraphInput
 from agents.kyma.tools.query import fetch_kyma_resource_version
 from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.data_sanitizer import redact_pii
@@ -112,8 +111,6 @@ class LangfuseService(metaclass=SingletonMeta):
         elif self.masking_mode == LangfuseMaskingModes.REDACTED:
             # If masking is set to REDACTED, return a placeholder string
             return REDACTED
-        elif self.masking_mode == LangfuseMaskingModes.PARTIAL:
-            return self._masking_mode_partial(data)
         elif self.masking_mode == LangfuseMaskingModes.FILTERED:
             return self._masking_mode_filtered(data)
 
@@ -124,15 +121,6 @@ class LangfuseService(metaclass=SingletonMeta):
         if isinstance(data, (IK8sClient, K8sClient)):
             return EMPTY_OBJECT
         return None
-
-    def _masking_mode_partial(self, data: Any) -> Any:
-        """Return only the user input and resource information. Everything else is redacted."""
-        if isinstance(data, GraphInput):
-            output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-            if output:
-                return redact_pii(output)
-
-        return REDACTED
 
     def _masking_mode_filtered(self, data: Any) -> Any:  # noqa: C901
         """Recursively masks sensitive information in the provided data."""
@@ -145,10 +133,6 @@ class LangfuseService(metaclass=SingletonMeta):
         try:
             if not data or isinstance(data, int | float | bool):
                 return data
-            # If data is a GraphInput, sanitize the messages in reverse order for better readability.
-            if isinstance(data, GraphInput):
-                output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-                return redact_pii(output if output else REDACTED)
             # If data is a string, sanitize it directly.
             elif isinstance(data, str):
                 return redact_pii(copy.copy(data))

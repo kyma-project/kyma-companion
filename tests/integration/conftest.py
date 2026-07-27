@@ -1,7 +1,6 @@
 import socket
 import sys
 import types
-from collections.abc import Sequence
 from threading import Thread
 
 # langchain-community 0.4.x removed chat_models.vertexai (moved to langchain-google-vertexai).
@@ -25,16 +24,13 @@ from langchain_core.messages import (
     SystemMessage,
 )
 
-from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
-    REDIS_DB_NUMBER,
     REDIS_HOST,
-    REDIS_PASSWORD,
 )
 
 # integration test configurations.
@@ -149,8 +145,6 @@ def start_fake_redis():
     t.join(timeout=5)
 
 
-
-
 @pytest.fixture
 def answer_relevancy_metric(evaluator_model):
     return AnswerRelevancyMetric(threshold=0.6, model=evaluator_model, include_reason=True)
@@ -241,4 +235,3 @@ def convert_dict_to_messages(messages: dict) -> list[BaseMessage]:
         )
         for message in messages
     ]
-

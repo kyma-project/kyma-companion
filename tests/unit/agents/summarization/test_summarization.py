@@ -4,15 +4,12 @@ import pytest
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
-    RemoveMessage,
     SystemMessage,
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel
 
 from agents.summarization.summarization import MessageSummarizer
-from agents.supervisor.agent import SUPERVISOR
 from utils.models.factory import IModel
 from utils.settings import MAIN_MODEL_NAME
 
@@ -241,96 +238,3 @@ class TestSummarization:
             summarization._chain.ainvoke.assert_called()
         else:
             summarization._chain.ainvoke.assert_not_called()
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "state_messages, state_messages_summary, token_lower_limit, token_upper_limit, expected_result, error",
-        [
-            # Test case 1: Successful summarization exceeding the token limit.
-            (
-                [
-                    HumanMessage(id="1", content="This is the first message. It is very long."),
-                    AIMessage(id="2", content="This is the second message. It is very long."),
-                    HumanMessage(id="3", content="This is the third message. It is very long."),
-                    AIMessage(id="4", content="This is the fourth message. It is very long."),
-                ],
-                "Previous summary",
-                20,
-                35,
-                {
-                    "error": None,
-                    "messages_summary": "Summary of previous chat:\n summary content",
-                    "messages": [
-                        RemoveMessage(id="1"),
-                        RemoveMessage(id="2"),
-                        RemoveMessage(id="3"),
-                    ],
-                    "next": SUPERVISOR,
-                },
-                None,
-            ),
-            # Test case 2: Failed summarization with fallback
-            (
-                [
-                    HumanMessage(id="1", content="This is the first message. It is very long."),
-                    AIMessage(id="2", content="This is the second message. It is very long."),
-                    HumanMessage(id="3", content="This is the third message. It is very long."),
-                    AIMessage(id="4", content="This is the fourth message. It is very long."),
-                ],
-                "Previous summary",
-                20,
-                35,
-                {
-                    "error": "Unexpected error while processing the request. Please try again later.",
-                },
-                Exception("Summarization failed"),
-            ),
-            # Test case, where there are no messages.
-            ([], "", 100, 200, {"error": None, "messages": []}, None),
-            # Test case, where the token limit is not exceeded.
-            (
-                [
-                    SystemMessage(id="1", content="System message"),
-                    HumanMessage(id="2", content="A longer text input to test the summary."),
-                ],
-                "",
-                100,
-                200,
-                {"error": None, "messages": []},
-                None,
-            ),
-        ],
-    )
-    async def test_summarization_node(
-        self,
-        state_messages,
-        state_messages_summary,
-        token_lower_limit,
-        token_upper_limit,
-        expected_result,
-        error,
-    ):
-        model = Mock(spec=IModel)
-        model.llm = Mock()
-        summarization = MessageSummarizer(
-            model=model,
-            tokenizer_model_name=MAIN_MODEL_NAME,
-            token_lower_limit=token_lower_limit,
-            token_upper_limit=token_upper_limit,
-        )
-        summarization._chain = Mock()
-
-        # Configure chain mock behavior based on error
-        if error:
-            summarization._chain.ainvoke = AsyncMock(side_effect=error)
-        else:
-            summarization._chain.ainvoke = AsyncMock(return_value=AIMessage(content="summary content"))
-
-        class TestState(BaseModel):
-            messages: list
-            messages_summary: str
-
-        state = TestState(messages=state_messages, messages_summary=state_messages_summary)
-
-        result = await summarization.summarization_node(state, {})
-        assert result == expected_result

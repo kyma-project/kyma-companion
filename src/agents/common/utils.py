@@ -9,7 +9,6 @@ import yaml
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
-    SystemMessage,
     ToolMessage,
 )
 from langgraph.constants import END
@@ -19,12 +18,7 @@ from pydantic import BaseModel
 from agents.common.constants import (
     CLUSTER,
     CONTINUE,
-    ERROR,
-    MESSAGES,
-    NEXT,
     RECENT_MESSAGES_LIMIT,
-    SUBTASKS,
-    UNKNOWN,
 )
 from agents.common.data import Message
 from services.k8s import IK8sClient
@@ -85,7 +79,6 @@ def filter_valid_messages(
     return filtered
 
 
-
 def compute_string_token_count(text: str, model_type: str) -> int:
     """Returns the token count of the string."""
     try:
@@ -110,7 +103,6 @@ def should_continue(state: BaseModel) -> str:
     if hasattr(state, "error") and state.error:
         return END
     return CONTINUE
-
 
 
 async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK8sClient) -> str:

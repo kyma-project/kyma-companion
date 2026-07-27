@@ -3,11 +3,11 @@ from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from typing import Protocol, cast
 
+from agents.graph import CompanionGraph, IGraph
 from kubernetes.client import ApiException
 
 from agents.common.constants import ERROR, ERROR_RESPONSE
 from agents.common.data import Message
-from agents.graph import CompanionGraph, IGraph
 from agents.memory.async_redis_checkpointer import get_async_redis_saver
 from followup_questions.followup_questions import (
     FollowUpQuestionsHandler,
@@ -149,7 +149,7 @@ class ConversationService(metaclass=SingletonMeta):
             await self._companion_graph.aupdate_thread_owner(conversation_id, user_identifier)
             return True
         # If the owner is the same as the user, we can authorize the user.
-        return owner == user_identifier
+        return bool(owner == user_identifier)
 
     async def is_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
         """Check if the token usage limit is exceeded for the given cluster_id."""
