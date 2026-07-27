@@ -459,7 +459,7 @@ UI_CONTEXT_TEST_CASES = [
         name="No context - agent uses doc search for general question",
         query="What is wrong with Kyma?",
         ui_context=None,
-        expected_goal="Agent response should explain that the query is broad and ask for specific details like resource name, namespace, or kind.",
+        expected_goal="This question is too broad to troubleshoot. Please provide a specific resource kind, name, and namespace (or what you observe) so I can investigate.",
         max_tool_calls=5,
     ),
     ReactAgentTestCase(
@@ -614,8 +614,8 @@ async def test_chat_history(react_agent, tool_tracker, goal_accuracy_metric, tes
     assert len(result) >= test_case.min_response_length, f"Response too short ({len(result)} chars): {result[:200]}"
 
     # Tool assertions (if specified)
-    if test_case.must_call_tools or test_case.must_not_call_tools:
-        assert_tool_invariants(test_case, tool_tracker)
+    # Tool assertions (always enforce max_tool_calls to detect runaway loops)
+    assert_tool_invariants(test_case, tool_tracker)
 
     # Goal accuracy (if expected_goal specified)
     if test_case.expected_goal:
