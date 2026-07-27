@@ -26,14 +26,14 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../src"))
 
+from agents.graph import CompanionGraph
+from agents.k8s.agent import KubernetesAgent
+from agents.kyma.agent import KymaAgent
 from IPython.display import (
     Image,  # noqa: E402
 )
 from langchain_core.runnables.graph import MermaidDrawMethod
 
-from agents.graph import CompanionGraph
-from agents.k8s.agent import KubernetesAgent
-from agents.kyma.agent import KymaAgent
 from agents.memory.async_redis_checkpointer import AsyncRedisSaver
 from utils.config import get_config
 from utils.models.factory import ModelFactory  # noqa: E402
