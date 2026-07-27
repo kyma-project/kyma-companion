@@ -1,6 +1,7 @@
 import ast
 import json
 from collections.abc import Sequence
+from http import HTTPStatus
 from typing import Any
 
 import tiktoken
@@ -28,6 +29,7 @@ from agents.common.constants import (
 from agents.common.data import Message
 from agents.common.state import SubTask, UserInput
 from services.k8s import IK8sClient
+from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.utils import is_empty_str, is_non_empty_str
 
@@ -190,8 +192,11 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         try:
             await k8s_client.get_namespace(namespace)
             namespace_exists = True
-        except Exception:
-            namespace_exists = False
+        except K8sClientError as e:
+            if e.status_code == HTTPStatus.NOT_FOUND:
+                namespace_exists = False
+            else:
+                raise
 
         if not namespace_exists:
             context = f"Namespace '{namespace}' was not found in the cluster."

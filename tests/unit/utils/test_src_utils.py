@@ -17,6 +17,7 @@ from agents.common.utils import get_relevant_context_from_k8s_cluster
 from services.data_sanitizer import DataSanitizer
 from services.k8s import IK8sClient
 from utils import utils
+from utils.exceptions import K8sClientError
 from utils.utils import (
     JWT_TOKEN_EMAIL,
     JWT_TOKEN_SERVICE_ACCOUNT,
@@ -483,7 +484,7 @@ async def test_namespace_overview_sanitization(mock_k8s_client, input_context, e
 async def test_namespace_overview(mock_k8s_client, namespace, namespace_exists, expected_result, expects_events_fetch):
     """Namespace overview should:
     - return a not-found message and skip fetching warning events when
-      `get_namespace` raises ValueError;
+      `get_namespace` raises K8sClientError with status 404;
     - return a no-events placeholder when the namespace exists but has no
       warning events.
     """
@@ -496,7 +497,7 @@ async def test_namespace_overview(mock_k8s_client, namespace, namespace_exists, 
         resource_api_version="",
     )
     if not namespace_exists:
-        mock_k8s_client.get_namespace.side_effect = ValueError("namespace not found")
+        mock_k8s_client.get_namespace.side_effect = K8sClientError("namespace not found", status_code=404)
     mock_k8s_client.list_k8s_warning_events.return_value = []
 
     # Execute
