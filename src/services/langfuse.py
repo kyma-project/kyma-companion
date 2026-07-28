@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
@@ -111,6 +111,8 @@ class LangfuseService(metaclass=SingletonMeta):
         elif self.masking_mode == LangfuseMaskingModes.REDACTED:
             # If masking is set to REDACTED, return a placeholder string
             return REDACTED
+        elif self.masking_mode == LangfuseMaskingModes.PARTIAL:
+            return self._masking_mode_partial(data)
         elif self.masking_mode == LangfuseMaskingModes.FILTERED:
             return self._masking_mode_filtered(data)
 
@@ -121,6 +123,18 @@ class LangfuseService(metaclass=SingletonMeta):
         if isinstance(data, (IK8sClient, K8sClient)):
             return EMPTY_OBJECT
         return None
+
+    def _masking_mode_partial(self, data: Any) -> Any:
+        """Return only the user input and resource information. Everything else is redacted."""
+        if isinstance(data, dict) and "messages" in data:
+            messages: list[Any] = data["messages"]
+            output = "\n".join(
+                str(msg.content) for msg in reversed(messages) if isinstance(msg, HumanMessage)
+            )
+            if output:
+                return redact_pii(output)
+
+        return REDACTED
 
     def _masking_mode_filtered(self, data: Any) -> Any:  # noqa: C901
         """Recursively masks sensitive information in the provided data."""
@@ -134,7 +148,7 @@ class LangfuseService(metaclass=SingletonMeta):
             if not data or isinstance(data, int | float | bool):
                 return data
             # If data is a string, sanitize it directly.
-            elif isinstance(data, str):
+            if isinstance(data, str):
                 return redact_pii(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
                 data = copy.deepcopy(data)
