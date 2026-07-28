@@ -128,9 +128,7 @@ class LangfuseService(metaclass=SingletonMeta):
         """Return only the user input and resource information. Everything else is redacted."""
         if isinstance(data, dict) and "messages" in data:
             messages: list[Any] = data["messages"]
-            output = "\n".join(
-                str(msg.content) for msg in reversed(messages) if isinstance(msg, HumanMessage)
-            )
+            output = "\n".join(str(msg.content) for msg in reversed(messages) if isinstance(msg, HumanMessage))
             if output:
                 return redact_pii(output)
 
