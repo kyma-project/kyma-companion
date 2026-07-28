@@ -6,18 +6,14 @@ from typing import Any
 
 import tiktoken
 import yaml
+from langchain.messages import AIMessage
 from langchain_core.messages import (
-    AIMessage,
     BaseMessage,
     ToolMessage,
 )
-from langgraph.constants import END
-from langgraph.graph.message import Messages
-from pydantic import BaseModel
 
 from agents.common.constants import (
     CLUSTER,
-    CONTINUE,
     RECENT_MESSAGES_LIMIT,
 )
 from agents.common.data import Message
@@ -90,19 +86,10 @@ def compute_string_token_count(text: str, model_type: str) -> int:
     return len(encoding.encode(text=text))
 
 
-def compute_messages_token_count(msgs: Messages, model_type: str) -> int:
+def compute_messages_token_count(msgs: Any, model_type: str) -> int:
     """Returns the token count of the messages."""
     tokens_per_msg = (compute_string_token_count(str(msg.content), model_type) for msg in msgs)
     return sum(tokens_per_msg)
-
-
-def should_continue(state: BaseModel) -> str:
-    """
-    Returns END if there is an error, else CONTINUE.
-    """
-    if hasattr(state, "error") and state.error:
-        return END
-    return CONTINUE
 
 
 async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK8sClient) -> str:
@@ -115,13 +102,9 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
     name: str = message.resource_name or ""
     api_version: str = message.resource_api_version or ""
 
-    # Query the Kubernetes API to get the context.
     context = ""
 
     if is_empty_str(namespace) and kind.lower() == CLUSTER:
-        # Get an overview of the cluster
-        # by fetching all not running pods, all K8s Nodes metrics,
-        # and all K8s events with warning type.
         logger.info("Fetching all not running Pods, Node metrics, and K8s Events with warning type")
         not_running_pods = k8s_client.list_not_running_pods(namespace=namespace)
         node_metrics = await k8s_client.list_nodes_metrics()
@@ -140,8 +123,6 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         context = f"{pods_section}\n{metrics_section}\n{events_section}"
 
     elif is_non_empty_str(namespace) and kind.lower() == "namespace":
-        # Get an overview of the namespace
-        # by fetching all K8s events with warning type.
         logger.debug(f"Verifying that namespace '{namespace}' exists")
         try:
             await k8s_client.get_namespace(namespace)
@@ -164,8 +145,6 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
             )
 
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
-        # Describe a specific resource. Not-namespaced resources need the namespace
-        # field to be empty. Finally, get all events related to given resource.
         logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
         resources = yaml.dump(
             k8s_client.describe_resource(

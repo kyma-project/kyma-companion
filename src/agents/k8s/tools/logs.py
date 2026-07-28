@@ -1,7 +1,4 @@
-from typing import Annotated
-
 from langchain_core.tools import tool
-from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel
 from pydantic.config import ConfigDict
 
@@ -17,9 +14,8 @@ class FetchPodLogsArgs(BaseModel):
     name: str
     namespace: str
     container_name: str
-    k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
+    k8s_client: IK8sClient
 
-    # Model configuration for Pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -28,16 +24,14 @@ async def fetch_pod_logs_tool(
     name: str,
     namespace: str,
     container_name: str,
-    k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
+    k8s_client: IK8sClient,
 ) -> dict:
     """Fetch logs of Kubernetes Pod. Returns structured response with current and previous logs,
     plus diagnostic context if current logs are unavailable."""
     try:
         result = await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
-        # Serialize Pydantic model to dict for langchain tool compatibility
         return result.model_dump(mode="json", by_alias=True)
     except NoLogsAvailableError:
-        # Let this exception pass through - router will handle it
         raise
     except Exception as e:
         raise K8sClientError.from_exception(
