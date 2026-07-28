@@ -6,8 +6,8 @@ from typing import Any
 
 import tiktoken
 import yaml
-from langchain.messages import AIMessage
 from langchain_core.messages import (
+    AIMessage,
     BaseMessage,
     ToolMessage,
 )
