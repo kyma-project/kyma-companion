@@ -83,7 +83,6 @@ MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
 MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
 MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
 LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
-GRAPH_STEP_TIMEOUT_SECONDS = config("GRAPH_STEP_TIMEOUT_SECONDS", default=180, cast=int)
 
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
@@ -105,10 +104,6 @@ LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
 LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
-
-# Summarization
-SUMMARIZATION_TOKEN_UPPER_LIMIT = config("SUMMARIZATION_TOKEN_UPPER_LIMIT", default=3000, cast=int)
-SUMMARIZATION_TOKEN_LOWER_LIMIT = config("SUMMARIZATION_TOKEN_LOWER_LIMIT", default=2000, cast=int)
 
 MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int)
 
