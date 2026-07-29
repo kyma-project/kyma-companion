@@ -82,4 +82,3 @@ ERROR_RESPONSE = (
     "We encountered an error while processing your request. Please try again shortly. Thank you for your patience!"
 )
 
-POD_LOGS_TAIL_LINES_LIMIT = 10
