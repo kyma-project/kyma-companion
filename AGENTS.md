@@ -19,7 +19,7 @@ src/                        # Application source
     common/                 # Shared utilities, data models, error handling
     kyma/                   # KymaReActAgent, tools (query, search, resource version)
     k8s/                    # Kubernetes tools (query, logs, overview)
-    memory/                 # Redis-backed conversation history and LLM usage tracking
+    memory/                 # Redis-backed LLM usage tracking (token usage per cluster)
   routers/                  # FastAPI route handlers
     kyma_agent_a2a.py       # A2A protocol endpoint for the Kyma agent
     k8s_tools_api.py        # REST endpoints for K8s tools
@@ -85,7 +85,7 @@ The application has a single agent: **`KymaReActAgent`** (`src/agents/kyma/react
 
 ```
 A2A Client (e.g. Busola UI)
-   └─► POST /api/agent/kyma  (JSON-RPC message/send)
+   └─► POST /api/agent/kyma/chat  (JSON-RPC message/send)
          └─► KymaAgentExecutor    # Decrypts cluster creds, loads Redis history
                └─► KymaReActAgent  # ReAct tool-calling loop
                      ├─► kyma_query_tool             # Fetch any K8s/Kyma resource
