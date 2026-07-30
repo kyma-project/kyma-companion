@@ -4,27 +4,27 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## Project Overview
 
-**Kyma Companion** is a FastAPI-based AI assistant ("Joule") for Kyma and Kubernetes. It uses a multi-agent architecture built on LangGraph, backed by Redis for conversation state and HANA DB for RAG.
+**Kyma Companion** is a FastAPI-based AI assistant ("Joule") for Kyma and Kubernetes. It exposes a single ReAct agent via the [Agent-to-Agent (A2A)](https://github.com/google/a2a) protocol, backed by Redis for conversation history and HANA DB for RAG.
 
 - **Language:** Python 3.13
 - **Package manager:** Poetry
 - **Task runner:** `poethepoet` (`poe`)
-- **Key frameworks:** FastAPI, LangGraph, LangChain, SAP AI SDK
+- **Key frameworks:** FastAPI, LangChain, A2A SDK, SAP AI SDK
 
 ## Repository Layout
 
 ```
 src/                        # Application source
-  agents/                   # LangGraph multi-agent system
-    common/                 # Base classes, state models, shared utilities
-    supervisor/             # Supervisor agent (planner + finalizer)
-    kyma/                   # Kyma-domain agent + tools
-    k8s/                    # Kubernetes agent + tools
-    memory/                 # Redis-backed LangGraph checkpointer
-    cluster_diagnostics/    # Cluster diagnostic agents
-    summarization/          # Token-aware message summarization
+  agents/                   # Agent logic and tools
+    common/                 # Shared utilities, data models, error handling
+    kyma/                   # KymaReActAgent, tools (query, search, resource version)
+    k8s/                    # Kubernetes tools (query, logs, overview)
+    memory/                 # Redis-backed conversation history and LLM usage tracking
   routers/                  # FastAPI route handlers
-  services/                 # Kubernetes, HANA, Redis, Langfuse integrations
+    kyma_agent_a2a.py       # A2A protocol endpoint for the Kyma agent
+    k8s_tools_api.py        # REST endpoints for K8s tools
+    kyma_tools_api.py       # REST endpoints for Kyma tools
+  services/                 # Kubernetes, HANA, Redis, Langfuse, encryption integrations
   rag/                      # RAG retriever and reranker
   followup_questions/       # Follow-up question generation
   initial_questions/        # Initial question handling
@@ -81,32 +81,39 @@ This runs: dependency sort → auto-fix → codecheck → unit tests → workflo
 
 ## Agent Architecture
 
-The multi-agent graph (`src/agents/graph.py`) is built with LangGraph's `StateGraph`:
+The application has a single agent: **`KymaReActAgent`** (`src/agents/kyma/react_agent.py`). It is a LangChain ReAct loop (Reason + Act) exposed over the [A2A protocol](https://github.com/google/a2a) via `src/routers/kyma_agent_a2a.py`.
 
 ```
-User Input
-   └─► Gatekeeper       # Validates query (injection detection, domain check)
-         └─► Supervisor
-               ├─► Planner        # Breaks query into subtasks
-               ├─► KymaAgent      # Handles Kyma-specific questions
-               ├─► KubernetesAgent # Handles K8s questions
-               └─► Finalizer      # Formats final response
+A2A Client (e.g. Busola UI)
+   └─► POST /api/agent/kyma  (JSON-RPC message/send)
+         └─► KymaAgentExecutor    # Decrypts cluster creds, loads Redis history
+               └─► KymaReActAgent  # ReAct tool-calling loop
+                     ├─► kyma_query_tool             # Fetch any K8s/Kyma resource
+                     ├─► fetch_kyma_resource_version # Look up API version for a Kyma kind
+                     ├─► k8s_overview_tool           # Cluster/namespace overview
+                     ├─► fetch_pod_logs_tool         # Pod container logs
+                     └─► search_kyma_doc             # RAG-based doc search
 ```
 
-**State classes** (Pydantic, in `src/agents/common/state.py`):
-- `CompanionState` — top-level graph state
-- `BaseAgentState` — shared state for sub-agents
-- `SubTask`, `Plan`, `UserInput`, `GatekeeperResponse`
+**A2A integration** (`src/routers/kyma_agent_a2a.py`):
+- `KymaAgentExecutor` extends `a2a.server.agent_execution.AgentExecutor`
+- `build_kyma_a2a_app()` creates a Starlette sub-app mounted at `/api/agent/kyma`
+- Cluster credentials arrive in encrypted A2A message metadata (`x-session-id`, `x-encrypted-key`, `x-client-iv`, `x-target-cluster-encrypted`)
+- Conversation continuity is keyed on the A2A `context_id` stored in Redis
 
-**Persistence:** Redis-backed checkpointer (`src/agents/memory/async_redis_checkpointer.py`) stores conversation state between requests.
+**Redis memory** (`src/agents/memory/async_redis_checkpointer.py`):
+- `AsyncRedisSaver` stores conversation history (list of messages) and tracks LLM token usage per cluster
+- No longer a LangGraph checkpoint saver
 
-**Summarization:** Token-aware summarization (`src/agents/summarization/`) keeps context within configured limits (`SUMMARIZATION_TOKEN_LOWER_LIMIT`, `SUMMARIZATION_TOKEN_UPPER_LIMIT`).
+**Tools also accessible as REST** (`/api/tools/k8s/*`, `/api/tools/kyma/*`):
+- K8s: `POST /query`, `POST /pods/logs`, `POST /overview`
+- Kyma: `POST /query`, `POST /resource-version`, `POST /search`
 
-## Adding or Modifying Agents
+## Adding or Modifying the Agent
 
-- Extend `BaseAgent` (`src/agents/common/agent.py`) for new sub-agents
-- Register new node/edge names in `src/agents/common/constants.py`
-- Wire the new agent into the graph in `src/agents/graph.py`
+- Edit the ReAct loop in `src/agents/kyma/react_agent.py`
+- Add new tools to `src/agents/kyma/tools/` or `src/agents/k8s/tools/`; bind them in `KymaReActAgent.__init__`
+- Update prompts in `src/agents/kyma/prompts.py`
 - Add corresponding unit tests under `tests/unit/agents/`
 
 ## PR Workflow
