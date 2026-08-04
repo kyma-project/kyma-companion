@@ -21,15 +21,16 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
+from agents.common.chunk_summarizer import ToolResponseSummarizer
 from agents.common.data import Message
-from agents.common.utils import get_relevant_context_from_k8s_cluster
+from agents.common.utils import compute_string_token_count, get_relevant_context_from_k8s_cluster
 from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT
 from agents.kyma.prompts import REACT_AGENT_INSTRUCTIONS, REACT_AGENT_PROMPT
 from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_NAME
+from utils.settings import MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT
 
 SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
@@ -61,8 +62,42 @@ class UINavigationContext(BaseModel):
         )
 
 
-def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
-    """Return tool instances with k8s_client pre-bound (avoids InjectedState outside LangGraph)."""
+async def _maybe_summarize(
+    response: list[Any],
+    text: str,
+    query: str,
+    summarizer: ToolResponseSummarizer,
+    config: RunnableConfig | None,
+    token_limit: int = TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
+) -> str:
+    """Summarize text if it exceeds token_limit, otherwise return it unchanged.
+
+    Uses ToolResponseSummarizer when the response is too large, treating the
+    raw response list as the input to summarize_tool_response.
+    Falls back to the plain text when summarization fails.
+    """
+    if compute_string_token_count(text, MAIN_MODEL_NAME) <= token_limit:
+        return text
+    try:
+        return await summarizer.summarize_tool_response(
+            tool_response=response,
+            user_query=query,
+            config=config or RunnableConfig(),
+        )
+    except Exception:
+        return text
+
+
+def _make_bound_tools(
+    k8s_client: IK8sClient,
+    summarizer: ToolResponseSummarizer,
+    invoke_ctx: dict[str, Any],
+) -> list[BaseTool]:
+    """Return tool instances with k8s_client and summarizer pre-bound.
+
+    invoke_ctx is a mutable dict updated by KymaReActAgent.ainvoke before each
+    graph call. Tools read 'query' and 'config' from it at call time.
+    """
 
     class K8sQueryArgs(BaseModel):
         """Arguments for kyma_query_tool."""
@@ -101,7 +136,7 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         container_name: str = Field(description="Name of the container whose logs to fetch.")
 
     @tool(args_schema=K8sQueryArgs)
-    async def kyma_query_tool(uri: str) -> dict | list[dict] | str:
+    async def kyma_query_tool(uri: str) -> str:
         """Query any Kubernetes or Kyma resource using the provided URI.
         The URI must follow the Kubernetes API path format.
         Use this for both Kyma resources (Function, APIRule, etc.) and standard K8s resources
@@ -109,7 +144,11 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         The returned data is sanitized to remove sensitive information (e.g. Secret data fields).
         If you get a 404, use fetch_kyma_resource_version to look up the correct API version and retry."""
         try:
-            return await k8s_client.execute_get_api_request(uri)
+            result = await k8s_client.execute_get_api_request(uri)
+            items = result if isinstance(result, list) else [result]
+            return await _maybe_summarize(
+                items, str(result), invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
+            )
         except Exception as e:
             return (
                 f"Tool error ({e}). "
@@ -146,7 +185,10 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
                 resource_api_version="",
                 resource_name="",
             )
-            return await get_relevant_context_from_k8s_cluster(message, k8s_client)
+            result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
+            return await _maybe_summarize(
+                [result], result, invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
+            )
         except Exception as e:
             return f"Tool error fetching K8s overview for namespace={namespace!r}, resource_kind={resource_kind!r}: {e}"
 
@@ -158,7 +200,10 @@ def _make_bound_tools(k8s_client: IK8sClient) -> list[BaseTool]:
         try:
             result = await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
             dumped = result.model_dump(mode="json", by_alias=True)
-            return str(dumped)
+            text = str(dumped)
+            return await _maybe_summarize(
+                [dumped], text, invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
+            )
         except Exception as e:
             return (
                 f"Tool error fetching logs for pod={name!r}, namespace={namespace!r}, container={container_name!r}: {e}"
@@ -183,10 +228,16 @@ class KymaReActAgent:
         search_tool: SearchKymaDocTool | None = None,
     ) -> None:
         """Initialize the agent with the given models, k8s_client, and search_tool."""
+        main_model = cast(IModel, models[MAIN_MODEL_NAME])
         resolved_search_tool = search_tool if search_tool is not None else SearchKymaDocTool(models)
-        tools: list[BaseTool] = [*_make_bound_tools(k8s_client), resolved_search_tool]
+        self._invoke_ctx: dict[str, Any] = {}
+        summarizer = ToolResponseSummarizer(model=main_model)
+        tools: list[BaseTool] = [
+            *_make_bound_tools(k8s_client, summarizer, self._invoke_ctx),
+            resolved_search_tool,
+        ]
 
-        llm: BaseChatModel = cast(IModel, models[MAIN_MODEL_NAME]).llm
+        llm: BaseChatModel = main_model.llm
         self._graph = create_agent(
             model=llm,
             tools=tools,
@@ -207,6 +258,8 @@ class KymaReActAgent:
         messages = [*(chat_history or []), HumanMessage(content=human_content)]
         payload: Any = {"messages": messages}
         run_config = RunnableConfig(callbacks=callbacks) if callbacks else None
+        self._invoke_ctx["query"] = query
+        self._invoke_ctx["config"] = run_config
         result = await self._graph.ainvoke(payload, config=run_config)
         messages_out = result.get("messages", [])
         if not messages_out:
