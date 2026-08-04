@@ -303,7 +303,7 @@ class KymaReActAgent:
         if not messages_out:
             raise ValueError("KymaReActAgent: graph returned no messages")
         last = messages_out[-1]
-        return str(last.content)
+        return last.text
 
     async def _prepare_chat_history(
         self,
