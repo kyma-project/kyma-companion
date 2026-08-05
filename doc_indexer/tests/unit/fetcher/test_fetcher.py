@@ -21,7 +21,7 @@ class TestDocumentsFetcher:
 
         # when
         with (
-            patch("shutil.rmtree") as rmtree_mock,
+            patch("fetcher.fetcher._empty_dir") as empty_dir_mock,
             patch("os.makedirs") as makedirs_mock,
         ):
             fetcher = DocumentsFetcher(
@@ -31,24 +31,21 @@ class TestDocumentsFetcher:
             )
 
         # then
-        # the constructor should have set the member variables.
         assert fetcher.output_dir == given_output_dir
         assert fetcher.tmp_dir == given_tmp_dir
         assert len(fetcher.sources) > 0
 
-        # the constructor should have called the rmtree functions.
-        rmtree_mock.assert_any_call(given_output_dir, ignore_errors=True)
-        rmtree_mock.assert_any_call(given_tmp_dir, ignore_errors=True)
-
-        # the constructor should have called the makedirs functions.
         makedirs_mock.assert_any_call(given_output_dir, exist_ok=True)
         makedirs_mock.assert_any_call(given_tmp_dir, exist_ok=True)
+
+        empty_dir_mock.assert_any_call(given_output_dir)
+        empty_dir_mock.assert_any_call(given_tmp_dir)
 
     def test_clean(self, docs_sources_file_path):
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
@@ -56,11 +53,11 @@ class TestDocumentsFetcher:
             )
 
         # when
-        with patch("shutil.rmtree") as rmtree_mock:
+        with patch("fetcher.fetcher._empty_dir") as empty_dir_mock:
             fetcher.clean()
 
         # then
-        rmtree_mock.assert_called_with(given_tmp_dir, ignore_errors=False)
+        empty_dir_mock.assert_called_with(given_tmp_dir)
 
     def test_run(self, docs_sources_file_path):
         # given
@@ -72,7 +69,6 @@ class TestDocumentsFetcher:
                 output_dir=given_output_dir,
                 tmp_dir=given_tmp_dir,
             )
-        # mock the fetch_documents and clean methods.
         fetcher.fetch_documents = Mock()
         fetcher.clean = Mock()
 
@@ -80,10 +76,8 @@ class TestDocumentsFetcher:
         fetcher.run()
 
         # then
-        # fetch_documents should have been called for each source.
         assert len(fetcher.sources) > 0
         assert fetcher.fetch_documents.call_count == len(fetcher.sources)
-        # clean should have been called.
         fetcher.clean.assert_called_once()
 
     def test_fetch_documents(self, docs_sources_file_path):
@@ -108,14 +102,10 @@ class TestDocumentsFetcher:
             fetcher.fetch_documents(fetcher.sources[0])
 
         # then
-        # should have cloned the repo.
         download_repo_mock.assert_called_once_with(fetcher.sources[0].url, given_tmp_dir)
-        # should have created the module directory for output.
         makedirs_mock.assert_called_once_with(os.path.join(given_output_dir, fetcher.sources[0].name), exist_ok=True)
-        # should have created the scroller object and called the scroll method.
         assert scroller_mock.call_count == 1
         scroller_mock.return_value.scroll.assert_called_once()
-        # should have deleted the temporary repo directory.
         rmtree_mock.assert_called_once()
 
     @pytest.mark.parametrize(
@@ -151,7 +141,6 @@ class TestDocumentsFetcher:
         invalid_source.source_type = fetcher.sources[0].source_type
         invalid_source.url = "https://example.com/repo.git"
 
-        # when / then
         with (
             patch("fetcher.fetcher.download_repo") as download_repo_mock,
             patch("fetcher.fetcher.Scroller") as scroller_mock,
@@ -192,7 +181,6 @@ class TestDocumentsFetcher:
         valid_source.source_type = fetcher.sources[0].source_type
         valid_source.url = "https://example.com/repo.git"
 
-        # when / then - should not raise ValueError
         with (
             patch("shutil.rmtree"),
             patch("os.makedirs"),
