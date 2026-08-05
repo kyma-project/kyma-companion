@@ -30,7 +30,7 @@ from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT
+from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT
 
 SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
@@ -62,7 +62,7 @@ class UINavigationContext(BaseModel):
         )
 
 
-async def _maybe_summarize(
+async def _tool_summarizer(
     response: list[Any],
     text: str,
     query: str,
@@ -146,7 +146,7 @@ def _make_bound_tools(
         try:
             result = await k8s_client.execute_get_api_request(uri)
             items = result if isinstance(result, list) else [result]
-            return await _maybe_summarize(
+            return await _tool_summarizer(
                 items, str(result), invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
             )
         except Exception as e:
@@ -186,7 +186,7 @@ def _make_bound_tools(
                 resource_name="",
             )
             result = await get_relevant_context_from_k8s_cluster(message, k8s_client)
-            return await _maybe_summarize(
+            return await _tool_summarizer(
                 [result], result, invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
             )
         except Exception as e:
@@ -201,7 +201,7 @@ def _make_bound_tools(
             result = await k8s_client.fetch_pod_logs(name, namespace, container_name, POD_LOGS_TAIL_LINES_LIMIT)
             dumped = result.model_dump(mode="json", by_alias=True)
             text = str(dumped)
-            return await _maybe_summarize(
+            return await _tool_summarizer(
                 [dumped], text, invoke_ctx.get("query", ""), summarizer, invoke_ctx.get("config")
             )
         except Exception as e:

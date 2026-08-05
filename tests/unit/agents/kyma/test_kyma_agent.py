@@ -8,7 +8,7 @@ from agents.kyma.tools.search import SearchKymaDocTool
 from rag.system import RAGSystem
 from utils.models.factory import IModel
 from utils.settings import MAIN_EMBEDDING_MODEL_NAME, MAIN_MODEL_NAME
-
+from agents.kyma.react_agent import _tool_summarizer
 
 @pytest.fixture
 def mock_models():
@@ -191,23 +191,23 @@ async def test_arun_list(mock_models, mock_documents, expected_output, top_k):
 
 
 # ---------------------------------------------------------------------------
-# _maybe_summarize
+# _tool_summarizer
 # ---------------------------------------------------------------------------
 
 
-class TestMaybeSummarize:
+class TestToolSummarizer:
     """Tests for _maybe_summarize."""
 
     @pytest.mark.asyncio
     async def test_short_response_returned_unchanged(self):
         """When the response is within the token limit, summarizer is not called."""
-        from agents.kyma.react_agent import _maybe_summarize
+        
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(return_value="summary")
 
         text = "short response"
-        result = await _maybe_summarize(
+        result = await _tool_summarizer(
             response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=10_000
         )
 
@@ -217,14 +217,13 @@ class TestMaybeSummarize:
     @pytest.mark.asyncio
     async def test_long_response_triggers_summarizer(self):
         """When the response exceeds the token limit, summarizer.summarize_tool_response is called."""
-        from agents.kyma.react_agent import _maybe_summarize
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(return_value="summarized")
 
         # One token per word; 200 words >> token_limit=5
         text = " ".join(["word"] * 200)
-        result = await _maybe_summarize(
+        result = await _tool_summarizer(
             response=[text], text=text, query="list pods", summarizer=summarizer, config=None, token_limit=5
         )
 
@@ -236,13 +235,12 @@ class TestMaybeSummarize:
     @pytest.mark.asyncio
     async def test_summarizer_failure_falls_back_to_original_text(self):
         """If summarizer raises, the original text is returned instead of propagating."""
-        from agents.kyma.react_agent import _maybe_summarize
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(side_effect=RuntimeError("llm error"))
 
         text = " ".join(["word"] * 200)
-        result = await _maybe_summarize(
+        result = await _tool_summarizer(
             response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=5
         )
 
