@@ -63,7 +63,7 @@ class TestDocumentsFetcher:
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
@@ -84,7 +84,7 @@ class TestDocumentsFetcher:
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
@@ -129,7 +129,7 @@ class TestDocumentsFetcher:
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
@@ -169,7 +169,7 @@ class TestDocumentsFetcher:
         # given
         given_output_dir = "test/output_dir"
         given_tmp_dir = "test/tmp_dir"
-        with patch("shutil.rmtree"), patch("os.makedirs"):
+        with patch("fetcher.fetcher._empty_dir"), patch("os.makedirs"):
             fetcher = DocumentsFetcher(
                 source_file=docs_sources_file_path,
                 output_dir=given_output_dir,
