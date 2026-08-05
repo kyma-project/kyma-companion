@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
 from agents.common.data import Message
+from agents.common.exceptions import TotalChunksLimitExceededError
 from agents.common.utils import compute_string_token_count, get_relevant_context_from_k8s_cluster
 from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT
 from agents.kyma.prompts import REACT_AGENT_INSTRUCTIONS, REACT_AGENT_PROMPT
@@ -30,7 +31,7 @@ from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT
+from utils.settings import MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT, TOTAL_CHUNKS_LIMIT
 
 SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
@@ -74,16 +75,27 @@ async def _tool_summarizer(
 
     Uses ToolResponseSummarizer when the response is too large, treating the
     raw response list as the input to summarize_tool_response.
+    Computes the number of chunks dynamically based on token count and raises
+    TotalChunksLimitExceededError if the required chunks exceed TOTAL_CHUNKS_LIMIT.
     Falls back to the plain text when summarization fails.
     """
-    if compute_string_token_count(text, MAIN_MODEL_NAME) <= token_limit:
+    token_count = compute_string_token_count(text, MAIN_MODEL_NAME)
+    if token_count <= token_limit:
         return text
+
+    num_chunks = (token_count // token_limit) + 1
+    if num_chunks > TOTAL_CHUNKS_LIMIT:
+        raise TotalChunksLimitExceededError()
+
     try:
         return await summarizer.summarize_tool_response(
             tool_response=response,
             user_query=query,
             config=config or RunnableConfig(),
+            nums_of_chunks=num_chunks,
         )
+    except TotalChunksLimitExceededError:
+        raise
     except Exception:
         return text
 

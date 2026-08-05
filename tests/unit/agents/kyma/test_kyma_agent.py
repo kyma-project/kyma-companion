@@ -4,11 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from langchain_core.embeddings import Embeddings
 
+from agents.kyma.react_agent import _tool_summarizer
 from agents.kyma.tools.search import SearchKymaDocTool
 from rag.system import RAGSystem
 from utils.models.factory import IModel
-from utils.settings import MAIN_EMBEDDING_MODEL_NAME, MAIN_MODEL_NAME
-from agents.kyma.react_agent import _tool_summarizer
+from utils.settings import MAIN_EMBEDDING_MODEL_NAME, MAIN_MODEL_NAME, TOTAL_CHUNKS_LIMIT
+
 
 @pytest.fixture
 def mock_models():
@@ -201,7 +202,6 @@ class TestToolSummarizer:
     @pytest.mark.asyncio
     async def test_short_response_returned_unchanged(self):
         """When the response is within the token limit, summarizer is not called."""
-        
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(return_value="summary")
@@ -221,27 +221,44 @@ class TestToolSummarizer:
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(return_value="summarized")
 
-        # One token per word; 200 words >> token_limit=5
+        # ~200 tokens; token_limit=150 → num_chunks=(200//150)+1=2 which is within TOTAL_CHUNKS_LIMIT
         text = " ".join(["word"] * 200)
         result = await _tool_summarizer(
-            response=[text], text=text, query="list pods", summarizer=summarizer, config=None, token_limit=5
+            response=[text], text=text, query="list pods", summarizer=summarizer, config=None, token_limit=150
         )
 
         assert result == "summarized"
         summarizer.summarize_tool_response.assert_awaited_once()
         call_kwargs = summarizer.summarize_tool_response.call_args[1]
         assert call_kwargs["user_query"] == "list pods"
+        assert call_kwargs["nums_of_chunks"] == TOTAL_CHUNKS_LIMIT
 
     @pytest.mark.asyncio
     async def test_summarizer_failure_falls_back_to_original_text(self):
-        """If summarizer raises, the original text is returned instead of propagating."""
+        """If summarizer raises a generic error, the original text is returned instead of propagating."""
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(side_effect=RuntimeError("llm error"))
 
+        # ~200 tokens; token_limit=150 → num_chunks=2, within TOTAL_CHUNKS_LIMIT
         text = " ".join(["word"] * 200)
         result = await _tool_summarizer(
-            response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=5
+            response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=150
         )
 
         assert result == text
+
+    @pytest.mark.asyncio
+    async def test_chunks_limit_exceeded_raises(self):
+        """If num_chunks exceeds TOTAL_CHUNKS_LIMIT, TotalChunksLimitExceededError is raised."""
+        from agents.common.exceptions import TotalChunksLimitExceededError
+
+        summarizer = MagicMock()
+        summarizer.summarize_tool_response = AsyncMock(return_value="summarized")
+
+        # ~200 tokens with token_limit=5 → num_chunks=41, far exceeds TOTAL_CHUNKS_LIMIT=2
+        text = " ".join(["word"] * 200)
+        with pytest.raises(TotalChunksLimitExceededError):
+            await _tool_summarizer(
+                response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=5
+            )

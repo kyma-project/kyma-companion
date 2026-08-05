@@ -19,6 +19,7 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
+from agents.common.exceptions import TotalChunksLimitExceededError
 from agents.common.utils import compute_string_token_count, convert_string_to_object
 from agents.kyma.react_agent import _tool_summarizer
 from integration.agents.fixtures.k8_query_tool_response import (
@@ -26,7 +27,12 @@ from integration.agents.fixtures.k8_query_tool_response import (
     sample_pods_tool_response,
     sample_services_tool_response,
 )
-from utils.settings import MAIN_MODEL_MINI_NAME, MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT
+from utils.settings import (
+    MAIN_MODEL_MINI_NAME,
+    MAIN_MODEL_NAME,
+    TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
+    TOTAL_CHUNKS_LIMIT,
+)
 
 # ---------------------------------------------------------------------------
 # Test Case Dataclass
@@ -153,12 +159,17 @@ class TestBelowTokenLimit:
 # 2. Large responses are summarized (above token limit)
 # ---------------------------------------------------------------------------
 
+# NOTE: token_limit must be chosen so that num_chunks = (token_count // token_limit) + 1
+# stays within TOTAL_CHUNKS_LIMIT. For these fixtures (~3.4k-5.5k tokens) a limit of
+# 3000 forces summarization while keeping num_chunks == 2 (the default TOTAL_CHUNKS_LIMIT).
+SUMMARIZATION_TOKEN_LIMIT = 3000
+
 SUMMARIZATION_TEST_CASES = [
     ToolSummarizerTestCase(
         name="Large pods response is summarized with pod-related query",
         tool_response_raw=sample_pods_tool_response,
         query="List all pods in the cluster and their status",
-        token_limit=50,  # Force summarization by using a very low limit
+        token_limit=SUMMARIZATION_TOKEN_LIMIT,  # forces summarization, num_chunks == 2
         expect_summarized=True,
         expected_content_keywords=["cert-manager", "Running"],
     ),
@@ -166,7 +177,7 @@ SUMMARIZATION_TEST_CASES = [
         name="Large services response is summarized with service query",
         tool_response_raw=sample_services_tool_response,
         query="Which services are available in the cluster?",
-        token_limit=50,
+        token_limit=SUMMARIZATION_TOKEN_LIMIT,
         expect_summarized=True,
         expected_content_keywords=["service", "istio"],
     ),
@@ -174,7 +185,7 @@ SUMMARIZATION_TEST_CASES = [
         name="Large deployment response is summarized with health query",
         tool_response_raw=sample_deployment_tool_response,
         query="Are all deployments healthy?",
-        token_limit=50,
+        token_limit=SUMMARIZATION_TOKEN_LIMIT,
         expect_summarized=True,
         expected_content_keywords=["cert-manager"],
     ),
@@ -298,7 +309,7 @@ async def test_summarization_quality(
         query=test_case.query,
         summarizer=summarizer,
         config=config,
-        token_limit=50,  # Force summarization
+        token_limit=SUMMARIZATION_TOKEN_LIMIT,  # forces summarization, num_chunks == 2
     )
 
     llm_test_case = LLMTestCase(
@@ -321,10 +332,11 @@ class TestFallbackOnError:
     @pytest.mark.asyncio
     async def test_fallback_on_summarizer_exception(self, summarizer, config):
         """When summarizer raises, the original text should be returned."""
-        original_text = "x " * 1000  # Will exceed a small token limit
+        original_text = "x " * 1000  # ~1001 tokens
         response_list = [{"data": original_text}]
 
-        # Patch the summarizer's method to raise
+        # token_limit=600 -> num_chunks = (1001//600)+1 = 2, within TOTAL_CHUNKS_LIMIT,
+        # so the summarizer is actually invoked and its RuntimeError triggers the fallback.
         with patch.object(
             summarizer,
             "summarize_tool_response",
@@ -337,7 +349,7 @@ class TestFallbackOnError:
                 query="What is this?",
                 summarizer=summarizer,
                 config=config,
-                token_limit=10,  # Force summarization path
+                token_limit=600,  # keeps num_chunks == 2
             )
 
         assert result == original_text
@@ -345,7 +357,7 @@ class TestFallbackOnError:
     @pytest.mark.asyncio
     async def test_fallback_on_timeout_exception(self, summarizer, config):
         """TimeoutError from summarizer should trigger fallback."""
-        original_text = "pod data " * 500
+        original_text = "pod data " * 500  # ~1001 tokens
         response_list = [{"pod": "data"}]
 
         with patch.object(
@@ -360,7 +372,7 @@ class TestFallbackOnError:
                 query="pod status",
                 summarizer=summarizer,
                 config=config,
-                token_limit=10,
+                token_limit=600,  # keeps num_chunks == 2
             )
 
         assert result == original_text
@@ -368,7 +380,7 @@ class TestFallbackOnError:
     @pytest.mark.asyncio
     async def test_fallback_on_value_error(self, summarizer, config):
         """ValueError from summarizer should trigger fallback."""
-        original_text = "deployment info " * 300
+        original_text = "deployment info " * 300  # ~601 tokens
         response_list = [{"deployment": "info"}]
 
         with patch.object(
@@ -383,7 +395,7 @@ class TestFallbackOnError:
                 query="deployment health",
                 summarizer=summarizer,
                 config=config,
-                token_limit=10,
+                token_limit=400,  # keeps num_chunks == 2
             )
 
         assert result == original_text
@@ -409,7 +421,7 @@ class TestConfigHandling:
             query="List all pods",
             summarizer=summarizer,
             config=None,  # Explicitly pass None
-            token_limit=50,
+            token_limit=SUMMARIZATION_TOKEN_LIMIT,
         )
 
         # Should still produce a summary (not crash)
@@ -455,7 +467,7 @@ class TestQueryRelevance:
             query="What is the status of each pod?",
             summarizer=summarizer,
             config=config,
-            token_limit=50,
+            token_limit=SUMMARIZATION_TOKEN_LIMIT,
         )
 
         # Query 2: focus on networking/IPs
@@ -465,7 +477,7 @@ class TestQueryRelevance:
             query="What are the IP addresses and networking details?",
             summarizer=summarizer,
             config=config,
-            token_limit=50,
+            token_limit=SUMMARIZATION_TOKEN_LIMIT,
         )
 
         # Both should be non-empty summaries
@@ -487,10 +499,123 @@ class TestQueryRelevance:
             query="Are there any pods with high restart counts or issues?",
             summarizer=summarizer,
             config=config,
-            token_limit=50,
+            token_limit=SUMMARIZATION_TOKEN_LIMIT,
         )
 
         result_lower = result.lower()
         assert "restart" in result_lower, (
             f"Summary for restart-focused query should mention restarts. Got: {result[:300]}"
         )
+
+
+# ---------------------------------------------------------------------------
+# 7. Chunk limit enforcement (TotalChunksLimitExceededError)
+# ---------------------------------------------------------------------------
+
+
+class TestChunkLimitExceeded:
+    """Verify _tool_summarizer enforces TOTAL_CHUNKS_LIMIT.
+
+    num_chunks = (token_count // token_limit) + 1. When this exceeds
+    TOTAL_CHUNKS_LIMIT, the helper must raise TotalChunksLimitExceededError
+    and must NOT be swallowed by the generic plain-text fallback.
+    """
+
+    @pytest.mark.asyncio
+    async def test_raises_when_response_exceeds_chunk_limit(self, summarizer, config):
+        """A large response with a small token_limit needs too many chunks and must raise."""
+        response_list = convert_string_to_object(sample_pods_tool_response)
+        text = sample_pods_tool_response
+
+        token_count = compute_string_token_count(text, MAIN_MODEL_NAME)
+        small_limit = 50
+        num_chunks = (token_count // small_limit) + 1
+        # Sanity: this configuration must exceed the chunk limit.
+        assert num_chunks > TOTAL_CHUNKS_LIMIT, (
+            f"Test setup error: num_chunks ({num_chunks}) should exceed TOTAL_CHUNKS_LIMIT ({TOTAL_CHUNKS_LIMIT})"
+        )
+
+        with pytest.raises(TotalChunksLimitExceededError):
+            await _tool_summarizer(
+                response=response_list,
+                text=text,
+                query="List all pods",
+                summarizer=summarizer,
+                config=config,
+                token_limit=small_limit,
+            )
+
+    @pytest.mark.asyncio
+    async def test_error_raised_before_summarizer_invoked(self, summarizer, config):
+        """When the chunk limit is exceeded the summarizer LLM must NOT be called (fail fast)."""
+        response_list = convert_string_to_object(sample_pods_tool_response)
+        text = sample_pods_tool_response
+
+        with patch.object(summarizer, "summarize_tool_response", new_callable=AsyncMock) as mock_summarize:
+            with pytest.raises(TotalChunksLimitExceededError):
+                await _tool_summarizer(
+                    response=response_list,
+                    text=text,
+                    query="List all pods",
+                    summarizer=summarizer,
+                    config=config,
+                    token_limit=50,
+                )
+            mock_summarize.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_chunk_limit_error_not_swallowed_by_fallback(self, summarizer, config):
+        """TotalChunksLimitExceededError must propagate, not be caught by the plain-text fallback.
+
+        Even when the summarizer would raise a generic error, the chunk-limit check runs
+        first, so the specific error is what surfaces.
+        """
+        response_list = convert_string_to_object(sample_pods_tool_response)
+        text = sample_pods_tool_response
+
+        with (
+            patch.object(
+                summarizer,
+                "summarize_tool_response",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("should not be reached"),
+            ),
+            pytest.raises(TotalChunksLimitExceededError),
+        ):
+            await _tool_summarizer(
+                response=response_list,
+                text=text,
+                query="List all pods",
+                summarizer=summarizer,
+                config=config,
+                token_limit=50,
+            )
+
+    @pytest.mark.asyncio
+    async def test_boundary_exactly_at_chunk_limit_succeeds(self, summarizer, config):
+        """A response needing exactly TOTAL_CHUNKS_LIMIT chunks should summarize, not raise."""
+        response_list = convert_string_to_object(sample_pods_tool_response)
+        text = sample_pods_tool_response
+
+        token_count = compute_string_token_count(text, MAIN_MODEL_NAME)
+        # Pick a limit so num_chunks == TOTAL_CHUNKS_LIMIT and summarization is still triggered.
+        # token_count / (TOTAL_CHUNKS_LIMIT - 0.5) yields token_count // limit == TOTAL_CHUNKS_LIMIT - 1.
+        limit = int(token_count / (TOTAL_CHUNKS_LIMIT - 0.5))
+        num_chunks = (token_count // limit) + 1
+        assert num_chunks == TOTAL_CHUNKS_LIMIT, (
+            f"Test setup error: expected num_chunks == {TOTAL_CHUNKS_LIMIT}, got {num_chunks}"
+        )
+        assert token_count > limit, "Test setup error: text must exceed limit to force summarization"
+
+        result = await _tool_summarizer(
+            response=response_list,
+            text=text,
+            query="List all pods",
+            summarizer=summarizer,
+            config=config,
+            token_limit=limit,
+        )
+
+        assert isinstance(result, str)
+        assert len(result) > 0
+        assert len(result) < len(text)
