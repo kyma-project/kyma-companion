@@ -3,6 +3,7 @@ import re
 import shutil
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
@@ -23,7 +24,7 @@ def _parse_github_repo(repo_url: str) -> tuple[str, str]:
     if parsed.scheme != "https" or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
         raise ValueError(f"unsupported repository URL (only github.com is allowed): {repo_url}")
     parts = parsed.path.removesuffix(".git").strip("/").split("/")
-    if len(parts) != _MIN_URL_PATH_PARTS or not all(parts):
+    if len(parts) != _MIN_URL_PATH_PARTS or not all(parts) or any(p == ".." for p in parts):
         raise ValueError(f"cannot parse owner/repo from URL: {repo_url}")
     return parts[0], parts[1]
 
@@ -51,15 +52,19 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> str:
     with tempfile.TemporaryDirectory(dir=dest_dir) as staging:
         tar_path = os.path.join(staging, "repo.tar.gz")
         req = urllib.request.Request(tar_url, headers={"User-Agent": "kyma-companion-doc-indexer"})
-        with urllib.request.urlopen(req, timeout=120) as resp, open(tar_path, "wb") as fh:  # noqa: S310
-            shutil.copyfileobj(resp, fh)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp, open(tar_path, "wb") as fh:  # noqa: S310
+                shutil.copyfileobj(resp, fh)
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(f"failed to download {tar_url}: HTTP {exc.code}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"failed to download {tar_url}: {exc.reason}") from exc
 
         with tarfile.open(tar_path, "r:gz") as tf:
             tf.extractall(staging, filter="data")  # filter="data" blocks path traversal (py3.12+)
 
         # The archive extracts to a single top-level dir named "<repo>-<ref-or-sha>".
-        entries = [e for e in os.listdir(staging) if e != "repo.tar.gz"]
-        extracted = [e for e in entries if os.path.isdir(os.path.join(staging, e))]
+        extracted = [e for e in os.listdir(staging) if os.path.isdir(os.path.join(staging, e))]
         if len(extracted) != 1:
             raise RuntimeError(f"unexpected tarball layout for {tar_url}: {extracted}")
         shutil.move(os.path.join(staging, extracted[0]), repo_path)

@@ -31,6 +31,7 @@ def test_parse_github_repo_valid(given_url, expected):
         "ftp://github.com/a/b",  # bad scheme
         "https://github.com/owner/repo/tree/main",  # extra path segments
         "https://github.com/owner/../evil",  # path traversal attempt
+        "https://github.com/../evil-repo",  # path traversal in owner position
     ],
 )
 def test_parse_github_repo_rejected(given_url):
