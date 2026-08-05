@@ -4,11 +4,10 @@ import copy
 from typing import Any
 
 from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
-from agents.common.state import GraphInput
 from agents.kyma.tools.query import fetch_kyma_resource_version
 from agents.kyma.tools.search import SEARCH_KYMA_DOC_TOOL_NAME
 from services.data_sanitizer import redact_pii
@@ -127,8 +126,9 @@ class LangfuseService(metaclass=SingletonMeta):
 
     def _masking_mode_partial(self, data: Any) -> Any:
         """Return only the user input and resource information. Everything else is redacted."""
-        if isinstance(data, GraphInput):
-            output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
+        if isinstance(data, dict) and "messages" in data:
+            messages: list[Any] = data["messages"]
+            output = "\n".join(str(msg.content) for msg in reversed(messages) if isinstance(msg, HumanMessage))
             if output:
                 return redact_pii(output)
 
@@ -145,12 +145,8 @@ class LangfuseService(metaclass=SingletonMeta):
         try:
             if not data or isinstance(data, int | float | bool):
                 return data
-            # If data is a GraphInput, sanitize the messages in reverse order for better readability.
-            if isinstance(data, GraphInput):
-                output = "\n".join([str(msg.content) for msg in reversed(data.messages)])
-                return redact_pii(output if output else REDACTED)
             # If data is a string, sanitize it directly.
-            elif isinstance(data, str):
+            if isinstance(data, str):
                 return redact_pii(copy.copy(data))
             elif isinstance(data, ToolMessage) and data.name not in self.allowed_tools:
                 data = copy.deepcopy(data)
