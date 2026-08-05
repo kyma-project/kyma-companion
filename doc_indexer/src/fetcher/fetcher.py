@@ -59,7 +59,7 @@ class DocumentsFetcher:
             raise ValueError(f"Invalid source name: {source.name}")
 
         if source.source_type == SourceType.GITHUB:
-            logger.debug(f"Downloading repository: {source.url}")
+            logger.debug("Downloading repository", extra={"url": source.url})
             # download and extract the repository tarball (no git required).
             repo_dir = download_repo(source.url, self.tmp_dir)
         else:
