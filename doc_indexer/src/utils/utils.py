@@ -20,10 +20,10 @@ _MIN_URL_PATH_PARTS = 2
 def _parse_github_repo(repo_url: str) -> tuple[str, str]:
     """Extract (owner, repo) from a GitHub URL, rejecting anything else."""
     parsed = urlparse(repo_url)
-    if parsed.scheme not in ("https", "http") or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
+    if parsed.scheme != "https" or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
         raise ValueError(f"unsupported repository URL (only github.com is allowed): {repo_url}")
     parts = parsed.path.removesuffix(".git").strip("/").split("/")
-    if len(parts) < _MIN_URL_PATH_PARTS or not all(parts[:_MIN_URL_PATH_PARTS]):
+    if len(parts) != _MIN_URL_PATH_PARTS or not all(parts):
         raise ValueError(f"cannot parse owner/repo from URL: {repo_url}")
     return parts[0], parts[1]
 
@@ -38,8 +38,12 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> str:
     """
     owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
+    os.makedirs(dest_dir, exist_ok=True)
     if os.path.exists(repo_path):
-        shutil.rmtree(repo_path, ignore_errors=True)
+        # Let rmtree raise on failure: a leftover repo_path would make the
+        # shutil.move below nest the extract inside it (<dest>/<repo>/<repo>-<sha>),
+        # silently breaking the layout the Scroller expects.
+        shutil.rmtree(repo_path)
 
     tar_url = f"https://{_CODELOAD_HOST}/{owner}/{repo}/tar.gz/{ref}"
     logger.info("Downloading repository", extra={"url": tar_url, "dest": repo_path})

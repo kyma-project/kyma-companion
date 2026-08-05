@@ -29,6 +29,8 @@ def test_parse_github_repo_valid(given_url, expected):
         "git@github.com:kyma-project/eventing-manager.git",  # ssh scheme
         "https://github.com/only-owner",  # missing repo
         "ftp://github.com/a/b",  # bad scheme
+        "https://github.com/owner/repo/tree/main",  # extra path segments
+        "https://github.com/owner/../evil",  # path traversal attempt
     ],
 )
 def test_parse_github_repo_rejected(given_url):
@@ -95,3 +97,15 @@ def test_download_repo_replaces_existing_dir(tmp_path):
 
     assert os.path.isfile(os.path.join(repo_path, "new.md"))
     assert not os.path.exists(os.path.join(repo_path, "old.md"))
+
+
+def test_download_repo_creates_dest_dir(tmp_path):
+    repo_url = "https://github.com/kyma-project/eventing-manager.git"
+    dest = str(tmp_path / "nonexistent" / "nested")
+
+    tar_bytes = _make_repo_tarball("eventing-manager-abc123", {"README.md": "# hello"})
+
+    with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
+        repo_path = download_repo(repo_url, dest)
+
+    assert os.path.isfile(os.path.join(repo_path, "README.md"))
