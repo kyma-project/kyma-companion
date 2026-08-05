@@ -1,23 +1,11 @@
-import json
-from typing import TypedDict
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage
-from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
 
 from agents.common.data import Message
 from agents.k8s.tools.query import k8s_overview_query_tool, k8s_query_tool
 from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
-
-
-class ToolTestState(TypedDict):
-    """State for testing tools with InjectedState."""
-
-    messages: list[BaseMessage]
-    k8s_client: IK8sClient
 
 
 def sample_k8s_secret():
@@ -33,21 +21,9 @@ def sample_k8s_secret():
     }
 
 
-def sample_k8s_sanitized_secret():
-    return {
-        "kind": "Secret",
-        "apiVersion": "v1",
-        "metadata": {
-            "name": "my-secret",
-        },
-        "data": {},
-    }
-
-
 @pytest.mark.parametrize(
     "given_uri, given_object, given_exception, expected_object, expected_error",
     [
-        # # Test case: successful query for secret object. The data should be sanitized.
         (
             "v1/secret/my-secret",
             sample_k8s_secret(),
@@ -55,17 +31,17 @@ def sample_k8s_sanitized_secret():
             sample_k8s_secret(),
             None,
         ),
-        # Test case: the execute_get_api_request returns an exception.
         (
             "v1/secret/my-secret",
             sample_k8s_secret(),
             Exception("dummy error 1"),
             None,
-            Exception(
-                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,raised the following error: dummy error 1\n Please fix your mistakes."
+            K8sClientError(
+                message="dummy error 1",
+                status_code=500,
+                uri="v1/secret/my-secret",
             ),
         ),
-        # Test case: the execute_get_api_request raises K8sClientError for invalid type.
         (
             "v1/secret/my-secret",
             None,
@@ -75,60 +51,29 @@ def sample_k8s_sanitized_secret():
                 uri="v1/secret/my-secret",
             ),
             None,
-            Exception(
-                "Error: failed executing k8s_query_tool with URI: v1/secret/my-secret,"
-                "raised the following error: Invalid result type: <class 'str'>\n Please fix your mistakes."
+            K8sClientError(
+                message="Invalid result type: <class 'str'>",
+                status_code=500,
+                uri="v1/secret/my-secret",
             ),
         ),
     ],
 )
 @pytest.mark.asyncio
 async def test_k8s_query_tool(given_uri, given_object, given_exception, expected_object, expected_error):
-    # Given
-    # In langgraph 1.0, ToolNode with InjectedState must be invoked within a StateGraph context
-    graph = StateGraph(ToolTestState)
-    graph.add_node("tools", ToolNode([k8s_query_tool], handle_tool_errors=True))
-    graph.add_edge(START, "tools")
-    graph.add_edge("tools", END)
-    app = graph.compile()
-
     k8s_client = AsyncMock(spec=IK8sClient)
     if given_exception:
         k8s_client.execute_get_api_request.side_effect = given_exception
     else:
         k8s_client.execute_get_api_request.return_value = given_object
 
-    # When: invoke the tool.
-    result = await app.ainvoke(
-        {
-            "k8s_client": k8s_client,
-            "messages": [
-                AIMessage(
-                    content="",
-                    tool_calls=[
-                        {
-                            "name": "k8s_query_tool",
-                            "args": {"uri": given_uri},
-                            "id": "id1",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-            ],
-        }
-    )
-
-    # Then
-    # check if the method was called with the given URI.
-    k8s_client.execute_get_api_request.assert_called_once_with(given_uri)
-    # check the response.
     if expected_error:
-        got_err_msg = result["messages"][0].content
-        expected_err_msg = str(expected_error)
-        assert got_err_msg == expected_err_msg
-    elif expected_object:
-        got_obj = json.loads(result["messages"][0].content)
-        assert got_obj == expected_object
+        with pytest.raises(K8sClientError):
+            await k8s_query_tool.ainvoke({"uri": given_uri, "k8s_client": k8s_client})
+    else:
+        result = await k8s_query_tool.ainvoke({"uri": given_uri, "k8s_client": k8s_client})
+        k8s_client.execute_get_api_request.assert_called_once_with(given_uri)
+        assert result == expected_object
 
 
 def sample_cluster_overview():
@@ -143,7 +88,6 @@ def sample_namespace_overview():
 @pytest.mark.parametrize(
     "given_namespace, given_resource_kind, given_result, given_exception, expected_result, expected_error",
     [
-        # Test case: successful cluster overview
         (
             "",
             "cluster",
@@ -152,7 +96,6 @@ def sample_namespace_overview():
             sample_cluster_overview(),
             None,
         ),
-        # Test case: successful namespace overview
         (
             "default",
             "namespace",
@@ -161,23 +104,21 @@ def sample_namespace_overview():
             sample_namespace_overview(),
             None,
         ),
-        # Test case: exception during execution
         (
             "default",
             "namespace",
             None,
             Exception("cluster unavailable"),
             None,
-            Exception("Error: Exception('cluster unavailable')\n Please fix your mistakes."),
+            K8sClientError(message="cluster unavailable", status_code=500),
         ),
-        # Test case: invalid resource kind
         (
             "default",
             "invalid_kind",
             None,
             Exception("Unsupported resource kind: invalid_kind"),
             None,
-            Exception("Error: Exception('Unsupported resource kind: invalid_kind')\n Please fix your mistakes."),
+            K8sClientError(message="Unsupported resource kind: invalid_kind", status_code=500),
         ),
     ],
 )
@@ -191,55 +132,32 @@ async def test_k8s_overview_query_tool(
     expected_result,
     expected_error,
 ):
-    # Given
-    # In langgraph 1.0, ToolNode with InjectedState must be invoked within a StateGraph context
-    graph = StateGraph(ToolTestState)
-    graph.add_node("tools", ToolNode([k8s_overview_query_tool], handle_tool_errors=True))
-    graph.add_edge(START, "tools")
-    graph.add_edge("tools", END)
-    app = graph.compile()
-
     k8s_client = Mock(spec=IK8sClient)
 
-    # Configure the mock
     if given_exception:
         mock_get_context.side_effect = given_exception
     else:
         mock_get_context.return_value = given_result
 
-    # When: invoke the tool.
-    result = await app.ainvoke(
-        {
-            "k8s_client": k8s_client,
-            "messages": [
-                AIMessage(
-                    content="",
-                    tool_calls=[
-                        {
-                            "name": "k8s_overview_query_tool",
-                            "args": {
-                                "namespace": given_namespace,
-                                "resource_kind": given_resource_kind,
-                            },
-                            "id": "id1",
-                            "type": "tool_call",
-                        }
-                    ],
-                ),
-            ],
-        }
-    )
-
-    # Then
     if expected_error:
-        got_err_msg = result["messages"][0].content
-        expected_err_msg = str(expected_error)
-        assert got_err_msg == expected_err_msg
-    elif expected_result:
-        got_obj = json.loads(result["messages"][0].content)
-        assert got_obj == expected_result
+        with pytest.raises(K8sClientError):
+            await k8s_overview_query_tool.ainvoke(
+                {
+                    "namespace": given_namespace,
+                    "resource_kind": given_resource_kind,
+                    "k8s_client": k8s_client,
+                }
+            )
+    else:
+        result = await k8s_overview_query_tool.ainvoke(
+            {
+                "namespace": given_namespace,
+                "resource_kind": given_resource_kind,
+                "k8s_client": k8s_client,
+            }
+        )
+        assert result == expected_result
 
-    # Verify the mock was called correctly
     mock_get_context.assert_called_once_with(
         Message(
             resource_kind=given_resource_kind,

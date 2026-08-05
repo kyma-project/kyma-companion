@@ -1,7 +1,4 @@
-from typing import Annotated
-
 from langchain_core.tools import tool
-from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel, Field
 from pydantic.config import ConfigDict
 
@@ -17,16 +14,13 @@ class KymaQueryToolArgs(BaseModel):
         "Must follow the format of Kubernetes API paths like "
         "'/apis/serverless.kyma-project.io/v1alpha2/namespaces/default/functions'."
     )
-    k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
+    k8s_client: IK8sClient
 
-    # Model configuration for Pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 @tool(infer_schema=False, args_schema=KymaQueryToolArgs)
-async def kyma_query_tool(
-    uri: str, k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
-) -> dict | list[dict]:
+async def kyma_query_tool(uri: str, k8s_client: IK8sClient) -> dict | list[dict]:
     """Query the state of Kyma resources in the cluster using the provided URI.
     The URI must follow the format of Kubernetes API.
     Use this to get information about Kyma-specific resources like Function, APIRule, etc.
@@ -36,7 +30,6 @@ async def kyma_query_tool(
     try:
         return await k8s_client.execute_get_api_request(uri)
     except K8sClientError as e:
-        # Add tool name if not already set
         if not e.tool_name:
             e.tool_name = "kyma_query_tool"
         raise
@@ -55,10 +48,8 @@ class KymaResourceVersionToolArgs(BaseModel):
         description="Kind of Kyma resource to get the version for (e.g., 'Function', 'APIRule', 'ServiceInstance'). "
         "Must be a valid Kyma resource kind available in the cluster."
     )
+    k8s_client: IK8sClient
 
-    k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")]
-
-    # Model configuration for Pydantic.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -74,7 +65,7 @@ DEPRECATED_API_VERSIONS = {
 @tool(infer_schema=False, args_schema=KymaResourceVersionToolArgs)
 def fetch_kyma_resource_version(
     resource_kind: str,
-    k8s_client: Annotated[IK8sClient, InjectedState("k8s_client")],
+    k8s_client: IK8sClient,
 ) -> str:
     """Tool for fetching the resource version for a given resource kind.
     Use this to get the resource version for a given resource kind.
