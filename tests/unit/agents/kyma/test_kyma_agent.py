@@ -249,16 +249,16 @@ class TestToolSummarizer:
         assert result == text
 
     @pytest.mark.asyncio
-    async def test_chunks_limit_exceeded_raises(self):
-        """If num_chunks exceeds TOTAL_CHUNKS_LIMIT, TotalChunksLimitExceededError is raised."""
-        from agents.common.exceptions import TotalChunksLimitExceededError
+    async def test_chunks_limit_exceeded_returns_message(self):
+        """If num_chunks exceeds TOTAL_CHUNKS_LIMIT, CHUNK_LIMIT_EXCEEDED_RESPONSE is returned."""
+        from agents.kyma.react_agent import CHUNK_LIMIT_EXCEEDED_RESPONSE
 
         summarizer = MagicMock()
         summarizer.summarize_tool_response = AsyncMock(return_value="summarized")
 
         # ~200 tokens with token_limit=5 → num_chunks=41, far exceeds TOTAL_CHUNKS_LIMIT=2
         text = " ".join(["word"] * 200)
-        with pytest.raises(TotalChunksLimitExceededError):
-            await _tool_summarizer(
-                response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=5
-            )
+        result = await _tool_summarizer(
+            response=[text], text=text, query="q", summarizer=summarizer, config=None, token_limit=5
+        )
+        assert result == CHUNK_LIMIT_EXCEEDED_RESPONSE

@@ -19,9 +19,8 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
-from agents.common.exceptions import TotalChunksLimitExceededError
 from agents.common.utils import compute_string_token_count, convert_string_to_object
-from agents.kyma.react_agent import _tool_summarizer
+from agents.kyma.react_agent import CHUNK_LIMIT_EXCEEDED_RESPONSE, _tool_summarizer
 from integration.agents.fixtures.k8_query_tool_response import (
     sample_deployment_tool_response,
     sample_pods_tool_response,
@@ -509,7 +508,7 @@ class TestQueryRelevance:
 
 
 # ---------------------------------------------------------------------------
-# 7. Chunk limit enforcement (TotalChunksLimitExceededError)
+# 7. Chunk limit enforcement (CHUNK_LIMIT_EXCEEDED_RESPONSE)
 # ---------------------------------------------------------------------------
 
 
@@ -517,13 +516,13 @@ class TestChunkLimitExceeded:
     """Verify _tool_summarizer enforces TOTAL_CHUNKS_LIMIT.
 
     num_chunks = (token_count // token_limit) + 1. When this exceeds
-    TOTAL_CHUNKS_LIMIT, the helper must raise TotalChunksLimitExceededError
-    and must NOT be swallowed by the generic plain-text fallback.
+    TOTAL_CHUNKS_LIMIT, the helper must return CHUNK_LIMIT_EXCEEDED_RESPONSE
+    instead of falling back to the plain text.
     """
 
     @pytest.mark.asyncio
-    async def test_raises_when_response_exceeds_chunk_limit(self, summarizer, config):
-        """A large response with a small token_limit needs too many chunks and must raise."""
+    async def test_returns_message_when_response_exceeds_chunk_limit(self, summarizer, config):
+        """A large response with a small token_limit needs too many chunks and returns the limit message."""
         response_list = convert_string_to_object(sample_pods_tool_response)
         text = sample_pods_tool_response
 
@@ -535,54 +534,24 @@ class TestChunkLimitExceeded:
             f"Test setup error: num_chunks ({num_chunks}) should exceed TOTAL_CHUNKS_LIMIT ({TOTAL_CHUNKS_LIMIT})"
         )
 
-        with pytest.raises(TotalChunksLimitExceededError):
-            await _tool_summarizer(
-                response=response_list,
-                text=text,
-                query="List all pods",
-                summarizer=summarizer,
-                config=config,
-                token_limit=small_limit,
-            )
+        result = await _tool_summarizer(
+            response=response_list,
+            text=text,
+            query="List all pods",
+            summarizer=summarizer,
+            config=config,
+            token_limit=small_limit,
+        )
+        assert result == CHUNK_LIMIT_EXCEEDED_RESPONSE
 
     @pytest.mark.asyncio
-    async def test_error_raised_before_summarizer_invoked(self, summarizer, config):
+    async def test_summarizer_not_invoked_when_limit_exceeded(self, summarizer, config):
         """When the chunk limit is exceeded the summarizer LLM must NOT be called (fail fast)."""
         response_list = convert_string_to_object(sample_pods_tool_response)
         text = sample_pods_tool_response
 
         with patch.object(summarizer, "summarize_tool_response", new_callable=AsyncMock) as mock_summarize:
-            with pytest.raises(TotalChunksLimitExceededError):
-                await _tool_summarizer(
-                    response=response_list,
-                    text=text,
-                    query="List all pods",
-                    summarizer=summarizer,
-                    config=config,
-                    token_limit=50,
-                )
-            mock_summarize.assert_not_awaited()
-
-    @pytest.mark.asyncio
-    async def test_chunk_limit_error_not_swallowed_by_fallback(self, summarizer, config):
-        """TotalChunksLimitExceededError must propagate, not be caught by the plain-text fallback.
-
-        Even when the summarizer would raise a generic error, the chunk-limit check runs
-        first, so the specific error is what surfaces.
-        """
-        response_list = convert_string_to_object(sample_pods_tool_response)
-        text = sample_pods_tool_response
-
-        with (
-            patch.object(
-                summarizer,
-                "summarize_tool_response",
-                new_callable=AsyncMock,
-                side_effect=RuntimeError("should not be reached"),
-            ),
-            pytest.raises(TotalChunksLimitExceededError),
-        ):
-            await _tool_summarizer(
+            result = await _tool_summarizer(
                 response=response_list,
                 text=text,
                 query="List all pods",
@@ -590,6 +559,34 @@ class TestChunkLimitExceeded:
                 config=config,
                 token_limit=50,
             )
+            assert result == CHUNK_LIMIT_EXCEEDED_RESPONSE
+            mock_summarize.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_chunk_limit_message_not_swallowed_by_fallback(self, summarizer, config):
+        """The limit message must be returned, not the plain-text fallback.
+
+        Even when the summarizer would raise a generic error, the chunk-limit check runs
+        first, so the limit message is what surfaces.
+        """
+        response_list = convert_string_to_object(sample_pods_tool_response)
+        text = sample_pods_tool_response
+
+        with patch.object(
+            summarizer,
+            "summarize_tool_response",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("should not be reached"),
+        ):
+            result = await _tool_summarizer(
+                response=response_list,
+                text=text,
+                query="List all pods",
+                summarizer=summarizer,
+                config=config,
+                token_limit=50,
+            )
+            assert result == CHUNK_LIMIT_EXCEEDED_RESPONSE
 
     @pytest.mark.asyncio
     async def test_boundary_exactly_at_chunk_limit_succeeds(self, summarizer, config):

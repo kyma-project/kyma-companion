@@ -49,6 +49,13 @@ logger = get_logger(__name__)
 
 SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
+# Returned to the LLM when a tool response is too large to summarize within
+# TOTAL_CHUNKS_LIMIT. Guides the model to narrow the query instead of retrying blindly.
+CHUNK_LIMIT_EXCEEDED_RESPONSE = (
+    "Tool error: the resource response is too large to process. "
+    "Narrow the query (e.g. target a specific namespace, name, or fewer resources) and retry."
+)
+
 
 class UINavigationContext(BaseModel):
     """Busola UI navigation context — the resource the user is currently viewing."""
@@ -89,8 +96,8 @@ async def _tool_summarizer(
 
     Uses ToolResponseSummarizer when the response is too large, treating the
     raw response list as the input to summarize_tool_response.
-    Computes the number of chunks dynamically based on token count and raises
-    TotalChunksLimitExceededError if the required chunks exceed TOTAL_CHUNKS_LIMIT.
+    Computes the number of chunks dynamically based on token count and returns
+    CHUNK_LIMIT_EXCEEDED_RESPONSE if the required chunks exceed TOTAL_CHUNKS_LIMIT.
     Falls back to the plain text when summarization fails.
     """
     token_count = compute_string_token_count(text, MAIN_MODEL_NAME)
@@ -99,7 +106,7 @@ async def _tool_summarizer(
 
     num_chunks = (token_count // token_limit) + 1
     if num_chunks > TOTAL_CHUNKS_LIMIT:
-        raise TotalChunksLimitExceededError()
+        return CHUNK_LIMIT_EXCEEDED_RESPONSE
 
     try:
         return await summarizer.summarize_tool_response(
@@ -109,8 +116,7 @@ async def _tool_summarizer(
             nums_of_chunks=num_chunks,
         )
     except TotalChunksLimitExceededError:
-        raise
-    except Exception:
+        return CHUNK_LIMIT_EXCEEDED_RESPONSE
     except Exception:
         logger.exception("Tool response summarization failed; returning original text")
         return text
