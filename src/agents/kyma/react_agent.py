@@ -111,6 +111,8 @@ async def _tool_summarizer(
     except TotalChunksLimitExceededError:
         raise
     except Exception:
+    except Exception:
+        logger.exception("Tool response summarization failed; returning original text")
         return text
 
 
