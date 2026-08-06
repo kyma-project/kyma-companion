@@ -22,16 +22,30 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
+from agents.common.conversation_summarizer import ConversationSummarizer
 from agents.common.data import Message
 from agents.common.exceptions import TotalChunksLimitExceededError
-from agents.common.utils import compute_string_token_count, get_relevant_context_from_k8s_cluster
+from agents.common.utils import (
+    compute_messages_token_count,
+    compute_string_token_count,
+    get_relevant_context_from_k8s_cluster,
+)
 from agents.k8s.tools.logs import POD_LOGS_TAIL_LINES_LIMIT
 from agents.kyma.prompts import REACT_AGENT_INSTRUCTIONS, REACT_AGENT_PROMPT
 from agents.kyma.tools.query import DEPRECATED_API_VERSIONS
 from agents.kyma.tools.search import SearchKymaDocTool
 from services.k8s import IK8sClient
+from utils.logging import get_logger
 from utils.models.factory import IModel
-from utils.settings import MAIN_MODEL_NAME, TOOL_RESPONSE_TOKEN_COUNT_LIMIT, TOTAL_CHUNKS_LIMIT
+from utils.settings import (
+    CHAT_HISTORY_KEEP_MESSAGES,
+    CHAT_HISTORY_TOKEN_LIMIT,
+    MAIN_MODEL_NAME,
+    TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
+    TOTAL_CHUNKS_LIMIT,
+)
+
+logger = get_logger(__name__)
 
 SYSTEM_PROMPT = f"{REACT_AGENT_PROMPT}\n\n{REACT_AGENT_INSTRUCTIONS}"
 
@@ -244,6 +258,7 @@ class KymaReActAgent:
         resolved_search_tool = search_tool if search_tool is not None else SearchKymaDocTool(models)
         self._invoke_ctx: dict[str, Any] = {}
         summarizer = ToolResponseSummarizer(model=main_model)
+        self._conversation_summarizer = ConversationSummarizer(model=main_model)
         tools: list[BaseTool] = [
             *_make_bound_tools(k8s_client, summarizer, self._invoke_ctx),
             resolved_search_tool,
@@ -267,9 +282,10 @@ class KymaReActAgent:
         human_content = query
         if ui_context is not None:
             human_content = f"{ui_context.as_context_message()}\n\n{query}"
-        messages = [*(chat_history or []), HumanMessage(content=human_content)]
-        payload: Any = {"messages": messages}
         run_config = RunnableConfig(callbacks=callbacks) if callbacks else None
+        prepared_history = await self._prepare_chat_history(chat_history or [], run_config)
+        messages = [*prepared_history, HumanMessage(content=human_content)]
+        payload: Any = {"messages": messages}
         self._invoke_ctx["query"] = query
         self._invoke_ctx["config"] = run_config
         result = await self._graph.ainvoke(payload, config=run_config)
@@ -278,3 +294,42 @@ class KymaReActAgent:
             raise ValueError("KymaReActAgent: graph returned no messages")
         last = messages_out[-1]
         return str(last.content)
+
+    async def _prepare_chat_history(
+        self,
+        chat_history: list[BaseMessage],
+        config: RunnableConfig | None,
+    ) -> list[BaseMessage]:
+        """Bound chat-history token usage by summarizing older turns.
+
+        The last ``CHAT_HISTORY_KEEP_MESSAGES`` messages are always kept verbatim.
+        When the full history exceeds ``CHAT_HISTORY_TOKEN_LIMIT`` tokens, every
+        older message is replaced with a single summary ``SystemMessage``.
+        On any summarization failure the raw history is returned unchanged.
+        """
+        if not chat_history:
+            return []
+
+        token_count = compute_messages_token_count(chat_history, MAIN_MODEL_NAME)
+        if token_count <= CHAT_HISTORY_TOKEN_LIMIT:
+            return chat_history
+
+        keep = max(CHAT_HISTORY_KEEP_MESSAGES, 0)
+        older = chat_history[:-keep] if keep else chat_history
+        recent = chat_history[-keep:] if keep else []
+        if not older:
+            # Fewer messages than the keep window; nothing to summarize.
+            return chat_history
+
+        try:
+            summary = await self._conversation_summarizer.summarize(older, config)
+        except Exception:
+            logger.exception("Failed to summarize chat history; falling back to raw history")
+            return chat_history
+
+        logger.info(
+            f"Summarized {len(older)} older chat messages "
+            f"({token_count} tokens > {CHAT_HISTORY_TOKEN_LIMIT} limit); keeping last {len(recent)}"
+        )
+        summary_message = SystemMessage(content=f"Summary of earlier conversation:\n{summary}")
+        return [summary_message, *recent]
