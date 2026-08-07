@@ -150,9 +150,7 @@ class ScenarioList(BaseModel):
         logger.info(f"Reading NamespaceScoped scenarios from: {path}")
 
         # get all the directories in the path (skip plain files like deploy_all.sh).
-        directories: list[str] = [
-            entry for entry in os.listdir(path) if os.path.isdir(os.path.join(path, entry))
-        ]
+        directories: list[str] = [entry for entry in os.listdir(path) if os.path.isdir(os.path.join(path, entry))]
         if directories:
             # sort directories to ensure consistent order
             directories.sort(reverse=True)
