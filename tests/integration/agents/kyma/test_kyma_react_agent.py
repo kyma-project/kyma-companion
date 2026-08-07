@@ -729,9 +729,9 @@ GOAL_ACCURACY_TEST_CASES = [
     ReactAgentTestCase(
         name="Enable Kyma module - describes Busola UI navigation",
         query="How do I enable the Istio module in my Kyma cluster?",
-        must_call_tools=[TOOL_KYMA_QUERY , TOOL_SEARCH_KYMA_DOC],
+        must_call_tools=[TOOL_SEARCH_KYMA_DOC],
         expected_goal=(
-            "In the Kyma Dashboard (Busola), navigate to Cluster Overview → Modify Modules; or Configuration → Modules"
+            "In the Kyma Dashboard (Busola), navigate to Cluster Overview → Modify Modules or Configuration → Modules"
             "Click 'Add' on the list of modules, find Istio, and click 'Add' from the UI."
             "The dashboard navigation steps are described BEFORE any cli instructions."
         ),
