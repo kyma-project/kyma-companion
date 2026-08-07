@@ -2008,31 +2008,32 @@ urllib3 = ["packaging", "urllib3"]
 
 [[package]]
 name = "google-genai"
-version = "1.60.0"
+version = "2.9.0"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_genai-1.60.0-py3-none-any.whl", hash = "sha256:967338378ffecebec19a8ed90cf8797b26818bacbefd7846a9280beb1099f7f3"},
-    {file = "google_genai-1.60.0.tar.gz", hash = "sha256:9768061775fddfaecfefb0d6d7a6cabefb3952ebd246cd5f65247151c07d33d1"},
+    {file = "google_genai-2.9.0-py3-none-any.whl", hash = "sha256:2a79e2b08e8439f5f25c2b42f98e3f3e8ea4be9c9265f5d7321580dbaf2764f4"},
+    {file = "google_genai-2.9.0.tar.gz", hash = "sha256:a8a10e9113f460cc668c1d9deeb62ba393ad1ba704bf3166d5a0f32a434f9415"},
 ]
 
 [package.dependencies]
 anyio = ">=4.8.0,<5.0.0"
 distro = ">=1.7.0,<2"
-google-auth = {version = ">=2.47.0,<3.0.0", extras = ["requests"]}
+google-auth = {version = ">=2.48.1,<3.0.0", extras = ["requests"]}
 httpx = ">=0.28.1,<1.0.0"
-pydantic = ">=2.9.0,<3.0.0"
+pydantic = ">=2.12.5,<3.0.0"
 requests = ">=2.28.1,<3.0.0"
 sniffio = "*"
 tenacity = ">=8.2.3,<9.2.0"
-typing-extensions = ">=4.11.0,<5.0.0"
-websockets = ">=13.0.0,<15.1.0"
+typing-extensions = ">=4.14.0,<5.0.0"
+websockets = ">=13.0.0,<17.0"
 
 [package.extras]
-aiohttp = ["aiohttp (<3.13.3)"]
-local-tokenizer = ["protobuf", "sentencepiece (>=0.2.0)"]
+aiohttp = ["aiohttp (>=3.10.11,<4.0.0)"]
+local-tokenizer = ["pillow", "protobuf", "sentencepiece (>=0.2.0)", "torch", "torchvision", "transformers"]
+pyopenssl = ["pyopenssl"]
 
 [[package]]
 name = "googleapis-common-protos"
@@ -2930,25 +2931,26 @@ google-auth = ["google-auth (>=1.0.1)"]
 
 [[package]]
 name = "langchain"
-version = "1.2.11"
+version = "1.3.14"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main", "test"]
 files = [
-    {file = "langchain-1.2.11-py3-none-any.whl", hash = "sha256:ccc5d23e2568efa6e3cb2dde268a267d7f090bdad47d7e1ee5f0c9769e8cb7b9"},
-    {file = "langchain-1.2.11.tar.gz", hash = "sha256:1b0f680de88c178898a69f9814025729110fc68365b2c33cd2ba978114d5fc0a"},
+    {file = "langchain-1.3.14-py3-none-any.whl", hash = "sha256:4d10dbe91005952cddd56d0dc77aa108964da6bae90ab20063653957e901f782"},
+    {file = "langchain-1.3.14.tar.gz", hash = "sha256:1b6696c72ba3bbbce54d745e0180742c9f6ece8bbc59ed5a46c3e20b9a435929"},
 ]
 
 [package.dependencies]
-langchain-core = ">=1.2.10,<2.0.0"
-langgraph = ">=1.1.0,<1.3.0"
+langchain-core = ">=1.4.9,<2.0.0"
+langgraph = ">=1.2.5,<1.3.0"
 pydantic = ">=2.7.4,<3.0.0"
 
 [package.extras]
 anthropic = ["langchain-anthropic"]
 aws = ["langchain-aws"]
 azure-ai = ["langchain-azure-ai"]
+baseten = ["langchain-baseten (>=0.2.0)"]
 community = ["langchain-community"]
 deepseek = ["langchain-deepseek"]
 fireworks = ["langchain-fireworks"]
@@ -2956,6 +2958,7 @@ google-genai = ["langchain-google-genai"]
 google-vertexai = ["langchain-google-vertexai"]
 groq = ["langchain-groq"]
 huggingface = ["langchain-huggingface"]
+meta = ["langchain-meta"]
 mistralai = ["langchain-mistralai"]
 ollama = ["langchain-ollama"]
 openai = ["langchain-openai"]
@@ -2965,19 +2968,19 @@ xai = ["langchain-xai"]
 
 [[package]]
 name = "langchain-aws"
-version = "1.4.7"
+version = "1.6.2"
 description = "An integration package connecting AWS and LangChain"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "langchain_aws-1.4.7-py3-none-any.whl", hash = "sha256:1f6f5f70366781d61b35730d3cd5e927f7d5cbf7c44d3a023ee254598a96112a"},
-    {file = "langchain_aws-1.4.7.tar.gz", hash = "sha256:2c0556b7549bdfaae2b68baa12fefcb2b869667540eb75dd0606edd629c4d543"},
+    {file = "langchain_aws-1.6.2-py3-none-any.whl", hash = "sha256:4755c60ce88fff2b829d96027068b7930f335cd85da41fda061769439c288251"},
+    {file = "langchain_aws-1.6.2.tar.gz", hash = "sha256:df2c15b463c068031af40460dbea6efb7999832263ff6eaec6b99c5f6b291acd"},
 ]
 
 [package.dependencies]
 boto3 = ">=1.42.42"
-langchain-core = ">=1.4.0"
+langchain-core = ">=1.4.7"
 numpy = ">=1.0.0,<3"
 pydantic = ">=2.10.6,<3"
 
@@ -3077,20 +3080,20 @@ uuid-utils = ">=0.12.0,<1.0"
 
 [[package]]
 name = "langchain-google-genai"
-version = "4.2.1"
+version = "4.2.7"
 description = "An integration package connecting Google's genai package and LangChain"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main"]
 files = [
-    {file = "langchain_google_genai-4.2.1-py3-none-any.whl", hash = "sha256:a7735289cf94ca3a684d830e09196aac8f6e75e647e3a0a1c3c9dc534ceb985e"},
-    {file = "langchain_google_genai-4.2.1.tar.gz", hash = "sha256:7f44487a0337535897e3bba9a1d6605d722629e034f757ffa8755af0aa85daa8"},
+    {file = "langchain_google_genai-4.2.7-py3-none-any.whl", hash = "sha256:0d9c388d0e6c629718fca6abb19c6fdca728a9a7873d0324c1ec821288b5b571"},
+    {file = "langchain_google_genai-4.2.7.tar.gz", hash = "sha256:03b1463ffe4d42435f43c7870467f2215f684bb46400d2543435d10157c80ac7"},
 ]
 
 [package.dependencies]
 filetype = ">=1.2.0,<2.0.0"
-google-genai = ">=1.56.0,<2.0.0"
-langchain-core = ">=1.2.5,<2.0.0"
+google-genai = ">=1.65.0,<3.0.0"
+langchain-core = ">=1.4.7,<2.0.0"
 pydantic = ">=2.0.0,<3.0.0"
 
 [[package]]
@@ -3115,18 +3118,18 @@ rdflib = ">=7.0.0,<8.0.0"
 
 [[package]]
 name = "langchain-openai"
-version = "1.1.16"
+version = "1.3.4"
 description = "An integration package connecting OpenAI and LangChain"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main", "test"]
 files = [
-    {file = "langchain_openai-1.1.16-py3-none-any.whl", hash = "sha256:648becb4fb86d24d56b9292e01878a05cca932bb475909bb8fb85b8c82dd1a02"},
-    {file = "langchain_openai-1.1.16.tar.gz", hash = "sha256:306f1c7f66f47bd39655e645fd1f9445d65473465a59347fa7d716596e28dfe0"},
+    {file = "langchain_openai-1.3.4-py3-none-any.whl", hash = "sha256:3241b8392b29c1af233b902b7d9a84bfc5fe26ccb210a7febdfc3972af7e5771"},
+    {file = "langchain_openai-1.3.4.tar.gz", hash = "sha256:d888d5f39c2a8c3d0d8aa88f5cf50e58a8e7d242f3f15e39422add520eec8e31"},
 ]
 
 [package.dependencies]
-langchain-core = ">=1.3.0,<2.0.0"
+langchain-core = ">=1.4.9,<2.0.0"
 openai = ">=2.26.0,<3.0.0"
 tiktoken = ">=0.7.0,<1.0.0"
 
@@ -6587,13 +6590,13 @@ sap-ai-sdk-base = ">=3.4,<4.0"
 
 [[package]]
 name = "sap-ai-sdk-gen"
-version = "6.7.0"
+version = "7.2.0"
 description = "SAP Cloud SDK for AI (Python): generative AI SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "sap_ai_sdk_gen-6.7.0-py3-none-any.whl", hash = "sha256:5bc3c54b6bb36039db59a4c35069d6bc91409e8f8219654e707082e2cab74a4f"},
+    {file = "sap_ai_sdk_gen-7.2.0-py3-none-any.whl", hash = "sha256:5b534e2b3780ecd13dd0820961d3dd2b8ebb8a2fc9069169d6d684e9bc5c7cec"},
 ]
 
 [package.dependencies]
@@ -6601,27 +6604,28 @@ aiobotocore = {version = ">=3.2.0", optional = true, markers = "extra == \"all\"
 boto3 = {version = ">=1.40.61", optional = true, markers = "extra == \"all\""}
 click = ">=8.1.7"
 dacite = ">=1.8.1"
-google-genai = {version = ">=1.60.0,<1.61.0", optional = true, markers = "extra == \"all\""}
+google-genai = {version = ">=2.9.0,<2.10.0", optional = true, markers = "extra == \"all\""}
 h11 = ">=0.16.0"
 httpx = ">=0.27.0"
-langchain = ">=1.2.10,<1.3.0"
-langchain-aws = {version = ">=1.4.0,<1.5.0", optional = true, markers = "extra == \"all\""}
+langchain = ">=1.3.11,<1.4.0"
+langchain-aws = {version = ">=1.6.0,<1.7.0", optional = true, markers = "extra == \"all\""}
 langchain-classic = ">=1.0.0,<1.1.0"
 langchain-community = ">=0.4.1,<0.5.0"
-langchain-google-genai = {version = ">=4.2.0,<4.3.0", optional = true, markers = "extra == \"all\""}
-langchain-openai = ">=1.1.0,<1.2.0"
+langchain-google-genai = {version = ">=4.2.5,<4.3.0", optional = true, markers = "extra == \"all\""}
+langchain-openai = ">=1.3.3,<1.4.0"
 langcodes = ">=3.5.1,<3.6.0"
-openai = ">=1.58.1"
+openai = ">=1.66.0"
 overloading = "0.5.0"
 packaging = ">=23.2"
 pandas = ">=2.2.0"
 pydantic = ">=2.12,<3.0"
 sap-ai-sdk-core = ">=3.3.0"
+setuptools = "50.3.1"
 
 [package.extras]
-all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=1.60.0,<1.61.0)", "langchain-aws (>=1.4.0,<1.5.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
-amazon = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "langchain-aws (>=1.4.0,<1.5.0)"]
-google = ["google-genai (>=1.60.0,<1.61.0)", "langchain-google-genai (>=4.2.0,<4.3.0)"]
+all = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "google-genai (>=2.9.0,<2.10.0)", "langchain-aws (>=1.6.0,<1.7.0)", "langchain-google-genai (>=4.2.5,<4.3.0)"]
+amazon = ["aiobotocore (>=3.2.0)", "boto3 (>=1.40.61)", "langchain-aws (>=1.6.0,<1.7.0)"]
+google = ["google-genai (>=2.9.0,<2.10.0)", "langchain-google-genai (>=4.2.5,<4.3.0)"]
 
 [[package]]
 name = "scikit-learn"
@@ -6882,24 +6886,21 @@ unleash = ["UnleashClient (>=6.0.1)"]
 
 [[package]]
 name = "setuptools"
-version = "82.0.1"
-description = "Most extensible Python build backend with support for C/C++ extension modules"
+version = "50.3.1"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
-python-versions = ">=3.9"
-groups = ["test"]
+python-versions = ">=3.5"
+groups = ["main", "test"]
 files = [
-    {file = "setuptools-82.0.1-py3-none-any.whl", hash = "sha256:a59e362652f08dcd477c78bb6e7bd9d80a7995bc73ce773050228a348ce2e5bb"},
-    {file = "setuptools-82.0.1.tar.gz", hash = "sha256:7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9"},
+    {file = "setuptools-50.3.1-py3-none-any.whl", hash = "sha256:8d057d7a928a82cdc985654355fc9e5431def7b6bdfc9e0f32d1e388a63c8ec6"},
+    {file = "setuptools-50.3.1.zip", hash = "sha256:0e9772768fa6e9d3cf818a3e6e24dd2236f319d2c478312995edcb30ddeb8343"},
 ]
 
 [package.extras]
-check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1) ; sys_platform != \"cygwin\"", "ruff (>=0.13.0) ; sys_platform != \"cygwin\""]
-core = ["importlib_metadata (>=6) ; python_version < \"3.10\"", "jaraco.functools (>=4)", "jaraco.text (>=3.7)", "more_itertools", "more_itertools (>=8.8)", "packaging (>=24.2)", "tomli (>=2.0.1) ; python_version < \"3.11\"", "wheel (>=0.43.0)"]
-cover = ["pytest-cov"]
-doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "pyproject-hooks (!=1.1)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier", "towncrier (<24.7)"]
-enabler = ["pytest-enabler (>=2.2)"]
-test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21) ; python_version >= \"3.9\" and sys_platform != \"cygwin\"", "jaraco.envs (>=2.2)", "jaraco.path (>=3.7.2)", "jaraco.test (>=5.5)", "packaging (>=24.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-home (>=0.5)", "pytest-perf ; sys_platform != \"cygwin\"", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
-type = ["importlib_metadata (>=7.0.2) ; python_version < \"3.10\"", "jaraco.develop (>=7.21) ; sys_platform != \"cygwin\"", "mypy (==1.18.*)", "pytest-mypy"]
+certs = ["certifi (==2016.9.26)"]
+docs = ["jaraco.packaging (>=6.1)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx"]
+ssl = ["wincertstore (==0.2) ; sys_platform == \"win32\""]
+tests = ["coverage (>=4.5.1)", "flake8-2020 ; python_version >= \"3.6\"", "jaraco.envs", "jaraco.test (>=3.1.1) ; python_version >= \"3.6\"", "mock", "paver ; python_version >= \"3.6\"", "pip (>=19.1)", "pytest (>=3.7)", "pytest-cov (>=2.5.1) ; platform_python_implementation != \"PyPy\"", "pytest-flake8", "pytest-virtualenv (>=1.2.7)", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
 name = "shellingham"
@@ -8492,4 +8493,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.13.*"
-content-hash = "a523b086b4c2850c0d0f9965dec336f0ac8c2dd461501d69051a3225686560d3"
+content-hash = "a6bdef3bc151284668a901e5e047d550e8d02766e3ce08e3b831d0af612b18a2"
