@@ -717,12 +717,25 @@ GOAL_ACCURACY_TEST_CASES = [
             namespace="test-function-8",
             resource_api_version="serverless.kyma-project.io/v1alpha2",
         ),
-        must_call_tools=[TOOL_KYMA_QUERY],
+        must_call_tools=[TOOL_KYMA_QUERY , TOOL_SEARCH_KYMA_DOC],
         expected_goal=(
-            "The response describes how to navigate to the Function in the Kyma Dashboard (Busola) "
-            "and edit the source code there BEFORE providing any YAML or kubectl commands."
+            "Navigate to the Function in the Kyma Dashboard (Busola): "
+            "Namespace test-function-8 → Workloads → Functions → func1, click Edit, "
+            "The Busola navigation steps are described BEFORE any YAML patch or cli command."
         ),
         max_tool_calls=6,
+        min_response_length=50,
+    ),
+    ReactAgentTestCase(
+        name="Enable Kyma module - describes Busola UI navigation",
+        query="How do I enable the Istio module in my Kyma cluster?",
+        must_call_tools=[TOOL_KYMA_QUERY , TOOL_SEARCH_KYMA_DOC],
+        expected_goal=(
+            "In the Kyma Dashboard (Busola), navigate to Cluster Overview → Modify Modules; or Configuration → Modules"
+            "Click 'Add' on the list of modules, find Istio, and click 'Add' from the UI."
+            "The dashboard navigation steps are described BEFORE any cli instructions."
+        ),
+        max_tool_calls=4,
         min_response_length=50,
     ),
 ]
