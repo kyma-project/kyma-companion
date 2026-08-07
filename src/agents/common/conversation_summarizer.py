@@ -47,6 +47,8 @@ class ConversationSummarizer:
 
     async def summarize(self, messages: list[BaseMessage], config: RunnableConfig | None = None) -> str:
         """Summarize the given conversation messages into a concise recap."""
+        if not messages:
+            return ""
         chain = (
             PromptTemplate(
                 template=CONVERSATION_SUMMARIZER_PROMPT,

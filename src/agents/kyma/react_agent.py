@@ -264,20 +264,12 @@ class KymaReActAgent:
         """Initialize the agent with the given models, k8s_client, and search_tool."""
         main_model = cast(IModel, models[MAIN_MODEL_NAME])
         resolved_search_tool = search_tool if search_tool is not None else SearchKymaDocTool(models)
-        self._invoke_ctx: dict[str, Any] = {}
-        summarizer = ToolResponseSummarizer(model=main_model)
+        self._summarizer = ToolResponseSummarizer(model=main_model)
+        self._k8s_client = k8s_client
+        self._search_tool = resolved_search_tool
         self._conversation_summarizer = ConversationSummarizer(model=main_model)
-        tools: list[BaseTool] = [
-            *_make_bound_tools(k8s_client, summarizer, self._invoke_ctx),
-            resolved_search_tool,
-        ]
 
-        llm: BaseChatModel = main_model.llm
-        self._graph = create_agent(
-            model=llm,
-            tools=tools,
-            system_prompt=SystemMessage(content=SYSTEM_PROMPT),
-        )
+        self._llm: BaseChatModel = main_model.llm
 
     async def ainvoke(
         self,
@@ -294,9 +286,19 @@ class KymaReActAgent:
         prepared_history = await self._prepare_chat_history(chat_history or [], run_config)
         messages = [*prepared_history, HumanMessage(content=human_content)]
         payload: Any = {"messages": messages}
-        self._invoke_ctx["query"] = query
-        self._invoke_ctx["config"] = run_config
-        result = await self._graph.ainvoke(payload, config=run_config)
+        # Build a per-call snapshot so concurrent ainvoke calls on the same
+        # instance cannot corrupt each other's query/config context.
+        invoke_ctx: dict[str, Any] = {"query": query, "config": run_config}
+        tools: list[BaseTool] = [
+            *_make_bound_tools(self._k8s_client, self._summarizer, invoke_ctx),
+            self._search_tool,
+        ]
+        graph = create_agent(
+            model=self._llm,
+            tools=tools,
+            system_prompt=SystemMessage(content=SYSTEM_PROMPT),
+        )
+        result = await graph.ainvoke(payload, config=run_config)
         messages_out = result.get("messages", [])
         if not messages_out:
             raise ValueError("KymaReActAgent: graph returned no messages")

@@ -27,7 +27,6 @@ from integration.agents.fixtures.k8_query_tool_response import (
     sample_services_tool_response,
 )
 from utils.settings import (
-    MAIN_MODEL_MINI_NAME,
     MAIN_MODEL_NAME,
     TOOL_RESPONSE_TOKEN_COUNT_LIMIT,
     TOTAL_CHUNKS_LIMIT,
@@ -57,9 +56,15 @@ class ToolSummarizerTestCase:
 
 @pytest.fixture
 def summarizer(app_models) -> ToolResponseSummarizer:
-    """Create a real ToolResponseSummarizer backed by the mini model."""
-    mini_model = app_models[MAIN_MODEL_MINI_NAME]
-    return ToolResponseSummarizer(model=mini_model)
+    """Create a real ToolResponseSummarizer backed by the main model.
+
+    Must use MAIN_MODEL_NAME (not MAIN_MODEL_MINI_NAME) because
+    _tool_summarizer always tokenizes with MAIN_MODEL_NAME.  Using a different
+    model here would cause the chunk-count arithmetic in threshold-sensitive
+    tests to diverge from production behaviour.
+    """
+    main_model = app_models[MAIN_MODEL_NAME]
+    return ToolResponseSummarizer(model=main_model)
 
 
 @pytest.fixture
