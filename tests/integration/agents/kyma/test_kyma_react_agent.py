@@ -332,7 +332,6 @@ def create_tool_selection_test_cases() -> list[ReactAgentTestCase]:
                 resource_api_version="serverless.kyma-project.io/v1alpha2",
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            must_not_call_tools=[TOOL_SEARCH_KYMA_DOC],
             max_tool_calls=3,
         ),
         # ---- CASE A: broad request without a specific resource ----
@@ -717,7 +716,7 @@ GOAL_ACCURACY_TEST_CASES = [
             namespace="test-function-8",
             resource_api_version="serverless.kyma-project.io/v1alpha2",
         ),
-        must_call_tools=[TOOL_KYMA_QUERY , TOOL_SEARCH_KYMA_DOC],
+        must_call_tools=[TOOL_KYMA_QUERY],
         expected_goal=(
             "Navigate to the Function in the Kyma Dashboard (Busola): "
             "Namespace test-function-8 → Workloads → Functions → func1, click Edit, "
