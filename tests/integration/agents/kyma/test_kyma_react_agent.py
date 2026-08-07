@@ -708,6 +708,23 @@ GOAL_ACCURACY_TEST_CASES = [
         must_not_call_tools=[TOOL_KYMA_QUERY],
         max_tool_calls=3,
     ),
+    ReactAgentTestCase(
+        name="Fix instruction leads with Busola UI navigation before YAML",
+        query="How do I fix this function?",
+        ui_context=UINavigationContext(
+            resource_kind="Function",
+            resource_name="func1",
+            namespace="test-function-8",
+            resource_api_version="serverless.kyma-project.io/v1alpha2",
+        ),
+        must_call_tools=[TOOL_KYMA_QUERY],
+        expected_goal=(
+            "The response describes how to navigate to the Function in the Kyma Dashboard (Busola) "
+            "and edit the source code there BEFORE providing any YAML or kubectl commands."
+        ),
+        max_tool_calls=6,
+        min_response_length=50,
+    ),
 ]
 
 
