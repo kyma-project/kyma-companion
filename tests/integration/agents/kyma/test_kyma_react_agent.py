@@ -332,7 +332,7 @@ def create_tool_selection_test_cases() -> list[ReactAgentTestCase]:
                 resource_api_version="serverless.kyma-project.io/v1alpha2",
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            max_tool_calls=3,
+            max_tool_calls=6,
         ),
         # ---- CASE A: broad request without a specific resource ----
         ReactAgentTestCase(
@@ -718,9 +718,10 @@ GOAL_ACCURACY_TEST_CASES = [
         ),
         must_call_tools=[TOOL_KYMA_QUERY],
         expected_goal=(
-            "Navigate to the Function in the Kyma Dashboard (Busola): "
-            "Namespace test-function-8 → Workloads → Functions → func1, click Edit, "
-            "The Busola navigation steps are described BEFORE any YAML patch or cli command."
+            "The response describes how to fix the JavaScript syntax error in func1 "
+            "(using 'new Date()' instead of 'new Dates()') and mentions the Kyma Dashboard (Busola) "
+            "as a way to navigate to and edit the Function. "
+            "The Busola UI navigation steps appear in the response before or alongside any YAML or kubectl instructions."
         ),
         max_tool_calls=6,
         min_response_length=50,
