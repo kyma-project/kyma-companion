@@ -716,7 +716,7 @@ GOAL_ACCURACY_TEST_CASES = [
             namespace="test-function-8",
             resource_api_version="serverless.kyma-project.io/v1alpha2",
         ),
-        must_call_tools=[TOOL_KYMA_QUERY,TOOL_SEARCH_KYMA_DOC],
+        must_call_tools=[TOOL_KYMA_QUERY, TOOL_SEARCH_KYMA_DOC],
         expected_goal=(
             "The agent identifies a JavaScript bug in the function source code (new Dates() should be new Date()). "
             "It provides Busola UI steps to fix it: click Edit on the Function page, correct the code in the source editor, and save. "
