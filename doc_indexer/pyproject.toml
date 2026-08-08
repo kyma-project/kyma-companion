@@ -33,7 +33,7 @@ mypy = "^2.3.0"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
 pytest = "^9.1.1"
-ruff = "^0.15.21"
+ruff = "^0.16.0"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
