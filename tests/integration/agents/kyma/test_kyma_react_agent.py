@@ -708,19 +708,19 @@ GOAL_ACCURACY_TEST_CASES = [
         max_tool_calls=3,
     ),
     ReactAgentTestCase(
-        name="Fix instruction leads with Busola UI navigation before YAML",
-        query="How do I fix this function?",
+        name="Fix instruction includes Busola UI edit steps and code fix",
+        query="How do I fix the broken function?",
         ui_context=UINavigationContext(
             resource_kind="Function",
             resource_name="func1",
             namespace="test-function-8",
             resource_api_version="serverless.kyma-project.io/v1alpha2",
         ),
-        must_call_tools=[TOOL_KYMA_QUERY],
+        must_call_tools=[TOOL_KYMA_QUERY,TOOL_SEARCH_KYMA_DOC],
         expected_goal=(
-            "Navigate to the Function in the Kyma Dashboard (Busola): "
-            "Namespace test-function-8 → Workloads → Functions → func1, click Edit, "
-            "The Busola navigation steps are described BEFORE any YAML patch or cli command."
+            "The agent identifies a JavaScript bug in the function source code (new Dates() should be new Date()). "
+            "It provides Busola UI steps to fix it: click Edit on the Function page, correct the code in the source editor, and save. "
+            "The response includes both the UI navigation steps and the corrected code."
         ),
         max_tool_calls=6,
         min_response_length=50,
