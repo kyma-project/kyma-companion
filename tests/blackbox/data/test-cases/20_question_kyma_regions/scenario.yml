@@ -11,7 +11,7 @@ queries:
       namespace: "" # format: test-<resource_kind>-<test_id>
     expectations:
       - name: mentions_hyperscaler_regions
-        statement: mentions centralus US Central (IA) for Azure, eu-central-1 (Frankfurt) for AWS (amazon web services) and us-east4 (Virginia) for GCP (google cloud platform)
+        statement: lists regions where Kyma is available across multiple hyperscalers (at least Azure, AWS/Amazon Web Services and GCP/Google Cloud), including specific regions such as Europe (Frankfurt), Europe (Netherlands), US East (VA), US West, US Central (IA), Singapore, Australia (Sydney), Brazil (São Paulo) and Japan (Tokyo)
         threshold: 0.5
         required: true
 
