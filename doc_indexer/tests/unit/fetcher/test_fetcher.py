@@ -102,14 +102,14 @@ class TestDocumentsFetcher:
         with (
             patch("shutil.rmtree") as rmtree_mock,
             patch("os.makedirs") as makedirs_mock,
-            patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
+            patch("fetcher.fetcher.download_repo") as download_repo_mock,
             patch("fetcher.fetcher.Scroller") as scroller_mock,
         ):
             fetcher.fetch_documents(fetcher.sources[0])
 
         # then
         # should have cloned the repo.
-        clone_repo_mock.assert_called_once_with(fetcher.sources[0].url, given_tmp_dir)
+        download_repo_mock.assert_called_once_with(fetcher.sources[0].url, given_tmp_dir)
         # should have created the module directory for output.
         makedirs_mock.assert_called_once_with(os.path.join(given_output_dir, fetcher.sources[0].name), exist_ok=True)
         # should have created the scroller object and called the scroll method.
@@ -153,14 +153,14 @@ class TestDocumentsFetcher:
 
         # when / then
         with (
-            patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
+            patch("fetcher.fetcher.download_repo") as download_repo_mock,
             patch("fetcher.fetcher.Scroller") as scroller_mock,
             patch("os.makedirs") as makedirs_mock,
         ):
             with pytest.raises(ValueError, match=r"Invalid source name"):
                 fetcher.fetch_documents(invalid_source)
 
-            clone_repo_mock.assert_not_called()
+            download_repo_mock.assert_not_called()
             scroller_mock.assert_not_called()
             makedirs_mock.assert_not_called()
 
@@ -196,11 +196,11 @@ class TestDocumentsFetcher:
         with (
             patch("shutil.rmtree"),
             patch("os.makedirs"),
-            patch("fetcher.fetcher.clone_repo") as clone_repo_mock,
+            patch("fetcher.fetcher.download_repo") as download_repo_mock,
             patch("fetcher.fetcher.Scroller") as scroller_mock,
         ):
             fetcher.fetch_documents(valid_source)
 
-        clone_repo_mock.assert_called_once_with(valid_source.url, given_tmp_dir)
+        download_repo_mock.assert_called_once_with(valid_source.url, given_tmp_dir)
         scroller_mock.assert_called_once()
         scroller_mock.return_value.scroll.assert_called_once()

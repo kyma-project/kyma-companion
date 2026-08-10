@@ -29,9 +29,10 @@ RUN apt update && apt upgrade -y \
 FROM ghcr.io/gardenlinux/gardenlinux:2150.7.0
 WORKDIR /app
 
-# Install Python runtime and git (needed for runtime)
+# Install Python runtime (git is no longer needed: the fetch task downloads
+# repository tarballs over HTTPS instead of shelling out to git clone)
 RUN apt update && apt upgrade -y \
-  && apt install -y --no-install-recommends python3.13 git \
+  && apt install -y --no-install-recommends python3.13 \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder (Poetry creates .venv with in-project)
