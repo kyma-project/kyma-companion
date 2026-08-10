@@ -17,6 +17,23 @@ When a tool call fails, follow this protocol:
 """
 
 
+CONVERSATION_SUMMARIZER_PROMPT = """
+You are compressing the earlier part of a conversation between a user and an AI assistant
+(SAP BTP Kyma Runtime Expert) so it can be used as background context for the ongoing chat.
+
+Summarize the conversation below into a concise, factual recap. Preserve information that is
+likely to matter for follow-up questions, specifically:
+- The user's goals, problems, and questions.
+- Kubernetes/Kyma resources discussed (kinds, names, namespaces, API versions).
+- Findings, root causes, decisions, and any fixes or YAML the assistant provided.
+- Any unresolved issues or pending next steps.
+
+Do not invent details. Do not include a preamble. Write in compact bullet points.
+
+Conversation to summarize:
+{conversation}
+"""
+
 CHUNK_SUMMARIZER_PROMPT = """
             "Focusing on the query: '{query}'\n\n"
             "Summarize this text, extracting key points relevant to the query:\n"
