@@ -48,9 +48,9 @@ def test_fetcher(new_tmp_dir):
     fetcher.run()
 
     # then
-    # should have deleted the tmp directory.
-    assert not os.path.exists(given_tmp_dir)
-    # should have created the output directory.
+    # clean() empties (not removes) tmp so the non-root container user can reuse it.
+    assert os.path.isdir(given_tmp_dir)
+    assert os.listdir(given_tmp_dir) == []
     assert os.path.exists(given_output_dir)
 
     # should have saved the files in the output directory.
