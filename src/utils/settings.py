@@ -138,6 +138,12 @@ TOTAL_CHUNKS_LIMIT = config("TOTAL_CHUNKS_LIMIT", 2, cast=int)  # Limit the numb
 
 TOOL_RESPONSE_TOKEN_COUNT_LIMIT = config("TOOL_RESPONSE_TOKEN_COUNT_LIMIT", 10000, cast=int)
 
+# Chat history summarization: when the raw conversation history exceeds
+# CHAT_HISTORY_TOKEN_LIMIT tokens, everything older than the last
+# CHAT_HISTORY_KEEP_MESSAGES messages is replaced with a single summary.
+CHAT_HISTORY_TOKEN_LIMIT = config("CHAT_HISTORY_TOKEN_LIMIT", 10000, cast=int)
+CHAT_HISTORY_KEEP_MESSAGES = config("CHAT_HISTORY_KEEP_MESSAGES", 10, cast=int)
+
 K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",
     default=f"{Path(__file__).parent.parent.parent}/config/api_resources.json",
