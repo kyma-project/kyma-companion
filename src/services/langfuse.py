@@ -1,7 +1,7 @@
 """Langfuse tracing service for LangGraph."""
 
 import copy
-from typing import Any
+from typing import Any, cast
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
@@ -78,7 +78,7 @@ class LangfuseService(metaclass=SingletonMeta):
             return None
 
         try:
-            return CallbackHandler()
+            return cast(BaseCallbackHandler, CallbackHandler())
         except Exception:
             logger.exception("Failed to create Langfuse callback handler")
             return None
