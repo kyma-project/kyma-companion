@@ -59,7 +59,7 @@ class TestKymaAPIErrorHandling:
                 "tool_name": "fetch_kyma_resource_version",
                 "handler": get_resource_version,
                 "request": KymaResourceVersionRequest(resource_kind="Function"),
-                "is_async": False,
+                "is_async": True,
             },
         ]
 
