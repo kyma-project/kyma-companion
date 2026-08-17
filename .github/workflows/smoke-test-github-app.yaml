@@ -39,6 +39,7 @@ jobs:
   smoke-test-app:
     name: Smoke test GitHub App access
     runs-on: ubuntu-latest
+    environment: e2e # AIFORCE_APP_ID / AIFORCE_APP_PRIVATE_KEY are scoped to the e2e environment.
     env:
       REPO: ${{ github.repository }}
       SMOKE_REF: github-app-smoke-test-${{ github.run_id }}
