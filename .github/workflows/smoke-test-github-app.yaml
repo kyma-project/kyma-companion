@@ -1,0 +1,142 @@
+name: "Smoke test: release GitHub App"
+run-name: "Smoke test: release GitHub App (run ${{ github.run_id }})"
+
+# Verifies that the GitHub App used by the release workflow (create-release.yml)
+# is installed correctly and has the access the release automation needs:
+#   * mint an installation token
+#   * contents: write        -> push branches & tags (create_git_tag.sh, sec-scanners bump)
+#   * pull requests: write   -> open PRs (create_sec_scanner_bump_pr.sh)
+#
+# It runs automatically on a PR that changes THIS file, so the App can be validated
+# from a PR WITHOUT merging it. It can also be triggered manually, with an optional
+# end-to-end pull-request create/close check.
+#
+# Requires the SAME configuration as create-release.yml:
+#   * variable AIFORCE_APP_ID
+#   * secret   AIFORCE_APP_PRIVATE_KEY
+#
+# The test only creates throwaway, self-cleaning refs:
+#   * a temp branch and tag named github-app-smoke-test-<run_id> (deleted at the end)
+#   * (optional, manual only) a throwaway PR that is closed automatically
+# Pushing this temp branch/tag does NOT trigger the build workflows, which only run
+# on main / release-* branches.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/smoke-test-github-app.yaml"
+  workflow_dispatch:
+    inputs:
+      run-live-pr-test:
+        description: "Also open & immediately close a throwaway PR to functionally verify pull-requests:write."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test-app:
+    name: Smoke test GitHub App access
+    runs-on: ubuntu-latest
+    env:
+      REPO: ${{ github.repository }}
+      SMOKE_REF: github-app-smoke-test-${{ github.run_id }}
+    steps:
+      - name: Generate GitHub App token (asserts required permissions)
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+          # Requesting these scopes makes token creation FAIL if the App installation
+          # does not actually have them -> a fast, explicit permission check.
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Resolve GitHub App bot identity
+        id: bot-identity
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          echo "Authenticated as: ${APP_SLUG}[bot] (id ${USER_ID})"
+          {
+            echo "name=${APP_SLUG}[bot]"
+            echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Verify read access
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          DEFAULT_BRANCH=$(gh api "/repos/${REPO}" --jq .default_branch)
+          OPEN_PRS=$(gh pr list -R "${REPO}" --state open --json number --jq 'length')
+          echo "Default branch: ${DEFAULT_BRANCH}"
+          echo "Open PRs: ${OPEN_PRS}"
+          echo "DEFAULT_BRANCH=${DEFAULT_BRANCH}" >> "$GITHUB_ENV"
+
+      - name: Checkout with App token
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Verify contents:write (push a temp branch and tag)
+        env:
+          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
+          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
+        run: |
+          git config user.name "${GIT_NAME}"
+          git config user.email "${GIT_EMAIL}"
+
+          # Branch push (mirrors the sec-scanners bump PR flow).
+          git checkout -b "${SMOKE_REF}"
+          echo "github app smoke test - safe to delete - run ${{ github.run_id }}" > .github-app-smoke-test
+          git add .github-app-smoke-test
+          git commit -m "chore: github app smoke test (safe to ignore)"
+          git push --set-upstream origin "${SMOKE_REF}"
+          echo "pushed branch ${SMOKE_REF}"
+
+          # Tag push (mirrors create_git_tag.sh during release).
+          git tag "${SMOKE_REF}"
+          git push origin "refs/tags/${SMOKE_REF}"
+          echo "pushed tag ${SMOKE_REF}"
+
+      - name: Verify pull-requests:write end-to-end (optional, manual only)
+        id: live-pr
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-live-pr-test }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          PR_URL=$(gh pr create -R "${REPO}" \
+            --base "${DEFAULT_BRANCH}" \
+            --head "${SMOKE_REF}" \
+            --title "chore: github app smoke test (safe to ignore)" \
+            --body "Automated smoke test of the release GitHub App - closed automatically.")
+          echo "opened PR: ${PR_URL}"
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Cleanup temp PR, branch and tag
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          if [ -n "${{ steps.live-pr.outputs.pr_url }}" ]; then
+            gh pr close "${{ steps.live-pr.outputs.pr_url }}" || true
+          fi
+          git push origin --delete "${SMOKE_REF}" || true
+          git push origin ":refs/tags/${SMOKE_REF}" || true
+          echo "cleanup done"
+
+      - name: Result
+        run: |
+          echo "GitHub App smoke test passed:"
+          echo "  - installation token minted"
+          echo "  - contents:write verified (temp branch + tag push/delete)"
+          if [ "${{ github.event_name == 'workflow_dispatch' && inputs.run-live-pr-test }}" = "true" ]; then
+            echo "  - pull-requests:write verified end-to-end (PR create/close)"
+          else
+            echo "  - pull-requests:write granted (asserted via requested token scope)"
+          fi
