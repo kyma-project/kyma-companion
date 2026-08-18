@@ -33,7 +33,11 @@ RUN pip install --no-cache-dir "poetry>=2.1" \
 # minimal Alpine base. Much smaller CVE surface than any Debian variant.
 # libstdc++ is required by hdbcli (pyhdbcli.abi3.so links against it).
 FROM python:3.13-alpine
-RUN apk add --no-cache libstdc++
+RUN apk add --no-cache libstdc++ \
+  && rm -rf /usr/local/lib/python3.13/site-packages/pip* \
+  && rm -rf /usr/local/lib/python3.13/site-packages/setuptools* \
+  && rm -rf /usr/local/lib/python3.13/site-packages/wheel* \
+  && rm -rf /usr/local/lib/python3.13/ensurepip
 WORKDIR /app
 
 COPY --from=builder /app/.venv ./venv
