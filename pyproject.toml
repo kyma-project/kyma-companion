@@ -19,7 +19,7 @@ requires-python = "==3.14.*"
 dependencies = [
   "a2a-sdk[http-server] (>=1.1.0,<2.0)",
   "aiohttp (>=3.14.1,<3.15.0)",
-  "cryptography (>=50.0.0,<50.1.0)",
+  "cryptography (>=50.0.0,<51.0.0)",
   "fastapi[standard] (>=0.141.1,<0.142.0)",
   "hdbcli (>=2.29.25,<3.0.0)",
   "kubernetes (>=36.0.3,<37.0.0)",
@@ -93,6 +93,7 @@ test-integration-local = "pytest -n auto -v tests/integration -x --reruns=6 --re
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
 sort = "poetry sort"
-lock-sync = "bash scripts/shell/lock-sync.sh"
+lock-check = "bash scripts/shell/lock-check.sh"
+lock-fix = "bash scripts/shell/lock-sync.sh"
 lint-workflows = "bash scripts/shell/lint-workflows.sh"
-pre-commit-check = ["sort", "lock-sync", "code-fix", "codecheck", "test-local", "lint-workflows"]
+pre-commit-check = ["sort", "lock-check", "code-fix", "codecheck", "test-local", "lint-workflows"]
