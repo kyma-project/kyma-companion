@@ -27,7 +27,8 @@ RUN pip install --no-cache-dir "poetry>=2.1" \
   && find /app/.venv -type f -name "*.pyo" -delete \
   && rm -rf /app/.venv/lib/python3.*/site-packages/pip* \
   && rm -rf /app/.venv/lib/python3.*/site-packages/setuptools* \
-  && rm -rf /app/.venv/lib/python3.*/site-packages/wheel*
+  && rm -rf /app/.venv/lib/python3.*/site-packages/wheel* \
+  && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install*
 
 # Runtime stage: plain Alpine — no shell package manager baggage beyond the
 # minimal Alpine base. Much smaller CVE surface than any Debian variant.
@@ -37,7 +38,8 @@ RUN apk add --no-cache libstdc++ \
   && rm -rf /usr/local/lib/python3.*/site-packages/pip* \
   && rm -rf /usr/local/lib/python3.*/site-packages/setuptools* \
   && rm -rf /usr/local/lib/python3.*/site-packages/wheel* \
-  && rm -rf /usr/local/lib/python3.*/ensurepip
+  && rm -rf /usr/local/lib/python3.*/ensurepip \
+  && rm -f /usr/local/bin/pip* /usr/local/bin/wheel /usr/local/bin/easy_install*
 WORKDIR /app
 
 COPY --from=builder /app/.venv ./venv
