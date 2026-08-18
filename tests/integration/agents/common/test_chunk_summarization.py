@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
@@ -177,4 +176,5 @@ async def test_summarize_tool_response_integration(
         actual_output=generated_summary,
     )
 
-    assert_test(llm_test_case, [tool_response_summarization_metric])
+    await tool_response_summarization_metric.a_measure(llm_test_case)
+    assert tool_response_summarization_metric.is_successful(), tool_response_summarization_metric.reason
