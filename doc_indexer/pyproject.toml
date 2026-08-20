@@ -62,4 +62,4 @@ test-all = "pytest -v"
 sort = "poetry sort"
 lock-check = "bash ../scripts/shell/lock-check.sh"
 lock-fix = "bash ../scripts/shell/lock-sync.sh"
-pre-commit-check = ["sort", "lock-check", "code-fix", "codecheck", "test-unit"]
+pre-commit-check = ["sort", "code-fix", "lock-check", "codecheck", "test-unit"]
