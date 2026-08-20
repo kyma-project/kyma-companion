@@ -237,7 +237,7 @@ def colored_status(status: TestStatus) -> str:
     return colored(status.upper(), "red")
 
 
-def print_test_results(scenario_list: ScenarioList, total_usage: int, time_taken: float) -> None:
+def print_test_results(scenario_list: ScenarioList, total_usage: dict[str, int], time_taken: float) -> None:
     """Prints the test results."""
     print_header("Test Results:")
     print_results_per_scenario(scenario_list)
@@ -358,21 +358,22 @@ def print_response_times_summary() -> None:
 
     print_header("Response time per API Endpoint:")
     metrics = Metrics.get_instance()
-    table.add_row(
-        [
-            "Initial Conversation",
-            metrics.get_init_conversation_response_summary(),
-        ]
-    )
-    table.add_row(
-        [
-            "Conversation",
-            metrics.get_conversation_response_summary(),
-        ]
-    )
+    if metrics.conversation_response_times_sec:
+        table.add_row(
+            [
+                "POST /api/agent/kyma/chat",
+                metrics.get_conversation_response_summary(),
+            ]
+        )
     print(table)
 
 
-def print_token_usage(token_used: int) -> None:
-    """Prints the token usage summary."""
-    print_header(f"Total token used by evaluation tests: {token_used}")
+def print_token_usage(token_used: dict[str, int]) -> None:
+    """Prints the token usage summary, separated into input and output tokens."""
+    print_header("Token usage by evaluation tests:")
+    table = PrettyTable()
+    table.field_names = ["Token Type", "Count"]
+    table.add_row(["Input tokens", token_used.get("input", 0)])
+    table.add_row(["Output tokens", token_used.get("output", 0)])
+    table.add_row(["Total tokens", token_used.get("total", 0)])
+    print(table)

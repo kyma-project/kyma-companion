@@ -88,7 +88,7 @@ def main() -> None:
 
     validator: IValidator = create_validator(config)
     usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
-    token_usage_before_run = usage_tracker_validator.get_total_token_usage()
+    token_usage_before_run = usage_tracker_validator.get_token_usage()
     usage_tracker_validator.disconnect()
 
     flush_logs(logger)
@@ -112,9 +112,9 @@ def main() -> None:
     flush_logs(logger)
 
     usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
-    token_usage_after_run = usage_tracker_validator.get_total_token_usage()
-    total_usage = token_usage_after_run - token_usage_before_run
-    if total_usage <= 0:
+    token_usage_after_run = usage_tracker_validator.get_token_usage()
+    total_usage = {key: token_usage_after_run[key] - token_usage_before_run[key] for key in token_usage_after_run}
+    if total_usage["total"] <= 0:
         logger.error("No token usage data found in Redis after A2A evaluation run.")
         raise Exception("*** A2A tests failed: No token usage data found in Redis.")
 

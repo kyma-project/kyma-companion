@@ -32,3 +32,12 @@ class TokenUsageDataValidator:
         """Get the total token usage from all LLM usage documents."""
         documents = self.fetch_llm_usage_documents()
         return sum([doc["total"] for doc in documents])
+
+    def get_token_usage(self) -> dict[str, int]:
+        """Get the total input, output and combined token usage from all LLM usage documents."""
+        documents = self.fetch_llm_usage_documents()
+        return {
+            "input": sum(doc.get("input", 0) for doc in documents),
+            "output": sum(doc.get("output", 0) for doc in documents),
+            "total": sum(doc.get("total", 0) for doc in documents),
+        }
