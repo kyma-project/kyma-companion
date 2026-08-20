@@ -30,8 +30,7 @@ class OpenAIModel:
             )
         else:
             logger.info(
-                f"Loading OpenAI model '{config.name}' without reasoning "
-                f"(model does not support reasoning_effort)."
+                f"Loading OpenAI model '{config.name}' without reasoning (model does not support reasoning_effort)."
             )
         self._llm = ChatOpenAI(
             proxy_model_name=config.name,
