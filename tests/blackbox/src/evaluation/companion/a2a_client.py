@@ -15,6 +15,7 @@ import logging
 import os
 import time
 import uuid
+from dataclasses import dataclass, field
 from http import HTTPStatus
 
 import requests
@@ -27,6 +28,25 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class A2AResult:
+    """Structured result of a single A2A ``message/send`` call.
+
+    Attributes:
+        answer: The text answer returned by the agent.
+        context_id: Conversation context id to thread into subsequent calls.
+        latency_seconds: Wall-clock time of the HTTP request/response.
+        metrics: Per-request metrics reported by the server (token usage, tool
+            calls, LLM call count). Empty when the server does not report any.
+    """
+
+    answer: str
+    context_id: str
+    latency_seconds: float = 0.0
+    metrics: dict = field(default_factory=dict)
+
 
 _ECDH_CURVE = ec.SECP521R1()
 _HKDF_INFO = b"ecdh-key-exchange"
@@ -173,8 +193,8 @@ class A2AClient:
         resource_api_version: str = "",
         namespace: str = "",
         context_id: str | None = None,
-    ) -> tuple[str, str]:
-        """Send a message to the A2A endpoint and return (answer, context_id).
+    ) -> A2AResult:
+        """Send a message to the A2A endpoint and return a structured result.
 
         Args:
             query: The user's question.
@@ -186,8 +206,10 @@ class A2AClient:
                         Pass None for the first message in a new conversation.
 
         Returns:
-            A tuple of (answer_text, context_id).  The returned context_id
-            must be passed back in subsequent calls to continue the conversation.
+            An :class:`A2AResult` with the answer text, context_id, request
+            latency, and any per-request metrics reported by the server.  The
+            ``context_id`` must be passed back in subsequent calls to continue
+            the conversation.
         """
         message_id = str(uuid.uuid4())
         metadata = self._encryption_session.build_encrypted_metadata(
@@ -221,8 +243,9 @@ class A2AClient:
             headers={"Content-Type": "application/json"},
             timeout=self.config.streaming_response_timeout,
         )
+        latency_seconds = time.time() - start_time
 
-        Metrics.get_instance().record_conversation_response_time(time.time() - start_time)
+        Metrics.get_instance().record_conversation_response_time(latency_seconds)
 
         if response.status_code != HTTPStatus.OK:
             raise ValueError(f"A2A request failed (status {response.status_code}): {response.text}")
@@ -238,8 +261,14 @@ class A2AClient:
         # The result may be a Task (with a status.message) or a plain Message.
         answer = self._extract_answer(result)
         returned_context_id = self._extract_context_id(result) or context_id or message_id
+        metrics = self._extract_metrics(result)
 
-        return answer, returned_context_id
+        return A2AResult(
+            answer=answer,
+            context_id=returned_context_id,
+            latency_seconds=latency_seconds,
+            metrics=metrics,
+        )
 
     @staticmethod
     def _extract_answer(result: dict) -> str:
@@ -267,3 +296,29 @@ class A2AClient:
         message = status.get("message", {})
         context_id = message.get("contextId")
         return str(context_id) if context_id is not None else None
+
+    @staticmethod
+    def _extract_metrics(result: dict) -> dict:
+        """Extract the per-request metrics dict from a Task or Message result.
+
+        The server encodes metrics as a JSON string under the ``x-metrics`` key
+        of the response message metadata. Returns an empty dict when absent or
+        malformed.
+        """
+        metadata = result.get("metadata")
+        if not isinstance(metadata, dict):
+            status = result.get("status", {})
+            message = status.get("message", {})
+            metadata = message.get("metadata") if isinstance(message, dict) else None
+        if not isinstance(metadata, dict):
+            return {}
+
+        raw = metadata.get("x-metrics")
+        if not raw:
+            return {}
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+        except (ValueError, TypeError):
+            logger.warning("Failed to parse A2A x-metrics metadata: %r", raw)
+            return {}
+        return parsed if isinstance(parsed, dict) else {}

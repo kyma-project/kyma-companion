@@ -83,7 +83,7 @@ def _get_a2a_response(
     while retry_wait_time <= config.retry_max_wait_time:
         try:
             logger.debug(f"Sending A2A query for scenario {scenario.id}: {query.user_query!r}")
-            answer, new_context_id = a2a_client.send_message(
+            result = a2a_client.send_message(
                 query=query.user_query,
                 resource_kind=query.resource.kind,
                 resource_name=query.resource.name,
@@ -91,9 +91,14 @@ def _get_a2a_response(
                 namespace=query.resource.namespace,
                 context_id=context_id,
             )
-            query.actual_response = answer
+            query.actual_response = result.answer
+            # Populate per-query metrics: latency + response shape (client-side) and
+            # token usage / tool calls / LLM call count (reported by the server).
+            query.metrics.latency_seconds = round(result.latency_seconds, 4)
+            query.metrics.set_response_shape(result.answer)
+            query.metrics.apply_server_metrics(result.metrics)
             # Stash context_id so the caller can thread it forward.
-            query._a2a_context_id = new_context_id  # type: ignore[attr-defined]
+            query._a2a_context_id = result.context_id  # type: ignore[attr-defined]
             return True
 
         except Exception as exc:
@@ -127,7 +132,9 @@ def _evaluate_query(
     while retry_wait_time <= config.retry_max_wait_time:
         try:
             logger.debug(f"Evaluating A2A response for scenario {scenario.id}, query: {query.user_query!r}")
+            eval_start = time.time()
             query.evaluation_result = validator.get_deepeval_evaluate(query)
+            query.metrics.evaluation_latency_seconds = round(time.time() - eval_start, 4)
             return True
 
         except Exception as exc:

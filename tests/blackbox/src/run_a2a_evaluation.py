@@ -20,7 +20,7 @@ from logging import Logger
 import github_action_utils as gha_utils
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_header, print_test_results
+from common.output import print_header, print_test_results, write_metrics_report
 from evaluation.process_a2a_scenario import process_a2a_scenario
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario, ScenarioList
@@ -120,6 +120,7 @@ def main() -> None:
 
     time_taken = round((time.time() - start_time) / 60, 2)
     print_test_results(scenario_list, total_usage, time_taken)
+    write_metrics_report(scenario_list, time_taken)
 
     print_header("NOTE: The A2A evaluation tests fail only when critical (required) expectations are not met.")
 

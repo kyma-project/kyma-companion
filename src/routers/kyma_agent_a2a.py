@@ -9,6 +9,7 @@ Exposed routes (relative to the mount point /api/agent/kyma):
   POST /chat                         – A2A JSON-RPC endpoint
 """
 
+import json
 from typing import Any, cast
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
@@ -21,6 +22,7 @@ from a2a.types.a2a_pb2 import Message, Part, Role
 from a2a.utils.errors import InternalError, InvalidParamsError, UnsupportedOperationError
 from fastapi import HTTPException
 from google.protobuf import json_format
+from google.protobuf.struct_pb2 import Struct
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage
 from starlette.applications import Starlette
@@ -40,7 +42,7 @@ from services.data_sanitizer import DataSanitizer
 from services.encryption_cache import EncryptionCache
 from services.k8s import K8sClient
 from services.redis import Redis
-from services.usage import UsageTrackerCallback
+from services.usage import RequestMetricsCallback, UsageTrackerCallback
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.utils import create_session_id
@@ -132,8 +134,10 @@ class KymaAgentExecutor(AgentExecutor):
 
             cluster_id = k8s_client.get_api_server().split(".")[1]
             usage_memory = AsyncRedisSaver(redis_conn.get_connection())
+            request_metrics = RequestMetricsCallback()
             callbacks: list[BaseCallbackHandler] = [
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, usage_memory)),
+                request_metrics,
             ]
 
             answer = await agent.ainvoke(query, chat_history=chat_history, ui_context=ui_context, callbacks=callbacks)
@@ -142,12 +146,20 @@ class KymaAgentExecutor(AgentExecutor):
             new_messages = [*chat_history, HumanMessage(content=human_content), AIMessage(content=answer)]
             await save_conversation_history(redis_conn, session_id, new_messages)
 
+            # Attach per-request metrics (token usage, tool calls, LLM calls) to the
+            # response metadata so A2A clients (e.g. the evaluation harness) can collect
+            # them per query. The Kyma dashboard uses the streaming conversation API and
+            # is unaffected by this field.
+            response_metadata = Struct()
+            response_metadata.update({"x-metrics": json.dumps(request_metrics.as_dict())})
+
             response_message = Message(
                 role=Role.ROLE_AGENT,
                 parts=[Part(text=answer)],
                 message_id=message.message_id or "",
                 context_id=session_id,
                 task_id=message.task_id or "",
+                metadata=response_metadata,
             )
             await event_queue.enqueue_event(response_message)
 
