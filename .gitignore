@@ -139,6 +139,7 @@ config/config.json
 config/encryption_key.pem
 config/k8s-clusters.json
 config/config-integration.json
+config/config-evaluation.json
 kubeconfig.yaml
 *.kubeconfig
 
