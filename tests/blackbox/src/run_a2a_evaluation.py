@@ -101,7 +101,7 @@ def main() -> None:
     ):
         futures = [
             executor.submit(process_a2a_scenario_with_retry, scenario, config, validator)
-            for scenario in scenario_list.items[:2]
+            for scenario in scenario_list.items
         ]
 
         for f in as_completed(futures):
