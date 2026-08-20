@@ -453,22 +453,32 @@ def print_scenario_metrics(scenario_list: ScenarioList) -> None:
         print(tool_table)
 
 
-def write_metrics_report(scenario_list: ScenarioList, time_taken_minutes: float, path: str | None = None) -> str:
+def write_metrics_report(
+    scenario_list: ScenarioList,
+    time_taken_minutes: float,
+    path: str | None = None,
+    config: Any = None,
+) -> str:
     """Write the complete, detailed run report to a JSON file and return its path.
 
     Captures everything from the run for later analysis: summary, per-scenario metrics,
     and for every query the response, pass/fail status, and per-expectation scores/reasons.
     The output path can be overridden via the ``METRICS_REPORT_PATH`` env var.
+
+    Model and run details are taken from the passed ``config`` when available (robust), and
+    fall back to environment variables otherwise.
     """
     output_path: str = path or os.getenv("METRICS_REPORT_PATH") or "metrics.json"
     report = scenario_list.build_full_report()
     report["run"] = {
         "generated_at": datetime.now(UTC).isoformat(),
         "total_time_minutes": time_taken_minutes,
-        "model_name": os.getenv("MAIN_MODEL_NAME", ""),
-        "companion_api_url": os.getenv("COMPANION_API_URL", ""),
-        "max_workers": os.getenv("MAX_WORKERS", ""),
-        "scenario_retries": os.getenv("KC_EVAL_RETRIES", ""),
+        "model_name": getattr(config, "model_name", None) or os.getenv("MODEL_NAME", ""),
+        "companion_api_url": getattr(config, "companion_api_url", None) or os.getenv("COMPANION_API_URL", ""),
+        "max_workers": getattr(config, "max_workers", None) if config is not None else os.getenv("MAX_WORKERS", ""),
+        "scenario_retries": getattr(config, "scenario_retries", None)
+        if config is not None
+        else os.getenv("KC_EVAL_RETRIES", ""),
     }
     report["summary"]["total_time_minutes"] = time_taken_minutes
     with open(output_path, "w") as file:
