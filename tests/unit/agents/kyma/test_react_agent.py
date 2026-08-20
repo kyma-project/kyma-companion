@@ -24,6 +24,7 @@ Google Gemini:
     content = [{"type": "text", "text": "..."}]  when parts contain text blocks.
 """
 
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -62,20 +63,29 @@ def mock_k8s_client() -> MagicMock:
 
 
 @pytest.fixture
-def agent(mock_models: dict, mock_k8s_client: MagicMock) -> KymaReActAgent:
-    """KymaReActAgent with all external dependencies stubbed out."""
+def mock_graph() -> MagicMock:
+    """Mock compiled graph returned by create_agent inside ainvoke."""
+    return MagicMock()
+
+
+@pytest.fixture
+def agent(mock_models: dict, mock_k8s_client: MagicMock, mock_graph: MagicMock) -> Iterator[KymaReActAgent]:
+    """KymaReActAgent with all external dependencies stubbed out.
+
+    ``create_agent`` is invoked inside ``ainvoke`` (not ``__init__``), so the
+    patch must stay active for the whole test — hence the ``yield`` inside the
+    ``with`` block.
+    """
     search_tool_stub = MagicMock()
     with (
         patch("agents.kyma.react_agent.SearchKymaDocTool", return_value=search_tool_stub),
-        patch("agents.kyma.react_agent.create_agent") as mock_create_agent,
+        patch("agents.kyma.react_agent.create_agent", return_value=mock_graph),
     ):
-        mock_graph = MagicMock()
-        mock_create_agent.return_value = mock_graph
         instance = KymaReActAgent(
             models=mock_models,
             k8s_client=mock_k8s_client,
         )
-        return instance
+        yield instance
 
 
 # ---------------------------------------------------------------------------
@@ -83,9 +93,9 @@ def agent(mock_models: dict, mock_k8s_client: MagicMock) -> KymaReActAgent:
 # ---------------------------------------------------------------------------
 
 
-def _set_graph_response(agent: KymaReActAgent, ai_message: AIMessage) -> None:
-    """Point the agent's internal graph at an AsyncMock returning the given message."""
-    agent._graph.ainvoke = AsyncMock(return_value={"messages": [ai_message]})
+def _set_graph_response(mock_graph: MagicMock, ai_message: AIMessage) -> None:
+    """Point the mock graph at an AsyncMock returning the given message."""
+    mock_graph.ainvoke = AsyncMock(return_value={"messages": [ai_message]})
 
 
 # ---------------------------------------------------------------------------
@@ -94,12 +104,12 @@ def _set_graph_response(agent: KymaReActAgent, ai_message: AIMessage) -> None:
 
 
 @pytest.mark.asyncio
-async def test_openai_plain_string_content(agent: KymaReActAgent) -> None:
+async def test_openai_plain_string_content(agent: KymaReActAgent, mock_graph: MagicMock) -> None:
     """OpenAI Chat Completions returns content as a plain string.
 
     The agent must pass it through unchanged.
     """
-    _set_graph_response(agent, AIMessage(content="Your pod is crashing."))
+    _set_graph_response(mock_graph, AIMessage(content="Your pod is crashing."))
 
     result = await agent.ainvoke("Why is my pod crashing?")
 
@@ -107,7 +117,7 @@ async def test_openai_plain_string_content(agent: KymaReActAgent) -> None:
 
 
 @pytest.mark.asyncio
-async def test_anthropic_bedrock_list_content(agent: KymaReActAgent) -> None:
+async def test_anthropic_bedrock_list_content(agent: KymaReActAgent, mock_graph: MagicMock) -> None:
     """Anthropic via AWS Bedrock Converse returns content as a list of typed dicts.
 
     Format source: https://platform.claude.com/docs/en/api/messages
@@ -119,7 +129,7 @@ async def test_anthropic_bedrock_list_content(agent: KymaReActAgent) -> None:
       AIMessage(content=[{'type': 'text', 'text': "..."}])
     """
     _set_graph_response(
-        agent,
+        mock_graph,
         AIMessage(content=[{"type": "text", "text": "Your pod is crashing."}]),
     )
 
@@ -129,7 +139,7 @@ async def test_anthropic_bedrock_list_content(agent: KymaReActAgent) -> None:
 
 
 @pytest.mark.asyncio
-async def test_anthropic_extended_thinking_list_content(agent: KymaReActAgent) -> None:
+async def test_anthropic_extended_thinking_list_content(agent: KymaReActAgent, mock_graph: MagicMock) -> None:
     """Anthropic with extended thinking enabled returns a thinking block before the text block.
 
     Format source: https://platform.claude.com/docs/en/api/messages
@@ -139,7 +149,7 @@ async def test_anthropic_extended_thinking_list_content(agent: KymaReActAgent) -
     The agent must return only the text, discarding the thinking block.
     """
     _set_graph_response(
-        agent,
+        mock_graph,
         AIMessage(
             content=[
                 {"type": "thinking", "thinking": "Let me analyze the pod status..."},
@@ -154,7 +164,7 @@ async def test_anthropic_extended_thinking_list_content(agent: KymaReActAgent) -
 
 
 @pytest.mark.asyncio
-async def test_gemini_list_content(agent: KymaReActAgent) -> None:
+async def test_gemini_list_content(agent: KymaReActAgent, mock_graph: MagicMock) -> None:
     """Google Gemini returns content as a list of typed dicts via langchain-google-genai.
 
     Format source: https://ai.google.dev/api/generate-content
@@ -166,7 +176,7 @@ async def test_gemini_list_content(agent: KymaReActAgent) -> None:
       content is built as a list when parts contain text blocks.
     """
     _set_graph_response(
-        agent,
+        mock_graph,
         AIMessage(content=[{"type": "text", "text": "Your pod is crashing."}]),
     )
 
@@ -176,7 +186,7 @@ async def test_gemini_list_content(agent: KymaReActAgent) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_content_is_not_returned_as_python_repr(agent: KymaReActAgent) -> None:
+async def test_list_content_is_not_returned_as_python_repr(agent: KymaReActAgent, mock_graph: MagicMock) -> None:
     """Regression guard: str() on a list returns a Python repr, not the text.
 
     This test explicitly asserts that the old broken behaviour no longer occurs.
@@ -186,7 +196,7 @@ async def test_list_content_is_not_returned_as_python_repr(agent: KymaReActAgent
     broken_repr = str([{"type": "text", "text": answer}])
 
     _set_graph_response(
-        agent,
+        mock_graph,
         AIMessage(content=[{"type": "text", "text": answer}]),
     )
 
