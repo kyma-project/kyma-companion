@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
@@ -38,6 +37,7 @@ def tool_response_summarization_metric(evaluator_model):
             "Do not penalize the generated summary if it contains additional information that is not relevant to the user query.",
             "Verify that the summary includes details relevant to the user query.",
             "Evaluate whether the summary maintains proper flow and readability when combining multiple chunk summaries.",
+            "Treat IP addresses with and without CIDR notation (e.g. '10.0.0.1' and '10.0.0.1/32') as equivalent.",
         ],
         evaluation_params=[
             LLMTestCaseParams.INPUT,
@@ -67,7 +67,7 @@ TEST_CASES = [
     SummarizationTestCase(
         name="Should extract pod IP addresses and networking details",
         tool_response=sample_pods_tool_response,
-        user_query="What are the IP addresses and networking details of the pods?",
+        user_query="What are the pod IP addresses, host IP addresses, and node names of the pods?",
         nums_of_chunks=2,
         expected_summary="""
         Networking configuration:
@@ -176,4 +176,5 @@ async def test_summarize_tool_response_integration(
         actual_output=generated_summary,
     )
 
-    assert_test(llm_test_case, [tool_response_summarization_metric])
+    await tool_response_summarization_metric.a_measure(llm_test_case)
+    assert tool_response_summarization_metric.is_successful(), tool_response_summarization_metric.reason
