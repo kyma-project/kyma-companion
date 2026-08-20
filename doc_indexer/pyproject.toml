@@ -15,14 +15,14 @@ authors = [
 ]
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 dependencies = [
   "hdbcli (>=2.29.25,<3.0.0)",
   "langchain-hana (>=1.1.1,<2.0.0)",
   "pydantic (>=2.13.4,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "python-json-logger (>=4.1.0,<5.0.0)",
-  "sap-ai-sdk-gen[all] (>=6.10.0,<7.0.0)"
+  "python-json-logger (>=4.2.0,<5.0.0)",
+  "sap-ai-sdk-gen[all] (>=7.0,<8.0)"
 ]
 
 [tool.poetry]
@@ -33,7 +33,7 @@ mypy = "^2.3.0"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
 pytest = "^9.1.1"
-ruff = "^0.16.0"
+ruff = "^0.16.3"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -60,4 +60,6 @@ test-integration-marked = "pytest -m integration -v"
 test = ["test-unit", "test-integration"]
 test-all = "pytest -v"
 sort = "poetry sort"
-pre-commit-check = ["sort", "code-fix", "codecheck", "test-unit"]
+lock-check = "bash ../scripts/shell/lock-check.sh"
+lock-fix = "bash ../scripts/shell/lock-sync.sh"
+pre-commit-check = ["sort", "code-fix", "lock-check", "codecheck", "test-unit"]
