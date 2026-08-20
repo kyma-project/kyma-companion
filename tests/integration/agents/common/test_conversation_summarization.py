@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -115,7 +114,8 @@ async def test_summarize_conversation_integration(
         input=f"Expected Summary: {test_case.expected_summary}",
         actual_output=generated_summary,
     )
-    assert_test(llm_test_case, [conversation_summary_metric])
+    await conversation_summary_metric.a_measure(llm_test_case)
+    assert conversation_summary_metric.is_successful(), conversation_summary_metric.reason
 
 
 def _make_pairs(num_pairs: int, filler: str) -> list[BaseMessage]:

@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics.contextual_precision.contextual_precision import (
     ContextualPrecisionMetric,
 )
@@ -278,7 +277,9 @@ async def test_chain_ainvoke(
     # Assert that the expected documents are in the actual list of documents.
     assert set(expected_docs_titles).issubset(set(actual_docs_titles)), "Expected documents not found in actual output"
     # Assert that the contextual precision is above the threshold.
-    assert_test(test_case, [contextual_precision(threshold)])
+    cp_metric = contextual_precision(threshold)
+    await cp_metric.a_measure(test_case)
+    assert cp_metric.is_successful(), cp_metric.reason
 
 
 def load_docs_in_path(path: str, extension: str, sort: bool = True) -> list[Document]:
