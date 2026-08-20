@@ -1,5 +1,4 @@
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import (
     ContextualRecallMetric,
     GEval,
@@ -83,4 +82,6 @@ async def test_rag_system(
         expected_output=expected_output,
     )
     # evaluate the test case using deepeval metrics
-    assert_test(test_case, evaluation_metrics)
+    for metric in evaluation_metrics:
+        await metric.a_measure(test_case)
+        assert metric.is_successful(), metric.reason
