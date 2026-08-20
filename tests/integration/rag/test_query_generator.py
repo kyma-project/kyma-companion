@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
@@ -93,4 +92,5 @@ async def test_generate_queries(input_query, expected_queries, query_generator, 
         expected_output=expected_json,
     )
 
-    assert_test(test_case, [correctness_metric], run_async=False)
+    await correctness_metric.a_measure(test_case)
+    assert correctness_metric.is_successful(), correctness_metric.reason
