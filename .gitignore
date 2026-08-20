@@ -276,3 +276,4 @@ modg.yaml
 .pi-subagents
 .crit
 .pi
+tests/blackbox/metrics.json
