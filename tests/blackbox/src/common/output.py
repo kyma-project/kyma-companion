@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import github_action_utils as gha_utils
@@ -453,14 +454,24 @@ def print_scenario_metrics(scenario_list: ScenarioList) -> None:
 
 
 def write_metrics_report(scenario_list: ScenarioList, time_taken_minutes: float, path: str | None = None) -> str:
-    """Write the machine-readable metrics report to a JSON file and return its path.
+    """Write the complete, detailed run report to a JSON file and return its path.
 
+    Captures everything from the run for later analysis: summary, per-scenario metrics,
+    and for every query the response, pass/fail status, and per-expectation scores/reasons.
     The output path can be overridden via the ``METRICS_REPORT_PATH`` env var.
     """
     output_path: str = path or os.getenv("METRICS_REPORT_PATH") or "metrics.json"
-    report = scenario_list.build_metrics_report()
+    report = scenario_list.build_full_report()
+    report["run"] = {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "total_time_minutes": time_taken_minutes,
+        "model_name": os.getenv("MAIN_MODEL_NAME", ""),
+        "companion_api_url": os.getenv("COMPANION_API_URL", ""),
+        "max_workers": os.getenv("MAX_WORKERS", ""),
+        "scenario_retries": os.getenv("KC_EVAL_RETRIES", ""),
+    }
     report["summary"]["total_time_minutes"] = time_taken_minutes
     with open(output_path, "w") as file:
-        json.dump(report, file, indent=2)
+        json.dump(report, file, indent=2, default=str)
     print_header(f"Metrics report written to: {output_path}")
     return output_path

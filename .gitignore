@@ -277,3 +277,4 @@ modg.yaml
 .crit
 .pi
 tests/blackbox/metrics.json
+tests/blackbox/metrics_report.html

@@ -120,6 +120,64 @@ class Query(BaseModel):
                 return False
         return True
 
+    def expectation_results(self) -> list[dict]:
+        """Return per-expectation evaluation results (score, threshold, pass/fail, reason)."""
+        metrics_data: list = []
+        if self.evaluation_result is not None and self.evaluation_result.test_results:
+            first_result = self.evaluation_result.test_results[0]
+            metrics_data = first_result.metrics_data or []
+
+        results: list[dict] = []
+        for index, expectation in enumerate(self.expectations):
+            metric = metrics_data[index] if index < len(metrics_data) else None
+            score = getattr(metric, "score", None)
+            success = getattr(metric, "success", None)
+            if success is None and score is not None:
+                success = score >= expectation.threshold
+            results.append(
+                {
+                    "name": expectation.name,
+                    "statement": expectation.statement,
+                    "required": expectation.required,
+                    "threshold": expectation.threshold,
+                    "metric_name": getattr(metric, "name", expectation.get_deepeval_metric_name()),
+                    "score": score,
+                    "success": success,
+                    "reason": getattr(metric, "reason", None),
+                    "evaluation_model": getattr(metric, "evaluation_model", None),
+                    "evaluation_cost": getattr(metric, "evaluation_cost", None),
+                    "error": getattr(metric, "error", None),
+                }
+            )
+        return results
+
+    def is_passed(self) -> bool:
+        """Return True when the query completed without failing."""
+        return self.test_status in (TestStatus.COMPLETED, TestStatus.PASSED)
+
+    def to_report_dict(self) -> dict:
+        """Serialize the full query detail (response, status, metrics, expectations) for collection."""
+        expectation_results = self.expectation_results()
+        required_total = sum(1 for exp in self.expectations if exp.required)
+        required_passed = sum(1 for r in expectation_results if r["required"] and r["success"])
+        optional_total = len(self.expectations) - required_total
+        optional_passed = sum(1 for r in expectation_results if not r["required"] and r["success"])
+        return {
+            "user_query": self.user_query,
+            "resource": self.resource.model_dump(),
+            "actual_response": self.actual_response,
+            "status": self.test_status.value,
+            "status_reason": self.test_status_reason,
+            "passed": self.is_passed(),
+            "num_expectations": len(self.expectations),
+            "required_expectations_total": required_total,
+            "required_expectations_passed": required_passed,
+            "optional_expectations_total": optional_total,
+            "optional_expectations_passed": optional_passed,
+            "metrics": self.metrics.model_dump(),
+            "expectations": expectation_results,
+        }
+
 
 class Scenario(BaseModel):
     """Scenario is a class that contains the information of a Kyma companion test scenario."""
@@ -207,6 +265,21 @@ class Scenario(BaseModel):
             "tool_call_count": total_tool_calls,
             "tool_call_counts": tool_call_counts,
         }
+
+    def to_report_dict(self) -> dict:
+        """Serialize full scenario detail (metrics rollup + every query) for collection."""
+        detail = self.aggregate_metrics()
+        detail.update(
+            {
+                "description": self.description,
+                "status_reason": self.test_status_reason,
+                "passed": self.test_status != TestStatus.FAILED,
+                "attempt_history": self.attempt_history,
+                "initial_questions": self.initial_questions,
+                "queries": [query.to_report_dict() for query in self.queries],
+            }
+        )
+        return detail
 
 
 class ScenarioList(BaseModel):
@@ -303,3 +376,36 @@ class ScenarioList(BaseModel):
             },
             "scenarios": scenarios,
         }
+
+    def _status_counts(self) -> dict[str, dict[str, int]]:
+        """Count scenarios and queries by pass/fail/pending status."""
+        scenario_passed = sum(1 for s in self.items if s.test_status != TestStatus.FAILED)
+        scenario_failed = sum(1 for s in self.items if s.test_status == TestStatus.FAILED)
+        query_passed = 0
+        query_failed = 0
+        query_pending = 0
+        for scenario in self.items:
+            for query in scenario.queries:
+                if query.test_status == TestStatus.FAILED:
+                    query_failed += 1
+                elif query.test_status == TestStatus.PENDING:
+                    query_pending += 1
+                else:
+                    query_passed += 1
+        return {
+            "scenarios": {"passed": scenario_passed, "failed": scenario_failed},
+            "queries": {"passed": query_passed, "failed": query_failed, "pending": query_pending},
+        }
+
+    def build_full_report(self) -> dict:
+        """Build the complete, detailed run report for collection (every response and expectation).
+
+        This is a superset of :meth:`build_metrics_report`: the summary section is identical,
+        and each scenario additionally carries its description, retry history, per-query
+        responses, and per-expectation scores/reasons. Intended for the ``metrics.json`` artifact.
+        """
+        report = self.build_metrics_report()
+        report["summary"]["status_counts"] = self._status_counts()
+        report["summary"]["num_scenarios_retried"] = sum(1 for s in self.items if s.attempt_number > 1)
+        report["scenarios"] = [scenario.to_report_dict() for scenario in self.items]
+        return report

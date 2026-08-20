@@ -1,6 +1,9 @@
 extend = "../../ruff.toml"
 [lint.per-file-ignores]
 "*.ipynb" = ["ALL"]
+"scripts/*" = [
+    "E501", # Long lines are expected in the embedded HTML/JS report template
+]
 "tests/*" = [
     "D", # Ignore all docstring rules for files in the "tests" directory
     "ANN001", # Missing type annotation for function argument
