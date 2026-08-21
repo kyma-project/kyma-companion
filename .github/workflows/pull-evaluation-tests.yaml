@@ -115,6 +115,59 @@ jobs:
           keep_files: true
           commit_message: "docs: evaluation report for PR-${{ github.event.number }} run ${{ github.run_id }}-${{ github.run_attempt }}"
 
+      - name: Prune old evaluation reports
+        # Keep the gh-pages branch bounded: retain only the most recent reports and
+        # delete the oldest ones. Best-effort, so a failure never blocks the PR.
+        # Runs inside the same "gh-pages-deploy" concurrency group as the deploy step,
+        # so its push can't race another run's push.
+        if: steps.deploy.outcome == 'success'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Maximum number of report folders to keep on the gh-pages branch.
+          MAX_REPORTS: 100
+        run: |
+          set -euo pipefail
+
+          TMP_DIR="$(mktemp -d)"
+          git clone --branch gh-pages --single-branch \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TMP_DIR"
+          cd "$TMP_DIR"
+
+          # Each report is published to PR-<number>/<run_id>-<run_attempt>/index.html.
+          # List every report folder oldest-first by the time of its last commit.
+          mapfile -t REPORTS < <(
+            find . -mindepth 2 -maxdepth 2 -type d -path './PR-*' | while read -r d; do
+              ts="$(git log -1 --format=%ct -- "$d")"
+              echo "${ts} ${d}"
+            done | sort -n | awk '{print $2}'
+          )
+
+          COUNT="${#REPORTS[@]}"
+          echo "Found ${COUNT} evaluation report(s) on gh-pages (keeping ${MAX_REPORTS})."
+          if [ "${COUNT}" -le "${MAX_REPORTS}" ]; then
+            echo "Nothing to prune."
+            exit 0
+          fi
+
+          REMOVE=$((COUNT - MAX_REPORTS))
+          echo "Removing ${REMOVE} oldest report(s)."
+          for ((i = 0; i < REMOVE; i++)); do
+            d="${REPORTS[$i]}"
+            echo "Deleting ${d}"
+            git rm -r --quiet "${d}"
+            # Drop the now-empty PR-<number> parent folder, if any.
+            parent="$(dirname "${d}")"
+            if [ -d "${parent}" ] && [ -z "$(find "${parent}" -mindepth 1 -maxdepth 1)" ]; then
+              rmdir "${parent}" 2>/dev/null || true
+            fi
+          done
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: prune old evaluation reports (keep last ${MAX_REPORTS})"
+          git push origin gh-pages
+
       - name: Publish report link to run summary
         if: steps.check.outputs.exists == 'true'
         continue-on-error: true
