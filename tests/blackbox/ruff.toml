@@ -1,6 +1,8 @@
 extend = "../../ruff.toml"
 [lint.per-file-ignores]
 "*.ipynb" = ["ALL"]
+# render_metrics.py embeds HTML/CSS/JS template strings where line length is not meaningful
+"scripts/render_metrics.py" = ["E501"]
 "tests/*" = [
     "D", # Ignore all docstring rules for files in the "tests" directory
     "ANN001", # Missing type annotation for function argument
