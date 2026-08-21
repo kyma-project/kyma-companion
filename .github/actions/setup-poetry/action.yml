@@ -19,9 +19,11 @@ runs:
   steps:
     - name: Install Poetry
       shell: bash
+      env:
+        POETRY_VERSION: ${{ inputs.poetry-version }}
       run: |
-        if [ -n "${{ inputs.poetry-version }}" ]; then
-          pipx install "poetry==${{ inputs.poetry-version }}"
+        if [ -n "$POETRY_VERSION" ]; then
+          pipx install "poetry==$POETRY_VERSION"
         else
           pipx install poetry
         fi
