@@ -18,7 +18,8 @@ Usage:
     python scripts/render_metrics.py -b baseline.json      # explicit baseline for comparison
     python scripts/render_metrics.py --open                # open in the default browser
 
-The output is fully offline-capable except for the Chart.js and marked.js CDN script tags.
+The output is fully offline-capable except for the Chart.js, marked.js, and
+DOMPurify CDN script tags.
 """
 
 from __future__ import annotations
@@ -200,8 +201,11 @@ const fmt = (n, d=0) => (n===undefined||n===null||isNaN(n)) ? '0' : Number(n).to
 const esc = (s) => (s===undefined||s===null) ? '' : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function renderMarkdown(text){
   if (text===undefined||text===null) return '';
-  if (window.marked && typeof window.marked.parse === 'function'){
-    try { return window.marked.parse(String(text)); } catch(e){ /* fall through */ }
+  // Only emit rendered HTML when a sanitizer is available; otherwise fail closed by escaping.
+  if (window.marked && typeof window.marked.parse === 'function'
+      && window.DOMPurify && typeof window.DOMPurify.sanitize === 'function'){
+    try { return window.DOMPurify.sanitize(window.marked.parse(String(text))); }
+    catch(e){ /* fall through */ }
   }
   return esc(text);
 }
@@ -524,6 +528,7 @@ _HTML_TEMPLATE = """<!doctype html>
 <title>Kyma Companion — Evaluation Report</title>
 <script src="{chartjs_src}"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <style>{styles}</style>
 </head>
 <body>
