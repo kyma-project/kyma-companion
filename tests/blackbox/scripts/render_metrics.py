@@ -269,7 +269,7 @@ function runScenarios(){
 function renderCharts(){
   const active = runScenarios();
   const labels = active.map(s => s.scenario_id);
-  const baseFor = (arr, key) => active.map(s => { const b = baseOf(s.scenario_id); return b ? (b[key]||0) : 0; });
+  const baseFor = (arr, key) => arr.map(s => { const b = baseOf(s.scenario_id); return b ? (b[key]||0) : 0; });
   const CUR = '#4f8cff', BASE = '#5b6b8c';
 
   // Total tokens per scenario (current vs baseline)
