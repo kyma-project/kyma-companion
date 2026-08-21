@@ -25,6 +25,7 @@ packages = [{include = "tiny_aicore", from = "src"}]
 mypy = "^2.3.0"
 poethepoet = "^0.48.0"
 pytest = "^8.0.0"
+respx = "^0.22.0"
 ruff = "^0.16.3"
 
 [tool.poe.tasks]
