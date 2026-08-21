@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "tiny-aicore"
 version = "0.1.0"
-description = "Hand-rolled SAP AI Core client and LangChain model adapters"
+description = "A tiny SAP AI Core client with LangChain model adapters"
 license = "Apache-2.0"
 requires-python = ">=3.14,<4.0.0"
 dependencies = [
