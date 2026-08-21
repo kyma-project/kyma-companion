@@ -14,49 +14,37 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 dependencies = [
-  "ai-core-sdk (>=2.6.2,<3.0.0)",
-  "cryptography (>=49.0.0,<50.0.0)",
-  "fastapi[standard] (>=0.138.1,<0.139.0)",
-  "generative-ai-hub-sdk[all] (>=4.12.4,<5.0.0)",
+  "cryptography (>=50.0.0,<51.0.0)",
   "github-action-utils (>=1.1.0,<2.0.0)",
-  "hdbcli (>=2.29.25,<3.0.0)",
-  "kubernetes (>=36.0.3,<37.0.0)",
-  "langgraph[all] (>=0.6.11,<0.7.0)",
-  "prometheus-client (>=0.25.0,<0.26.0)",
-  "pyjwt (>=2.13.0,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "python-multipart (>=0.0.32,<0.0.33)",
   "redis (>=8.0.1,<9.0.0)",
   "requests (>=2.34.2,<3.0.0)",
-  "tenacity (>=9.1.4,<10.0.0)",
-  "tiktoken (>=0.13.0,<0.14.0)",
-  "uvicorn (>=0.51.0,<0.52.0)"
+  "sap-ai-sdk-gen[all] (>=7.0.0,<8.0.0)"
 ]
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {version = ">=3.0.1,<3.9.6", extras = ["all"]}
+deepeval = {version = "^4.1.0", extras = ["all"]}
 fakeredis = "^2.36.2"
 prettytable = "^3.18.0"
 pytest = "^9.1.1"
 pytest-asyncio = "^1.4.0"
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.15.1"
-pytest-rerunfailures = "^12.0"
+pytest-rerunfailures = "^16.3"
 pyyaml = "^6.0.3"
 termcolor = "^3.3.0"
 types-pyyaml = "^6.0.12.20260518"
 
 [tool.poetry.group.dev.dependencies]
-cryptography = "^49.0.0"
 ipython = "^9.15.0"
 mypy = "^2.3.0"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.15.21"
+ruff = "^0.16.3"
 types-requests = "^2.33.0.20260712"
 
 [tool.pytest.ini_options]
@@ -76,6 +64,8 @@ format-fix = "ruff format ."
 lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]
 sort = "poetry sort"
-pre-commit-check = ["sort", "code-fix", "codecheck"]
+lock-check = "bash ${POE_ROOT}/../../scripts/shell/lock-check.sh"
+lock-fix = "bash ${POE_ROOT}/../../scripts/shell/lock-sync.sh"
+pre-commit-check = ["sort", "code-fix", "lock-check", "codecheck"]
 run-evaluation = "python src/run_evaluation.py"
 run-a2a-evaluation = "python src/run_a2a_evaluation.py"
