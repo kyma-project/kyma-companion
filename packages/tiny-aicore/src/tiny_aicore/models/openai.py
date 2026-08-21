@@ -27,7 +27,7 @@ class OpenAIAdapter:
         deployment_url = client.get_deployment_url(deployment_id)
         auth = _AICoreAuth(client)
         self._llm = ChatOpenAI(
-            base_url=f"{deployment_url}/chat/completions",
+            base_url=deployment_url,
             api_key="placeholder",  # type: ignore[arg-type]  # auth header injected by transport
             model=model_name,
             http_client=httpx.Client(auth=auth),
