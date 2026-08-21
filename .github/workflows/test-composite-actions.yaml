@@ -1,0 +1,62 @@
+# This workflow tests the composite actions defined in .github/actions/.
+# It is the only workflow that calls actions via path (./.github/actions/...)
+# rather than @main, so that changes to the actions can be verified on a
+# branch before they are merged and become available via the @main reference.
+# Trigger: any change to a composite action under .github/actions/.
+
+name: "Test composite actions"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/actions/**"
+
+permissions: read-all
+
+jobs:
+  test-setup-poetry:
+    name: Test setup-poetry action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Run setup-poetry
+        uses: ./.github/actions/setup-poetry
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Verify Poetry is available
+        run: poetry --version
+
+  test-install-poetry-deps:
+    name: Test install-poetry-deps action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Run setup-poetry
+        uses: ./.github/actions/setup-poetry
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run install-poetry-deps
+        uses: ./.github/actions/install-poetry-deps
+        with:
+          working-directory: tests/blackbox
+          args: "--with dev"
+
+      - name: Verify installation
+        working-directory: tests/blackbox
+        run: poetry run python --version
