@@ -3,11 +3,11 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
-name = "aicore"
+name = "tiny-aicore"
 version = "0.1.0"
 description = "Hand-rolled SAP AI Core client and LangChain model adapters"
 license = "Apache-2.0"
-requires-python = "==3.14.*"
+requires-python = ">=3.14"
 dependencies = [
   "google-genai (>=2.0.0,<3.0.0)",
   "httpx (>=0.28.1,<0.29.0)",
@@ -19,7 +19,7 @@ dependencies = [
 
 [tool.poetry]
 package-mode = true
-packages = [{include = "aicore", from = "src"}]
+packages = [{include = "tiny_aicore", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.0"

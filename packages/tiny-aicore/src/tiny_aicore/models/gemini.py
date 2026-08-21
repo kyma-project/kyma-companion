@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 from google.oauth2.credentials import Credentials
 
-from aicore.client import AICoreClient
+from tiny_aicore.client import AICoreClient
 
 
 class _AICoreTransport(httpx.BaseTransport):
@@ -71,7 +71,6 @@ class GeminiAdapter:
     """Wraps google.genai.Client with SAP AI Core routing."""
 
     def __init__(self, client: AICoreClient, deployment_id: str) -> None:
-        self._name: str = ""
         self._model = genai.Client(
             vertexai=True,
             project="placeholder",
