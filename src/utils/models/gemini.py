@@ -1,31 +1,26 @@
-from gen_ai_hub.proxy.core.base import BaseProxyClient
-from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
+from aicore import AICoreClient, GeminiAdapter
+from google.genai import Client as GoogleGenAIClient
 
 from utils.config import ModelConfig
 
 
 class GeminiModel:
-    """Gemini Model."""
+    """Gemini Model -- uses google.genai.Client directly, not a LangChain BaseChatModel."""
 
     _name: str
     _model: GoogleGenAIClient
 
-    def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
+    def __init__(self, config: ModelConfig, client: AICoreClient) -> None:
         self._name = config.name
-        self._model = GoogleGenAIClient(
-            proxy_client=proxy_client,
-            deployment_id=config.deployment_id,
-        )
+        adapter = GeminiAdapter(client=client, deployment_id=config.deployment_id)
+        self._model = adapter.llm
 
     def invoke(self, content: str):  # noqa
         """Generate content using the model"""
-        response = self._model.models.generate_content(
+        return self._model.models.generate_content(
             model=self._name,
             contents=content,
         )
-        return response
 
     @property
     def name(self) -> str:
@@ -33,6 +28,6 @@ class GeminiModel:
         return self._name
 
     @property
-    def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
-        """Returns the instance of Gemini model."""
+    def llm(self) -> GoogleGenAIClient:
+        """Returns the underlying google.genai.Client instance."""
         return self._model

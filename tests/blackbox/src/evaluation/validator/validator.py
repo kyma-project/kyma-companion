@@ -1,12 +1,13 @@
 from typing import Any, Protocol
 
+from aicore import AICoreClient, OpenAIAdapter
 from deepeval.evaluate.configs import AsyncConfig, CacheConfig, DisplayConfig
 from deepeval.evaluate.evaluate import evaluate
 from deepeval.evaluate.types import EvaluationResult
 from deepeval.metrics import BaseMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
+from langchain_openai import ChatOpenAI
 
 from evaluation.scenario.scenario import Query
 
@@ -52,12 +53,15 @@ class ChatOpenAIValidator:
     model: LangChainOpenAI
 
     def __init__(self, name: str, temperature: str, deployment_id: str) -> None:
-        model = ChatOpenAI(
+        client = AICoreClient()
+        adapter = OpenAIAdapter(
+            client=client,
+            deployment_id=deployment_id,
             model_name=name,
             temperature=temperature,
-            deployment_id=deployment_id,
         )
-        self.model = LangChainOpenAI(model=model)
+        llm: ChatOpenAI = adapter.llm
+        self.model = LangChainOpenAI(model=llm)
 
     def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
         """Evaluate the query using the model and expectations."""

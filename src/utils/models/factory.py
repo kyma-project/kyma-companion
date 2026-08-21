@@ -2,12 +2,9 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Protocol, cast, runtime_checkable
 
-from gen_ai_hub.proxy.core.base import BaseProxyClient
-from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
-from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI, OpenAIEmbeddings
-from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
+from aicore import AICoreClient, OpenAIEmbeddingsAdapter
 from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseChatModel
 
 from utils.config import Config
 from utils.models.anthropic import AnthropicModel
@@ -61,14 +58,14 @@ class IModel(Protocol):
         """The name of the model."""
 
     @property
-    def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
+    def llm(self) -> BaseChatModel:
         """The instance of the model."""
 
 
 @lru_cache(maxsize=1)
-def init_proxy_client() -> BaseProxyClient:
-    """Initialize the proxy client for the GenAI Hub only once."""
-    return get_proxy_client("gen-ai-hub")
+def init_aicore_client() -> AICoreClient:
+    """Initialize the AICoreClient only once."""
+    return AICoreClient()
 
 
 class IModelFactory(Protocol):
@@ -85,7 +82,7 @@ class ModelFactory:
     """Model Factory for LLM and Embedding models."""
 
     def __init__(self, config: Config):
-        self._proxy_client = init_proxy_client()
+        self._aicore_client = init_aicore_client()
         self._models: dict[str, IModel | Embeddings] = {}
         self._config = config
 
@@ -106,16 +103,16 @@ class ModelFactory:
 
         # Dispatch mechanism for model creation.
         model_prefix_dispatch = {
-            ModelPrefix.GPT: lambda: OpenAIModel(model_config, self._proxy_client),
-            ModelPrefix.GEMINI: lambda: GeminiModel(model_config, self._proxy_client),
-            ModelPrefix.ANTHROPIC: lambda: AnthropicModel(model_config, self._proxy_client),
+            ModelPrefix.GPT: lambda: OpenAIModel(model_config, self._aicore_client),
+            ModelPrefix.GEMINI: lambda: GeminiModel(model_config, self._aicore_client),
+            ModelPrefix.ANTHROPIC: lambda: AnthropicModel(model_config, self._aicore_client),
             ModelPrefix.TEXT_EMBEDDING: lambda: cast(
                 Embeddings,
-                OpenAIEmbeddings(
-                    model=name,
+                OpenAIEmbeddingsAdapter(
+                    client=self._aicore_client,
                     deployment_id=model_config.deployment_id,
-                    proxy_client=self._proxy_client,
-                ),
+                    model_name=name,
+                ).embeddings,
             ),
         }
 

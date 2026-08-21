@@ -1,7 +1,5 @@
-from gen_ai_hub.proxy.core.base import BaseProxyClient
-from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
+from aicore import AICoreClient, OpenAIAdapter
+from langchain_core.language_models import BaseChatModel
 
 from utils import settings
 from utils.config import ModelConfig
@@ -11,23 +9,23 @@ class OpenAIModel:
     """OpenAI Model."""
 
     _name: str
-    _llm: ChatOpenAI
+    _llm: BaseChatModel
 
-    def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
+    def __init__(self, config: ModelConfig, client: AICoreClient) -> None:
         self._name = config.name
-        self._llm = ChatOpenAI(
-            proxy_model_name=config.name,
+        adapter = OpenAIAdapter(
+            client=client,
             deployment_id=config.deployment_id,
-            proxy_client=proxy_client,
+            model_name=config.name,
             temperature=config.temperature,
             request_timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
             timeout=settings.LLM_REQUEST_TIMEOUT_SECONDS,
         )
+        self._llm = adapter.llm
 
     def invoke(self, content: str):  # noqa
         """Generate content using the model"""
-        response = self.llm.invoke(content)
-        return response
+        return self._llm.invoke(content)
 
     @property
     def name(self) -> str:
@@ -35,6 +33,6 @@ class OpenAIModel:
         return self._name
 
     @property
-    def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
+    def llm(self) -> BaseChatModel:
         """Returns the instance of OpenAI model."""
         return self._llm

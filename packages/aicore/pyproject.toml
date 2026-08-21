@@ -1,0 +1,27 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "aicore"
+version = "0.1.0"
+description = "Hand-rolled SAP AI Core client and LangChain model adapters"
+license = "Apache-2.0"
+requires-python = "==3.14.*"
+dependencies = [
+  "google-genai (>=2.0.0,<3.0.0)",
+  "httpx (>=0.28.1,<0.29.0)",
+  "langchain-aws (>=1.0.0,<2.0.0)",
+  "langchain-core (>=1.0.0,<2.0.0)",
+  "langchain-openai (>=0.3.0,<2.0.0)",
+  "python-decouple (>=3.8,<4.0)",
+]
+
+[tool.poetry]
+package-mode = true
+packages = [{include = "aicore", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^2.3.0"
+poethepoet = "^0.48.0"
+ruff = "^0.16.3"

@@ -14,6 +14,28 @@ files = [
 ]
 
 [[package]]
+name = "aicore"
+version = "0.1.0"
+description = "Hand-rolled SAP AI Core client and LangChain model adapters"
+optional = false
+python-versions = "==3.14.*"
+groups = ["main"]
+files = []
+develop = false
+
+[package.dependencies]
+google-genai = ">=2.0.0,<3.0.0"
+httpx = ">=0.28.1,<0.29.0"
+langchain-aws = ">=1.0.0,<2.0.0"
+langchain-core = ">=1.0.0,<2.0.0"
+langchain-openai = ">=0.3.0,<2.0.0"
+python-decouple = ">=3.8,<4.0"
+
+[package.source]
+type = "directory"
+url = "../../packages/aicore"
+
+[[package]]
 name = "aiobotocore"
 version = "3.9.0"
 description = "Async client for aws services using botocore and aiohttp"
@@ -5717,4 +5739,4 @@ cffi = ["cffi (>=1.17) ; python_version >= \"3.13\" and platform_python_implemen
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.14.*"
-content-hash = "3f086865324f2db30945031882ba5cfa03767be5570a9a3d11d0ac1885396ce6"
+content-hash = "063e5fe42a86a7d2febfc2d7dc900c681de2bf89008a0f74ac0cea0c1d95f323"

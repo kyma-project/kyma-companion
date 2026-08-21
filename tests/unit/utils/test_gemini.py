@@ -1,19 +1,19 @@
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from utils.config import ModelConfig
-from utils.models.factory import (
-    GeminiModel,
-)
+from utils.models.factory import GeminiModel
 
 
 @pytest.fixture
-def gemini_model(mock_get_proxy_client):
+def gemini_model():
     config = ModelConfig(name="gemini-1.0-pro", deployment_id="dep2", temperature=0)
-    with patch("utils.models.gemini.GoogleGenAIClient") as mock_client:
-        model = GeminiModel(config, mock_get_proxy_client)
-        model._model = mock_client.return_value
+    mock_client = MagicMock()
+    with patch("utils.models.gemini.GeminiAdapter") as mock_adapter_cls:
+        mock_adapter = MagicMock()
+        mock_adapter_cls.return_value = mock_adapter
+        model = GeminiModel(config, mock_client)
         return model
 
 

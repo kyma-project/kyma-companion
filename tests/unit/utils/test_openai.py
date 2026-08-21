@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -7,11 +7,13 @@ from utils.models.openai import OpenAIModel
 
 
 @pytest.fixture
-def openai_model(mock_get_proxy_client):
-    config = ModelConfig(name="gpt-4", deployment_id="deployment-123", temperature=0.7, type="openai")
-    with patch("utils.models.openai.ChatOpenAI") as mock_chat_openai:
-        model = OpenAIModel(config, mock_get_proxy_client)
-        model._llm = mock_chat_openai.return_value
+def openai_model():
+    config = ModelConfig(name="gpt-4", deployment_id="deployment-123", temperature=0.7)
+    mock_client = MagicMock()
+    with patch("utils.models.openai.OpenAIAdapter") as mock_adapter_cls:
+        mock_adapter = MagicMock()
+        mock_adapter_cls.return_value = mock_adapter
+        model = OpenAIModel(config, mock_client)
         return model
 
 
