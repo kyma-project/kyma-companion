@@ -1,5 +1,5 @@
 name: "Setup Python and Poetry"
-description: "Install Python with Poetry cache and Poetry via pipx"
+description: "Install Poetry via pipx, then setup Python with Poetry cache"
 
 inputs:
   python-version:
@@ -9,16 +9,14 @@ inputs:
     description: "Poetry version to install (default: latest)"
     required: false
     default: ""
+  cache-dependency-path:
+    description: "Path to poetry.lock used for cache key (default: **/poetry.lock)"
+    required: false
+    default: "**/poetry.lock"
 
 runs:
   using: "composite"
   steps:
-    - name: Setup Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ inputs.python-version }}
-        cache: "poetry"
-
     - name: Install Poetry
       shell: bash
       run: |
@@ -28,3 +26,10 @@ runs:
           pipx install poetry
         fi
         echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: "poetry"
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}

@@ -31,6 +31,7 @@ jobs:
         uses: ./.github/actions/setup-poetry
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache-dependency-path: poetry.lock
 
       - name: Verify Poetry is available
         run: poetry --version
@@ -50,6 +51,7 @@ jobs:
         uses: ./.github/actions/setup-poetry
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          cache-dependency-path: tests/blackbox/poetry.lock
 
       - name: Run install-poetry-deps
         uses: ./.github/actions/install-poetry-deps

@@ -16,4 +16,6 @@ runs:
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: poetry install ${{ inputs.args }}
+      env:
+        EXTRA_ARGS: ${{ inputs.args }}
+      run: poetry install $EXTRA_ARGS
