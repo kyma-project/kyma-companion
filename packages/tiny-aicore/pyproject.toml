@@ -7,7 +7,7 @@ name = "tiny-aicore"
 version = "0.1.0"
 description = "Hand-rolled SAP AI Core client and LangChain model adapters"
 license = "Apache-2.0"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<4.0.0"
 dependencies = [
   "google-genai (>=2.0.0,<3.0.0)",
   "httpx (>=0.28.1,<0.29.0)",
@@ -24,4 +24,12 @@ packages = [{include = "tiny_aicore", from = "src"}]
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.0"
 poethepoet = "^0.48.0"
+pytest = "^8.0.0"
 ruff = "^0.16.3"
+
+[tool.poe.tasks]
+test = "pytest tests/ -v"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
