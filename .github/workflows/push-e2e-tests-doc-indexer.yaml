@@ -13,6 +13,9 @@ on:
 
 permissions: read-all
 
+env:
+  PYTHON_VERSION: "3.14"
+
 jobs:
   wait-for-build:
     runs-on: ubuntu-latest
@@ -25,7 +28,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
       - name: Install requirements
