@@ -282,7 +282,7 @@ jobs:
       - name: Upload evaluation report artifact
         if: ${{ always() && steps.render-report.outputs.report_generated == 'true' }}
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evaluation-report
           path: tests/blackbox/report
