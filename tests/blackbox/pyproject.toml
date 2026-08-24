@@ -21,13 +21,13 @@ dependencies = [
   "python-decouple (>=3.8,<4.0)",
   "redis (>=8.0.1,<9.0.0)",
   "requests (>=2.34.2,<3.0.0)",
-  "sap-ai-sdk-gen[all] (>=7.0.0,<8.0.0)"
+  "sap-ai-sdk-gen (>=7.0.0,<8.0.0)"
 ]
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {version = "^4.1.0", extras = ["all"]}
+deepeval = {version = "^4.1.0"}
 fakeredis = "^2.36.2"
 prettytable = "^3.18.0"
 pytest = "^9.1.1"
