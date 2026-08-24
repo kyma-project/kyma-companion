@@ -194,20 +194,16 @@ jobs:
         run: |
           ./../../scripts/shell/extract-python-version.sh
 
-      - name: Evaluation Tests Setup - Install Python
-        uses: actions/setup-python@v6
+      - name: Evaluation Tests Setup - Install Python and Poetry
+        uses: kyma-project/kyma-companion/.github/actions/setup-poetry@main
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Evaluation Tests Setup - Install Poetry
-        working-directory: tests/blackbox
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          cache-dependency-path: tests/blackbox/poetry.lock
 
       - name: Evaluation Tests Setup - Install dependencies
-        working-directory: tests/blackbox
-        run: poetry install
+        uses: kyma-project/kyma-companion/.github/actions/install-poetry-deps@main
+        with:
+          working-directory: tests/blackbox
 
       - name: Run API Tests
         working-directory: tests/blackbox
@@ -244,3 +240,47 @@ jobs:
           kubectl get pod -n ai-system || true
           kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
           kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
+
+      # Render the metrics.json produced by the evaluation run into a self-contained
+      # HTML dashboard. This is best-effort: a missing script/metrics file or a render
+      # error must never fail the evaluation job (continue-on-error + guarded exits).
+      - name: Render evaluation report
+        id: render-report
+        if: ${{ always() && inputs.RUN_EVALUATION_TESTS }}
+        continue-on-error: true
+        working-directory: tests/blackbox
+        run: |
+          set -euo pipefail
+          RENDER_SCRIPT="scripts/render_metrics.py"
+
+          if [ ! -f "$RENDER_SCRIPT" ]; then
+            echo "::warning::${RENDER_SCRIPT} not found - skipping evaluation report rendering."
+            exit 0
+          fi
+          if [ ! -f "metrics.json" ]; then
+            echo "::warning::metrics.json not found - skipping evaluation report rendering."
+            exit 0
+          fi
+
+          mkdir -p report
+          # GitHub Pages serves index.html by default, so render straight to that name.
+          BASELINE_ARGS=()
+          if [ -f "baseline_metrics.json" ]; then
+            BASELINE_ARGS=(-b baseline_metrics.json)
+          fi
+          # render_metrics.py only uses the Python stdlib, so plain python3 is enough.
+          python3 "$RENDER_SCRIPT" metrics.json -o report/index.html "${BASELINE_ARGS[@]}"
+          echo "report_generated=true" >> "$GITHUB_OUTPUT"
+
+      # Upload the rendered report so a downstream job in the caller workflow can
+      # deploy it to GitHub Pages. Only runs when a report was actually generated.
+      # The PR number (when available) is included in the artifact name for traceability.
+      - name: Upload evaluation report artifact
+        if: ${{ always() && steps.render-report.outputs.report_generated == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: evaluation-report
+          path: tests/blackbox/report
+          if-no-files-found: ignore
+          retention-days: 30

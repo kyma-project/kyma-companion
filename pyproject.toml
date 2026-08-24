@@ -15,30 +15,29 @@ authors = [
   { name = "Mansur Uralov", email = "m.uralov@sap.com" },
   { name = "Mohammad Tanweer Salah", email = "mohammad.tanweer.salah@sap.com" },
 ]
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 dependencies = [
   "a2a-sdk[http-server] (>=1.1.0,<2.0)",
   "aiohttp (>=3.14.1,<3.15.0)",
-  "cryptography (>=50.0.0,<50.1.0)",
-  "fastapi[standard] (>=0.139.1,<0.140.0)",
+  "cryptography (>=50.0.0,<51.0.0)",
+  "fastapi[standard] (>=0.141.1,<0.142.0)",
   "hdbcli (>=2.29.25,<3.0.0)",
   "kubernetes (>=36.0.3,<37.0.0)",
-  "langchain (>=1.2,<2.0)",
-  "langchain-core (>=1.4.9,<2.0.0)",
+  "langchain (>=1.3.15,<2.0.0)",
+  "langchain-core (>=1.5.6,<2.0.0)",
   "langchain-hana (>=1.1.1,<2.0.0)",
-  "langfuse (>=4.14.0,<5.0.0)",
-  "phonenumbers (>=9.0.36,<10.0.0)",
-  "prometheus-client (>=0.25.0,<0.26.0)",
+  "langfuse (>=4.14.4,<5.0.0)",
+  "phonenumbers (>=9.0.37,<10.0.0)",
+  "prometheus-client (>=0.26.0,<0.27.0)",
   "pyjwt (>=2.13.0,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
-  "python-json-logger (>=4.1.0,<5.0.0)",
+  "python-json-logger (>=4.2.0,<5.0.0)",
   "python-multipart (>=0.0.32,<0.0.33)",
   "redis (>=8.0.1,<9.0.0)",
   "sap-ai-sdk-gen[all] (>=7.0.0,<8.0.0)",
-  "starlette (>=1.3.1,<2.0.0)",
   "tenacity (>=9.1.4,<10.0.0)",
-  "tiktoken (>=0.13.0,<0.14.0)",
-  "uvicorn (>=0.51.0,<0.52.0)"
+  "tiktoken (>=0.14.0,<0.15.0)",
+  "uvicorn (>=0.52.3,<0.53.0)"
 ]
 [tool.poetry]
 package-mode = false
@@ -68,7 +67,7 @@ ipython = "^9.15.0"
 mypy = "^2.3.0"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.15.21"
+ruff = "^0.16.3"
 types-requests = "^2.33.0.20260712"
 
 [tool.pytest.ini_options]
@@ -97,5 +96,7 @@ test-integration-local = "pytest -n auto -v tests/integration -x --reruns=6 --re
 run = "fastapi run src/main.py --port 8000"
 run-local = "fastapi dev src/main.py --port 8000"
 sort = "poetry sort"
+lock-check = "bash scripts/shell/lock-check.sh"
+lock-fix = "bash scripts/shell/lock-sync.sh"
 lint-workflows = "bash scripts/shell/lint-workflows.sh"
-pre-commit-check = ["sort", "code-fix", "codecheck", "test-local", "lint-workflows"]
+pre-commit-check = ["sort", "lock-check", "code-fix", "codecheck", "test-local", "lint-workflows"]

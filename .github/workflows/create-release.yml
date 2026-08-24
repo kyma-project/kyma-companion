@@ -46,6 +46,7 @@ permissions: write-all
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   RELEASE_TAG: "${{ inputs.name }}"
+  PYTHON_VERSION: "3.14"
 
 jobs:
   validate-input-params:
@@ -106,7 +107,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -152,7 +153,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -210,7 +211,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -256,7 +257,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -447,9 +448,9 @@ jobs:
           ref: main
 
       - name: Setup python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
       - name: Install requirements

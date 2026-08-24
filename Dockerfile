@@ -4,7 +4,7 @@
 # Alpine uses musl libc. Key runtime deps ship musl wheels: pydantic-core has
 # musllinux wheels for x86_64 and aarch64; hdbcli only has musllinux_1_2_x86_64.
 # This image must therefore be built for linux/amd64 (the production target).
-FROM python:3.13-alpine AS builder
+FROM python:3.14-alpine AS builder
 WORKDIR /app
 
 # gcc + musl-dev + libffi-dev cover C-extension fallback builds (cryptography,
@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir "poetry>=2.1" \
 # Runtime stage: plain Alpine — no shell package manager baggage beyond the
 # minimal Alpine base. Much smaller CVE surface than any Debian variant.
 # libstdc++ is required by hdbcli (pyhdbcli.abi3.so links against it).
-FROM python:3.13-alpine
+FROM python:3.14-alpine
 RUN apk add --no-cache libstdc++ \
   && rm -rf /usr/local/lib/python3.*/site-packages/pip* \
   && rm -rf /usr/local/lib/python3.*/site-packages/setuptools* \
