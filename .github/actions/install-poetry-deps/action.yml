@@ -1,0 +1,21 @@
+name: "Install Poetry Dependencies"
+description: "Run poetry install in the given working directory"
+
+inputs:
+  working-directory:
+    description: "Directory to run poetry install in"
+    required: true
+  args:
+    description: "Extra arguments passed to poetry install (e.g. --with dev)"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        EXTRA_ARGS: ${{ inputs.args }}
+      run: poetry install $EXTRA_ARGS
