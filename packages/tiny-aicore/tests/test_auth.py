@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-
 from tiny_aicore.models.openai import _AICoreAuth
 
 

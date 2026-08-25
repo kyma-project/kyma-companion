@@ -1,10 +1,9 @@
 """Anthropic (Bedrock Converse) adapter for SAP AI Core."""
 
-from typing import Any
+from typing import Any, Self
 
 from langchain_aws import ChatBedrockConverse
 from pydantic import SecretStr, model_validator
-from typing_extensions import Self
 
 from tiny_aicore.client import AICoreClient
 

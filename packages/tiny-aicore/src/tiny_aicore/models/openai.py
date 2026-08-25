@@ -15,7 +15,7 @@ class _AICoreAuth(httpx.Auth):
     def __init__(self, client: AICoreClient) -> None:
         self._client = client
 
-    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
         request.headers["Authorization"] = f"Bearer {self._client.get_token()}"
         yield request
 
