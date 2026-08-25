@@ -194,16 +194,20 @@ jobs:
         run: |
           ./../../scripts/shell/extract-python-version.sh
 
-      - name: Evaluation Tests Setup - Install Python and Poetry
-        uses: kyma-project/kyma-companion/.github/actions/setup-poetry@main
+      - name: Evaluation Tests Setup - Install Python
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache-dependency-path: tests/blackbox/poetry.lock
+
+      - name: Evaluation Tests Setup - Install Poetry
+        working-directory: tests/blackbox
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Evaluation Tests Setup - Install dependencies
-        uses: kyma-project/kyma-companion/.github/actions/install-poetry-deps@main
-        with:
-          working-directory: tests/blackbox
+        working-directory: tests/blackbox
+        run: poetry install
 
       - name: Run API Tests
         working-directory: tests/blackbox
