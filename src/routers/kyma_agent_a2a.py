@@ -9,7 +9,6 @@ Exposed routes (relative to the mount point /api/agent/kyma):
   POST /chat                         – A2A JSON-RPC endpoint
 """
 
-import json
 from typing import Any, cast
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
@@ -149,9 +148,11 @@ class KymaAgentExecutor(AgentExecutor):
             # Attach per-request metrics (token usage, tool calls, LLM calls) to the
             # response metadata so A2A clients (e.g. the evaluation harness) can collect
             # them per query. The Kyma dashboard uses the streaming conversation API and
-            # is unaffected by this field.
+            # is unaffected by this field. The protobuf Struct natively represents a JSON
+            # object, so the metrics dict is stored directly (no json.dumps / double-decode).
+            # Note: Struct stores numbers as doubles, so integer counts round-trip as floats.
             response_metadata = Struct()
-            response_metadata.update({"x-metrics": json.dumps(request_metrics.as_dict())})
+            response_metadata.update({"x-metrics": request_metrics.as_dict()})
 
             response_message = Message(
                 role=Role.ROLE_AGENT,

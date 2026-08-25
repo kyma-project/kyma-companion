@@ -301,9 +301,10 @@ class A2AClient:
     def _extract_metrics(result: dict) -> dict:
         """Extract the per-request metrics dict from a Task or Message result.
 
-        The server encodes metrics as a JSON string under the ``x-metrics`` key
-        of the response message metadata. Returns an empty dict when absent or
-        malformed.
+        The server stores metrics natively as a nested object under the
+        ``x-metrics`` key of the response message metadata (a legacy JSON-string
+        encoding is still parsed for backward compatibility). Returns an empty
+        dict when absent or malformed.
         """
         metadata = result.get("metadata")
         if not isinstance(metadata, dict):

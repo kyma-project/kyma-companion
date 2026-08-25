@@ -7,7 +7,6 @@ Covers:
 - build_kyma_a2a_app() factory
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -169,11 +168,14 @@ class TestKymaAgentExecutorExecute:
         assert len(event.parts) == 1
         assert event.parts[0].text == expected_answer
 
-        # The response must carry per-request metrics in its metadata.
+        # The response must carry per-request metrics in its metadata, stored
+        # natively as a nested object (no JSON-string double-encoding).
         metadata = json_format.MessageToDict(event.metadata)
         assert "x-metrics" in metadata
-        metrics = json.loads(metadata["x-metrics"])
-        assert metrics == {
+        metrics = metadata["x-metrics"]
+        assert isinstance(metrics, dict)
+        # Struct stores numbers as doubles, so integer counts round-trip as floats.
+        assert {k: (int(v) if isinstance(v, float) else v) for k, v in metrics.items()} == {
             "input_tokens": 0,
             "output_tokens": 0,
             "total_tokens": 0,
