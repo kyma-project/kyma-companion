@@ -4,7 +4,6 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from tiny_aicore.client import AICoreClient
 
 
@@ -67,8 +66,6 @@ class TestGetToken:
         """get_token() must not hold the lock while doing the HTTP POST."""
         client = _make_client()
         lock_held_during_post: list[bool] = []
-
-        original_post = __import__("httpx").post
 
         def patched_post(*args, **kwargs):  # type: ignore[no-untyped-def]
             lock_held_during_post.append(client._token_lock.locked())

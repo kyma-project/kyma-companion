@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 import httpx
-
 from tiny_aicore.models.gemini import _rewrite
 
 

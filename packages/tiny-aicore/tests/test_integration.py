@@ -4,7 +4,6 @@ These tests exercise the full construction and request path of each adapter
 without real credentials.
 """
 
-import json
 from unittest.mock import patch
 
 import httpx
@@ -44,18 +43,14 @@ def aicore_client():
 
 @respx.mock
 def test_client_get_token(aicore_client) -> None:  # type: ignore[no-untyped-def]
-    respx.post(f"{AUTH_URL}/oauth/token").mock(
-        return_value=httpx.Response(200, json=_token_body())
-    )
+    respx.post(f"{AUTH_URL}/oauth/token").mock(return_value=httpx.Response(200, json=_token_body()))
     token = aicore_client.get_token()
     assert token == TOKEN
 
 
 @respx.mock
 def test_client_get_deployment_url(aicore_client) -> None:  # type: ignore[no-untyped-def]
-    respx.post(f"{AUTH_URL}/oauth/token").mock(
-        return_value=httpx.Response(200, json=_token_body())
-    )
+    respx.post(f"{AUTH_URL}/oauth/token").mock(return_value=httpx.Response(200, json=_token_body()))
     respx.get(f"{BASE_URL}/lm/deployments/{DEPLOYMENT_ID}").mock(
         return_value=httpx.Response(200, json=_deployment_body())
     )
@@ -67,9 +62,7 @@ def test_client_get_deployment_url(aicore_client) -> None:  # type: ignore[no-un
 def test_openai_adapter_sends_bearer_token(aicore_client) -> None:  # type: ignore[no-untyped-def]
     from tiny_aicore.models.openai import OpenAIAdapter
 
-    respx.post(f"{AUTH_URL}/oauth/token").mock(
-        return_value=httpx.Response(200, json=_token_body())
-    )
+    respx.post(f"{AUTH_URL}/oauth/token").mock(return_value=httpx.Response(200, json=_token_body()))
     respx.get(f"{BASE_URL}/lm/deployments/{DEPLOYMENT_ID}").mock(
         return_value=httpx.Response(200, json=_deployment_body())
     )
@@ -104,9 +97,7 @@ def test_openai_adapter_sends_bearer_token(aicore_client) -> None:  # type: igno
 def test_embeddings_adapter_sends_bearer_token(aicore_client) -> None:  # type: ignore[no-untyped-def]
     from tiny_aicore.models.embeddings import OpenAIEmbeddingsAdapter
 
-    respx.post(f"{AUTH_URL}/oauth/token").mock(
-        return_value=httpx.Response(200, json=_token_body())
-    )
+    respx.post(f"{AUTH_URL}/oauth/token").mock(return_value=httpx.Response(200, json=_token_body()))
     respx.get(f"{BASE_URL}/lm/deployments/{DEPLOYMENT_ID}").mock(
         return_value=httpx.Response(200, json=_deployment_body())
     )
