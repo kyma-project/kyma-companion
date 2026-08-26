@@ -1,54 +1,47 @@
-# syntax=docker/dockerfile:1
-
-# Build stage: Alpine-based Python with build tools for compiling C-extensions.
-# Alpine uses musl libc. Key runtime deps ship musl wheels: pydantic-core has
-# musllinux wheels for x86_64 and aarch64; hdbcli only has musllinux_1_2_x86_64.
-# This image must therefore be built for linux/amd64 (the production target).
-FROM python:3.14-alpine AS builder
+# Build stage: install dependencies
+FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0 AS builder
 WORKDIR /app
 
-# gcc + musl-dev + libffi-dev cover C-extension fallback builds (cryptography,
-# aiohttp). git is excluded — not needed by the Companion at runtime.
-RUN apk add --no-cache gcc musl-dev libffi-dev
-
+# Copy necessary files for dependency installation
 COPY pyproject.toml poetry.lock ./
 COPY src ./src
 COPY config ./config
 
-# Install into a venv with --copies so the interpreter is a real binary (not a
-# symlink), making the venv fully self-contained in the runtime stage.
-RUN pip install --no-cache-dir "poetry>=2.1" \
-  && poetry config virtualenvs.in-project true \
-  && poetry config virtualenvs.options.always-copy true \
-  && poetry install --only main --no-interaction --no-ansi \
-  && pip uninstall -y poetry \
-  && find /app/.venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
-  && find /app/.venv -type f -name "*.pyc" -delete \
-  && find /app/.venv -type f -name "*.pyo" -delete \
-  && rm -rf /app/.venv/lib/python3.*/site-packages/pip* \
-  && rm -rf /app/.venv/lib/python3.*/site-packages/setuptools* \
-  && rm -rf /app/.venv/lib/python3.*/site-packages/wheel* \
-  && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install*
+# Install dependencies with Poetry and aggressively clean up
+RUN apt update && apt upgrade -y \
+  && apt install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv \
+  && python3.13 -m venv ./venv \
+  && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
+  && ./venv/bin/poetry config virtualenvs.in-project true \
+  && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
+  && cd /app/.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
+  && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
+  && find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true \
+  && find . -type d -name "test" -exec rm -rf {} + 2>/dev/null || true \
+  && find . -type f -name "*.pyc" -delete \
+  && find . -type f -name "*.pyo" -delete \
+  && rm -rf ./lib/python3.*/site-packages/pip* \
+  && rm -rf ./lib/python3.*/site-packages/setuptools* \
+  && rm -rf ./lib/python3.*/site-packages/wheel* \
+  && rm -f ./bin/pip* ./bin/wheel ./bin/easy_install* \
+  && find . -name "*.so" -exec strip --strip-debug {} + 2>/dev/null || true
 
-# Runtime stage: plain Alpine — no shell package manager baggage beyond the
-# minimal Alpine base. Much smaller CVE surface than any Debian variant.
-# libstdc++ is required by hdbcli (pyhdbcli.abi3.so links against it).
-FROM python:3.14-alpine
-RUN apk add --no-cache libstdc++ \
-  && rm -rf /usr/local/lib/python3.*/site-packages/pip* \
-  && rm -rf /usr/local/lib/python3.*/site-packages/setuptools* \
-  && rm -rf /usr/local/lib/python3.*/site-packages/wheel* \
-  && rm -rf /usr/local/lib/python3.*/ensurepip \
-  && rm -f /usr/local/bin/pip* /usr/local/bin/wheel /usr/local/bin/easy_install*
+# Runtime stage: bare-python contains only the Python interpreter and its
+# dynamically linked .so chain — no shell utilities or apt packages that
+# generate CVE findings.
+FROM ghcr.io/gardenlinux/gardenlinux/bare-python:2150.9.0
 WORKDIR /app
 
+# Copy virtual environment from builder (Poetry creates .venv with in-project)
 COPY --from=builder /app/.venv ./venv
+
+# Copy application code
 COPY src ./src
 COPY config ./config
 
-# Non-root user matching the prior image's uid/gid.
-RUN addgroup -g 5678 appuser \
-  && adduser -u 5678 -G appuser -s /bin/sh -D appuser \
+# Create non-root user and set ownership
+RUN groupadd -g 5678 appuser \
+  && useradd -u 5678 -g appuser -s /bin/sh appuser \
   && chown -R appuser:appuser /app
 
 USER appuser

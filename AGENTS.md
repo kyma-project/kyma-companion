@@ -6,7 +6,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 **Kyma Companion** is a FastAPI-based AI assistant ("Joule") for Kyma and Kubernetes. It exposes a single ReAct agent via the [Agent-to-Agent (A2A)](https://github.com/google/a2a) protocol, backed by Redis for conversation history and HANA DB for RAG.
 
-- **Language:** Python 3.14
+- **Language:** Python 3.13
 - **Package manager:** Poetry
 - **Task runner:** `poethepoet` (`poe`)
 - **Key frameworks:** FastAPI, LangChain, A2A SDK, SAP AI SDK
