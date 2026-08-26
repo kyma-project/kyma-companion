@@ -8,8 +8,8 @@ COPY src ./src
 COPY config ./config
 
 # Install dependencies with Poetry and aggressively clean up
-RUN apt update && apt upgrade -y \
-  && apt install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv \
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends build-essential gcc python3.13 python3.13-dev python3.13-venv \
   && python3.13 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir "poetry>=2.1" \
   && ./venv/bin/poetry config virtualenvs.in-project true \
