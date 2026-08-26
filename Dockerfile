@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# Build stage: Debian bookworm for compiling C-extensions (gcc, libffi-dev).
-# Python 3.14 comes from Debian sid via pinned apt sources.
+# Build stage: Debian sid (unstable) for compiling C-extensions (gcc, libffi-dev).
+# Python 3.14 comes from Debian sid natively.
 # Garden Linux 2150.9.0 only ships Python 3.13, and its minimal package set
-# lacks the -dev headers needed to build C-extensions — so we compile in
+# lacks the -dev headers needed to build C-extensions -- so we compile in
 # Debian and copy only the finished venv into the Garden Linux runtime.
 FROM debian:sid AS builder
 RUN apt-get update \
@@ -20,7 +20,8 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && poetry config virtualenvs.in-project true \
   && poetry config virtualenvs.options.always-copy true \
   && poetry install --only main --no-interaction --no-ansi \
-  && python3.14 -m pip uninstall -y poetry \
+  && python3.14 -m pip uninstall -y --break-system-packages poetry \
+  && rm -rf ~/.config/pypoetry ~/.cache/pypoetry \
   && find /app/.venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
   && find /app/.venv -type f -name "*.pyc" -delete \
   && find /app/.venv -type f -name "*.pyo" -delete \
@@ -34,7 +35,6 @@ FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
 RUN echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list \
   && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
   && apt-get update \
-  && apt-get upgrade -y \
   && apt-get install -y python3.14 libstdc++6 \
   && rm -rf /var/lib/apt/lists/*
 
