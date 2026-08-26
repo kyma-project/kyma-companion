@@ -1,0 +1,3119 @@
+{
+  "summary": {
+    "num_scenarios": 23,
+    "num_queries": 25,
+    "overall_success_rate": 94.16,
+    "input_tokens": 343428,
+    "output_tokens": 18736,
+    "total_tokens": 362164,
+    "avg_tokens_per_query": 14486.56,
+    "total_latency_seconds": 245.4691,
+    "avg_latency_seconds": 9.8188,
+    "total_llm_call_count": 83,
+    "total_tool_call_count": 46,
+    "tool_call_counts": {
+      "search_kyma_doc": 9,
+      "kyma_query_tool": 25,
+      "k8s_overview_tool": 3,
+      "fetch_pod_logs_tool": 8,
+      "fetch_kyma_resource_version": 1
+    },
+    "status_counts": {
+      "scenarios": {
+        "passed": 22,
+        "failed": 1
+      },
+      "queries": {
+        "passed": 24,
+        "failed": 1,
+        "pending": 0
+      }
+    },
+    "num_scenarios_retried": 1,
+    "total_time_minutes": 9.32
+  },
+  "scenarios": [
+    {
+      "scenario_id": "test-question-26",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 13.5322,
+      "avg_latency_seconds": 13.5322,
+      "total_evaluation_latency_seconds": 1.9562,
+      "input_tokens": 14695,
+      "output_tokens": 835,
+      "total_tokens": 15530,
+      "avg_tokens_per_query": 15530.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask to compare kyma and cloud foundry.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is the difference between Kyma and Cloud Foundry?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "Based on the Kyma documentation, here are the **key differences between Kyma and Cloud Foundry**:\n\n## **Architecture & Foundation**\n\n| Aspect | **Kyma** | **Cloud Foundry** |\n|--------|---------|-------------------|\n| **Foundation** | Kubernetes-based cloud-native runtime | Platform-as-a-Service (PaaS) |\n| **Deployment Model** | Container-based microservices | Application-based deployment |\n| **Orchestration** | Kubernetes orchestration | Cloud Foundry's own orchestration |\n\n## **Development Approach**\n\n| Aspect | **Kyma** | **Cloud Foundry** |\n|--------|---------|-------------------|\n| **Workload Types** | Serverless Functions, microservices, full-stack applications | Polyglot applications (Java, Node.js, Python, etc.) |\n| **Scaling** | Kubernetes-native auto-scaling | Cloud Foundry scaling mechanisms |\n| **Language Support** | Node.js, Python (Functions); any language in containers | Multiple buildpacks (Java, Node.js, Python, PHP, Ruby, Go) |\n\n## **Management & Operations**\n\n| Aspect | **Kyma** | **Cloud Foundry** |\n|--------|---------|-------------------|\n| **Lifecycle Management** | Kubernetes resources (Deployments, Pods, Services) | Cloud Foundry CLI and web UI |\n| **Modularity** | Modular Kyma modules (can be added/removed at runtime) | Monolithic platform |\n| **Integration** | Native Kubernetes integration, event-driven architecture | Service binding and marketplace |\n\n## **SAP BTP Managed Offering**\n\nWhen using **SAP BTP, Kyma runtime** (the managed version):\n- \u2705 Service Level Agreements (SLAs)\n- \u2705 Fully managed Kubernetes\n- \u2705 Centralized Kyma dashboard\n- \u2705 System landscape management via SAP BTP cockpit\n- \u2705 Native integration with SAP systems via events and APIs\n\n## **When to Use Each**\n\n- **Kyma**: Best for cloud-native, event-driven architectures, microservices, serverless functions, and deep Kubernetes integration\n- **Cloud Foundry**: Better for traditional application deployment, polyglot development, and simpler operational models\n\nBoth are available as managed services on SAP BTP, so your choice depends on your architecture and development preferences.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 13.5322,
+            "evaluation_latency_seconds": 1.9562,
+            "input_tokens": 14695,
+            "output_tokens": 835,
+            "total_tokens": 15530,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 2105,
+            "response_word_count": 281
+          },
+          "expectations": [
+            {
+              "name": "kyma_vs_cloud_foundry",
+              "statement": "points out that kyma runs on k8s (kubernetes) and that Cloud Foundry is PaaS (Platform as a service)",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_kyma_vs_cloud_foundry [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response clearly points out that Kyma runs on Kubernetes and that Cloud Foundry is a Platform-as-a-Service, fulfilling the key evaluation step. It provides detailed comparisons emphasizing Kyma's Kubernetes foundation and Cloud Foundry's PaaS nature, along with additional relevant distinctions. The only minor shortcoming is the lack of an explicit, simple statement directly contrasting the two in a single sentence, but overall the alignment is strong.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-25",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 12.1135,
+      "avg_latency_seconds": 12.1135,
+      "total_evaluation_latency_seconds": 2.6645,
+      "input_tokens": 13404,
+      "output_tokens": 784,
+      "total_tokens": 14188,
+      "avg_tokens_per_query": 14188.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask to compare kyma with k8s environments provided by hyperscalers.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is the difference between Kyma and other Kubernetes environments provided by hypescalers?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "Based on the Kyma documentation, here are the **key differences between Kyma and other Kubernetes environments** provided by hyperscalers:\n\n## **1. Managed Service with SAP Integration**\n- **Kyma**: A fully managed Kubernetes runtime specifically designed for SAP BTP, with **native integration to SAP systems** (S/4HANA, SuccessFactors, Commerce Cloud, etc.) and Multi-Cloud Foundation Services\n- **Other K8s (AWS EKS, Azure AKS, GCP GKE)**: Generic Kubernetes offerings without built-in SAP system integration\n\n## **2. Modular Architecture**\n- **Kyma**: Built on **modular building blocks** (Kyma modules) that can be added, deleted, or reconfigured at runtime\n- **Other K8s**: Require manual installation and configuration of additional components\n\n## **3. Out-of-the-Box Enterprise Features**\n- **Kyma**: Includes pre-built support for:\n  - SAP CAP (Cloud Application Programming Model)\n  - SAP Cloud SDK\n  - Application Router\n  - HTML5 Deployer\n  - Serverless Functions (Node.js/Python)\n  - Event-driven architecture\n- **Other K8s**: Require manual setup and integration\n\n## **4. Automatic Resource Management**\n- **Kyma**: As a managed service, **automatically checks all Kyma-managed resources**. Any unexpected modifications are automatically reverted to maintain consistency\n- **Other K8s**: Full user responsibility for resource management and drift detection\n\n## **5. Infrastructure Foundation**\n- **Kyma**: Built on **Gardener** (open-source Kubernetes cluster management) across multiple cloud providers\n- **Other K8s**: Each hyperscaler manages their own proprietary infrastructure\n\n## **6. Use Case Focus**\n- **Kyma**: Optimized for **building extensions and integrations** to SAP solutions\n- **Other K8s**: General-purpose cloud-native application deployment\n\nIn summary, **Kyma is purpose-built for SAP enterprise scenarios**, while other hyperscaler Kubernetes offerings are general-purpose platforms.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 12.1135,
+            "evaluation_latency_seconds": 2.6645,
+            "input_tokens": 13404,
+            "output_tokens": 784,
+            "total_tokens": 14188,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1920,
+            "response_word_count": 250
+          },
+          "expectations": [
+            {
+              "name": "mentions_keywords",
+              "statement": "points out that kyma provides support for SAP services",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_keywords [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly highlights Kyma's native integration with SAP systems such as S/4HANA, SuccessFactors, and Commerce Cloud, directly addressing the evaluation step about Kyma's support for SAP services. It clearly differentiates Kyma from other hyperscaler Kubernetes environments by emphasizing this SAP-specific integration.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-24",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 11.5883,
+      "avg_latency_seconds": 11.5883,
+      "total_evaluation_latency_seconds": 1.9302,
+      "input_tokens": 13822,
+      "output_tokens": 699,
+      "total_tokens": 14521,
+      "avg_tokens_per_query": 14521.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask how to expose an endpoint in a Kyma cluster.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "How can I expose my endpoint using Kyma?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "## Summary: Exposing Endpoints in Kyma\n\nTo expose your endpoint in Kyma, you use **APIRule** \u2014 a custom resource that makes your Kubernetes Service reachable from outside the cluster.\n\n### Key Steps:\n\n1. **Create a Service** for your workload (Deployment, Function, etc.)\n2. **Create an APIRule** that references your Service and defines:\n   - **Host name** (e.g., `myapp.example.com`)\n   - **Paths and HTTP methods** allowed\n   - **Access strategy** (security level)\n\n### Access Strategies:\n\n- **`noAuth`** \u2013 Open endpoint (development/testing)\n- **`jwt`** \u2013 Protect with JSON Web Tokens (recommended for production)\n- **`extAuth`** \u2013 Delegate to external authorization service\n\n### Example APIRule:\n\n```yaml\napiVersion: gateway.kyma-project.io/v2\nkind: APIRule\nmetadata:\n  name: my-service-exposed\n  namespace: default\nspec:\n  gateway: kyma-system/kyma-gateway\n  hosts:\n    - my-service.example.com\n  service:\n    name: my-service\n    port: 8080\n  rules:\n    - path: /*\n      methods: [\"GET\", \"POST\"]\n      noAuth: true\n```\n\n### How It Works:\n\nThe API Gateway module watches your APIRule and automatically translates it into Istio `VirtualService` and `AuthorizationPolicy` objects \u2014 you don't need to create these manually.\n\n### Next Steps:\n\n- Use the **Kyma Dashboard** \u2192 *Discovery and Network \u2192 API Rules* \u2192 *Create* to set up your APIRule\n- Or apply the YAML directly with `kubectl apply -f apirule.yaml`\n\nWould you like help creating an APIRule for a specific workload or securing it with JWT?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 11.5883,
+            "evaluation_latency_seconds": 1.9302,
+            "input_tokens": 13822,
+            "output_tokens": 699,
+            "total_tokens": 14521,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1501,
+            "response_word_count": 208
+          },
+          "expectations": [
+            {
+              "name": "mentions_kyewords",
+              "statement": "propose to use the APIRule custom resource and mentions accessStrategies",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_kyewords [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly proposes using the APIRule custom resource to expose endpoints in Kyma and explicitly mentions accessStrategies, detailing noAuth, jwt, and extAuth options. It provides a comprehensive explanation, example YAML, and next steps, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-23",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 11.3842,
+      "avg_latency_seconds": 11.3842,
+      "total_evaluation_latency_seconds": 2.0909,
+      "input_tokens": 10929,
+      "output_tokens": 852,
+      "total_tokens": 11781,
+      "avg_tokens_per_query": 11781.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask how to use isto.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "How can I use Istio in Kyma?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "Based on the Kyma documentation, here's how you can use Istio in Kyma:\n\n## Overview\n\n**Istio** is an open-source service mesh that provides a uniform way to manage, connect, and secure microservices. The Istio module is automatically added to your Kyma runtime instance by default.\n\n## Key Features\n\nThe Istio module offers:\n- **Automatic installation and management** of Istio with simplified upgrades\n- **Default configuration** for quick setup\n- **Fine-tuning capabilities** to optimize settings for your needs\n- **Data plane synchronization** with the control plane\n- **X-Forwarded-For (XFF) header support** for request tracking\n\n## Default Configuration\n\nOut of the box, Kyma's Istio module provides:\n- **Istiod (Pilot)** and **Ingress Gateway** enabled by default\n- **Automatic sidecar injection disabled** by default (you enable it per namespace)\n- **Mutual TLS (mTLS) in STRICT mode** for enhanced security\n- **Distroless images** for reduced attack surface\n- **CNI component** as a DaemonSet for sidecar installation\n\n## Getting Started\n\n### 1. **Enable Sidecar Proxy Injection** (per namespace)\nTo use Istio's service mesh features, you need to enable automatic sidecar proxy injection in your namespace. This injects Istio proxies into your pods.\n\n### 2. **Expose Workloads with VirtualService**\nUse Istio's `VirtualService` resource to expose your workloads. You can:\n- Use the default Kyma domain and the default Gateway (`kyma-system/kyma-gateway`)\n- Set up a custom TLS Gateway for production environments\n\n### 3. **Configure Istio (Optional)**\nCustomize Istio settings via the **Istio Custom Resource (CR)**:\n\n```yaml\napiVersion: operator.kyma-project.io/v1alpha2\nkind: Istio\nmetadata:\n  name: default\n  namespace: kyma-system\nspec:\n  config:\n    gatewayExternalTrafficPolicy: Cluster\n```\n\n## Common Use Cases\n\n- **Traffic management** - Route and load balance traffic between services\n- **Security** - Enforce mTLS and authorization policies\n- **Observability** - Collect telemetry data for service behavior insights\n- **Service exposure** - Expose internal services via Gateways and VirtualServices\n\nWould you like guidance on any specific Istio feature, such as enabling sidecar injection, configuring a custom gateway, or setting up traffic policies?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 11.3842,
+            "evaluation_latency_seconds": 2.0909,
+            "input_tokens": 10929,
+            "output_tokens": 852,
+            "total_tokens": 11781,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 2271,
+            "response_word_count": 319
+          },
+          "expectations": [
+            {
+              "name": "istio_is_included",
+              "statement": "points out that Istio comes preinstalled in Kyma",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_istio_is_included [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly states that the Istio module is automatically added to the Kyma runtime instance by default, directly addressing the evaluation step that requires pointing out Istio comes preinstalled in Kyma.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-28",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 11.8195,
+      "avg_latency_seconds": 11.8195,
+      "total_evaluation_latency_seconds": 1.8179,
+      "input_tokens": 16243,
+      "output_tokens": 755,
+      "total_tokens": 16998,
+      "avg_tokens_per_query": 16998.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask about Kyma Modules.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What modules does Kyma offer and what they do?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "## Summary: Kyma Modules\n\nKyma offers a **modular architecture** where you can install only the modules you need. Here's what's available:\n\n### **Default Modules** (included by default, but optional)\n\n| Module | Technical Name | Purpose |\n|--------|---|---|\n| **Istio** | `istio` | Service mesh with Kyma-specific configuration for traffic management and security |\n| **API Gateway** | `api-gateway` | Expose and secure APIs in your cluster |\n| **SAP BTP Operator** | `btp-operator` | Consume SAP BTP services from your Kubernetes cluster using Kubernetes-native tools |\n\n### **Optional Modules** (add on demand)\n\n| Module | Technical Name | Purpose |\n|--------|---|---|\n| **Application Connector** | `application-connector` | Connect with external on-premise or cloud systems seamlessly |\n| **Cloud Manager** | `cloud-manager` | Bring cloud provider products and resources into the cluster securely |\n| **Eventing** | `eventing` | Publish and subscribe to CloudEvents (supports SAP Event Mesh and NATS) |\n| **Keda** | `keda` | Install KEDA (Kubernetes Event-Driven Autoscaler) for event-driven scaling |\n| **NATS** | `nats` | Deploy a NATS cluster as a backend for Kyma Eventing |\n| **Serverless** | `serverless` | Define and deploy simple code snippets (Functions) with minimal effort |\n| **Telemetry** | `telemetry` | Collect application logs and distributed traces, dispatch to preferred backends |\n\n### Key Benefits\n- **Pick what you need**: Install only modules relevant to your workload\n- **Cost optimization**: Pay only for infrastructure used by your modules\n- **Flexibility**: Add or delete modules on demand\n- **Dependency awareness**: Some modules may depend on others (e.g., API Gateway depends on Istio capabilities)\n\nYou can manage modules through the **Kyma Dashboard** or programmatically. For detailed configuration of any module, refer to the official Kyma documentation.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 11.8195,
+            "evaluation_latency_seconds": 1.8179,
+            "input_tokens": 16243,
+            "output_tokens": 755,
+            "total_tokens": 16998,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1890,
+            "response_word_count": 285
+          },
+          "expectations": [
+            {
+              "name": "mentions_modules",
+              "statement": "mentions the eventing, serverless and telemetry",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_modules [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly mentions the eventing, serverless, and telemetry modules, providing their technical names and clear descriptions of their purposes, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-21",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 10.9348,
+      "avg_latency_seconds": 10.9348,
+      "total_evaluation_latency_seconds": 1.6733,
+      "input_tokens": 16729,
+      "output_tokens": 663,
+      "total_tokens": 17392,
+      "avg_tokens_per_query": 17392.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask how to add a module.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "How to add a module?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "## Summary\n\nTo add a module to your Kyma cluster, you have **two options**:\n\n### **Option 1: Using Kyma Dashboard (UI)**\n1. Go to your Kyma dashboard\n2. Navigate to **Cluster Overview** \u2192 **Modify Modules** \u2192 **Add**\n3. Check the modules you want to add\n4. Click **Add**\n5. *(Optional)* Under **Advanced** options, you can select a specific release channel\n6. Wait for the module status to change to **READY**\n\n### **Option 2: Using Kyma CLI**\n\n**List available modules:**\n```bash\nkyma module catalog\n```\n\n**Add a module with default configuration:**\n```bash\nkyma module add {MODULE-NAME} --default-cr\n```\n\n**Add a module with custom configuration:**\n```bash\nkyma module add {MODULE-NAME} --cr-path={CR-FILEPATH}\n```\n\n**Add a module with a specific release channel:**\n```bash\nkyma module add {MODULE-NAME} -c {CHANNEL-NAME} --default-cr\n```\n\n**Verify the module was added:**\n```bash\nkyma module list\n```\n\n---\n\n## Available Optional Modules\n\nKyma offers several optional modules you can add:\n- **Application Connector** \u2014 Connect external systems\n- **Cloud Manager** \u2014 Manage cloud provider resources\n- **Eventing** \u2014 Publish/subscribe to CloudEvents\n- **Keda** \u2014 Kubernetes Event-Driven Autoscaler\n- **NATS** \u2014 NATS cluster for eventing backend\n- **Serverless** \u2014 Deploy Functions\n- **Telemetry** \u2014 Collect logs and traces\n\nWould you like help adding a specific module or configuring it?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 10.9348,
+            "evaluation_latency_seconds": 1.6733,
+            "input_tokens": 16729,
+            "output_tokens": 663,
+            "total_tokens": 17392,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1387,
+            "response_word_count": 208
+          },
+          "expectations": [
+            {
+              "name": "dashboard",
+              "statement": "provides instructions on how to add modules via the Kyma dashboard",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_dashboard [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly provides step-by-step instructions on how to add modules via the Kyma dashboard, fulfilling the evaluation requirement. It details navigation paths, actions to take, and optional settings, demonstrating strong alignment with the evaluation steps.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-20",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 11.0213,
+      "avg_latency_seconds": 11.0213,
+      "total_evaluation_latency_seconds": 2.1667,
+      "input_tokens": 24370,
+      "output_tokens": 691,
+      "total_tokens": 25061,
+      "avg_tokens_per_query": 25061.0,
+      "llm_call_count": 4,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "search_kyma_doc": 1
+      },
+      "description": "Unrelated to existing cluster resources, ask at which regions kyma is available.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "at which regions is kyma available?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "## Summary\n\nKyma is available across **multiple regions** on **four major cloud providers**:\n\n### **1. Microsoft Azure** (13 regions)\n- **US**: Central (IA), East (VA), West (WA)\n- **Europe**: North (Ireland), UK South (London), Germany (Frankfurt), Switzerland (Zurich), Netherlands\n- **Asia-Pacific**: Singapore, Australia (Sydney), Japan (Tokyo)\n- **Americas**: Brazil (S\u00e3o Paulo), Canada (Toronto)\n\n### **2. Amazon Web Services (AWS)** (12 regions)\n- **Europe**: Frankfurt, London, Milan\n- **US**: East (VA), West (Oregon)\n- **Asia-Pacific**: Japan (Tokyo), South Korea (Seoul), India (Mumbai), Singapore, Australia (Sydney)\n- **Americas**: Canada (Montreal), Brazil (S\u00e3o Paulo)\n\n### **3. Google Cloud Platform (GCP)** (13 regions)\n- **Europe**: Frankfurt, Netherlands\n- **US**: Central (IA), West (Oregon), East (Virginia)\n- **Asia-Pacific**: India (Mumbai), Japan (Tokyo & Osaka), Singapore, Australia (Sydney)\n- **Middle East**: KSA (Dammam), Israel (Tel Aviv)\n- **Americas**: Brazil (S\u00e3o Paulo)\n\n### **4. SAP Cloud Infrastructure** (7 regions)\n- **Europe**: Germany (Rot), Germany (Frankfurt)\n- **US**: East (Sterling), West (Colorado)\n- **Asia-Pacific**: Australia (Sydney), Japan (Tokyo)\n- **Middle East**: UAE (Dubai)\n\n### **Trial Plans**\nTrial accounts are available in:\n- **AWS**: Frankfurt, US East (VA), Singapore\n- **Azure**: Singapore\n\nEach region supports different plan types (`azure`, `aws`, `gcp`, `sap-converged-cloud`, `trial`, etc.), and availability varies by account type (Enterprise, Trial, Partner accounts).",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 1,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 11.0213,
+            "evaluation_latency_seconds": 2.1667,
+            "input_tokens": 24370,
+            "output_tokens": 691,
+            "total_tokens": 25061,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1536,
+            "response_word_count": 205
+          },
+          "expectations": [
+            {
+              "name": "mentions_hyperscaler_regions",
+              "statement": "lists regions where Kyma is available across multiple hyperscalers (at least Azure, AWS/Amazon Web Services and GCP/Google Cloud), including specific regions such as Europe (Frankfurt), Europe (Netherlands), US East (VA), US West, US Central (IA), Singapore, Australia (Sydney), Brazil (S\u00e3o Paulo) and Japan (Tokyo)",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_hyperscaler_regions [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response comprehensively lists Kyma availability across multiple hyperscalers including Azure, AWS, and GCP, covering all specified regions such as Europe (Frankfurt, Netherlands), US East (VA), US West, US Central (IA), Singapore, Australia (Sydney), Brazil (S\u00e3o Paulo), and Japan (Tokyo). It also includes additional details on SAP Cloud Infrastructure and trial plans, demonstrating thoroughness and strong alignment with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-question-19",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 4.5723,
+      "avg_latency_seconds": 4.5723,
+      "total_evaluation_latency_seconds": 5.3582,
+      "input_tokens": 2793,
+      "output_tokens": 427,
+      "total_tokens": 3220,
+      "avg_tokens_per_query": 3220.0,
+      "llm_call_count": 1,
+      "tool_call_count": 0,
+      "tool_call_counts": {},
+      "description": "Unrelated to existing cluster resources, ask what kyma is.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is Kyma?",
+          "resource": {
+            "kind": "Cluster",
+            "api_version": "",
+            "name": "",
+            "namespace": ""
+          },
+          "actual_response": "# What is Kyma?\n\nKyma is a **fully managed, cloud-native Kubernetes application runtime** based on the open-source Kyma project. It's designed to help you build, deploy, and manage cloud-native applications on Kubernetes with ease.\n\n## Key Characteristics\n\n**Core Purpose:**\n- Provides a complete, opinionated Kubernetes runtime environment\n- Simplifies cloud-native application development and operations\n- Abstracts away Kubernetes complexity while maintaining full flexibility\n\n**Main Components:**\n- **Kubernetes Foundation**: Built on standard Kubernetes, ensuring portability and compatibility\n- **Service Mesh (Istio)**: For advanced networking, traffic management, and security\n- **Serverless Functions**: Native support for event-driven, serverless workloads\n- **API Management**: Tools for exposing and managing APIs\n- **Event Handling**: Built-in event bus for asynchronous communication\n- **Observability**: Integrated logging, monitoring, and tracing capabilities\n- **Security**: RBAC, network policies, and certificate management\n\n## What You Can Do with Kyma\n\n\u2705 Deploy containerized microservices  \n\u2705 Build and run serverless functions  \n\u2705 Manage APIs and expose services  \n\u2705 Handle events and asynchronous workflows  \n\u2705 Monitor, log, and trace applications  \n\u2705 Implement advanced networking and security policies  \n\u2705 Integrate with external systems via events and APIs  \n\n## Kyma in SAP BTP\n\nWhen you use **Kyma Runtime in SAP BTP**, you get:\n- A managed Kubernetes cluster with Kyma pre-installed\n- Automatic updates and maintenance\n- Integration with SAP BTP services and identity management\n- Enterprise-grade security and compliance\n\n---\n\nWould you like to know more about a specific Kyma feature, or do you need help with a particular resource or configuration?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 3,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 1,
+          "optional_expectations_passed": 1,
+          "metrics": {
+            "latency_seconds": 4.5723,
+            "evaluation_latency_seconds": 5.3582,
+            "input_tokens": 2793,
+            "output_tokens": 427,
+            "total_tokens": 3220,
+            "llm_call_count": 1,
+            "tool_calls": [],
+            "tool_call_count": 0,
+            "tool_call_counts": {},
+            "response_char_count": 1782,
+            "response_word_count": 246
+          },
+          "expectations": [
+            {
+              "name": "mentions_keywords",
+              "statement": "mentions 'Kubernetes' or 'k8s'",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_keywords [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly mentions 'Kubernetes' multiple times, including phrases like 'cloud-native Kubernetes application runtime' and 'Built on standard Kubernetes,' fully satisfying the evaluation step requiring mention of 'Kubernetes' or 'k8s'.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "mentions_keywords",
+              "statement": "mentions 'managed' or 'fully managed'",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_mentions_keywords [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly mentions 'fully managed' in the description of Kyma as a 'fully managed, cloud-native Kubernetes application runtime' and also refers to a 'managed Kubernetes cluster' in the SAP BTP context, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "mentions_btp",
+              "statement": "mentions 'Business Technology Platform' or 'BTP'.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "mentions_btp [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly mentions 'SAP BTP' and 'Kyma Runtime in SAP BTP,' directly addressing the evaluation step requiring mention of 'Business Technology Platform' or 'BTP.' The explanation of Kyma within the context of SAP BTP is clear and relevant.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-function-18",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 5.9176,
+      "avg_latency_seconds": 5.9176,
+      "total_evaluation_latency_seconds": 12.3782,
+      "input_tokens": 6348,
+      "output_tokens": 630,
+      "total_tokens": 6978,
+      "avg_tokens_per_query": 6978.0,
+      "llm_call_count": 2,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "kyma_query_tool": 1
+      },
+      "description": "The Function has a wrong dependencies field set.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is the problem?",
+          "resource": {
+            "kind": "Function",
+            "api_version": "serverless.kyma-project.io/v1alpha2",
+            "name": "test-function-18",
+            "namespace": "test-function-18"
+          },
+          "actual_response": "## Problem Identified \u274c\n\nThe Function **test-function-18** has a **configuration error**:\n\n### Issue\n**ConfigurationReady condition is False**\n- **Reason:** `InvalidFunctionSpec`\n- **Message:** `invalid source.inline.dependencies value: deps should start with '{' and end with '}'`\n\n### Root Cause\nThe `dependencies` field in `spec.source.inline` contains invalid content:\n```\ndependencies: 'hakuna matata'\n```\n\nFor Node.js functions, the `dependencies` field must be a valid **package.json** format (JSON object), not a plain string.\n\n### Solution\nUpdate the Function resource to provide valid dependencies. Here's the corrected YAML:\n\n```yaml\napiVersion: serverless.kyma-project.io/v1alpha2\nkind: Function\nmetadata:\n  name: test-function-18\n  namespace: test-function-18\nspec:\n  replicas: 1\n  resourceConfiguration:\n    function:\n      profile: S\n  runtime: nodejs20\n  source:\n    inline:\n      dependencies: |\n        {\n          \"name\": \"test-function-18\",\n          \"version\": \"1.0.0\",\n          \"dependencies\": {}\n        }\n      source: |\n        module.exports = {\n          main: async function (event, context) {\n            var queryParams = event['extensions']['request']['query'];\n            var greetingMsg = queryParams['greeting']; \n            if(!greetingMsg) {\n              greetingMsg = 'Hello world';\n            } \n            const message = greetingMsg\n              + ` from the Kyma Function ${context['function-name']}`\n              + ` running on ${context.runtime}!`;\n            console.log(message);\n            return message;\n          }\n        }\n```\n\n**Key changes:**\n- `dependencies` is now a valid JSON object (package.json format)\n- If you don't need external dependencies, use an empty `dependencies` object as shown above\n- If you need specific packages, add them to the `dependencies` object (e.g., `\"express\": \"^4.18.0\"`)\n\nApply this fix and the Function should transition to a healthy state.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 4,
+          "optional_expectations_passed": 4,
+          "metrics": {
+            "latency_seconds": 5.9176,
+            "evaluation_latency_seconds": 12.3782,
+            "input_tokens": 6348,
+            "output_tokens": 630,
+            "total_tokens": 6978,
+            "llm_call_count": 2,
+            "tool_calls": [
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "kyma_query_tool": 1
+            },
+            "response_char_count": 1937,
+            "response_word_count": 215
+          },
+          "expectations": [
+            {
+              "name": "identify_issue",
+              "statement": "points out that the issues is with the dependencies field in the Kyma Function",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_identify_issue [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the problem with the 'dependencies' field in the Kyma Function, explaining that it must be a valid JSON object in package.json format rather than a plain string. It clearly points out the invalid content, provides a root cause, and offers a corrected example, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "dependencies_field",
+              "statement": "points out that the dependencies field should be a JSON object",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_dependencies_field [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the 'dependencies' field should be a JSON object, not a plain string, aligning perfectly with the evaluation step. It provides a clear explanation of the error, the root cause, and a corrected example showing 'dependencies' as a valid JSON object in package.json format.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide on how to fix the issue.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the configuration error, including identifying the issue, explaining the root cause, and offering a corrected YAML example with key changes highlighted. This directly aligns with the evaluation step requiring a step-by-step fix.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "example",
+              "statement": "provides an example of a correct dependencies field.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "example [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear example of a correct dependencies field in the form of a valid package.json JSON object, addressing the invalid string issue. It includes a properly formatted YAML snippet with dependencies as a JSON object, explains the error, and offers guidance on how to add or leave dependencies empty, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml for the Function with the correct dependencies.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response correctly identifies the problem with the dependencies field and provides a partial YAML snippet showing the Function with valid dependencies in package.json format, fulfilling the requirement for correct dependencies. The explanation is clear and the YAML snippet is mostly complete for the dependencies part, though it includes more than just the dependencies field, which is acceptable. Minor deduction for not being minimal or explicitly partial, but overall strong alignment.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "provides a complete yaml for the Function with the correct dependencies.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a complete and correct YAML for the Function, including the proper dependencies field formatted as a valid JSON object (package.json format), which directly addresses the configuration error described in the test case.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-deployment-16",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 8.4971,
+      "avg_latency_seconds": 8.4971,
+      "total_evaluation_latency_seconds": 12.6202,
+      "input_tokens": 15387,
+      "output_tokens": 676,
+      "total_tokens": 16063,
+      "avg_tokens_per_query": 16063.0,
+      "llm_call_count": 3,
+      "tool_call_count": 2,
+      "tool_call_counts": {
+        "kyma_query_tool": 2
+      },
+      "description": "The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is causing the Deployment to not have minimum availability?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx",
+            "namespace": "test-deployment-16"
+          },
+          "actual_response": "## Root Cause Identified\n\nThe Deployment **nginx** is not achieving minimum availability due to a **container image pull failure**. Here's what's happening:\n\n### Problem Summary\n\n| Issue | Details |\n|-------|---------|\n| **Pod Status** | Pending (not running) |\n| **Container Status** | `ImagePullBackOff` |\n| **Error Message** | `failed to pull and unpack image \"docker.io/library/ngix:latest\": failed to resolve image: pull access denied, repository does not exist or may require authorization` |\n| **Root Cause** | **Typo in the image name: `ngix` instead of `nginx`** |\n\n### Why Minimum Availability Failed\n\n1. The Deployment spec specifies `image: 'ngix'` (line in spec.template.spec.containers)\n2. Kubernetes tries to pull this image from Docker Hub\n3. The image `ngix` doesn't exist (it's a typo)\n4. The pod enters `ImagePullBackOff` state and never becomes ready\n5. With 0 ready replicas out of 1 desired, the Deployment condition `Available` is set to `False` with reason `MinimumReplicasUnavailable`\n6. The Deployment also exceeded the `progressDeadlineSeconds` (600s), so it's marked as `ProgressDeadlineExceeded`\n\n### Solution\n\nFix the image name typo in your Deployment. Change `ngix` to `nginx`:\n\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx\n  namespace: test-deployment-16\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: nginx\n  template:\n    metadata:\n      labels:\n        app: nginx\n    spec:\n      containers:\n      - name: nginx\n        image: nginx  # \u2190 Changed from 'ngix' to 'nginx'\n        imagePullPolicy: Always\n```\n\nApply this fix, and the pod should pull the correct image and become ready, restoring minimum availability to the Deployment.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 3,
+          "required_expectations_passed": 3,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 2,
+          "metrics": {
+            "latency_seconds": 8.4971,
+            "evaluation_latency_seconds": 12.6202,
+            "input_tokens": 15387,
+            "output_tokens": 676,
+            "total_tokens": 16063,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 2,
+            "tool_call_counts": {
+              "kyma_query_tool": 2
+            },
+            "response_char_count": 1704,
+            "response_word_count": 236
+          },
+          "expectations": [
+            {
+              "name": "image_not_found",
+              "statement": "points out that the image 'ngix' does not exist",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_image_not_found [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the image 'ngix' does not exist and is a typo for 'nginx', which directly addresses the evaluation step. It clearly explains the root cause, error message, and the impact on Deployment availability, providing a precise and actionable solution.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "image_typo",
+              "statement": "points out that the image name might have a type",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_image_typo [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the root cause as a typo in the image name ('ngix' instead of 'nginx'), directly addressing the evaluation step to point out the image name error. It clearly explains how this typo leads to the image pull failure and minimum availability issues, and provides a precise solution with corrected YAML, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "should_be_nginx",
+              "statement": "points out that the image name should be 'nginx'",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_should_be_nginx [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the root cause as a typo in the image name 'ngix' instead of 'nginx', clearly pointing out that the image name should be 'nginx'. It provides detailed evidence from the error message, explains the impact on minimum availability, and offers a precise solution to fix the image name, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, detailed step-by-step explanation of the root cause, the failure process, and the solution, fully aligning with the evaluation step requiring a step-by-step guide. It breaks down the problem into logical steps explaining why minimum availability failed and concludes with a precise fix.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "contains some yaml formatted Deployment manifest with all the required fields",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response includes a well-formed YAML Deployment manifest with all required fields such as apiVersion, kind, metadata, spec, replicas, selector, template, and containers. It directly addresses the root cause of the Deployment's minimum availability issue and provides a corrected manifest snippet, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "contains a yaml formatted Deployment manifest, containing all the required fields, and having the image set to 'nginx', the name set to 'nginx' and the namespace set to 'nginx'",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 0.4,
+              "success": false,
+              "reason": "The response includes a YAML Deployment manifest with the image set to 'nginx' and the name set to 'nginx', but the namespace is 'test-deployment-16' instead of the required 'nginx'. Therefore, it partially meets the criteria but fails to fully align with the namespace requirement.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-deployment-15",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 13.4218,
+      "avg_latency_seconds": 13.4218,
+      "total_evaluation_latency_seconds": 15.8107,
+      "input_tokens": 33885,
+      "output_tokens": 1100,
+      "total_tokens": 34985,
+      "avg_tokens_per_query": 34985.0,
+      "llm_call_count": 5,
+      "tool_call_count": 4,
+      "tool_call_counts": {
+        "kyma_query_tool": 2,
+        "k8s_overview_tool": 1,
+        "fetch_pod_logs_tool": 1
+      },
+      "description": "The ngnix Deployment is configured to an insufficient amount of memory and will run out of memory.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the Deployment not available?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx",
+            "namespace": "test-deployment-15"
+          },
+          "actual_response": "---\n\n## **Summary: Why the Deployment is Not Available**\n\nThe nginx Deployment is unavailable due to a **critical container runtime error** in the nginx Pod:\n\n### **Primary Issue: CrashLoopBackOff**\nThe nginx container is in a **CrashLoopBackOff** state with **3,351 restarts** and failing with:\n\n```\nOCI runtime create failed: runc create failed: unable to start container process: \nerror during container init: error setting cgroup config for procHooks process: \nopenat2 /sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podf788e98c_dc05_4af0_8b86_d9610c5a11b6.slice/cgroup.controllers: \nno such file or directory\n```\n\n### **Root Cause: Insufficient Memory**\nThe nginx container has a **memory limit of only 2Mi** (2 megabytes), which is **extremely low**. This causes:\n- Container initialization failures\n- Cgroup configuration errors\n- Continuous crash-restart cycles\n\n### **Secondary Issue: Memory Request Mismatch**\n- **Memory Request**: 1Mi\n- **Memory Limit**: 2Mi\n- **Actual nginx requirement**: ~10-50Mi minimum\n\n---\n\n## **Solution: Increase Memory Limits**\n\nUpdate your Deployment with adequate memory resources:\n\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx\n  namespace: test-deployment-15\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: nginx\n  template:\n    metadata:\n      labels:\n        app: nginx\n    spec:\n      containers:\n      - name: nginx\n        image: nginx\n        resources:\n          requests:\n            cpu: 100m\n            memory: 64Mi      # Increased from 1Mi\n          limits:\n            cpu: 250m\n            memory: 128Mi     # Increased from 2Mi\n```\n\n**Apply the fix:**\n```bash\nkubectl apply -f deployment.yaml\n```\n\nAfter applying this fix, the nginx container should start successfully and the Deployment will become available.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 7,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 5,
+          "optional_expectations_passed": 5,
+          "metrics": {
+            "latency_seconds": 13.4218,
+            "evaluation_latency_seconds": 15.8107,
+            "input_tokens": 33885,
+            "output_tokens": 1100,
+            "total_tokens": 34985,
+            "llm_call_count": 5,
+            "tool_calls": [
+              "kyma_query_tool",
+              "k8s_overview_tool",
+              "kyma_query_tool",
+              "fetch_pod_logs_tool"
+            ],
+            "tool_call_count": 4,
+            "tool_call_counts": {
+              "kyma_query_tool": 2,
+              "k8s_overview_tool": 1,
+              "fetch_pod_logs_tool": 1
+            },
+            "response_char_count": 1828,
+            "response_word_count": 217
+          },
+          "expectations": [
+            {
+              "name": "insufficient_memory",
+              "statement": "points out that the Container has an insufficient amount of memory",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_insufficient_memory [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the insufficient memory allocation (2Mi limit) as the root cause of the Deployment's unavailability, aligning perfectly with the evaluation step. It details how the low memory causes container initialization failures and crash loops, and provides a clear solution to increase memory requests and limits, directly addressing the memory insufficiency.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "propose_memory_increase",
+              "statement": "points out that either the memory limit or the memory request should be increased",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_propose_memory_increase [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies that both the memory limit and memory request are too low and need to be increased, directly addressing the evaluation step. It provides specific current values (1Mi request, 2Mi limit) and suggests appropriate increased values (64Mi request, 128Mi limit), along with a detailed explanation of how insufficient memory causes the Deployment to be unavailable.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, detailed step-by-step guide explaining the problem (CrashLoopBackOff due to insufficient memory), root cause analysis, and a concrete solution with updated YAML configuration and commands to apply the fix, fully aligning with the evaluation requirement.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "oom_error",
+              "statement": "points out that the Pod has an OOM (out of memory) error",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "oom_error [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response correctly identifies that the Deployment is unavailable due to container runtime errors linked to insufficient memory limits, which cause CrashLoopBackOff states. However, it does not explicitly mention an OOM (out of memory) error, focusing instead on cgroup configuration errors and memory limits being too low. While the memory issue is central, the absence of a direct OOM error mention limits full alignment with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "yaml_with_deployment",
+              "statement": "provides some yaml formatted manifest for a Deployment, that contains a Container with resource limits and/or resource requests",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "yaml_with_deployment [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear YAML manifest for a Deployment including a container with both resource requests and limits specified. It directly addresses the issue by showing increased memory and CPU resources, fulfilling the evaluation step requirement precisely.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "yaml_with_deployment_and_resources",
+              "statement": "provides a complete yaml formatted manifest for a Deployment, that contains all required fields and that contains the settings for a Container with resource limits and/or resource requests",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "yaml_with_deployment_and_resources [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response provides a complete YAML manifest for a Deployment including all required fields such as apiVersion, kind, metadata, spec, and container settings. It includes resource requests and limits for the container, addressing the memory issue explicitly. The manifest is well-structured and valid YAML. The only minor shortcoming is the absence of explicit resource limits or requests for all containers if multiple were present, but given the single container context, it fully meets the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "fully_deployable_yaml",
+              "statement": "provides a complete yaml formatted manifest for a Deployment, with the name set to 'nginx', the namespace set to 'test-deployment-15', that contains all required fields and that contains the settings for a Container with resource limits and/or resource requests",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "fully_deployable_yaml [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response provides a complete and valid YAML manifest for a Deployment named 'nginx' in the 'test-deployment-15' namespace, including all required fields and container resource requests and limits. It clearly addresses the resource configuration issue causing the Deployment unavailability. The only minor shortcoming is the absence of explicit replicas count verification, but the manifest includes replicas: 1, which is sufficient.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-subscription-14",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 9.0265,
+      "avg_latency_seconds": 9.0265,
+      "total_evaluation_latency_seconds": 17.8702,
+      "input_tokens": 10715,
+      "output_tokens": 720,
+      "total_tokens": 11435,
+      "avg_tokens_per_query": 11435.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 2,
+        "fetch_kyma_resource_version": 1
+      },
+      "description": "The Subscription is set-up to forward events to redis svc instead of func1 service.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why the events are not being received by my function func1?",
+          "resource": {
+            "kind": "Subscription",
+            "api_version": "eventing.kyma-project.io/v1alpha2",
+            "name": "sub1",
+            "namespace": "test-subscription-14"
+          },
+          "actual_response": "I've found the issue! Let me explain what's happening:\n\n## **Problem Identified**\n\nThe **Subscription is correctly configured and active**, but the **sink endpoint is wrong**:\n\n- **Subscription sink:** `http://restapi.test-subscription-14.svc.cluster.local/api/v1/counter`\n- **Function name:** `func1`\n- **Function service:** Should be `http://func1.test-subscription-14.svc.cluster.local`\n\nThe Subscription is pointing to a service called `restapi`, but your function is deployed as `func1`. The events are being sent to the wrong endpoint.\n\n## **Solution**\n\nUpdate the Subscription to point to the correct function service. Here's the corrected resource:\n\n```yaml\napiVersion: eventing.kyma-project.io/v1alpha2\nkind: Subscription\nmetadata:\n  name: sub1\n  namespace: test-subscription-14\nspec:\n  source: noapp\n  types:\n    - increase.counter.v0\n  sink: http://func1.test-subscription-14.svc.cluster.local\n  typeMatching: standard\n  config:\n    maxInFlightMessages: \"10\"\n```\n\n**Key changes:**\n- Changed `sink` from `http://restapi.test-subscription-14.svc.cluster.local/api/v1/counter` to `http://func1.test-subscription-14.svc.cluster.local`\n\n## **Additional Notes**\n\n1. **Function Status:** Your `func1` is healthy and running (Deployment is ready).\n2. **Subscription Status:** The Subscription is active and correctly configured for the event type `increase.counter.v0`.\n3. **Function Handler:** The function's current handler just returns a static response. If you want it to actually process events, you may need to update the function code to handle the incoming event payload.\n\nApply the corrected Subscription YAML above, and events should start flowing to your function.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 5,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 9.0265,
+            "evaluation_latency_seconds": 17.8702,
+            "input_tokens": 10715,
+            "output_tokens": 720,
+            "total_tokens": 11435,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "fetch_kyma_resource_version",
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 2,
+              "fetch_kyma_resource_version": 1
+            },
+            "response_char_count": 1678,
+            "response_word_count": 191
+          },
+          "expectations": [
+            {
+              "name": "subscription_wrong_sink_url",
+              "statement": "points out that the sink configured in the Subscription is incorrect",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_subscription_wrong_sink_url [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Subscription's sink is incorrect by comparing the current sink URL with the correct function service URL. It clearly points out that events are sent to the wrong endpoint and provides a corrected Subscription YAML with the proper sink. This directly aligns with the evaluation step requiring the identification of the incorrect sink configuration.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "subscription_wrong_sink_url_reason",
+              "statement": "provides the reason that the Subscription is set-up to forward events to redis svc instead of func1 service",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "subscription_wrong_sink_url_reason [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies that the Subscription is forwarding events to the 'restapi' service instead of the 'func1' service, directly addressing the cause of events not reaching func1. It explains the incorrect sink endpoint and provides a corrected Subscription YAML pointing to func1, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "subscription_explanation",
+              "statement": "explains the use of Subscriptions and how to configure them",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "subscription_explanation [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response clearly explains the use of Subscriptions by identifying the misconfigured sink endpoint and provides a detailed corrected Subscription YAML configuration. It highlights the relationship between the Subscription and the function service, addressing why events are not received by func1. The explanation includes key details such as the Subscription status, function health, and event type, effectively covering configuration and usage. However, it could improve by explicitly describing the general concept of Subscriptions beyond the specific fix.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response clearly identifies the problem and provides a detailed, step-by-step guide to fix the issue by updating the Subscription sink URL. It includes the corrected YAML configuration and explains the key change needed. Additional notes about function and subscription status add helpful context. The only minor shortcoming is the lack of explicit stepwise instructions separated as discrete steps, but overall it strongly aligns with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with the correct event type \"increase.counter.v1\"",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.2,
+              "success": false,
+              "reason": "The response provides a partial YAML for a Subscription resource but uses the incorrect event type 'increase.counter.v0' instead of the required 'increase.counter.v1'. While the sink endpoint correction is clear and relevant, the key evaluation step of specifying the correct event type is not met, resulting in low alignment.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "deployable_yaml",
+              "statement": "provides a complete yaml for the Subscription, with the namespace set to 'test-subscription-14' and the event type set to \"increase.counter.v1\"",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "deployable_yaml [GEval]",
+              "score": 0.2,
+              "success": false,
+              "reason": "The response provides a Subscription YAML with the correct namespace 'test-subscription-14' but sets the event type to 'increase.counter.v0' instead of the required 'increase.counter.v1'. Thus, it partially aligns with the evaluation steps but fails to meet the key requirement of the specified event type.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-subscription-13",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 13.0513,
+      "avg_latency_seconds": 13.0513,
+      "total_evaluation_latency_seconds": 12.8269,
+      "input_tokens": 15875,
+      "output_tokens": 839,
+      "total_tokens": 16714,
+      "avg_tokens_per_query": 16714.0,
+      "llm_call_count": 5,
+      "tool_call_count": 2,
+      "tool_call_counts": {
+        "kyma_query_tool": 1,
+        "search_kyma_doc": 1
+      },
+      "description": "The Subscription is configured with an invalid source configuration.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "How exactly do I fix my kyma subscription?",
+          "resource": {
+            "kind": "Subscription",
+            "api_version": "eventing.kyma-project.io/v1alpha2",
+            "name": "my-sub",
+            "namespace": "test-subscription-13"
+          },
+          "actual_response": "## Issue Identified\n\nYour subscription **`my-sub`** is failing validation because the **`source` field is empty**. According to the error message:\n\n```\nSubscription validation failed: spec.source: Invalid value: \"\": must not be empty\n```\n\nThe `source` field is **required** and defines the origin of the event.\n\n---\n\n## How to Fix It\n\nYou need to update your subscription to include a valid `source` value. Here's the corrected YAML:\n\n```yaml\napiVersion: eventing.kyma-project.io/v1alpha2\nkind: Subscription\nmetadata:\n  name: my-sub\n  namespace: test-subscription-13\nspec:\n  source: \"commerce\"  # \u2190 ADD THIS: Specify the event source (e.g., \"commerce\", \"sap.s4hana\", etc.)\n  types:\n    - event.happened.v1\n  sink: http://my-service.test-subscription-13.svc.cluster.local\n  config:\n    maxInFlightMessages: \"10\"\n  typeMatching: standard\n```\n\n### Steps to Apply the Fix:\n\n1. **Replace `\"commerce\"` with your actual event source** (e.g., the application or system that emits the events)\n2. **Apply the updated resource:**\n   ```bash\n   kubectl apply -f subscription.yaml\n   ```\n   Or patch it directly:\n   ```bash\n   kubectl patch subscription my-sub -n test-subscription-13 --type merge -p '{\"spec\":{\"source\":\"commerce\"}}'\n   ```\n\n### Required Fields Summary:\n- **`source`** (required) \u2014 The origin of the event (currently missing \u274c)\n- **`types`** (required) \u2014 Event types to subscribe to \u2705 (you have `event.happened.v1`)\n- **`sink`** (required) \u2014 Target service for event delivery \u2705 (you have `my-service`)\n\nOnce you add a valid `source`, your subscription should become ready and start receiving events.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 4,
+          "optional_expectations_passed": 4,
+          "metrics": {
+            "latency_seconds": 13.0513,
+            "evaluation_latency_seconds": 12.8269,
+            "input_tokens": 15875,
+            "output_tokens": 839,
+            "total_tokens": 16714,
+            "llm_call_count": 5,
+            "tool_calls": [
+              "kyma_query_tool",
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 2,
+            "tool_call_counts": {
+              "kyma_query_tool": 1,
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 1603,
+            "response_word_count": 210
+          },
+          "expectations": [
+            {
+              "name": "subscription_config_error",
+              "statement": "identifies that the source field is missing, empty, or invalid",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_subscription_config_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies that the 'source' field is missing and empty, referencing the exact error message and explaining its importance. It provides a detailed fix with a corrected YAML example, instructions to apply the fix, and a summary of required fields, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "subscription_correct_source",
+              "statement": "provides an example of how the source should be configured",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_subscription_correct_source [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies the issue with the empty 'source' field and provides a complete example YAML configuration showing how to set the 'source' field properly. It also includes detailed instructions on applying the fix and explains the role of the 'source' field, fully aligning with the evaluation step requiring an example of how the source should be configured.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide on how to fix the issue with the Kyma subscription, including identifying the problem, showing corrected YAML, and detailed instructions on applying the fix via kubectl commands. It directly addresses the missing 'source' field and explains required fields, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml for the Subscription with an example of a valid source configuration",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear partial YAML example of a Subscription with a valid 'source' field, directly addressing the missing 'source' issue. It includes an example value ('commerce'), detailed instructions to fix the problem, and highlights required fields, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "provides a complete yaml for the Subscription with the correct source configuration",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a complete and correct YAML for the Subscription, including the required 'source' field with a valid example value. It clearly identifies the issue with the empty 'source' field, explains its importance, and offers detailed instructions to fix it, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "verification",
+              "statement": "provides a Kubectl command to check the status of the subscription to ensure it is 'Ready' after applying the fix",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "verification [GEval]",
+              "score": 0.7,
+              "success": true,
+              "reason": "The response clearly identifies the issue and provides a fix with YAML and commands to apply the fix, including kubectl apply and patch commands. However, it does not provide a specific kubectl command to check the subscription status to ensure it is 'Ready' after applying the fix, which was the key evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-subscription-12",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 15.6001,
+      "avg_latency_seconds": 15.6001,
+      "total_evaluation_latency_seconds": 13.637,
+      "input_tokens": 16832,
+      "output_tokens": 961,
+      "total_tokens": 17793,
+      "avg_tokens_per_query": 17793.0,
+      "llm_call_count": 5,
+      "tool_call_count": 2,
+      "tool_call_counts": {
+        "kyma_query_tool": 1,
+        "search_kyma_doc": 1
+      },
+      "description": "The Subscription is configured with an invalid sink URL",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "How do I fix my kyma subscription?",
+          "resource": {
+            "kind": "Subscription",
+            "api_version": "eventing.kyma-project.io/v1alpha2",
+            "name": "my-sub",
+            "namespace": "test-subscription-12"
+          },
+          "actual_response": "## Issue Identified\n\nYour Subscription **my-sub** is failing validation because the **sink URL is invalid**. \n\n**Current sink:** `http://localhost:8080`\n\n**Error message:**\n```\nSubscription validation failed: spec.sink: Invalid value: \"http://localhost:8080\": \nmust have valid sink URL suffix svc.cluster.local\n```\n\n---\n\n## The Problem\n\nThe sink must be a **Kubernetes Service** within the same namespace (or a different namespace if explicitly specified). The sink cannot be:\n- \u274c `localhost` or `127.0.0.1`\n- \u274c External URLs\n- \u274c IP addresses\n\nIt must be a valid Kubernetes Service DNS name ending with `.svc.cluster.local`.\n\n---\n\n## How to Fix It\n\n### Option 1: Use a Service in the Same Namespace (Recommended)\n\nIf you have a Kubernetes Service in the `test-subscription-12` namespace, use its name:\n\n```yaml\napiVersion: eventing.kyma-project.io/v1alpha2\nkind: Subscription\nmetadata:\n  name: my-sub\n  namespace: test-subscription-12\nspec:\n  source: application\n  types:\n    - event.happened.v1\n  sink: http://my-service:8080  # Replace with your actual Service name\n  typeMatching: standard\n  config:\n    maxInFlightMessages: \"10\"\n```\n\n### Option 2: Use a Service in a Different Namespace\n\nIf your target Service is in a different namespace, specify it explicitly:\n\n```yaml\napiVersion: eventing.kyma-project.io/v1alpha2\nkind: Subscription\nmetadata:\n  name: my-sub\n  namespace: test-subscription-12\nspec:\n  source: application\n  types:\n    - event.happened.v1\n  sink: http://my-service.other-namespace:8080  # Service in different namespace\n  typeMatching: standard\n  config:\n    maxInFlightMessages: \"10\"\n```\n\n---\n\n## Next Steps\n\n1. **Identify your target Service**: What Kubernetes Service should receive the events?\n   - Run: `kubectl get svc -n test-subscription-12` to list available services\n   \n2. **Update the Subscription** with the correct sink URL\n\n3. **Verify the fix**: The Subscription status should show `ready: True` once the sink is valid\n\nWould you like help identifying the correct Service name, or do you need further assistance?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 5,
+          "optional_expectations_passed": 5,
+          "metrics": {
+            "latency_seconds": 15.6001,
+            "evaluation_latency_seconds": 13.637,
+            "input_tokens": 16832,
+            "output_tokens": 961,
+            "total_tokens": 17793,
+            "llm_call_count": 5,
+            "tool_calls": [
+              "kyma_query_tool",
+              "search_kyma_doc"
+            ],
+            "tool_call_count": 2,
+            "tool_call_counts": {
+              "kyma_query_tool": 1,
+              "search_kyma_doc": 1
+            },
+            "response_char_count": 2050,
+            "response_word_count": 266
+          },
+          "expectations": [
+            {
+              "name": "subscription_sink_invalid",
+              "statement": "identifies that the sink URL is invalid, incorrectly formatted, or not a Kubernetes service",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_subscription_sink_invalid [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response correctly identifies that the sink URL is invalid because it does not end with the required Kubernetes service DNS suffix '.svc.cluster.local'. It clearly explains that the sink must be a Kubernetes Service, not localhost or external URLs, and provides detailed, practical examples for fixing the sink URL within the same or different namespaces. The explanation aligns perfectly with the evaluation step of recognizing an invalid or incorrectly formatted sink URL.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "subscription_sink_format_correct",
+              "statement": "explains the sink should use Kubernetes service DNS format or mentions svc.cluster.local",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "subscription_sink_format_correct [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly explains that the sink must be a Kubernetes Service DNS name ending with .svc.cluster.local, explicitly referencing the error message and providing detailed examples of valid sink URLs using Kubernetes service DNS format. It directly addresses the test case requirement by emphasizing the need for the correct sink URL suffix and offers practical steps to fix the issue.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "subscription_correct_sink",
+              "statement": "provides an example of how the sink URL should be configured with the suffix svc.cluster.local",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "subscription_correct_sink [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response clearly explains the sink URL issue and provides two detailed YAML examples showing how to configure the sink URL with the required suffix pattern (e.g., http://my-service:8080 and http://my-service.other-namespace:8080), implicitly indicating the use of svc.cluster.local DNS names. However, it does not explicitly show the full suffix '.svc.cluster.local' in the sink URLs, which would have perfectly aligned with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, detailed step-by-step guide on how to fix the kyma subscription issue, including explanation of the problem, two configuration options with example YAML, and next steps to identify the correct service, update the subscription, and verify the fix, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml for the Subscription with an example of a valid sink URL",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear partial YAML for the Subscription resource including a valid sink URL example with the correct Kubernetes service DNS suffix. It explicitly shows two options for the sink URL, both valid and aligned with the requirement to end with .svc.cluster.local, fulfilling the evaluation step completely.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "provides a complete yaml for the Subscription with the correct sink URL which ends with svc.cluster.local",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response provides a complete YAML for the Subscription with correct sink URLs that end with svc.cluster.local, addressing both same-namespace and cross-namespace scenarios. It clearly explains the issue, the required sink URL format, and how to fix it, fulfilling the evaluation step. The only minor shortcoming is that the example sink URLs use port 8080, which is acceptable but not explicitly emphasized as part of the valid format.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-function-11",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 7.794,
+      "avg_latency_seconds": 7.794,
+      "total_evaluation_latency_seconds": 14.0384,
+      "input_tokens": 10327,
+      "output_tokens": 678,
+      "total_tokens": 11005,
+      "avg_tokens_per_query": 11005.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 2,
+        "k8s_overview_tool": 1
+      },
+      "description": "The Pod of the Serverless Function is not ready because the function is configured with 0 replicas.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the pod of the serverless Function not ready?",
+          "resource": {
+            "kind": "Function",
+            "api_version": "serverless.kyma-project.io/v1alpha2",
+            "name": "func1",
+            "namespace": "test-function-11"
+          },
+          "actual_response": "## Analysis\n\nI found the issue! Looking at your Function resource, the problem is clear:\n\n**The Function has `replicas: 0` configured in its spec.**\n\nThis means the Deployment is intentionally scaled down to zero replicas, so there are no pods running. This is why you don't see any pods in the namespace.\n\n### Current Status:\n- \u2705 **BuildReady**: The function code was successfully built\n- \u2705 **ConfigurationReady**: Configuration is ready\n- \u2705 **Running**: The Deployment is technically \"ready\" (but scaled to 0)\n- \u274c **No Pods**: Because `replicas: 0` means no instances are running\n\n### Solution\n\nTo make the Function ready with running pods, you need to scale it up by setting `replicas` to at least 1. Here's the corrected Function definition:\n\n```yaml\napiVersion: serverless.kyma-project.io/v1alpha2\nkind: Function\nmetadata:\n  name: func1\n  namespace: test-function-11\nspec:\n  replicas: 1  # Change from 0 to 1 (or higher for multiple instances)\n  runtime: nodejs20\n  source:\n    inline:\n      source: |\n        module.exports = {\n          main: function(event, context) {\n            return 'Hello World!'\n          }\n        }\n```\n\n**Apply this change** using:\n```bash\nkubectl apply -f function.yaml\n```\n\nOr patch it directly:\n```bash\nkubectl patch function func1 -n test-function-11 --type merge -p '{\"spec\":{\"replicas\":1}}'\n```\n\nOnce you set `replicas` to 1 or higher, the Deployment will create pods and they should become ready.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 7,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 6,
+          "optional_expectations_passed": 6,
+          "metrics": {
+            "latency_seconds": 7.794,
+            "evaluation_latency_seconds": 14.0384,
+            "input_tokens": 10327,
+            "output_tokens": 678,
+            "total_tokens": 11005,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "k8s_overview_tool",
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 2,
+              "k8s_overview_tool": 1
+            },
+            "response_char_count": 1438,
+            "response_word_count": 209
+          },
+          "expectations": [
+            {
+              "name": "function_error",
+              "statement": "points out that the Pod is not ready",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_function_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the pod is not ready because the Function's replicas are set to 0, meaning no pods are running. It clearly points out the root cause, explains the current status including the absence of pods, and provides a concrete solution to scale replicas to 1 or more, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "function_no_replicas",
+              "statement": "points out that the Function is configured with 0 replicas",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "function_no_replicas [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Function is configured with 0 replicas, explains the impact on pod readiness, and provides a clear solution to scale replicas to at least 1, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "function_correct_replicas",
+              "statement": "provides the correct amount of replicas, which would be 1",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "function_correct_replicas [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response correctly identifies that the Function's replicas are set to 0, explains why no pods are running, and provides a clear solution to set replicas to 1, which aligns perfectly with the evaluation step requiring the correct amount of replicas.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "function_explanation",
+              "statement": "explains the use of Functions",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "function_explanation [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly explains the use of Functions by identifying the cause of the pod readiness issue as the Function's replicas being set to 0, which directly relates to the Function resource configuration. It provides a detailed analysis of the Function's status conditions, explains the impact of the replicas setting on pod availability, and offers a precise solution with example YAML and commands to fix the problem, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies the root cause (replicas set to 0) and provides a detailed, step-by-step guide to fix the issue, including modifying the replicas field, example YAML, and commands to apply or patch the change, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with the correct amount of replicas, which would be 1",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a partial YAML snippet with the correct number of replicas set to 1, directly addressing the evaluation step. It clearly identifies the issue of replicas being 0 and offers a corrected spec with replicas: 1, fulfilling the requirement precisely.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "deployable_yaml",
+              "statement": "provides a complete yaml for the Function, with the namespace set to 'test-function-11' and the replicas set to 1",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "deployable_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a complete YAML for the Function with the namespace set to 'test-function-11' and replicas set to 1, fully aligning with the evaluation step. It also includes clear explanation and instructions for applying the change.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-function-10",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 4.8836,
+      "avg_latency_seconds": 4.8836,
+      "total_evaluation_latency_seconds": 11.4665,
+      "input_tokens": 6395,
+      "output_tokens": 437,
+      "total_tokens": 6832,
+      "avg_tokens_per_query": 6832.0,
+      "llm_call_count": 2,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "kyma_query_tool": 1
+      },
+      "description": "The Function has a syntax error in its JavaScript source code.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is my Kyma Function not working?",
+          "resource": {
+            "kind": "Function",
+            "api_version": "serverless.kyma-project.io/v1alpha2",
+            "name": "my-function-0",
+            "namespace": "test-function-10"
+          },
+          "actual_response": "I found a **syntax error in your Function code**! \n\n## Issue Identified\n\nIn your function's inline source code, there's a **mismatched quote** on the return statement:\n\n```javascript\nreturn \"Hello World!;  // \u274c Missing closing quote\n```\n\nThe string starts with a double quote (`\"`) but is missing the closing quote before the semicolon.\n\n## Fix\n\nUpdate your Function with the corrected code:\n\n```yaml\napiVersion: serverless.kyma-project.io/v1alpha2\nkind: Function\nmetadata:\n  name: my-function-0\n  namespace: test-function-10\nspec:\n  replicas: 1\n  runtime: nodejs20\n  scaleConfig:\n    maxReplicas: 2\n    minReplicas: 1\n  source:\n    inline:\n      source: |\n        module.exports = {\n          main: function (event, context) {\n            return \"Hello World!\";\n          }\n        }\n```\n\n**Key change:** `return \"Hello World!\";` (added the closing quote)\n\n## Status Notes\n\nThe good news is that your Function's **infrastructure is healthy**:\n- \u2705 Deployment is ready\n- \u2705 Build job completed successfully\n- \u2705 Configuration is ready\n\nThe issue is purely in the **function code syntax**. Once you fix the quote, your Function should work correctly.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 4,
+          "optional_expectations_passed": 4,
+          "metrics": {
+            "latency_seconds": 4.8836,
+            "evaluation_latency_seconds": 11.4665,
+            "input_tokens": 6395,
+            "output_tokens": 437,
+            "total_tokens": 6832,
+            "llm_call_count": 2,
+            "tool_calls": [
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "kyma_query_tool": 1
+            },
+            "response_char_count": 1146,
+            "response_word_count": 157
+          },
+          "expectations": [
+            {
+              "name": "function_syntax_error",
+              "statement": "points out that the Function has a syntax error in its source code and provides a description of the error.",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_function_syntax_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies a syntax error in the Function's source code, specifically a mismatched quote in the return statement, and provides a detailed explanation and corrected code snippet, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "function_correct_syntax",
+              "statement": "provides an example of how to fix the Function JavaScript source code.",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_function_correct_syntax [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies the syntax error with a mismatched quote and provides a complete, corrected example of the Function's JavaScript source code, fulfilling the evaluation step of showing how to fix the code.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains a step-by-step guide on how to fix the issue.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the syntax error, including identification of the mismatched quote, a corrected code snippet, and explanation of the key change, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_fix",
+              "statement": "provides a partial JavaScript code for the Function with the correct syntax.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_fix [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a partial JavaScript code snippet for the Function with correct syntax, specifically showing the corrected return statement within the main function. It clearly identifies the syntax error and offers a fix, including the proper module.exports structure. However, the code snippet is embedded within a YAML manifest and is somewhat incomplete as a standalone JavaScript function, which slightly limits clarity on the function alone.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml for the Function with the correct syntax for its JavaScript source code.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a partial YAML snippet for the Function with correct syntax, including the JavaScript source code under 'source.inline.source'. It clearly identifies the syntax error and shows the fixed code within the YAML structure. However, the YAML snippet is incomplete as it lacks closing indentation and the final closing backticks, which slightly reduces completeness.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "provides a complete yaml for the Function with the correct syntax for its JavaScript source code.",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a mostly complete YAML manifest for the Kyma Function with correct syntax, including metadata, spec, and inline JavaScript source code. However, the YAML snippet is incomplete as it lacks the closing indentation and final line breaks, which are necessary for a fully valid YAML document. The JavaScript source code is correctly embedded and fixes the syntax error, aligning well with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-function-8",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 5.3781,
+      "avg_latency_seconds": 5.3781,
+      "total_evaluation_latency_seconds": 11.4165,
+      "input_tokens": 6480,
+      "output_tokens": 538,
+      "total_tokens": 7018,
+      "avg_tokens_per_query": 7018.0,
+      "llm_call_count": 2,
+      "tool_call_count": 1,
+      "tool_call_counts": {
+        "kyma_query_tool": 1
+      },
+      "description": "The Serverless Function has a syntax error; it calls Dates() instead of Date().",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "What is wrong with the Function's source code?",
+          "resource": {
+            "kind": "Function",
+            "api_version": "serverless.kyma-project.io/v1alpha2",
+            "name": "func1",
+            "namespace": "test-function-8"
+          },
+          "actual_response": "I found the issue! There's a **JavaScript syntax error** in the Function's source code:\n\n### Problem\nIn the source code, line 4 has:\n```javascript\nconst now = new Dates();\n```\n\n**This is incorrect.** The correct JavaScript constructor is `Date` (singular), not `Dates` (plural).\n\n### Fix\nChange line 4 from:\n```javascript\nconst now = new Dates();\n```\n\nTo:\n```javascript\nconst now = new Date();\n```\n\n### Updated Function Resource\n\nHere's the corrected Function definition:\n\n```yaml\napiVersion: serverless.kyma-project.io/v1alpha2\nkind: Function\nmetadata:\n  name: func1\n  namespace: test-function-8\n  labels:\n    app: restapi\nspec:\n  replicas: 1\n  runtime: nodejs20\n  source:\n    inline:\n      dependencies: |\n        {\n          \"name\": \"func1\",\n          \"version\": \"1.0.0\",\n          \"dependencies\": {}\n        }\n      source: |\n        module.exports = {\n          main: async function (event, context) {\n              // Return a response.\n              const now = new Date();\n              const response = {\n              statusCode: 200,\n              result: {\n                message: 'Serverless function is up and running',\n                status: 'success',\n                utcDatetime: now\n              }\n            };\n            console.log('Response:', response);\n            return response;\n          }\n        }\n```\n\n### Why This Matters\n- `Dates` is not a valid JavaScript constructor and will throw a `ReferenceError` at runtime\n- `Date` is the correct built-in JavaScript object for working with dates and times\n- This error would cause the function to fail when executed\n\nApply this corrected resource to fix the issue.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 5,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 5.3781,
+            "evaluation_latency_seconds": 11.4165,
+            "input_tokens": 6480,
+            "output_tokens": 538,
+            "total_tokens": 7018,
+            "llm_call_count": 2,
+            "tool_calls": [
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "kyma_query_tool": 1
+            },
+            "response_char_count": 1644,
+            "response_word_count": 203
+          },
+          "expectations": [
+            {
+              "name": "syntax_error",
+              "statement": "points out that the serverless Function 'func1' calls Dates() or uses Dates",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_syntax_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the serverless Function 'func1' incorrectly calls 'new Dates()' instead of 'new Date()', directly addressing the evaluation step. It provides a clear explanation of the error, the fix, and includes the corrected function source code, demonstrating strong alignment with the requirement to point out the misuse of Dates().",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "syntax_fix",
+              "statement": "suggests using Date() instead of Dates() or provides the correct syntax",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_syntax_fix [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response correctly identifies the error of using 'Dates()' instead of 'Date()' and provides the exact fix with proper syntax. It clearly explains the problem, shows the corrected code, and highlights why 'Date' is the correct constructor, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "contains step-by-step guidance",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides clear, step-by-step guidance identifying the exact syntax error, explaining why it is wrong, showing the incorrect and corrected code snippets, and including an updated full function resource. It also explains the significance of the fix, fully aligning with the evaluation step requiring step-by-step guidance.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides some yaml formatted manifest for a serverless Function",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a clear YAML manifest for a serverless Function, fulfilling the evaluation step. It includes a corrected Function resource with proper metadata, spec, and inline source code. However, the YAML snippet is incomplete (missing closing braces and indentation issues), which slightly reduces clarity and completeness.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "complete_yaml",
+              "statement": "provides a complete yaml formatted manifest for a serverless Function with all required fields, name set to 'func1', namespace set to 'test-function-8' and  that calls 'Date()'",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "complete_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a complete YAML manifest for a serverless Function with the name 'func1' and namespace 'test-function-8', including all required fields. The function source correctly calls 'Date()' instead of the incorrect 'Dates()', fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-service-6",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 9.3048,
+      "avg_latency_seconds": 9.3048,
+      "total_evaluation_latency_seconds": 9.0208,
+      "input_tokens": 14656,
+      "output_tokens": 738,
+      "total_tokens": 15394,
+      "avg_tokens_per_query": 15394.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 2,
+        "k8s_overview_tool": 1
+      },
+      "description": "The selector labels of the Service do not match the labels of the Deployment. Therefore, the Service is not routing traffic to the Pods.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is my application not reachable?",
+          "resource": {
+            "kind": "Service",
+            "api_version": "v1",
+            "name": "test-service-6",
+            "namespace": "test-service-6"
+          },
+          "actual_response": "I've identified a **critical issue** with your Service configuration:\n\n## \ud83d\udd34 **Problem: Service Selector Mismatch**\n\nYour Service `test-service-6` has a **selector mismatch** that prevents it from routing traffic to your Pods:\n\n| Component | Label |\n|-----------|-------|\n| **Service selector** | `app: my-k8s-test-svc` |\n| **Pod labels** | `app: test-service-6` |\n\nThe Service is looking for Pods with label `app: my-k8s-test-svc`, but your running Pods have label `app: test-service-6`. This means **no Pods are matched**, so the Service has no endpoints to route traffic to.\n\n### Current Service Configuration:\n```yaml\napiVersion: v1\nkind: Service\nmetadata:\n  name: test-service-6\n  namespace: test-service-6\n  labels:\n    app: my-k8s-test-svc\nspec:\n  type: ClusterIP\n  selector:\n    app: my-k8s-test-svc  # \u274c This doesn't match the Pods\n  ports:\n  - protocol: TCP\n    port: 80\n    targetPort: 80\n```\n\n---\n\n## \u2705 **Solution**\n\nUpdate the Service selector to match your Pod labels:\n\n```yaml\napiVersion: v1\nkind: Service\nmetadata:\n  name: test-service-6\n  namespace: test-service-6\n  labels:\n    app: my-k8s-test-svc\nspec:\n  type: ClusterIP\n  selector:\n    app: test-service-6  # \u2705 Now matches the Pod labels\n  ports:\n  - protocol: TCP\n    port: 80\n    targetPort: 80\n```\n\n**Apply this fix:**\n```bash\nkubectl apply -f service.yaml\n```\n\nOnce you update the selector, the Service will automatically discover the 3 running Pods and route traffic to them on port 80.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 4,
+          "required_expectations_total": 1,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 9.3048,
+            "evaluation_latency_seconds": 9.0208,
+            "input_tokens": 14656,
+            "output_tokens": 738,
+            "total_tokens": 15394,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "k8s_overview_tool",
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 2,
+              "k8s_overview_tool": 1
+            },
+            "response_char_count": 1461,
+            "response_word_count": 203
+          },
+          "expectations": [
+            {
+              "name": "svc_wrong_label",
+              "statement": "points out that the labels used in the Service selector and the labels on the Pods do not match",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "svc_wrong_label [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies the mismatch between the Service selector label 'app: my-k8s-test-svc' and the Pod label 'app: test-service-6', explaining that this prevents the Service from routing traffic. It also provides a detailed explanation, current configuration, and a precise solution to update the selector to match the Pod labels, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "svc_provide_explanation",
+              "statement": "provides a detailed explanation of why the Service is not routing traffic to the Pods",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_svc_provide_explanation [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a detailed explanation of why the Service is not routing traffic to the Pods by clearly identifying the selector mismatch between the Service and Pod labels. It includes a comparison table, highlights the problem, shows the current Service configuration, and offers a precise solution with updated YAML and instructions to apply the fix, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the issue by identifying the selector mismatch, showing the current incorrect configuration, then presenting the corrected Service selector configuration, and finally instructing how to apply the fix with kubectl. This fully aligns with the evaluation step requiring a step-by-step guide to resolve the problem.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with the correct labels for the Service",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response provides a clear partial YAML snippet with the correct labels for the Service selector, directly addressing the mismatch issue. It includes both the incorrect and corrected selector configurations, which aligns well with the evaluation step. The only minor shortcoming is that the YAML includes additional metadata labels that are not strictly necessary for the selector fix, but this does not detract significantly from the correctness.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-deployment-5",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 9.816,
+      "avg_latency_seconds": 9.816,
+      "total_evaluation_latency_seconds": 10.3028,
+      "input_tokens": 18992,
+      "output_tokens": 857,
+      "total_tokens": 19849,
+      "avg_tokens_per_query": 19849.0,
+      "llm_call_count": 4,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 2,
+        "fetch_pod_logs_tool": 1
+      },
+      "description": "The Pod is in an error state because the liveness and readiness probes are incorrectly configured.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the deployment not getting ready?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx-deployment",
+            "namespace": "test-deployment-5"
+          },
+          "actual_response": "## Problem Identified\n\nYour **nginx-deployment** is not getting ready due to **failing readiness and liveness probes**. Here's what's happening:\n\n### Root Cause\nThe deployment has a **probe configuration mismatch**:\n- **Container port**: `80` (where nginx listens)\n- **Probe port**: `8080` (where probes are checking)\n\nThe readiness and liveness probes are configured to check port `8080`, but nginx is only listening on port `80`. This causes the probes to fail, marking the container as not ready, which triggers a `CrashLoopBackOff` after multiple restart attempts.\n\n### Current Status\n- **Pod phase**: Running (but not Ready)\n- **Container status**: `CrashLoopBackOff` with 5621 restarts\n- **Deployment condition**: `ProgressDeadlineExceeded` - the deployment has timed out trying to reach the desired state\n\n### Solution\n\nFix the probe configuration to use the correct port. Update your deployment:\n\n```yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx-deployment\n  namespace: test-deployment-5\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: nginx\n  template:\n    metadata:\n      labels:\n        app: nginx\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:latest\n        ports:\n        - containerPort: 80\n          protocol: TCP\n        livenessProbe:\n          httpGet:\n            path: /\n            port: 80              # \u2190 Changed from 8080 to 80\n            scheme: HTTP\n          initialDelaySeconds: 5\n          timeoutSeconds: 1\n          periodSeconds: 10\n          successThreshold: 1\n          failureThreshold: 3\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80              # \u2190 Changed from 8080 to 80\n            scheme: HTTP\n          initialDelaySeconds: 5\n          timeoutSeconds: 1\n          periodSeconds: 10\n          successThreshold: 1\n          failureThreshold: 3\n```\n\nAfter applying this fix, the probes will successfully connect to nginx on port 80, the container will become ready, and the deployment will reach the desired state.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 5,
+          "required_expectations_total": 3,
+          "required_expectations_passed": 3,
+          "optional_expectations_total": 2,
+          "optional_expectations_passed": 2,
+          "metrics": {
+            "latency_seconds": 9.816,
+            "evaluation_latency_seconds": 10.3028,
+            "input_tokens": 18992,
+            "output_tokens": 857,
+            "total_tokens": 19849,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "kyma_query_tool",
+              "kyma_query_tool",
+              "fetch_pod_logs_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 2,
+              "fetch_pod_logs_tool": 1
+            },
+            "response_char_count": 2050,
+            "response_word_count": 243
+          },
+          "expectations": [
+            {
+              "name": "deployment_error",
+              "statement": "points out that the Deployment is in an error state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_deployment_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly points out that the deployment is in an error state by detailing the failing readiness and liveness probes, the CrashLoopBackOff status, and the ProgressDeadlineExceeded condition, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_wrong_liveness",
+              "statement": "points out that the Pod has not started because the liveness and readiness probes are incorrectly configured",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_wrong_liveness [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies that the deployment is not ready due to failing readiness and liveness probes caused by a port mismatch (probes checking port 8080 while nginx listens on port 80). It explains the root cause, current pod status, and provides a precise solution to fix the probe configuration, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_provide_right_liveness",
+              "statement": "provides the correct liveness and readiness probes to use with the Pod",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_provide_right_liveness [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response correctly identifies the root cause as a mismatch between the container port (80) and the probe port (8080), and provides the exact liveness and readiness probe configurations with the correct port (80). It fully aligns with the evaluation step by offering the proper probe settings to fix the deployment readiness issue.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the issue by identifying the root cause (probe port mismatch), explaining the problem, and offering a detailed YAML snippet showing exactly how to update the probe ports from 8080 to 80. This directly aligns with the evaluation step requiring a step-by-step fix.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with the correct liveness and readiness port '80'",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a partial YAML snippet that correctly sets both liveness and readiness probes to port 80, matching the container port, which aligns perfectly with the evaluation step requiring the correct probe port configuration.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "k8s-test-deployment-4",
+      "status": "failed",
+      "attempts": 3,
+      "num_queries": 3,
+      "total_latency_seconds": 22.2745,
+      "avg_latency_seconds": 7.4248,
+      "total_evaluation_latency_seconds": 18.8686,
+      "input_tokens": 36017,
+      "output_tokens": 2041,
+      "total_tokens": 38058,
+      "avg_tokens_per_query": 12686.0,
+      "llm_call_count": 8,
+      "tool_call_count": 5,
+      "tool_call_counts": {
+        "kyma_query_tool": 5
+      },
+      "description": "The PersistentVolumeClaim requests ReadWriteMany access mode, but the PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to remain unbound, leading to issues with the deployment.",
+      "status_reason": "",
+      "passed": false,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "reason": "",
+          "queries_passed": 2,
+          "queries_failed": 1,
+          "queries_pending": 0
+        },
+        {
+          "attempt": 2,
+          "status": "failed",
+          "reason": "",
+          "queries_passed": 2,
+          "queries_failed": 1,
+          "queries_pending": 0
+        },
+        {
+          "attempt": 3,
+          "status": "failed",
+          "reason": "",
+          "queries_passed": 2,
+          "queries_failed": 1,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the deployment not getting ready?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx-deployment",
+            "namespace": "test-deployment-4"
+          },
+          "actual_response": "## **Confirmed Issue: PVC is Stuck in Pending State**\n\nThe `example-pvc` PersistentVolumeClaim is in **Pending** phase and has not been bound to any PersistentVolume. This is blocking the pod from being scheduled.\n\n### **Why This Happens:**\n- The PVC is requesting `ReadWriteMany` access mode with the `default` storage class\n- The EBS CSI provisioner (`ebs.csi.aws.com`) is selected but hasn't successfully provisioned the volume\n- The pod cannot start until the volume is bound\n\n### **Solutions:**\n\n**Option 1: Check if the storage class supports ReadWriteMany**\n```bash\nkubectl get storageclass default -o yaml\n```\n\n**Option 2: Use a storage class that supports ReadWriteMany** (if default doesn't)\n```yaml\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: example-pvc\n  namespace: test-deployment-4\nspec:\n  accessModes:\n    - ReadWriteOnce  # Change from ReadWriteMany to ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n  storageClassName: default\n```\n\n**Option 3: Delete and recreate the PVC** (if it's stuck)\n```bash\nkubectl delete pvc example-pvc -n test-deployment-4\n# Wait a moment, then the deployment should auto-recreate it or you can reapply it\n```\n\n**Option 4: Check PVC events for more details**\n```bash\nkubectl describe pvc example-pvc -n test-deployment-4\n```\n\n### **Recommended Next Steps:**\n1. Run `kubectl describe pvc example-pvc -n test-deployment-4` to see detailed events\n2. Verify your storage class supports the `ReadWriteMany` access mode\n3. If using EBS, note that EBS volumes typically only support `ReadWriteOnce`\u2014consider using EFS for `ReadWriteMany` if needed\n\nWould you like me to help you investigate the storage class configuration or the PVC events further?",
+          "status": "failed",
+          "status_reason": "",
+          "passed": false,
+          "num_expectations": 6,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 1,
+          "optional_expectations_total": 4,
+          "optional_expectations_passed": 4,
+          "metrics": {
+            "latency_seconds": 10.7369,
+            "evaluation_latency_seconds": 10.8821,
+            "input_tokens": 16382,
+            "output_tokens": 991,
+            "total_tokens": 17373,
+            "llm_call_count": 4,
+            "tool_calls": [
+              "kyma_query_tool",
+              "kyma_query_tool",
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 3
+            },
+            "response_char_count": 1717,
+            "response_word_count": 241
+          },
+          "expectations": [
+            {
+              "name": "deployment_error",
+              "statement": "points out that the Deployment is in an error state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_deployment_error [GEval]",
+              "score": 0.2,
+              "success": false,
+              "reason": "The response thoroughly explains the PVC issue causing the deployment to be stuck but does not explicitly state that the deployment itself is in an error state, which is the key evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "potential_pvc_issue",
+              "statement": "points out that the issue may be due to PersistentVolumeClaim",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_potential_pvc_issue [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response directly identifies the issue as a PersistentVolumeClaim stuck in Pending state, explains why the PVC is blocking the deployment readiness, and provides detailed troubleshooting steps focused on the PVC and storage class configuration, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "wrong_pvc_access_mode",
+              "statement": "points out that the access mode configured in PersistentVolumeClaim do not match with access mode supported by PersistentVolume",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "wrong_pvc_access_mode [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the mismatch between the PVC's requested access mode (ReadWriteMany) and the storage provisioner's supported access mode (EBS supports only ReadWriteOnce). It clearly explains why the PVC remains pending and provides actionable steps to verify and resolve the access mode conflict, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pvc_provide_explanation",
+              "statement": "provides an explanation on why the deployment is not getting ready",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "pvc_provide_explanation [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly explains why the deployment is not getting ready by identifying the PVC stuck in Pending state as the root cause. It details the issue with the access mode and storage class compatibility, explains the impact on pod scheduling, and provides multiple actionable solutions and next steps, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the PVC pending issue, including checking storage class support, modifying the PVC access mode, deleting and recreating the PVC, and inspecting PVC events. It also explains why the issue occurs and offers recommended next steps, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with correct access mode for PersistentVolumeClaim",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a partial YAML snippet for the PersistentVolumeClaim with a corrected access mode (changing from ReadWriteMany to ReadWriteOnce), which aligns with the evaluation step. It correctly identifies the access mode issue causing the PVC to remain pending and offers practical troubleshooting steps. However, the YAML is partial and includes a comment rather than a fully standalone manifest, which slightly limits completeness.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        },
+        {
+          "user_query": "Can you check the PVC?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx-deployment",
+            "namespace": "test-deployment-4"
+          },
+          "actual_response": "## **PVC Status: PENDING \u26a0\ufe0f**\n\nHere's what I found:\n\n| Property | Value |\n|----------|-------|\n| **Name** | `example-pvc` |\n| **Namespace** | `test-deployment-4` |\n| **Phase** | **Pending** (not bound) |\n| **Access Mode** | `ReadWriteMany` |\n| **Storage Requested** | `1Gi` |\n| **Storage Class** | `default` |\n| **Provisioner** | `ebs.csi.aws.com` (EBS CSI) |\n\n### **The Problem:**\nThe PVC is stuck in **Pending** state, which means:\n- \u274c No PersistentVolume has been provisioned yet\n- \u274c The EBS CSI provisioner hasn't created the underlying volume\n- \u274c The pod cannot start without a bound volume\n\n### **Why This Likely Happened:**\n**EBS volumes do NOT support `ReadWriteMany` access mode.** EBS only supports `ReadWriteOnce`. The provisioner is likely failing silently because it cannot fulfill the request.\n\n### **Fix: Change Access Mode to ReadWriteOnce**\n\n```yaml\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: example-pvc\n  namespace: test-deployment-4\nspec:\n  accessModes:\n    - ReadWriteOnce  # \u2190 Changed from ReadWriteMany\n  resources:\n    requests:\n      storage: 1Gi\n  storageClassName: default\n```\n\n**Apply the fix:**\n```bash\nkubectl delete pvc example-pvc -n test-deployment-4\nkubectl apply -f pvc-fix.yaml\n```\n\nAfter this, the PVC should bind successfully and your deployment should become ready. Would you like me to check the deployment status after you apply this fix?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 2,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 0,
+          "optional_expectations_passed": 0,
+          "metrics": {
+            "latency_seconds": 5.7535,
+            "evaluation_latency_seconds": 4.4264,
+            "input_tokens": 7134,
+            "output_tokens": 527,
+            "total_tokens": 7661,
+            "llm_call_count": 2,
+            "tool_calls": [
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "kyma_query_tool": 1
+            },
+            "response_char_count": 1397,
+            "response_word_count": 202
+          },
+          "expectations": [
+            {
+              "name": "pvc_pending",
+              "statement": "points out that the PersistentVolumeClaim (PVC) is in an pending state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pvc_pending [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the PVC is in a pending state, providing a clear status header and detailed explanation of the implications. It correctly highlights the root cause related to the access mode mismatch, offers a precise fix, and includes commands to apply the fix, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "potential_pvc_issue",
+              "statement": "points out that the issue may be related to PersistentVolume (PV)",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_potential_pvc_issue [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the issue as related to the PersistentVolume by explaining that no PersistentVolume has been provisioned and the PVC remains in Pending state. It clearly connects the problem to PV provisioning failure due to an unsupported access mode, fulfilling the evaluation step perfectly.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        },
+        {
+          "user_query": "Can you check the PV?",
+          "resource": {
+            "kind": "Deployment",
+            "api_version": "apps/v1",
+            "name": "nginx-deployment",
+            "namespace": "test-deployment-4"
+          },
+          "actual_response": "## **PV Status: AVAILABLE but NOT BOUND \u26a0\ufe0f**\n\nHere's what I found:\n\n| Property | Value |\n|----------|-------|\n| **Name** | `example-pv` |\n| **Phase** | **Available** (not bound to any PVC) |\n| **Access Mode** | `ReadWriteOnce` |\n| **Storage Capacity** | `1Gi` |\n| **Storage Type** | `hostPath` (/mnt/data) |\n| **Reclaim Policy** | `Retain` |\n\n### **The Problem:**\nThe PV exists and is healthy, but it's **not bound** to the PVC (`example-pvc`). This is because:\n\n1. **Access Mode Mismatch**: \n   - The PV supports `ReadWriteOnce`\n   - The PVC requests `ReadWriteMany` \u274c\n   - They cannot match, so the binding fails\n\n2. **Result**: \n   - PV stays in `Available` state (unbound)\n   - PVC stays in `Pending` state (unbound)\n   - Pod cannot start\n\n### **Solution: Fix the PVC Access Mode**\n\nUpdate the PVC to use `ReadWriteOnce` to match the PV:\n\n```yaml\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: example-pvc\n  namespace: test-deployment-4\nspec:\n  accessModes:\n    - ReadWriteOnce  # \u2190 Changed from ReadWriteMany\n  resources:\n    requests:\n      storage: 1Gi\n  storageClassName: default\n```\n\n**Apply the fix:**\n```bash\nkubectl delete pvc example-pvc -n test-deployment-4\nkubectl apply -f pvc-fix.yaml\n```\n\nOnce the PVC is updated, it should bind to `example-pv` and your deployment will become ready. \u2705",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 2,
+          "required_expectations_total": 0,
+          "required_expectations_passed": 0,
+          "optional_expectations_total": 2,
+          "optional_expectations_passed": 2,
+          "metrics": {
+            "latency_seconds": 5.7841,
+            "evaluation_latency_seconds": 3.5601,
+            "input_tokens": 12501,
+            "output_tokens": 523,
+            "total_tokens": 13024,
+            "llm_call_count": 2,
+            "tool_calls": [
+              "kyma_query_tool"
+            ],
+            "tool_call_count": 1,
+            "tool_call_counts": {
+              "kyma_query_tool": 1
+            },
+            "response_char_count": 1317,
+            "response_word_count": 196
+          },
+          "expectations": [
+            {
+              "name": "potential_pvc_issue",
+              "statement": "points out that the PersistentVolume (PV) do not support ReadWriteMany",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "potential_pvc_issue [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the PV supports ReadWriteOnce while the PVC requests ReadWriteMany, causing a binding failure. It clearly explains the access mode mismatch as the root cause and provides a precise solution to update the PVC access mode, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the issue by explaining the cause of the PV not binding, specifying the exact change needed in the PVC access mode, and including commands to apply the fix, fully aligning with the evaluation criteria.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-pod-3",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 13.9436,
+      "avg_latency_seconds": 13.9436,
+      "total_evaluation_latency_seconds": 13.1073,
+      "input_tokens": 12880,
+      "output_tokens": 781,
+      "total_tokens": 13661,
+      "avg_tokens_per_query": 13661.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 1,
+        "fetch_pod_logs_tool": 2
+      },
+      "description": "The Pod tries to list Pods in the same namespace using kubectl but the image does not contain kubectl.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the Pod in error state?",
+          "resource": {
+            "kind": "Pod",
+            "api_version": "v1",
+            "name": "pod-check",
+            "namespace": "test-pod-3"
+          },
+          "actual_response": "## Pod Error Analysis\n\n**Pod Status:** `Failed` \u274c\n\n### Root Cause\n\nThe Pod is in an error state due to a **command execution failure**:\n\n- **Container:** `busybox`\n- **Exit Code:** `127` (Command not found)\n- **Reason:** `Error`\n- **Terminated at:** 2026-08-10T12:10:34Z\n\n### Problem Details\n\nThe Pod's container is configured to run:\n```bash\nsh -c 'kubectl get pods'\n```\n\nHowever, the `kubectl` command is **not available** in the `busybox` image. The exit code `127` specifically indicates that the command could not be found in the container's PATH.\n\n### Why This Happened\n\nThe `busybox` image is a minimal container image that doesn't include `kubectl`. To run Kubernetes API commands, you would need:\n1. A container image that includes `kubectl` (e.g., `bitnami/kubectl`, `alpine` with `kubectl` installed)\n2. Or use a different approach to query the Kubernetes API\n\n### Solution\n\nReplace the container image with one that includes `kubectl`:\n\n```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pod-check\n  namespace: test-pod-3\nspec:\n  serviceAccountName: pod-reader-sa\n  restartPolicy: Never\n  containers:\n  - name: busybox\n    image: bitnami/kubectl:latest  # Use an image with kubectl pre-installed\n    command: ['sh', '-c', 'kubectl get pods']\n    env:\n    - name: KUBERNETES_NAMESPACE\n      valueFrom:\n        fieldRef:\n          apiVersion: v1\n          fieldPath: metadata.namespace\n    - name: KUBERNETES_SERVICE_HOST\n      value: 'api.comp-tests-0.kymatunas.internal.canary.k8s.ondemand.com'\n```\n\nAlternatively, if you want to keep using `busybox`, you could use the Kubernetes API directly via curl instead of `kubectl`.",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 3,
+          "required_expectations_passed": 3,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 13.9436,
+            "evaluation_latency_seconds": 13.1073,
+            "input_tokens": 12880,
+            "output_tokens": 781,
+            "total_tokens": 13661,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "fetch_pod_logs_tool",
+              "fetch_pod_logs_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 1,
+              "fetch_pod_logs_tool": 2
+            },
+            "response_char_count": 1636,
+            "response_word_count": 215
+          },
+          "expectations": [
+            {
+              "name": "pod_error",
+              "statement": "points out that the Pod is in an error state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly identifies that the Pod is in an error state by stating the Pod status as 'Failed' and explaining the root cause related to command execution failure. It provides detailed information about the error, including the exit code and reason, directly addressing why the Pod is in error state as required by the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_wrong_image",
+              "statement": "points out that the Pod uses the wrong image",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_wrong_image [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Pod uses the wrong image by explaining that the busybox image lacks kubectl, causing the command not found error. It clearly points out the need to replace the image with one that includes kubectl, directly addressing the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_provide_right_image",
+              "statement": "provides the correct image to use with kubectl",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_provide_right_image [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response correctly identifies that the busybox image lacks kubectl, explains the cause of the error with exit code 127, and provides a clear solution by recommending the use of an appropriate image (bitnami/kubectl) that includes kubectl, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_image_explanation",
+              "statement": "explains the connection between an image and included binaries",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "pod_image_explanation [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response clearly explains the connection between the busybox image and the missing kubectl binary, identifying that the error is due to the absence of kubectl in the minimal busybox image. It details the exit code 127 meaning command not found, explains why busybox lacks kubectl, and provides a solution by recommending an image that includes kubectl or alternative approaches, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the issue, including identifying the root cause, explaining why the error occurs, and offering concrete solutions such as replacing the container image with one that includes kubectl or using curl to access the Kubernetes API. The inclusion of a detailed YAML snippet further strengthens the guidance.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml with the correct image 'bitnami/kubectl:latest'",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a partial YAML snippet that correctly uses the image 'bitnami/kubectl:latest' as required by the evaluation steps. It clearly addresses the root cause and solution, demonstrating strong alignment with the test case parameters.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-pod-2",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 10.2886,
+      "avg_latency_seconds": 10.2886,
+      "total_evaluation_latency_seconds": 13.7389,
+      "input_tokens": 12814,
+      "output_tokens": 1008,
+      "total_tokens": 13822,
+      "avg_tokens_per_query": 13822.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 1,
+        "fetch_pod_logs_tool": 2
+      },
+      "description": "The application inside the Pod tries to list Pods in the same namespace using kubectl but it has the wrong RBAC permissions to watch instead of list.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the Pod in error state?",
+          "resource": {
+            "kind": "Pod",
+            "api_version": "v1",
+            "name": "pod-check",
+            "namespace": "test-pod-2"
+          },
+          "actual_response": "## Pod Error Analysis\n\n**Pod Status: Failed** \u274c\n\n### Root Cause\nThe Pod `pod-check` is in an error state because:\n\n1. **Container Exit Code: 1** \u2014 The `kubectl-container` terminated with exit code `1`, indicating a command execution failure.\n2. **Command Failure** \u2014 The container runs: `kubectl get pods`\n3. **No Logs Available** \u2014 The container logs are empty, which suggests the command failed immediately or silently.\n\n### Why the Command Failed\n\nThe most likely cause is an **authentication/authorization issue**:\n\n- The Pod uses the `pod-reader-sa` ServiceAccount\n- The container attempts to run `kubectl get pods` without specifying a namespace\n- The ServiceAccount may lack the necessary RBAC permissions to list pods cluster-wide or in the current namespace\n\n### How to Fix\n\n**Option 1: Verify RBAC Permissions**\nCheck if the `pod-reader-sa` ServiceAccount has the required ClusterRole or Role binding:\n\n```bash\nkubectl get rolebindings,clusterrolebindings -n test-pod-2 | grep pod-reader-sa\nkubectl get clusterrole,role | grep -i pod\n```\n\n**Option 2: Update the Pod to Specify Namespace**\nModify the command to explicitly target the namespace:\n\n```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pod-check\n  namespace: test-pod-2\nspec:\n  serviceAccountName: pod-reader-sa\n  containers:\n  - name: kubectl-container\n    image: bitnami/kubectl:latest\n    command: ['sh', '-c', 'kubectl get pods -n test-pod-2']\n    env:\n    - name: KUBERNETES_NAMESPACE\n      valueFrom:\n        fieldRef:\n          apiVersion: v1\n          fieldPath: metadata.namespace\n    - name: KUBERNETES_SERVICE_HOST\n      value: 'api.comp-tests-0.kymatunas.internal.canary.k8s.ondemand.com'\n  restartPolicy: Never\n```\n\n**Option 3: Ensure Proper RBAC Setup**\nIf the ServiceAccount lacks permissions, create a ClusterRole and binding:\n\n```yaml\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata:\n  name: pod-reader\nrules:\n- apiGroups: [\"\"]\n  resources: [\"pods\"]\n  verbs: [\"get\", \"list\", \"watch\"]\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata:\n  name: pod-reader-binding\nroleRef:\n  apiGroup: rbac.authorization.k8s.io\n  kind: ClusterRole\n  name: pod-reader\nsubjects:\n- kind: ServiceAccount\n  name: pod-reader-sa\n  namespace: test-pod-2\n```\n\nWould you like me to help verify the RBAC configuration or apply one of these fixes?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 5,
+          "required_expectations_total": 2,
+          "required_expectations_passed": 2,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 10.2886,
+            "evaluation_latency_seconds": 13.7389,
+            "input_tokens": 12814,
+            "output_tokens": 1008,
+            "total_tokens": 13822,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "fetch_pod_logs_tool",
+              "fetch_pod_logs_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 1,
+              "fetch_pod_logs_tool": 2
+            },
+            "response_char_count": 2352,
+            "response_word_count": 290
+          },
+          "expectations": [
+            {
+              "name": "pod_error",
+              "statement": "points out that the Pod is in an error state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Pod is in an error state by stating the Pod status as 'Failed' and explaining the container exit code and command failure as root causes, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_wrong_permissions",
+              "statement": "points out that the Pod has the wrong permissions",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_wrong_permissions [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Pod is in error due to insufficient permissions of the ServiceAccount 'pod-reader-sa' when running 'kubectl get pods'. It thoroughly explains the likely RBAC authorization issue, details the current ServiceAccount usage, and provides concrete steps to verify and fix the permissions, fully aligning with the evaluation step to point out wrong permissions.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "permission_should_be_watch",
+              "statement": "points out that the Role gives permission to watch Pods but the Pod tries to list them",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "permission_should_be_watch [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response correctly identifies that the Pod is in error because the container runs 'kubectl get pods' but the ServiceAccount likely lacks permissions to list pods. It points out the RBAC issue and suggests verifying and updating permissions, including the watch verb. However, it does not explicitly highlight that the Role only grants watch permission while the Pod tries to list pods, which is a key detail in the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the Pod error, including verifying RBAC permissions, updating the Pod command to specify the namespace, and creating appropriate ClusterRole and ClusterRoleBinding resources. Each step is detailed with commands or YAML snippets, directly addressing the root cause and offering actionable solutions.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides a partial yaml for the Role that grants permission to list Pods",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 0.8,
+              "success": true,
+              "reason": "The response provides a detailed analysis of the Pod error and includes a partial YAML manifest for a ClusterRole granting permissions to list pods, fulfilling the requirement to provide a partial YAML for the Role. However, it uses a ClusterRole instead of a Role, which may be broader than necessary, and does not provide a Role scoped to a namespace. The inclusion of ClusterRoleBinding is helpful but slightly beyond the minimal partial Role YAML requested.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario_id": "test-pod-1",
+      "status": "completed",
+      "attempts": 1,
+      "num_queries": 1,
+      "total_latency_seconds": 9.3054,
+      "avg_latency_seconds": 9.3054,
+      "total_evaluation_latency_seconds": 13.2775,
+      "input_tokens": 12840,
+      "output_tokens": 1026,
+      "total_tokens": 13866,
+      "avg_tokens_per_query": 13866.0,
+      "llm_call_count": 3,
+      "tool_call_count": 3,
+      "tool_call_counts": {
+        "kyma_query_tool": 1,
+        "fetch_pod_logs_tool": 2
+      },
+      "description": "The application inside the Pod tries to list Pods in the same namespace using kubectl but it does not have the necessary RBAC permissions because the Role is missing.",
+      "status_reason": "",
+      "passed": true,
+      "attempt_history": [
+        {
+          "attempt": 1,
+          "status": "completed",
+          "reason": "",
+          "queries_passed": 1,
+          "queries_failed": 0,
+          "queries_pending": 0
+        }
+      ],
+      "initial_questions": [],
+      "queries": [
+        {
+          "user_query": "Why is the Pod in error state?",
+          "resource": {
+            "kind": "Pod",
+            "api_version": "v1",
+            "name": "pod-check",
+            "namespace": "test-pod-1"
+          },
+          "actual_response": "## Pod Error Analysis\n\n**Pod Status: Failed** \u274c\n\n### Root Cause\nThe Pod `pod-check` is in an error state because:\n\n1. **Container Exit Code: 1** \u2014 The `kubectl-container` terminated with exit code `1` (error)\n2. **Termination Reason: Error** \u2014 The container exited abnormally\n3. **No Restart Policy** \u2014 The Pod has `restartPolicy: Never`, so it won't automatically restart\n\n### Container Details\n- **Container Name:** `kubectl-container`\n- **Image:** `bitnami/kubectl:latest`\n- **Command:** `sh -c 'kubectl get pods'`\n- **State:** Terminated at `2026-08-10T12:10:31Z`\n- **Exit Code:** 1\n- **Restart Count:** 0\n\n### Why the Command Failed\nThe container ran `kubectl get pods` but likely failed due to:\n- **Missing KUBECONFIG** \u2014 The kubectl command needs proper Kubernetes API authentication\n- **Insufficient Permissions** \u2014 The ServiceAccount `test-pod-1-sa` may lack permissions to list pods\n- **API Server Connectivity** \u2014 Although `KUBERNETES_SERVICE_HOST` is set, the connection may have failed\n\n### Recommendations\n\n1. **Check ServiceAccount Permissions** \u2014 Verify the `test-pod-1-sa` has the necessary RBAC role bindings:\n   ```bash\n   kubectl get rolebindings,clusterrolebindings -n test-pod-1 | grep test-pod-1-sa\n   ```\n\n2. **Add Required RBAC** \u2014 If permissions are missing, create a Role and RoleBinding:\n   ```yaml\n   apiVersion: rbac.authorization.k8s.io/v1\n   kind: Role\n   metadata:\n     name: pod-reader\n     namespace: test-pod-1\n   rules:\n   - apiGroups: [\"\"]\n     resources: [\"pods\"]\n     verbs: [\"get\", \"list\"]\n   ---\n   apiVersion: rbac.authorization.k8s.io/v1\n   kind: RoleBinding\n   metadata:\n     name: read-pods\n     namespace: test-pod-1\n   roleRef:\n     apiGroup: rbac.authorization.k8s.io\n     kind: Role\n     name: pod-reader\n   subjects:\n   - kind: ServiceAccount\n     name: test-pod-1-sa\n     namespace: test-pod-1\n   ```\n\n3. **Debug the Command** \u2014 Run a test Pod with verbose output to see the actual error:\n   ```yaml\n   apiVersion: v1\n   kind: Pod\n   metadata:\n     name: debug-kubectl\n     namespace: test-pod-1\n   spec:\n     serviceAccountName: test-pod-1-sa\n     containers:\n     - name: kubectl\n       image: bitnami/kubectl:latest\n       command: [\"sh\", \"-c\", \"kubectl get pods -v=8\"]\n     restartPolicy: Never\n   ```\n\nWould you like me to help you check the ServiceAccount permissions or create the RBAC configuration?",
+          "status": "completed",
+          "status_reason": "",
+          "passed": true,
+          "num_expectations": 6,
+          "required_expectations_total": 3,
+          "required_expectations_passed": 3,
+          "optional_expectations_total": 3,
+          "optional_expectations_passed": 3,
+          "metrics": {
+            "latency_seconds": 9.3054,
+            "evaluation_latency_seconds": 13.2775,
+            "input_tokens": 12840,
+            "output_tokens": 1026,
+            "total_tokens": 13866,
+            "llm_call_count": 3,
+            "tool_calls": [
+              "kyma_query_tool",
+              "fetch_pod_logs_tool",
+              "fetch_pod_logs_tool"
+            ],
+            "tool_call_count": 3,
+            "tool_call_counts": {
+              "kyma_query_tool": 1,
+              "fetch_pod_logs_tool": 2
+            },
+            "response_char_count": 2359,
+            "response_word_count": 290
+          },
+          "expectations": [
+            {
+              "name": "pod_error",
+              "statement": "points out that the Pod is in an error state",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_error [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Pod is in an error state by stating the Pod status as 'Failed' and detailing the container's exit code and termination reason. It thoroughly explains why the Pod is in error, including the restart policy and potential causes, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "pod_no_permissions",
+              "statement": "points out that the Pod has no permissions",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_pod_no_permissions [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies that the Pod is in error due to insufficient permissions, pointing out that the ServiceAccount 'test-pod-1-sa' may lack the necessary RBAC roles to list pods. It provides detailed recommendations to check and add the required permissions, fully aligning with the evaluation step to point out that the Pod has no permissions.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "permission_role",
+              "statement": "points out that a solution could be to grant permissions",
+              "required": true,
+              "threshold": 0.5,
+              "metric_name": "required_permission_role [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies insufficient permissions as a likely cause of the Pod error and provides detailed steps to verify and grant the necessary RBAC permissions, fully aligning with the evaluation step to point out granting permissions as a solution.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "permission_role_missing",
+              "statement": "points out that the role 'pod-reader' is missing or do not exist",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "permission_role_missing [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response explicitly identifies the missing 'pod-reader' role as a likely cause of the pod error and provides detailed RBAC YAML to create the 'pod-reader' role and RoleBinding, fully aligning with the evaluation step.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "step_by_step_guide",
+              "statement": "provides a step-by-step guide on how to fix the issue",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "step_by_step_guide [GEval]",
+              "score": 0.9,
+              "success": true,
+              "reason": "The response provides a clear, step-by-step guide to fix the Pod error, including checking ServiceAccount permissions, adding RBAC roles and bindings, and debugging with verbose output. It thoroughly explains the root cause and offers actionable commands and YAML manifests, aligning well with the evaluation step. The only minor shortcoming is the lack of explicit steps to verify KUBECONFIG or API server connectivity, which were mentioned as possible causes.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            },
+            {
+              "name": "partial_yaml",
+              "statement": "provides at least a partial yaml for the Role that grants permission to list Pods",
+              "required": false,
+              "threshold": 0.5,
+              "metric_name": "partial_yaml [GEval]",
+              "score": 1.0,
+              "success": true,
+              "reason": "The response provides a complete YAML Role manifest granting permission to list pods, including apiGroups, resources, and verbs, fulfilling the evaluation step. It also includes a RoleBinding YAML that correctly binds the Role to the specified ServiceAccount, demonstrating a thorough and practical solution.",
+              "evaluation_model": "Custom Azure OpenAI Model",
+              "evaluation_cost": null,
+              "error": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "run": {
+    "generated_at": "2026-08-20T14:26:31.508889+00:00",
+    "total_time_minutes": 9.32,
+    "model_name": "",
+    "companion_api_url": "http://127.0.0.1:8000",
+    "max_workers": "",
+    "scenario_retries": ""
+  }
+}
