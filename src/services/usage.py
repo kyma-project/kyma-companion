@@ -135,6 +135,72 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         await CustomMetrics().record_langgraph_error(LangGraphErrorType.TOOL_ERROR)
 
 
+class RequestMetricsCallback(AsyncCallbackHandler):
+    """LangChain callback that collects per-request metrics for a single agent run.
+
+    Unlike ``UsageTrackerCallback`` (which persists cumulative usage per cluster in
+    Redis), this handler accumulates token usage, LLM call count and tool calls for
+    exactly one ``ainvoke`` so the values can be surfaced back to the caller (e.g. the
+    A2A response metadata).  Create a fresh instance for every request.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the per-request counters."""
+        self.input_tokens: int = 0
+        self.output_tokens: int = 0
+        self.total_tokens: int = 0
+        self.llm_call_count: int = 0
+        self.tool_calls: list[str] = []
+
+    async def on_llm_end(
+        self,
+        response: LLMResult,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Accumulate token usage and increment the LLM call count."""
+        self.llm_call_count += 1
+        usage = _parse_usage(response)
+        if usage:
+            self.input_tokens += int(usage.get("input", 0) or 0)
+            self.output_tokens += int(usage.get("output", 0) or 0)
+            self.total_tokens += int(usage.get("total", 0) or 0)
+
+    async def on_tool_start(
+        self,
+        serialized: dict[str, Any],
+        input_str: str,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Record the name of each tool invocation."""
+        name = ""
+        if isinstance(serialized, dict):
+            name = str(serialized.get("name", ""))
+        if not name:
+            name = str(kwargs.get("name", "") or "unknown_tool")
+        self.tool_calls.append(name)
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the collected metrics as a JSON-serializable dictionary."""
+        tool_call_counts: dict[str, int] = {}
+        for name in self.tool_calls:
+            tool_call_counts[name] = tool_call_counts.get(name, 0) + 1
+        return {
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "total_tokens": self.total_tokens,
+            "llm_call_count": self.llm_call_count,
+            "tool_calls": self.tool_calls,
+            "tool_call_count": len(self.tool_calls),
+            "tool_call_counts": tool_call_counts,
+        }
+
+
 class IUsageTracker(Protocol):
     """Interface for the UsageTracker."""
 
