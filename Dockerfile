@@ -13,6 +13,7 @@ RUN apt update && apt upgrade -y \
   && python3.13 -m venv ./venv \
   && ./venv/bin/pip install --no-cache-dir poetry>=2.1 \
   && ./venv/bin/poetry config virtualenvs.in-project true \
+  && ./venv/bin/poetry config virtualenvs.options.always-copy true \
   && ./venv/bin/poetry install --only main --no-interaction --no-ansi \
   && cd /app/.venv && ../venv/bin/pip uninstall -y poetry pip setuptools wheel \
   && find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
