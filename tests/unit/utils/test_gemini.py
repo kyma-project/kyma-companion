@@ -11,9 +11,9 @@ from utils.models.factory import (
 @pytest.fixture
 def gemini_model(mock_get_proxy_client):
     config = ModelConfig(name="gemini-1.0-pro", deployment_id="dep2", temperature=0)
-    with patch("utils.models.gemini.GoogleGenAIClient") as mock_client:
+    with patch("utils.models.gemini.make_gemini_client") as mock_make:
         model = GeminiModel(config, mock_get_proxy_client)
-        model._model = mock_client.return_value
+        model._model = mock_make.return_value
         return model
 
 

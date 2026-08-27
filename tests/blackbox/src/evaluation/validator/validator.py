@@ -6,9 +6,9 @@ from deepeval.evaluate.types import EvaluationResult
 from deepeval.metrics import BaseMetric, GEval
 from deepeval.models import DeepEvalBaseLLM
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 
 from evaluation.scenario.scenario import Query
+from evaluation.validator._aicore import AICoreClient, make_openai_chat
 
 
 class IValidator(Protocol):
@@ -52,18 +52,19 @@ class ChatOpenAIValidator:
     model: LangChainOpenAI
 
     def __init__(self, name: str, temperature: str, deployment_id: str) -> None:
-        model = ChatOpenAI(
-            model_name=name,
-            temperature=temperature,
+        client = AICoreClient()
+        llm = make_openai_chat(
+            client=client,
             deployment_id=deployment_id,
+            model_name=name,
+            temperature=float(temperature),
         )
-        self.model = LangChainOpenAI(model=model)
+        self.model = LangChainOpenAI(model=llm)
 
     def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
         """Evaluate the query using the model and expectations."""
         evaluation_metrics: list[BaseMetric] = []
         for expectation in query.expectations:
-            # create a new metric for each expectation.
             new_metric = GEval(
                 name=expectation.get_deepeval_metric_name(),
                 model=self.model,
@@ -76,10 +77,8 @@ class ChatOpenAIValidator:
                 async_mode=False,
                 verbose_mode=False,
             )
-            # add the new metric to the list.
             evaluation_metrics.append(new_metric)
 
-        # define the test case.
         test_case = LLMTestCase(
             input=query.user_query,
             actual_output=query.actual_response,
