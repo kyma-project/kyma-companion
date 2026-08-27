@@ -1,6 +1,7 @@
 """Anthropic (Bedrock Converse) adapter for SAP AI Core."""
 
 from typing import Any, Self
+from urllib.parse import urlparse
 
 from langchain_aws import ChatBedrockConverse
 from pydantic import SecretStr, model_validator
@@ -9,19 +10,26 @@ from tiny_aicore.client import AICoreClient
 
 
 class _RefreshingChatBedrockConverse(ChatBedrockConverse):
-    """ChatBedrockConverse that injects a fresh AI Core bearer token before every request."""
+    """ChatBedrockConverse that rewrites the botocore URL and injects a fresh AI Core bearer token."""
 
     aicore_client: Any  # AICoreClient — typed Any to keep Pydantic schema simple
+    aicore_deployment_id: Any
 
     @model_validator(mode="after")
     def _register_token_refresh(self) -> Self:
         aicore = self.aicore_client
+        deployment_id = self.aicore_deployment_id
 
-        def _inject_token(request: Any, **kwargs: Any) -> None:
+        def _rewrite_and_inject(request: Any, **kwargs: Any) -> None:
+            # botocore builds /model/<model-id>/converse; AI Core expects <deployment_url>/converse.
+            deployment_url = aicore.get_deployment_url(deployment_id)
+            last_segment = urlparse(request.url).path.rsplit("/", 1)[-1]
+            request.url = f"{deployment_url.rstrip('/')}/{last_segment}"
             request.headers["Authorization"] = f"Bearer {aicore.get_token()}"
+            request.headers["AI-Resource-Group"] = aicore._resource_group
 
-        self.client.meta.events.register("before-send.bedrock-runtime.Converse", _inject_token)
-        self.client.meta.events.register("before-send.bedrock-runtime.ConverseStream", _inject_token)
+        self.client.meta.events.register("before-send.bedrock-runtime.Converse", _rewrite_and_inject)
+        self.client.meta.events.register("before-send.bedrock-runtime.ConverseStream", _rewrite_and_inject)
         return self
 
 
@@ -37,6 +45,7 @@ class AnthropicAdapter:
             region_name="us-east-1",
             model=model_name,
             aicore_client=client,
+            aicore_deployment_id=deployment_id,
             **kwargs,
         )
 

@@ -8,6 +8,8 @@ from langchain_openai import ChatOpenAI
 
 from tiny_aicore.client import AICoreClient
 
+_API_VERSION = "2025-03-01-preview"
+
 
 class _AICoreAuth(httpx.Auth):
     """httpx Auth that injects a fresh AI Core bearer token on every request."""
@@ -17,6 +19,7 @@ class _AICoreAuth(httpx.Auth):
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
         request.headers["Authorization"] = f"Bearer {self._client.get_token()}"
+        request.headers["AI-Resource-Group"] = self._client._resource_group
         yield request
 
 
@@ -30,6 +33,7 @@ class OpenAIAdapter:
             base_url=deployment_url,
             api_key="placeholder",  # type: ignore[arg-type]  # auth header injected by transport
             model=model_name,
+            default_query={"api-version": _API_VERSION},
             http_client=httpx.Client(auth=auth),
             http_async_client=httpx.AsyncClient(auth=auth),
             **kwargs,
