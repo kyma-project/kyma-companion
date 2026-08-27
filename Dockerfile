@@ -33,9 +33,9 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
 FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
 RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list \
-  && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
+  && printf 'Package: *\nPin: release a=unstable\nPin-Priority: -1\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib libdb5.3t64 media-types\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
   && apt-get update \
-  && apt-get install -y python3.14 libstdc++6 \
+  && apt-get install -y --no-install-recommends python3.14 libstdc++6 \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt /usr/share/doc /usr/share/man \
   && rm -f /usr/bin/perl /usr/bin/perl5* /usr/bin/bashbug \
   && rm -rf /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl5 \
