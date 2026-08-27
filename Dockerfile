@@ -13,8 +13,6 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
-COPY src ./src
-COPY config ./config
 
 RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.1" \
   && poetry config virtualenvs.in-project true \
