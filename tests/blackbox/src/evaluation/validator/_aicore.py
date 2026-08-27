@@ -68,6 +68,7 @@ class _BearerAuth(httpx.Auth):
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
         request.headers["Authorization"] = f"Bearer {self._client.get_token()}"
+        request.headers["AI-Resource-Group"] = self._client._resource_group
         yield request
 
 

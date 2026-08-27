@@ -74,6 +74,7 @@ class _BearerAuth(httpx.Auth):
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response]:
         request.headers["Authorization"] = f"Bearer {self._client.get_token()}"
+        request.headers["AI-Resource-Group"] = self._client._resource_group
         yield request
 
 
@@ -111,6 +112,7 @@ class _RefreshingChatBedrockConverse(ChatBedrockConverse):
 
         def _inject_token(request: Any, **kwargs: Any) -> None:
             request.headers["Authorization"] = f"Bearer {aicore.get_token()}"
+            request.headers["AI-Resource-Group"] = aicore._resource_group
 
         self.client.meta.events.register("before-send.bedrock-runtime.Converse", _inject_token)
         self.client.meta.events.register("before-send.bedrock-runtime.ConverseStream", _inject_token)
@@ -145,6 +147,7 @@ def _rewrite_gemini(request: httpx.Request, client: AICoreClient, deployment_id:
     )
     request.headers["Host"] = deployment_url.host
     request.headers["Authorization"] = f"Bearer {client.get_token()}"
+    request.headers["AI-Resource-Group"] = client._resource_group
 
 
 class _GeminiTransport(httpx.BaseTransport):
