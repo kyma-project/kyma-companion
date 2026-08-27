@@ -4,6 +4,7 @@ import threading
 import time
 from collections.abc import Generator
 from typing import Any, Self
+from urllib.parse import urlparse
 
 import httpx
 from decouple import config
@@ -110,17 +111,25 @@ def make_openai_embeddings(client: AICoreClient, deployment_id: str, model_name:
 
 class _RefreshingChatBedrockConverse(ChatBedrockConverse):
     aicore_client: Any
+    aicore_deployment_id: Any
 
     @model_validator(mode="after")
     def _register_token_refresh(self) -> Self:
         aicore = self.aicore_client
+        deployment_id = self.aicore_deployment_id
 
-        def _inject_token(request: Any, **kwargs: Any) -> None:
+        def _rewrite_and_inject(request: Any, **kwargs: Any) -> None:
+            # Rewrite botocore URL: take only the last path segment, prepend deployment URL.
+            # botocore constructs /model/<model-id>/converse; AI Core expects <deployment_url>/converse.
+            deployment_url = aicore.get_deployment_url(deployment_id)
+            parsed = urlparse(request.url)
+            last_segment = parsed.path.rsplit("/", 1)[-1]
+            request.url = f"{deployment_url.rstrip('/')}/{last_segment}"
             request.headers["Authorization"] = f"Bearer {aicore.get_token()}"
             request.headers["AI-Resource-Group"] = aicore._resource_group
 
-        self.client.meta.events.register("before-send.bedrock-runtime.Converse", _inject_token)
-        self.client.meta.events.register("before-send.bedrock-runtime.ConverseStream", _inject_token)
+        self.client.meta.events.register("before-send.bedrock-runtime.Converse", _rewrite_and_inject)
+        self.client.meta.events.register("before-send.bedrock-runtime.ConverseStream", _rewrite_and_inject)
         return self
 
 
@@ -133,6 +142,7 @@ def make_anthropic_chat(client: AICoreClient, deployment_id: str, model_name: st
         region_name="us-east-1",
         model=model_name,
         aicore_client=client,
+        aicore_deployment_id=deployment_id,
         **kwargs,
     )
 
