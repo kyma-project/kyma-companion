@@ -72,6 +72,9 @@ class _BearerAuth(httpx.Auth):
         yield request
 
 
+_API_VERSION = "2025-03-01-preview"
+
+
 def make_openai_embeddings(client: AICoreClient, deployment_id: str, model_name: str) -> OpenAIEmbeddings:
     """Create an OpenAIEmbeddings instance routed through SAP AI Core."""
     deployment_url = client.get_deployment_url(deployment_id)
@@ -80,6 +83,7 @@ def make_openai_embeddings(client: AICoreClient, deployment_id: str, model_name:
         base_url=deployment_url,
         api_key="placeholder",  # type: ignore[arg-type]
         model=model_name,
+        default_query={"api-version": _API_VERSION},
         http_client=httpx.Client(auth=auth),
         http_async_client=httpx.AsyncClient(auth=auth),
     )
