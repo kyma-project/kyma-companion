@@ -7,7 +7,7 @@
 # Debian and copy only the finished venv into the Garden Linux runtime.
 FROM debian:sid AS builder
 RUN apt-get update \
-  && apt-get install -y python3.14 python3.14-dev python3-pip gcc libffi-dev libssl-dev \
+  && apt-get install -y --no-install-recommends python3.14 python3.14-dev python3-pip gcc libffi-dev libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -32,7 +32,7 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
 
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
 FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
-RUN echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list \
+RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list \
   && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
   && apt-get update \
   && apt-get install -y python3.14 libstdc++6 \
