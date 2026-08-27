@@ -11,7 +11,6 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.callbacks import BaseCallbackHandler
@@ -279,7 +278,8 @@ async def test_ainvoke_basic(react_agent, correctness_metric, test_case: ReactAg
         actual_output=result,
         expected_output=test_case.expected_goal,
     )
-    assert_test(test_case_eval, [correctness_metric])
+    await correctness_metric.a_measure(test_case_eval)
+    assert correctness_metric.is_successful(), correctness_metric.reason
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ from logging import Logger
 import github_action_utils as gha_utils
 from common.config import Config
 from common.logger import get_logger
-from common.output import print_header, print_test_results
+from common.output import print_header, print_test_results, write_metrics_report
 from evaluation.process_a2a_scenario import process_a2a_scenario
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Scenario, ScenarioList
@@ -88,7 +88,7 @@ def main() -> None:
 
     validator: IValidator = create_validator(config)
     usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
-    token_usage_before_run = usage_tracker_validator.get_total_token_usage()
+    token_usage_before_run = usage_tracker_validator.get_token_usage()
     usage_tracker_validator.disconnect()
 
     flush_logs(logger)
@@ -112,14 +112,15 @@ def main() -> None:
     flush_logs(logger)
 
     usage_tracker_validator = TokenUsageDataValidator(config.redis_url)
-    token_usage_after_run = usage_tracker_validator.get_total_token_usage()
-    total_usage = token_usage_after_run - token_usage_before_run
-    if total_usage <= 0:
+    token_usage_after_run = usage_tracker_validator.get_token_usage()
+    total_usage = {key: token_usage_after_run[key] - token_usage_before_run[key] for key in token_usage_after_run}
+    if total_usage["total"] <= 0:
         logger.error("No token usage data found in Redis after A2A evaluation run.")
         raise Exception("*** A2A tests failed: No token usage data found in Redis.")
 
     time_taken = round((time.time() - start_time) / 60, 2)
     print_test_results(scenario_list, total_usage, time_taken)
+    write_metrics_report(scenario_list, time_taken, config=config)
 
     print_header("NOTE: The A2A evaluation tests fail only when critical (required) expectations are not met.")
 

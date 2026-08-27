@@ -3,12 +3,15 @@ run-name: Create release ${{ inputs.name }}
 
 # Required repository secrets:
 # - GITHUB_TOKEN
-# - GIT_BOT_TOKEN
+# - AIFORCE_APP_PRIVATE_KEY  # private key (PEM) of the GitHub App used for release automation
 # Required repository variables:
-# - GIT_BOT_EMAIL
-# - GIT_BOT_NAME
+# - AIFORCE_APP_ID           # app id of the GitHub App used for release automation
 # - COMPANION_IMAGE_NAME
 # - IMAGE_NAME_INDEXER
+#
+# NOTE: Release automation authenticates via a GitHub App (short-lived installation token)
+#       instead of a technical user's personal access token. The App requires the
+#       "contents: write" and "pull requests: write" repository permissions.
 
 # This workflow creates a release for kyma-companion.
 # The steps are:
@@ -43,6 +46,7 @@ permissions: write-all
 env:
   REPOSITORY_FULL_NAME: "${{ github.repository }}" # <owner>/<repository-name>.
   RELEASE_TAG: "${{ inputs.name }}"
+  PYTHON_VERSION: "3.14"
 
 jobs:
   validate-input-params:
@@ -103,7 +107,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -149,7 +153,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -204,7 +208,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -250,7 +254,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -347,17 +351,33 @@ jobs:
         if: ${{ inputs.sec-scanners-config }}
         run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+
+      - name: Resolve GitHub App bot identity
+        id: bot-identity
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
       - name: Create PR if anything changed
         if: ${{ inputs.sec-scanners-config }}
         env:
           BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}-rb
           RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
-          GIT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-          GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
+          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          prs=$(gh pr list -A "${{ vars.GIT_BOT_NAME }}" --state open --json headRefName | jq -r '.[] | .headRefName')
-          prs=$(gh pr list -A ${{ vars.GIT_BOT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
+          prs=$(gh pr list -A "${{ steps.bot-identity.outputs.name }}" --state open --json headRefName | jq -r '.[] | .headRefName')
           if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
             echo "PR already exists, no need to create a new one"
             echo "PR_NUMBER=$(gh pr list --search "base:${{ env.RELEASE_BRANCH }} head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
@@ -387,15 +407,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: e2e
     env:
-      GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }} # creating git tag using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+
       - name: Checkout code
         uses: actions/checkout@v7
         with: # checkout the release branch. This is the branch where the release tag will be created.
           fetch-depth: 0 # fetch all the branches and tags.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
-          token: ${{ secrets.GIT_BOT_TOKEN }} # cloning repo using bot token because GITHUB_TOKEN would not trigger build workflow (https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
+          token: ${{ steps.app-token.outputs.token }} # cloning repo using GitHub App token so the tag push triggers the build workflow (GITHUB_TOKEN would not: https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
 
       - name: Check if the checked out branch is the release branch.
         run: |
@@ -403,6 +429,8 @@ jobs:
           git branch --show-current | grep -q "${RELEASE_BRANCH}"
 
       - name: Create git tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }} # creating git tag using GitHub App token so it triggers the build workflow.
         run: |
           ./scripts/shell/create_git_tag.sh "${RELEASE_TAG}"
 
@@ -417,9 +445,9 @@ jobs:
           ref: main
 
       - name: Setup python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
       - name: Install requirements
@@ -495,16 +523,32 @@ jobs:
         if: ${{ inputs.sec-scanners-config }}
         run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+
+      - name: Resolve GitHub App bot identity
+        id: bot-identity
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
       - name: Create PR if anything changed
         if: ${{ inputs.sec-scanners-config }}
         env:
           BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}
-          GIT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-          GH_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
+          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          prs=$(gh pr list -A "${{ vars.GIT_BOT_NAME }}" --state open --json headRefName | jq -r '.[] | .headRefName')
-          prs=$(gh pr list -A ${{ vars.GIT_BOT_NAME }} --state open --json headRefName | jq -r '.[] | .headRefName')
+          prs=$(gh pr list -A "${{ steps.bot-identity.outputs.name }}" --state open --json headRefName | jq -r '.[] | .headRefName')
           if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
             echo "PR already exists, no need to create a new one"
             echo "PR_NUMBER=$(gh pr list --search "base:main head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
