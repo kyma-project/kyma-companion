@@ -28,7 +28,8 @@ RUN apt-get update && apt-get upgrade -y \
   && rm -f ./bin/pip* ./bin/wheel ./bin/easy_install* \
   && find . -name "*.so" -exec strip --strip-debug {} + 2>/dev/null || true \
   && groupadd -g 5678 appuser \
-  && useradd -u 5678 -g appuser -s /bin/sh appuser
+  && useradd -u 5678 -g appuser -s /bin/sh appuser \
+  && install -d -m 1777 -o 5678 -g 5678 /app/tmp
 
 # Runtime stage: bare-python contains only the Python interpreter and its
 # dynamically linked .so chain — no shell utilities or apt packages that
@@ -39,6 +40,12 @@ WORKDIR /app
 # Bring passwd/group from builder so the runtime image knows about appuser.
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
+
+# CA certificates — needed for TLS connections (HANA Cloud, AI Core, etc.).
+# bare-python ships libssl but no trust store. OpenSSL looks up certs via
+# /usr/lib/ssl/cert.pem -> /etc/ssl/certs/ca-certificates.crt.
+COPY --from=builder /etc/ssl /etc/ssl
+COPY --from=builder /usr/lib/ssl /usr/lib/ssl
 
 # bare-python only includes Python's own ldd chain. C-extension packages
 # (pydantic-core, hdbcli, cryptography) also need libgcc_s and libstdc++.
@@ -54,11 +61,14 @@ COPY --from=builder --chown=5678:5678 /app/.venv ./venv
 COPY --chown=5678:5678 src ./src
 COPY --chown=5678:5678 config ./config
 
+COPY --from=builder --chown=5678:5678 /app/tmp ./tmp
+
 USER 5678
 
 ENV PATH="/app/venv/bin:$PATH" \
     PYTHONPATH=/app/src \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    TMPDIR=/app/tmp
 
 EXPOSE 8000
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
