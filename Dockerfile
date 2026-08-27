@@ -36,7 +36,13 @@ RUN echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/s
   && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
   && apt-get update \
   && apt-get install -y python3.14 libstdc++6 \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt /usr/share/doc /usr/share/man \
+  && rm -f /usr/bin/perl /usr/bin/perl5* /usr/bin/bashbug \
+  && rm -rf /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl5 \
+  && rm -f /bin/bash /usr/bin/bash \
+  && rm -f /usr/bin/openssl /usr/bin/c_rehash \
+  && rm -f /usr/bin/apt /usr/bin/apt-get /usr/bin/apt-cache /usr/bin/apt-mark \
+     /usr/bin/apt-cdrom /usr/bin/apt-config /usr/bin/apt-sortpkgs /usr/bin/apt-extracttemplates
 
 WORKDIR /app
 
