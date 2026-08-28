@@ -76,20 +76,20 @@ RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/
      /usr/sbin/ldconfig /usr/sbin/iconvconfig \
      /usr/sbin/start-stop-daemon /usr/sbin/invoke-rc.d /usr/sbin/service \
      /usr/sbin/update-rc.d /usr/sbin/update-passwd /usr/sbin/update-shells \
-     /usr/sbin/update-alternatives /usr/sbin/update-ca-certificates \
+     /usr/sbin/update-ca-certificates \
      /usr/sbin/shadowconfig /usr/sbin/dpkg-preconfigure /usr/sbin/dpkg-reconfigure \
      /usr/sbin/pam-auth-update /usr/sbin/pam_getenv /usr/sbin/pam_namespace_helper \
      /usr/sbin/pam_timestamp_check \
      /usr/sbin/grpck /usr/sbin/grpconv /usr/sbin/grpunconv \
      /usr/sbin/pwck /usr/sbin/pwconv /usr/sbin/pwunconv /usr/sbin/pwhistory_helper \
      /usr/sbin/vigr /usr/sbin/vipw \
-     /usr/sbin/installkernel /usr/sbin/chroot \
+     /usr/sbin/installkernel \
      /usr/sbin/rtcwake /usr/sbin/readprofile \
      /usr/sbin/rmt /usr/sbin/rmt-tar /usr/sbin/tarcat \
      /usr/sbin/nologin /usr/sbin/unix_chkpwd /usr/sbin/unix_update \
      /usr/sbin/mkhomedir_helper /usr/sbin/add-shell /usr/sbin/remove-shell \
      /usr/sbin/faillock /usr/sbin/findfs /usr/sbin/fstab-decode \
-     /usr/bin/update-alternatives \
+  && rm -f /usr/bin/update-alternatives \
   && rm -f /usr/sbin/chgpasswd /usr/sbin/chpasswd /usr/sbin/zic \
   && rm -f /usr/bin/deb-systemd-helper /usr/bin/deb-systemd-invoke \
   && rm -f /usr/bin/chcon /usr/bin/choom /usr/bin/chrt /usr/bin/runcon \
