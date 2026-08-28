@@ -26,7 +26,8 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && rm -rf /app/.venv/lib/python3.*/site-packages/pip* \
   && rm -rf /app/.venv/lib/python3.*/site-packages/setuptools* \
   && rm -rf /app/.venv/lib/python3.*/site-packages/wheel* \
-  && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install*
+  && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
+  && rm -rf /app/.venv/docs
 
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
 FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
