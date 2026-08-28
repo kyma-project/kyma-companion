@@ -31,7 +31,7 @@ class OpenAIAdapter:
         auth = _AICoreAuth(client)
         self._llm = ChatOpenAI(
             base_url=deployment_url,
-            api_key="placeholder",  # type: ignore[arg-type]  # auth header injected by transport
+            api_key="placeholder",  # auth header injected by transport
             model=model_name,
             default_query={"api-version": _API_VERSION},
             http_client=httpx.Client(auth=auth),

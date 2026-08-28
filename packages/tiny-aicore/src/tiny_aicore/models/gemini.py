@@ -65,6 +65,7 @@ def _rewrite(request: httpx.Request, client: AICoreClient, deployment_id: str) -
     token = client.get_token()
     request.headers["Host"] = deployment_url.host
     request.headers["Authorization"] = f"Bearer {token}"
+    request.headers["AI-Resource-Group"] = client._resource_group
 
 
 class GeminiAdapter:
