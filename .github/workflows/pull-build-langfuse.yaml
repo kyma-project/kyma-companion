@@ -14,7 +14,7 @@ permissions: read-all
 jobs:
   gate:
     runs-on: ubuntu-latest
-    environment: e2e
+    environment: ${{ contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) && 'e2e-internal' || 'e2e' }}
     steps:
       - run: echo "environment gate passed"
   build-langfuse:

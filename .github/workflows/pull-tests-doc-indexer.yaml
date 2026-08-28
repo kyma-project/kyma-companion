@@ -15,7 +15,7 @@ permissions: read-all
 jobs:
   tests:
     runs-on: ubuntu-latest
-    environment: ${{ matrix.env_name }}
+    environment: ${{ contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) && 'e2e-internal' || 'e2e' }}
     permissions:
       contents: read
     strategy:
@@ -24,7 +24,6 @@ jobs:
         include:
           - test-type: unit
           - test-type: integration
-            env_name: e2e
     name: Tests (${{ matrix.test-type }})
     steps:
       - name: Checkout code

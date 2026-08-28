@@ -21,7 +21,7 @@ jobs:
   wait-for-build:
     name: Wait for image build job
     runs-on: ubuntu-latest
-    environment: e2e
+    environment: ${{ contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association) && 'e2e-internal' || 'e2e' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
