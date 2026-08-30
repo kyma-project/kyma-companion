@@ -17,6 +17,9 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
     environment: e2e
+    strategy:
+      matrix:
+        domain: [agents, rag, services]
 
     permissions:
       contents: read
@@ -46,10 +49,10 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run integration tests
+      - name: Run integration tests (${{ matrix.domain }})
         env:
           LOG_LEVEL: "DEBUG"
           DEEPEVAL_DISABLE_TIMEOUTS: "true"
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
-          poetry run poe test-integration
+          poetry run poe test-integration-${{ matrix.domain }}

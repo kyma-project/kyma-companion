@@ -185,10 +185,13 @@ jobs:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
     ## in the release-workflow, make sure to update
     ## in the run-integration-test.yaml workflow as well.
-    name: Run integration tests
+    name: Run integration tests (${{ matrix.domain }})
     needs: validate-input-params
     runs-on: ubuntu-latest
     environment: e2e
+    strategy:
+      matrix:
+        domain: [agents, rag, services]
     permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
@@ -220,12 +223,12 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run integration tests
+      - name: Run integration tests (${{ matrix.domain }})
         env:
           LOG_LEVEL: "DEBUG"
         run: |
           echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
-          poetry run poe test-integration
+          poetry run poe test-integration-${{ matrix.domain }}
 
   run-integration-tests-indexer:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
