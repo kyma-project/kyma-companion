@@ -223,8 +223,11 @@ jobs:
       - name: Run integration tests
         env:
           LOG_LEVEL: "DEBUG"
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}
         run: |
-          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
+          echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
+            | jq --argjson override "$INTEGRATION_TEST_CONFIG" '. * $override' > "$GITHUB_WORKSPACE/config/config.json"
           poetry run poe test-integration
 
   run-integration-tests-indexer:
@@ -275,10 +278,10 @@ jobs:
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_release_${{ inputs.name }}"
+          DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          export CONFIG_PATH="$GITHUB_WORKSPACE/config/config.json"
-          echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
+          echo "$DOC_INDEXER_TESTS_CONFIG" > "$CONFIG_PATH"
           poetry run poe test-integration
 
   get-image-sha:
