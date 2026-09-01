@@ -209,6 +209,18 @@
     ]
   },
   {
+    "name": "registry-cache",
+    "source_type": "Github",
+    "url": "https://github.com/kyma-project/registry-cache.git",
+    "include_files": [
+      "README.md",
+      "docs/user/*"
+    ],
+    "exclude_files": [
+      "*/_sidebar.md"
+    ]
+  },
+  {
     "name": "auditlog-manager",
     "source_type": "Github",
     "url": "https://github.com/kyma-project/auditlog-manager.git",
