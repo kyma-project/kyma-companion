@@ -1,0 +1,156 @@
+name: "Update evaluation baseline"
+run-name: "Update evaluation baseline (PR-#${{ github.event.number }})"
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+# Best-effort: this workflow must never block other checks.
+# - contents: read  -> checkout main.
+# - actions: read   -> list/download the metrics artifact produced by the PR's
+#                      (separate) evaluation run via the Actions REST API.
+# The bot PR itself is created with a GitHub App token (see create-release.yml),
+# not GITHUB_TOKEN, so no write permission is needed here.
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  update-baseline:
+    name: Open baseline-update PR
+    # Only for merged PRs that carried the evaluation label.
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Download metrics artifact from the PR's evaluation run
+        id: fetch
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          NAME="evaluation-metrics-PR-${PR_NUMBER}"
+          # Presence of this artifact encodes "the evaluation run passed" (it is only
+          # uploaded when the evaluation step succeeded). Pick the newest non-expired one.
+          ART="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${NAME}&per_page=100" \
+            --jq '[.artifacts[] | select(.expired==false)] | sort_by(.created_at) | last // empty')"
+          if [ -z "$ART" ]; then
+            echo "::warning::No non-expired ${NAME} artifact found - nothing to update."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ART_URL="$(echo "$ART" | jq -r '.archive_download_url')"
+          # The artifact's own metadata records which run produced it - i.e. the PR's
+          # evaluation run (not this baseline-update run). Link that in the bot PR body.
+          EVAL_RUN_ID="$(echo "$ART" | jq -r '.workflow_run.id // empty')"
+          if [ -n "$EVAL_RUN_ID" ]; then
+            echo "run_url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${EVAL_RUN_ID}" >> "$GITHUB_OUTPUT"
+          fi
+          gh api "$ART_URL" > metrics.zip
+          unzip -o metrics.zip -d _metrics
+          test -f _metrics/metrics.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build delta summary and stage baseline
+        id: prep
+        if: steps.fetch.outputs.found == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # diff_metrics.py is stdlib-only, so the runner's python3 is enough (no Poetry).
+          DELTA="$(python3 tests/blackbox/scripts/diff_metrics.py \
+            tests/blackbox/baseline_metrics.json _metrics/metrics.json || echo '_(delta unavailable)_')"
+          cp _metrics/metrics.json tests/blackbox/baseline_metrics.json
+          {
+            echo 'delta<<DELTA_EOF'
+            echo "$DELTA"
+            echo 'DELTA_EOF'
+          } >> "$GITHUB_OUTPUT"
+          if git diff --quiet -- tests/blackbox/baseline_metrics.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Baseline already matches the merged run's metrics - no PR needed."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.prep.outputs.changed == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          # Reuse the same GitHub App configuration as create-release.yml.
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+
+      - name: Resolve GitHub App bot identity
+        id: bot-identity
+        if: steps.prep.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
+      - name: Create bot PR
+        if: steps.prep.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          # Reuse the repo's established bot-PR pattern (create-release.yml): a GitHub App
+          # token, NOT GITHUB_TOKEN (which is deliberately avoided in this repo).
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
+          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
+          PR_NUMBER: ${{ github.event.number }}
+          # Link the PR's evaluation run (the run that produced the metrics), captured from
+          # the artifact metadata. Fall back to this baseline-update run if it was unavailable.
+          EVAL_RUN_URL: ${{ steps.fetch.outputs.run_url }}
+          THIS_RUN_URL: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          DELTA: ${{ steps.prep.outputs.delta }}
+        run: |
+          set -euo pipefail
+          RUN_URL="${EVAL_RUN_URL:-$THIS_RUN_URL}"
+          BRANCH="chore/update-eval-baseline-PR-${PR_NUMBER}"
+          git config user.name "${GIT_NAME}"
+          git config user.email "${GIT_EMAIL}"
+          git checkout -b "$BRANCH"
+          git add tests/blackbox/baseline_metrics.json
+          git commit -m "chore: update evaluation baseline metrics (from #${PR_NUMBER})"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force-with-lease origin "$BRANCH"
+          # The label may already exist; ignore the failure in that case.
+          gh label create baseline-update --color BFD4F2 \
+            --description "Automated evaluation baseline refresh" 2>/dev/null || true
+          # Reuse an existing open bot PR for this source PR instead of creating a duplicate.
+          if gh pr view "$BRANCH" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
+            echo "PR for ${BRANCH} already open - branch updated, nothing else to do."
+            exit 0
+          fi
+          gh pr create \
+            --base main --head "$BRANCH" \
+            --title "chore: update evaluation baseline metrics (from #${PR_NUMBER})" \
+            --label baseline-update \
+            --body "$(cat <<EOF
+          Automated refresh of \`tests/blackbox/baseline_metrics.json\` from the evaluation run of #${PR_NUMBER}.
+
+          - Source PR: #${PR_NUMBER}
+          - Evaluation run: ${RUN_URL}
+          - Dashboard: see the **📊 Evaluation Report** link in that PR's run summary.
+
+          ### Baseline deltas (old → new)
+          ${DELTA}
+
+          _Opened automatically. Not auto-merged — review before merging._
+          EOF
+          )"
