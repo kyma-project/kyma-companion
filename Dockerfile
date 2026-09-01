@@ -29,7 +29,8 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
   && rm -rf /app/.venv/docs \
   && find /app/.venv -path "*/rdflib/plugins/stores/berkeleydb.py" -delete \
-  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/[Bb]erkeleydb/d' {} \;
+  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/[Bb]erkeleydb/d' {} \; \
+  && find /app/.venv -name "_yaml*.so" -delete
 
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
 FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
@@ -106,7 +107,8 @@ RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/
      /usr/bin/which /usr/bin/which.debianutils \
   && rm -f /usr/bin/rbash /usr/bin/localedef \
   && rm -f /usr/bin/taskset /usr/bin/uclampset /usr/bin/prlimit \
-     /usr/bin/ionice /usr/bin/setsid /usr/bin/setterm
+     /usr/bin/ionice /usr/bin/setsid /usr/bin/setterm \
+  && rm -rf /var/lib/dpkg /var/cache/debconf /etc/apt
 
 WORKDIR /app
 
