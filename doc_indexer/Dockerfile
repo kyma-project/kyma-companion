@@ -50,7 +50,8 @@ RUN apk add --no-cache libstdc++ \
   && rm -rf /usr/local/lib/python3.*/ensurepip \
   && rm -f /usr/local/bin/pip* /usr/local/bin/wheel /usr/local/bin/easy_install* \
   && rm -f /usr/bin/scanelf \
-  && rm -rf /lib/apk
+  && rm -rf /lib/apk \
+  && rm -f /sbin/apk
 WORKDIR /app
 
 # CA certificates for HTTPS to GitHub (codeload), SAP AI Core, and HANA Cloud.

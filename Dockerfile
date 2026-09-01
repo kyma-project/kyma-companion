@@ -29,7 +29,7 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
   && rm -rf /app/.venv/docs \
   && find /app/.venv -path "*/rdflib/plugins/stores/berkeleydb.py" -delete \
-  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/[Bb]erkeleydb/d' {} \; \
+  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/berkeleydb/Id' {} \; \
   && find /app/.venv -name "_yaml*.so" -delete
 
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
