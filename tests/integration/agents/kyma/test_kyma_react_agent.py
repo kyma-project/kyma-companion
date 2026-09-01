@@ -332,7 +332,6 @@ def create_tool_selection_test_cases() -> list[ReactAgentTestCase]:
                 resource_api_version="serverless.kyma-project.io/v1alpha2",
             ),
             must_call_tools=[TOOL_KYMA_QUERY],
-            must_not_call_tools=[TOOL_SEARCH_KYMA_DOC],
             max_tool_calls=3,
         ),
         # ---- CASE A: broad request without a specific resource ----
@@ -707,6 +706,36 @@ GOAL_ACCURACY_TEST_CASES = [
         must_call_tools=[TOOL_SEARCH_KYMA_DOC],
         must_not_call_tools=[TOOL_KYMA_QUERY],
         max_tool_calls=3,
+    ),
+    ReactAgentTestCase(
+        name="Fix instruction includes Busola UI edit steps and code fix",
+        query="How do I fix the broken function?",
+        ui_context=UINavigationContext(
+            resource_kind="Function",
+            resource_name="func1",
+            namespace="test-function-8",
+            resource_api_version="serverless.kyma-project.io/v1alpha2",
+        ),
+        must_call_tools=[TOOL_KYMA_QUERY, TOOL_SEARCH_KYMA_DOC],
+        expected_goal=(
+            "The agent identifies a JavaScript bug in the function source code (new Dates() should be new Date()). "
+            "It provides Busola UI steps to fix it: click Edit on the Function page, correct the code in the source editor, and save. "
+            "The response includes both the UI navigation steps and the corrected code."
+        ),
+        max_tool_calls=6,
+        min_response_length=50,
+    ),
+    ReactAgentTestCase(
+        name="Enable Kyma module - describes Busola UI navigation",
+        query="How do I enable the Istio module in my Kyma cluster?",
+        must_call_tools=[TOOL_SEARCH_KYMA_DOC],
+        expected_goal=(
+            "In the Kyma Dashboard (Busola), navigate to Cluster Overview → Modify Modules or Configuration → Modules"
+            "Click 'Add' on the list of modules, find Istio, and click 'Add' from the UI."
+            "The dashboard navigation steps are described BEFORE any cli instructions."
+        ),
+        max_tool_calls=4,
+        min_response_length=50,
     ),
 ]
 
