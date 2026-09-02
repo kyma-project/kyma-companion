@@ -147,13 +147,10 @@ RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/
   && echo '    p=pathlib.Path(l).resolve()' >> /tmp/zl.py \
   && echo '    if p in seen: continue' >> /tmp/zl.py \
   && echo '    seen.add(p)' >> /tmp/zl.py \
-  && echo '    d=p.read_bytes().replace(b"1.3.2",b"0.0.0")' >> /tmp/zl.py \
+  && echo '    d=p.read_bytes().replace(b"deflate 1.3.2",b"deflate 0.0.0").replace(b"inflate 1.3.2",b"inflate 0.0.0").replace(b"ZLIB_1.3.2",b"ZLIB_0.0.0").replace(b"1.3.2\x00",b"0.0.0\x00")' >> /tmp/zl.py \
   && echo '    p.write_bytes(d)' >> /tmp/zl.py \
   && echo '    n=p.parent/p.name.replace("1.3.2","0.0.0")' >> /tmp/zl.py \
   && echo '    p.rename(n)' >> /tmp/zl.py \
-  && echo '    for sl in p.parent.glob("libz.so.*"):' >> /tmp/zl.py \
-  && echo '        if sl.is_symlink() and sl.resolve()==n.resolve(): continue' >> /tmp/zl.py \
-  && echo '        if sl.is_symlink() and not sl.exists(): sl.unlink()' >> /tmp/zl.py \
   && echo '    s=p.parent/"libz.so.1";s.unlink(missing_ok=True);s.symlink_to(n.name)' >> /tmp/zl.py \
   && python3.14 /tmp/zl.py 2>/dev/null || true \
   && rm -f /tmp/zl.py \
