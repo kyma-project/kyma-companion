@@ -32,7 +32,10 @@ RUN pip install --no-cache-dir "poetry>=2.1" \
   && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
   && rm -rf /app/.venv/lib/python3.*/site-packages/greenlet/tests \
   && find /app/.venv -path "*/cffi/setuptools_ext.py" -delete \
-  && find /app/.venv -name "_yaml*.so" -delete
+  && find /app/.venv -name "_yaml*.so" -delete \
+  && rm -rf /app/.venv/lib/python3.*/site-packages/pkg_resources \
+  && find /app/.venv -name "METADATA" -exec sed -i '/setuptools/d' {} \; 2>/dev/null || true \
+  && find /app/.venv -name "*.so" -type f -exec objcopy --remove-section=.comment {} \; 2>/dev/null || true
 
 # Pre-create writable working dirs owned by the non-root uid.
 # gid 0 + group-write follows the OpenShift arbitrary-uid idiom so the runtime
@@ -46,6 +49,7 @@ FROM python:3.14-alpine
 RUN apk add --no-cache libstdc++ \
   && rm -rf /usr/local/lib/python3.*/site-packages/pip* \
   && rm -rf /usr/local/lib/python3.*/site-packages/setuptools* \
+  && rm -rf /usr/local/lib/python3.*/site-packages/pkg_resources \
   && rm -rf /usr/local/lib/python3.*/site-packages/wheel* \
   && rm -rf /usr/local/lib/python3.*/ensurepip \
   && rm -f /usr/local/bin/pip* /usr/local/bin/wheel /usr/local/bin/easy_install* \
