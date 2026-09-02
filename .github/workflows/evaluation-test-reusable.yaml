@@ -129,9 +129,12 @@ jobs:
 
       - name: Companion Deploy - Create secret
         env:
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
-          COMPANION_CONFIG_BASE64=$(echo -n "$EVALUATION_TESTS_CONFIG" | base64 -w 0)
+          COMPANION_CONFIG_BASE64=$(echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
+            | jq --argjson override "${EVALUATION_TESTS_CONFIG:-{}}" '. * $override' \
+            | base64 -w 0)
           export COMPANION_CONFIG_BASE64
           kubectl create namespace ai-system
           ./scripts/k8s/create-secret.sh
@@ -194,30 +197,28 @@ jobs:
         run: |
           ./../../scripts/shell/extract-python-version.sh
 
-      - name: Evaluation Tests Setup - Install Python
-        uses: actions/setup-python@v6
+      - name: Evaluation Tests Setup - Install Python and Poetry
+        uses: kyma-project/kyma-companion/.github/actions/setup-poetry@main
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Evaluation Tests Setup - Install Poetry
-        working-directory: tests/blackbox
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          cache-dependency-path: tests/blackbox/poetry.lock
 
       - name: Evaluation Tests Setup - Install dependencies
-        working-directory: tests/blackbox
-        run: poetry install
+        uses: kyma-project/kyma-companion/.github/actions/install-poetry-deps@main
+        with:
+          working-directory: tests/blackbox
 
       - name: Run API Tests
         working-directory: tests/blackbox
         env:
           LOG_LEVEL: "DEBUG"
           COMPANION_API_URL: "http://localhost:32000"
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
+          echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
+            | jq --argjson override "${EVALUATION_TESTS_CONFIG:-{}}" '. * $override' > "$CONFIG_PATH"
           echo "saved config to $CONFIG_PATH! Running API tests against Companion at $COMPANION_API_URL"
           poetry run pytest src/api_tests/ -v
 
@@ -230,10 +231,12 @@ jobs:
           COMPANION_API_URL: "http://localhost:32000"
           REDIS_URL: "redis://localhost:32100"
           KC_EVAL_RETRIES: "5"
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG_JSON }}
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${EVALUATION_TESTS_CONFIG}" | jq > "$CONFIG_PATH"
+          echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
+            | jq --argjson override "${EVALUATION_TESTS_CONFIG:-{}}" '. * $override' > "$CONFIG_PATH"
           echo "saved config to $CONFIG_PATH! Running A2A Kyma Agent tests"
           poetry run python src/run_a2a_evaluation.py
 
@@ -244,3 +247,47 @@ jobs:
           kubectl get pod -n ai-system || true
           kubectl logs -n ai-system -l app.kubernetes.io/name=companion || true
           kubectl describe pods -n ai-system -l app.kubernetes.io/name=companion || true
+
+      # Render the metrics.json produced by the evaluation run into a self-contained
+      # HTML dashboard. This is best-effort: a missing script/metrics file or a render
+      # error must never fail the evaluation job (continue-on-error + guarded exits).
+      - name: Render evaluation report
+        id: render-report
+        if: ${{ always() && inputs.RUN_EVALUATION_TESTS }}
+        continue-on-error: true
+        working-directory: tests/blackbox
+        run: |
+          set -euo pipefail
+          RENDER_SCRIPT="scripts/render_metrics.py"
+
+          if [ ! -f "$RENDER_SCRIPT" ]; then
+            echo "::warning::${RENDER_SCRIPT} not found - skipping evaluation report rendering."
+            exit 0
+          fi
+          if [ ! -f "metrics.json" ]; then
+            echo "::warning::metrics.json not found - skipping evaluation report rendering."
+            exit 0
+          fi
+
+          mkdir -p report
+          # GitHub Pages serves index.html by default, so render straight to that name.
+          BASELINE_ARGS=()
+          if [ -f "baseline_metrics.json" ]; then
+            BASELINE_ARGS=(-b baseline_metrics.json)
+          fi
+          # render_metrics.py only uses the Python stdlib, so plain python3 is enough.
+          python3 "$RENDER_SCRIPT" metrics.json -o report/index.html "${BASELINE_ARGS[@]}"
+          echo "report_generated=true" >> "$GITHUB_OUTPUT"
+
+      # Upload the rendered report so a downstream job in the caller workflow can
+      # deploy it to GitHub Pages. Only runs when a report was actually generated.
+      # The PR number (when available) is included in the artifact name for traceability.
+      - name: Upload evaluation report artifact
+        if: ${{ always() && steps.render-report.outputs.report_generated == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: evaluation-report
+          path: tests/blackbox/report
+          if-no-files-found: ignore
+          retention-days: 30

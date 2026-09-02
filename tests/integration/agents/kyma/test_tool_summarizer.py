@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from deepeval import assert_test
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
@@ -322,7 +321,8 @@ async def test_summarization_quality(
         expected_output=test_case.expected_summary,
     )
 
-    assert_test(llm_test_case, [summarization_quality_metric])
+    await summarization_quality_metric.a_measure(llm_test_case)
+    assert summarization_quality_metric.is_successful(), summarization_quality_metric.reason
 
 
 # ---------------------------------------------------------------------------

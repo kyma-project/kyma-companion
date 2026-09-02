@@ -63,8 +63,9 @@ jobs:
 
       - name: Create config secret
         env:
-          DOC_INDEXER_CONFIG_BASE64: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
+          DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
         run: |
+          DOC_INDEXER_CONFIG_BASE64=$(echo "$DOC_INDEXER_TESTS_CONFIG" | base64 -w 0)
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: Secret

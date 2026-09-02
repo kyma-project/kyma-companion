@@ -9,6 +9,9 @@ on:
 
 permissions: read-all
 
+env:
+  PYTHON_VERSION: "3.14"
+
 jobs:
   wait-for-build:
     name: Wait for image build job
@@ -22,9 +25,9 @@ jobs:
           ref: main
 
       - name: Setup python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
       - name: Install requirements
@@ -52,3 +55,145 @@ jobs:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
       TEST_REF: ${{ github.event.pull_request.head.ref }}
+
+  # Deploy the HTML report rendered by the reusable evaluation workflow to GitHub Pages.
+  # This job is intentionally kept in the (non-reusable) caller workflow so the reusable
+  # pipeline only produces the artifact and stays deployment-agnostic.
+  #
+  # Each PR is published under its own folder, and every run/re-run gets its own
+  # subfolder (PR-<number>/<run_id>-<run_attempt>/) with keep_files: true, so neither
+  # another PR nor another run of the same PR ever replaces an existing report.
+  deploy-report:
+    name: Deploy evaluation report to GitHub Pages
+    needs: evaluation
+    # Run even if the evaluation job failed so partial reports still get published,
+    # but skip when the evaluation was cancelled or never ran.
+    if: ${{ always() && needs.evaluation.result != 'cancelled' && needs.evaluation.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      # peaceiris/actions-gh-pages pushes a commit to the gh-pages branch.
+      contents: write
+    # Serialize gh-pages pushes so concurrent PR runs don't hit non-fast-forward errors.
+    # keep_files preserves other PR folders; the concurrency group just avoids git races.
+    concurrency:
+      group: "gh-pages-deploy"
+      cancel-in-progress: false
+    steps:
+      - name: Download evaluation report artifact
+        id: download
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: evaluation-report
+          path: ./report
+
+      - name: Check report exists
+        id: check
+        run: |
+          if [ -f ./report/index.html ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No evaluation report artifact found - skipping GitHub Pages deploy."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy report to per-run subdirectory on GitHub Pages
+        id: deploy
+        if: steps.check.outputs.exists == 'true'
+        # Best-effort: a deploy failure (push race, Pages disabled, permissions) must
+        # never fail this job, otherwise the "All Checks Passed" aggregator would block
+        # the PR on a non-mandatory report deployment.
+        continue-on-error: true
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./report
+          # Publish into a per-PR, per-run folder, e.g.
+          # gh-pages:/PR-123/16050912345-1/index.html
+          destination_dir: PR-${{ github.event.number }}/${{ github.run_id }}-${{ github.run_attempt }}
+          # Preserve every other PR's and every other run's folder on the gh-pages branch.
+          keep_files: true
+          commit_message: "docs: evaluation report for PR-${{ github.event.number }} run ${{ github.run_id }}-${{ github.run_attempt }}"
+
+      - name: Prune old evaluation reports
+        # Keep the gh-pages branch bounded: retain only the most recent reports and
+        # delete the oldest ones. Best-effort, so a failure never blocks the PR.
+        # Runs inside the same "gh-pages-deploy" concurrency group as the deploy step,
+        # so its push can't race another run's push.
+        if: steps.deploy.outcome == 'success'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Maximum number of report folders to keep on the gh-pages branch.
+          MAX_REPORTS: 100
+        run: |
+          set -euo pipefail
+
+          TMP_DIR="$(mktemp -d)"
+          git clone --branch gh-pages --single-branch \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$TMP_DIR"
+          cd "$TMP_DIR"
+
+          # Each report is published to PR-<number>/<run_id>-<run_attempt>/index.html.
+          # List every report folder oldest-first by the time of its last commit.
+          mapfile -t REPORTS < <(
+            find . -mindepth 2 -maxdepth 2 -type d -path './PR-*' | while read -r d; do
+              ts="$(git log -1 --format=%ct -- "$d")"
+              echo "${ts} ${d}"
+            done | sort -n | awk '{print $2}'
+          )
+
+          COUNT="${#REPORTS[@]}"
+          echo "Found ${COUNT} evaluation report(s) on gh-pages (keeping ${MAX_REPORTS})."
+          if [ "${COUNT}" -le "${MAX_REPORTS}" ]; then
+            echo "Nothing to prune."
+            exit 0
+          fi
+
+          REMOVE=$((COUNT - MAX_REPORTS))
+          echo "Removing ${REMOVE} oldest report(s)."
+          for ((i = 0; i < REMOVE; i++)); do
+            d="${REPORTS[$i]}"
+            echo "Deleting ${d}"
+            git rm -r --quiet "${d}"
+            # Drop the now-empty PR-<number> parent folder, if any.
+            parent="$(dirname "${d}")"
+            if [ -d "${parent}" ] && [ -z "$(find "${parent}" -mindepth 1 -maxdepth 1)" ]; then
+              rmdir "${parent}" 2>/dev/null || true
+            fi
+          done
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: prune old evaluation reports (keep last ${MAX_REPORTS})"
+          git push origin gh-pages
+
+      - name: Publish report link to run summary
+        if: steps.check.outputs.exists == 'true'
+        continue-on-error: true
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          RUN_DIR="PR-${{ github.event.number }}/${{ github.run_id }}-${{ github.run_attempt }}"
+          REPORT_URL="https://${OWNER}.github.io/${REPO}/${RUN_DIR}/"
+          DEPLOY_RESULT="${{ steps.deploy.outcome }}"
+
+          {
+            echo "## \ud83d\udcca Evaluation Report"
+            echo ""
+            if [ "$DEPLOY_RESULT" = "success" ]; then
+              echo "### \u27a1\ufe0f [**Open the interactive evaluation report**](${REPORT_URL})"
+            else
+              echo "> \u26a0\ufe0f The report was rendered but the GitHub Pages deploy did not succeed."
+              echo ">"
+              echo "> Once available it will be published at: <${REPORT_URL}>"
+            fi
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Pull request** | #${{ github.event.number }} |"
+            echo "| **Run** | \`${{ github.run_id }}-${{ github.run_attempt }}\` |"
+            echo "| **URL** | ${REPORT_URL} |"
+            echo ""
+            echo "_This report is generated automatically and is not a required check._"
+          } >> "$GITHUB_STEP_SUMMARY"

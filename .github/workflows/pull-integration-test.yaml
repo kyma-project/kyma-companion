@@ -34,7 +34,7 @@ jobs:
         run: ./scripts/shell/extract-python-version.sh
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -49,6 +49,10 @@ jobs:
       - name: Run integration tests
         env:
           LOG_LEVEL: "DEBUG"
+          DEEPEVAL_DISABLE_TIMEOUTS: "true"
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}
         run: |
-          echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode | jq > "$GITHUB_WORKSPACE/config/config.json"
+          echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
+            | jq --argjson override "$INTEGRATION_TEST_CONFIG" '. * $override' > "$GITHUB_WORKSPACE/config/config.json"
           poetry run poe test-integration

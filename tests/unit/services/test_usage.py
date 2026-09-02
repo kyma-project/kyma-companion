@@ -14,6 +14,7 @@ from services.metrics import (
     LangGraphErrorType,
 )
 from services.usage import (
+    RequestMetricsCallback,
     UsageExceedReport,
     UsageTracker,
     UsageTrackerCallback,
@@ -509,3 +510,81 @@ def test_parse_usage(test_description, llm_result, expected_output):
 
     # Then
     assert result == expected_output
+
+
+class TestRequestMetricsCallback:
+    @pytest.mark.asyncio
+    async def test_accumulates_token_usage_and_llm_calls(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = {"token_usage": {"input_tokens": 100, "output_tokens": 40, "total_tokens": 140}}
+        response.generations = []
+
+        # When
+        await callback.on_llm_end(response, run_id=uuid4())
+        await callback.on_llm_end(response, run_id=uuid4())
+
+        # Then
+        assert callback.as_dict() == {
+            "input_tokens": 200,
+            "output_tokens": 80,
+            "total_tokens": 280,
+            "llm_call_count": 2,
+            "tool_calls": [],
+            "tool_call_count": 0,
+            "tool_call_counts": {},
+        }
+
+    @pytest.mark.asyncio
+    async def test_llm_end_without_usage_does_not_raise(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = None
+        response.generations = []
+
+        # When
+        await callback.on_llm_end(response, run_id=uuid4())
+
+        # Then
+        assert callback.llm_call_count == 1
+        assert callback.total_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_records_tool_calls(self):
+        # Given
+        callback = RequestMetricsCallback()
+
+        # When
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({}, "input", run_id=uuid4(), name="search_kyma_doc")
+
+        # Then
+        assert callback.tool_calls == ["kyma_query_tool", "kyma_query_tool", "search_kyma_doc"]
+
+    @pytest.mark.asyncio
+    async def test_as_dict_reports_aggregated_metrics(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = {"token_usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}}
+        response.generations = []
+        await callback.on_llm_end(response, run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+
+        # When
+        result = callback.as_dict()
+
+        # Then
+        assert result == {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "total_tokens": 15,
+            "llm_call_count": 1,
+            "tool_calls": ["kyma_query_tool", "kyma_query_tool"],
+            "tool_call_count": 2,
+            "tool_call_counts": {"kyma_query_tool": 2},
+        }
