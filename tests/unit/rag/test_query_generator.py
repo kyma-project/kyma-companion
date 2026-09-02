@@ -1,8 +1,8 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
 
 from rag.prompts import QUERY_GENERATOR_PROMPT_TEMPLATE
 from rag.query_generator import Queries, QueryGenerator

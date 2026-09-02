@@ -2,9 +2,8 @@ import time
 from collections.abc import Callable
 from typing import cast
 
-from gen_ai_hub.proxy.core.proxy_clients import get_proxy_client
-from gen_ai_hub.proxy.langchain import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
+from utils._aicore import AICoreClient, make_openai_embeddings
 
 from utils.logging import get_logger
 from utils.settings import get_embedding_model_config
@@ -27,7 +26,7 @@ def openai_embedding_creator(model_name: str) -> Embeddings:
     """Create an OpenAI embedding model using SAP AI Core.
 
     Reads model configuration from settings to map model names to SAP AI Core
-    deployment IDs, then uses the gen_ai_hub proxy for authentication.
+    deployment IDs, then uses inline AICoreClient for authentication.
 
     Args:
         model_name: Model name as defined in config.json (e.g., "text-embedding-3-large")
@@ -40,20 +39,14 @@ def openai_embedding_creator(model_name: str) -> Embeddings:
     """
     try:
         time.sleep(1)  # Sleep to avoid rate limiting
-
-        # Look up deployment_id from settings
         model_config = get_embedding_model_config(model_name)
-
-        # Initialize SAP AI Core proxy client
-        proxy_client = get_proxy_client("gen-ai-hub")
-
-        # Create embeddings with model name and deployment_id
+        client = AICoreClient()
         llm = cast(
             Embeddings,
-            OpenAIEmbeddings(
-                model=model_name,
+            make_openai_embeddings(
+                client=client,
                 deployment_id=model_config.deployment_id,
-                proxy_client=proxy_client,
+                model_name=model_name,
             ),
         )
     except Exception:

@@ -1,7 +1,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from gen_ai_hub.proxy.langchain import OpenAIEmbeddings
 from langchain_core.embeddings import Embeddings
 from utils.model_config import ModelConfig
 
@@ -57,7 +56,7 @@ def test_create_embedding_factory(
 
 
 @pytest.mark.parametrize(
-    "test_case,model_name,mock_openai_error",
+    "test_case,model_name,mock_error",
     [
         (
             "successful creation",
@@ -74,39 +73,39 @@ def test_create_embedding_factory(
 def test_openai_embedding_creator(
     test_case,
     model_name,
-    mock_openai_error,
+    mock_error,
     caplog,
 ):
     # Arrange
-    mock_embeddings = Mock(spec=OpenAIEmbeddings)
-    mock_proxy_client = Mock()
+    mock_embeddings = Mock(spec=Embeddings)
     mock_model_config = ModelConfig(name=model_name, deployment_id="test-deployment-id")
 
     with (
         patch("utils.models.get_embedding_model_config", return_value=mock_model_config),
-        patch("utils.models.get_proxy_client", return_value=mock_proxy_client),
-        patch("utils.models.OpenAIEmbeddings") as mock_openai_cls,
+        patch("utils.models.AICoreClient") as mock_client_cls,
+        patch("utils.models.make_openai_embeddings") as mock_make,
         patch("utils.models.time.sleep"),
     ):
-        if mock_openai_error:
-            mock_openai_cls.side_effect = mock_openai_error
+        mock_client = Mock()
+        mock_client_cls.return_value = mock_client
+
+        if mock_error:
+            mock_make.side_effect = mock_error
         else:
-            mock_openai_cls.return_value = mock_embeddings
+            mock_make.return_value = mock_embeddings
 
         # Act & Assert
-        if mock_openai_error:
-            with pytest.raises(type(mock_openai_error)) as exc_info:
+        if mock_error:
+            with pytest.raises(type(mock_error)) as exc_info:
                 openai_embedding_creator(model_name)
-            assert str(exc_info.value) == str(mock_openai_error)
+            assert str(exc_info.value) == str(mock_error)
             assert "Error while creating OpenAI embedding model" in caplog.text
         else:
             result = openai_embedding_creator(model_name)
 
-            # Assert the result is correct
             assert result == mock_embeddings
-
-            # Assert OpenAIEmbeddings was called with correct parameters
-            call_kwargs = mock_openai_cls.call_args.kwargs
-            assert call_kwargs["model"] == model_name
-            assert call_kwargs["deployment_id"] == "test-deployment-id"
-            assert call_kwargs["proxy_client"] == mock_proxy_client
+            mock_make.assert_called_once_with(
+                client=mock_client,
+                deployment_id="test-deployment-id",
+                model_name=model_name,
+            )

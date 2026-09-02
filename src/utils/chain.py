@@ -1,6 +1,6 @@
 from typing import Any
 
-from langchain_core.runnables import RunnableConfig, RunnableSequence
+from langchain_core.runnables import RunnableConfig, RunnableSerializable
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
     reraise=True,
 )
 async def ainvoke_chain(
-    chain: RunnableSequence,
+    chain: RunnableSerializable,
     inputs: dict[str, Any] | Any,
     *,
     config: RunnableConfig | None = None,
