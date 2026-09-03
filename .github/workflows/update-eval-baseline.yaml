@@ -51,12 +51,6 @@ jobs:
             exit 0
           fi
           ART_URL="$(echo "$ART" | jq -r '.archive_download_url')"
-          # The artifact's own metadata records which run produced it - i.e. the PR's
-          # evaluation run (not this baseline-update run). Link that in the bot PR body.
-          EVAL_RUN_ID="$(echo "$ART" | jq -r '.workflow_run.id // empty')"
-          if [ -n "$EVAL_RUN_ID" ]; then
-            echo "run_url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${EVAL_RUN_ID}" >> "$GITHUB_OUTPUT"
-          fi
           gh api "$ART_URL" > metrics.zip
           unzip -o metrics.zip -d _metrics
           test -f _metrics/metrics.json
@@ -93,15 +87,10 @@ jobs:
           GIT_NAME: ${{ steps.bot-identity.outputs.name }}
           GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
           PR_NUMBER: ${{ github.event.number }}
-          # Link the PR's evaluation run (the run that produced the metrics), captured from
-          # the artifact metadata. Fall back to this baseline-update run if it was unavailable.
-          EVAL_RUN_URL: ${{ steps.fetch.outputs.run_url }}
-          THIS_RUN_URL: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         run: |
           set -euo pipefail
           # Always open a PR (--allow-empty); the codeowner decides whether to adopt it.
           cp _metrics/metrics.json tests/blackbox/baseline_metrics.json
-          RUN_URL="${EVAL_RUN_URL:-$THIS_RUN_URL}"
           BRANCH="chore/update-eval-baseline-PR-${PR_NUMBER}"
           git config user.name "${GIT_NAME}"
           git config user.email "${GIT_EMAIL}"
@@ -129,7 +118,6 @@ jobs:
           Automated refresh of \`tests/blackbox/baseline_metrics.json\` from the evaluation run of #${PR_NUMBER}.
 
           - Source PR: #${PR_NUMBER}
-          - Evaluation run: ${RUN_URL}
           - Dashboard: see the **📊 Evaluation Report** link in that PR's run summary.
 
           _Opened automatically. Not auto-merged — review before merging._
