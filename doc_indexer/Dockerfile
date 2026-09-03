@@ -34,8 +34,7 @@ RUN pip install --no-cache-dir "poetry>=2.1" \
   && find /app/.venv -path "*/cffi/setuptools_ext.py" -delete \
   && find /app/.venv -name "_yaml*.so" -delete \
   && rm -rf /app/.venv/lib/python3.*/site-packages/pkg_resources \
-  && find /app/.venv -name "METADATA" -exec sed -i '/^Requires-Dist:.*setuptools/d' {} \; 2>/dev/null || true \
-  && find /app/.venv -name "*.so" -type f -exec objcopy --remove-section=.comment {} \; 2>/dev/null || true
+  && find /app/.venv -name "METADATA" -exec sed -i '/^Requires-Dist:.*setuptools/d' {} \; 2>/dev/null || true
 
 # Pre-create writable working dirs owned by the non-root uid.
 # gid 0 + group-write follows the OpenShift arbitrary-uid idiom so the runtime
