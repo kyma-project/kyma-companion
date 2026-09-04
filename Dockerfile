@@ -27,7 +27,10 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && rm -rf /app/.venv/lib/python3.*/site-packages/setuptools* \
   && rm -rf /app/.venv/lib/python3.*/site-packages/wheel* \
   && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
-  && rm -rf /app/.venv/docs
+  && rm -rf /app/.venv/docs \
+  && find /app/.venv -path "*/rdflib/plugins/stores/berkeleydb.py" -delete \
+  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/berkeleydb/Id' {} \; \
+  && find /app/.venv -name "_yaml*.so" -delete
 
 # Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
 FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
@@ -36,10 +39,14 @@ RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/
   && apt-get update \
   && apt-get install -y --no-install-recommends python3.14 libstdc++6 \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt /usr/share/doc /usr/share/man \
+  && dpkg --purge --force-depends libdb5.3t64 2>/dev/null || true \
+  && dpkg --purge --force-depends libsqlite3-0 2>/dev/null || true \
+  && dpkg --purge --force-depends libncurses6 libncursesw6 libtinfo6 2>/dev/null || true \
+  && dpkg --purge --force-depends libsystemd0 2>/dev/null || true \
   && groupadd --gid 5678 appuser \
   && useradd --uid 5678 --gid appuser --shell /bin/sh --no-create-home appuser \
   && rm -f /usr/bin/perl /usr/bin/perl5* /usr/bin/bashbug \
-  && rm -rf /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl5 \
+  && find /usr/lib -maxdepth 3 -type d \( -name "perl-base" -o -name "perl5" \) -exec rm -rf {} + 2>/dev/null || true \
   && rm -f /bin/bash /usr/bin/bash \
   && rm -f /usr/bin/openssl /usr/bin/c_rehash \
   && rm -f /usr/bin/apt /usr/bin/apt-get /usr/bin/apt-cache /usr/bin/apt-mark \
@@ -103,15 +110,44 @@ RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/
      /usr/bin/which /usr/bin/which.debianutils \
   && rm -f /usr/bin/rbash /usr/bin/localedef \
   && rm -f /usr/bin/taskset /usr/bin/uclampset /usr/bin/prlimit \
-     /usr/bin/ionice /usr/bin/setsid /usr/bin/setterm
+     /usr/bin/ionice /usr/bin/setsid /usr/bin/setterm \
+  && rm -f /usr/bin/grep /usr/bin/egrep /usr/bin/fgrep \
+  && find /usr/lib/python3* -name "_sqlite3*.so" -delete 2>/dev/null || true \
+  && find /usr/lib/python3* \( -name "_curses*.so" -o -name "readline*.so" \) -delete 2>/dev/null || true \
+  && find /lib /usr/lib -maxdepth 4 \( -name "libsqlite3.so*" -o -name "libncurses*.so*" -o -name "libtinfo*.so*" \) -delete 2>/dev/null || true \
+  && find /lib /usr/lib -maxdepth 5 \( -name "libsystemd.so*" -o -name "libsystemd-shared*.so*" \) -delete 2>/dev/null || true \
+  && find /usr/share -maxdepth 2 -type d -name "perl*" -exec rm -rf {} + 2>/dev/null || true \
+  && find /lib /usr/lib -maxdepth 4 -name "libperl*.so*" -delete 2>/dev/null || true \
+  && rm -f \
+     /usr/bin/b2sum /usr/bin/base32 /usr/bin/base64 /usr/bin/basename /usr/bin/basenc \
+     /usr/bin/cat /usr/bin/chgrp /usr/bin/chmod /usr/bin/chown /usr/bin/cksum \
+     /usr/bin/comm /usr/bin/cp /usr/bin/csplit /usr/bin/cut /usr/bin/date \
+     /usr/bin/dd /usr/bin/df /usr/bin/dir /usr/bin/dircolors /usr/bin/dirname \
+     /usr/bin/du /usr/bin/echo /usr/bin/env /usr/bin/expand /usr/bin/expr \
+     /usr/bin/factor /usr/bin/false /usr/bin/fmt /usr/bin/fold /usr/bin/groups \
+     /usr/bin/head /usr/bin/hostid /usr/bin/id /usr/bin/install /usr/bin/join \
+     /usr/bin/kill /usr/bin/link /usr/bin/ln /usr/bin/logname /usr/bin/ls \
+     /usr/bin/md5sum /usr/bin/mkdir /usr/bin/mkfifo /usr/bin/mknod /usr/bin/mktemp \
+     /usr/bin/mv /usr/bin/nice /usr/bin/nl /usr/bin/nohup /usr/bin/nproc \
+     /usr/bin/numfmt /usr/bin/od /usr/bin/paste /usr/bin/pathchk /usr/bin/pinky \
+     /usr/bin/pr /usr/bin/printenv /usr/bin/printf /usr/bin/ptx /usr/bin/pwd \
+     /usr/bin/readlink /usr/bin/realpath /usr/bin/seq \
+     /usr/bin/sha1sum /usr/bin/sha224sum /usr/bin/sha256sum /usr/bin/sha384sum \
+     /usr/bin/sha512sum /usr/bin/shred /usr/bin/shuf /usr/bin/sleep /usr/bin/sort \
+     /usr/bin/split /usr/bin/stat /usr/bin/stdbuf /usr/bin/stty /usr/bin/sum \
+     /usr/bin/sync /usr/bin/tac /usr/bin/tail /usr/bin/tee /usr/bin/test \
+     /usr/bin/timeout /usr/bin/touch /usr/bin/tr /usr/bin/true /usr/bin/truncate \
+     /usr/bin/tsort /usr/bin/tty /usr/bin/uname /usr/bin/unexpand /usr/bin/uniq \
+     /usr/bin/unlink /usr/bin/uptime /usr/bin/users /usr/bin/vdir /usr/bin/wc \
+     /usr/bin/who /usr/bin/whoami /usr/bin/yes \
+  && rm -rf /var/lib/dpkg /var/cache/debconf /etc/apt \
+  && rm -f /usr/bin/rm
 
 WORKDIR /app
 
-COPY --from=builder /app/.venv ./venv
-COPY src ./src
-COPY config ./config
-
-RUN chown -R appuser:appuser /app
+COPY --chown=appuser:appuser --from=builder /app/.venv ./venv
+COPY --chown=appuser:appuser src ./src
+COPY --chown=appuser:appuser config ./config
 
 USER appuser
 
