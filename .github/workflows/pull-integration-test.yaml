@@ -54,5 +54,5 @@ jobs:
           INTEGRATION_TEST_CONFIG: ${{ secrets.INTEGRATION_TEST_CONFIG }}
         run: |
           echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
-            | jq --argjson override "$INTEGRATION_TEST_CONFIG" '. * $override' > "$GITHUB_WORKSPACE/config/config.json"
+            | jq --argjson override "${INTEGRATION_TEST_CONFIG:-"{}"}" '. * $override' > "$GITHUB_WORKSPACE/config/config.json"
           poetry run poe test-integration
