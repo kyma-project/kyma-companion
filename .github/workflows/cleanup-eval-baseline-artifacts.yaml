@@ -1,0 +1,86 @@
+name: "Cleanup evaluation baseline artifacts"
+run-name: "Cleanup evaluation baseline artifacts (PR-#${{ github.event.number }})"
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+# Best-effort: this workflow must never block other checks.
+# - actions: write -> list & DELETE the per-PR evaluation-metrics artifacts via the
+#                     Actions REST API (read alone returns 403 on delete).
+# No checkout happens here (we only call the Actions API), so contents access is not
+# needed. No fork code is checked out and no secrets are exposed to fork code, so this
+# workflow legitimately omits the `environment: e2e` gate - matching the sibling
+# update-eval-baseline.yaml, which is gated the same way (label + no unsafe checkout).
+permissions:
+  actions: write
+
+jobs:
+  cleanup-metrics:
+    name: Delete per-PR evaluation metrics artifacts
+    # Only for the automated baseline-update bot PR. Runs on BOTH merge and plain close
+    # (we intentionally do NOT require merged == true): a closed-without-merge bot PR
+    # should have its metrics artifacts cleaned up too.
+    if: contains(github.event.pull_request.labels.*.name, 'baseline-update')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete evaluation-metrics-PR-<n> artifacts
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The bot PR head branch is chore/update-eval-baseline-PR-<n>; <n> is the
+          # source PR number, and the artifact to delete is evaluation-metrics-PR-<n>.
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          # Derive the source PR number from the bot PR head branch. Strip everything up
+          # to and including the final "-PR-"; ${HEAD_REF##*-PR-} returns the branch
+          # unchanged if "-PR-" is absent, which the case guard below catches.
+          N="${HEAD_REF##*-PR-}"
+          case "$HEAD_REF" in
+            chore/update-eval-baseline-PR-*) : ;;
+            *)
+              echo "::warning::Head branch '${HEAD_REF}' is not a baseline-update branch - nothing to clean up."
+              exit 0
+              ;;
+          esac
+          if ! printf '%s' "$N" | grep -Eq '^[0-9]+$'; then
+            echo "::warning::Could not extract a numeric PR number from '${HEAD_REF}' (got '${N}') - skipping."
+            exit 0
+          fi
+
+          NAME="evaluation-metrics-PR-${N}"
+          echo "::notice::Looking for artifacts named ${NAME} to delete."
+
+          # There can be several artifacts with this name (one per evaluation run / re-run);
+          # collect ALL of their ids. Capture the list call's output first and check its
+          # exit status: piping gh api through a process substitution would hide a transient
+          # API failure (set -o pipefail can't see it), making a 502/rate-limit look like a
+          # clean "no artifacts found" and leaving artifacts to linger. --paginate handles
+          # >100 results.
+          if ! IDS_RAW="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${NAME}&per_page=100" \
+            --jq '.artifacts[].id')"; then
+            echo "::warning::Failed to list ${NAME} artifacts (API error) - skipping cleanup this run."
+            exit 0
+          fi
+
+          # Drop blank lines (an empty result set yields a single empty line via <<<).
+          IDS=()
+          while IFS= read -r id; do
+            [ -n "$id" ] && IDS+=("$id")
+          done <<< "$IDS_RAW"
+
+          if [ "${#IDS[@]}" -eq 0 ]; then
+            echo "::notice::No ${NAME} artifacts found (already expired or deleted) - nothing to do."
+            exit 0
+          fi
+
+          echo "::notice::Found ${#IDS[@]} ${NAME} artifact(s) to delete."
+          for id in "${IDS[@]}"; do
+            echo "Deleting artifact ${id} (${NAME})"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}" || true
+          done
+          echo "::notice::Cleanup of ${NAME} artifacts complete."
