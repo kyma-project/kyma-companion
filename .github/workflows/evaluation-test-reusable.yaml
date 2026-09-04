@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: ""
+      PR_NUMBER:
+        required: false
+        type: string
+        default: ""
+        description: "PR number, used to name the metrics artifact for baseline auto-update. Empty for manual runs."
 
 # global env variables.
 env:
@@ -223,6 +228,7 @@ jobs:
           poetry run pytest src/api_tests/ -v
 
       - name: Run Evaluation Tests
+        id: run-evaluation
         if: ${{ inputs.RUN_EVALUATION_TESTS }}
         working-directory: tests/blackbox
         env:
@@ -290,4 +296,19 @@ jobs:
           name: evaluation-report
           path: tests/blackbox/report
           if-no-files-found: ignore
+          retention-days: 30
+
+      # Upload the raw metrics.json as its own artifact so the baseline-update
+      # workflow can retrieve it after the PR is merged. Uploaded ONLY when the
+      # evaluation step succeeded, so artifact-presence == "this run passed".
+      # The PR number (when available) is included in the name so the merge-time
+      # workflow can locate this exact run's metrics across runs.
+      - name: Upload evaluation metrics artifact
+        if: ${{ inputs.RUN_EVALUATION_TESTS && steps.run-evaluation.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.PR_NUMBER != '' && format('evaluation-metrics-PR-{0}', inputs.PR_NUMBER) || 'evaluation-metrics' }}
+          path: tests/blackbox/metrics.json
+          if-no-files-found: warn
           retention-days: 30

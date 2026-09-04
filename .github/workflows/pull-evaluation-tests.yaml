@@ -55,6 +55,7 @@ jobs:
       IMAGE_NAME: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
       TEST_REF: ${{ github.event.pull_request.head.ref }}
+      PR_NUMBER: ${{ github.event.number }}
 
   # Deploy the HTML report rendered by the reusable evaluation workflow to GitHub Pages.
   # This job is intentionally kept in the (non-reusable) caller workflow so the reusable

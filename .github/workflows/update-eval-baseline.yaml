@@ -1,0 +1,125 @@
+name: "Update evaluation baseline"
+run-name: "Update evaluation baseline (PR-#${{ github.event.number }})"
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+# Best-effort: this workflow must never block other checks.
+# - contents: read  -> checkout main.
+# - actions: read   -> list/download the metrics artifact produced by the PR's
+#                      (separate) evaluation run via the Actions REST API.
+# The bot PR itself is created with a GitHub App token (see create-release.yml),
+# not GITHUB_TOKEN, so no write permission is needed here.
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  update-baseline:
+    name: Open baseline-update PR
+    # Only for merged PRs that carried the evaluation label.
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'evaluation requested')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          # Don't persist GITHUB_TOKEN creds; the bot PR pushes with the App token (set-url below).
+          persist-credentials: false
+
+      - name: Download metrics artifact from the PR's evaluation run
+        id: fetch
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          NAME="evaluation-metrics-PR-${PR_NUMBER}"
+          # Presence of this artifact encodes "the evaluation run passed" (it is only
+          # uploaded when the evaluation step succeeded). Pick the newest non-expired one.
+          ART="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${NAME}&per_page=100" \
+            --jq '[.artifacts[] | select(.expired==false)] | sort_by(.created_at) | last // empty')"
+          if [ -z "$ART" ]; then
+            echo "::warning::No non-expired ${NAME} artifact found - nothing to update."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ART_URL="$(echo "$ART" | jq -r '.archive_download_url')"
+          gh api "$ART_URL" > metrics.zip
+          unzip -o metrics.zip -d _metrics
+          test -f _metrics/metrics.json
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.fetch.outputs.found == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          # Reuse the same GitHub App configuration as create-release.yml.
+          app-id: ${{ vars.AIFORCE_APP_ID }}
+          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
+
+      - name: Resolve GitHub App bot identity
+        id: bot-identity
+        if: steps.fetch.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
+      - name: Create bot PR
+        if: steps.fetch.outputs.found == 'true'
+        continue-on-error: true
+        env:
+          # Reuse the repo's established bot-PR pattern (create-release.yml): a GitHub App
+          # token, NOT GITHUB_TOKEN (which is deliberately avoided in this repo).
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
+          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          # Always open a PR (--allow-empty); the codeowner decides whether to adopt it.
+          cp _metrics/metrics.json tests/blackbox/baseline_metrics.json
+          BRANCH="chore/update-eval-baseline-PR-${PR_NUMBER}"
+          git config user.name "${GIT_NAME}"
+          git config user.email "${GIT_EMAIL}"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # Fetch any existing bot branch into its remote-tracking ref so --force-with-lease
+          # has something to compare against on re-runs (main-only checkout has none).
+          git fetch origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" || true
+          git checkout -b "$BRANCH"
+          git add tests/blackbox/baseline_metrics.json
+          git commit --allow-empty -m "chore: update evaluation baseline metrics (from #${PR_NUMBER})"
+          git push --force-with-lease origin "$BRANCH"
+          # The label may already exist; ignore the failure in that case.
+          gh label create baseline-update --color BFD4F2 \
+            --description "Automated evaluation baseline refresh" 2>/dev/null || true
+          # Reuse an existing open bot PR for this source PR instead of creating a duplicate.
+          if gh pr view "$BRANCH" --json state --jq '.state' 2>/dev/null | grep -q OPEN; then
+            echo "PR for ${BRANCH} already open - branch updated, nothing else to do."
+            exit 0
+          fi
+          gh pr create \
+            --base main --head "$BRANCH" \
+            --title "chore: update evaluation baseline metrics (from #${PR_NUMBER})" \
+            --label baseline-update \
+            --body "$(cat <<EOF
+          Automated refresh of \`tests/blackbox/baseline_metrics.json\` from the evaluation run of #${PR_NUMBER}.
+
+          - Source PR: #${PR_NUMBER}
+          - Dashboard: see the **📊 Evaluation Report** link in that PR's run summary.
+
+          _Opened automatically. Not auto-merged — review before merging._
+          EOF
+          )"
