@@ -1,26 +1,180 @@
 # syntax=docker/dockerfile:1
 
-# Build stage: Debian sid (unstable) for compiling C-extensions (gcc, libffi-dev).
-# Python 3.14 comes from Debian sid natively.
-# Garden Linux 2150.9.0 only ships Python 3.13, and its minimal package set
-# lacks the -dev headers needed to build C-extensions -- so we compile in
-# Debian and copy only the finished venv into the Garden Linux runtime.
-FROM debian:sid AS builder
+# Three-stage build:
+#
+#   builder  Garden Linux + a C toolchain. Builds a static libffi and a
+#            CPython interpreter from source, installs the application's
+#            dependencies into a virtualenv with poetry, and trims both.
+#   rootfs   Same image as builder. Assembles, in /rootfs, the complete set
+#            of files the application needs at runtime: the interpreter, the
+#            virtualenv, the application source, and every shared library
+#            those load, found by running ldd over all of them.
+#   runtime  FROM scratch, i.e. an empty filesystem, into which /rootfs is
+#            copied. Contains no shell, no package manager, no coreutils, no
+#            files other than the ones the rootfs stage selected. A final
+#            RUN imports the application inside this image to prove the
+#            file set is complete.
+#
+# Version pins: GARDENLINUX_VERSION picks the builder image and therefore the
+# glibc, OpenSSL, zlib, bzip2, xz and libstdc++ that end up in the runtime
+# image. PYTHON_VERSION and LIBFFI_VERSION pick the source tarballs; each
+# ADD below carries the SHA-256 of the tarball it downloads, so a version
+# bump means changing the ARG and the checksum together.
+
+ARG GARDENLINUX_VERSION=2150.9.0
+
+# --- Stage 1: builder ---------------------------------------------------------
+FROM ghcr.io/gardenlinux/gardenlinux:${GARDENLINUX_VERSION} AS builder
+
+ARG PYTHON_VERSION=3.14.7
+ARG LIBFFI_VERSION=3.8.0
+
+# Toolchain and development headers for the CPython build:
+#   gcc, libc6-dev, make   the compiler, C library headers, build driver
+#   libssl-dev             OpenSSL headers, for the ssl and hashlib modules
+#   zlib1g-dev             zlib headers, for the zlib module
+#   libbz2-dev, liblzma-dev  bzip2 / xz headers, for the bz2 and lzma modules
+#   ca-certificates, tzdata  copied into the runtime image later (TLS roots,
+#                          time zone database for the zoneinfo module)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3.14 python3.14-dev python3-pip gcc libffi-dev libssl-dev \
+  && apt-get install -y --no-install-recommends \
+       gcc libc6-dev make ca-certificates tzdata \
+       libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
   && rm -rf /var/lib/apt/lists/*
 
+# libffi, needed by CPython's _ctypes module. Garden Linux ships the runtime
+# library (libffi8) but not the headers, so libffi is built here from source
+# as a static library (libffi.a) and linked into _ctypes. Build output goes
+# to a log file and is printed only if a step fails.
+#   --disable-shared --enable-static   produce only libffi.a
+#   --with-pic                         position-independent code, required
+#                                      because the .a is linked into a .so
+#   --disable-docs                     skip the texinfo manual
+#   --disable-multi-os-directory       install to lib/, not lib64/
+ADD --checksum=sha256:7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4 \
+    https://github.com/libffi/libffi/releases/download/v${LIBFFI_VERSION}/libffi-${LIBFFI_VERSION}.tar.gz /src/
+RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VERSION} \
+  && ./configure --prefix=/opt/libffi --disable-shared --enable-static --with-pic \
+       --disable-docs --disable-multi-os-directory > /tmp/libffi.log 2>&1 \
+  && make -j"$(nproc)" >> /tmp/libffi.log 2>&1 \
+  && make install >> /tmp/libffi.log 2>&1 \
+  || { tail -50 /tmp/libffi.log; exit 1; }
+
+# CPython from source, installed to /opt/python.
+#
+# Modules/Setup.local lists stdlib extension modules under "*disabled*" that
+# are not built at all. Their C libraries therefore never enter the image:
+#   _dbm, _gdbm             Berkeley DB / GNU dbm
+#   _sqlite3                SQLite
+#   _tkinter                Tk
+#   readline, _curses, _curses_panel   GNU readline / ncurses
+# Importing one of these later raises ModuleNotFoundError.
+#
+# pyexpat and _elementtree (XML parsing via CPython's bundled expat) are NOT
+# disabled here: pip needs xmlrpc.client, which needs pyexpat, to install
+# wheels. They are built as shared extension modules in lib-dynload and
+# deleted after the virtualenv exists (see the poetry step below).
+#
+# configure flags:
+#   LIBFFI_CFLAGS / LIBFFI_LIBS   point _ctypes at the static libffi above
+#   --with-openssl=/usr           use Garden Linux's OpenSSL
+#   --with-ensurepip=install      install pip, so poetry can be installed;
+#                                 pip is removed again after the venv build
+#   --disable-test-modules        skip the _testcapi etc. C test modules
+#   --without-static-libpython    do not install libpython3.14.a
+# The interpreter binary is statically linked against libpython (there is
+# no libpython3.14.so); its only runtime library dependencies are libc and
+# libm.
+ADD --checksum=sha256:62859805f6fdf25e2bcbf3fa3217801e1996887ca33e6a2af80674bdfa2dbe07 \
+    https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz /src/
+RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSION} \
+  && printf '%s\n' '*disabled*' _dbm _gdbm _sqlite3 _tkinter readline _curses _curses_panel \
+       > Modules/Setup.local \
+  && LIBFFI_CFLAGS="-I/opt/libffi/include" LIBFFI_LIBS="/opt/libffi/lib/libffi.a" \
+     ./configure --prefix=/opt/python --with-openssl=/usr --with-ensurepip=install \
+       --disable-test-modules --without-static-libpython > /tmp/python.log 2>&1 \
+  && make -j"$(nproc)" >> /tmp/python.log 2>&1 \
+  && make install >> /tmp/python.log 2>&1 \
+  || { tail -50 /tmp/python.log; exit 1; }
+
+# Trim the installed interpreter tree. Removed:
+#   lib/python3.*/test                  the stdlib test suite
+#   idlelib, tkinter, turtledemo, turtle.py, __phello__   IDLE, Tk bindings,
+#                                       demos; _tkinter is disabled anyway
+#   sqlite3, dbm, curses                the pure-Python packages wrapping
+#                                       the disabled C modules
+#   config-3.*                          Makefile/Setup used only to compile
+#                                       new extension modules
+#   lib/pkgconfig, include              .pc files and C headers, used only
+#                                       to compile against the interpreter
+#   bin/idle3*, pydoc3*, python3*-config   tools not used at runtime
+#   *.opt-1.pyc, *.opt-2.pyc            bytecode for python -O / -OO;
+#                                       make install compiles all three
+#                                       levels, the interpreter runs without
+#                                       -O so only the plain .pyc is loaded
+# strip removes debug symbols (.symtab, .debug_*) from the interpreter and
+# the extension modules. The dynamic symbol table (.dynsym) that the loader
+# and dlopen use stays, so the modules still import.
+# The python -c lines check that the modules the application needs (ssl,
+# ctypes, compression, hashing, zoneinfo with a real zone) work, and that
+# two disabled modules are indeed absent. pip is kept for the next step.
+RUN cd /opt/python \
+  && rm -rf lib/python3.*/test lib/python3.*/idlelib lib/python3.*/tkinter \
+       lib/python3.*/turtledemo lib/python3.*/turtle.py lib/python3.*/__phello__ \
+       lib/python3.*/sqlite3 lib/python3.*/dbm lib/python3.*/curses \
+       lib/python3.*/config-3.* lib/pkgconfig include \
+       bin/idle3* bin/pydoc3* bin/python3*-config \
+  && find lib -name '*.opt-[12].pyc' -delete \
+  && strip bin/python3.14 lib/python3.*/lib-dynload/*.so \
+  && /opt/python/bin/python3 -c "import ssl, ctypes, zlib, bz2, lzma, hashlib, uuid, zoneinfo; zoneinfo.ZoneInfo('Europe/Berlin')" \
+  && ! /opt/python/bin/python3 -c "import dbm.ndbm" 2>/dev/null \
+  && ! /opt/python/bin/python3 -c "import sqlite3" 2>/dev/null
+
+ENV PATH="/opt/python/bin:$PATH"
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
 
-RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.1" \
+# Application dependencies into /app/.venv, then cleanup.
+#
+# 1. Install poetry into the interpreter's site-packages with the pip that
+#    ensurepip provided; poetry creates /app/.venv (in-project) and installs
+#    the locked main dependencies into it.
+# 2. Remove poetry, pip and ensurepip from /opt/python again, plus their
+#    caches. The interpreter tree that ships is then stdlib only.
+# 3. Delete the pyexpat and _elementtree extension modules that were only
+#    needed for the wheel installs, then assert that no expat code remains:
+#    import must fail, and the string "expat_<version>" (embedded in every
+#    expat build) must appear neither in the interpreter binary nor in any
+#    .so under /opt/python or the venv.
+# 4. Trim the venv:
+#      __pycache__, *.pyc, *.pyo    bytecode caches; the runtime sets
+#                                   PYTHONDONTWRITEBYTECODE, so none are
+#                                   written later either
+#      pip, setuptools, wheel       installers, not needed to run
+#      docs                         package documentation
+#      rdflib berkeleydb backend    the storage plugin for Berkeley DB, and
+#                                   the mention of it in rdflib's METADATA
+#      _yaml*.so                    PyYAML's C accelerator; PyYAML falls
+#                                   back to its pure-Python implementation
+#      tests directories            bundled test suites (pandas/tests alone
+#                                   is 16 MB). Only directories named
+#                                   exactly "tests" are removed; "testing"
+#                                   packages such as numpy.testing are
+#                                   public API and stay.
+#    strip removes debug symbols from every shared object in the venv;
+#    wheels on PyPI ship unstripped.
+RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && poetry config virtualenvs.in-project true \
-  && poetry config virtualenvs.options.always-copy true \
   && poetry install --only main --no-interaction --no-ansi \
-  && python3.14 -m pip uninstall -y --break-system-packages poetry \
-  && rm -rf ~/.config/pypoetry ~/.cache/pypoetry \
-  && find /app/.venv -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
+  && rm -rf ~/.config/pypoetry ~/.cache/pypoetry ~/.cache/pip \
+  && rm -rf /opt/python/lib/python3.*/site-packages/* /opt/python/lib/python3.*/ensurepip \
+       /opt/python/bin/pip* /opt/python/bin/poetry \
+  && rm -f /opt/python/lib/python3.*/lib-dynload/pyexpat* /opt/python/lib/python3.*/lib-dynload/_elementtree* \
+  && ! python3 -c "import pyexpat" 2>/dev/null \
+  && ! grep -q 'expat_[0-9]' /opt/python/bin/python3.14 \
+  && ! find /opt/python /app/.venv -name '*.so*' -type f -exec grep -l 'expat_[0-9]' {} + | grep . \
+  && find /app/.venv -type d -name __pycache__ -prune -exec rm -rf {} + \
   && find /app/.venv -type f -name "*.pyc" -delete \
   && find /app/.venv -type f -name "*.pyo" -delete \
   && rm -rf /app/.venv/lib/python3.*/site-packages/pip* \
@@ -30,130 +184,91 @@ RUN python3.14 -m pip install --no-cache-dir --break-system-packages "poetry>=2.
   && rm -rf /app/.venv/docs \
   && find /app/.venv -path "*/rdflib/plugins/stores/berkeleydb.py" -delete \
   && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/berkeleydb/Id' {} \; \
-  && find /app/.venv -name "_yaml*.so" -delete
+  && find /app/.venv -name "_yaml*.so" -delete \
+  && find /app/.venv -type d -name tests -prune -exec rm -rf {} + \
+  && find /app/.venv -name "*.so*" -type f -exec strip {} + 2>/dev/null
 
-# Runtime stage: clean Garden Linux with Python 3.14 from Debian sid.
-FROM ghcr.io/gardenlinux/gardenlinux:2150.9.0
-RUN echo "deb https://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list \
-  && printf 'Package: *\nPin: release a=unstable\nPin-Priority: -1\n\nPackage: python3.14 python3.14-minimal libpython3.14 libpython3.14-minimal libpython3.14-stdlib libdb5.3t64 media-types libexpat1\nPin: release a=unstable\nPin-Priority: 900\n' > /etc/apt/preferences.d/sid-pin \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends python3.14 libstdc++6 \
-  && rm -rf /var/lib/apt/lists/* /var/cache/apt /usr/share/doc /usr/share/man \
-  && dpkg --purge --force-depends libdb5.3t64 2>/dev/null || true \
-  && dpkg --purge --force-depends libsqlite3-0 2>/dev/null || true \
-  && dpkg --purge --force-depends libncurses6 libncursesw6 libtinfo6 2>/dev/null || true \
-  && dpkg --purge --force-depends libsystemd0 2>/dev/null || true \
-  && groupadd --gid 5678 appuser \
-  && useradd --uid 5678 --gid appuser --shell /bin/sh --no-create-home appuser \
-  && rm -f /usr/bin/perl /usr/bin/perl5* /usr/bin/bashbug \
-  && find /usr/lib -maxdepth 3 -type d \( -name "perl-base" -o -name "perl5" \) -exec rm -rf {} + 2>/dev/null || true \
-  && rm -f /bin/bash /usr/bin/bash \
-  && rm -f /usr/bin/openssl /usr/bin/c_rehash \
-  && rm -f /usr/bin/apt /usr/bin/apt-get /usr/bin/apt-cache /usr/bin/apt-mark \
-     /usr/bin/apt-cdrom /usr/bin/apt-config /usr/bin/apt-sortpkgs /usr/bin/apt-extracttemplates \
-  && rm -f /usr/bin/su /usr/bin/chsh /usr/bin/chfn /usr/bin/passwd /usr/bin/gpasswd \
-     /usr/bin/chage /usr/bin/expiry \
-  && rm -f /usr/bin/login /usr/sbin/sulogin /usr/sbin/runuser \
-  && rm -f /usr/sbin/useradd /usr/sbin/userdel /usr/sbin/usermod \
-     /usr/sbin/groupadd /usr/sbin/groupdel /usr/sbin/groupmod /usr/sbin/newusers \
-  && rm -f /usr/bin/dpkg /usr/bin/dpkg-deb /usr/bin/dpkg-divert /usr/bin/dpkg-query \
-     /usr/bin/dpkg-split /usr/bin/dpkg-statoverride /usr/bin/dpkg-trigger \
-     /usr/bin/dpkg-realpath /usr/bin/dpkg-maintscript-helper \
-     /usr/bin/debconf /usr/bin/debconf-apt-progress /usr/bin/debconf-communicate \
-     /usr/bin/debconf-copydb /usr/bin/debconf-escape /usr/bin/debconf-set-selections \
-     /usr/bin/debconf-show \
-  && rm -f /usr/bin/pdb3.14 /usr/bin/pydoc3.14 /usr/bin/pygettext3.14 \
-  && rm -f /usr/bin/sqv \
-  && rm -f /usr/bin/ldd /usr/bin/pldd \
-  && rm -f /usr/bin/mount /usr/bin/umount /usr/sbin/losetup /usr/sbin/swapoff \
-     /usr/sbin/swapon /usr/sbin/mkswap /usr/sbin/blkdiscard /usr/sbin/blkid \
-     /usr/sbin/blockdev /usr/sbin/fsck /usr/sbin/mkfs /usr/sbin/fsfreeze \
-     /usr/sbin/fstrim /usr/sbin/wipefs /usr/sbin/zramctl /usr/sbin/swaplabel \
-     /usr/bin/mountpoint /usr/bin/findmnt /usr/bin/lsblk /usr/bin/partx \
-  && rm -f /usr/bin/tar /usr/bin/gzip /usr/bin/gunzip /usr/bin/gzexe \
-     /usr/bin/zcat /usr/bin/zcmp /usr/bin/zdiff /usr/bin/zegrep /usr/bin/zfgrep \
-     /usr/bin/zforce /usr/bin/zgrep /usr/bin/zless /usr/bin/zmore /usr/bin/znew \
-  && rm -f /usr/bin/cmp /usr/bin/diff /usr/bin/diff3 /usr/bin/sdiff \
-  && rm -f /usr/bin/sensible-browser /usr/bin/sensible-editor /usr/bin/sensible-terminal \
-     /usr/bin/sensible-pager /usr/bin/select-editor \
-  && rm -f /usr/bin/dmesg /usr/bin/lscpu /usr/bin/lsipc /usr/bin/lslocks \
-     /usr/bin/lsns /usr/bin/nsenter /usr/bin/unshare /usr/bin/setarch \
-     /usr/bin/linux32 /usr/bin/linux64 /usr/bin/setpriv /usr/bin/chroot \
-  && rm -f /usr/sbin/agetty /usr/sbin/getty /usr/sbin/killall5 \
-     /usr/sbin/ldconfig /usr/sbin/iconvconfig \
-     /usr/sbin/start-stop-daemon /usr/sbin/invoke-rc.d /usr/sbin/service \
-     /usr/sbin/update-rc.d /usr/sbin/update-passwd /usr/sbin/update-shells \
-     /usr/sbin/update-ca-certificates \
-     /usr/sbin/shadowconfig /usr/sbin/dpkg-preconfigure /usr/sbin/dpkg-reconfigure \
-     /usr/sbin/pam-auth-update /usr/sbin/pam_getenv /usr/sbin/pam_namespace_helper \
-     /usr/sbin/pam_timestamp_check \
-     /usr/sbin/grpck /usr/sbin/grpconv /usr/sbin/grpunconv \
-     /usr/sbin/pwck /usr/sbin/pwconv /usr/sbin/pwunconv /usr/sbin/pwhistory_helper \
-     /usr/sbin/vigr /usr/sbin/vipw \
-     /usr/sbin/installkernel \
-     /usr/sbin/rtcwake /usr/sbin/readprofile \
-     /usr/sbin/rmt /usr/sbin/rmt-tar /usr/sbin/tarcat \
-     /usr/sbin/nologin /usr/sbin/unix_chkpwd /usr/sbin/unix_update \
-     /usr/sbin/mkhomedir_helper /usr/sbin/add-shell /usr/sbin/remove-shell \
-     /usr/sbin/faillock /usr/sbin/findfs /usr/sbin/fstab-decode \
-  && rm -f /usr/bin/update-alternatives \
-  && rm -f /usr/sbin/chgpasswd /usr/sbin/chpasswd /usr/sbin/zic \
-  && rm -f /usr/bin/deb-systemd-helper /usr/bin/deb-systemd-invoke \
-  && rm -f /usr/bin/chcon /usr/bin/choom /usr/bin/chrt /usr/bin/runcon \
-  && rm -f /usr/bin/ipcmk /usr/bin/ipcrm /usr/bin/ipcs \
-  && rm -f /usr/bin/captoinfo /usr/bin/infocmp /usr/bin/infotocap \
-     /usr/bin/tic /usr/bin/toe /usr/bin/tput /usr/bin/tset /usr/bin/reset \
-     /usr/bin/clear /usr/bin/clear_console /usr/bin/tabs \
-  && rm -f /usr/bin/ischroot /usr/bin/savelog /usr/bin/tempfile \
-     /usr/bin/run-parts /usr/bin/hardlink \
-  && rm -f /usr/bin/mcookie /usr/bin/namei /usr/bin/whereis \
-     /usr/bin/which /usr/bin/which.debianutils \
-  && rm -f /usr/bin/rbash /usr/bin/localedef \
-  && rm -f /usr/bin/taskset /usr/bin/uclampset /usr/bin/prlimit \
-     /usr/bin/ionice /usr/bin/setsid /usr/bin/setterm \
-  && rm -f /usr/bin/grep /usr/bin/egrep /usr/bin/fgrep \
-  && find /usr/lib/python3* -name "_sqlite3*.so" -delete 2>/dev/null || true \
-  && find /usr/lib/python3* \( -name "_curses*.so" -o -name "readline*.so" \) -delete 2>/dev/null || true \
-  && find /lib /usr/lib -maxdepth 4 \( -name "libsqlite3.so*" -o -name "libncurses*.so*" -o -name "libtinfo*.so*" \) -delete 2>/dev/null || true \
-  && find /lib /usr/lib -maxdepth 5 \( -name "libsystemd.so*" -o -name "libsystemd-shared*.so*" \) -delete 2>/dev/null || true \
-  && find /usr/share -maxdepth 2 -type d -name "perl*" -exec rm -rf {} + 2>/dev/null || true \
-  && find /lib /usr/lib -maxdepth 4 -name "libperl*.so*" -delete 2>/dev/null || true \
-  && rm -f \
-     /usr/bin/b2sum /usr/bin/base32 /usr/bin/base64 /usr/bin/basename /usr/bin/basenc \
-     /usr/bin/cat /usr/bin/chgrp /usr/bin/chmod /usr/bin/chown /usr/bin/cksum \
-     /usr/bin/comm /usr/bin/cp /usr/bin/csplit /usr/bin/cut /usr/bin/date \
-     /usr/bin/dd /usr/bin/df /usr/bin/dir /usr/bin/dircolors /usr/bin/dirname \
-     /usr/bin/du /usr/bin/echo /usr/bin/env /usr/bin/expand /usr/bin/expr \
-     /usr/bin/factor /usr/bin/false /usr/bin/fmt /usr/bin/fold /usr/bin/groups \
-     /usr/bin/head /usr/bin/hostid /usr/bin/id /usr/bin/install /usr/bin/join \
-     /usr/bin/kill /usr/bin/link /usr/bin/ln /usr/bin/logname /usr/bin/ls \
-     /usr/bin/md5sum /usr/bin/mkdir /usr/bin/mkfifo /usr/bin/mknod /usr/bin/mktemp \
-     /usr/bin/mv /usr/bin/nice /usr/bin/nl /usr/bin/nohup /usr/bin/nproc \
-     /usr/bin/numfmt /usr/bin/od /usr/bin/paste /usr/bin/pathchk /usr/bin/pinky \
-     /usr/bin/pr /usr/bin/printenv /usr/bin/printf /usr/bin/ptx /usr/bin/pwd \
-     /usr/bin/readlink /usr/bin/realpath /usr/bin/seq \
-     /usr/bin/sha1sum /usr/bin/sha224sum /usr/bin/sha256sum /usr/bin/sha384sum \
-     /usr/bin/sha512sum /usr/bin/shred /usr/bin/shuf /usr/bin/sleep /usr/bin/sort \
-     /usr/bin/split /usr/bin/stat /usr/bin/stdbuf /usr/bin/stty /usr/bin/sum \
-     /usr/bin/sync /usr/bin/tac /usr/bin/tail /usr/bin/tee /usr/bin/test \
-     /usr/bin/timeout /usr/bin/touch /usr/bin/tr /usr/bin/true /usr/bin/truncate \
-     /usr/bin/tsort /usr/bin/tty /usr/bin/uname /usr/bin/unexpand /usr/bin/uniq \
-     /usr/bin/unlink /usr/bin/uptime /usr/bin/users /usr/bin/vdir /usr/bin/wc \
-     /usr/bin/who /usr/bin/whoami /usr/bin/yes \
-  && rm -rf /var/lib/dpkg /var/cache/debconf /etc/apt \
-  && rm -f /usr/bin/rm
+COPY src ./src
+COPY config ./config
+
+# --- Stage 2: rootfs ----------------------------------------------------------
+# Assembles /rootfs, the exact file tree the runtime image will consist of.
+#
+# 1. Directory skeleton with the merged-/usr layout of the builder: /lib,
+#    /lib64 and /bin are symlinks into /usr. The dynamic loader searches
+#    /lib/x86_64-linux-gnu and /usr/lib/x86_64-linux-gnu, and the interpreter
+#    binary names its loader as /lib64/ld-linux-x86-64.so.2, so both spellings
+#    must resolve to the same files.
+# 2. Shared-library closure. ldd is run over the interpreter binary and every
+#    .so under /opt/python and the venv. Its output lists, per file, the
+#    libraries the loader would map, as either
+#        libssl.so.3 => /usr/lib/x86_64-linux-gnu/libssl.so.3 (0x...)
+#    or, for the loader itself,
+#        /lib64/ld-linux-x86-64.so.2 (0x...)
+#    A library the loader cannot find prints "=> not found"; the build stops
+#    there and shows the file that needs it, because a library missing from
+#    the closure would surface only when that extension is first imported.
+#    The awk picks the resolved paths out of both line shapes; paths inside
+#    /app and /opt/python are skipped because those trees are copied whole
+#    below. cp --parents -L copies each library to the same path under
+#    /rootfs, dereferencing symlinks so the runtime gets real files.
+# 3. libgcc_s.so.1 is added by hand: glibc loads it with dlopen for thread
+#    cancellation and C++ exception unwinding, so ldd never lists it.
+# 4. Whole trees: the interpreter, /etc/ssl and /usr/lib/ssl (CA bundle and
+#    OpenSSL's default paths, which point into /etc/ssl), the time zone
+#    database, and /etc/nsswitch.conf (name-service order; the "files" and
+#    "dns" backends it names are compiled into this glibc, so no libnss_*
+#    files are needed). cp -a keeps symlinks as symlinks.
+# 5. The venv, renamed from .venv to venv, and the application source and
+#    config. The venv's bin/python is a symlink to /opt/python/bin/python3.14,
+#    which resolves because /opt/python is copied to the same path.
+# 6. /etc/passwd and /etc/group with the root and appuser entries so uid/gid
+#    5678 resolve to a name, and a world-writable /tmp for tempfile.
+FROM builder AS rootfs
+RUN set -eu \
+  && mkdir -p /rootfs/usr/lib /rootfs/usr/lib64 /rootfs/usr/bin /rootfs/etc /rootfs/app \
+  && ln -s usr/lib /rootfs/lib && ln -s usr/lib64 /rootfs/lib64 && ln -s usr/bin /rootfs/bin \
+  && { echo /opt/python/bin/python3.14; find /opt/python /app/.venv -name '*.so*' -type f; } \
+     | xargs ldd 2>/dev/null > /tmp/ldd.out \
+  && if grep -B1 'not found' /tmp/ldd.out; then echo 'unresolved shared libraries'; exit 1; fi \
+  && awk '$2 == "=>" && $3 ~ /^\// { print $3 } $1 ~ /^\// && $2 ~ /^\(0x/ { print $1 }' /tmp/ldd.out \
+     | grep -vE '^/(app|opt/python)/' \
+     | sort -u \
+     | while read -r lib; do cp --parents -L "$lib" /rootfs; done \
+  && cp --parents -L "$(find /usr/lib -name libgcc_s.so.1 -print -quit)" /rootfs \
+  && cp -a --parents /opt/python /etc/ssl /usr/lib/ssl /usr/share/zoneinfo /etc/nsswitch.conf /rootfs \
+  && cp -a /app/.venv /rootfs/app/venv \
+  && cp -a /app/src /app/config /rootfs/app/ \
+  && printf 'root:x:0:0:root:/root:/sbin/nologin\nappuser:x:5678:5678::/nonexistent:/sbin/nologin\n' > /rootfs/etc/passwd \
+  && printf 'root:x:0:\nappuser:x:5678:\n' > /rootfs/etc/group \
+  && install -d -m 1777 /rootfs/tmp
+
+# --- Stage 3: runtime ---------------------------------------------------------
+# Starts from an empty filesystem; the single COPY makes /rootfs the whole
+# image. Nothing from the builder stage is inherited.
+FROM scratch
+COPY --from=rootfs /rootfs /
+
+# PATH has only the venv and the interpreter; there is no /usr/bin.
+# SSL_CERT_FILE names the CA bundle explicitly for libraries that read the
+# variable rather than OpenSSL's compiled-in default path.
+ENV PATH="/app/venv/bin:/opt/python/bin" \
+    PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
-COPY --chown=appuser:appuser --from=builder /app/.venv ./venv
-COPY --chown=appuser:appuser src ./src
-COPY --chown=appuser:appuser config ./config
+# Build-time check that the image is complete. Exec form, because there is
+# no shell to run a command line through; the interpreter is started
+# directly, on this image's files, and imports the application's entry
+# module. A shared library missing from the closure, or a stdlib module the
+# application imports eagerly that was disabled above, fails the build here.
+# The real config.json is mounted at deploy time; the example config from
+# the repository stands in for it so the import can complete.
+RUN ["/app/venv/bin/python", "-c", "import os; os.environ['CONFIG_PATH'] = 'config/config-example.json'; import main"]
 
-USER appuser
-
-ENV PATH="/app/venv/bin:$PATH" \
-    PYTHONPATH=/app/src \
-    PYTHONDONTWRITEBYTECODE=1
+USER 5678:5678
 
 EXPOSE 8000
 CMD ["python3.14", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
