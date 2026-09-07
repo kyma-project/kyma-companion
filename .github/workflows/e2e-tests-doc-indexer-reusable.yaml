@@ -106,7 +106,7 @@ jobs:
                 - name: doc-indexer
                   image: ${{ inputs.IMAGE_NAME }}
                   imagePullPolicy: Never
-                  command: ["sh", "-c", "python src/main.py fetch && python src/main.py index"]
+                  command: ["python", "src/main.py", "fetch-and-index"]
                   env:
                   - name: LOG_LEVEL
                     value: "INFO"
