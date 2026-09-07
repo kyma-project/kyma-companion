@@ -28,6 +28,7 @@ from utils.settings import (
 
 TASK_FETCH = "fetch"
 TASK_INDEX = "index"
+TASK_FETCH_AND_INDEX = "fetch-and-index"
 TASK_DROP = "drop"
 TASK_TABLES = "tables"
 logger = get_logger(__name__)
@@ -131,7 +132,7 @@ def run_list_tables(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
-    parser.add_argument("task", choices=["index", "fetch", "drop", "tables"])
+    parser.add_argument("task", choices=["index", "fetch", "fetch-and-index", "drop", "tables"])
     args = parser.parse_args()
 
     logger.info("Indexer job starting", extra={"task": args.task})
@@ -139,6 +140,9 @@ if __name__ == "__main__":
     if args.task == TASK_FETCH:
         run_fetcher()
     elif args.task == TASK_INDEX:
+        run_indexer()
+    elif args.task == TASK_FETCH_AND_INDEX:
+        run_fetcher()
         run_indexer()
     elif args.task == TASK_DROP:
         run_drop()
