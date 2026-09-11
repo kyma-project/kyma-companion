@@ -23,6 +23,38 @@ logger = get_logger(__name__)
 
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
 
+_RETRY_WAIT_SECONDS = [2, 4, 8, 16, 32]
+_MAX_RETRIES = len(_RETRY_WAIT_SECONDS)
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """Return True if the exception looks like a rate-limit error."""
+    return "RateLimit" in type(exc).__name__ or "429" in str(exc)
+
+
+def _add_documents_with_retry(db: HanaDB, batch: list[Document], batch_number: int) -> None:
+    """Add a batch of documents to HanaDB, retrying on rate-limit errors.
+
+    Args:
+        db: The HanaDB instance to add documents to.
+        batch: The list of documents to add.
+        batch_number: The batch number (used for log messages only).
+    """
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            db.add_documents(batch)
+            return
+        except Exception as exc:
+            if not _is_rate_limit_error(exc):
+                raise
+            if attempt >= _MAX_RETRIES:
+                raise
+            wait = _RETRY_WAIT_SECONDS[attempt]
+            logger.warning(
+                f"Rate-limit error on batch {batch_number} (attempt {attempt + 1}/{_MAX_RETRIES}): retrying in {wait}s"
+            )
+            time.sleep(wait)
+
 
 def remove_parentheses(text: str) -> str:
     """Remove text within parentheses () from a string.
@@ -267,8 +299,8 @@ class AdaptiveSplitMarkdownIndexer:
                 for chunk in all_chunks:
                     batch.append(chunk)
                     if len(batch) >= CHUNKS_BATCH_SIZE:
-                        # Process the current batch
-                        self.db.add_documents(batch)
+                        # Process the current batch with retry on rate-limit errors
+                        _add_documents_with_retry(self.db, batch, batch_count + 1)
                         batch_count += 1
                         total_chunk_number += len(batch)
                         logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
@@ -276,13 +308,9 @@ class AdaptiveSplitMarkdownIndexer:
                         # Clear the batch
                         batch = []
 
-                        # Wait before processing next batch
-                        logger.debug("Rate limiting: sleeping 3s before next batch")
-                        time.sleep(3)
-
                 # Process any remaining documents in the final batch
                 if batch:
-                    self.db.add_documents(batch)
+                    _add_documents_with_retry(self.db, batch, batch_count + 1)
                     batch_count += 1
                     total_chunk_number += len(batch)
                     logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks")
