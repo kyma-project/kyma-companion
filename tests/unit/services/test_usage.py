@@ -14,6 +14,7 @@ from services.metrics import (
     LangGraphErrorType,
 )
 from services.usage import (
+    ReferencesCallback,
     RequestMetricsCallback,
     UsageExceedReport,
     UsageTracker,
@@ -588,3 +589,95 @@ class TestRequestMetricsCallback:
             "tool_call_count": 2,
             "tool_call_counts": {"kyma_query_tool": 2},
         }
+
+
+class TestReferencesCallback:
+    """Tests for ReferencesCallback.on_tool_end parsing."""
+
+    # A realistic snippet of what SearchKymaDocTool._arun returns
+    SAMPLE_OUTPUT = (
+        "### Kyma Functions Overview\n"
+        "Source: https://kyma.io/docs/functions\n"
+        "Module: serverless\n"
+        "\n"
+        "Functions let you run custom code...\n"
+        "\n"
+        "---\n"
+        "\n"
+        "### API Rule Configuration\n"
+        "Source: https://kyma.io/docs/apirule\n"
+        "\n"
+        "API Rules expose services..."
+    )
+
+    @pytest.mark.asyncio
+    async def test_parses_source_lines_from_search_tool(self):
+        """on_tool_end extracts title/url pairs from search_kyma_doc output."""
+        cb = ReferencesCallback()
+        await cb.on_tool_end(
+            self.SAMPLE_OUTPUT,
+            run_id=uuid4(),
+            name="search_kyma_doc",
+        )
+        assert len(cb.references) == 2  # noqa: PLR2004
+        assert cb.references[0] == {"title": "Kyma Functions Overview", "url": "https://kyma.io/docs/functions"}
+        assert cb.references[1] == {"title": "API Rule Configuration", "url": "https://kyma.io/docs/apirule"}
+
+    @pytest.mark.asyncio
+    async def test_ignores_other_tools(self):
+        """on_tool_end ignores output from tools other than search_kyma_doc."""
+        cb = ReferencesCallback()
+        await cb.on_tool_end(
+            self.SAMPLE_OUTPUT,
+            run_id=uuid4(),
+            name="kyma_query_tool",
+        )
+        assert cb.references == []
+
+    @pytest.mark.asyncio
+    async def test_deduplicates_urls_across_calls(self):
+        """Duplicate URLs are not added a second time."""
+        cb = ReferencesCallback()
+        await cb.on_tool_end(
+            self.SAMPLE_OUTPUT,
+            run_id=uuid4(),
+            name="search_kyma_doc",
+        )
+        # Second call with overlapping URLs
+        await cb.on_tool_end(
+            self.SAMPLE_OUTPUT,
+            run_id=uuid4(),
+            name="search_kyma_doc",
+        )
+        assert len(cb.references) == 2  # noqa: PLR2004
+
+    @pytest.mark.asyncio
+    async def test_handles_output_without_source_lines(self):
+        """No references are collected when the output has no Source: lines."""
+        cb = ReferencesCallback()
+        await cb.on_tool_end(
+            "No relevant documentation found.",
+            run_id=uuid4(),
+            name="search_kyma_doc",
+        )
+        assert cb.references == []
+
+    @pytest.mark.asyncio
+    async def test_handles_non_string_output(self):
+        """Non-string output does not raise and produces no references."""
+        cb = ReferencesCallback()
+        await cb.on_tool_end(
+            None,  # type: ignore[arg-type]
+            run_id=uuid4(),
+            name="search_kyma_doc",
+        )
+        assert cb.references == []
+
+    @pytest.mark.asyncio
+    async def test_uses_untitled_when_no_heading_precedes_source(self):
+        """References without a preceding ### heading use 'Untitled'."""
+        cb = ReferencesCallback()
+        output = "Source: https://orphan.example.com\n\nSome content."
+        await cb.on_tool_end(output, run_id=uuid4(), name="search_kyma_doc")
+        assert len(cb.references) == 1  # noqa: PLR2004
+        assert cb.references[0] == {"title": "Untitled", "url": "https://orphan.example.com"}

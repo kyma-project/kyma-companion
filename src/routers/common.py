@@ -200,10 +200,26 @@ class SearchKymaDocRequest(BaseModel):
     )
 
 
+class SearchKymaDocResult(BaseModel):
+    """A single structured result from a Kyma documentation search."""
+
+    title: str = Field(..., description="Document title")
+    url: str = Field(..., description="Source URL of the document")
+    module: str | None = Field(default=None, description="Kyma module the document belongs to")
+    content: str = Field(..., description="Document text content")
+
+
 class SearchKymaDocResponse(BaseModel):
     """Response model for Kyma documentation search."""
 
-    results: list[str] = Field(..., description="List of retrieved documents")
+    results: list[str] = Field(
+        ...,
+        description="[Deprecated] List of raw document content strings. Use `documents` instead.",
+    )
+    documents: list[SearchKymaDocResult] = Field(
+        default_factory=list,
+        description="Structured search results with title, URL, module, and content",
+    )
     query: str = Field(..., description="Original search query")
 
 
