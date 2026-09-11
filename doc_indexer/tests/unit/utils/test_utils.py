@@ -62,23 +62,27 @@ class _FakeResponse(io.BytesIO):
         return False
 
 
+_SHA = "a" * 40  # 40-char hex sha fixture
+
+
 def test_download_repo_extracts_and_strips_wrapper(tmp_path):
     # Given: a codeload-style tarball whose top dir is "<repo>-<sha>"
     repo_url = "https://github.com/kyma-project/eventing-manager.git"
     tar_bytes = _make_repo_tarball(
-        "eventing-manager-abc123",
+        f"eventing-manager-{_SHA}",
         {"README.md": "# hello", "docs/user/guide.md": "guide"},
     )
     dest = str(tmp_path)
 
     # When
     with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
-        repo_path = download_repo(repo_url, dest)
+        result = download_repo(repo_url, dest)
 
     # Then: files live directly under <dest>/<repo>, wrapper dir stripped
-    assert repo_path == os.path.join(dest, "eventing-manager")
-    assert os.path.isfile(os.path.join(repo_path, "README.md"))
-    assert os.path.isfile(os.path.join(repo_path, "docs", "user", "guide.md"))
+    assert result.path == os.path.join(dest, "eventing-manager")
+    assert result.commit == _SHA
+    assert os.path.isfile(os.path.join(result.path, "README.md"))
+    assert os.path.isfile(os.path.join(result.path, "docs", "user", "guide.md"))
     # staging temp dir is cleaned up
     assert set(os.listdir(dest)) == {"eventing-manager"}
 
@@ -91,22 +95,39 @@ def test_download_repo_replaces_existing_dir(tmp_path):
     with open(os.path.join(stale, "old.md"), "w") as fh:
         fh.write("stale")
 
-    tar_bytes = _make_repo_tarball("eventing-manager-def456", {"new.md": "fresh"})
+    sha2 = "b" * 40
+    tar_bytes = _make_repo_tarball(f"eventing-manager-{sha2}", {"new.md": "fresh"})
 
     with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
-        repo_path = download_repo(repo_url, dest)
+        result = download_repo(repo_url, dest)
 
-    assert os.path.isfile(os.path.join(repo_path, "new.md"))
-    assert not os.path.exists(os.path.join(repo_path, "old.md"))
+    assert result.commit == sha2
+    assert os.path.isfile(os.path.join(result.path, "new.md"))
+    assert not os.path.exists(os.path.join(result.path, "old.md"))
 
 
 def test_download_repo_creates_dest_dir(tmp_path):
     repo_url = "https://github.com/kyma-project/eventing-manager.git"
     dest = str(tmp_path / "nonexistent" / "nested")
 
-    tar_bytes = _make_repo_tarball("eventing-manager-abc123", {"README.md": "# hello"})
+    tar_bytes = _make_repo_tarball(f"eventing-manager-{_SHA}", {"README.md": "# hello"})
 
     with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
-        repo_path = download_repo(repo_url, dest)
+        result = download_repo(repo_url, dest)
 
-    assert os.path.isfile(os.path.join(repo_path, "README.md"))
+    assert os.path.isfile(os.path.join(result.path, "README.md"))
+    assert result.commit == _SHA
+
+
+def test_download_repo_raises_on_non_sha_dir(tmp_path):
+    """download_repo raises RuntimeError when the top-level directory has no 40-char sha suffix."""
+    repo_url = "https://github.com/kyma-project/eventing-manager.git"
+    # Use a short ref-like suffix instead of a sha (no 40 hex chars).
+    tar_bytes = _make_repo_tarball("eventing-manager-main", {"README.md": "# hello"})
+    dest = str(tmp_path)
+
+    with (
+        patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)),
+        pytest.raises(RuntimeError, match="cannot parse commit sha"),
+    ):
+        download_repo(repo_url, dest)
