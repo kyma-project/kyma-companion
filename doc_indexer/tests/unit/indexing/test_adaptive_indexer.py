@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from hdbcli import dbapi
@@ -803,9 +803,11 @@ class TestIndexAtomicSwap:
         expected_rename_count = 2
         assert mock_rename.call_count == expected_rename_count
         first_rename_args = mock_rename.call_args_list[0]
-        assert first_rename_args == call(
-            indexer.connection, "TESTUSER", live, first_rename_args[0][3], ignore_missing=True
-        )
+        # First rename: live -> <live>_old_<ts>; assert format not circular
+        old_table_arg = first_rename_args[0][3]
+        assert old_table_arg.startswith(live), f"Expected old table name to start with '{live}', got '{old_table_arg}'"
+        assert "_old_" in old_table_arg, f"Expected '_old_' in old table name, got '{old_table_arg}'"
+        assert first_rename_args[1].get("ignore_missing") is True
         second_rename_args = mock_rename.call_args_list[1]
         assert second_rename_args[0][2] == staging
         assert second_rename_args[0][3] == live
@@ -903,10 +905,32 @@ class TestIndexAtomicSwap:
             patch("indexing.adaptive_indexer.rename_table") as mock_rename,
             patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
         ):
-            # cursor returns 0 rows -- mismatch with 1 chunk inserted
+            # DB returns fewer rows than written -- distinct from zero-chunk case
             indexer.connection.cursor.return_value = _make_mock_cursor(0)
 
             with pytest.raises(RuntimeError, match="row count mismatch"):
+                indexer.index()
+
+        mock_drop.assert_called_once_with(indexer.connection, "TESTUSER", indexer.staging_table_name)
+        mock_rename.assert_not_called()
+
+    def test_empty_docs_drops_staging(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
+        """If all documents produce zero chunks, staging is dropped with a distinct error."""
+        indexer = indexer_for_swap
+
+        with (
+            # SAMPLE_DOC filtered out by min_chunk_token_count via a tiny doc
+            patch("indexing.adaptive_indexer.load_documents", return_value=[]),
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            patch("indexing.adaptive_indexer.CHUNKS_BATCH_SIZE", 100),
+            patch("time.sleep"),
+            patch("indexing.adaptive_indexer.drop_table") as mock_drop,
+            patch("indexing.adaptive_indexer.rename_table") as mock_rename,
+            patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
+        ):
+            indexer.connection.cursor.return_value = _make_mock_cursor(0)
+
+            with pytest.raises(RuntimeError, match="No chunks were produced"):
                 indexer.index()
 
         mock_drop.assert_called_once_with(indexer.connection, "TESTUSER", indexer.staging_table_name)

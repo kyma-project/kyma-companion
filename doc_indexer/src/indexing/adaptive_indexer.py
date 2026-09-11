@@ -270,6 +270,11 @@ class AdaptiveSplitMarkdownIndexer:
         """Insert all chunks into the staging table in batches.
 
         Returns the total number of chunks inserted.
+
+        Raises RuntimeError if no chunks were produced (guards against overwriting
+        the live table with an empty index) or if the DB row count does not match
+        the number of chunks written (guards against partial writes).
+
         On any exception the staging table is dropped and the exception is re-raised.
         """
         batch: list[Document] = []
@@ -298,7 +303,12 @@ class AdaptiveSplitMarkdownIndexer:
                 row = cursor.fetchone()
             staged_count = row[0] if row else 0
             logger.info(f"Staging table '{self.staging_table_name}' has {staged_count} rows (expected {total}).")
-            if staged_count != total or staged_count == 0:
+            if total == 0:
+                raise RuntimeError(
+                    f"No chunks were produced for staging table '{self.staging_table_name}'. "
+                    "Aborting swap to avoid overwriting the live table with an empty index."
+                )
+            if staged_count != total:
                 raise RuntimeError(
                     f"Staging table row count mismatch: expected {total}, got {staged_count}. Aborting swap."
                 )
