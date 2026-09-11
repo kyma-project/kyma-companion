@@ -61,9 +61,13 @@ def _matches_any_pattern(rel_path: str, patterns: list[str]) -> bool:
     """Return True if *rel_path* matches at least one glob pattern.
 
     The patterns use the same glob syntax as docs_sources.json ``include_files``
-    entries (e.g. ``docs/user/*``, ``README.md``).  We normalise separators and
-    try both a plain fnmatch and a basename-only match so that patterns such as
-    ``README.md`` match regardless of directory depth.
+    entries (e.g. ``docs/user/*``, ``README.md``).  We normalise separators and:
+
+    - Try a plain ``fnmatch`` against the full path.
+    - For patterns ending in ``/*``, also treat them as prefix matches so that
+      files nested deeper (e.g. ``docs/user/sub/page.md``) are covered.
+    - For patterns without a ``/``, also match against the basename alone so
+      that ``README.md`` matches at any depth.
 
     Args:
         rel_path: Path relative to the repo root (with forward slashes).
@@ -77,6 +81,12 @@ def _matches_any_pattern(rel_path: str, patterns: list[str]) -> bool:
         pattern = pattern.replace("\\", "/")
         if fnmatch.fnmatch(normalised, pattern):
             return True
+        # For patterns like "docs/user/*", also match deeper paths like
+        # "docs/user/sub/page.md" by treating the prefix as a directory match.
+        if pattern.endswith("/*"):
+            prefix = pattern[:-1]  # e.g. "docs/user/"
+            if normalised.startswith(prefix):
+                return True
         # Also match basename for single-level patterns like "README.md"
         if "/" not in pattern and fnmatch.fnmatch(os.path.basename(normalised), pattern):
             return True

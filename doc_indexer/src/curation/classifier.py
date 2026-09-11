@@ -170,13 +170,17 @@ def _classify_batch(
             dec = _SingleDecision(
                 decision="unsure", doc_type=None, module=None, confidence=0.0, rationale="no decision returned"
             )
+        try:
+            confidence = max(0.0, min(1.0, float(dec.confidence)))
+        except (TypeError, ValueError):
+            confidence = 0.0
         results.append(
             ClassificationResult(
                 candidate=candidate,
                 decision=dec.decision if dec.decision in ("include", "exclude", "unsure") else "unsure",
                 doc_type=dec.doc_type,
                 module=dec.module,
-                confidence=max(0.0, min(1.0, float(dec.confidence))),
+                confidence=confidence,
                 rationale=dec.rationale,
                 decided_by="agent",
             )

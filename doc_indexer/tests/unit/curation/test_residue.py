@@ -90,6 +90,15 @@ class TestIncludePatterns:
         assert len(results) == 1
         assert results[0].path == "docs/internal/adr.md"
 
+    def test_nested_path_matches_wildcard_pattern(self, docs_path):
+        """A file nested under a wildcard pattern dir should not be residue."""
+        _write_md(docs_path, "mymodule/docs/user/sub/nested.md", "# Nested")
+        sources = [{"name": "mymodule", "include_files": ["docs/user/*"]}]
+
+        results = find_residue(docs_path, sources)
+
+        assert results == []
+
     def test_no_include_files_means_everything_is_residue(self, docs_path):
         _write_md(docs_path, "mymodule/docs/user/page.md", "# Page")
         sources = [{"name": "mymodule", "include_files": []}]
