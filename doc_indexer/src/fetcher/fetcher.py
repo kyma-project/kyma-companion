@@ -58,7 +58,8 @@ class DocumentsFetcher:
     def fetch_documents(self, source: DocumentsSource) -> dict[str, str]:
         """Fetch the documents from the source.
 
-        Returns a mapping of ``{module_name: commit_sha}`` for use by the caller.
+        Returns a dict with keys ``name``, ``url``, and ``commit`` for use
+        by :meth:`run` when building the manifest.
         """
         logger.info("Fetching documents", extra={"source": source.name, "url": source.url})
 
@@ -94,13 +95,14 @@ class DocumentsFetcher:
 
     def run(self) -> None:
         """Fetch the documents from all the sources and write a manifest."""
+        fetched_at = datetime.now(tz=UTC).isoformat()
         manifest: dict[str, dict[str, str | None]] = {}
         for source in self.sources:
             result = self.fetch_documents(source)
             manifest[result["name"]] = {
                 "repo_url": result["url"].removesuffix(".git"),
                 "commit": result["commit"],
-                "fetched_at": datetime.now(tz=UTC).isoformat(),
+                "fetched_at": fetched_at,
             }
         logger.info("Documents fetched successfully from all sources!")
 

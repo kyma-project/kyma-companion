@@ -106,15 +106,29 @@ def _build_url(module: str, doc_rel_path: str, repo_url: str, commit: str | None
     """Construct the canonical public URL for a document.
 
     Three cases:
-    - kyma-project.io external-content repos: ``https://kyma-project.io/external-content/<repo>/<path>``
+
+    - kyma-project.io external-content repos: the deploy workflow copies
+      ``<repo>/docs/user/`` → ``external-content/<repo>/docs/``, so the
+      ``docs/user/`` prefix from the repo path is replaced with ``docs/``.
+      URL: ``https://kyma-project.io/external-content/<repo>/docs/<filename>``
     - The ``kyma`` mono-repo: ``https://kyma-project.io/<path under docs/ without .md>``
-    - Everything else: ``<repo_url>/blob/<commit>/<path>`` (GitHub blob URL).
+    - Everything else: ``<repo_url>/blob/<commit>/<path>`` (GitHub blob URL,
+      extension preserved so the link is a valid GitHub file reference).
     """
-    # Strip trailing .md for web URLs.
+    # Strip trailing .md for web page URLs (site repos and mono-repo).
     path_no_ext = doc_rel_path.removesuffix(".md")
 
     if module in _KYMA_SITE_REPOS:
-        return f"https://kyma-project.io/external-content/{module}/{path_no_ext}"
+        # deploy.yml: docs/user/<file> → external-content/<repo>/docs/<file>
+        docs_user_prefix = "docs/user/"
+        docs_prefix = "docs/"
+        if path_no_ext.startswith(docs_user_prefix):
+            site_file = path_no_ext[len(docs_user_prefix) :]
+        elif path_no_ext.startswith(docs_prefix):
+            site_file = path_no_ext[len(docs_prefix) :]
+        else:
+            site_file = path_no_ext
+        return f"https://kyma-project.io/external-content/{module}/docs/{site_file}"
 
     if module == _KYMA_MONO_REPO:
         # The kyma mono-repo docs sit under docs/ in the repo; the site serves them
@@ -123,7 +137,7 @@ def _build_url(module: str, doc_rel_path: str, repo_url: str, commit: str | None
         site_path = path_no_ext[len(docs_prefix) :] if path_no_ext.startswith(docs_prefix) else path_no_ext
         return f"https://kyma-project.io/{site_path}"
 
-    # Fallback: GitHub blob URL.
+    # Fallback: GitHub blob URL (preserves extension -- it's a file reference, not a web page).
     if not repo_url or not commit:
         return None
     return f"{repo_url}/blob/{commit}/{doc_rel_path}"

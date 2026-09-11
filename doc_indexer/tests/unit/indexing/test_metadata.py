@@ -20,7 +20,11 @@ def _make_manifest(module: str, repo_url: str, commit: str = _SHA) -> dict:
 
 
 class TestBuildChunkMetadataSiteRepo:
-    """Repos published on kyma-project.io as external-content."""
+    """Repos published on kyma-project.io as external-content.
+
+    deploy.yml copies <repo>/docs/user/ → external-content/<repo>/docs/
+    so the URL strips docs/user/ and adds docs/ back.
+    """
 
     def test_url_uses_kyma_site_external_content_path(self):
         manifest = _make_manifest("istio", "https://github.com/kyma-project/istio")
@@ -31,7 +35,8 @@ class TestBuildChunkMetadataSiteRepo:
         assert meta["path"] == "docs/user/01-overview.md"
         assert meta["repo"] == "https://github.com/kyma-project/istio"
         assert meta["commit"] == _SHA
-        assert meta["url"] == "https://kyma-project.io/external-content/istio/docs/user/01-overview"
+        # docs/user/ is stripped; docs/ is added back (deploy.yml mapping)
+        assert meta["url"] == "https://kyma-project.io/external-content/istio/docs/01-overview"
         assert meta["title"] is None
         assert meta["doc_type"] is None
 
@@ -40,14 +45,25 @@ class TestBuildChunkMetadataSiteRepo:
         source_path = f"{_DOCS_PATH}/serverless/docs/user/README.md"
         meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
 
-        assert meta["url"] == "https://kyma-project.io/external-content/serverless/docs/user/README"
+        assert meta["url"] == "https://kyma-project.io/external-content/serverless/docs/README"
 
-    def test_busola_site_repo(self):
+    def test_url_strips_docs_prefix_only(self):
+        """Files at docs/ root (no user/ sub-dir) still get the docs/ mapping."""
         manifest = _make_manifest("busola", "https://github.com/kyma-project/busola")
-        source_path = f"{_DOCS_PATH}/busola/docs/user/intro.md"
+        # busola indexes docs/user/* but some repos only have docs/
+        source_path = f"{_DOCS_PATH}/busola/docs/intro.md"
         meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
 
-        assert meta["url"].startswith("https://kyma-project.io/external-content/busola/")
+        assert meta["url"] == "https://kyma-project.io/external-content/busola/docs/intro"
+
+    def test_url_path_not_under_docs(self):
+        """Files not under docs/ at all fall back gracefully -- file name only."""
+        manifest = _make_manifest("busola", "https://github.com/kyma-project/busola")
+        source_path = f"{_DOCS_PATH}/busola/README.md"
+        meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
+
+        # No docs/ prefix found -- file name used directly
+        assert meta["url"] == "https://kyma-project.io/external-content/busola/docs/README"
 
 
 class TestBuildChunkMetadataKymaMonoRepo:
