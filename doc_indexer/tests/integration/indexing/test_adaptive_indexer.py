@@ -42,7 +42,7 @@ DOCUMENTS = [
         ),
         metadata={"source": "serverless.md"},
     ),
-    # 6 tokens: below the minimum, must be dropped.
+    # 6 tokens: below the minimum, merged into adjacent chunk and preserved.
     Document(page_content="# Tiny\nToo short.", metadata={"source": "tiny.md"}),
     # 15 tokens, no header: preamble -- gets filename stem as title.
     Document(
@@ -58,6 +58,7 @@ EXPECTED_CHUNKS = {
     "Functions can be written in Node.js or Python and are built into container images automatically.",
     "# Serverless - Function triggers\nA Function is exposed with an APIRule or invoked through an event Subscription.",
     "# unknown\n\nPlain text without any Markdown headers that still has enough words to be indexed.",
+    "# Tiny\nToo short.",
 }
 
 
