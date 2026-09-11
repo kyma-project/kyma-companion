@@ -1,5 +1,5 @@
 import argparse
-import subprocess
+import os
 import time
 
 from fetcher.fetcher import DocumentsFetcher
@@ -44,10 +44,15 @@ def run_fetcher() -> None:
     )
     fetcher.run()
     logger.info(f"Fetch completed in {time.monotonic() - start:.1f}s")
-    try:
-        subprocess.run(["tree", DOCS_PATH])
-    except Exception:
-        logger.warning("Fetcher Completed but Failed to print the documents list")
+
+    # Log the number of Markdown files per source directory
+    md_counts: dict[str, int] = {}
+    for root, _dirs, files in os.walk(DOCS_PATH):
+        md_count = sum(1 for f in files if f.endswith(".md"))
+        if md_count:
+            md_counts[root] = md_count
+    for dir_path, count in md_counts.items():
+        logger.info(f"Found {count} Markdown file(s) in {dir_path}")
 
 
 def run_indexer(
