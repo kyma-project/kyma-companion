@@ -113,7 +113,9 @@ def verify_table(
         (duplicate_chunks,) = cursor.fetchone()
 
         # Oversized chunks (character length > 6000)
-        cursor.execute(f"SELECT COUNT(*) FROM {qualified} WHERE LENGTH(VEC_TEXT) > 6000")  # noqa: S608
+        # Use CHAR_LENGTH (not LENGTH) so that NCLOB columns are measured in characters,
+        # not bytes.
+        cursor.execute(f"SELECT COUNT(*) FROM {qualified} WHERE CHAR_LENGTH(VEC_TEXT) > 6000")  # noqa: S608
         (oversized_chunks,) = cursor.fetchone()
 
         # Rows missing title or url in metadata

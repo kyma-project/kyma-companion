@@ -48,10 +48,17 @@ def test_chunk_snapshot(snapshot_indexer: AdaptiveSplitMarkdownIndexer) -> None:
     docs = load_documents(str(_FIXTURES_DIR))
     chunks = snapshot_indexer.build_chunks(docs)
 
+    def _rel_source(raw: str) -> str:
+        """Return path relative to the fixture root, using forward slashes."""
+        try:
+            return Path(raw).relative_to(_FIXTURES_DIR).as_posix()
+        except ValueError:
+            return raw
+
     serialized = sorted(
         [
             {
-                "source": chunk.metadata.get("source", ""),
+                "source": _rel_source(chunk.metadata.get("source", "")),
                 "title": chunk.metadata.get("title", ""),
                 "page_content": chunk.page_content,
             }
