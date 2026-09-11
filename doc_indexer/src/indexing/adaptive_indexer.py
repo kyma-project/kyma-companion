@@ -152,8 +152,16 @@ def split_preserving_code_fences(
         Document objects with the right metadata.
     """
     # Split the text into alternating non-code / fenced-code segments.
-    fence_pattern = re.compile(r"(```[^\n]*\n.*?```)", re.DOTALL)
-    segments = fence_pattern.split(text)  # odd indices are fenced blocks
+    # Pattern explanation:
+    #   - Opening fence: ``` followed by optional info string and a newline.
+    #   - Body: any content including lines that happen to start with ``` (e.g.
+    #     documentation showing how to write a code fence).
+    #   - Closing fence: a ``` that is at the beginning of a line (after \n)
+    #     and is followed only by optional whitespace and a newline or end-of-string.
+    #   Using a capturing group so re.split keeps the fence in the output list;
+    #   odd-indexed segments are the fenced blocks, even-indexed are plain text.
+    fence_pattern = re.compile(r"(```[^\n]*\n.*?\n```[ \t]*(?:\n|$))", re.DOTALL)
+    segments = fence_pattern.split(text)  # odd indices are fenced blocks, even are plain text
 
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         encoding_name="cl100k_base",
