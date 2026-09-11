@@ -4,6 +4,10 @@ import os
 import sys
 import time
 
+from curation.classifier import classify_residue
+from curation.decisions_cache import DecisionsCache
+from curation.models import CuratorConfig
+from curation.residue import find_residue
 from fetcher.fetcher import DocumentsFetcher
 from hdbcli import dbapi
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
@@ -16,6 +20,9 @@ from utils.models import (
     openai_embedding_creator,
 )
 from utils.settings import (
+    CURATOR_DECISIONS_FILE,
+    CURATOR_MODEL_NAME,
+    CURATOR_RESIDUE_TO_AGENT,
     DATABASE_PASSWORD,
     DATABASE_PORT,
     DATABASE_URL,
@@ -33,6 +40,7 @@ TASK_INDEX = "index"
 TASK_DROP = "drop"
 TASK_TABLES = "tables"
 TASK_VERIFY = "verify"
+TASK_CURATE = "curate"
 logger = get_logger(__name__)
 
 
@@ -209,9 +217,93 @@ def _print_verify_report(stats: VerifyStats, table_name: str) -> None:
     logger.info("\n".join(lines))
 
 
+def run_curator(
+    docs_path: str = DOCS_PATH,
+    sources_file: str = DOCS_SOURCES_FILE_PATH,
+    residue_to_agent: bool = CURATOR_RESIDUE_TO_AGENT,
+    decisions_file: str = CURATOR_DECISIONS_FILE,
+    model_name: str | None = CURATOR_MODEL_NAME,
+) -> None:
+    """Entry function to curate residue documentation files.
+
+    Walks *docs_path* for .md files that fall outside the configured
+    ``include_files`` patterns, checks a persistent decisions cache, and
+    optionally classifies uncached files using an LLM agent.
+
+    Prints a summary to the logger on completion.
+
+    Args:
+        docs_path: Root directory containing per-module sub-directories.
+        sources_file: Path to the docs_sources.json file.
+        residue_to_agent: When True, send uncached residue to the LLM classifier.
+        decisions_file: Path to the JSONL decisions cache file.
+        model_name: SAP AI Core model name override (None = use SDK default).
+    """
+    logger.info("Starting curate task")
+
+    # 1. Load docs sources
+    try:
+        with open(sources_file, encoding="utf-8") as f:
+            sources = json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Sources file not found: {sources_file}")
+        raise
+    except Exception:
+        logger.exception(f"Failed to read sources file: {sources_file}")
+        raise
+
+    # 2. Find residue
+    candidates = find_residue(docs_path, sources)
+    total_residue = len(candidates)
+
+    # 3. Load decisions cache
+    cache = DecisionsCache(decisions_file)
+    cache.load()
+
+    # 4. Filter out already-cached candidates
+    uncached = [c for c in candidates if not cache.is_cached(c)]
+    cached_count = total_residue - len(uncached)
+
+    # 5. Classify uncached candidates if enabled
+    new_results = []
+    if residue_to_agent and uncached:
+        config = CuratorConfig(
+            residue_to_agent=True,
+            decisions_file=decisions_file,
+            model_name=model_name,
+        )
+        new_results = classify_residue(uncached, config)
+        cache.save(new_results)
+
+    # 6. Print summary
+    include_count = sum(1 for r in new_results if r.decision == "include")
+    exclude_count = sum(1 for r in new_results if r.decision == "exclude")
+    unsure_count = sum(1 for r in new_results if r.decision == "unsure")
+    unclassified_count = len(uncached) - len(new_results)
+
+    col_w = 40
+    val_w = 10
+    header = f"{'METRIC':<{col_w}} {'VALUE':>{val_w}}"
+    separator = "-" * (col_w + val_w + 1)
+
+    def _row(label: str, value: int | str) -> str:
+        return f"{label:<{col_w}} {str(value):>{val_w}}"
+
+    lines = ["Curate summary", header, separator]
+    lines.append(_row("Total residue files", total_residue))
+    lines.append(_row("Cached (skipped)", cached_count))
+    lines.append(_row("Newly classified", len(new_results)))
+    lines.append(_row("  include", include_count))
+    lines.append(_row("  exclude", exclude_count))
+    lines.append(_row("  unsure", unsure_count))
+    lines.append(_row("  unclassified (agent disabled)", unclassified_count))
+
+    logger.info("\n".join(lines))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
-    parser.add_argument("task", choices=["index", "fetch", "drop", "tables", "verify"])
+    parser.add_argument("task", choices=["index", "fetch", "drop", "tables", "verify", "curate"])
     args = parser.parse_args()
 
     logger.info("Indexer job starting", extra={"task": args.task})
@@ -226,5 +318,7 @@ if __name__ == "__main__":
         run_list_tables()
     elif args.task == TASK_VERIFY:
         run_verify()
+    elif args.task == TASK_CURATE:
+        run_curator()
     else:
-        print("Invalid task. Valid tasks are: index, fetch, drop, tables, verify.")
+        print("Invalid task. Valid tasks are: index, fetch, drop, tables, verify, curate.")
