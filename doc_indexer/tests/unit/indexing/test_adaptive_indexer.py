@@ -717,7 +717,9 @@ class TestAdaptiveSplitMarkdownIndexer:
                         },
                     ),
                     Document(
-                        page_content=("```python\nprint('Hello, World!') # prints 'Hello, World!' to the console\n```"),
+                        page_content=(
+                            "```python\nprint('Hello, World!') # prints 'Hello, World!' to the console\n```\n"
+                        ),
                         metadata={
                             "source": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 2/3)",
@@ -830,6 +832,11 @@ class TestTinySectionMerging:
 
         all_content = " ".join(c.page_content for c in chunks)
         assert "Tiny intro" in all_content, "Tiny intro text must not be dropped"
+
+        # The tiny intro must have been merged into another chunk, not kept standalone.
+        # Verify no chunk contains ONLY the tiny intro (i.e. it was merged, not isolated).
+        standalone_tiny = [c for c in chunks if "Tiny intro" in c.page_content and "description" not in c.page_content]
+        assert not standalone_tiny, "Tiny intro must be merged into the adjacent chunk, not kept as a standalone chunk"
 
 
 class TestPreamblePreservation:
@@ -1006,9 +1013,10 @@ class TestCodeFencePreservation:
         for doc in docs:
             chunks = list(indexer.get_document_chunks([doc]))
             total_chunk_chars = sum(len(c.page_content) for c in chunks)
-            # Allow some reduction from header-line deduplication but no content loss.
-            # We use 80% as a conservative floor -- in practice it should be ~100%.
-            assert total_chunk_chars >= len(doc.page_content) * 0.80, (
+            # Allow a small reduction from header-line deduplication by the MarkdownHeaderTextSplitter
+            # (it strips the leading header line from each sub-document), but no bulk content loss.
+            # 95% is a tight floor -- the only expected reduction is from header lines.
+            assert total_chunk_chars >= len(doc.page_content) * 0.95, (
                 f"Too much content lost for {doc.metadata['source']}: "
                 f"original {len(doc.page_content)} chars, "
                 f"chunks total {total_chunk_chars} chars"
