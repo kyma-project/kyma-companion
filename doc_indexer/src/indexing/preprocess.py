@@ -84,7 +84,8 @@ def _remove_html_comments(text: str) -> str:
     text = re.sub(r"<!--\s*tabs:end\s*-->", "", text)
 
     # Convert tab header bold: #### **Title** -> #### Title
-    text = re.sub(r"^(#{1,6}\s+)\*\*(.+?)\*\*\s*$", r"\1\2", text, flags=re.MULTILINE)
+    # Handles both fully-bold headings and headings where only the first word(s) are bold.
+    text = re.sub(r"^(#{1,6}\s+)\*\*(.+?)\*\*", r"\1\2", text, flags=re.MULTILINE)
 
     # Remove all remaining HTML comments (DOTALL to handle multi-line)
     text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
@@ -254,8 +255,14 @@ def preprocess_markdown(text: str, page_url: str | None = None) -> str:
     # Step 1: Frontmatter
     text, frontmatter_title = _remove_frontmatter(text)
 
-    # Check if the text has an H1 after frontmatter removal
-    has_h1 = bool(re.search(r"^#{1}\s+", text, re.MULTILINE))
+    # Check if the text has an H1 after frontmatter removal.
+    # We split on fences here so that a '# heading' inside a code block is not
+    # counted as a real H1 -- only headings in non-code segments are checked.
+    has_h1 = any(
+        bool(re.search(r"^#{1}\s+", segment, re.MULTILINE))
+        for segment, is_code in _split_on_fences(text)
+        if not is_code
+    )
     if not has_h1 and frontmatter_title:
         text = f"# {frontmatter_title}\n\n{text}"
 

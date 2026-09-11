@@ -148,9 +148,10 @@ class TestWhitespace:
         """Three or more consecutive blank lines are collapsed to two."""
         text = "# Title\n\n\n\nContent.\n"
         result = preprocess_markdown(text)
+        # Must have no run of 4+ newlines (= 3+ blank lines)
         assert "\n\n\n\n" not in result
-        # At most two blank lines (three newlines in a row)
-        assert "\n\n\n\n" not in result
+        # And must still contain at least the content (not over-collapsed)
+        assert "Content." in result
 
     def test_trailing_spaces_stripped(self) -> None:
         """Trailing spaces on each line are removed."""
