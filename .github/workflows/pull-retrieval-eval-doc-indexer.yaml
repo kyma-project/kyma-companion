@@ -53,8 +53,6 @@ jobs:
 
       - name: Run retrieval evaluation
         working-directory: doc_indexer
-        env:
-          GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
         run: |
           poetry run python evaluation/run_retrieval_eval.py \
             --table kyma_docs \

@@ -9,7 +9,7 @@
 {"id": "concept-telemetry-overview", "kind": "concept", "query": "What is the Kyma Telemetry module and what does it support?", "expected": ["telemetry-manager/docs/user"]}
 {"id": "concept-btp-service-binding", "kind": "concept", "query": "What is a BTP service binding and how does it work in Kyma?", "expected": ["btp-manager/docs/user"]}
 {"id": "concept-busola-overview", "kind": "concept", "query": "What is Busola and what features does the Kyma dashboard provide?", "expected": ["busola/docs/user"]}
-{"id": "concept-kyma-regions", "kind": "concept", "query": "In which regions and hyperscalers is Kyma available?", "expected": ["kyma-environment-broker/docs/user"]}
+{"id": "concept-kyma-regions", "kind": "concept", "query": "In which regions and hyperscalers is Kyma available?", "expected": ["kyma/docs/01-overview"]}
 {"id": "howto-add-module", "kind": "howto", "query": "How do I add a Kyma module to my cluster?", "expected": ["kyma/docs/04-operation-guides"]}
 {"id": "howto-expose-endpoint-apirule", "kind": "howto", "query": "How do I expose my service endpoint using an APIRule?", "expected": ["api-gateway/docs/user"]}
 {"id": "howto-apirule-v2-migration", "kind": "howto", "query": "How do I migrate an APIRule from v1beta1 to v2?", "expected": ["api-gateway/docs/user/apirule-migration"]}
