@@ -71,6 +71,25 @@ poetry run poe test
 - **`tests/integration/test_main.py::test_run_indexer_fails_when_deployment_id_passed_as_model_name`** — negative check: passing a deployment ID instead of a model name raises `ValueError`.
 - **`tests/integration/test_main.py::test_run_indexer_e2e`** — full end-to-end: indexes real documents into a temporary Hana DB table and verifies chunks were stored.
 
+### Chunk snapshot tests
+
+`tests/unit/indexing/test_chunk_snapshots.py` runs the full chunking pipeline over a set of
+realistic fixture documents (under `tests/unit/fixtures/snapshot_docs/`) and compares the output
+against a committed JSON file (`tests/unit/fixtures/snapshots/chunks.json`).
+
+**Any change to the chunking logic or the fixture files must be followed by a snapshot update.**
+Review the diff carefully before committing -- the snapshot is the source of truth for what the
+indexer produces.
+
+To regenerate the snapshot:
+
+```bash
+cd doc_indexer
+UPDATE_SNAPSHOTS=1 poetry run pytest tests/unit/indexing/test_chunk_snapshots.py -v
+```
+
+Then review and commit `tests/unit/fixtures/snapshots/chunks.json`.
+
 ## Static Code Analysis
 ```bash
 poetry run poe codecheck
