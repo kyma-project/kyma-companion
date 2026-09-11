@@ -170,6 +170,57 @@ jobs:
           kubectl get pods -n "${{ env.NAMESPACE }}" -o wide || true
           kubectl describe pods -n "${{ env.NAMESPACE }}" || true
 
+      - name: Run verify Job
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-verify
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "verify"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  - name: DOCS_SOURCES_FILE_PATH
+                    value: "/etc/doc-sources/e2e_docs_sources.json"
+                  - name: DOCS_TABLE_NAME
+                    value: "${{ inputs.DOCS_TABLE_NAME }}"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                  - name: doc-sources
+                    mountPath: /etc/doc-sources
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+                - name: doc-sources
+                  configMap:
+                    name: doc-indexer-sources
+          EOF
+          if kubectl wait --for=condition=complete job/doc-indexer-verify \
+            -n "${{ env.NAMESPACE }}" --timeout=120s; then
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
+          else
+            kubectl wait --for=condition=failed job/doc-indexer-verify \
+              -n "${{ env.NAMESPACE }}" --timeout=10s || true
+            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
+            exit 1
+          fi
+
       - name: Drop HANA table
         if: always()
         run: |
