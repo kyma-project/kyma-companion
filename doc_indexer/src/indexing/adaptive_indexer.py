@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import re
@@ -9,6 +10,7 @@ import tiktoken
 from hdbcli import dbapi
 from indexing.constants import HEADER1, HEADER2, HEADER3
 from indexing.metadata import build_chunk_metadata
+from indexing.preprocess import preprocess_markdown
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
@@ -57,6 +59,43 @@ def _add_documents_with_retry(db: HanaDB, batch: list[Document], batch_number: i
                 f"Rate-limit error on batch {batch_number} (attempt {attempt + 1}/{_MAX_RETRIES}): retrying in {wait}s"
             )
             time.sleep(wait)
+
+
+def deduplicate_documents(docs: list[Document]) -> list[Document]:
+    """Remove duplicate documents by SHA-256 hash of their page content.
+
+    When two documents collide on the same hash, the one whose source path
+    contains 'docs/user/' is preferred.  If neither (or both) match, the first
+    occurrence is kept.  Dropped paths are logged at INFO level.
+
+    Args:
+        docs: List of documents to deduplicate.
+
+    Returns:
+        A deduplicated list of documents in stable order.
+    """
+    seen: dict[str, Document] = {}
+    result: list[Document] = []
+
+    for doc in docs:
+        digest = hashlib.sha256(doc.page_content.encode()).hexdigest()
+        if digest not in seen:
+            seen[digest] = doc
+            result.append(doc)
+        else:
+            existing = seen[digest]
+            existing_path = existing.metadata.get("source", "")
+            new_path = doc.metadata.get("source", "")
+            if "docs/user/" in new_path and "docs/user/" not in existing_path:
+                # Prefer the docs/user/ path -- replace in-place
+                idx = result.index(existing)
+                result[idx] = doc
+                seen[digest] = doc
+                logger.info("Dropping duplicate document (keeping docs/user/ variant): %s", existing_path)
+            else:
+                logger.info("Dropping duplicate document: %s", new_path)
+
+    return result
 
 
 def remove_parentheses(text: str) -> str:
@@ -590,7 +629,18 @@ class AdaptiveSplitMarkdownIndexer:
         the live table is left untouched.
         """
         docs = load_documents(self.docs_path)
-        all_chunks = self.process_document_titles(docs)
+
+        # Preprocess each document before chunking
+        preprocessed: list[Document] = []
+        for doc in docs:
+            page_url: str | None = doc.metadata.get("source")
+            cleaned = preprocess_markdown(doc.page_content, page_url=page_url)
+            preprocessed.append(Document(page_content=cleaned, metadata=doc.metadata))
+
+        # Deduplicate by SHA-256 of cleaned text
+        preprocessed = deduplicate_documents(preprocessed)
+
+        all_chunks = self.process_document_titles(preprocessed)
 
         if INDEX_TO_FILE:
             # write pretty to file
