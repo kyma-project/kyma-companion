@@ -12,9 +12,10 @@ from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from utils.documents import load_documents
+from utils.hana import drop_table, rename_table
 
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
+from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER, INDEX_TO_FILE
 from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
@@ -151,6 +152,8 @@ class AdaptiveSplitMarkdownIndexer:
 
         self.docs_path = docs_path
         self.table_name = table_name
+        self.staging_table_name = sanitize_table_name(f"{table_name}_staging_{int(time.time())}")
+        self.connection = connection
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
@@ -158,7 +161,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.db = HanaDB(
             connection=connection,
             embedding=embedding,
-            table_name=table_name,
+            table_name=self.staging_table_name,
         )
 
         self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
@@ -263,9 +266,79 @@ class AdaptiveSplitMarkdownIndexer:
                     metadata=chunk.metadata,
                 )
 
-    def index(self) -> None:
-        """Indexes the markdown files in the given directory."""
+    def _insert_chunks_to_staging(self, all_chunks: Generator[Document]) -> int:
+        """Insert all chunks into the staging table in batches.
 
+        Returns the total number of chunks inserted.
+        On any exception the staging table is dropped and the exception is re-raised.
+        """
+        batch: list[Document] = []
+        batch_count = 0
+        total = 0
+        try:
+            for chunk in all_chunks:
+                batch.append(chunk)
+                if len(batch) >= CHUNKS_BATCH_SIZE:
+                    self.db.add_documents(batch)
+                    batch_count += 1
+                    total += len(batch)
+                    logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks into staging table")
+                    batch = []
+                    logger.debug("Rate limiting: sleeping 3s before next batch")
+                    time.sleep(3)
+
+            if batch:
+                self.db.add_documents(batch)
+                batch_count += 1
+                total += len(batch)
+                logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks into staging table")
+
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'SELECT COUNT(*) FROM "{DATABASE_USER}"."{self.staging_table_name}"')
+                row = cursor.fetchone()
+            staged_count = row[0] if row else 0
+            logger.info(f"Staging table '{self.staging_table_name}' has {staged_count} rows (expected {total}).")
+            if staged_count != total or staged_count == 0:
+                raise RuntimeError(
+                    f"Staging table row count mismatch: expected {total}, got {staged_count}. Aborting swap."
+                )
+        except Exception:
+            logger.exception("Error during indexing into staging table. Dropping staging table.")
+            drop_table(self.connection, DATABASE_USER, self.staging_table_name)
+            raise
+
+        return total
+
+    def _swap_staging_to_live(self, old_table_name: str) -> None:
+        """Atomic swap: rename live -> old, staging -> live, drop old.
+
+        If the staging -> live rename fails, old is renamed back to live and the
+        exception is re-raised.
+        """
+        rename_table(self.connection, DATABASE_USER, self.table_name, old_table_name, ignore_missing=True)
+        try:
+            rename_table(self.connection, DATABASE_USER, self.staging_table_name, self.table_name)
+        except Exception:
+            logger.exception(
+                f"Failed to rename staging table '{self.staging_table_name}' to '{self.table_name}'. "
+                f"Attempting to restore live table from '{old_table_name}'."
+            )
+            rename_table(self.connection, DATABASE_USER, old_table_name, self.table_name, ignore_missing=True)
+            raise
+        drop_table(self.connection, DATABASE_USER, old_table_name)
+
+    def index(self) -> None:
+        """Indexes the markdown files in the given directory.
+
+        Uses a staging-table rename swap for atomicity:
+        1. All chunks are inserted into a staging table.
+        2. The row count is verified.
+        3. The live table is renamed to a temporary name, the staging table is
+           renamed to the live name, then the old live table is dropped.
+
+        On any error before or during the swap the staging table is dropped and
+        the live table is left untouched.
+        """
         docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
@@ -283,40 +356,16 @@ class AdaptiveSplitMarkdownIndexer:
             logger.info(f"Indexed {len(serializable_chunks)} chunks.")
             logger.info(f"Chunks are stored in the file: {output_file_path}")
         else:
-            logger.info("Deleting existing index in HanaDB...")
-            try:
-                self.db.delete(filter={})
-            except Exception:
-                logger.exception("Error while deleting existing documents in HanaDB.")
-                raise
-            logger.info("Successfully deleted existing documents in HanaDB.")
-
-            logger.info("Indexing and storing indexes to HanaDB...")
-            batch = []
-            batch_count = 0
-            total_chunk_number = 0
-            try:
-                for chunk in all_chunks:
-                    batch.append(chunk)
-                    if len(batch) >= CHUNKS_BATCH_SIZE:
-                        # Process the current batch with retry on rate-limit errors
-                        _add_documents_with_retry(self.db, batch, batch_count + 1)
-                        batch_count += 1
-                        total_chunk_number += len(batch)
-                        logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
-
-                        # Clear the batch
-                        batch = []
-
-                # Process any remaining documents in the final batch
-                if batch:
-                    _add_documents_with_retry(self.db, batch, batch_count + 1)
-                    batch_count += 1
-                    total_chunk_number += len(batch)
-                    logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks")
-
-            except Exception:
-                logger.exception(f"Error while storing documents batch {batch_count + 1} in HanaDB")
-                raise
-
-            logger.info(f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}.")
+            old_table_name = f"{self.table_name}_old_{int(time.time())}"
+            logger.info(
+                f"Indexing into staging table '{self.staging_table_name}'; "
+                f"live table is '{self.table_name}'; "
+                f"old table will be '{old_table_name}'."
+            )
+            total = self._insert_chunks_to_staging(all_chunks)
+            logger.info("Swapping staging table into live position...")
+            self._swap_staging_to_live(old_table_name)
+            logger.info(
+                f"Successfully indexed {total} chunks into table '{self.table_name}' "
+                f"(via staging table '{self.staging_table_name}')."
+            )

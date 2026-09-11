@@ -1,6 +1,7 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
+from hdbcli import dbapi
 from indexing.adaptive_indexer import (
     AdaptiveSplitMarkdownIndexer,
     extract_first_title,
@@ -729,3 +730,184 @@ class TestAdaptiveSplitMarkdownIndexer:
         # Then:
         # Compare the actual chunks with expected results
         assert chunks == wanted_results
+
+
+# ---------------------------------------------------------------------------
+# Atomic-swap unit tests for AdaptiveSplitMarkdownIndexer.index()
+# ---------------------------------------------------------------------------
+
+TABLE_NAME = "test_table"
+
+# One chunk whose token count is above min_chunk_token_count=1.
+SAMPLE_DOC = Document(
+    page_content="# Title\nSome content that is definitely long enough to survive token filtering.",
+    metadata={"source": "test.md"},
+)
+
+
+def _make_mock_cursor(row_count: int) -> MagicMock:
+    """Return a mock cursor whose fetchone() returns (row_count,)."""
+    cursor = MagicMock()
+    cursor.fetchone.return_value = (row_count,)
+    # support context-manager use: `with connection.cursor() as cursor`
+    cursor.__enter__ = lambda s: s
+    cursor.__exit__ = Mock(return_value=False)
+    return cursor
+
+
+@pytest.fixture
+def mock_connection_with_cursor():
+    """Mock connection whose cursor() always returns a fresh mock cursor."""
+    conn = Mock()
+    conn.cursor = Mock(return_value=_make_mock_cursor(1))
+    return conn
+
+
+@pytest.fixture
+def indexer_for_swap(mock_embedding, mock_connection_with_cursor, mock_hana_db):
+    """Indexer wired with a mock connection that can be interrogated for SQL calls."""
+    return AdaptiveSplitMarkdownIndexer(
+        docs_path="",
+        embedding=mock_embedding,
+        connection=mock_connection_with_cursor,
+        table_name=TABLE_NAME,
+        min_chunk_token_count=1,
+        max_chunk_token_count=10000,
+    )
+
+
+class TestIndexAtomicSwap:
+    """Tests for the staging-table rename-swap logic in AdaptiveSplitMarkdownIndexer.index()."""
+
+    def test_success_swap_sequence(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
+        """On success: chunks inserted, count verified, and rename/drop called in order."""
+        indexer = indexer_for_swap
+        staging = indexer.staging_table_name
+        live = indexer.table_name
+
+        with (
+            patch("indexing.adaptive_indexer.load_documents", return_value=[SAMPLE_DOC]),
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            patch("indexing.adaptive_indexer.CHUNKS_BATCH_SIZE", 100),
+            patch("time.sleep"),
+            patch("indexing.adaptive_indexer.drop_table") as mock_drop,
+            patch("indexing.adaptive_indexer.rename_table") as mock_rename,
+            patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
+        ):
+            # cursor returns 1 row (matches the 1 chunk that will be inserted)
+            indexer.connection.cursor.return_value = _make_mock_cursor(1)
+
+            indexer.index()
+
+        # rename called twice: live->old, staging->live
+        expected_rename_count = 2
+        assert mock_rename.call_count == expected_rename_count
+        first_rename_args = mock_rename.call_args_list[0]
+        assert first_rename_args == call(
+            indexer.connection, "TESTUSER", live, first_rename_args[0][3], ignore_missing=True
+        )
+        second_rename_args = mock_rename.call_args_list[1]
+        assert second_rename_args[0][2] == staging
+        assert second_rename_args[0][3] == live
+
+        # drop called once for the old table (not for staging, which was swapped in)
+        assert mock_drop.call_count == 1
+        dropped_name = mock_drop.call_args[0][2]
+        assert dropped_name != staging
+        assert dropped_name != live
+
+        # add_documents was called at least once
+        indexer.db.add_documents.assert_called()
+
+    def test_failure_before_swap_drops_staging(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
+        """If add_documents raises, staging table is dropped and live table is untouched."""
+        indexer = indexer_for_swap
+
+        with (
+            patch("indexing.adaptive_indexer.load_documents", return_value=[SAMPLE_DOC]),
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            patch("indexing.adaptive_indexer.CHUNKS_BATCH_SIZE", 100),
+            patch("time.sleep"),
+            patch("indexing.adaptive_indexer.drop_table") as mock_drop,
+            patch("indexing.adaptive_indexer.rename_table") as mock_rename,
+            patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
+        ):
+            indexer.db.add_documents.side_effect = RuntimeError("insert failed")
+
+            with pytest.raises(RuntimeError, match="insert failed"):
+                indexer.index()
+
+        # staging table must be dropped
+        assert mock_drop.call_count == 1
+        mock_drop.assert_called_once_with(indexer.connection, "TESTUSER", indexer.staging_table_name)
+        # live table must NOT be touched (no rename)
+        mock_rename.assert_not_called()
+
+    def test_failure_on_second_rename_restores_live(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
+        """If the staging->live rename fails, the old live table is renamed back."""
+        indexer = indexer_for_swap
+        live = indexer.table_name
+
+        rename_error = dbapi.ProgrammingError("rename failed")
+        rename_error.errorcode = 999  # not error 259
+
+        call_count = {"n": 0}
+        second_rename_call = 2
+        expected_total_rename_calls = 3
+
+        def rename_side_effect(
+            conn: object,
+            db_user: str,
+            old: str,
+            new: str,
+            ignore_missing: bool = False,
+        ) -> None:
+            call_count["n"] += 1
+            if call_count["n"] == second_rename_call:
+                # Second call is staging -> live; make it fail
+                raise rename_error
+
+        with (
+            patch("indexing.adaptive_indexer.load_documents", return_value=[SAMPLE_DOC]),
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            patch("indexing.adaptive_indexer.CHUNKS_BATCH_SIZE", 100),
+            patch("time.sleep"),
+            patch("indexing.adaptive_indexer.drop_table") as mock_drop,
+            patch("indexing.adaptive_indexer.rename_table", side_effect=rename_side_effect) as mock_rename,
+            patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
+        ):
+            indexer.connection.cursor.return_value = _make_mock_cursor(1)
+
+            with pytest.raises(dbapi.ProgrammingError):
+                indexer.index()
+
+        # Three rename calls: live->old, staging->live (fails), old->live (restore)
+        assert mock_rename.call_count == expected_total_rename_calls
+        restore_call = mock_rename.call_args_list[expected_total_rename_calls - 1]
+        # Third call: old_table_name -> live
+        assert restore_call[0][3] == live
+
+        # drop must NOT have been called (swap never completed)
+        mock_drop.assert_not_called()
+
+    def test_row_count_mismatch_drops_staging(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
+        """If the staging row count does not match chunks written, staging is dropped."""
+        indexer = indexer_for_swap
+
+        with (
+            patch("indexing.adaptive_indexer.load_documents", return_value=[SAMPLE_DOC]),
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            patch("indexing.adaptive_indexer.CHUNKS_BATCH_SIZE", 100),
+            patch("time.sleep"),
+            patch("indexing.adaptive_indexer.drop_table") as mock_drop,
+            patch("indexing.adaptive_indexer.rename_table") as mock_rename,
+            patch("indexing.adaptive_indexer.DATABASE_USER", "TESTUSER"),
+        ):
+            # cursor returns 0 rows -- mismatch with 1 chunk inserted
+            indexer.connection.cursor.return_value = _make_mock_cursor(0)
+
+            with pytest.raises(RuntimeError, match="row count mismatch"):
+                indexer.index()
+
+        mock_drop.assert_called_once_with(indexer.connection, "TESTUSER", indexer.staging_table_name)
+        mock_rename.assert_not_called()
