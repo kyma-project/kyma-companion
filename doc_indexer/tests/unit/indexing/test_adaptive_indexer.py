@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import tiktoken
 from indexing.adaptive_indexer import (
     AdaptiveSplitMarkdownIndexer,
     extract_first_title,
@@ -14,6 +15,17 @@ from langchain_core.documents import Document
 from utils.utils import sanitize_table_name
 
 pytestmark = pytest.mark.unit
+
+_encoding = tiktoken.encoding_for_model("gpt-4o")
+
+
+def _token_count(text: str) -> int:
+    return len(_encoding.encode(text))
+
+
+def _make_words(n: int, word: str = "word") -> str:
+    """Return a string of approximately n tokens by repeating `word`."""
+    return (word + " ") * n
 
 
 @pytest.fixture(scope="session")
@@ -695,16 +707,29 @@ class TestAdaptiveSplitMarkdownIndexer:
                         page_content=(
                             "### Subsubtitle 1\n"
                             "Subsubtitle 1 content for testing:\n"
-                            "Here is the the hello world Python code:\n"
-                            "```python\n"
-                            "print('Hello, World!') # prints 'Hello, World!' to the console\n"
-                            "```\n"
-                            "#### Subsubsubtitle 1\n"
-                            "Subsubsubtitle 1 content for testing ..."
+                            "Here is the the hello world Python code:"
                         ),
                         metadata={
                             "source": "test4.md",
-                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 1/3)",
+                            "module": "kyma",
+                            "version": "latest",
+                        },
+                    ),
+                    Document(
+                        page_content=("```python\nprint('Hello, World!') # prints 'Hello, World!' to the console\n```"),
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 2/3)",
+                            "module": "kyma",
+                            "version": "latest",
+                        },
+                    ),
+                    Document(
+                        page_content=("#### Subsubsubtitle 1\nSubsubsubtitle 1 content for testing ..."),
+                        metadata={
+                            "source": "test4.md",
+                            "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 3/3)",
                             "module": "kyma",
                             "version": "latest",
                         },
@@ -729,3 +754,262 @@ class TestAdaptiveSplitMarkdownIndexer:
         # Then:
         # Compare the actual chunks with expected results
         assert chunks == wanted_results
+
+
+class TestTinySectionMerging:
+    """Tiny sections (<=min_chunk_token_count tokens) must never be dropped."""
+
+    def test_tiny_section_merged_into_previous(self, mock_embedding, mock_connection, mock_hana_db):
+        """A tiny ## Prerequisites section must appear in exactly one output chunk."""
+        # Build a doc where ## Prerequisites has ~10 tokens and the rest is bigger.
+        prereq_text = "You need kubectl and helm installed."  # ~8 tokens
+        big_section = _make_words(200, "description")
+
+        doc_content = (
+            f"# My Guide\n\n{big_section}\n\n## Prerequisites\n\n{prereq_text}\n\n## Installation\n\n{big_section}"
+        )
+        doc = Document(page_content=doc_content, metadata={"source": "guide.md"})
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=1000,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        # prereq_text must appear in at least one chunk
+        prereq_in_chunks = [c for c in chunks if prereq_text in c.page_content]
+        assert len(prereq_in_chunks) >= 1, "Prerequisites text must appear in at least one chunk"
+
+        # prereq_text must appear in exactly one chunk (not duplicated)
+        assert len(prereq_in_chunks) == 1, "Prerequisites text must not be duplicated across chunks"
+
+    def test_single_tiny_chunk_kept(self, mock_embedding, mock_connection, mock_hana_db):
+        """A document that is itself tiny (single chunk, too small) must be kept."""
+        doc = Document(
+            page_content="## Prerequisites\n\nInstall kubectl.",
+            metadata={"source": "tiny.md"},
+        )
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=1000,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+        # Must produce exactly one chunk and it must contain the content.
+        assert len(chunks) == 1
+        assert "Install kubectl" in chunks[0].page_content
+
+    def test_tiny_first_chunk_merged_into_next(self, mock_embedding, mock_connection, mock_hana_db):
+        """When the first chunk of a document is tiny it must be prepended to the second."""
+        big_section = _make_words(200, "description")
+
+        # Build a doc where H1 content is tiny (< 20 tokens) and H2 content is big.
+        doc_content = (
+            "# Title\n\n"
+            "Tiny intro.\n\n"  # tiny H1 content
+            f"## Section A\n\n{big_section}"
+        )
+        doc = Document(page_content=doc_content, metadata={"source": "first.md"})
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=1000,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        all_content = " ".join(c.page_content for c in chunks)
+        assert "Tiny intro" in all_content, "Tiny intro text must not be dropped"
+
+
+class TestPreamblePreservation:
+    """Content before the first header (preamble) must not be dropped."""
+
+    def test_preamble_preserved_in_large_doc(self, mock_embedding, mock_connection, mock_hana_db):
+        """Intro text before H2 sections must appear in a chunk titled with the H1."""
+        # Build a doc: 200-token intro under H1, then three 600-token H2 sections.
+        intro_words = _make_words(200, "intro")
+        section_words = _make_words(300, "sectioncontent")
+
+        doc_content = (
+            "# Main Title\n\n"
+            f"{intro_words}\n\n"
+            f"## Section One\n\n{section_words}\n\n"
+            f"## Section Two\n\n{section_words}\n\n"
+            f"## Section Three\n\n{section_words}"
+        )
+        doc = Document(page_content=doc_content, metadata={"source": "large.md"})
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=1000,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        # Intro words must appear in at least one chunk.
+        intro_chunks = [c for c in chunks if "intro" in c.page_content]
+        assert intro_chunks, "Intro (preamble) text must appear in at least one chunk"
+
+        # The chunk containing intro text must have 'Main Title' in its title metadata.
+        intro_chunk = intro_chunks[0]
+        assert "Main Title" in (intro_chunk.metadata.get("title") or ""), (
+            f"Preamble chunk title should contain 'Main Title', got: {intro_chunk.metadata.get('title')}"
+        )
+
+
+class TestOversizedSectionSplitting:
+    """Sections that exceed max_chunk_token_count at H3 level must be split."""
+
+    def test_oversized_h3_section_split_into_parts(self, mock_embedding, mock_connection, mock_hana_db):
+        """A 3000-token ### Reference section must produce multiple parts."""
+        # Build a ~3000 token section.
+        big_content = _make_words(3000, "word")
+
+        doc_content = f"# API Reference\n\n## Module\n\n### Reference\n\n{big_content}"
+        doc = Document(page_content=doc_content, metadata={"source": "ref.md"})
+
+        max_tokens = 1000
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=max_tokens,
+            chunk_overlap_tokens=100,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        # Find the Reference chunks.
+        ref_chunks = [c for c in chunks if "Reference" in (c.metadata.get("title") or "")]
+        min_expected_parts = 3
+        assert len(ref_chunks) >= min_expected_parts, f"Expected at least 3 Reference chunks, got {len(ref_chunks)}"
+
+        # Each chunk must be within the size limit (+ overlap tolerance).
+        for chunk in ref_chunks:
+            chunk_tokens = _token_count(chunk.page_content)
+            assert chunk_tokens <= max_tokens + 100, (
+                f"Chunk '{chunk.metadata.get('title')}' has {chunk_tokens} tokens, exceeds limit {max_tokens + 100}"
+            )
+
+        # At least some chunks should have "(part X/Y)" in their title.
+        part_chunks = [c for c in ref_chunks if "(part " in (c.metadata.get("title") or "")]
+        assert part_chunks, "Oversized section chunks must have '(part X/Y)' in their title"
+
+    def test_oversized_part_titles_numbered(self, mock_embedding, mock_connection, mock_hana_db):
+        """Part titles must follow the '(part 1/N)' pattern."""
+        big_content = _make_words(3000, "data")
+
+        doc_content = f"# Docs\n\n## Chapter\n\n### Reference\n\n{big_content}"
+        doc = Document(page_content=doc_content, metadata={"source": "docs.md"})
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=1000,
+            chunk_overlap_tokens=100,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        part_titles = [c.metadata.get("title", "") for c in chunks if "(part " in (c.metadata.get("title") or "")]
+        assert part_titles, "Expected at least one part-titled chunk"
+
+        import re
+
+        pattern = re.compile(r"\(part \d+/\d+\)")
+        for title in part_titles:
+            assert pattern.search(title), f"Title '{title}' does not match '(part X/Y)' pattern"
+
+
+class TestCodeFencePreservation:
+    """Fenced code blocks must never be split across chunk boundaries."""
+
+    def test_no_code_fence_split(self, mock_embedding, mock_connection, mock_hana_db):
+        """No fenced code block should appear in more than one chunk (split)."""
+        fence = "```python\n" + "x = 1\n" * 50 + "```"
+
+        doc_content = (
+            f"# Guide\n\n## Usage\n\n### Example\n\nSome intro text.\n\n{fence}\n\nMore text after the code block."
+        )
+        doc = Document(page_content=doc_content, metadata={"source": "code.md"})
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=200,
+            chunk_overlap_tokens=10,
+        )
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        # Count chunks that contain an opening fence but no closing fence, or vice versa.
+        for chunk in chunks:
+            fence_opens = chunk.page_content.count("```python")
+            fence_closes = chunk.page_content.count("```\n") + (1 if chunk.page_content.endswith("```") else 0)
+            # A balanced chunk has equal opens and closes (simplified check).
+            # Since the only code block is python, each chunk must have 0 or 1 complete block.
+            assert fence_opens == 0 or fence_opens <= fence_closes, (
+                f"Chunk appears to have an unclosed code fence: {chunk.page_content[:200]}"
+            )
+
+    def test_no_content_lost(self, mock_embedding, mock_connection, mock_hana_db):
+        """Total characters across all chunks must be >= document characters minus header duplication."""
+        # Use a corpus of docs with different content types.
+        fence = "```yaml\nkey: value\nother: data\n```"
+        docs = [
+            Document(
+                page_content=(
+                    "# Title A\n\nIntro text.\n\n"
+                    "## Section One\n\n" + _make_words(150, "alpha") + "\n\n"
+                    f"### Detail\n\n{fence}\n\nMore info.\n\n"
+                    "## Section Two\n\n" + _make_words(150, "beta")
+                ),
+                metadata={"source": "doc_a.md"},
+            ),
+            Document(
+                page_content=(
+                    "# Title B\n\n" + _make_words(300, "gamma") + "\n\n## Sub\n\n" + _make_words(50, "delta")
+                ),
+                metadata={"source": "doc_b.md"},
+            ),
+        ]
+
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=20,
+            max_chunk_token_count=500,
+            chunk_overlap_tokens=50,
+        )
+
+        for doc in docs:
+            chunks = list(indexer.get_document_chunks([doc]))
+            total_chunk_chars = sum(len(c.page_content) for c in chunks)
+            # Allow some reduction from header-line deduplication but no content loss.
+            # We use 80% as a conservative floor -- in practice it should be ~100%.
+            assert total_chunk_chars >= len(doc.page_content) * 0.80, (
+                f"Too much content lost for {doc.metadata['source']}: "
+                f"original {len(doc.page_content)} chars, "
+                f"chunks total {total_chunk_chars} chars"
+            )
