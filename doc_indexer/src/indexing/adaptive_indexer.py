@@ -10,7 +10,7 @@ from indexing.constants import HEADER1, HEADER2, HEADER3
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from utils.documents import load_documents
 from utils.hana import drop_table, rename_table
 
@@ -129,6 +129,83 @@ def extract_first_title(text: str) -> str | None:
     return None
 
 
+def split_preserving_code_fences(
+    text: str,
+    max_chunk_token_count: int,
+    chunk_overlap_tokens: int,
+    title: str,
+) -> list[str]:
+    """Split a text into chunks while preserving fenced code blocks as atomic units.
+
+    Fenced code blocks (``` ... ```) are treated as indivisible -- if a block
+    alone exceeds max_chunk_token_count, it is kept whole and a warning is
+    emitted.  Non-code segments are split with RecursiveCharacterTextSplitter.
+
+    Args:
+        text: The markdown text to split.
+        max_chunk_token_count: Maximum token count per chunk.
+        chunk_overlap_tokens: Token overlap between consecutive chunks.
+        title: Base title used to generate part titles.
+
+    Returns:
+        A list of text strings.  The caller is responsible for wrapping them in
+        Document objects with the right metadata.
+    """
+    # Split the text into alternating non-code / fenced-code segments.
+    fence_pattern = re.compile(r"(```[^\n]*\n.*?```)", re.DOTALL)
+    segments = fence_pattern.split(text)  # odd indices are fenced blocks
+
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        encoding_name="cl100k_base",
+        chunk_size=max_chunk_token_count,
+        chunk_overlap=min(chunk_overlap_tokens, max(0, max_chunk_token_count - 1)),
+        separators=["\n#### ", "\n\n", "\n", " "],
+    )
+
+    parts: list[str] = []
+
+    for i, segment in enumerate(segments):
+        if not segment:
+            continue
+        if i % 2 == 1:
+            # Fenced code block -- keep atomic.
+            seg_tokens = len(encoding.encode(segment))
+            if seg_tokens > max_chunk_token_count:
+                logger.warning(
+                    "Fenced code block in '%s' has %d tokens (limit %d); keeping whole.",
+                    title,
+                    seg_tokens,
+                    max_chunk_token_count,
+                )
+            parts.append(segment)
+        else:
+            sub_parts = splitter.split_text(segment)
+            parts.extend(sub_parts)
+
+    if not parts:
+        return []
+
+    # Merge the parts back into chunks that respect max_chunk_token_count
+    # (code blocks may bust the limit, but that is intentional per spec).
+    chunks: list[str] = []
+    current: list[str] = []
+    current_tokens = 0
+
+    for part in parts:
+        part_tokens = len(encoding.encode(part))
+        if current and current_tokens + part_tokens > max_chunk_token_count:
+            chunks.append("\n".join(current))
+            current = []
+            current_tokens = 0
+        current.append(part)
+        current_tokens += part_tokens
+
+    if current:
+        chunks.append("\n".join(current))
+
+    return chunks
+
+
 class AdaptiveSplitMarkdownIndexer:
     """
     Markdown indexer that adaptively splits documents based on token size thresholds,
@@ -144,7 +221,20 @@ class AdaptiveSplitMarkdownIndexer:
         headers_to_split_on: list[tuple[str, str]] | None = None,
         min_chunk_token_count: int = 20,
         max_chunk_token_count: int = 1000,
+        chunk_overlap_tokens: int = 100,
     ):
+        """Initialize the AdaptiveSplitMarkdownIndexer.
+
+        Args:
+            docs_path: Path to the directory containing markdown files.
+            embedding: Embedding model to use for indexing.
+            connection: HANA database connection.
+            table_name: Name of the HANA table to store the index.
+            headers_to_split_on: List of header tuples to split on.
+            min_chunk_token_count: Chunks with fewer tokens are merged into neighbours.
+            max_chunk_token_count: Chunks larger than this are split further.
+            chunk_overlap_tokens: Token overlap used when splitting oversized sections.
+        """
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
             table_name = docs_path.split("/")[-1]
@@ -157,6 +247,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
+        self.chunk_overlap_tokens = chunk_overlap_tokens
 
         self.db = HanaDB(
             connection=connection,
@@ -171,6 +262,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.markdown_splitter_h3 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2, HEADER3])
 
     def _build_title(self, doc: Document) -> str:
+        """Build a combined title from the headers H1, H2, H3 in the document metadata."""
         # the following lines build the combined title from the headers H1, H2, H3
         header1 = remove_header_brackets(doc.metadata.get("Header1", "")).strip()
         header2 = remove_header_brackets(doc.metadata.get("Header2", "")).strip()
@@ -190,30 +282,74 @@ class AdaptiveSplitMarkdownIndexer:
         module: str | None = "kyma",
         module_version: str | None = "latest",
     ) -> Generator[Document]:
+        """Recursively split a document into chunks based on token count and header levels.
+
+        Args:
+            doc: The document to process.
+            level: The current header level index into HEADER_LEVELS.
+            parent_title: The title of the parent chunk.
+            module: The module name for metadata.
+            module_version: The module version for metadata.
+
+        Yields:
+            Documents representing individual chunks.
+        """
         tokens = len(encoding.encode(doc.page_content))
 
-        if tokens <= self.min_chunk_token_count:
+        # If the document is smaller than the max chunk token count or the H3 level is
+        # reached, yield the document (possibly after splitting oversized sections).
+        if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
+            if level >= len(HEADER_LEVELS) and tokens > self.max_chunk_token_count:
+                # Oversized section at last header level -- split it.
+                title = doc.metadata.get("title") or parent_title or extract_first_title(doc.page_content) or ""
+                parts = split_preserving_code_fences(
+                    doc.page_content,
+                    self.max_chunk_token_count,
+                    self.chunk_overlap_tokens,
+                    title,
+                )
+                n = len(parts)
+                for i, part in enumerate(parts, start=1):
+                    part_title = f"{title} (part {i}/{n})" if n > 1 else title
+                    yield Document(
+                        page_content=part,
+                        metadata={
+                            "source": doc.metadata.get("source", ""),
+                            "title": part_title,
+                            "module": module,
+                            "version": module_version,
+                        },
+                    )
+            else:
+                yield Document(
+                    page_content=doc.page_content,
+                    metadata={
+                        "source": doc.metadata.get("source", ""),
+                        "title": doc.metadata.get("title") or extract_first_title(doc.page_content),
+                        "module": module,
+                        "version": module_version,
+                    },
+                )
             return
 
-        # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
-        if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
-            yield Document(
-                page_content=doc.page_content,
-                metadata={
-                    "source": doc.metadata.get("source", ""),
-                    "title": doc.metadata.get("title") or extract_first_title(doc.page_content),
-                    "module": module,
-                    "version": module_version,
-                },
-            )
-            return
         # Split document using current header level
         markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADER_LEVELS[level], strip_headers=False)
         splitted_docs = markdown_splitter.split_text(doc.page_content)
 
         for sub_doc in splitted_docs:
             if not sub_doc.metadata:
-                logger.warning("skip chunk - no metadata")
+                # Preamble before the first header -- keep it, don't skip.
+                preamble_title = parent_title or doc.metadata.get("title") or extract_first_title(doc.page_content)
+                preamble_doc = Document(
+                    page_content=sub_doc.page_content,
+                    metadata={
+                        "source": doc.metadata.get("source", ""),
+                        "title": preamble_title,
+                        "module": module,
+                        "version": module_version,
+                    },
+                )
+                yield from self._process_doc(preamble_doc, level=len(HEADER_LEVELS), parent_title=parent_title)
                 continue
 
             title = self._build_title(sub_doc)
@@ -237,21 +373,114 @@ class AdaptiveSplitMarkdownIndexer:
             # Recursively process this chunk with next header level
             yield from self._process_doc(chunk, level + 1, parent_title=title if level == 0 else parent_title)
 
-    def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
+    def _merge_tiny_chunks(self, chunks: list[Document]) -> list[Document]:
+        """Merge chunks with too few tokens into their neighbours within the same document.
+
+        A chunk with tokens <= min_chunk_token_count is appended to the previous chunk
+        of the same source document (or to the next one if it is the first chunk of that
+        document).  A document that consists of a single tiny chunk is kept as is.
+
+        Args:
+            chunks: All chunks produced by _process_doc for a single source document.
+
+        Returns:
+            A new list where tiny chunks have been merged into adjacent chunks.
         """
-        Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
+        if not chunks:
+            return chunks
+
+        result: list[Document] = []
+
+        for chunk in chunks:
+            tokens = len(encoding.encode(chunk.page_content))
+            if tokens <= self.min_chunk_token_count and result:
+                # Append to previous chunk -- preserve its heading line.
+                prev = result[-1]
+                merged_content = prev.page_content + "\n\n" + chunk.page_content
+                result[-1] = Document(
+                    page_content=merged_content,
+                    metadata=prev.metadata,
+                )
+            else:
+                result.append(chunk)
+
+        # Second pass: if the very first chunk is still tiny and there is a second chunk,
+        # prepend it to the second chunk.
+        min_two_chunks = 2
+        if len(result) >= min_two_chunks:
+            first_tokens = len(encoding.encode(result[0].page_content))
+            if first_tokens <= self.min_chunk_token_count:
+                merged_content = result[0].page_content + "\n\n" + result[1].page_content
+                result[1] = Document(
+                    page_content=merged_content,
+                    metadata=result[1].metadata,
+                )
+                result.pop(0)
+
+        return result
+
+    def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
+        """Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
+
         It splits the documents recursively if larger than given token number.
         It stops if the header level H3 is reached despite the token count.
+        After splitting, tiny chunks are merged into their neighbours and statistics
+        are logged at INFO level.
+
+        Args:
+            docs_to_chunk: List of documents to chunk.
+
+        Yields:
+            Chunked documents.
         """
+        total_preamble_kept = 0
+        total_tiny_merged = 0
+        total_oversized_split = 0
 
         for doc in docs_to_chunk:
-            yield from self._process_doc(doc)
+            raw_chunks = list(self._process_doc(doc))
+
+            # Count preamble chunks (those whose title matches the parent doc title
+            # and which came from a sub_doc with no metadata).
+            # We use a simpler proxy: any chunk whose source title equals the document
+            # title and whose page_content does NOT start with a markdown header is a
+            # preamble candidate.  The exact count is not critical -- it is informational.
+            doc_title = doc.metadata.get("title") or extract_first_title(doc.page_content)
+            for chunk in raw_chunks:
+                chunk_title = chunk.metadata.get("title")
+                if chunk_title == doc_title and not chunk.page_content.lstrip().startswith("#"):
+                    total_preamble_kept += 1
+
+            # Count oversized-split chunks (titles containing " (part ").
+            for chunk in raw_chunks:
+                if " (part " in (chunk.metadata.get("title") or ""):
+                    total_oversized_split += 1
+
+            # Merge tiny chunks.
+            merged_chunks = self._merge_tiny_chunks(raw_chunks)
+            tiny_merged = len(raw_chunks) - len(merged_chunks)
+            total_tiny_merged += tiny_merged
+
+            yield from merged_chunks
+
+        logger.info(
+            "Chunking complete: preamble_kept=%d, tiny_merged=%d, oversized_split=%d",
+            total_preamble_kept,
+            total_tiny_merged,
+            total_oversized_split,
+        )
 
     def process_document_titles(self, docs: list[Document]) -> Generator[Document]:
-        """
-        Add a combined title to the document if the title is not already set.
+        """Add a combined title to the document if the title is not already set.
+
         Clear the header from the document if it starts with the header.
         Yields documents one at a time instead of creating a full list.
+
+        Args:
+            docs: List of documents to process.
+
+        Yields:
+            Documents with updated titles.
         """
         for chunk in self.get_document_chunks(docs):
             if chunk.metadata.get("title") is None:
