@@ -779,7 +779,6 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Here is the the hello world Python code:"
                         ),
                         metadata={
-                            "source": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 1/3)",
                             "module": "test4.md",
                             "path": "",
@@ -794,7 +793,6 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "```python\nprint('Hello, World!') # prints 'Hello, World!' to the console\n```\n"
                         ),
                         metadata={
-                            "source": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 2/3)",
                             "module": "test4.md",
                             "path": "",
@@ -807,7 +805,6 @@ class TestAdaptiveSplitMarkdownIndexer:
                     Document(
                         page_content=("#### Subsubsubtitle 1\nSubsubsubtitle 1 content for testing ..."),
                         metadata={
-                            "source": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1 (part 3/3)",
                             "module": "test4.md",
                             "path": "",
@@ -1045,6 +1042,7 @@ class TestIndexAtomicSwap:
 
         mock_drop.assert_called_once_with(indexer.connection, "TESTUSER", indexer.staging_table_name)
         mock_rename.assert_not_called()
+
 
 class TestTinySectionMerging:
     """Tiny sections (<=min_chunk_token_count tokens) must never be dropped."""
@@ -1309,4 +1307,3 @@ class TestCodeFencePreservation:
                 f"original {len(doc.page_content)} chars, "
                 f"chunks total {total_chunk_chars} chars"
             )
-

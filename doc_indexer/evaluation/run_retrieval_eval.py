@@ -79,9 +79,7 @@ def _source_matches(chunk_source: str, expected_suffix: str) -> bool:
     # Handle directory prefix: allow matching when the suffix appears as a
     # sub-path component (avoids partial filename matches like "user" matching
     # "super-user/...").
-    if ("/" + exp + "/") in ("/" + src + "/"):
-        return True
-    return False
+    return ("/" + exp + "/") in ("/" + src + "/")
 
 
 def _hits_at_k(
@@ -121,6 +119,9 @@ def _run_vector_mode(
     Returns (per_query_results, total_elapsed_seconds).
     """
     # Import here so the script can be imported without the full indexer env.
+    from langchain_community.vectorstores.hanavector import HanaDB
+    from utils.hana import create_hana_connection
+
     from utils.models import create_embedding_factory, openai_embedding_creator
     from utils.settings import (
         DATABASE_PASSWORD,
@@ -130,8 +131,6 @@ def _run_vector_mode(
         EMBEDDING_MODEL_NAME,
         get_embedding_model_config,
     )
-    from utils.hana import create_hana_connection
-    from langchain_community.vectorstores.hanavector import HanaDB
 
     print(f"Connecting to HANA at {DATABASE_URL}:{DATABASE_PORT} ...")
     conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
@@ -167,9 +166,7 @@ def _run_vector_mode(
                 "hit@10": hit10,
                 "rr": rr,
                 "latency_ms": latency_ms,
-                "top_sources": [
-                    doc.metadata.get("source", "") for doc in results[:5]
-                ],
+                "top_sources": [doc.metadata.get("source", "") for doc in results[:5]],
             }
         )
 
