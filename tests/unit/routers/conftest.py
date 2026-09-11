@@ -230,8 +230,14 @@ def test_client():
         mock_rag_instance = Mock()
         mock_rag_instance.aretrieve = AsyncMock(
             return_value=[
-                Mock(page_content="Mock Kyma documentation."),
-                Mock(page_content="Another Kyma document."),
+                Mock(
+                    page_content="Mock Kyma documentation.",
+                    metadata={"title": "Mock Doc", "url": "https://kyma.io/mock", "module": "mock-module"},
+                ),
+                Mock(
+                    page_content="Another Kyma document.",
+                    metadata={"title": "Another Doc", "url": "https://kyma.io/another"},
+                ),
             ]
         )
         mock_rag_class.return_value = mock_rag_instance

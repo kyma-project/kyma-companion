@@ -38,6 +38,12 @@ def doc_search_tool(mock_models):
 @dataclass
 class MockDocument:
     page_content: str
+    metadata: dict = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        """Set default metadata."""
+        if self.metadata is None:
+            self.metadata = {}
 
 
 @pytest.mark.asyncio
@@ -45,16 +51,16 @@ class MockDocument:
     "mock_documents,expected_output",
     [
         # Single document case
-        ([MockDocument("Single document content")], "Single document content"),
+        ([MockDocument("Single document content")], "### Untitled\n\nSingle document content"),
         # Multiple documents case
         (
             [MockDocument("First doc"), MockDocument("Second doc")],
-            "First doc\n\n -- next document -- \n\nSecond doc",
+            "### Untitled\n\nFirst doc\n\n---\n\n### Untitled\n\nSecond doc",
         ),
         # Three documents case
         (
             [MockDocument("Doc 1"), MockDocument("Doc 2"), MockDocument("Doc 3")],
-            "Doc 1\n\n -- next document -- \n\nDoc 2\n\n -- next document -- \n\nDoc 3",
+            "### Untitled\n\nDoc 1\n\n---\n\n### Untitled\n\nDoc 2\n\n---\n\n### Untitled\n\nDoc 3",
         ),
         # Empty documents list - should return fallback message
         ([], "No relevant documentation found."),
@@ -71,12 +77,12 @@ class MockDocument:
                 MockDocument("Content with special chars: !@#$"),
                 MockDocument("Unicode: αβγ"),
             ],
-            "Content with special chars: !@#$\n\n -- next document -- \n\nUnicode: αβγ",
+            "### Untitled\n\nContent with special chars: !@#$\n\n---\n\n### Untitled\n\nUnicode: αβγ",
         ),
         # Documents with newlines
         (
             [MockDocument("Multi\nline\ncontent"), MockDocument("Another\ndocument")],
-            "Multi\nline\ncontent\n\n -- next document -- \n\nAnother\ndocument",
+            "### Untitled\n\nMulti\nline\ncontent\n\n---\n\n### Untitled\n\nAnother\ndocument",
         ),
     ],
 )
