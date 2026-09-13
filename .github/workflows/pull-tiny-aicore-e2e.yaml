@@ -1,0 +1,60 @@
+name: tiny-aicore E2E Tests
+
+on:
+  pull_request_target:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
+    branches:
+      - "main"
+      - "release-**"
+
+permissions: read-all
+
+jobs:
+  tiny-aicore-e2e:
+    if: contains(github.event.pull_request.labels.*.name, 'run-tiny-aicore-e2e')
+    runs-on: ubuntu-latest
+    environment: e2e
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          allow-unsafe-pr-checkout: true
+
+      - name: Extract Python version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install tiny-aicore dependencies
+        working-directory: packages/tiny-aicore
+        run: poetry install
+
+      - name: Run e2e tests
+        working-directory: packages/tiny-aicore
+        run: |
+          CONFIG=$(echo "${{ secrets.INTEGRATION_TEST_CONFIG }}" | base64 --decode)
+          AICORE_AUTH_URL=$(echo "$CONFIG" | jq -r '.AICORE_AUTH_URL')
+          AICORE_BASE_URL=$(echo "$CONFIG" | jq -r '.AICORE_BASE_URL')
+          AICORE_CLIENT_ID=$(echo "$CONFIG" | jq -r '.AICORE_CLIENT_ID')
+          AICORE_CLIENT_SECRET=$(echo "$CONFIG" | jq -r '.AICORE_CLIENT_SECRET')
+          AICORE_RESOURCE_GROUP=$(echo "$CONFIG" | jq -r '.AICORE_RESOURCE_GROUP')
+          AICORE_DEPLOYMENT_ID_OPENAI=$(echo "$CONFIG" | jq -r '.models[] | select(.name == "gpt-4.1-mini") | .deployment_id')
+          AICORE_DEPLOYMENT_ID_EMBEDDINGS=$(echo "$CONFIG" | jq -r '.models[] | select(.name == "text-embedding-3-large") | .deployment_id')
+          AICORE_DEPLOYMENT_ID_ANTHROPIC=$(echo "$CONFIG" | jq -r '.models[] | select(.name == "anthropic--claude-4.5-haiku") | .deployment_id')
+          export AICORE_AUTH_URL AICORE_BASE_URL AICORE_CLIENT_ID AICORE_CLIENT_SECRET AICORE_RESOURCE_GROUP
+          export AICORE_DEPLOYMENT_ID_OPENAI AICORE_DEPLOYMENT_ID_EMBEDDINGS AICORE_DEPLOYMENT_ID_ANTHROPIC
+          poetry run pytest tests/test_e2e.py -v

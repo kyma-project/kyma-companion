@@ -49,10 +49,10 @@ def mock_config():
 
 @pytest.fixture
 def mock_get_proxy_client():
-    with patch("utils.models.factory.get_proxy_client") as mock_get_proxy_client:
-        mock_proxy_client = MagicMock()
-        mock_get_proxy_client.return_value = mock_proxy_client
-        yield mock_proxy_client
+    with patch("utils.models.factory.init_aicore_client") as mock_init:
+        mock_client = MagicMock()
+        mock_init.return_value = mock_client
+        yield mock_client
 
 
 @pytest.fixture

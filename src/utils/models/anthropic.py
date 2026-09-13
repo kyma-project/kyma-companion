@@ -1,9 +1,10 @@
-from gen_ai_hub.proxy.core.base import BaseProxyClient
-from gen_ai_hub.proxy.langchain.amazon import ChatBedrockConverse
-from gen_ai_hub.proxy.langchain.openai import ChatOpenAI
-from gen_ai_hub.proxy.native.google_genai.clients import Client as GoogleGenAIClient
+from typing import cast
+
+from langchain_aws import ChatBedrockConverse
+from langchain_core.language_models import BaseChatModel
 
 from utils.config import ModelConfig
+from utils.models._aicore import AICoreClient, make_anthropic_chat
 
 
 class AnthropicModel:
@@ -12,13 +13,16 @@ class AnthropicModel:
     _name: str
     _llm: ChatBedrockConverse
 
-    def __init__(self, config: ModelConfig, proxy_client: BaseProxyClient):
+    def __init__(self, config: ModelConfig, client: AICoreClient):
         self._name = config.name
-        self._llm = ChatBedrockConverse(
-            model_name=config.name,
-            deployment_id=config.deployment_id,
-            proxy_client=proxy_client,
-            temperature=config.temperature,
+        self._llm = cast(
+            ChatBedrockConverse,
+            make_anthropic_chat(
+                client=client,
+                deployment_id=config.deployment_id,
+                model_name=config.name,
+                temperature=config.temperature,
+            ),
         )
 
     def invoke(self, content: str):  # noqa
@@ -31,6 +35,6 @@ class AnthropicModel:
         return self._name
 
     @property
-    def llm(self) -> ChatOpenAI | GoogleGenAIClient | ChatBedrockConverse:
+    def llm(self) -> BaseChatModel:
         """Returns the instance of the Anthropic model."""
         return self._llm
