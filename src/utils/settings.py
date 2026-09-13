@@ -17,6 +17,19 @@ class LangfuseMaskingModes(StrEnum):
     REDACTED = "REDACTED"  # Everything is redacted.
 
 
+class ThinkingEffort(StrEnum):
+    """Global reasoning/thinking effort applied across all supported LLM providers.
+
+    OFF disables extended/adaptive thinking; LOW/MEDIUM/HIGH progressively allow
+    the model to spend more tokens on internal reasoning.
+    """
+
+    OFF = "OFF"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
 def load_env_from_json() -> Path:
     """Load the configuration from the config.json file. Returns the path to the config file used."""
     # if running tests with pytest, use config_test.json
@@ -83,6 +96,14 @@ MAIN_MODEL_NAME = config("MAIN_MODEL_NAME", default="gpt-4.1")
 MAIN_MODEL_MINI_NAME = config("MAIN_MODEL_MINI_NAME", default="gpt-4o-mini")
 MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-embedding-3-large")
 LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
+
+# Global reasoning/thinking effort applied to all reasoning-capable models
+# (OpenAI reasoning models and Anthropic Claude). One of: OFF, LOW, MEDIUM, HIGH.
+THINKING_EFFORT = config(
+    "THINKING_EFFORT",
+    default=ThinkingEffort.OFF,
+    cast=lambda v: ThinkingEffort(str(v).strip().upper()),
+)
 
 # Redis
 # A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
