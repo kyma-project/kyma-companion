@@ -231,11 +231,27 @@ class AdaptiveSplitMarkdownIndexer:
                     metadata=chunk.metadata,
                 )
 
+    def build_chunks(self, docs: list[Document]) -> list[Document]:
+        """Load, preprocess, chunk and title documents without touching HANA.
+
+        This method is the pure chunking pipeline: it takes already-loaded documents,
+        runs them through the adaptive splitter, and returns the final titled chunks.
+        It is used by :meth:`index` internally and exposed for unit/snapshot testing
+        without requiring a live HANA connection.
+
+        Args:
+            docs: Pre-loaded documents to chunk.
+
+        Returns:
+            List of titled, chunked :class:`~langchain_core.documents.Document` objects.
+        """
+        return list(self.process_document_titles(docs))
+
     def index(self) -> None:
         """Indexes the markdown files in the given directory."""
 
         docs = load_documents(self.docs_path)
-        all_chunks = self.process_document_titles(docs)
+        all_chunks = self.build_chunks(docs)
 
         if INDEX_TO_FILE:
             # write pretty to file
@@ -260,7 +276,7 @@ class AdaptiveSplitMarkdownIndexer:
             logger.info("Successfully deleted existing documents in HanaDB.")
 
             logger.info("Indexing and storing indexes to HanaDB...")
-            batch = []
+            batch: list[Document] = []
             batch_count = 0
             total_chunk_number = 0
             try:
