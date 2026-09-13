@@ -70,6 +70,12 @@ select = [
   "ANN206", # Missing return type annotation for classmethod
   "E501",   # Ignore line too long errors
 ]
+"packages/*/tests/*" = [
+  "D",       # Ignore all docstring rules
+  "ANN",     # Ignore all annotation rules
+  "PLR2004", # Allow magic values in tests
+  "E501",    # Ignore line too long
+]
 # ignore line too long for prompt files
 "**/prompts.py" = ["E501"]
 "**/prompt.py" = ["E501"]
