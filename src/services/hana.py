@@ -40,6 +40,18 @@ class Hana(metaclass=SingletonMeta):
             logger.exception("Unknown error occurred.")
             self.connection = None
 
+    def _run_health_check_query(self) -> bool:
+        """Execute the HANA health check query synchronously."""
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM DUMMY")
+                cursor.fetchone()
+            logger.debug("HANA DB connection is ready.")
+            return True
+        except Exception:
+            logger.exception("Error while connecting to HANA DB.")
+            return False
+
     def is_connection_operational(self) -> bool:
         """
         Check if the HANA database is ready by executing a test query.
@@ -64,19 +76,10 @@ class Hana(metaclass=SingletonMeta):
             self._last_health_state = False
             return False
 
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute("SELECT 1 FROM DUMMY")
-                cursor.fetchone()
-            logger.debug("HANA DB connection is ready.")
-            self._last_health_check = now
-            self._last_health_state = True
-            return True
-        except Exception:
-            logger.exception("Error while connecting to HANA DB.")
-            self._last_health_check = now
-            self._last_health_state = False
-            return False
+        result = self._run_health_check_query()
+        self._last_health_check = now
+        self._last_health_state = result
+        return result
 
     def has_connection(self) -> bool:
         """Check if a connection exists."""

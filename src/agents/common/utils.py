@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import json
 from collections.abc import Sequence
 from http import HTTPStatus
@@ -106,9 +107,11 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
 
     if is_empty_str(namespace) and kind.lower() == CLUSTER:
         logger.info("Fetching all not running Pods, Node metrics, and K8s Events with warning type")
-        not_running_pods = k8s_client.list_not_running_pods(namespace=namespace)
-        node_metrics = await k8s_client.list_nodes_metrics()
-        warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
+        not_running_pods, node_metrics, warning_events = await asyncio.gather(
+            asyncio.to_thread(k8s_client.list_not_running_pods, namespace),
+            k8s_client.list_nodes_metrics(),
+            asyncio.to_thread(k8s_client.list_k8s_warning_events, namespace),
+        )
 
         pods_section = (
             yaml.dump_all(not_running_pods) if not_running_pods else "No non-running pods were found in the cluster."
@@ -137,7 +140,7 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
             context = f"Namespace '{namespace}' was not found in the cluster."
         else:
             logger.debug("Fetching all K8s Events with warning type")
-            warning_events = k8s_client.list_k8s_warning_events(namespace=namespace)
+            warning_events = await asyncio.to_thread(k8s_client.list_k8s_warning_events, namespace)
             context = (
                 yaml.dump_all(warning_events)
                 if warning_events
@@ -147,7 +150,8 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
     elif is_non_empty_str(kind) and is_non_empty_str(api_version):
         logger.info(f"Fetching all entities of Kind {kind} with API version {api_version}")
         resources = yaml.dump(
-            k8s_client.describe_resource(
+            await asyncio.to_thread(
+                k8s_client.describe_resource,
                 api_version=api_version,
                 kind=kind,
                 name=name,
@@ -155,7 +159,8 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
             )
         )
         events = yaml.dump_all(
-            k8s_client.list_k8s_events_for_resource(
+            await asyncio.to_thread(
+                k8s_client.list_k8s_events_for_resource,
                 kind=kind,
                 name=name,
                 namespace=namespace,
