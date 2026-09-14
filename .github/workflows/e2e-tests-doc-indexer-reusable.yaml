@@ -108,6 +108,8 @@ jobs:
             template:
               spec:
                 restartPolicy: Never
+                securityContext:
+                  fsGroup: 0
                 initContainers:
                 - name: fetch
                   image: ${{ inputs.IMAGE_NAME }}
