@@ -71,16 +71,6 @@ def init_proxy_client() -> BaseProxyClient:
     return get_proxy_client("gen-ai-hub")
 
 
-class IModelFactory(Protocol):
-    """Model Factory Interface."""
-
-    def create_model(self, name: str) -> IModel | Embeddings:
-        """Create a model."""
-
-    def create_models(self) -> dict[str, IModel | Embeddings]:
-        """Create all models."""
-
-
 class ModelFactory:
     """Model Factory for LLM and Embedding models."""
 
