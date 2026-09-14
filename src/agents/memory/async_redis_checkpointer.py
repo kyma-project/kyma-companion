@@ -1,17 +1,10 @@
 """Redis-backed LLM usage memory."""
 
 import json
-import ssl
 import time
 from typing import Protocol
 
 from redis.asyncio import Redis as AsyncRedis
-
-from services.redis import Redis
-from utils.logging import get_logger
-from utils.settings import REDIS_SSL_ENABLED
-
-logger = get_logger(__name__)
 
 
 class IUsageMemory(Protocol):
@@ -60,25 +53,6 @@ class AsyncRedisSaver:
     def __init__(self, conn: AsyncRedis):
         self.conn = conn
 
-    @classmethod
-    def from_conn_info(cls, *, host: str, port: int, db: int, password: str) -> "AsyncRedisSaver":
-        """Create a new AsyncRedisSaver with the given connection info."""
-        conn = AsyncRedis(
-            host=host,
-            port=port,
-            db=db,
-            password=password if password != "" else None,
-            ssl=REDIS_SSL_ENABLED,
-            ssl_ca_certs="/etc/secret/ca.crt" if REDIS_SSL_ENABLED else None,
-            ssl_include_verify_flags=([ssl.VERIFY_DEFAULT] if REDIS_SSL_ENABLED else None),
-            ssl_exclude_verify_flags=([ssl.VERIFY_X509_STRICT] if REDIS_SSL_ENABLED else None),
-        )
-        if REDIS_SSL_ENABLED:
-            logger.info("Redis connection established with SSL.")
-        else:
-            logger.info("Redis connection established.")
-        return cls(conn)
-
     async def awrite_llm_usage(self, cluster_id: str, data: dict, ttl: int = 0) -> str:
         """Write LLM usage data to Redis. Return the key."""
         key = _make_llm_usage_key(cluster_id)
@@ -109,9 +83,3 @@ class AsyncRedisSaver:
                 latest_keys.append(key)
         records = await self.conn.mget(latest_keys)
         return [json.loads(record) for record in records if record]
-
-
-def get_async_redis_saver() -> AsyncRedisSaver:
-    """Return an AsyncRedisSaver backed by the configured Redis connection."""
-    connection = Redis().get_connection()
-    return AsyncRedisSaver(connection)
