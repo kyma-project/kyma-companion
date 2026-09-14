@@ -71,7 +71,6 @@ config_path = load_env_from_json()
 # LOG_FORMAT: "json" (structured, production), "pretty" (formatted JSON, dev), or "standard" (human-readable)
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 LOG_FORMAT = config("LOG_FORMAT", default="json")
-DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Server configuration - host and port for uvicorn
 HOST = config("HOST", default="0.0.0.0")
@@ -104,8 +103,6 @@ LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
 LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
 LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
-
-MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int)
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
