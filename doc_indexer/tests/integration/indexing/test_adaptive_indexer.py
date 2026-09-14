@@ -111,6 +111,7 @@ def test_index_replaces_previous_content(indexer, hana_conn, table_name):
     # A second run must not duplicate chunks: index() deletes the existing content first.
     with patch("indexing.adaptive_indexer.load_documents", return_value=DOCUMENTS):
         indexer.index()
+        indexer.index()
 
     cursor = hana_conn.cursor()
     cursor.execute(f'SELECT COUNT(*) FROM "{DATABASE_USER}"."{table_name}"')
