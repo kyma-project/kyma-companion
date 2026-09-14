@@ -23,6 +23,7 @@ from routers.common import (
     KymaResourceVersionResponse,
     SearchKymaDocRequest,
     SearchKymaDocResponse,
+    SearchKymaDocResult,
     init_k8s_client,
     init_search_tool,
 )
@@ -133,10 +134,21 @@ async def search_kyma_documentation(
     logger.info(f"Search request: query={request.query}")
 
     try:
-        results = await search_tool.arun_list(query=request.query, top_k=request.top_k)
+        docs = await search_tool.arun_documents(query=request.query, top_k=request.top_k)
+        results = [doc.page_content for doc in docs]
+        documents = [
+            SearchKymaDocResult(
+                title=doc.metadata.get("title") or "Untitled",
+                url=doc.metadata.get("url") or doc.metadata.get("source") or "",
+                module=doc.metadata.get("module") or None,
+                content=doc.page_content,
+            )
+            for doc in docs
+        ]
         logger.info(f"Search completed successfully, returned {len(results)} documents")
         return SearchKymaDocResponse(
             results=results,
+            documents=documents,
             query=request.query,
         )
     except Exception as e:

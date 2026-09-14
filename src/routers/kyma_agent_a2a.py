@@ -41,7 +41,7 @@ from services.data_sanitizer import DataSanitizer
 from services.encryption_cache import EncryptionCache
 from services.k8s import K8sClient
 from services.redis import Redis
-from services.usage import RequestMetricsCallback, UsageTrackerCallback
+from services.usage import ReferencesCallback, RequestMetricsCallback, UsageTrackerCallback
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger
 from utils.utils import create_session_id
@@ -134,9 +134,11 @@ class KymaAgentExecutor(AgentExecutor):
             cluster_id = k8s_client.get_api_server().split(".")[1]
             usage_memory = AsyncRedisSaver(redis_conn.get_connection())
             request_metrics = RequestMetricsCallback()
+            references_cb = ReferencesCallback()
             callbacks: list[BaseCallbackHandler] = [
                 UsageTrackerCallback(cluster_id, cast(IUsageMemory, usage_memory)),
                 request_metrics,
+                references_cb,
             ]
 
             answer = await agent.ainvoke(query, chat_history=chat_history, ui_context=ui_context, callbacks=callbacks)
@@ -153,6 +155,8 @@ class KymaAgentExecutor(AgentExecutor):
             # Note: Struct stores numbers as doubles, so integer counts round-trip as floats.
             response_metadata = Struct()
             response_metadata.update({"x-metrics": request_metrics.as_dict()})
+            if references_cb.references:
+                response_metadata.update({"x-references": references_cb.references})
 
             response_message = Message(
                 role=Role.ROLE_AGENT,

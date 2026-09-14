@@ -201,6 +201,56 @@ class RequestMetricsCallback(AsyncCallbackHandler):
         }
 
 
+class ReferencesCallback(AsyncCallbackHandler):
+    """LangChain callback that collects documentation references from search tool output.
+
+    Parses ``Source:`` lines emitted by ``SearchKymaDocTool._arun`` and accumulates
+    a deduplicated list of ``{"title": ..., "url": ...}`` dicts.  Create a fresh
+    instance per request and read ``references`` after the agent run completes.
+    """
+
+    TOOL_NAME = "search_kyma_doc"
+
+    def __init__(self) -> None:
+        """Initialize the references collector."""
+        self._seen_urls: set[str] = set()
+        self.references: list[dict[str, str]] = []
+
+    async def on_tool_end(
+        self,
+        output: Any,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Parse Source: lines from search_kyma_doc output and collect references.
+
+        Args:
+            output: The string returned by the tool.
+            run_id: LangChain run identifier (unused).
+            parent_run_id: Parent run identifier (unused).
+            **kwargs: Additional keyword arguments, including ``name`` for the tool name.
+        """
+        tool_name = str(kwargs.get("name", "") or "")
+        if tool_name != self.TOOL_NAME:
+            return
+        if not isinstance(output, str):
+            return
+
+        current_title: str | None = None
+        for line in output.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("### "):
+                current_title = stripped[4:].strip() or "Untitled"
+            elif stripped.startswith("Source: "):
+                url = stripped[len("Source: ") :].strip()
+                if url and url not in self._seen_urls:
+                    self._seen_urls.add(url)
+                    self.references.append({"title": current_title or "Untitled", "url": url})
+                current_title = None
+
+
 class IUsageTracker(Protocol):
     """Interface for the UsageTracker."""
 

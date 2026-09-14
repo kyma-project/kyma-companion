@@ -122,6 +122,35 @@ class TestSearchEndpoint:
         assert response.status_code == HTTPStatus.OK
         response_data = response.json()
         assert "results" in response_data
+        assert "documents" in response_data
+
+    def test_search_response_has_documents_list(self, test_client):
+        """Response includes a structured documents list with title, url, and content fields."""
+        response = test_client.post(
+            "/api/tools/kyma/search",
+            json={"query": "APIRule configuration"},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert "documents" in data
+        assert isinstance(data["documents"], list)
+        for doc in data["documents"]:
+            assert "title" in doc
+            assert "url" in doc
+            assert "content" in doc
+
+    def test_search_response_backward_compat_results_populated(self, test_client):
+        """Legacy results field is still populated alongside documents."""
+        response = test_client.post(
+            "/api/tools/kyma/search",
+            json={"query": "Kyma functions"},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert "results" in data
+        assert isinstance(data["results"], list)
 
     @pytest.mark.parametrize(
         "query",
