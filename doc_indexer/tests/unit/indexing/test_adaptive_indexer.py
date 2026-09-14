@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from hdbcli import dbapi
 import tiktoken
+from hdbcli import dbapi
 from indexing.adaptive_indexer import (
     AdaptiveSplitMarkdownIndexer,
     extract_first_title,
