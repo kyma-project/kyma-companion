@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import time
 import uuid
@@ -7,6 +8,7 @@ from collections.abc import Generator
 import tiktoken
 from hdbcli import dbapi
 from indexing.constants import HEADER1, HEADER2, HEADER3
+from indexing.metadata import build_chunk_metadata
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
@@ -123,6 +125,18 @@ class AdaptiveSplitMarkdownIndexer:
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
 
+        # Load the fetch manifest if present; fall back gracefully when absent.
+        manifest_path = os.path.join(docs_path, "manifest.json")
+        if os.path.isfile(manifest_path):
+            with open(manifest_path, encoding="utf-8") as fh:
+                self.manifest: dict[str, dict[str, str | None]] | None = json.load(fh)
+            logger.info("Loaded fetch manifest", extra={"path": manifest_path})
+        else:
+            logger.warning(
+                "No manifest.json found -- repo/commit metadata will be missing", extra={"path": manifest_path}
+            )
+            self.manifest = None
+
         self.db = HanaDB(
             connection=connection,
             embedding=embedding,
@@ -152,8 +166,7 @@ class AdaptiveSplitMarkdownIndexer:
         doc: Document,
         level: int = 0,
         parent_title: str = "",
-        module: str | None = "kyma",
-        module_version: str | None = "latest",
+        base_metadata: dict[str, str | None] | None = None,
     ) -> Generator[Document]:
         tokens = len(encoding.encode(doc.page_content))
 
@@ -162,14 +175,11 @@ class AdaptiveSplitMarkdownIndexer:
 
         # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
         if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
+            chunk_meta = dict(base_metadata) if base_metadata else {}
+            chunk_meta["title"] = doc.metadata.get("title") or extract_first_title(doc.page_content)
             yield Document(
                 page_content=doc.page_content,
-                metadata={
-                    "source": doc.metadata.get("source", ""),
-                    "title": doc.metadata.get("title") or extract_first_title(doc.page_content),
-                    "module": module,
-                    "version": module_version,
-                },
+                metadata=chunk_meta,
             )
             return
         # Split document using current header level
@@ -189,18 +199,17 @@ class AdaptiveSplitMarkdownIndexer:
             if parent_title != title and (parent_title + " - ") not in title:
                 title = parent_title + " - " + title if parent_title else title
 
+            chunk_meta = dict(base_metadata) if base_metadata else {}
+            chunk_meta["title"] = title
             chunk = Document(
                 page_content=sub_doc.page_content,
-                metadata={
-                    "source": doc.metadata.get("source", ""),
-                    "title": title,
-                    "module": module,
-                    "version": module_version,
-                },
+                metadata=chunk_meta,
             )
 
             # Recursively process this chunk with next header level
-            yield from self._process_doc(chunk, level + 1, parent_title=title if level == 0 else parent_title)
+            yield from self._process_doc(
+                chunk, level + 1, parent_title=title if level == 0 else parent_title, base_metadata=base_metadata
+            )
 
     def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
         """
@@ -210,7 +219,9 @@ class AdaptiveSplitMarkdownIndexer:
         """
 
         for doc in docs_to_chunk:
-            yield from self._process_doc(doc)
+            source_path = doc.metadata.get("source", "")
+            base_metadata = build_chunk_metadata(source_path, self.docs_path, self.manifest)
+            yield from self._process_doc(doc, base_metadata=base_metadata)
 
     def process_document_titles(self, docs: list[Document]) -> Generator[Document]:
         """
