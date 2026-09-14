@@ -26,8 +26,6 @@ src/                        # Application source
     kyma_tools_api.py       # REST endpoints for Kyma tools
   services/                 # Kubernetes, HANA, Redis, Langfuse, encryption integrations
   rag/                      # RAG retriever and reranker
-  followup_questions/       # Follow-up question generation
-  initial_questions/        # Initial question handling
   utils/                    # Logging, config, model factory
 tests/
   unit/                     # Unit tests (fast, mocked)
