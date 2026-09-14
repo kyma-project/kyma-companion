@@ -250,7 +250,7 @@ class AdaptiveSplitMarkdownIndexer:
 
         self.docs_path = docs_path
         self.table_name = table_name
-        self.staging_table_name = sanitize_table_name(f"{table_name}_staging_{int(time.time())}")
+        self.staging_table_name = sanitize_table_name(f"{table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}")
         self.connection = connection
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
@@ -521,7 +521,7 @@ class AdaptiveSplitMarkdownIndexer:
             for chunk in all_chunks:
                 batch.append(chunk)
                 if len(batch) >= CHUNKS_BATCH_SIZE:
-                    self.db.add_documents(batch)
+                    _add_documents_with_retry(self.db, batch, batch_count + 1)
                     batch_count += 1
                     total += len(batch)
                     logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks into staging table")
@@ -530,7 +530,7 @@ class AdaptiveSplitMarkdownIndexer:
                     time.sleep(3)
 
             if batch:
-                self.db.add_documents(batch)
+                _add_documents_with_retry(self.db, batch, batch_count + 1)
                 batch_count += 1
                 total += len(batch)
                 logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks into staging table")
