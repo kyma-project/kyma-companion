@@ -759,7 +759,6 @@ class TestAdaptiveSplitMarkdownIndexer:
         assert chunks == wanted_results
 
 
-
 # ---------------------------------------------------------------------------
 # Atomic-swap unit tests for AdaptiveSplitMarkdownIndexer.index()
 # ---------------------------------------------------------------------------
