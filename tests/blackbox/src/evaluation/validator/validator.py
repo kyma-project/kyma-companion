@@ -22,8 +22,9 @@ class IValidator(Protocol):
 class LangChainOpenAI(DeepEvalBaseLLM):
     """Inherited from DeepEvalBaseLLM to use LangChain OpenAI model."""
 
-    def __init__(self, model: Any) -> None:
+    def __init__(self, model: Any, model_name: str) -> None:
         self.model = model
+        self.model_name = model_name
 
     def load_model(self) -> Any:
         """Loads the model."""
@@ -43,7 +44,7 @@ class LangChainOpenAI(DeepEvalBaseLLM):
 
     def get_model_name(self) -> str:
         """Returns the model name."""
-        return "Custom Azure OpenAI Model"
+        return self.model_name
 
 
 class ChatOpenAIValidator:
@@ -57,7 +58,7 @@ class ChatOpenAIValidator:
             temperature=temperature,
             deployment_id=deployment_id,
         )
-        self.model = LangChainOpenAI(model=model)
+        self.model = LangChainOpenAI(model=model, model_name=name)
 
     def get_deepeval_evaluate(self, query: Query) -> EvaluationResult:
         """Evaluate the query using the model and expectations."""
