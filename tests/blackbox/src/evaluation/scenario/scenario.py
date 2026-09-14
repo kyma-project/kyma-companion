@@ -6,7 +6,6 @@ import yaml
 from deepeval.evaluate.types import EvaluationResult, TestResult
 from pydantic import BaseModel, Field
 
-from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import (
     TestStatus,
 )
@@ -85,8 +84,7 @@ class Query(BaseModel):
     user_query: str
     resource: Resource
     expectations: list[Expectation]
-    # actual responses
-    response_chunks: list[ConversationResponseChunk] = []
+    # actual response
     actual_response: str = ""
     # per-query performance metrics
     metrics: QueryMetrics = Field(default_factory=QueryMetrics)
@@ -185,8 +183,6 @@ class Scenario(BaseModel):
     id: str
     description: str
     queries: list[Query] = []
-    # actual responses
-    initial_questions: list[str] = []
     # evaluation
     test_status: TestStatus = TestStatus.PENDING
     test_status_reason: str = ""
@@ -198,12 +194,10 @@ class Scenario(BaseModel):
         """Reset scenario state for retry attempts."""
         self.test_status = TestStatus.PENDING
         self.test_status_reason = ""
-        self.initial_questions = []
         for query in self.queries:
             query.test_status = TestStatus.PENDING
             query.test_status_reason = ""
             query.actual_response = ""
-            query.response_chunks = []
             query.evaluation_result = None
             query.metrics = QueryMetrics()
 
@@ -275,7 +269,6 @@ class Scenario(BaseModel):
                 "status_reason": self.test_status_reason,
                 "passed": self.test_status != TestStatus.FAILED,
                 "attempt_history": self.attempt_history,
-                "initial_questions": self.initial_questions,
                 "queries": [query.to_report_dict() for query in self.queries],
             }
         )
