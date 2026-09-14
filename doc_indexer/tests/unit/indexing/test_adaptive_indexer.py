@@ -809,7 +809,6 @@ class TestIndexAtomicSwap:
     def test_success_swap_sequence(self, indexer_for_swap: AdaptiveSplitMarkdownIndexer) -> None:
         """On success: chunks inserted, count verified, and rename/drop called in order."""
         indexer = indexer_for_swap
-        staging = indexer.staging_table_name
         live = indexer.table_name
 
         with (
@@ -825,6 +824,9 @@ class TestIndexAtomicSwap:
             indexer.connection.cursor.return_value = _make_mock_cursor(1)
 
             indexer.index()
+
+        # Capture staging name after index() has set it
+        staging = indexer.staging_table_name
 
         # rename called twice: live->old, staging->live
         expected_rename_count = 2
