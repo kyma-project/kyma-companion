@@ -5,9 +5,6 @@ from pathlib import Path
 
 from decouple import config
 
-DEFAULT_RETRY_WAIT_TIME = 60
-DEFAULT_RETRY_MAX_WAIT_TIME = 240
-
 
 class Config:
     """
@@ -95,7 +92,3 @@ class Config:
                 return model
 
         raise ValueError(f"Model {model_name} not found in the configuration.")
-
-    def get_models(self) -> list[dict]:
-        """Return all models."""
-        return self.models
