@@ -89,9 +89,10 @@ def test_run_indexer_e2e(hana_conn, e2e_table_name):
 
     # Step 4-5: index test documents into the e2e table.
     indexer = AdaptiveSplitMarkdownIndexer(E2E_DOCS_PATH, embeddings_model, hana_conn, e2e_table_name)
-    staging_name = indexer.staging_table_name
     try:
         indexer.index()
+        # staging_table_name is set during index(); capture it after the call.
+        staging_name = indexer.staging_table_name
 
         # Verify chunks were written to the table.
         cursor = hana_conn.cursor()
@@ -108,9 +109,10 @@ def test_run_indexer_e2e(hana_conn, e2e_table_name):
         )
     finally:
         # Drop the test table regardless of test outcome.
-        for name in (e2e_table_name, staging_name):
-            drop_table(hana_conn, DATABASE_USER, name)
-            logging.info(f"Dropped e2e test table '{name}' (if it existed).")
+        drop_table(hana_conn, DATABASE_USER, e2e_table_name)
+        if indexer.staging_table_name:
+            drop_table(hana_conn, DATABASE_USER, indexer.staging_table_name)
+        logging.info(f"Dropped e2e test tables for '{e2e_table_name}' (if they existed).")
 
 
 @pytest.mark.integration
@@ -128,11 +130,11 @@ def test_run_indexer_e2e_failing_batch_leaves_live_table_intact(hana_conn, e2e_t
 
     # Seed the live table with known content via a successful run first.
     seeder = AdaptiveSplitMarkdownIndexer(E2E_DOCS_PATH, embeddings_model, hana_conn, e2e_table_name)
-    seeder_staging = seeder.staging_table_name
     try:
         seeder.index()
     finally:
-        drop_table(hana_conn, DATABASE_USER, seeder_staging)
+        if seeder.staging_table_name:
+            drop_table(hana_conn, DATABASE_USER, seeder.staging_table_name)
 
     cursor = hana_conn.cursor()
     cursor.execute(f'SELECT COUNT(*) FROM "{DATABASE_USER}"."{e2e_table_name}"')
@@ -142,23 +144,23 @@ def test_run_indexer_e2e_failing_batch_leaves_live_table_intact(hana_conn, e2e_t
 
     # Now attempt a second run that will fail mid-batch.
     failing_indexer = AdaptiveSplitMarkdownIndexer(E2E_DOCS_PATH, embeddings_model, hana_conn, e2e_table_name)
-    failing_staging = failing_indexer.staging_table_name
 
     call_count = {"n": 0}
-    original_add = failing_indexer.db.add_documents
 
-    def add_documents_failing(docs):  # type: ignore[no-untyped-def]
+    def add_documents_failing(db, docs, batch_number):  # type: ignore[no-untyped-def]
         call_count["n"] += 1
         if call_count["n"] >= 1:
             raise RuntimeError("simulated batch failure")
-        return original_add(docs)
 
     try:
         with (
-            patch.object(failing_indexer.db, "add_documents", side_effect=add_documents_failing),
+            patch("indexing.adaptive_indexer._add_documents_with_retry", side_effect=add_documents_failing),
             pytest.raises(RuntimeError, match="simulated batch failure"),
         ):
             failing_indexer.index()
+
+        # failing_staging is set during index(); capture it after the call.
+        failing_staging = failing_indexer.staging_table_name
 
         # Live table must be untouched.
         cursor = hana_conn.cursor()
@@ -175,6 +177,7 @@ def test_run_indexer_e2e_failing_batch_leaves_live_table_intact(hana_conn, e2e_t
             f"Staging table '{failing_staging}' was not cleaned up after a failed run."
         )
     finally:
-        for name in (e2e_table_name, failing_staging):
-            drop_table(hana_conn, DATABASE_USER, name)
-            logging.info(f"Dropped e2e test table '{name}' (if it existed).")
+        drop_table(hana_conn, DATABASE_USER, e2e_table_name)
+        if failing_indexer.staging_table_name:
+            drop_table(hana_conn, DATABASE_USER, failing_indexer.staging_table_name)
+        logging.info(f"Dropped e2e test tables for '{e2e_table_name}' (if they existed).")
