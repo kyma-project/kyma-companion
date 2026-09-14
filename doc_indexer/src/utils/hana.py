@@ -46,7 +46,7 @@ def drop_table(connection: dbapi.Connection, db_user: str, table_name: str) -> N
         connection.commit()
         logger.info(f"Dropped table {table_name}.")
     except dbapi.ProgrammingError as e:
-        if e.errorcode == _ERR_SQL_INV_TABLE:
+        if getattr(e, "errorcode", None) == _ERR_SQL_INV_TABLE:
             logger.warning(f"Table {table_name} does not exist, nothing to drop.")
             return
         logger.exception(f"Error dropping table {table_name}.")
@@ -80,7 +80,7 @@ def rename_table(
             cursor.execute(sql)
         logger.info(f"Renamed table {old_name} to {new_name}.")
     except dbapi.ProgrammingError as e:
-        if e.errorcode == _ERR_SQL_INV_TABLE and ignore_missing:
+        if getattr(e, "errorcode", None) == _ERR_SQL_INV_TABLE and ignore_missing:
             logger.warning(f"Table {old_name} does not exist, nothing to rename.")
             return
         logger.exception(f"Error renaming table {old_name} to {new_name}.")
