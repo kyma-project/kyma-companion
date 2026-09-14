@@ -27,13 +27,6 @@ class ContainerStateType(StrEnum):
     TERMINATED = "terminated"
 
 
-class LogSource(StrEnum):
-    """Source of pod logs - current or previous container."""
-
-    CURRENT = "current"
-    PREVIOUS = "previous"
-
-
 class K8sApiFields:
     """Kubernetes API field names to avoid magic strings in dictionary access."""
 
