@@ -250,18 +250,16 @@ class AdaptiveSplitMarkdownIndexer:
 
         self.docs_path = docs_path
         self.table_name = table_name
-        self.staging_table_name = sanitize_table_name(f"{table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}")
         self.connection = connection
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
         self.chunk_overlap_tokens = chunk_overlap_tokens
 
-        self.db = HanaDB(
-            connection=connection,
-            embedding=embedding,
-            table_name=self.staging_table_name,
-        )
+        # staging_table_name and db are set fresh on each index() call so that
+        # repeated invocations don't collide on the same staging table name.
+        self.staging_table_name: str = ""
+        self.db: HanaDB = HanaDB(connection=connection, embedding=embedding, table_name=table_name)
 
         self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
 
@@ -586,11 +584,18 @@ class AdaptiveSplitMarkdownIndexer:
         On any error before or during the swap the staging table is dropped and
         the live table is left untouched.
         """
+        self.staging_table_name = sanitize_table_name(
+            f"{self.table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}"
+        )
+        self.db = HanaDB(
+            connection=self.connection,
+            embedding=self.embedding,
+            table_name=self.staging_table_name,
+        )
         docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
-        if INDEX_TO_FILE:
-            # write pretty to file
+        if INDEX_TO_FILE:  # write pretty to file
             timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
             uuid_str = str(uuid.uuid4())
             output_file_path = f"Kyma_Documentation_chunks_{timestamp}_{uuid_str}.json"
