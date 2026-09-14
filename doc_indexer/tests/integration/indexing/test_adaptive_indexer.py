@@ -108,7 +108,7 @@ def test_index_stores_adaptively_split_chunks(indexer, hana_conn, table_name):
 
 @pytest.mark.integration
 def test_index_replaces_previous_content(indexer, hana_conn, table_name):
-    # A second run must not duplicate chunks: index() deletes the existing content first.
+    # A second run must not duplicate chunks: index() swaps in a fresh staging table.
     with patch("indexing.adaptive_indexer.load_documents", return_value=DOCUMENTS):
         indexer.index()
         indexer.index()
