@@ -1,10 +1,8 @@
 import json
-import re
 
 from pydantic import AliasChoices, BaseModel, Field
 from tenacity import retry, stop_after_attempt
 
-from agents.common.constants import CLUSTER, NAMESPACED
 from services.k8s import IK8sClient
 from utils import logging
 from utils.logging import after_log
@@ -28,10 +26,6 @@ class ResourceKind(BaseModel):
         validation_alias=AliasChoices("storage_version_hash", "storageVersionHash"),
         default=None,
     )
-
-    def get_scope(self) -> str:
-        """Get the scope of the resource kind."""
-        return NAMESPACED if self.namespaced else CLUSTER
 
 
 class Version(BaseModel):
@@ -97,22 +91,6 @@ class K8sResourceDiscovery:
             with open(K8S_RESOURCE_RELATIONS_JSON_FILE) as f:
                 items = json.load(f)
                 K8sResourceDiscovery.resource_relations = [K8sResourceRelation.model_validate(i) for i in items]
-
-    @staticmethod
-    def get_resource_related_to(group_version: str, kind: str) -> str:
-        """
-        Get the related module of a resource based on its group version and kind.
-        :param group_version:
-        :param kind:
-        :return:
-        """
-        K8sResourceDiscovery.initialize()
-        for relation in K8sResourceDiscovery.resource_relations:
-            if re.fullmatch(relation.group_version_pattern, group_version.lower()) and re.fullmatch(
-                relation.kind_pattern, kind
-            ):
-                return relation.related_to
-        return "Kubernetes"  # Default to Kubernetes if no match found
 
     def _find_resource_kind(self, resource_kind: str, resources: list[ResourceKind]) -> ResourceKind | None:
         """

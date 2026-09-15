@@ -1,21 +1,12 @@
 import ast
 import json
-from collections.abc import Sequence
 from http import HTTPStatus
 from typing import Any
 
 import tiktoken
 import yaml
-from langchain_core.messages import (
-    AIMessage,
-    BaseMessage,
-    ToolMessage,
-)
 
-from agents.common.constants import (
-    CLUSTER,
-    RECENT_MESSAGES_LIMIT,
-)
+from agents.common.constants import CLUSTER
 from agents.common.data import Message
 from services.k8s import IK8sClient
 from utils.exceptions import K8sClientError
@@ -23,56 +14,6 @@ from utils.logging import get_logger
 from utils.utils import is_empty_str, is_non_empty_str
 
 logger = get_logger(__name__)
-
-
-def filter_messages(
-    messages: Sequence[BaseMessage],
-    recent_message_limit: int = RECENT_MESSAGES_LIMIT,
-) -> Sequence[BaseMessage]:
-    """
-    Filter the last n number of messages given last_messages_number.
-    Args:
-        messages: list of messages
-        recent_message_limit:  int: number of last messages to return, default is 10
-
-    Returns: list of last messages
-    """
-    filtered = messages[-recent_message_limit:]
-    # remove the tool messages from head of the list,
-    # because a tool message must be preceded by a system message.
-    for i, message in enumerate(filtered):
-        if not isinstance(message, ToolMessage):
-            return filtered[i:]
-    return filtered
-
-
-def filter_valid_messages(
-    messages: Sequence[BaseMessage] | list[BaseMessage],
-) -> list[BaseMessage]:
-    """
-    Filters the invalid sequence of messages.
-    For example:
-    - An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
-    - A tool message must be preceded by an assistant message with 'tool_calls'.
-    This method should be used when the LLMs are being invoked with messages.
-    """
-
-    filtered: list[BaseMessage] = []
-    for i, message in enumerate(messages):
-        if isinstance(message, AIMessage) and message.tool_calls:
-            # check if the next messages are tool calls as requested by AIMessage.
-            tool_call_count = len(message.tool_calls)
-            next_messages = messages[i + 1 : i + 1 + tool_call_count]  # +1 because the index starts from zero.
-            if len(next_messages) == tool_call_count and all(isinstance(msg, ToolMessage) for msg in next_messages):
-                # Append the AIMessage and its corresponding ToolMessages.
-                filtered.append(message)
-                filtered.extend(next_messages)
-        elif not isinstance(message, ToolMessage):
-            # append other valid messages.
-            # ToolMessage should not be added directly.
-            # It should be preceded by an AIMessage with tool_calls.
-            filtered.append(message)
-    return filtered
 
 
 def compute_string_token_count(text: str, model_type: str) -> int:

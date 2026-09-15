@@ -6,7 +6,6 @@ from typing import Any, Literal
 import github_action_utils as gha_utils
 from deepeval.evaluate.utils import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
-from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Expectation, Query, Scenario, ScenarioList
 from prettytable import PrettyTable
@@ -269,21 +268,6 @@ def print_test_results(scenario_list: ScenarioList, total_usage: dict[str, int],
     print_failed_queries(scenario_list)
 
 
-def print_initial_questions(questions: list[str]) -> None:
-    """Prints the initial questions."""
-    for i, q in enumerate(questions):
-        print(f"\t{i + 1}: {q}")
-
-
-def print_response_chunks(chunks: list[ConversationResponseChunk]) -> None:
-    """Prints the response chunks."""
-    print(colored("==> Response chunks:", "yellow"))
-    if len(chunks) == 0:
-        return None
-    print(json.dumps([chunk.model_dump() for chunk in chunks], indent=4))
-    return None
-
-
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
     """Prints the results per scenario."""
     for scenario in scenario_list.items:
@@ -297,16 +281,9 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
         ):
             print(colored(f"Description: {scenario.description}", "green"))
 
-            # print initial questions.
-            print_header(f"* Scenario ID: {scenario.id}, Initial Questions:")
-            print_initial_questions(scenario.initial_questions)
-
             # for each query print the evaluation results.
             for query in scenario.queries:
                 print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
-
-                # print the response chunks.
-                print_response_chunks(query.response_chunks)
 
                 # print the evaluation results.
                 if query.evaluation_result is not None:

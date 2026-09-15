@@ -71,7 +71,6 @@ config_path = load_env_from_json()
 # LOG_FORMAT: "json" (structured, production), "pretty" (formatted JSON, dev), or "standard" (human-readable)
 LOG_LEVEL = config("LOG_LEVEL", default="INFO")
 LOG_FORMAT = config("LOG_FORMAT", default="json")
-DEEPEVAL_TESTCASE_VERBOSE = config("DEEPEVAL_TESTCASE_VERBOSE", default="False")
 
 # Server configuration - host and port for uvicorn
 HOST = config("HOST", default="0.0.0.0")
@@ -105,8 +104,6 @@ LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
 LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
 LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
 
-MAX_TOKEN_LIMIT_INPUT_QUERY = config("MAX_TOKEN_LIMIT_INPUT_QUERY", default=8000, cast=int)
-
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
 
@@ -126,7 +123,6 @@ ENCRYPTION_PRIVATE_KEY_PATH = config("ENCRYPTION_PRIVATE_KEY_PATH", default=defa
 NONCE_REPLAY_WINDOW_SECONDS = config("NONCE_REPLAY_WINDOW_SECONDS", default=300, cast=int)  # 5 minutes
 
 # Token limits
-TOKEN_LIMIT_PER_CLUSTER = config("TOKEN_LIMIT_PER_CLUSTER", 5000000, cast=int)
 TOKEN_USAGE_RESET_INTERVAL = config("TOKEN_USAGE_RESET_INTERVAL", 86400, cast=int)  # 24 hours
 
 
