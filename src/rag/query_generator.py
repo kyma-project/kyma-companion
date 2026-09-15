@@ -1,4 +1,4 @@
-from typing import Any, Protocol, cast
+from typing import Any, cast
 
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
@@ -18,13 +18,6 @@ class Queries(BaseModel):
     """A list of generated queries."""
 
     queries: list[str]
-
-
-class IQueryGenerator(Protocol):
-    """Given a single query, generates multiple alternative queries."""
-
-    async def agenerate_queries(self, query: str) -> Queries:
-        """Generate multiple queries based on the input query."""
 
 
 class QueryGenerator:
