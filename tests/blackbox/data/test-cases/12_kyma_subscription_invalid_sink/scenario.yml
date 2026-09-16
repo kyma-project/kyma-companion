@@ -1,4 +1,10 @@
 id: test-subscription-12 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-subscription-12
+  predicate:
+    kind: Subscription
+    name: my-sub
+    condition: status.ready=false
 description: The Subscription is configured with an invalid sink URL
 queries:
   - user_query: How do I fix my kyma subscription?

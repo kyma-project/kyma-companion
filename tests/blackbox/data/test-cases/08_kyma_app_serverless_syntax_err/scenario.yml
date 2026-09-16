@@ -1,4 +1,10 @@
 id: test-function-8 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-function-8
+  predicate:
+    kind: Function
+    name: func1
+    condition: status.ready=false
 description: The Serverless Function has a syntax error; it calls Dates() instead of Date().
 queries:
   - user_query: What is wrong with the Function's source code?

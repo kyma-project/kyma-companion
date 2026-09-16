@@ -1,4 +1,10 @@
 id: test-function-10 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-function-10
+  predicate:
+    kind: Function
+    name: my-function-0
+    condition: status.ready=false
 description: The Function has a syntax error in its JavaScript source code.
 queries:
   - user_query: Why is my Kyma Function not working?

@@ -125,13 +125,17 @@ class A2AEncryptionSession:
 
         body = response.json()
 
-        plaintext = json.dumps(
-            {
-                "x-cluster-url": config.test_cluster_url,
-                "x-cluster-certificate-authority-data": config.test_cluster_ca_data,
-                "x-k8s-authorization": config.test_cluster_auth_token,
-            }
-        ).encode()
+        creds: dict[str, str] = {
+            "x-cluster-url": config.test_cluster_url,
+            "x-cluster-certificate-authority-data": config.test_cluster_ca_data,
+        }
+        if config.test_cluster_client_cert and config.test_cluster_client_key:
+            creds["x-client-certificate-data"] = config.test_cluster_client_cert
+            creds["x-client-key-data"] = config.test_cluster_client_key
+        else:
+            creds["x-k8s-authorization"] = config.test_cluster_auth_token
+
+        plaintext = json.dumps(creds).encode()
 
         return cls(
             client_private_key=client_private_key,

@@ -1,4 +1,10 @@
 id: test-pod-3 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-pod-3
+  predicate:
+    kind: Pod
+    name: pod-check
+    condition: phase=Failed
 description: The Pod tries to list Pods in the same namespace using kubectl but the image does not contain kubectl.
 queries:
   - user_query: Why is the Pod in error state?

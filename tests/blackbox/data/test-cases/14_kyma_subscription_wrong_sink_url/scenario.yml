@@ -1,4 +1,10 @@
 id: test-subscription-14 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-subscription-14
+  predicate:
+    kind: Subscription
+    name: sub1
+    condition: status.ready=false
 description: The Subscription is set-up to forward events to redis svc instead of func1 service.
 queries:
   - user_query: Why the events are not being received by my function func1?

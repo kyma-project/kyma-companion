@@ -1,4 +1,10 @@
 id: test-function-18 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-function-18
+  predicate:
+    kind: Function
+    name: test-function-18
+    condition: status.ready=false
 description: The Function has a wrong dependencies field set.
 queries:
   - user_query: What is the problem?

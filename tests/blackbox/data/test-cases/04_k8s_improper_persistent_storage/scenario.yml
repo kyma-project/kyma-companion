@@ -1,4 +1,10 @@
 id: k8s-test-deployment-4 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-deployment-4
+  predicate:
+    kind: PersistentVolumeClaim
+    name: example-pvc
+    condition: phase=Pending
 description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to remain unbound, leading to issues with the deployment.
 queries:
   - user_query: Why is the deployment not getting ready?

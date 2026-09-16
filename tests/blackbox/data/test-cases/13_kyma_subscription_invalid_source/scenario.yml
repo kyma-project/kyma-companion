@@ -1,4 +1,10 @@
 id: test-subscription-13 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-subscription-13
+  predicate:
+    kind: Subscription
+    name: my-sub
+    condition: status.ready=false
 description: The Subscription is configured with an invalid source configuration.
 queries:
   - user_query: How exactly do I fix my kyma subscription?

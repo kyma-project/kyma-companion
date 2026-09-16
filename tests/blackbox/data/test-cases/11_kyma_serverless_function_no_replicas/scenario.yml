@@ -1,4 +1,10 @@
 id: test-function-11 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-function-11
+  predicate:
+    kind: Function
+    name: func1
+    condition: status.ready=false
 description: The Pod of the Serverless Function is not ready because the function is configured with 0 replicas.
 queries:
   - user_query: Why is the pod of the serverless Function not ready?

@@ -1,4 +1,10 @@
 id: test-service-6 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-service-6
+  predicate:
+    kind: Deployment
+    name: test-service-6
+    condition: status.ready=false
 description: The selector labels of the Service do not match the labels of the Deployment. Therefore, the Service is not routing traffic to the Pods.
 queries:
   - user_query: Why is my application not reachable?

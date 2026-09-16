@@ -1,4 +1,10 @@
 id: test-deployment-5 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-deployment-5
+  predicate:
+    kind: Deployment
+    name: nginx-deployment
+    condition: status.ready=false
 description: The Pod is in an error state because the liveness and readiness probes are incorrectly configured.
 queries:
   - user_query: Why is the deployment not getting ready?

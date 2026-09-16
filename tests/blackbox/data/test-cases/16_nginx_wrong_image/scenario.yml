@@ -1,4 +1,10 @@
 id: test-deployment-16 # format: test-<resource_kind>-<test_id>
+fixture:
+  namespace: test-deployment-16
+  predicate:
+    kind: Pod
+    name: nginx
+    condition: reason=ImagePullBackOff
 description: The name of the image in the Deployment is misspelled to 'ngix' instead of 'nginx'.
 queries:
   - user_query: What is causing the Deployment to not have minimum availability?

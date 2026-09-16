@@ -1,0 +1,1 @@
+Error from server (Forbidden): pods is forbidden: User "system:serviceaccount:test-pod-1:test-pod-1-sa" cannot list resource "pods" in API group "" in the namespace "test-pod-1": RBAC: role.rbac.authorization.k8s.io "pod-reader" not found
