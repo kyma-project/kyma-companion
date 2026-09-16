@@ -26,6 +26,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 SCENARIO_DIR="${1:?Usage: $0 <scenario-dir> <kwok-cluster-name>}"
 KWOK_CLUSTER="${2:?Usage: $0 <scenario-dir> <kwok-cluster-name>}"
 
+# Resolve to absolute path so it stays valid after cd
+SCENARIO_DIR="$(cd "$SCENARIO_DIR" && pwd)"
+
 FIXTURE_DIR="$SCENARIO_DIR/fixture"
 [[ -d "$FIXTURE_DIR" ]] || { echo "ERROR: fixture dir not found: $FIXTURE_DIR" >&2; exit 1; }
 
@@ -78,6 +81,20 @@ PYEOF
 PY_STRIP_OWNERREF=$(cat <<'PYEOF'
 import sys, yaml, copy
 
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
 path = sys.argv[1]
 out_path = sys.argv[2] if len(sys.argv) > 2 else path
 
@@ -103,6 +120,20 @@ PYEOF
 PY_EXTRACT_KIND=$(cat <<'PYEOF'
 import sys, yaml
 
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
 kinds = set(sys.argv[2:]) if len(sys.argv) > 2 else set()
 path = sys.argv[1]
 
@@ -115,6 +146,20 @@ PYEOF
 
 PY_EXTRACT_NOT_KIND=$(cat <<'PYEOF'
 import sys, yaml
+
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
 
 exclude = set(sys.argv[2:]) if len(sys.argv) > 2 else set()
 path = sys.argv[1]
@@ -148,6 +193,20 @@ PYEOF
 PY_EXTRACT_STATUSES=$(cat <<'PYEOF'
 import sys, yaml, json
 
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
 path = sys.argv[1]
 kinds = set(sys.argv[2:]) if len(sys.argv) > 2 else set()
 
@@ -174,6 +233,20 @@ PYEOF
 PY_EXTRACT_NODES=$(cat <<'PYEOF'
 import sys, yaml, json
 
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
 path = sys.argv[1]
 
 docs = _load_docs(path)
@@ -192,6 +265,20 @@ PYEOF
 
 PY_EXTRACT_PVCS=$(cat <<'PYEOF'
 import sys, yaml, json
+
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
 
 path = sys.argv[1]
 
@@ -216,6 +303,20 @@ PYEOF
 # Extract pods that have ownerReferences (owned by Job/ReplicaSet/Function etc.)
 PY_EXTRACT_OWNED_PODS=$(cat <<'PYEOF'
 import sys, yaml
+
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
 
 path = sys.argv[1]
 
@@ -256,15 +357,25 @@ import yaml
 def find_ns(doc):
     if not doc:
         return None
+    # Try Namespace kind first
     if doc.get('kind') == 'Namespace':
         return doc['metadata']['name']
-    # kubectl -o yaml wraps everything in a List
+    # Recurse into List items
     if doc.get('kind') == 'List':
+        # First pass: look for an explicit Namespace resource
         for item in doc.get('items', []):
             r = find_ns(item)
             if r:
                 return r
-    return None
+        # Second pass: extract namespace from any namespaced resource
+        for item in doc.get('items', []):
+            if not item:
+                continue
+            ns = item.get('metadata', {}).get('namespace', '')
+            if ns:
+                return ns
+    # Fallback: read namespace from metadata directly
+    return doc.get('metadata', {}).get('namespace', '') or None
 
 with open('$RESOURCES') as f:
     for doc in yaml.safe_load_all(f):
@@ -275,6 +386,16 @@ with open('$RESOURCES') as f:
 ")
 [[ -n "$NS" ]] || die "Could not determine namespace from $RESOURCES"
 log "Namespace: $NS"
+
+# ---------------------------------------------------------------------------
+# 1b. Ensure namespace exists in KWOK cluster
+#     (kubectl get all,... does not export Namespace objects, so it must be
+#     created explicitly before any namespaced resources can be applied)
+# ---------------------------------------------------------------------------
+
+log "Ensuring namespace $NS exists"
+kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f - 2>&1 | \
+    while read -r line; do log "  $line"; done || true
 
 # ---------------------------------------------------------------------------
 # 2. Convert timestamps: update creationTimestamp to current time
@@ -353,6 +474,20 @@ python3 - "$TMPDIR_WORK/resources-rebased.yaml" \
     > "$TMPDIR_WORK/resources-no-kyma.yaml" <<'PYEOF'
 import sys, yaml, copy
 
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
 path = sys.argv[1]
 exclude_kinds = set(sys.argv[2:])
 
@@ -394,6 +529,50 @@ kwokctl snapshot restore \
         esac
     done || true
 
+# Apply pods separately via kubectl (kwokctl snapshot restore rejects pods when
+# SA lookup fails; kubectl apply bypasses that admission validation on KWOK)
+log "Applying pods via kubectl (bypassing KWOK SA lookup)"
+python3 - "$TMPDIR_WORK/resources-rebased.yaml" "$NS" \
+    > "$TMPDIR_WORK/pods-only.yaml" <<'PYEOF'
+import sys, yaml, copy
+
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
+
+path, ns = sys.argv[1], sys.argv[2]
+docs = _load_docs(path)
+pods = []
+for doc in docs:
+    if not doc or doc.get('kind') != 'Pod':
+        continue
+    if doc.get('metadata', {}).get('namespace') != ns:
+        continue
+    d = copy.deepcopy(doc)
+    meta = d.get('metadata', {})
+    meta.pop('uid', None)
+    meta.pop('resourceVersion', None)
+    meta.pop('managedFields', None)
+    d.pop('status', None)
+    pods.append(d)
+print(yaml.dump_all(pods, default_flow_style=False, allow_unicode=True), end='')
+PYEOF
+
+if [[ -s "$TMPDIR_WORK/pods-only.yaml" ]]; then
+    kubectl apply -f "$TMPDIR_WORK/pods-only.yaml" 2>&1 | \
+        while read -r line; do log "  $line"; done || true
+fi
+
 # ---------------------------------------------------------------------------
 # 4. Apply Kyma CRs (Function, Subscription) without ownerRefs
 # ---------------------------------------------------------------------------
@@ -408,6 +587,20 @@ log "Applying Kyma CRs (Function, Subscription)"
 python3 - "$TMPDIR_WORK/resources-rebased.yaml" Function Subscription \
     > "$TMPDIR_WORK/kyma-crs.yaml" <<'PYEOF'
 import sys, yaml, copy
+
+def _load_docs(path):
+    import yaml
+    with open(path) as _f:
+        raw = list(yaml.safe_load_all(_f))
+    out = []
+    for doc in raw:
+        if not doc:
+            continue
+        if doc.get('kind') == 'List':
+            out.extend(item for item in doc.get('items', []) if item)
+        else:
+            out.append(doc)
+    return out
 
 path = sys.argv[1]
 wanted_kinds = set(sys.argv[2:])
@@ -440,21 +633,20 @@ fi
 # ---------------------------------------------------------------------------
 
 log "Patching Kyma CR statuses"
-python3 -c "$PY_FLATTEN
+CR_STATUSES=$(python3 -c "$PY_FLATTEN
 $PY_EXTRACT_STATUSES" \
-    "$TMPDIR_WORK/resources-rebased.yaml" Function Subscription \
-    | python3 - <<'PYEOF'
-import sys, json, subprocess, yaml
+    "$TMPDIR_WORK/resources-rebased.yaml" Function Subscription)
+if [[ -n "$CR_STATUSES" && "$CR_STATUSES" != "[]" ]]; then
+    PATCH_DATA="$CR_STATUSES" python3 <<'PYEOF'
+import sys, json, os, subprocess
 
-items = json.loads(sys.stdin.read())
+items = json.loads(os.environ['PATCH_DATA'])
 for item in items:
     kind = item['kind']
     ns = item['namespace']
     name = item['name']
-    api_version = item['apiVersion']
     status_patch = json.dumps({'status': item['status']})
 
-    # Determine resource name for kubectl
     resource_map = {
         'Function': 'functions.serverless.kyma-project.io',
         'Subscription': 'subscriptions.eventing.kyma-project.io',
@@ -473,6 +665,9 @@ for item in items:
     if result.returncode != 0:
         print(f"  WARNING: {result.stderr.strip()}", file=sys.stderr)
 PYEOF
+else
+    log "No Function/Subscription CRs with status found — skipping CR status patch."
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Apply owned pods (Job/Function/RS pods) without ownerRefs
@@ -481,13 +676,14 @@ PYEOF
 # ---------------------------------------------------------------------------
 
 log "Patching pod statuses"
-python3 -c "$PY_FLATTEN
+POD_STATUSES=$(python3 -c "$PY_FLATTEN
 $PY_EXTRACT_STATUSES" \
-    "$TMPDIR_WORK/resources-rebased.yaml" Pod \
-    | python3 - <<'PYEOF'
-import sys, json, subprocess
+    "$TMPDIR_WORK/resources-rebased.yaml" Pod)
+if [[ -n "$POD_STATUSES" && "$POD_STATUSES" != "[]" ]]; then
+    PATCH_DATA="$POD_STATUSES" python3 <<'PYEOF'
+import sys, json, os, subprocess
 
-items = json.loads(sys.stdin.read())
+items = json.loads(os.environ['PATCH_DATA'])
 for item in items:
     ns = item['namespace']
     name = item['name']
@@ -505,18 +701,22 @@ for item in items:
     if result.returncode != 0:
         print(f"  WARNING: {result.stderr.strip()}", file=sys.stderr)
 PYEOF
+else
+    log "No pods with status found — skipping pod status patch."
+fi
 
 # ---------------------------------------------------------------------------
 # 7. Create fake nodes for any nodeName referenced by pods
 # ---------------------------------------------------------------------------
 
 log "Creating fake nodes"
-python3 -c "$PY_FLATTEN
-$PY_EXTRACT_NODES" "$TMPDIR_WORK/resources-rebased.yaml" \
-    | python3 - <<'PYEOF'
-import sys, json, subprocess, yaml
+FAKE_NODES=$(python3 -c "$PY_FLATTEN
+$PY_EXTRACT_NODES" "$TMPDIR_WORK/resources-rebased.yaml")
+if [[ -n "$FAKE_NODES" && "$FAKE_NODES" != "[]" ]]; then
+    PATCH_DATA="$FAKE_NODES" python3 <<'PYEOF'
+import sys, json, os, subprocess, yaml
 
-node_names = json.loads(sys.stdin.read())
+node_names = json.loads(os.environ['PATCH_DATA'])
 for node_name in node_names:
     node = {
         'apiVersion': 'v1',
@@ -533,7 +733,7 @@ for node_name in node_names:
                 'type': 'kwok',
             },
         },
-        'spec': {},  # no taints — pods should schedule
+        'spec': {},
     }
     node_yaml = yaml.dump(node, default_flow_style=False)
     cmd = ['kubectl', 'apply', '-f', '-']
@@ -543,18 +743,22 @@ for node_name in node_names:
     else:
         print(f"  Node {node_name} ok", file=sys.stderr)
 PYEOF
+else
+    log "No pod nodeName references found — skipping fake node creation."
+fi
 
 # ---------------------------------------------------------------------------
 # 8. Create fake PVs and bind PVCs
 # ---------------------------------------------------------------------------
 
 log "Creating PVs and binding PVCs"
-python3 -c "$PY_FLATTEN
-$PY_EXTRACT_PVCS" "$TMPDIR_WORK/resources-rebased.yaml" \
-    | python3 - <<'PYEOF'
-import sys, json, subprocess, yaml, uuid
+PVC_LIST=$(python3 -c "$PY_FLATTEN
+$PY_EXTRACT_PVCS" "$TMPDIR_WORK/resources-rebased.yaml")
+if [[ -n "$PVC_LIST" && "$PVC_LIST" != "[]" ]]; then
+    PATCH_DATA="$PVC_LIST" python3 <<'PYEOF'
+import sys, json, os, subprocess, yaml, uuid
 
-pvcs = json.loads(sys.stdin.read())
+pvcs = json.loads(os.environ['PATCH_DATA'])
 for pvc in pvcs:
     name = pvc['name']
     ns = pvc['namespace']
@@ -586,14 +790,12 @@ for pvc in pvcs:
     else:
         print(f"  PV {pv_name} ok", file=sys.stderr)
 
-    # Get actual PV UID after creation
     r2 = subprocess.run(
         ['kubectl', 'get', 'pv', pv_name, '-o', 'jsonpath={.metadata.uid}'],
         capture_output=True, text=True
     )
     actual_uid = r2.stdout.strip() or pv_uid
 
-    # Patch PVC status to Bound
     pvc_status = json.dumps({
         'status': {
             'phase': 'Bound',
@@ -611,6 +813,9 @@ for pvc in pvcs:
     else:
         print(f"  PVC {name} -> Bound ok", file=sys.stderr)
 PYEOF
+else
+    log "No PVCs found — skipping PV/PVC setup."
+fi
 
 # ---------------------------------------------------------------------------
 # 9. Convert logs to kubelet format
@@ -664,9 +869,7 @@ else
     KWOK_WORKDIR="$HOME/.kwok/clusters/$KWOK_CLUSTER"
     if [[ -f "$KWOK_WORKDIR/kwok.yaml" ]]; then
         log "  Restarting with log mount using kwok.yaml"
-        # kwokctl will re-create the container on next operation, but we need it now.
-        # Restart via kwokctl — it reads kwok.yaml and recreates containers.
-        kwokctl start --name "$KWOK_CLUSTER" 2>&1 | while read -r line; do log "  $line"; done || true
+        kwokctl start cluster --name "$KWOK_CLUSTER" 2>&1 | while read -r line; do log "  $line"; done || true
         # Stop just the controller, add volume, restart
         docker stop "$KWOK_CONTAINER" >/dev/null 2>&1 || true
         docker rm "$KWOK_CONTAINER" >/dev/null 2>&1 || true
@@ -682,7 +885,9 @@ import sys, yaml, subprocess, os
 config_path, container_name, image, logs_dir, workdir = sys.argv[1:]
 
 with open(config_path) as f:
-    config = yaml.safe_load(f)
+    # kwok.yaml is a multi-doc YAML; the cluster config is in the first doc
+    docs = list(yaml.safe_load_all(f))
+config = docs[0] if docs else {}
 
 # Find the kwok-controller component config
 components = config.get('components', [])
