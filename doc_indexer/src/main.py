@@ -1,5 +1,7 @@
 import argparse
+import json
 import os
+import subprocess
 import time
 
 from fetcher.fetcher import DocumentsFetcher
@@ -22,11 +24,14 @@ from utils.settings import (
     DOCS_SOURCES_FILE_PATH,
     DOCS_TABLE_NAME,
     EMBEDDING_MODEL_NAME,
+    PINAKES_BIN,
+    PINAKES_CONFIG,
     TMP_DIR,
     get_embedding_model_config,
 )
 
 TASK_FETCH = "fetch"
+TASK_MATERIALIZE = "materialize"
 TASK_INDEX = "index"
 TASK_DROP = "drop"
 TASK_TABLES = "tables"
@@ -53,6 +58,53 @@ def run_fetcher() -> None:
             md_counts[root] = md_count
     for dir_path, count in md_counts.items():
         logger.info(f"Found {count} Markdown file(s) in {dir_path}")
+
+
+def _count_manifest_pages(manifest_path: str) -> int:
+    """Return the total number of pages declared across all sources in a pinakes manifest."""
+    with open(manifest_path, encoding="utf-8") as f:
+        manifest = json.load(f)
+    return sum(len(source.get("pages", {})) for source in manifest.get("sources", {}).values())
+
+
+def run_materialize(docs_path: str = DOCS_PATH) -> None:
+    """Entry function to materialize the curated corpus with pinakes.
+
+    Reproduces the committed manifest.json into an artifact directory pinakes-style
+    (`<source>/<path>.md` plus `<source>/meta.json`) by running
+    `pinakes resolve --from-manifest manifest.json --artifact <docs_path>`. This is a drop-in
+    alternative to `fetch` that does not need to re-resolve the sources over the network -- it
+    reproduces exactly the pages recorded in the manifest.
+
+    Args:
+        docs_path: Directory to materialize the artifact into. Defaults to DOCS_PATH from config.
+    """
+    logger.info("Starting materialize task")
+    start = time.monotonic()
+
+    manifest_path = os.path.join(os.path.dirname(PINAKES_CONFIG), "manifest.json")
+    if not os.path.isfile(manifest_path):
+        raise FileNotFoundError(
+            f"No pinakes manifest found at {manifest_path}. Commit one with `pinakes resolve` first."
+        )
+
+    page_count = _count_manifest_pages(manifest_path)
+    logger.info(f"Manifest {manifest_path} declares {page_count} page(s).")
+
+    cmd = [
+        PINAKES_BIN,
+        "resolve",
+        "--from-manifest",
+        manifest_path,
+        "--config",
+        PINAKES_CONFIG,
+        "--artifact",
+        docs_path,
+    ]
+    logger.info(f"Running: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+
+    logger.info(f"Materialize completed in {time.monotonic() - start:.1f}s")
 
 
 def run_indexer(
@@ -136,13 +188,15 @@ def run_list_tables(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
-    parser.add_argument("task", choices=["index", "fetch", "drop", "tables"])
+    parser.add_argument("task", choices=["index", "fetch", "materialize", "drop", "tables"])
     args = parser.parse_args()
 
     logger.info("Indexer job starting", extra={"task": args.task})
 
     if args.task == TASK_FETCH:
         run_fetcher()
+    elif args.task == TASK_MATERIALIZE:
+        run_materialize()
     elif args.task == TASK_INDEX:
         run_indexer()
     elif args.task == TASK_DROP:
@@ -150,4 +204,4 @@ if __name__ == "__main__":
     elif args.task == TASK_TABLES:
         run_list_tables()
     else:
-        print("Invalid task. Valid tasks are: index, fetch, drop, tables.")
+        print("Invalid task. Valid tasks are: index, fetch, materialize, drop, tables.")
