@@ -1,0 +1,305 @@
+# Curated documentation corpus for kyma-companion, compiled by pinakes
+# (https://github.com/friedrichwilken/pinakes), pinned at commit
+# a990185fa22ba4c93b8f9c1c191a92cdd7f50bbe.
+#
+# This is the same 23 sources as doc_indexer/docs_sources.json, converted to pinakes's
+# resolver types:
+#
+# - Module repositories with a VitePress sidebar (`docs/user/_sidebar.ts`) use the built-in
+#   `vitepress` resolver. pinakes's `vitepress` resolver has no `include` key (unlike the old
+#   Python `sidebar` resolver, which always added the module's landing README even when the
+#   sidebar does not link it): the landing README, and every other file the old
+#   `include_files` list carried, is instead brought into the resolver's residue `scope` (so it
+#   shows up in `residue.jsonl` after `resolve`) and then selected with `pinakes decide … include`
+#   (see `doc_indexer/README.md`). The decisions are committed in `decisions.jsonl`.
+# - btp-cloud-platform (SAP Help table of contents) and the two sap-tutorials repositories use
+#   `external` resolvers that reimplement the old `sap_help_toc` / `tutorials` Python resolvers
+#   as dependency-free scripts in `doc_indexer/resolvers/`.
+# - Repositories with no sidebar (kyma, lifecycle-manager, modulectl, kyma-environment-broker)
+#   keep the old hand-picked path list as a `glob` resolver.
+# - Eight module repos also get a second `<name>-crds` source that renders their CRDs
+#   (`config/crd/bases/*.yaml`) into reference pages with the built-in `openapi` renderer;
+#   serverless and telemetry-manager have no `config/crd/bases` directory and are not included.
+version: 1
+sources:
+  - name: btp-cloud-platform
+    repo: https://github.com/SAP-docs/btp-cloud-platform.git
+    ref: main
+    priority: 1
+    resolver:
+      type: external
+      command: ["python3", "resolvers/sap_help_toc.py"]
+      args: ["docs/index.md", "(?i)kyma"]
+      residue_mention: "(?i)kyma"
+
+  - name: eventing-manager
+    repo: https://github.com/kyma-project/eventing-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+      scope: ["docs/user/**/*.md", "README.md"]
+
+  - name: nats-manager
+    repo: https://github.com/kyma-project/nats-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+      scope: ["docs/user/**/*.md", "README.md"]
+
+  - name: istio
+    repo: https://github.com/kyma-project/istio.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: cloud-manager
+    repo: https://github.com/kyma-project/cloud-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: api-gateway
+    repo: https://github.com/kyma-project/api-gateway.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: telemetry-manager
+    repo: https://github.com/kyma-project/telemetry-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: btp-manager
+    repo: https://github.com/kyma-project/btp-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: application-connector-manager
+    repo: https://github.com/kyma-project/application-connector-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+      scope: ["docs/user/**/*.md", "README.md"]
+
+  - name: docker-registry
+    repo: https://github.com/kyma-project/docker-registry.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: keda-manager
+    repo: https://github.com/kyma-project/keda-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: serverless
+    repo: https://github.com/kyma-project/serverless.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: busola
+    repo: https://github.com/kyma-project/busola.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+      scope: ["docs/user/**/*.md", "docs/resource-validation/*", "docs/custom-extensions/*"]
+
+  - name: btp-foundation
+    repo: https://github.com/sap-tutorials/btp-foundation.git
+    ref: main
+    priority: 1
+    resolver:
+      type: external
+      command: ["python3", "resolvers/tutorials.py"]
+      args: ["tutorials", "kyma"]
+
+  - name: btp-dev-guidance
+    repo: https://github.com/sap-tutorials/btp-dev-guidance.git
+    ref: main
+    priority: 1
+    resolver:
+      type: external
+      command: ["python3", "resolvers/tutorials.py"]
+      args: ["tutorials", "kyma"]
+
+  - name: kyma-environment-broker
+    repo: https://github.com/kyma-project/kyma-environment-broker.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["docs/user/*"]
+
+  - name: cli
+    repo: https://github.com/kyma-project/cli.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: registry-proxy
+    repo: https://github.com/kyma-project/registry-proxy.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: registry-cache
+    repo: https://github.com/kyma-project/registry-cache.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+      scope: ["docs/user/**/*.md", "README.md"]
+
+  - name: modulectl
+    repo: https://github.com/kyma-project/modulectl.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["docs/gen-docs/*"]
+
+  - name: lifecycle-manager
+    repo: https://github.com/kyma-project/lifecycle-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["docs/user/*"]
+
+  - name: community-modules
+    repo: https://github.com/kyma-project/community-modules.git
+    ref: main
+    priority: 10
+    resolver:
+      type: vitepress
+      path: docs/user/_sidebar.ts
+
+  - name: kyma
+    repo: https://github.com/kyma-project/kyma.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      # The legacy fetcher's `filter_file_types` keeps only `.md`; pinakes's glob resolver has
+      # no such filter, so the patterns are narrowed to `.md` explicitly (the directories also
+      # carry a few images and a shell script that the old pipeline silently dropped).
+      include:
+        - "README.md"
+        - "docs/01-overview/**/*.md"
+        - "docs/02-get-started/**/*.md"
+        - "docs/03-tutorials/**/*.md"
+        - "docs/04-operation-guides/**/*.md"
+        - "docs/06-modules/**/*.md"
+        - "docs/README.md"
+        - "docs/glossary.md"
+
+  # CRD reference sources (SPEC §10.2 openapi renderer). Only for repos that actually carry
+  # config/crd/bases/*.yaml; serverless and telemetry-manager do not and are skipped.
+  - name: istio-crds
+    repo: https://github.com/kyma-project/istio.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+  - name: api-gateway-crds
+    repo: https://github.com/kyma-project/api-gateway.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+  - name: eventing-manager-crds
+    repo: https://github.com/kyma-project/eventing-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+  - name: nats-manager-crds
+    repo: https://github.com/kyma-project/nats-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+  - name: btp-manager-crds
+    repo: https://github.com/kyma-project/btp-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+  - name: keda-manager-crds
+    repo: https://github.com/kyma-project/keda-manager.git
+    ref: main
+    priority: 10
+    resolver:
+      type: glob
+      include: ["config/crd/bases/*.yaml"]
+    render:
+      type: openapi
+
+policy:
+  deny:
+    - "**/CLAUDE.md"
+    - "**/adr/**"
+    - "**/CHANGELOG.md"
+    # serverless carries this tutorial in its sidebar, but docs_sources.json's e2e config
+    # excludes it (external registry setup is not part of the curated corpus).
+    - "**/01-60-set-external-registry.md"
+  archived: warn
+  min_pages_per_source: 1
+
+eval:
+  queries: evaluation/queries.jsonl
+  k: 10
+  max_recall_drop: 0.05
