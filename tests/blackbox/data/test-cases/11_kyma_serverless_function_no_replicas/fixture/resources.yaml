@@ -4,51 +4,112 @@ items:
   kind: Pod
   metadata:
     annotations:
-      cni.projectcalico.org/containerID: 39740a541835aec58a255b1f7f7cd0a91477774a2d9f87e0ca2647212e1532ee
-      cni.projectcalico.org/podIP: ''
-      cni.projectcalico.org/podIPs: ''
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"pod-check","namespace":"test-pod-1"},"spec":{"containers":[{"command":["sh","-c","kubectl
-        get pods"],"env":[{"name":"KUBERNETES_NAMESPACE","valueFrom":{"fieldRef":{"fieldPath":"metadata.namespace"}}}],"image":"bitnami/kubectl:latest","name":"kubectl-container"}],"restartPolicy":"Never","serviceAccountName":"test-pod-1-sa"}}
-
-        '
-    creationTimestamp: '2026-09-16T19:07:42Z'
+      cni.projectcalico.org/containerID: 8ad6dc356e3e166764b7e65a7ff6bea393cb433143f60d5749616fbce1d8efec
+      cni.projectcalico.org/podIP: 100.96.0.60/32
+      cni.projectcalico.org/podIPs: 100.96.0.60/32
+      sidecar.istio.io/inject: 'false'
+    creationTimestamp: '2026-09-16T19:11:00Z'
+    finalizers:
+    - batch.kubernetes.io/job-tracking
+    generateName: func1-build-x2clf-
     generation: 1
-    name: pod-check
-    namespace: test-pod-1
+    labels:
+      batch.kubernetes.io/controller-uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+      batch.kubernetes.io/job-name: func1-build-x2clf
+      controller-uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+      job-name: func1-build-x2clf
+      serverless.kyma-project.io/function-name: func1
+      serverless.kyma-project.io/managed-by: function-controller
+      serverless.kyma-project.io/uuid: 0642a785-6025-45b1-880a-0289256ba5e9
+    name: func1-build-x2clf-cjgzp
+    namespace: test-function-11
+    ownerReferences:
+    - apiVersion: batch/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Job
+      name: func1-build-x2clf
+      uid: 2152fd0f-12c2-4532-95ee-52c15a248427
   spec:
     containers:
-    - command:
-      - sh
-      - -c
-      - kubectl get pods
+    - args:
+      - --insecure
+      - --skip-tls-verify
+      - --skip-unused-stages
+      - --log-format=text
+      - --cache=true
+      - --use-new-run
+      - --compressed-caching=false
+      - --destination=serverless-docker-registry.kyma-system.svc.cluster.local:5000/test-function-11-func1:bdc7212abfb848962927a5693cb3511f16345450afe58dd735d6a851774d830e
+      - --context=dir:///workspace
       env:
-      - name: KUBERNETES_NAMESPACE
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: metadata.namespace
+      - name: DOCKER_CONFIG
+        value: /docker/.docker/
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /dev/null
       - name: KUBERNETES_SERVICE_HOST
         value: api.comp-tests-0.kymatunas.internal.canary.k8s.ondemand.com
-      image: bitnami/kubectl:latest
-      imagePullPolicy: Always
-      name: kubectl-container
-      resources: {}
+      image: europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2
+      imagePullPolicy: IfNotPresent
+      name: executor
+      resources:
+        limits:
+          cpu: 700m
+          memory: 700Mi
+        requests:
+          cpu: 200m
+          memory: 200Mi
+      securityContext:
+        capabilities:
+          add:
+          - CHOWN
+          - FOWNER
+          - SETGID
+          - DAC_OVERRIDE
+          drop:
+          - ALL
+        privileged: false
+        procMount: Default
+        readOnlyRootFilesystem: false
       terminationMessagePath: /dev/termination-log
       terminationMessagePolicy: File
       volumeMounts:
+      - mountPath: /workspace/src/package.json
+        name: sources
+        readOnly: true
+        subPath: dependencies
+      - mountPath: /workspace/src/handler.js
+        name: sources
+        readOnly: true
+        subPath: source
+      - mountPath: /workspace/Dockerfile
+        name: runtime
+        readOnly: true
+        subPath: Dockerfile
+      - mountPath: /docker
+        name: credentials
+        readOnly: true
+      - mountPath: /workspace/registry-config/.npmrc
+        name: registry-config
+        readOnly: true
+        subPath: .npmrc
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-qjlkj
+        name: kube-api-access-mtrvp
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
-    nodeName: ip-10-250-26-115.eu-west-1.compute.internal
+    nodeName: ip-10-250-8-135.eu-west-1.compute.internal
     preemptionPolicy: PreemptLowerPriority
     priority: 0
     restartPolicy: Never
     schedulerName: default-scheduler
-    securityContext: {}
-    serviceAccount: test-pod-1-sa
-    serviceAccountName: test-pod-1-sa
+    securityContext:
+      runAsGroup: 0
+      runAsUser: 0
+      seccompProfile:
+        type: RuntimeDefault
+    serviceAccount: default
+    serviceAccountName: default
     terminationGracePeriodSeconds: 30
     tolerations:
     - effect: NoExecute
@@ -60,7 +121,27 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-qjlkj
+    - name: credentials
+      secret:
+        defaultMode: 420
+        items:
+        - key: .dockerconfigjson
+          path: .docker/config.json
+        secretName: serverless-registry-config-default
+    - name: registry-config
+      secret:
+        defaultMode: 420
+        optional: true
+        secretName: serverless-package-registry-config
+    - configMap:
+        defaultMode: 420
+        name: dockerfile-nodejs20
+      name: runtime
+    - configMap:
+        defaultMode: 420
+        name: func1-tf48v
+      name: sources
+    - name: kube-api-access-mtrvp
       projected:
         defaultMode: 420
         sources:
@@ -81,70 +162,216 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:45Z'
+      lastTransitionTime: '2026-09-16T19:11:00Z'
       observedGeneration: 1
       status: 'False'
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:11:00Z'
       observedGeneration: 1
       status: 'True'
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:11:00Z'
+      message: 'containers with unready status: [executor]'
       observedGeneration: 1
-      reason: PodFailed
+      reason: ContainersNotReady
       status: 'False'
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:11:00Z'
+      message: 'containers with unready status: [executor]'
       observedGeneration: 1
-      reason: PodFailed
+      reason: ContainersNotReady
       status: 'False'
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:11:00Z'
       observedGeneration: 1
       status: 'True'
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://46ca35e78eab145fa0872d5b89c0a1274e374cfb9fbe7aaa943421a42d82a296
-      image: docker.io/bitnami/kubectl:latest
-      imageID: docker.io/bitnami/kubectl@sha256:b29d8c1665b70817259ceecaea16ab27aab6368b48daf485d19436c809067492
+    - image: europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2
+      imageID: ''
       lastState: {}
-      name: kubectl-container
+      name: executor
       ready: false
-      resources: {}
       restartCount: 0
       started: false
       state:
-        terminated:
-          containerID: containerd://46ca35e78eab145fa0872d5b89c0a1274e374cfb9fbe7aaa943421a42d82a296
-          exitCode: 1
-          finishedAt: '2026-09-16T19:07:44Z'
-          reason: Error
-          startedAt: '2026-09-16T19:07:43Z'
-      user:
-        linux:
-          gid: 0
-          supplementalGroups:
-          - 0
-          uid: 1001
+        waiting:
+          reason: ContainerCreating
       volumeMounts:
-      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-qjlkj
+      - mountPath: /workspace/src/package.json
+        name: sources
         readOnly: true
         recursiveReadOnly: Disabled
-    hostIP: 10.250.26.115
+      - mountPath: /workspace/src/handler.js
+        name: sources
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /workspace/Dockerfile
+        name: runtime
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /docker
+        name: credentials
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /workspace/registry-config/.npmrc
+        name: registry-config
+        readOnly: true
+        recursiveReadOnly: Disabled
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: kube-api-access-mtrvp
+        readOnly: true
+        recursiveReadOnly: Disabled
+    hostIP: 10.250.8.135
     hostIPs:
-    - ip: 10.250.26.115
+    - ip: 10.250.8.135
     observedGeneration: 1
-    phase: Failed
-    podIP: 100.96.1.43
-    podIPs:
-    - ip: 100.96.1.43
-    qosClass: BestEffort
-    startTime: '2026-09-16T19:07:42Z'
+    phase: Pending
+    qosClass: Burstable
+    startTime: '2026-09-16T19:11:00Z'
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    creationTimestamp: '2026-09-16T19:11:00Z'
+    generateName: func1-build-
+    generation: 1
+    labels:
+      serverless.kyma-project.io/function-name: func1
+      serverless.kyma-project.io/managed-by: function-controller
+      serverless.kyma-project.io/uuid: 0642a785-6025-45b1-880a-0289256ba5e9
+    name: func1-build-x2clf
+    namespace: test-function-11
+    ownerReferences:
+    - apiVersion: serverless.kyma-project.io/v1alpha2
+      blockOwnerDeletion: true
+      controller: true
+      kind: Function
+      name: func1
+      uid: 0642a785-6025-45b1-880a-0289256ba5e9
+  spec:
+    backoffLimit: 0
+    completionMode: NonIndexed
+    completions: 1
+    manualSelector: false
+    parallelism: 1
+    podReplacementPolicy: TerminatingOrFailed
+    selector:
+      matchLabels:
+        batch.kubernetes.io/controller-uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+    suspend: false
+    template:
+      metadata:
+        annotations:
+          sidecar.istio.io/inject: 'false'
+        labels:
+          batch.kubernetes.io/controller-uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+          batch.kubernetes.io/job-name: func1-build-x2clf
+          controller-uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+          job-name: func1-build-x2clf
+          serverless.kyma-project.io/function-name: func1
+          serverless.kyma-project.io/managed-by: function-controller
+          serverless.kyma-project.io/uuid: 0642a785-6025-45b1-880a-0289256ba5e9
+      spec:
+        containers:
+        - args:
+          - --insecure
+          - --skip-tls-verify
+          - --skip-unused-stages
+          - --log-format=text
+          - --cache=true
+          - --use-new-run
+          - --compressed-caching=false
+          - --destination=serverless-docker-registry.kyma-system.svc.cluster.local:5000/test-function-11-func1:bdc7212abfb848962927a5693cb3511f16345450afe58dd735d6a851774d830e
+          - --context=dir:///workspace
+          env:
+          - name: DOCKER_CONFIG
+            value: /docker/.docker/
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /dev/null
+          image: europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2
+          imagePullPolicy: IfNotPresent
+          name: executor
+          resources:
+            limits:
+              cpu: 700m
+              memory: 700Mi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+          securityContext:
+            capabilities:
+              add:
+              - CHOWN
+              - FOWNER
+              - SETGID
+              - DAC_OVERRIDE
+              drop:
+              - ALL
+            privileged: false
+            procMount: Default
+            readOnlyRootFilesystem: false
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /workspace/src/package.json
+            name: sources
+            readOnly: true
+            subPath: dependencies
+          - mountPath: /workspace/src/handler.js
+            name: sources
+            readOnly: true
+            subPath: source
+          - mountPath: /workspace/Dockerfile
+            name: runtime
+            readOnly: true
+            subPath: Dockerfile
+          - mountPath: /docker
+            name: credentials
+            readOnly: true
+          - mountPath: /workspace/registry-config/.npmrc
+            name: registry-config
+            readOnly: true
+            subPath: .npmrc
+        dnsPolicy: ClusterFirst
+        restartPolicy: Never
+        schedulerName: default-scheduler
+        securityContext:
+          runAsGroup: 0
+          runAsUser: 0
+          seccompProfile:
+            type: RuntimeDefault
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: credentials
+          secret:
+            defaultMode: 420
+            items:
+            - key: .dockerconfigjson
+              path: .docker/config.json
+            secretName: serverless-registry-config-default
+        - name: registry-config
+          secret:
+            defaultMode: 420
+            optional: true
+            secretName: serverless-package-registry-config
+        - configMap:
+            defaultMode: 420
+            name: dockerfile-nodejs20
+          name: runtime
+        - configMap:
+            defaultMode: 420
+            name: func1-tf48v
+          name: sources
+  status:
+    active: 1
+    ready: 0
+    startTime: '2026-09-16T19:11:00Z'
+    terminating: 0
+    uncountedTerminatedPods: {}
 - apiVersion: v1
   kind: PersistentVolume
   metadata:
@@ -152,7 +379,7 @@ items:
       kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"example-pv"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"1Gi"},"hostPath":{"path":"/mnt/data"}}}
 
         '
-    creationTimestamp: '2026-09-16T14:32:14Z'
+    creationTimestamp: '2026-09-16T19:08:51Z'
     finalizers:
     - kubernetes.io/pv-protection
     name: example-pv
@@ -167,7 +394,7 @@ items:
     persistentVolumeReclaimPolicy: Retain
     volumeMode: Filesystem
   status:
-    lastPhaseTransitionTime: '2026-09-16T14:32:14Z'
+    lastPhaseTransitionTime: '2026-09-16T19:08:51Z'
     phase: Available
 - apiVersion: v1
   kind: PersistentVolume
@@ -311,6 +538,51 @@ items:
       pv.kubernetes.io/provisioned-by: ebs.csi.aws.com
       volume.kubernetes.io/provisioner-deletion-secret-name: ''
       volume.kubernetes.io/provisioner-deletion-secret-namespace: ''
+    creationTimestamp: '2026-09-16T19:10:26Z'
+    finalizers:
+    - external-provisioner.volume.kubernetes.io/finalizer
+    - kubernetes.io/pv-protection
+    - external-attacher/ebs-csi-aws-com
+    name: pv-shoot--kymatunas--comp-tests-0-531a8bd5-402d-468f-ac73-f0a812397531
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    capacity:
+      storage: 1Gi
+    claimRef:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      name: redis-data-redis-0
+      namespace: test-function-8
+      resourceVersion: '620733735'
+      uid: 531a8bd5-402d-468f-ac73-f0a812397531
+    csi:
+      driver: ebs.csi.aws.com
+      fsType: ext4
+      volumeAttributes:
+        storage.kubernetes.io/csiProvisionerIdentity: 1789563576656-7823-ebs.csi.aws.com
+      volumeHandle: vol-04d877a2506168314
+    nodeAffinity:
+      required:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+            - eu-west-1a
+    persistentVolumeReclaimPolicy: Delete
+    storageClassName: default
+    volumeMode: Filesystem
+  status:
+    lastPhaseTransitionTime: '2026-09-16T19:10:26Z'
+    phase: Bound
+- apiVersion: v1
+  kind: PersistentVolume
+  metadata:
+    annotations:
+      pv.kubernetes.io/provisioned-by: ebs.csi.aws.com
+      volume.kubernetes.io/provisioner-deletion-secret-name: ''
+      volume.kubernetes.io/provisioner-deletion-secret-namespace: ''
     creationTimestamp: '2026-09-16T14:32:25Z'
     finalizers:
     - external-provisioner.volume.kubernetes.io/finalizer
@@ -443,55 +715,10 @@ items:
   kind: PersistentVolume
   metadata:
     annotations:
-      pv.kubernetes.io/provisioned-by: ebs.csi.aws.com
-      volume.kubernetes.io/provisioner-deletion-secret-name: ''
-      volume.kubernetes.io/provisioner-deletion-secret-namespace: ''
-    creationTimestamp: '2026-09-16T14:32:20Z'
-    finalizers:
-    - external-provisioner.volume.kubernetes.io/finalizer
-    - kubernetes.io/pv-protection
-    - external-attacher/ebs-csi-aws-com
-    name: pv-shoot--kymatunas--comp-tests-0-de13b843-a1a0-4259-a320-3bc4e30c3274
-  spec:
-    accessModes:
-    - ReadWriteOnce
-    capacity:
-      storage: 1Gi
-    claimRef:
-      apiVersion: v1
-      kind: PersistentVolumeClaim
-      name: redis-data-redis-0
-      namespace: test-function-8
-      resourceVersion: '620580378'
-      uid: de13b843-a1a0-4259-a320-3bc4e30c3274
-    csi:
-      driver: ebs.csi.aws.com
-      fsType: ext4
-      volumeAttributes:
-        storage.kubernetes.io/csiProvisionerIdentity: 1789563576656-7823-ebs.csi.aws.com
-      volumeHandle: vol-04a87158f04823dcb
-    nodeAffinity:
-      required:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: topology.kubernetes.io/zone
-            operator: In
-            values:
-            - eu-west-1a
-    persistentVolumeReclaimPolicy: Delete
-    storageClassName: default
-    volumeMode: Filesystem
-  status:
-    lastPhaseTransitionTime: '2026-09-16T14:32:20Z'
-    phase: Bound
-- apiVersion: v1
-  kind: PersistentVolume
-  metadata:
-    annotations:
       kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"redis-pv"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"10Mi"},"hostPath":{"path":"/data/redis"},"persistentVolumeReclaimPolicy":"Retain","storageClassName":"standard"}}
 
         '
-    creationTimestamp: '2026-09-16T14:32:17Z'
+    creationTimestamp: '2026-09-16T19:10:23Z'
     finalizers:
     - kubernetes.io/pv-protection
     name: redis-pv
@@ -507,7 +734,7 @@ items:
     storageClassName: standard
     volumeMode: Filesystem
   status:
-    lastPhaseTransitionTime: '2026-09-16T14:32:17Z'
+    lastPhaseTransitionTime: '2026-09-16T19:10:23Z'
     phase: Available
 - apiVersion: v1
   data:
@@ -548,7 +775,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -563,7 +790,7 @@ items:
       serverless.kyma-project.io/runtime: nodejs20
       version: 1.6.8
     name: dockerfile-nodejs20
-    namespace: test-pod-1
+    namespace: test-function-11
 - apiVersion: v1
   data:
     Dockerfile: 'ARG base_image=europe-docker.pkg.dev/kyma-project/prod/function-runtime-nodejs22:1.6.8
@@ -603,7 +830,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -618,7 +845,7 @@ items:
       serverless.kyma-project.io/runtime: nodejs22
       version: 1.6.8
     name: dockerfile-nodejs22
-    namespace: test-pod-1
+    namespace: test-function-11
 - apiVersion: v1
   data:
     Dockerfile: 'ARG base_image=europe-docker.pkg.dev/kyma-project/prod/function-runtime-python312:1.6.8
@@ -651,7 +878,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -666,7 +893,29 @@ items:
       serverless.kyma-project.io/runtime: python312
       version: 1.6.8
     name: dockerfile-python312
-    namespace: test-pod-1
+    namespace: test-function-11
+- apiVersion: v1
+  data:
+    dependencies: '{}'
+    source: "module.exports = {\n  main: function(event, context) {\n    return 'Hello\
+      \ World!'\n  }\n}\n"
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: '2026-09-16T19:11:00Z'
+    generateName: func1-
+    labels:
+      serverless.kyma-project.io/function-name: func1
+      serverless.kyma-project.io/managed-by: function-controller
+      serverless.kyma-project.io/uuid: 0642a785-6025-45b1-880a-0289256ba5e9
+    name: func1-tf48v
+    namespace: test-function-11
+    ownerReferences:
+    - apiVersion: serverless.kyma-project.io/v1alpha2
+      blockOwnerDeletion: true
+      controller: true
+      kind: Function
+      name: func1
+      uid: 0642a785-6025-45b1-880a-0289256ba5e9
 - apiVersion: v1
   data:
     root-cert.pem: '-----BEGIN CERTIFICATE-----
@@ -730,11 +979,11 @@ items:
       '
   kind: ConfigMap
   metadata:
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       istio.io/config: 'true'
     name: istio-ca-root-cert
-    namespace: test-pod-1
+    namespace: test-function-11
 - apiVersion: v1
   data:
     ca.crt: '-----BEGIN CERTIFICATE-----
@@ -839,9 +1088,9 @@ items:
         kube-apiserver when using internal endpoints such as the internal service
         IP or kubernetes.default.svc. No other usage is guaranteed across distributions
         of Kubernetes clusters.
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     name: kube-root-ca.crt
-    namespace: test-pod-1
+    namespace: test-function-11
 - apiVersion: v1
   data:
     .dockerconfigjson: eyJhdXRocyI6IHsic2VydmVybGVzcy1kb2NrZXItcmVnaXN0cnkua3ltYS1zeXN0ZW0uc3ZjLmNsdXN0ZXIubG9jYWw6NTAwMCI6IHsiYXV0aCI6ICJUMFJrV21Sck5ERlViRlpGVmxoQ1YxcEdiRVJSYWxwT1dUTkpQVHBPUlhCRlRqRldVMkZHV2s1a1ZVcGhXVzVHUWxWRWJHNVVNMmhUVTFWVmQyTlZUbFZoUlRsVFdWWk9jRlZHYkZwaWJGSkhVbWM5UFE9PSJ9LCAibG9jYWxob3N0OjMyMTM3IjogeyJhdXRoIjogIlQwUmtXbVJyTkRGVWJGWkZWbGhDVjFwR2JFUlJhbHBPV1ROSlBUcE9SWEJGVGpGV1UyRkdXazVrVlVwaFdXNUdRbFZFYkc1VU0yaFRVMVZWZDJOVlRsVmhSVGxUV1ZaT2NGVkdiRnBpYkZKSFVtYzlQUT09In19fQ==
@@ -858,18 +1107,18 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       serverless.kyma-project.io/config: credentials
     name: serverless-registry-config-default
-    namespace: test-pod-1
+    namespace: test-function-11
   type: kubernetes.io/dockerconfigjson
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     name: default
-    namespace: test-pod-1
+    namespace: test-function-11
 - apiVersion: v1
   automountServiceAccountToken: false
   imagePullSecrets:
@@ -882,7 +1131,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:11:00Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -896,35 +1145,7 @@ items:
       serverless.kyma-project.io/config: service-account
       version: 1.6.8
     name: serverless-function
-    namespace: test-pod-1
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    annotations:
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"annotations":{},"name":"test-pod-1-sa","namespace":"test-pod-1"}}
-
-        '
-    creationTimestamp: '2026-09-16T19:07:41Z'
-    name: test-pod-1-sa
-    namespace: test-pod-1
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: RoleBinding
-  metadata:
-    annotations:
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"rbac.authorization.k8s.io/v1","kind":"RoleBinding","metadata":{"annotations":{},"name":"test-pod-1-binding","namespace":"test-pod-1"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"Role","name":"pod-reader"},"subjects":[{"kind":"ServiceAccount","name":"test-pod-1-sa","namespace":"test-pod-1"}]}
-
-        '
-    creationTimestamp: '2026-09-16T19:07:42Z'
-    name: test-pod-1-binding
-    namespace: test-pod-1
-  roleRef:
-    apiGroup: rbac.authorization.k8s.io
-    kind: Role
-    name: pod-reader
-  subjects:
-  - kind: ServiceAccount
-    name: test-pod-1-sa
-    namespace: test-pod-1
+    namespace: test-function-11
 - aggregationRule:
     clusterRoleSelectors:
     - matchLabels:
@@ -13625,5 +13846,41 @@ items:
   - kind: ServiceAccount
     name: typha-cpva
     namespace: kube-system
+- apiVersion: serverless.kyma-project.io/v1alpha2
+  kind: Function
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"serverless.kyma-project.io/v1alpha2","kind":"Function","metadata":{"annotations":{},"name":"func1","namespace":"test-function-11"},"spec":{"replicas":0,"runtime":"nodejs20","source":{"inline":{"source":"module.exports
+        = {\n  main: function(event, context) {\n    return ''Hello World!''\n  }\n}\n"}}}}
+
+        '
+    creationTimestamp: '2026-09-16T19:11:00Z'
+    generation: 1
+    name: func1
+    namespace: test-function-11
+  spec:
+    replicas: 0
+    runtime: nodejs20
+    source:
+      inline:
+        source: "module.exports = {\n  main: function(event, context) {\n    return\
+          \ 'Hello World!'\n  }\n}\n"
+  status:
+    buildResourceProfile: slow
+    conditions:
+    - lastTransitionTime: '2026-09-16T19:11:01Z'
+      message: Job func1-build-x2clf is still in progress
+      reason: JobRunning
+      status: Unknown
+      type: BuildReady
+    - lastTransitionTime: '2026-09-16T19:11:00Z'
+      message: ConfigMap func1-tf48v created
+      reason: ConfigMapCreated
+      status: 'True'
+      type: ConfigurationReady
+    functionResourceProfile: XS
+    podSelector: serverless.kyma-project.io/function-name=func1,serverless.kyma-project.io/managed-by=function-controller,serverless.kyma-project.io/resource=deployment,serverless.kyma-project.io/uuid=0642a785-6025-45b1-880a-0289256ba5e9
+    runtime: nodejs20
+    runtimeImage: europe-docker.pkg.dev/kyma-project/prod/function-runtime-nodejs20:1.6.8
 kind: List
 metadata: {}

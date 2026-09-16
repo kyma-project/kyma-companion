@@ -1,0 +1,628 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: func1-build-7hf8s-zcdgh
+    namespace: test-subscription-14
+    resourceVersion: '620735434'
+    uid: cc652405-068b-45eb-abee-ed359ac3ab7f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: Successfully assigned test-subscription-14/func1-build-7hf8s-zcdgh to ip-10-250-26-115.eu-west-1.compute.internal
+  metadata:
+    name: func1-build-7hf8s-zcdgh.18d5e2f09258d42c
+    namespace: test-subscription-14
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-7hf8s-zcdgh
+    namespace: test-subscription-14
+    resourceVersion: '620735435'
+    uid: cc652405-068b-45eb-abee-ed359ac3ab7f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2"
+    already present on machine
+  metadata:
+    name: func1-build-7hf8s-zcdgh.18d5e2f0b751360a
+    namespace: test-subscription-14
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-7hf8s-zcdgh
+    namespace: test-subscription-14
+    resourceVersion: '620735435'
+    uid: cc652405-068b-45eb-abee-ed359ac3ab7f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: 'Created container: executor'
+  metadata:
+    name: func1-build-7hf8s-zcdgh.18d5e2f0b9ad06e2
+    namespace: test-subscription-14
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-7hf8s-zcdgh
+    namespace: test-subscription-14
+    resourceVersion: '620735435'
+    uid: cc652405-068b-45eb-abee-ed359ac3ab7f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Started container executor
+  metadata:
+    name: func1-build-7hf8s-zcdgh.18d5e2f0bf1b943d
+    namespace: test-subscription-14
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: batch/v1
+    kind: Job
+    name: func1-build-7hf8s
+    namespace: test-subscription-14
+    resourceVersion: '620735431'
+    uid: 76237e34-0a53-4b10-a9b6-9018e48b4966
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: 'Created pod: func1-build-7hf8s-zcdgh'
+  metadata:
+    name: func1-build-7hf8s.18d5e2f091e619dd
+    namespace: test-subscription-14
+  reason: SuccessfulCreate
+  reportingComponent: job-controller
+  reportingInstance: ''
+  source:
+    component: job-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-subscription-14
+    resourceVersion: '620735428'
+    uid: d797858b-e505-4666-98ab-dc7964030892
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: ConfigMap func1-tv6pb created
+  metadata:
+    name: func1.18d5e2f0874fd044
+    namespace: test-subscription-14
+  reason: ConfigMapCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-subscription-14
+    resourceVersion: '620735433'
+    uid: d797858b-e505-4666-98ab-dc7964030892
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: Job func1-build-7hf8s created
+  metadata:
+    name: func1.18d5e2f08e9902c4
+    namespace: test-subscription-14
+  reason: JobCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 2
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-subscription-14
+    resourceVersion: '620735454'
+    uid: d797858b-e505-4666-98ab-dc7964030892
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:31Z'
+  message: Job func1-build-7hf8s is still in progress
+  metadata:
+    name: func1.18d5e2f0c47c86fe
+    namespace: test-subscription-14
+  reason: JobRunning
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:31Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: redis-0
+    namespace: test-subscription-14
+    resourceVersion: '620735386'
+    uid: ca2beb8b-9bc8-4fb1-bf86-faaaffb90baf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:31Z'
+  message: Successfully assigned test-subscription-14/redis-0 to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: redis-0.18d5e2f0f9b58ee1
+    namespace: test-subscription-14
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-subscription-14
+    resourceVersion: '620735385'
+    uid: 551a89c6-d4e9-4fb6-929d-391d1e433232
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: waiting for first consumer to be created before binding
+  metadata:
+    name: redis-data-redis-0.18d5e2f04494e65e
+    namespace: test-subscription-14
+  reason: WaitForFirstConsumer
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-subscription-14
+    resourceVersion: '620735389'
+    uid: 551a89c6-d4e9-4fb6-929d-391d1e433232
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: External provisioner is provisioning volume for claim "test-subscription-14/redis-data-redis-0"
+  metadata:
+    name: redis-data-redis-0.18d5e2f046ab56c1
+    namespace: test-subscription-14
+  reason: Provisioning
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Normal
+- apiVersion: v1
+  count: 2
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-subscription-14
+    resourceVersion: '620735389'
+    uid: 551a89c6-d4e9-4fb6-929d-391d1e433232
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com'
+    or manually by the system administrator. If volume creation is delayed, please
+    verify that the provisioner is running and correctly registered.
+  metadata:
+    name: redis-data-redis-0.18d5e2f046b1cce4
+    namespace: test-subscription-14
+  reason: ExternalProvisioning
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-subscription-14
+    resourceVersion: '620735389'
+    uid: 551a89c6-d4e9-4fb6-929d-391d1e433232
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Successfully provisioned volume pv-shoot--kymatunas--comp-tests-0-551a89c6-d4e9-4fb6-929d-391d1e433232
+  metadata:
+    name: redis-data-redis-0.18d5e2f0d37cc149
+    namespace: test-subscription-14
+  reason: ProvisioningSucceeded
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis
+    namespace: test-subscription-14
+    resourceVersion: '620735383'
+    uid: d817e191-d550-40cd-8379-223853052047
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: create Claim redis-data-redis-0 Pod redis-0 in StatefulSet redis success
+  metadata:
+    name: redis.18d5e2f044967d07
+    namespace: test-subscription-14
+  reason: SuccessfulCreate
+  reportingComponent: statefulset-controller
+  reportingInstance: ''
+  source:
+    component: statefulset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis
+    namespace: test-subscription-14
+    resourceVersion: '620735383'
+    uid: d817e191-d550-40cd-8379-223853052047
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: create Pod redis-0 in StatefulSet redis successful
+  metadata:
+    name: redis.18d5e2f045ef8ddf
+    namespace: test-subscription-14
+  reason: SuccessfulCreate
+  reportingComponent: statefulset-controller
+  reportingInstance: ''
+  source:
+    component: statefulset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735399'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: Successfully assigned test-subscription-14/restapi-54fc4968f4-prnws to
+    ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f0589530de
+    namespace: test-subscription-14
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f088e8aeaf
+    namespace: test-subscription-14
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: 'Created container: istio-validation'
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f08a7eecfd
+    namespace: test-subscription-14
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:29Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:29Z'
+  message: Started container istio-validation
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f08ed1e238
+    namespace: test-subscription-14
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f0c03dca96
+    namespace: test-subscription-14
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: 'Created container: istio-proxy'
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f0c29b3a87
+    namespace: test-subscription-14
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-prnws
+    namespace: test-subscription-14
+    resourceVersion: '620735400'
+    uid: 34b796b5-9431-4013-8346-776f93ad889c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Started container istio-proxy
+  metadata:
+    name: restapi-54fc4968f4-prnws.18d5e2f0c6e66f83
+    namespace: test-subscription-14
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 5
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: restapi-54fc4968f4
+    namespace: test-subscription-14
+    resourceVersion: '620735393'
+    uid: b1b4c38f-456d-4e76-aeb1-75338adeec55
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: 'Error creating: pods "restapi-54fc4968f4-" is forbidden: error looking
+    up service account test-subscription-14/restapi: serviceaccount "restapi" not
+    found'
+  metadata:
+    name: restapi-54fc4968f4.18d5e2f04c96dc42
+    namespace: test-subscription-14
+  reason: FailedCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Warning
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: restapi-54fc4968f4
+    namespace: test-subscription-14
+    resourceVersion: '620735395'
+    uid: b1b4c38f-456d-4e76-aeb1-75338adeec55
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: 'Created pod: restapi-54fc4968f4-prnws'
+  metadata:
+    name: restapi-54fc4968f4.18d5e2f058292d28
+    namespace: test-subscription-14
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:28Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: restapi
+    namespace: test-subscription-14
+    resourceVersion: '620735392'
+    uid: e36264a7-6124-4983-ace3-816213071f03
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:28Z'
+  message: Scaled up replica set restapi-54fc4968f4 from 0 to 1
+  metadata:
+    name: restapi.18d5e2f04c1259b7
+    namespace: test-subscription-14
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:30Z'
+  involvedObject:
+    apiVersion: eventing.kyma-project.io/v1alpha2
+    kind: Subscription
+    name: sub1
+    namespace: test-subscription-14
+    resourceVersion: '620735444'
+    uid: 7ca43d26-d69d-413a-a6a7-29da9277335c
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:30Z'
+  message: Update Subscription status succeeded sub1
+  metadata:
+    name: sub1.18d5e2f0a5ecb8eb
+    namespace: test-subscription-14
+  reason: Update
+  reportingComponent: eventing-controller-jetstream
+  reportingInstance: ''
+  source:
+    component: eventing-controller-jetstream
+  type: Normal
+kind: List
+metadata: {}

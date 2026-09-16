@@ -1,0 +1,7 @@
+{
+  "deployment_yml_git_hash": "unknown",
+  "k8s_server_version": "v1.34.7",
+  "captured_at": "2026-09-16T19:20:17.220938Z",
+  "scenario_id": "18_kyma_function_wrong_dependencies",
+  "namespace": "test-function-18"
+}

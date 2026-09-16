@@ -1,0 +1,395 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: test-service-6-5866884d99-2kkhw
+    namespace: test-service-6
+    resourceVersion: '620733059'
+    uid: 43de93e0-f0a6-4ef7-a228-ba674fa85fc5
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: Successfully assigned test-service-6/test-service-6-5866884d99-2kkhw to
+    ip-10-250-26-115.eu-west-1.compute.internal
+  metadata:
+    name: test-service-6-5866884d99-2kkhw.18d5e2c56d72a90a
+    namespace: test-service-6
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-2kkhw
+    namespace: test-service-6
+    resourceVersion: '620733061'
+    uid: 43de93e0-f0a6-4ef7-a228-ba674fa85fc5
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: Pulling image "nginx:latest"
+  metadata:
+    name: test-service-6-5866884d99-2kkhw.18d5e2c5a5c63725
+    namespace: test-service-6
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: test-service-6-5866884d99-4dfrd
+    namespace: test-service-6
+    resourceVersion: '620733057'
+    uid: baf10c0b-2155-4ac2-9cf9-d7a8a84c7bad
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: Successfully assigned test-service-6/test-service-6-5866884d99-4dfrd to
+    ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: test-service-6-5866884d99-4dfrd.18d5e2c56d383657
+    namespace: test-service-6
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-4dfrd
+    namespace: test-service-6
+    resourceVersion: '620733060'
+    uid: baf10c0b-2155-4ac2-9cf9-d7a8a84c7bad
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: Pulling image "nginx:latest"
+  metadata:
+    name: test-service-6-5866884d99-4dfrd.18d5e2c59a5efc15
+    namespace: test-service-6
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-4dfrd
+    namespace: test-service-6
+    resourceVersion: '620733060'
+    uid: baf10c0b-2155-4ac2-9cf9-d7a8a84c7bad
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: 'Successfully pulled image "nginx:latest" in 511ms (511ms including waiting).
+    Image size: 66343686 bytes.'
+  metadata:
+    name: test-service-6-5866884d99-4dfrd.18d5e2c5b8e15f7b
+    namespace: test-service-6
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-4dfrd
+    namespace: test-service-6
+    resourceVersion: '620733060'
+    uid: baf10c0b-2155-4ac2-9cf9-d7a8a84c7bad
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: 'Created container: nginx'
+  metadata:
+    name: test-service-6-5866884d99-4dfrd.18d5e2c5baa8fb2a
+    namespace: test-service-6
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-4dfrd
+    namespace: test-service-6
+    resourceVersion: '620733060'
+    uid: baf10c0b-2155-4ac2-9cf9-d7a8a84c7bad
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: Started container nginx
+  metadata:
+    name: test-service-6-5866884d99-4dfrd.18d5e2c5bee0bb63
+    namespace: test-service-6
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: test-service-6-5866884d99-dx2pv
+    namespace: test-service-6
+    resourceVersion: '620733055'
+    uid: 2db73bc2-85c7-410c-b2c3-794f29c093bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: Successfully assigned test-service-6/test-service-6-5866884d99-dx2pv to
+    ip-10-250-26-115.eu-west-1.compute.internal
+  metadata:
+    name: test-service-6-5866884d99-dx2pv.18d5e2c56cc21fd0
+    namespace: test-service-6
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-dx2pv
+    namespace: test-service-6
+    resourceVersion: '620733058'
+    uid: 2db73bc2-85c7-410c-b2c3-794f29c093bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: Pulling image "nginx:latest"
+  metadata:
+    name: test-service-6-5866884d99-dx2pv.18d5e2c5a53d5dc5
+    namespace: test-service-6
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-dx2pv
+    namespace: test-service-6
+    resourceVersion: '620733058'
+    uid: 2db73bc2-85c7-410c-b2c3-794f29c093bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:25Z'
+  message: 'Successfully pulled image "nginx:latest" in 516ms (516ms including waiting).
+    Image size: 66343686 bytes.'
+  metadata:
+    name: test-service-6-5866884d99-dx2pv.18d5e2c5c4096bf6
+    namespace: test-service-6
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-dx2pv
+    namespace: test-service-6
+    resourceVersion: '620733058'
+    uid: 2db73bc2-85c7-410c-b2c3-794f29c093bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:26Z'
+  message: 'Created container: nginx'
+  metadata:
+    name: test-service-6-5866884d99-dx2pv.18d5e2c5c6338e6c
+    namespace: test-service-6
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: test-service-6-5866884d99-dx2pv
+    namespace: test-service-6
+    resourceVersion: '620733058'
+    uid: 2db73bc2-85c7-410c-b2c3-794f29c093bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:26Z'
+  message: Started container nginx
+  metadata:
+    name: test-service-6-5866884d99-dx2pv.18d5e2c5ca6b2cd8
+    namespace: test-service-6
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: test-service-6-5866884d99
+    namespace: test-service-6
+    resourceVersion: '620733053'
+    uid: d2569c61-b1f0-4026-a55b-6b2bf846fd5a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: 'Created pod: test-service-6-5866884d99-dx2pv'
+  metadata:
+    name: test-service-6-5866884d99.18d5e2c56c2b1941
+    namespace: test-service-6
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: test-service-6-5866884d99
+    namespace: test-service-6
+    resourceVersion: '620733053'
+    uid: d2569c61-b1f0-4026-a55b-6b2bf846fd5a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: 'Created pod: test-service-6-5866884d99-4dfrd'
+  metadata:
+    name: test-service-6-5866884d99.18d5e2c56cb06fad
+    namespace: test-service-6
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: test-service-6-5866884d99
+    namespace: test-service-6
+    resourceVersion: '620733053'
+    uid: d2569c61-b1f0-4026-a55b-6b2bf846fd5a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: 'Created pod: test-service-6-5866884d99-2kkhw'
+  metadata:
+    name: test-service-6-5866884d99.18d5e2c56d15902c
+    namespace: test-service-6
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: test-service-6
+    namespace: test-service-6
+    resourceVersion: '620733052'
+    uid: 60440266-0477-4fdd-877e-b53a1f5d2818
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:24Z'
+  message: Scaled up replica set test-service-6-5866884d99 from 0 to 3
+  metadata:
+    name: test-service-6.18d5e2c56b71f1c9
+    namespace: test-service-6
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+kind: List
+metadata: {}

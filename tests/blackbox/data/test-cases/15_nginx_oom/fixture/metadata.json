@@ -1,0 +1,7 @@
+{
+  "deployment_yml_git_hash": "unknown",
+  "k8s_server_version": "v1.34.7",
+  "captured_at": "2026-09-16T19:12:54.737835Z",
+  "scenario_id": "15_nginx_oom",
+  "namespace": "test-deployment-15"
+}

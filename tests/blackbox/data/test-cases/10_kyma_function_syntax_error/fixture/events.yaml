@@ -1,0 +1,196 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:45Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: my-function-0-build-xlpgl-458rm
+    namespace: test-function-10
+    resourceVersion: '620734088'
+    uid: a7efbba9-8634-4f26-bf53-b16b1f13c57a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:45Z'
+  message: Successfully assigned test-function-10/my-function-0-build-xlpgl-458rm
+    to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: my-function-0-build-xlpgl-458rm.18d5e2d8414393a6
+    namespace: test-function-10
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:46Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: my-function-0-build-xlpgl-458rm
+    namespace: test-function-10
+    resourceVersion: '620734090'
+    uid: a7efbba9-8634-4f26-bf53-b16b1f13c57a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:46Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2"
+    already present on machine
+  metadata:
+    name: my-function-0-build-xlpgl-458rm.18d5e2d86a264106
+    namespace: test-function-10
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:46Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: my-function-0-build-xlpgl-458rm
+    namespace: test-function-10
+    resourceVersion: '620734090'
+    uid: a7efbba9-8634-4f26-bf53-b16b1f13c57a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:46Z'
+  message: 'Created container: executor'
+  metadata:
+    name: my-function-0-build-xlpgl-458rm.18d5e2d86cb830fe
+    namespace: test-function-10
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:46Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: my-function-0-build-xlpgl-458rm
+    namespace: test-function-10
+    resourceVersion: '620734090'
+    uid: a7efbba9-8634-4f26-bf53-b16b1f13c57a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:46Z'
+  message: Started container executor
+  metadata:
+    name: my-function-0-build-xlpgl-458rm.18d5e2d872c83775
+    namespace: test-function-10
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:45Z'
+  involvedObject:
+    apiVersion: batch/v1
+    kind: Job
+    name: my-function-0-build-xlpgl
+    namespace: test-function-10
+    resourceVersion: '620734086'
+    uid: 2d4c42b4-9287-4dcf-83af-5109ad9d42bf
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:45Z'
+  message: 'Created pod: my-function-0-build-xlpgl-458rm'
+  metadata:
+    name: my-function-0-build-xlpgl.18d5e2d840d383ad
+    namespace: test-function-10
+  reason: SuccessfulCreate
+  reportingComponent: job-controller
+  reportingInstance: ''
+  source:
+    component: job-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:45Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: my-function-0
+    namespace: test-function-10
+    resourceVersion: '620734085'
+    uid: 8ba73f18-760d-42e1-ad50-7b48cccfc5f5
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:45Z'
+  message: ConfigMap my-function-0-49rjz created
+  metadata:
+    name: my-function-0.18d5e2d8394d07ac
+    namespace: test-function-10
+  reason: ConfigMapCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:45Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: my-function-0
+    namespace: test-function-10
+    resourceVersion: '620734087'
+    uid: 8ba73f18-760d-42e1-ad50-7b48cccfc5f5
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:45Z'
+  message: Job my-function-0-build-xlpgl created
+  metadata:
+    name: my-function-0.18d5e2d83f84f071
+    namespace: test-function-10
+  reason: JobCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:46Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: my-function-0
+    namespace: test-function-10
+    resourceVersion: '620734102'
+    uid: 8ba73f18-760d-42e1-ad50-7b48cccfc5f5
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:46Z'
+  message: Job my-function-0-build-xlpgl is still in progress
+  metadata:
+    name: my-function-0.18d5e2d8764258f9
+    namespace: test-function-10
+  reason: JobRunning
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+kind: List
+metadata: {}

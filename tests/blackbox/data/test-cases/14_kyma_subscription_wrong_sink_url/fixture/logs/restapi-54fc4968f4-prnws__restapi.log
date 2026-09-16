@@ -1,0 +1,3 @@
+{"level":"info","time":1789585955,"message":"Initializing the application"}
+{"level":"debug","time":1789585955,"message":"Checkick if the Redis client is connected"}
+{"level":"fatal","error":"read: connection reset by peer","time":1789585955,"message":"Failed to get the counter"}

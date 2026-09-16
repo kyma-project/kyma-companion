@@ -1,0 +1,626 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: func1-build-hkpc9-xx9ts
+    namespace: test-function-8
+    resourceVersion: '620733778'
+    uid: d6a73554-a4bd-4b7b-a3a2-b1a2788f398b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Successfully assigned test-function-8/func1-build-hkpc9-xx9ts to ip-10-250-26-115.eu-west-1.compute.internal
+  metadata:
+    name: func1-build-hkpc9-xx9ts.18d5e2d3a7933b8f
+    namespace: test-function-8
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-hkpc9-xx9ts
+    namespace: test-function-8
+    resourceVersion: '620733780'
+    uid: d6a73554-a4bd-4b7b-a3a2-b1a2788f398b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2"
+    already present on machine
+  metadata:
+    name: func1-build-hkpc9-xx9ts.18d5e2d3ce780f57
+    namespace: test-function-8
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-hkpc9-xx9ts
+    namespace: test-function-8
+    resourceVersion: '620733780'
+    uid: d6a73554-a4bd-4b7b-a3a2-b1a2788f398b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: 'Created container: executor'
+  metadata:
+    name: func1-build-hkpc9-xx9ts.18d5e2d3d0da0537
+    namespace: test-function-8
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-hkpc9-xx9ts
+    namespace: test-function-8
+    resourceVersion: '620733780'
+    uid: d6a73554-a4bd-4b7b-a3a2-b1a2788f398b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: Started container executor
+  metadata:
+    name: func1-build-hkpc9-xx9ts.18d5e2d3d67f1963
+    namespace: test-function-8
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: batch/v1
+    kind: Job
+    name: func1-build-hkpc9
+    namespace: test-function-8
+    resourceVersion: '620733773'
+    uid: dbe40721-2e19-42ee-ab5d-4cf13d0a3f65
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: 'Created pod: func1-build-hkpc9-xx9ts'
+  metadata:
+    name: func1-build-hkpc9.18d5e2d3a7246412
+    namespace: test-function-8
+  reason: SuccessfulCreate
+  reportingComponent: job-controller
+  reportingInstance: ''
+  source:
+    component: job-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-8
+    resourceVersion: '620733772'
+    uid: 8e2b091f-756d-46dd-ae4f-dd551616dd0f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: ConfigMap func1-pthpz created
+  metadata:
+    name: func1.18d5e2d39eefd1b0
+    namespace: test-function-8
+  reason: ConfigMapCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-8
+    resourceVersion: '620733774'
+    uid: 8e2b091f-756d-46dd-ae4f-dd551616dd0f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Job func1-build-hkpc9 created
+  metadata:
+    name: func1.18d5e2d3a234006b
+    namespace: test-function-8
+  reason: JobCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 2
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-8
+    resourceVersion: '620733794'
+    uid: 8e2b091f-756d-46dd-ae4f-dd551616dd0f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:27Z'
+  message: Job func1-build-hkpc9 is still in progress
+  metadata:
+    name: func1.18d5e2d3dc75b9aa
+    namespace: test-function-8
+  reason: JobRunning
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:27Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: redis-0
+    namespace: test-function-8
+    resourceVersion: '620733732'
+    uid: aefe3928-0748-4359-a99c-f79b2a0b5ddc
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:27Z'
+  message: Successfully assigned test-function-8/redis-0 to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: redis-0.18d5e2d41037e4a4
+    namespace: test-function-8
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-function-8
+    resourceVersion: '620733731'
+    uid: 531a8bd5-402d-468f-ac73-f0a812397531
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: waiting for first consumer to be created before binding
+  metadata:
+    name: redis-data-redis-0.18d5e2d359cb18f8
+    namespace: test-function-8
+  reason: WaitForFirstConsumer
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-function-8
+    resourceVersion: '620733735'
+    uid: 531a8bd5-402d-468f-ac73-f0a812397531
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: External provisioner is provisioning volume for claim "test-function-8/redis-data-redis-0"
+  metadata:
+    name: redis-data-redis-0.18d5e2d35cd9fb9c
+    namespace: test-function-8
+  reason: Provisioning
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Normal
+- apiVersion: v1
+  count: 2
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-function-8
+    resourceVersion: '620733735'
+    uid: 531a8bd5-402d-468f-ac73-f0a812397531
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com'
+    or manually by the system administrator. If volume creation is delayed, please
+    verify that the provisioner is running and correctly registered.
+  metadata:
+    name: redis-data-redis-0.18d5e2d35ce2799f
+    namespace: test-function-8
+  reason: ExternalProvisioning
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-data-redis-0
+    namespace: test-function-8
+    resourceVersion: '620733735'
+    uid: 531a8bd5-402d-468f-ac73-f0a812397531
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: Successfully provisioned volume pv-shoot--kymatunas--comp-tests-0-531a8bd5-402d-468f-ac73-f0a812397531
+  metadata:
+    name: redis-data-redis-0.18d5e2d3dd6fc6fd
+    namespace: test-function-8
+  reason: ProvisioningSucceeded
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis
+    namespace: test-function-8
+    resourceVersion: '620733729'
+    uid: 503b2520-9f47-42fb-b86f-7d5bb2ca9b3f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: create Claim redis-data-redis-0 Pod redis-0 in StatefulSet redis success
+  metadata:
+    name: redis.18d5e2d359d80c3e
+    namespace: test-function-8
+  reason: SuccessfulCreate
+  reportingComponent: statefulset-controller
+  reportingInstance: ''
+  source:
+    component: statefulset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis
+    namespace: test-function-8
+    resourceVersion: '620733729'
+    uid: 503b2520-9f47-42fb-b86f-7d5bb2ca9b3f
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: create Pod redis-0 in StatefulSet redis successful
+  metadata:
+    name: redis.18d5e2d35c323c21
+    namespace: test-function-8
+  reason: SuccessfulCreate
+  reportingComponent: statefulset-controller
+  reportingInstance: ''
+  source:
+    component: statefulset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733746'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: Successfully assigned test-function-8/restapi-54fc4968f4-2l28w to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d36d35ea28
+    namespace: test-function-8
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d3995a9512
+    namespace: test-function-8
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: 'Created container: istio-validation'
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d39adbe598
+    namespace: test-function-8
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Started container istio-validation
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d3a06c2041
+    namespace: test-function-8
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d3d38e8b62
+    namespace: test-function-8
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: 'Created container: istio-proxy'
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d3d6179713
+    namespace: test-function-8
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:26Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: restapi-54fc4968f4-2l28w
+    namespace: test-function-8
+    resourceVersion: '620733748'
+    uid: db96f329-f91b-4b03-9114-29f5a4a14701
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:26Z'
+  message: Started container istio-proxy
+  metadata:
+    name: restapi-54fc4968f4-2l28w.18d5e2d3db870ba3
+    namespace: test-function-8
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 5
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: restapi-54fc4968f4
+    namespace: test-function-8
+    resourceVersion: '620733739'
+    uid: c96839ba-506e-41c3-9bc8-9ec3dddf9bf0
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: 'Error creating: pods "restapi-54fc4968f4-" is forbidden: error looking
+    up service account test-function-8/restapi: serviceaccount "restapi" not found'
+  metadata:
+    name: restapi-54fc4968f4.18d5e2d3602d84f9
+    namespace: test-function-8
+  reason: FailedCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Warning
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: restapi-54fc4968f4
+    namespace: test-function-8
+    resourceVersion: '620733741'
+    uid: c96839ba-506e-41c3-9bc8-9ec3dddf9bf0
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: 'Created pod: restapi-54fc4968f4-2l28w'
+  metadata:
+    name: restapi-54fc4968f4.18d5e2d36c981f99
+    namespace: test-function-8
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:24Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: restapi
+    namespace: test-function-8
+    resourceVersion: '620733738'
+    uid: e16787f3-7035-436a-afb5-3152b2b969d4
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:24Z'
+  message: Scaled up replica set restapi-54fc4968f4 from 0 to 1
+  metadata:
+    name: restapi.18d5e2d35fad2ed7
+    namespace: test-function-8
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:10:25Z'
+  involvedObject:
+    apiVersion: eventing.kyma-project.io/v1alpha2
+    kind: Subscription
+    name: sub1
+    namespace: test-function-8
+    resourceVersion: '620733777'
+    uid: c410c6b3-1df9-4119-bbf6-b12b6187ee24
+  kind: Event
+  lastTimestamp: '2026-09-16T19:10:25Z'
+  message: Update Subscription status succeeded sub1
+  metadata:
+    name: sub1.18d5e2d3a6fad261
+    namespace: test-function-8
+  reason: Update
+  reportingComponent: eventing-controller-jetstream
+  reportingInstance: ''
+  source:
+    component: eventing-controller-jetstream
+  type: Normal
+kind: List
+metadata: {}

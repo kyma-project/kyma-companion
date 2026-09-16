@@ -1,0 +1,128 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:29Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-3
+    resourceVersion: '620732419'
+    uid: 534fb47e-f6b6-42f5-be2e-1443722deaac
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:29Z'
+  message: Successfully assigned test-pod-3/pod-check to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: pod-check.18d5e2b8b97081a0
+    namespace: test-pod-3
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:30Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{busybox}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-3
+    resourceVersion: '620732420'
+    uid: 534fb47e-f6b6-42f5-be2e-1443722deaac
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:30Z'
+  message: Pulling image "busybox"
+  metadata:
+    name: pod-check.18d5e2b8e01bac85
+    namespace: test-pod-3
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:31Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{busybox}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-3
+    resourceVersion: '620732420'
+    uid: 534fb47e-f6b6-42f5-be2e-1443722deaac
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:31Z'
+  message: 'Successfully pulled image "busybox" in 497ms (497ms including waiting).
+    Image size: 2236931 bytes.'
+  metadata:
+    name: pod-check.18d5e2b8fdc00160
+    namespace: test-pod-3
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:31Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{busybox}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-3
+    resourceVersion: '620732420'
+    uid: 534fb47e-f6b6-42f5-be2e-1443722deaac
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:31Z'
+  message: 'Created container: busybox'
+  metadata:
+    name: pod-check.18d5e2b8ff7e3d26
+    namespace: test-pod-3
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:31Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{busybox}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-3
+    resourceVersion: '620732420'
+    uid: 534fb47e-f6b6-42f5-be2e-1443722deaac
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:31Z'
+  message: Started container busybox
+  metadata:
+    name: pod-check.18d5e2b90341f1e5
+    namespace: test-pod-3
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+kind: List
+metadata: {}

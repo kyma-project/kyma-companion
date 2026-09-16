@@ -1,0 +1,195 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:00Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: func1-build-x2clf-cjgzp
+    namespace: test-function-11
+    resourceVersion: '620734317'
+    uid: 1f493cbc-391b-434a-a35f-f613cb615fb6
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:00Z'
+  message: Successfully assigned test-function-11/func1-build-x2clf-cjgzp to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: func1-build-x2clf-cjgzp.18d5e2dbc8f9bb05
+    namespace: test-function-11
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:01Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-x2clf-cjgzp
+    namespace: test-function-11
+    resourceVersion: '620734318'
+    uid: 1f493cbc-391b-434a-a35f-f613cb615fb6
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:01Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/gcr.io/kaniko-project/executor:v1.23.2"
+    already present on machine
+  metadata:
+    name: func1-build-x2clf-cjgzp.18d5e2dbee98b5c4
+    namespace: test-function-11
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:01Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-x2clf-cjgzp
+    namespace: test-function-11
+    resourceVersion: '620734318'
+    uid: 1f493cbc-391b-434a-a35f-f613cb615fb6
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:01Z'
+  message: 'Created container: executor'
+  metadata:
+    name: func1-build-x2clf-cjgzp.18d5e2dbf15290f1
+    namespace: test-function-11
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:01Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{executor}
+    kind: Pod
+    name: func1-build-x2clf-cjgzp
+    namespace: test-function-11
+    resourceVersion: '620734318'
+    uid: 1f493cbc-391b-434a-a35f-f613cb615fb6
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:01Z'
+  message: Started container executor
+  metadata:
+    name: func1-build-x2clf-cjgzp.18d5e2dbf7f155a6
+    namespace: test-function-11
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:00Z'
+  involvedObject:
+    apiVersion: batch/v1
+    kind: Job
+    name: func1-build-x2clf
+    namespace: test-function-11
+    resourceVersion: '620734315'
+    uid: 2152fd0f-12c2-4532-95ee-52c15a248427
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:00Z'
+  message: 'Created pod: func1-build-x2clf-cjgzp'
+  metadata:
+    name: func1-build-x2clf.18d5e2dbc8627f00
+    namespace: test-function-11
+  reason: SuccessfulCreate
+  reportingComponent: job-controller
+  reportingInstance: ''
+  source:
+    component: job-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:00Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-11
+    resourceVersion: '620734314'
+    uid: 0642a785-6025-45b1-880a-0289256ba5e9
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:00Z'
+  message: ConfigMap func1-tf48v created
+  metadata:
+    name: func1.18d5e2dbc5c4a1cc
+    namespace: test-function-11
+  reason: ConfigMapCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:00Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-11
+    resourceVersion: '620734316'
+    uid: 0642a785-6025-45b1-880a-0289256ba5e9
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:00Z'
+  message: Job func1-build-x2clf created
+  metadata:
+    name: func1.18d5e2dbc747b8d2
+    namespace: test-function-11
+  reason: JobCreated
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:01Z'
+  involvedObject:
+    apiVersion: serverless.kyma-project.io/v1alpha2
+    kind: Function
+    name: func1
+    namespace: test-function-11
+    resourceVersion: '620734333'
+    uid: 0642a785-6025-45b1-880a-0289256ba5e9
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:01Z'
+  message: Job func1-build-x2clf is still in progress
+  metadata:
+    name: func1.18d5e2dc0293ae09
+    namespace: test-function-11
+  reason: JobRunning
+  reportingComponent: function-controller
+  reportingInstance: ''
+  source:
+    component: function-controller
+  type: Normal
+kind: List
+metadata: {}

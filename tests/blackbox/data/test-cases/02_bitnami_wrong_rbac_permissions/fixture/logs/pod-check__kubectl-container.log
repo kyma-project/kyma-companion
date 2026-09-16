@@ -1,0 +1,1 @@
+Error from server (Forbidden): pods is forbidden: User "system:serviceaccount:test-pod-2:pod-reader-sa" cannot list resource "pods" in API group "" in the namespace "test-pod-2"

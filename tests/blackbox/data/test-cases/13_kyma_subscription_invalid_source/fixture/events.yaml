@@ -1,0 +1,27 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:11:30Z'
+  involvedObject:
+    apiVersion: eventing.kyma-project.io/v1alpha2
+    kind: Subscription
+    name: my-sub
+    namespace: test-subscription-13
+    resourceVersion: '620734759'
+    uid: bf69c2a2-47f3-4333-8a88-67998be59796
+  kind: Event
+  lastTimestamp: '2026-09-16T19:11:30Z'
+  message: Update Subscription status succeeded my-sub
+  metadata:
+    name: my-sub.18d5e2e2c73c982a
+    namespace: test-subscription-13
+  reason: Update
+  reportingComponent: eventing-controller-jetstream
+  reportingInstance: ''
+  source:
+    component: eventing-controller-jetstream
+  type: Normal
+kind: List
+metadata: {}

@@ -1,0 +1,7 @@
+{
+  "deployment_yml_git_hash": "unknown",
+  "k8s_server_version": "v1.34.7",
+  "captured_at": "2026-09-16T19:08:44.030302Z",
+  "scenario_id": "03_busybox_no_kubectl_binary",
+  "namespace": "test-pod-3"
+}

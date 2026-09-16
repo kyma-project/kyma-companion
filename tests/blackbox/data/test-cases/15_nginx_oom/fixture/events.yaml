@@ -1,0 +1,225 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:49Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735746'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:49Z'
+  message: Successfully assigned test-deployment-15/nginx-6c47d47d96-v4pwd to ip-10-250-26-115.eu-west-1.compute.internal
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f53237d642
+    namespace: test-deployment-15
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:50Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:50Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f55bc0624a
+    namespace: test-deployment-15
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:50Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:50Z'
+  message: 'Created container: istio-validation'
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f55d625a73
+    namespace: test-deployment-15
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:50Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.initContainers{istio-validation}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:50Z'
+  message: Started container istio-validation
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f561ac89ae
+    namespace: test-deployment-15
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:50Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:50Z'
+  message: Container image "europe-docker.pkg.dev/kyma-project/prod/external/istio/proxyv2:1.24.2-distroless"
+    already present on machine
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f57d15a5bf
+    namespace: test-deployment-15
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:50Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:50Z'
+  message: 'Created container: istio-proxy'
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f57f1f83f4
+    namespace: test-deployment-15
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:51Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{istio-proxy}
+    kind: Pod
+    name: nginx-6c47d47d96-v4pwd
+    namespace: test-deployment-15
+    resourceVersion: '620735748'
+    uid: 6c2f5011-b30a-4a35-95f1-1c786810ceb3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:51Z'
+  message: Started container istio-proxy
+  metadata:
+    name: nginx-6c47d47d96-v4pwd.18d5e2f583a873d3
+    namespace: test-deployment-15
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-26-115.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-26-115.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:49Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: nginx-6c47d47d96
+    namespace: test-deployment-15
+    resourceVersion: '620735743'
+    uid: 2a7d65c0-a246-4e1f-851a-e3b38a552443
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:49Z'
+  message: 'Created pod: nginx-6c47d47d96-v4pwd'
+  metadata:
+    name: nginx-6c47d47d96.18d5e2f531c6d01f
+    namespace: test-deployment-15
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:12:49Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx
+    namespace: test-deployment-15
+    resourceVersion: '620735742'
+    uid: b83a14f1-29b8-4549-a7e3-e96c95444ef2
+  kind: Event
+  lastTimestamp: '2026-09-16T19:12:49Z'
+  message: Scaled up replica set nginx-6c47d47d96 from 0 to 1
+  metadata:
+    name: nginx.18d5e2f52edf2aa1
+    namespace: test-deployment-15
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+kind: List
+metadata: {}

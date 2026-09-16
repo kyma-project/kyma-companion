@@ -1,0 +1,145 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:51Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: example-pvc
+    namespace: test-deployment-4
+    resourceVersion: '620732668'
+    uid: 328fc4b4-449a-4266-8120-23ff1ab6f6c3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:51Z'
+  message: waiting for first consumer to be created before binding
+  metadata:
+    name: example-pvc.18d5e2bdc35bd3c3
+    namespace: test-deployment-4
+  reason: WaitForFirstConsumer
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:52Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: example-pvc
+    namespace: test-deployment-4
+    resourceVersion: '620732678'
+    uid: 328fc4b4-449a-4266-8120-23ff1ab6f6c3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:52Z'
+  message: External provisioner is provisioning volume for claim "test-deployment-4/example-pvc"
+  metadata:
+    name: example-pvc.18d5e2bdecae4537
+    namespace: test-deployment-4
+  reason: Provisioning
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:52Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: example-pvc
+    namespace: test-deployment-4
+    resourceVersion: '620732678'
+    uid: 328fc4b4-449a-4266-8120-23ff1ab6f6c3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:52Z'
+  message: Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com'
+    or manually by the system administrator. If volume creation is delayed, please
+    verify that the provisioner is running and correctly registered.
+  metadata:
+    name: example-pvc.18d5e2bdecb3bb33
+    namespace: test-deployment-4
+  reason: ExternalProvisioning
+  reportingComponent: persistentvolume-controller
+  reportingInstance: ''
+  source:
+    component: persistentvolume-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:52Z'
+  involvedObject:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: example-pvc
+    namespace: test-deployment-4
+    resourceVersion: '620732678'
+    uid: 328fc4b4-449a-4266-8120-23ff1ab6f6c3
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:52Z'
+  message: 'Volume provisioning failed with infeasible error. Retries will be delayed.
+    rpc error: code = InvalidArgument desc = Volume capabilities not supported'
+  metadata:
+    name: example-pvc.18d5e2bdecbe9f14
+    namespace: test-deployment-4
+  reason: ProvisioningFailed
+  reportingComponent: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  reportingInstance: ''
+  source:
+    component: ebs.csi.aws.com_csi-driver-controller-69b9c5879d-r2sm9_f96c97ba-06ab-498b-9e4f-1894021853f3
+  type: Warning
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:52Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: nginx-deployment-fd996c946
+    namespace: test-deployment-4
+    resourceVersion: '620732670'
+    uid: 79f80b37-1d2e-4284-9ee3-b72b4f195800
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:52Z'
+  message: 'Created pod: nginx-deployment-fd996c946-hzh6n'
+  metadata:
+    name: nginx-deployment-fd996c946.18d5e2bdeafea13f
+    namespace: test-deployment-4
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:52Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-deployment
+    namespace: test-deployment-4
+    resourceVersion: '620732669'
+    uid: 588298b2-135a-4e3a-9a9c-19346f2ba38a
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:52Z'
+  message: Scaled up replica set nginx-deployment-fd996c946 from 0 to 1
+  metadata:
+    name: nginx-deployment.18d5e2bde613f768
+    namespace: test-deployment-4
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+kind: List
+metadata: {}

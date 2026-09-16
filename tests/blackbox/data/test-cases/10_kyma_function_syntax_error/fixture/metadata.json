@@ -1,0 +1,7 @@
+{
+  "deployment_yml_git_hash": "unknown",
+  "k8s_server_version": "v1.34.7",
+  "captured_at": "2026-09-16T19:10:48.900427Z",
+  "scenario_id": "10_kyma_function_syntax_error",
+  "namespace": "test-function-10"
+}

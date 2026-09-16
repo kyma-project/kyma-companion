@@ -1,0 +1,128 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:04Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-2
+    resourceVersion: '620732144'
+    uid: 72088ae8-5c55-496f-8cb9-76296f1d498d
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:04Z'
+  message: Successfully assigned test-pod-2/pod-check to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: pod-check.18d5e2b2b16bbda5
+    namespace: test-pod-2
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:04Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{kubectl-container}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-2
+    resourceVersion: '620732145'
+    uid: 72088ae8-5c55-496f-8cb9-76296f1d498d
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:04Z'
+  message: Pulling image "bitnami/kubectl:latest"
+  metadata:
+    name: pod-check.18d5e2b2d98f4301
+    namespace: test-pod-2
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:05Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{kubectl-container}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-2
+    resourceVersion: '620732145'
+    uid: 72088ae8-5c55-496f-8cb9-76296f1d498d
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:05Z'
+  message: 'Successfully pulled image "bitnami/kubectl:latest" in 510ms (510ms including
+    waiting). Image size: 78834677 bytes.'
+  metadata:
+    name: pod-check.18d5e2b2f7f8dde2
+    namespace: test-pod-2
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:05Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{kubectl-container}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-2
+    resourceVersion: '620732145'
+    uid: 72088ae8-5c55-496f-8cb9-76296f1d498d
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:05Z'
+  message: 'Created container: kubectl-container'
+  metadata:
+    name: pod-check.18d5e2b2f9a541ff
+    namespace: test-pod-2
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:08:05Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{kubectl-container}
+    kind: Pod
+    name: pod-check
+    namespace: test-pod-2
+    resourceVersion: '620732145'
+    uid: 72088ae8-5c55-496f-8cb9-76296f1d498d
+  kind: Event
+  lastTimestamp: '2026-09-16T19:08:05Z'
+  message: Started container kubectl-container
+  metadata:
+    name: pod-check.18d5e2b2fcfd1913
+    namespace: test-pod-2
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+kind: List
+metadata: {}

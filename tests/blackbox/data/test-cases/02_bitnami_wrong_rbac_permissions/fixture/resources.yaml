@@ -4,17 +4,17 @@ items:
   kind: Pod
   metadata:
     annotations:
-      cni.projectcalico.org/containerID: 39740a541835aec58a255b1f7f7cd0a91477774a2d9f87e0ca2647212e1532ee
+      cni.projectcalico.org/containerID: 87d20af26c181a1cb39c2cf23986a28d147438b21a1dde7309c2419fd6fb4a92
       cni.projectcalico.org/podIP: ''
       cni.projectcalico.org/podIPs: ''
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"pod-check","namespace":"test-pod-1"},"spec":{"containers":[{"command":["sh","-c","kubectl
-        get pods"],"env":[{"name":"KUBERNETES_NAMESPACE","valueFrom":{"fieldRef":{"fieldPath":"metadata.namespace"}}}],"image":"bitnami/kubectl:latest","name":"kubectl-container"}],"restartPolicy":"Never","serviceAccountName":"test-pod-1-sa"}}
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"pod-check","namespace":"test-pod-2"},"spec":{"containers":[{"command":["sh","-c","kubectl
+        get pods"],"env":[{"name":"KUBERNETES_NAMESPACE","valueFrom":{"fieldRef":{"fieldPath":"metadata.namespace"}}}],"image":"bitnami/kubectl:latest","name":"kubectl-container"}],"restartPolicy":"Never","serviceAccountName":"pod-reader-sa"}}
 
         '
-    creationTimestamp: '2026-09-16T19:07:42Z'
+    creationTimestamp: '2026-09-16T19:08:04Z'
     generation: 1
     name: pod-check
-    namespace: test-pod-1
+    namespace: test-pod-2
   spec:
     containers:
     - command:
@@ -37,18 +37,18 @@ items:
       terminationMessagePolicy: File
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-qjlkj
+        name: kube-api-access-r4r4t
         readOnly: true
     dnsPolicy: ClusterFirst
     enableServiceLinks: true
-    nodeName: ip-10-250-26-115.eu-west-1.compute.internal
+    nodeName: ip-10-250-8-135.eu-west-1.compute.internal
     preemptionPolicy: PreemptLowerPriority
     priority: 0
     restartPolicy: Never
     schedulerName: default-scheduler
     securityContext: {}
-    serviceAccount: test-pod-1-sa
-    serviceAccountName: test-pod-1-sa
+    serviceAccount: pod-reader-sa
+    serviceAccountName: pod-reader-sa
     terminationGracePeriodSeconds: 30
     tolerations:
     - effect: NoExecute
@@ -60,7 +60,7 @@ items:
       operator: Exists
       tolerationSeconds: 300
     volumes:
-    - name: kube-api-access-qjlkj
+    - name: kube-api-access-r4r4t
       projected:
         defaultMode: 420
         sources:
@@ -81,34 +81,34 @@ items:
   status:
     conditions:
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:45Z'
+      lastTransitionTime: '2026-09-16T19:08:07Z'
       observedGeneration: 1
       status: 'False'
       type: PodReadyToStartContainers
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:08:04Z'
       observedGeneration: 1
       status: 'True'
       type: Initialized
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:08:06Z'
       observedGeneration: 1
       reason: PodFailed
       status: 'False'
       type: Ready
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:08:06Z'
       observedGeneration: 1
       reason: PodFailed
       status: 'False'
       type: ContainersReady
     - lastProbeTime: null
-      lastTransitionTime: '2026-09-16T19:07:42Z'
+      lastTransitionTime: '2026-09-16T19:08:04Z'
       observedGeneration: 1
       status: 'True'
       type: PodScheduled
     containerStatuses:
-    - containerID: containerd://46ca35e78eab145fa0872d5b89c0a1274e374cfb9fbe7aaa943421a42d82a296
+    - containerID: containerd://cf1b22f995a37f519d2db137187e2fd8fd52a854503448dc7257d220da10e675
       image: docker.io/bitnami/kubectl:latest
       imageID: docker.io/bitnami/kubectl@sha256:b29d8c1665b70817259ceecaea16ab27aab6368b48daf485d19436c809067492
       lastState: {}
@@ -119,11 +119,11 @@ items:
       started: false
       state:
         terminated:
-          containerID: containerd://46ca35e78eab145fa0872d5b89c0a1274e374cfb9fbe7aaa943421a42d82a296
+          containerID: containerd://cf1b22f995a37f519d2db137187e2fd8fd52a854503448dc7257d220da10e675
           exitCode: 1
-          finishedAt: '2026-09-16T19:07:44Z'
+          finishedAt: '2026-09-16T19:08:05Z'
           reason: Error
-          startedAt: '2026-09-16T19:07:43Z'
+          startedAt: '2026-09-16T19:08:05Z'
       user:
         linux:
           gid: 0
@@ -132,19 +132,19 @@ items:
           uid: 1001
       volumeMounts:
       - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-        name: kube-api-access-qjlkj
+        name: kube-api-access-r4r4t
         readOnly: true
         recursiveReadOnly: Disabled
-    hostIP: 10.250.26.115
+    hostIP: 10.250.8.135
     hostIPs:
-    - ip: 10.250.26.115
+    - ip: 10.250.8.135
     observedGeneration: 1
     phase: Failed
-    podIP: 100.96.1.43
+    podIP: 100.96.0.52
     podIPs:
-    - ip: 100.96.1.43
+    - ip: 100.96.0.52
     qosClass: BestEffort
-    startTime: '2026-09-16T19:07:42Z'
+    startTime: '2026-09-16T19:08:04Z'
 - apiVersion: v1
   kind: PersistentVolume
   metadata:
@@ -548,7 +548,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -563,7 +563,7 @@ items:
       serverless.kyma-project.io/runtime: nodejs20
       version: 1.6.8
     name: dockerfile-nodejs20
-    namespace: test-pod-1
+    namespace: test-pod-2
 - apiVersion: v1
   data:
     Dockerfile: 'ARG base_image=europe-docker.pkg.dev/kyma-project/prod/function-runtime-nodejs22:1.6.8
@@ -603,7 +603,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -618,7 +618,7 @@ items:
       serverless.kyma-project.io/runtime: nodejs22
       version: 1.6.8
     name: dockerfile-nodejs22
-    namespace: test-pod-1
+    namespace: test-pod-2
 - apiVersion: v1
   data:
     Dockerfile: 'ARG base_image=europe-docker.pkg.dev/kyma-project/prod/function-runtime-python312:1.6.8
@@ -651,7 +651,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -666,7 +666,7 @@ items:
       serverless.kyma-project.io/runtime: python312
       version: 1.6.8
     name: dockerfile-python312
-    namespace: test-pod-1
+    namespace: test-pod-2
 - apiVersion: v1
   data:
     root-cert.pem: '-----BEGIN CERTIFICATE-----
@@ -730,11 +730,11 @@ items:
       '
   kind: ConfigMap
   metadata:
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       istio.io/config: 'true'
     name: istio-ca-root-cert
-    namespace: test-pod-1
+    namespace: test-pod-2
 - apiVersion: v1
   data:
     ca.crt: '-----BEGIN CERTIFICATE-----
@@ -839,9 +839,9 @@ items:
         kube-apiserver when using internal endpoints such as the internal service
         IP or kubernetes.default.svc. No other usage is guaranteed across distributions
         of Kubernetes clusters.
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     name: kube-root-ca.crt
-    namespace: test-pod-1
+    namespace: test-pod-2
 - apiVersion: v1
   data:
     .dockerconfigjson: eyJhdXRocyI6IHsic2VydmVybGVzcy1kb2NrZXItcmVnaXN0cnkua3ltYS1zeXN0ZW0uc3ZjLmNsdXN0ZXIubG9jYWw6NTAwMCI6IHsiYXV0aCI6ICJUMFJrV21Sck5ERlViRlpGVmxoQ1YxcEdiRVJSYWxwT1dUTkpQVHBPUlhCRlRqRldVMkZHV2s1a1ZVcGhXVzVHUWxWRWJHNVVNMmhUVTFWVmQyTlZUbFZoUlRsVFdWWk9jRlZHYkZwaWJGSkhVbWM5UFE9PSJ9LCAibG9jYWxob3N0OjMyMTM3IjogeyJhdXRoIjogIlQwUmtXbVJyTkRGVWJGWkZWbGhDVjFwR2JFUlJhbHBPV1ROSlBUcE9SWEJGVGpGV1UyRkdXazVrVlVwaFdXNUdRbFZFYkc1VU0yaFRVMVZWZDJOVlRsVmhSVGxUV1ZaT2NGVkdiRnBpYkZKSFVtYzlQUT09In19fQ==
@@ -858,18 +858,28 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       serverless.kyma-project.io/config: credentials
     name: serverless-registry-config-default
-    namespace: test-pod-1
+    namespace: test-pod-2
   type: kubernetes.io/dockerconfigjson
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     name: default
-    namespace: test-pod-1
+    namespace: test-pod-2
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"annotations":{},"name":"pod-reader-sa","namespace":"test-pod-2"}}
+
+        '
+    creationTimestamp: '2026-09-16T19:08:03Z'
+    name: pod-reader-sa
+    namespace: test-pod-2
 - apiVersion: v1
   automountServiceAccountToken: false
   imagePullSecrets:
@@ -882,7 +892,7 @@ items:
 
         Any modifications are discarded and the resource is reverted to the original
         state.'
-    creationTimestamp: '2026-09-16T19:07:41Z'
+    creationTimestamp: '2026-09-16T19:08:03Z'
     labels:
       app: serverless
       app.kubernetes.io/component: serverless
@@ -896,35 +906,42 @@ items:
       serverless.kyma-project.io/config: service-account
       version: 1.6.8
     name: serverless-function
-    namespace: test-pod-1
-- apiVersion: v1
-  kind: ServiceAccount
+    namespace: test-pod-2
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role
   metadata:
     annotations:
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","kind":"ServiceAccount","metadata":{"annotations":{},"name":"test-pod-1-sa","namespace":"test-pod-1"}}
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"rbac.authorization.k8s.io/v1","kind":"Role","metadata":{"annotations":{},"name":"pod-reader","namespace":"test-pod-2"},"rules":[{"apiGroups":[""],"resources":["pods"],"verbs":["watch"]}]}
 
         '
-    creationTimestamp: '2026-09-16T19:07:41Z'
-    name: test-pod-1-sa
-    namespace: test-pod-1
+    creationTimestamp: '2026-09-16T19:08:03Z'
+    name: pod-reader
+    namespace: test-pod-2
+  rules:
+  - apiGroups:
+    - ''
+    resources:
+    - pods
+    verbs:
+    - watch
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
     annotations:
-      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"rbac.authorization.k8s.io/v1","kind":"RoleBinding","metadata":{"annotations":{},"name":"test-pod-1-binding","namespace":"test-pod-1"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"Role","name":"pod-reader"},"subjects":[{"kind":"ServiceAccount","name":"test-pod-1-sa","namespace":"test-pod-1"}]}
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"rbac.authorization.k8s.io/v1","kind":"RoleBinding","metadata":{"annotations":{},"name":"read-pods-binding","namespace":"test-pod-2"},"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"Role","name":"pod-reader"},"subjects":[{"kind":"ServiceAccount","name":"pod-reader-sa","namespace":"test-pod-2"}]}
 
         '
-    creationTimestamp: '2026-09-16T19:07:42Z'
-    name: test-pod-1-binding
-    namespace: test-pod-1
+    creationTimestamp: '2026-09-16T19:08:03Z'
+    name: read-pods-binding
+    namespace: test-pod-2
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: Role
     name: pod-reader
   subjects:
   - kind: ServiceAccount
-    name: test-pod-1-sa
-    namespace: test-pod-1
+    name: pod-reader-sa
+    namespace: test-pod-2
 - aggregationRule:
     clusterRoleSelectors:
     - matchLabels:

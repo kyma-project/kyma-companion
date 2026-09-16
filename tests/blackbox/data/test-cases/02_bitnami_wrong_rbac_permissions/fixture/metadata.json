@@ -1,0 +1,7 @@
+{
+  "deployment_yml_git_hash": "unknown",
+  "k8s_server_version": "v1.34.7",
+  "captured_at": "2026-09-16T19:08:17.925273Z",
+  "scenario_id": "02_bitnami_wrong_rbac_permissions",
+  "namespace": "test-pod-2"
+}

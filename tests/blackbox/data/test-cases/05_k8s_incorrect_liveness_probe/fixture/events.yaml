@@ -1,0 +1,175 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:08Z'
+  involvedObject:
+    apiVersion: v1
+    kind: Pod
+    name: nginx-deployment-7cb85649db-jtmp2
+    namespace: test-deployment-5
+    resourceVersion: '620732853'
+    uid: fd322956-6e96-4424-acaf-d71539acbc5b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:08Z'
+  message: Successfully assigned test-deployment-5/nginx-deployment-7cb85649db-jtmp2
+    to ip-10-250-8-135.eu-west-1.compute.internal
+  metadata:
+    name: nginx-deployment-7cb85649db-jtmp2.18d5e2c1b7ea3bc8
+    namespace: test-deployment-5
+  reason: Scheduled
+  reportingComponent: default-scheduler
+  reportingInstance: ''
+  source:
+    component: default-scheduler
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:09Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: nginx-deployment-7cb85649db-jtmp2
+    namespace: test-deployment-5
+    resourceVersion: '620732854'
+    uid: fd322956-6e96-4424-acaf-d71539acbc5b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:09Z'
+  message: Pulling image "nginx:latest"
+  metadata:
+    name: nginx-deployment-7cb85649db-jtmp2.18d5e2c1dced14e3
+    namespace: test-deployment-5
+  reason: Pulling
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:09Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: nginx-deployment-7cb85649db-jtmp2
+    namespace: test-deployment-5
+    resourceVersion: '620732854'
+    uid: fd322956-6e96-4424-acaf-d71539acbc5b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:09Z'
+  message: 'Successfully pulled image "nginx:latest" in 524ms (524ms including waiting).
+    Image size: 66343686 bytes.'
+  metadata:
+    name: nginx-deployment-7cb85649db-jtmp2.18d5e2c1fc361756
+    namespace: test-deployment-5
+  reason: Pulled
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:09Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: nginx-deployment-7cb85649db-jtmp2
+    namespace: test-deployment-5
+    resourceVersion: '620732854'
+    uid: fd322956-6e96-4424-acaf-d71539acbc5b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:09Z'
+  message: 'Created container: nginx'
+  metadata:
+    name: nginx-deployment-7cb85649db-jtmp2.18d5e2c1fdf9e0a2
+    namespace: test-deployment-5
+  reason: Created
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:09Z'
+  involvedObject:
+    apiVersion: v1
+    fieldPath: spec.containers{nginx}
+    kind: Pod
+    name: nginx-deployment-7cb85649db-jtmp2
+    namespace: test-deployment-5
+    resourceVersion: '620732854'
+    uid: fd322956-6e96-4424-acaf-d71539acbc5b
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:09Z'
+  message: Started container nginx
+  metadata:
+    name: nginx-deployment-7cb85649db-jtmp2.18d5e2c2026d3a86
+    namespace: test-deployment-5
+  reason: Started
+  reportingComponent: kubelet
+  reportingInstance: ip-10-250-8-135.eu-west-1.compute.internal
+  source:
+    component: kubelet
+    host: ip-10-250-8-135.eu-west-1.compute.internal
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:08Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    name: nginx-deployment-7cb85649db
+    namespace: test-deployment-5
+    resourceVersion: '620732851'
+    uid: 2ef1f2cc-ca2e-4008-8b92-4aadd84fb412
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:08Z'
+  message: 'Created pod: nginx-deployment-7cb85649db-jtmp2'
+  metadata:
+    name: nginx-deployment-7cb85649db.18d5e2c1b7610bdd
+    namespace: test-deployment-5
+  reason: SuccessfulCreate
+  reportingComponent: replicaset-controller
+  reportingInstance: ''
+  source:
+    component: replicaset-controller
+  type: Normal
+- apiVersion: v1
+  count: 1
+  eventTime: null
+  firstTimestamp: '2026-09-16T19:09:08Z'
+  involvedObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-deployment
+    namespace: test-deployment-5
+    resourceVersion: '620732850'
+    uid: 268e51ee-9117-4e11-90c6-48832a5565d0
+  kind: Event
+  lastTimestamp: '2026-09-16T19:09:08Z'
+  message: Scaled up replica set nginx-deployment-7cb85649db from 0 to 1
+  metadata:
+    name: nginx-deployment.18d5e2c1b6c56a8f
+    namespace: test-deployment-5
+  reason: ScalingReplicaSet
+  reportingComponent: deployment-controller
+  reportingInstance: ''
+  source:
+    component: deployment-controller
+  type: Normal
+kind: List
+metadata: {}
