@@ -24,6 +24,7 @@ from utils.settings import (
     DOCS_SOURCES_FILE_PATH,
     DOCS_TABLE_NAME,
     EMBEDDING_MODEL_NAME,
+    INDEX_TO_FILE,
     PINAKES_BIN,
     PINAKES_CONFIG,
     TMP_DIR,
@@ -124,12 +125,15 @@ def run_indexer(
     logger.info("Starting index task")
     start = time.monotonic()
 
-    if embeddings_model is None:
+    # In INDEX_TO_FILE mode chunks are written to a file and never embedded or written to HANA,
+    # so skip creating an embedding model and a DB connection unless the caller injected one --
+    # this is what lets the curated-corpus demo run without SAP AI Core or HANA credentials.
+    if embeddings_model is None and not INDEX_TO_FILE:
         embedding_model = get_embedding_model_config(EMBEDDING_MODEL_NAME)
         create_embedding = create_embedding_factory(openai_embedding_creator)
         embeddings_model = create_embedding(embedding_model.name)
 
-    if hana_conn is None:
+    if hana_conn is None and not INDEX_TO_FILE:
         hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
         if not hana_conn:
             logger.error("Failed to connect to the database. Exiting.")

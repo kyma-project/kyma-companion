@@ -71,6 +71,24 @@ def test_run_indexer_uses_injected_embeddings_and_connection(mock_embeddings, mo
     mock_indexer_cls.assert_called_once()
 
 
+def test_run_indexer_skips_model_and_connection_when_index_to_file():
+    """When INDEX_TO_FILE is set, run_indexer never needs SAP AI Core or HANA credentials."""
+    from main import run_indexer
+
+    with (
+        patch("main.INDEX_TO_FILE", True),
+        patch("main.get_embedding_model_config") as mock_get_config,
+        patch("main.create_hana_connection") as mock_create_conn,
+        patch("main.AdaptiveSplitMarkdownIndexer") as mock_indexer_cls,
+    ):
+        mock_indexer_cls.return_value.index = Mock()
+        run_indexer()
+
+    mock_get_config.assert_not_called()
+    mock_create_conn.assert_not_called()
+    mock_indexer_cls.assert_called_once_with("data", None, None, "kyma_docs")
+
+
 def test_run_drop_calls_drop_table_with_injected_connection(mock_hana_conn):
     """run_drop calls drop_table with the injected connection and configured table name."""
     from main import run_drop

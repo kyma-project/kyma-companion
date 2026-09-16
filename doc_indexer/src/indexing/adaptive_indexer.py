@@ -229,8 +229,8 @@ class AdaptiveSplitMarkdownIndexer:
     def __init__(
         self,
         docs_path: str,
-        embedding: Embeddings,
-        connection: dbapi.Connection,
+        embedding: Embeddings | None,
+        connection: dbapi.Connection | None,
         table_name: str | None = None,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         min_chunk_token_count: int = 20,
@@ -241,8 +241,9 @@ class AdaptiveSplitMarkdownIndexer:
 
         Args:
             docs_path: Path to the directory containing markdown files.
-            embedding: Embedding model to use for indexing.
-            connection: HANA database connection.
+            embedding: Embedding model to use for indexing. May be None when INDEX_TO_FILE
+                is set -- chunks are then written to a file and never embedded.
+            connection: HANA database connection. May be None when INDEX_TO_FILE is set.
             table_name: Name of the HANA table to store the index.
             headers_to_split_on: List of header tuples to split on.
             min_chunk_token_count: Chunks with fewer tokens are merged into neighbours.
@@ -264,8 +265,14 @@ class AdaptiveSplitMarkdownIndexer:
 
         # staging_table_name and db are set fresh on each index() call so that
         # repeated invocations don't collide on the same staging table name.
+        # Both stay unset in INDEX_TO_FILE mode: it never touches HANA, and connection or
+        # embedding may be None (see index()).
         self.staging_table_name: str = ""
-        self.db: HanaDB = HanaDB(connection=connection, embedding=embedding, table_name=table_name)
+        self.db: HanaDB | None = None
+        if not INDEX_TO_FILE:
+            if connection is None or embedding is None:
+                raise ValueError("connection and embedding are required unless INDEX_TO_FILE is set.")
+            self.db = HanaDB(connection=connection, embedding=embedding, table_name=table_name)
 
         self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
 
@@ -554,6 +561,8 @@ class AdaptiveSplitMarkdownIndexer:
 
         On any exception the staging table is dropped and the exception is re-raised.
         """
+        assert self.db is not None, "_insert_chunks_to_staging requires a HanaDB instance (INDEX_TO_FILE is unset)."
+        assert self.connection is not None, "_insert_chunks_to_staging requires a HANA connection."
         batch: list[Document] = []
         batch_count = 0
         total = 0
@@ -602,6 +611,7 @@ class AdaptiveSplitMarkdownIndexer:
         If the staging -> live rename fails, old is renamed back to live and the
         exception is re-raised.
         """
+        assert self.connection is not None, "_swap_staging_to_live requires a HANA connection."
         rename_table(self.connection, DATABASE_USER, self.table_name, old_table_name, ignore_missing=True)
         try:
             rename_table(self.connection, DATABASE_USER, self.staging_table_name, self.table_name)
@@ -626,14 +636,17 @@ class AdaptiveSplitMarkdownIndexer:
         On any error before or during the swap the staging table is dropped and
         the live table is left untouched.
         """
-        self.staging_table_name = sanitize_table_name(
-            f"{self.table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}"
-        )
-        self.db = HanaDB(
-            connection=self.connection,
-            embedding=self.embedding,
-            table_name=self.staging_table_name,
-        )
+        if not INDEX_TO_FILE:
+            if self.connection is None or self.embedding is None:
+                raise ValueError("connection and embedding are required unless INDEX_TO_FILE is set.")
+            self.staging_table_name = sanitize_table_name(
+                f"{self.table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}"
+            )
+            self.db = HanaDB(
+                connection=self.connection,
+                embedding=self.embedding,
+                table_name=self.staging_table_name,
+            )
         # A pinakes-materialised artifact directory carries a manifest.json: index exactly
         # the pages it lists (with their curated metadata), instead of walking the directory
         # and reading every file (which would also pick up manifest.json, meta.json and the

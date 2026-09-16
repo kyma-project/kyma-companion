@@ -968,6 +968,49 @@ class TestIndexAtomicSwap:
         mock_rename.assert_not_called()
 
 
+class TestIndexToFileDryRun:
+    """INDEX_TO_FILE lets the indexer run without a HANA connection or an embedding model."""
+
+    def test_init_requires_connection_and_embedding_unless_index_to_file(self):
+        with (
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", False),
+            pytest.raises(ValueError, match="connection and embedding are required"),
+        ):
+            AdaptiveSplitMarkdownIndexer(docs_path="", embedding=None, connection=None)
+
+    def test_init_allows_none_connection_and_embedding_when_index_to_file(self):
+        with patch("indexing.adaptive_indexer.INDEX_TO_FILE", True):
+            indexer = AdaptiveSplitMarkdownIndexer(docs_path="", embedding=None, connection=None)
+
+        assert indexer.db is None
+
+    def test_index_writes_file_without_connection_or_embedding(self, tmp_path, monkeypatch):
+        """The full index() dry-run path never touches HANA or the embedding model."""
+        output_dir = tmp_path
+        # index() writes to a relative path (cwd) -- chdir so the test doesn't litter the repo.
+        monkeypatch.chdir(output_dir)
+
+        with (
+            patch("indexing.adaptive_indexer.INDEX_TO_FILE", True),
+            patch("indexing.adaptive_indexer.load_documents", return_value=[SAMPLE_DOC]),
+        ):
+            indexer = AdaptiveSplitMarkdownIndexer(
+                docs_path="",
+                embedding=None,
+                connection=None,
+                table_name=TABLE_NAME,
+                min_chunk_token_count=1,
+                max_chunk_token_count=10000,
+            )
+            indexer.index()
+
+        output_files = list(output_dir.glob("Kyma_Documentation_chunks_*.json"))
+        assert len(output_files) == 1
+        written = json.loads(output_files[0].read_text(encoding="utf-8"))
+        assert len(written["kyma_docs"]) == 1
+        assert written["kyma_docs"][0]["metadata"]["title"] == "Title"
+
+
 class TestTinySectionMerging:
     """Tiny sections (<=min_chunk_token_count tokens) must never be dropped."""
 
