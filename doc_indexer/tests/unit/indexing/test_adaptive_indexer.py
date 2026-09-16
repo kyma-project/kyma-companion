@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -12,6 +13,7 @@ from indexing.adaptive_indexer import (
     remove_parentheses,
 )
 from langchain_core.documents import Document
+from utils.manifest import load_manifest_documents
 
 from utils.utils import sanitize_table_name
 
@@ -1229,3 +1231,180 @@ class TestCodeFencePreservation:
                 f"original {len(doc.page_content)} chars, "
                 f"chunks total {total_chunk_chars} chars"
             )
+
+
+def _write(path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+@pytest.fixture
+def manifest_artifact_dir(tmp_path):
+    """A tiny synthetic pinakes artifact: two sources, one residue file, one excluded page.
+
+    Mirrors tests/unit/utils/test_manifest.py's fixture, but the api-gateway page here has
+    headers so it gets split into several chunks, letting the chunk-level metadata
+    assertions below exercise the recursive path too.
+    """
+    root = tmp_path / "artifact"
+
+    manifest = {
+        "version": 1,
+        "generated_at": "2026-09-16T00:00:00Z",
+        "sources": {
+            "istio": {
+                "commit": "abc123",
+                "pages": {
+                    "docs/user/README.md": {
+                        "title": "Istio Module",
+                        "doc_type": "concept",
+                        "section": "",
+                        "sha256": "sha-readme",
+                        "selected_by": "resolver",
+                    },
+                    "docs/user/second.md": {
+                        "title": "Second Page",
+                        "doc_type": "howto",
+                        "section": "Guides",
+                        "sha256": "sha-second",
+                        "selected_by": "resolver",
+                    },
+                },
+            },
+            "api-gateway": {
+                "commit": "def456",
+                "pages": {
+                    "docs/user/overview.md": {
+                        "title": "API Gateway Overview",
+                        "doc_type": "concept",
+                        "section": "",
+                        "sha256": "sha-overview",
+                        "selected_by": "resolver",
+                    }
+                },
+            },
+        },
+    }
+    _write(root / "manifest.json", json.dumps(manifest))
+
+    _write(
+        root / "istio" / "meta.json",
+        json.dumps(
+            {
+                "repo": "kyma-project/istio",
+                "module": "istio",
+                "base_url": "https://github.com/kyma-project/istio/blob/abc123",
+                "commit": "abc123",
+            }
+        ),
+    )
+    _write(root / "istio" / "docs" / "user" / "README.md", "# Istio Module\nOverview content.")
+    _write(root / "istio" / "docs" / "user" / "second.md", "# Second Page\nGuide content.")
+
+    _write(
+        root / "api-gateway" / "meta.json",
+        json.dumps(
+            {
+                "repo": "kyma-project/api-gateway",
+                "module": "api-gateway",
+                "base_url": "https://github.com/kyma-project/api-gateway/blob/def456",
+                "commit": "def456",
+            }
+        ),
+    )
+    _write(
+        root / "api-gateway" / "docs" / "user" / "overview.md",
+        "# API Gateway Overview\nIntro line.\n\n## Configuration\nConfig details go here.",
+    )
+
+    # Residue: left out by the resolver, never listed in the manifest -- must not be read.
+    _write(root / "_residue" / "istio" / "docs" / "user" / "leftover.md", "# Leftover\nShould never be indexed.")
+
+    # Exclude istio::docs/user/second.md via a still-valid decision (sha256 matches the manifest).
+    decision = {
+        "id": "istio::docs/user/second.md",
+        "sha256": "sha-second",
+        "decision": "exclude",
+        "reason": "duplicate of another page",
+        "by": "test",
+        "at": "2026-09-16T00:00:00Z",
+    }
+    _write(root / "decisions.jsonl", json.dumps(decision) + "\n")
+
+    return root
+
+
+class TestManifestDrivenChunking:
+    """Chunking a manifest-loaded corpus: only manifest pages are chunked, with curated metadata."""
+
+    def test_only_manifest_pages_are_chunked(
+        self, manifest_artifact_dir, mock_embedding, mock_connection, mock_hana_db
+    ):
+        docs = load_manifest_documents(str(manifest_artifact_dir))
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path=str(manifest_artifact_dir),
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+
+        chunks = list(indexer.get_document_chunks(docs))
+
+        page_ids = {chunk.metadata["page_id"] for chunk in chunks}
+        assert page_ids == {"istio::docs/user/README.md", "api-gateway::docs/user/overview.md"}
+        assert all("Leftover" not in chunk.page_content for chunk in chunks)
+        assert all("Guide content." not in chunk.page_content for chunk in chunks)
+
+    def test_chunks_carry_manifest_and_source_meta_metadata(
+        self, manifest_artifact_dir, mock_embedding, mock_connection, mock_hana_db
+    ):
+        docs = load_manifest_documents(str(manifest_artifact_dir))
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path=str(manifest_artifact_dir),
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+
+        chunks = list(indexer.get_document_chunks(docs))
+        istio_chunks = [c for c in chunks if c.metadata["page_id"] == "istio::docs/user/README.md"]
+        assert len(istio_chunks) == 1
+        chunk = istio_chunks[0]
+
+        assert chunk.metadata["module"] == "istio"
+        assert chunk.metadata["repo"] == "kyma-project/istio"
+        assert chunk.metadata["commit"] == "abc123"
+        assert chunk.metadata["url"] == "https://github.com/kyma-project/istio/blob/abc123/docs/user/README.md"
+        assert chunk.metadata["doc_type"] == "concept"
+        assert chunk.metadata["section"] == ""
+        assert chunk.metadata["path"] == "docs/user/README.md"
+        assert chunk.metadata["sha256"] == "sha-readme"
+        assert chunk.metadata["title"] == "Istio Module"
+
+    def test_split_page_chunks_inherit_navigation_title_and_manifest_metadata(
+        self, manifest_artifact_dir, mock_embedding, mock_connection, mock_hana_db
+    ):
+        """A page split by its H2 headers still carries the navigation title as a prefix,
+        and every resulting chunk still carries the page's manifest/meta.json metadata."""
+        docs = load_manifest_documents(str(manifest_artifact_dir))
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path=str(manifest_artifact_dir),
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="t",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1,  # force splitting on every header
+        )
+
+        chunks = list(indexer.get_document_chunks(docs))
+        gateway_chunks = [c for c in chunks if c.metadata["page_id"] == "api-gateway::docs/user/overview.md"]
+        assert len(gateway_chunks) >= 1
+        for chunk in gateway_chunks:
+            assert chunk.metadata["title"].startswith("API Gateway Overview")
+            assert chunk.metadata["module"] == "api-gateway"
+            assert chunk.metadata["repo"] == "kyma-project/api-gateway"
+            assert chunk.metadata["page_id"] == "api-gateway::docs/user/overview.md"

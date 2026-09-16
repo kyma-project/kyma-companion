@@ -13,6 +13,7 @@ from langchain_hana import HanaDB
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from utils.documents import load_documents
 from utils.hana import drop_table, rename_table
+from utils.manifest import has_manifest, load_manifest_documents
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER, INDEX_TO_FILE
@@ -23,6 +24,11 @@ encoding = tiktoken.encoding_for_model("gpt-4o")
 logger = get_logger(__name__)
 
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
+
+# Document metadata keys handled explicitly by _process_doc; everything else on a document
+# (e.g. the manifest/meta.json fields utils.manifest.load_manifest_documents attaches) is
+# passed through unchanged onto every chunk derived from it.
+_RESERVED_DOC_METADATA_KEYS = {"source", "title", "module", "version"}
 
 _RETRY_WAIT_SECONDS = [2, 4, 8, 16, 32]
 _MAX_RETRIES = len(_RETRY_WAIT_SECONDS)
@@ -287,6 +293,7 @@ class AdaptiveSplitMarkdownIndexer:
         parent_title: str = "",
         module: str | None = "kyma",
         module_version: str | None = "latest",
+        extra_metadata: dict[str, str] | None = None,
     ) -> Generator[Document]:
         """Recursively split a document into chunks based on token count and header levels.
 
@@ -296,10 +303,14 @@ class AdaptiveSplitMarkdownIndexer:
             parent_title: The title of the parent chunk.
             module: The module name for metadata.
             module_version: The module version for metadata.
+            extra_metadata: Additional metadata merged into every yielded chunk (e.g. the
+                manifest/meta.json fields when indexing a curated corpus). None for the
+                legacy fetch output.
 
         Yields:
             Documents representing individual chunks.
         """
+        extra_metadata = extra_metadata or {}
         tokens = len(encoding.encode(doc.page_content))
 
         # If the document is smaller than the max chunk token count or the H3 level is
@@ -324,6 +335,7 @@ class AdaptiveSplitMarkdownIndexer:
                             "title": part_title,
                             "module": module,
                             "version": module_version,
+                            **extra_metadata,
                         },
                     )
             else:
@@ -334,6 +346,7 @@ class AdaptiveSplitMarkdownIndexer:
                         "title": doc.metadata.get("title") or extract_first_title(doc.page_content),
                         "module": module,
                         "version": module_version,
+                        **extra_metadata,
                     },
                 )
             return
@@ -355,7 +368,14 @@ class AdaptiveSplitMarkdownIndexer:
                         "version": module_version,
                     },
                 )
-                yield from self._process_doc(preamble_doc, level=len(HEADER_LEVELS), parent_title=parent_title)
+                yield from self._process_doc(
+                    preamble_doc,
+                    level=len(HEADER_LEVELS),
+                    parent_title=parent_title,
+                    module=module,
+                    module_version=module_version,
+                    extra_metadata=extra_metadata,
+                )
                 continue
 
             title = self._build_title(sub_doc)
@@ -377,7 +397,14 @@ class AdaptiveSplitMarkdownIndexer:
             )
 
             # Recursively process this chunk with next header level
-            yield from self._process_doc(chunk, level + 1, parent_title=title if level == 0 else parent_title)
+            yield from self._process_doc(
+                chunk,
+                level + 1,
+                parent_title=title if level == 0 else parent_title,
+                module=module,
+                module_version=module_version,
+                extra_metadata=extra_metadata,
+            )
 
     def _merge_tiny_chunks(self, chunks: list[Document]) -> list[Document]:
         """Merge chunks with too few tokens into their neighbours within the same document.
@@ -444,7 +471,22 @@ class AdaptiveSplitMarkdownIndexer:
         total_oversized_split = 0
 
         for doc in docs_to_chunk:
-            raw_chunks = list(self._process_doc(doc))
+            # Documents loaded from a pinakes manifest (utils.manifest.load_manifest_documents)
+            # carry module/repo/commit/url/doc_type/section/path/page_id/sha256 metadata that
+            # must be propagated onto every chunk; legacy fetch-output documents only carry
+            # "source", so this is a no-op for them (module/version fall back to the defaults).
+            extra_metadata = {k: v for k, v in doc.metadata.items() if k not in _RESERVED_DOC_METADATA_KEYS}
+            module = doc.metadata.get("module", "kyma")
+            module_version = doc.metadata.get("version", "latest")
+            raw_chunks = list(
+                self._process_doc(
+                    doc,
+                    parent_title=doc.metadata.get("title") or "",
+                    module=module,
+                    module_version=module_version,
+                    extra_metadata=extra_metadata or None,
+                )
+            )
 
             # Count preamble chunks (those whose title matches the parent doc title
             # and which came from a sub_doc with no metadata).
@@ -592,7 +634,14 @@ class AdaptiveSplitMarkdownIndexer:
             embedding=self.embedding,
             table_name=self.staging_table_name,
         )
-        docs = load_documents(self.docs_path)
+        # A pinakes-materialised artifact directory carries a manifest.json: index exactly
+        # the pages it lists (with their curated metadata), instead of walking the directory
+        # and reading every file (which would also pick up manifest.json, meta.json and the
+        # _residue/ leftovers).
+        if has_manifest(self.docs_path):
+            docs = load_manifest_documents(self.docs_path)
+        else:
+            docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
         if INDEX_TO_FILE:  # write pretty to file
