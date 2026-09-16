@@ -12,3 +12,6 @@ eval-after.json
 eval.before.json
 eval.after.json
 report.md
+
+# INDEX_TO_FILE=true output (see README "Demo: the HANA builder on the curated corpus")
+Kyma_Documentation_chunks_*.json
