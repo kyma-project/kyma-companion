@@ -1,2 +1,14 @@
 data
 tmp
+
+# pinakes materialised outputs (SPEC 2.3): reproducible from pinakes.yaml + manifest.json,
+# never committed. manifest.json, residue.jsonl and duplicates.jsonl are committed.
+artifact/
+embeddings.*
+manifest.before.json
+artifact.before/
+eval-before.json
+eval-after.json
+eval.before.json
+eval.after.json
+report.md
