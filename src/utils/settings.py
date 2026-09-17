@@ -2,19 +2,9 @@ import json
 import logging
 import os
 import sys
-from enum import StrEnum
 from pathlib import Path
 
 from decouple import config
-
-
-class LangfuseMaskingModes(StrEnum):
-    """Enumeration for Langfuse masking modes."""
-
-    DISABLED = "DISABLED"  # No masking, return data as is.
-    PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
-    FILTERED = "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
-    REDACTED = "REDACTED"  # Everything is redacted.
 
 
 def load_env_from_json() -> Path:
@@ -96,13 +86,6 @@ REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
-
-# Langfuse
-LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
-LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
-LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
-LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
-LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
