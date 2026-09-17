@@ -1,12 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "schedule": [
-    "* 0-2 * * 1"
+    "* 0-2 * * 1",
+    "* 0-2 * * 2"
   ],
   "timezone": "Europe/Berlin",
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
+    "doc_indexer/Dockerfile",
     "tests/blackbox/pyproject.toml",
     ".github/workflows/**"
   ],
@@ -18,53 +20,54 @@
   ],
   "enabledManagers": [
     "poetry",
-    "github-actions"
+    "github-actions",
+    "dockerfile"
   ],
   "packageRules": [
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "pyproject.toml"
-      ],
-      "groupName": "Dependencies in pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
+      "matchManagers": ["poetry", "github-actions", "dockerfile"],
+      "schedule": ["* 0-2 * * 1"],
+      "groupName": "deps: combines dependency bump",
+      "addLabels": ["dependencies"]
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "doc_indexer/pyproject.toml"
-      ],
-      "groupName": "Dependencies in doc_indexer/pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["pyproject.toml"],
+      "schedule": ["* 0-2 * * 2"],
+      "groupName": null,
+      "prTitle": "deps: pyproject.toml",
+      "addLabels": ["dependencies"]
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "tests/blackbox/pyproject.toml"
-      ],
-      "groupName": "Dependencies in tests/blackbox/pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["doc_indexer/pyproject.toml"],
+      "schedule": ["* 0-2 * * 2"],
+      "groupName": null,
+      "prTitle": "deps: doc_indexer/pyproject.toml",
+      "addLabels": ["dependencies"]
     },
     {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "groupName": "GitHub Actions",
-      "addLabels": [
-        "dependencies"
-      ]
+      "matchManagers": ["poetry"],
+      "matchFileNames": ["tests/blackbox/pyproject.toml"],
+      "schedule": ["* 0-2 * * 2"],
+      "groupName": null,
+      "prTitle": "deps: tests/blackbox/pyproject.toml",
+      "addLabels": ["dependencies"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "schedule": ["* 0-2 * * 2"],
+      "groupName": null,
+      "prTitle": "deps: .github/workflows",
+      "addLabels": ["dependencies"]
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["doc_indexer/Dockerfile"],
+      "schedule": ["* 0-2 * * 2"],
+      "groupName": null,
+      "prTitle": "deps: doc_indexer/Dockerfile",
+      "addLabels": ["dependencies"]
     }
   ]
 }
