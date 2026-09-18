@@ -139,8 +139,10 @@ RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSIO
 # ctypes, compression, hashing, zoneinfo with a real zone) work, and that
 # two disabled modules are indeed absent. pip is kept for the next step.
 # The readelf lines assert the hardening requested at configure time, on the
-# interpreter and on _ctypes (which contains libffi): BIND_NOW in the dynamic
-# section means full RELRO; an undefined __stack_chk_fail means stack
+# interpreter and on _ctypes (which contains libffi): a GNU_RELRO program
+# header together with BIND_NOW in the dynamic section means full RELRO (the
+# segment alone is partial RELRO, which leaves the GOT entries for library
+# functions writable); an undefined __stack_chk_fail means stack
 # canaries are compiled in; a __*_chk import (__memcpy_chk, __snprintf_chk,
 # ...) means _FORTIFY_SOURCE took effect.
 RUN cd /opt/python \
@@ -152,7 +154,8 @@ RUN cd /opt/python \
   && find lib -name '*.opt-[12].pyc' -delete \
   && strip bin/python3.14 lib/python3.*/lib-dynload/*.so \
   && for f in bin/python3.14 lib/python3.*/lib-dynload/_ctypes.*.so; do \
-       readelf -dW "$f" | grep -q BIND_NOW \
+       readelf -lW "$f" | grep -q GNU_RELRO \
+       && readelf -dW "$f" | grep -q BIND_NOW \
        && readelf -W --dyn-syms "$f" | grep -q __stack_chk_fail \
        && readelf -W --dyn-syms "$f" | grep -qE '__(mem|str|stp|v?sn?printf)[a-z]*_chk' \
        || { echo "hardening missing in $f"; exit 1; }; \
