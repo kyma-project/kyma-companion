@@ -1,0 +1,57 @@
+name: "Redeploy Test Scenarios"
+run-name: "Redeploy test scenarios to test cluster"
+
+# Weekly refresh of the blackbox test scenarios on the test cluster.
+# Undeploys all existing scenarios and deploys them back from scratch.
+on:
+  schedule:
+    # Every Monday at 05:00 UTC (Monday morning).
+    - cron: "0 5 * * 1"
+  # Allow manual triggering from the Actions tab.
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  redeploy-test-scenarios:
+    name: Undeploy and redeploy all test scenarios
+    runs-on: ubuntu-latest
+    environment: e2e
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install kubectl CLI
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Configure cluster access
+        env:
+          TEST_CLUSTER_KUBECONFIG: ${{ secrets.TEST_CLUSTER_KUBECONFIG }}
+        run: |
+          if [ -z "$TEST_CLUSTER_KUBECONFIG" ]; then
+            echo "::error::Secret TEST_CLUSTER_KUBECONFIG is not set."
+            exit 1
+          fi
+          mkdir -p "$HOME/.kube"
+          echo "$TEST_CLUSTER_KUBECONFIG" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Undeploy all test scenarios
+        run: |
+          chmod +x ./scripts/shell/undeploy_test_scenarios.sh
+          ./scripts/shell/undeploy_test_scenarios.sh
+
+      - name: Deploy all test scenarios
+        run: |
+          chmod +x ./scripts/shell/deploy_test_scenarios.sh
+          ./scripts/shell/deploy_test_scenarios.sh
