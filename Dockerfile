@@ -8,7 +8,8 @@
 #   rootfs   Same image as builder. Assembles, in /rootfs, the complete set
 #            of files the application needs at runtime: the interpreter, the
 #            virtualenv, the application source, and every shared library
-#            those load, found by running ldd over all of them.
+#            those load, found by running ldd over all of them. Also
+#            writes the package metadata vulnerability scanners read.
 #   runtime  FROM scratch, i.e. an empty filesystem, into which /rootfs is
 #            copied. Contains no shell, no package manager, no coreutils, no
 #            files other than the ones the rootfs stage selected. A final
@@ -51,10 +52,16 @@ RUN apt-get update \
 #                                      because the .a is linked into a .so
 #   --disable-docs                     skip the texinfo manual
 #   --disable-multi-os-directory       install to lib/, not lib64/
+# CPPFLAGS/CFLAGS compile libffi with the hardening Debian applies to its
+# packages (checked-buffer libc calls, stack canaries, stack-clash probes);
+# libffi ends up inside _ctypes, so it would otherwise be the one unhardened
+# part of that module. Setting CFLAGS replaces libffi's default optimisation
+# flags, hence the explicit -O2, which _FORTIFY_SOURCE also requires.
 ADD --checksum=sha256:7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4 \
     https://github.com/libffi/libffi/releases/download/v${LIBFFI_VERSION}/libffi-${LIBFFI_VERSION}.tar.gz /src/
 RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VERSION} \
-  && ./configure --prefix=/opt/libffi --disable-shared --enable-static --with-pic \
+  && CPPFLAGS="-D_FORTIFY_SOURCE=3" CFLAGS="-O2 -fstack-protector-strong -fstack-clash-protection" \
+     ./configure --prefix=/opt/libffi --disable-shared --enable-static --with-pic \
        --disable-docs --disable-multi-os-directory > /tmp/libffi.log 2>&1 \
   && make -j"$(nproc)" >> /tmp/libffi.log 2>&1 \
   && make install >> /tmp/libffi.log 2>&1 \
@@ -82,6 +89,17 @@ RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VER
 #                                 pip is removed again after the venv build
 #   --disable-test-modules        skip the _testcapi etc. C test modules
 #   --without-static-libpython    do not install libpython3.14.a
+#   --enable-safety               -fstack-protector-strong (stack canaries)
+#   --enable-slower-safety        -D_FORTIFY_SOURCE=3 (checked-buffer variants
+#                                 of memcpy, sprintf etc.)
+#   CFLAGS                        -fstack-clash-protection: probe each page of
+#                                 a large stack allocation
+#   LDFLAGS                       -z relro -z now: full RELRO; all symbols are
+#                                 resolved at load time and the GOT is then
+#                                 mapped read-only
+# CPython's default build has none of these; the Garden Linux libraries in
+# the image have all of them. They apply to the interpreter and to every
+# stdlib extension module. The trim step below asserts the result.
 # The interpreter binary is statically linked against libpython (there is
 # no libpython3.14.so); its only runtime library dependencies are libc and
 # libm.
@@ -91,8 +109,10 @@ RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSIO
   && printf '%s\n' '*disabled*' _dbm _gdbm _sqlite3 _tkinter readline _curses _curses_panel \
        > Modules/Setup.local \
   && LIBFFI_CFLAGS="-I/opt/libffi/include" LIBFFI_LIBS="/opt/libffi/lib/libffi.a" \
+     CFLAGS="-fstack-clash-protection" LDFLAGS="-Wl,-z,relro -Wl,-z,now" \
      ./configure --prefix=/opt/python --with-openssl=/usr --with-ensurepip=install \
-       --disable-test-modules --without-static-libpython > /tmp/python.log 2>&1 \
+       --disable-test-modules --without-static-libpython \
+       --enable-safety --enable-slower-safety > /tmp/python.log 2>&1 \
   && make -j"$(nproc)" >> /tmp/python.log 2>&1 \
   && make install >> /tmp/python.log 2>&1 \
   || { tail -50 /tmp/python.log; exit 1; }
@@ -118,6 +138,11 @@ RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSIO
 # The python -c lines check that the modules the application needs (ssl,
 # ctypes, compression, hashing, zoneinfo with a real zone) work, and that
 # two disabled modules are indeed absent. pip is kept for the next step.
+# The readelf lines assert the hardening requested at configure time, on the
+# interpreter and on _ctypes (which contains libffi): BIND_NOW in the dynamic
+# section means full RELRO; an undefined __stack_chk_fail means stack
+# canaries are compiled in; a __*_chk import (__memcpy_chk, __snprintf_chk,
+# ...) means _FORTIFY_SOURCE took effect.
 RUN cd /opt/python \
   && rm -rf lib/python3.*/test lib/python3.*/idlelib lib/python3.*/tkinter \
        lib/python3.*/turtledemo lib/python3.*/turtle.py lib/python3.*/__phello__ \
@@ -126,6 +151,12 @@ RUN cd /opt/python \
        bin/idle3* bin/pydoc3* bin/python3*-config \
   && find lib -name '*.opt-[12].pyc' -delete \
   && strip bin/python3.14 lib/python3.*/lib-dynload/*.so \
+  && for f in bin/python3.14 lib/python3.*/lib-dynload/_ctypes.*.so; do \
+       readelf -dW "$f" | grep -q BIND_NOW \
+       && readelf -W --dyn-syms "$f" | grep -q __stack_chk_fail \
+       && readelf -W --dyn-syms "$f" | grep -qE '__(mem|str|stp|v?sn?printf)[a-z]*_chk' \
+       || { echo "hardening missing in $f"; exit 1; }; \
+     done \
   && /opt/python/bin/python3 -c "import ssl, ctypes, zlib, bz2, lzma, hashlib, uuid, zoneinfo; zoneinfo.ZoneInfo('Europe/Berlin')" \
   && ! /opt/python/bin/python3 -c "import dbm.ndbm" 2>/dev/null \
   && ! /opt/python/bin/python3 -c "import sqlite3" 2>/dev/null
@@ -214,6 +245,7 @@ COPY config ./config
 #    /rootfs, dereferencing symlinks so the runtime gets real files.
 # 3. libgcc_s.so.1 is added by hand: glibc loads it with dlopen for thread
 #    cancellation and C++ exception unwinding, so ldd never lists it.
+#    The list of copied libraries is kept in /tmp/libs.txt for step 7.
 # 4. Whole trees: the interpreter, /etc/ssl and /usr/lib/ssl (CA bundle and
 #    OpenSSL's default paths, which point into /etc/ssl), the time zone
 #    database, and /etc/nsswitch.conf (name-service order; the "files" and
@@ -224,6 +256,22 @@ COPY config ./config
 #    which resolves because /opt/python is copied to the same path.
 # 6. /etc/passwd and /etc/group with the root and appuser entries so uid/gid
 #    5678 resolve to a name, and a world-writable /tmp for tempfile.
+# 7. Metadata for vulnerability scanners and SBOM tools. A scratch image has
+#    no dpkg database, so Trivy, Grype and Syft would report no OS packages
+#    and the Garden Linux libraries copied in step 2 and 3 would go unscanned.
+#    Each copied library is mapped to the package that owns it with dpkg -S
+#    (tried on the path ldd printed and on its symlink-resolved form, since
+#    dpkg records only one of them); a library no package owns stops the
+#    build. For glibc's loader dpkg -S also prints "diversion by libc6"
+#    lines, which name no package and are dropped. The status stanza of each
+#    package is written to
+#    /var/lib/dpkg/status.d/<package>, the per-package layout of Google's
+#    distroless images, which those tools read. /etc/os-release tells them
+#    which distribution the versions belong to. A package is listed in full
+#    even if only one of its files is in the image, so findings can concern
+#    files that are not there; that errs on the safe side. CPython and libffi
+#    are compiled here, belong to no package and are not listed; they are
+#    tracked through PYTHON_VERSION and LIBFFI_VERSION above.
 FROM builder AS rootfs
 RUN set -eu \
   && mkdir -p /rootfs/usr/lib /rootfs/usr/lib64 /rootfs/usr/bin /rootfs/etc /rootfs/app \
@@ -233,9 +281,20 @@ RUN set -eu \
   && if grep -B1 'not found' /tmp/ldd.out; then echo 'unresolved shared libraries'; exit 1; fi \
   && awk '$2 == "=>" && $3 ~ /^\// { print $3 } $1 ~ /^\// && $2 ~ /^\(0x/ { print $1 }' /tmp/ldd.out \
      | grep -vE '^/(app|opt/python)/' \
-     | sort -u \
-     | while read -r lib; do cp --parents -L "$lib" /rootfs; done \
-  && cp --parents -L "$(find /usr/lib -name libgcc_s.so.1 -print -quit)" /rootfs \
+     | sort -u > /tmp/libs.txt \
+  && find /usr/lib -name libgcc_s.so.1 -print -quit >> /tmp/libs.txt \
+  && while read -r lib; do cp --parents -L "$lib" /rootfs; done < /tmp/libs.txt \
+  && while read -r lib; do \
+       dpkg -S "$lib" 2>/dev/null || dpkg -S "$(readlink -f "$lib")" 2>/dev/null \
+       || { echo "no package owns $lib" >&2; exit 1; }; \
+     done < /tmp/libs.txt > /tmp/owners.txt \
+  && grep -v '^diversion by ' /tmp/owners.txt | sed 's|: /.*||' | sort -u > /tmp/pkgs.txt \
+  && test -s /tmp/pkgs.txt \
+  && mkdir -p /rootfs/var/lib/dpkg/status.d \
+  && while read -r pkg; do \
+       dpkg-query -s "$pkg" > "/rootfs/var/lib/dpkg/status.d/${pkg%%:*}" || exit 1; \
+     done < /tmp/pkgs.txt \
+  && cp -L /etc/os-release /rootfs/etc/os-release \
   && cp -a --parents /opt/python /etc/ssl /usr/lib/ssl /usr/share/zoneinfo /etc/nsswitch.conf /rootfs \
   && cp -a /app/.venv /rootfs/app/venv \
   && cp -a /app/src /app/config /rootfs/app/ \
