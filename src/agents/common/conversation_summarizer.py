@@ -1,7 +1,5 @@
 """Summarize older conversation history to keep prompt token usage bounded."""
 
-from typing import Protocol
-
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import PromptTemplate
@@ -29,14 +27,6 @@ def _role_of(message: BaseMessage) -> str:
 def format_conversation(messages: list[BaseMessage]) -> str:
     """Render a list of messages into a readable transcript for summarization."""
     return "\n\n".join(f"{_role_of(msg)}: {str(msg.content)}" for msg in messages)
-
-
-class IConversationSummarizer(Protocol):
-    """Protocol for conversation history summarizers."""
-
-    async def summarize(self, messages: list[BaseMessage], config: RunnableConfig | None = None) -> str:
-        """Summarize the given conversation messages into a concise recap."""
-        ...
 
 
 class ConversationSummarizer:

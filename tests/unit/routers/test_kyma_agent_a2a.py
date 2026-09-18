@@ -14,6 +14,7 @@ from a2a.server.agent_execution import RequestContext
 from a2a.server.events import EventQueueLegacy
 from a2a.types.a2a_pb2 import Message, Part, Role
 from a2a.utils.errors import InternalError, InvalidParamsError, UnsupportedOperationError
+from google.protobuf import json_format
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
@@ -166,6 +167,23 @@ class TestKymaAgentExecutorExecute:
         assert event.role == Role.ROLE_AGENT
         assert len(event.parts) == 1
         assert event.parts[0].text == expected_answer
+
+        # The response must carry per-request metrics in its metadata, stored
+        # natively as a nested object (no JSON-string double-encoding).
+        metadata = json_format.MessageToDict(event.metadata)
+        assert "x-metrics" in metadata
+        metrics = metadata["x-metrics"]
+        assert isinstance(metrics, dict)
+        # Struct stores numbers as doubles, so integer counts round-trip as floats.
+        assert {k: (int(v) if isinstance(v, float) else v) for k, v in metrics.items()} == {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "llm_call_count": 0,
+            "tool_calls": [],
+            "tool_call_count": 0,
+            "tool_call_counts": {},
+        }
 
     @pytest.mark.asyncio
     async def test_raises_internal_error_on_k8s_client_error(self, executor, event_queue):

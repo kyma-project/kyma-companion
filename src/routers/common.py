@@ -32,7 +32,6 @@ logger = get_logger(__name__)
 # Constants
 # ============================================================================
 
-SESSION_ID_HEADER = "session-id"
 API_PREFIX = "/api"
 
 # ============================================================================
@@ -205,40 +204,6 @@ class SearchKymaDocResponse(BaseModel):
 
     results: list[str] = Field(..., description="List of retrieved documents")
     query: str = Field(..., description="Original search query")
-
-
-class KymaAgentRequest(BaseModel):
-    """Request model for the Kyma ReAct agent endpoint."""
-
-    query: str = Field(
-        ...,
-        description="The question or task for the Kyma agent",
-        examples=[
-            "Why is my Kyma Function not starting?",
-            "What are the available APIRule versions?",
-        ],
-    )
-    resource_kind: str = Field(
-        description="Kyma/K8s resource kind the user is currently viewing in Busola UI (navigation context)",
-    )
-    resource_name: str = Field(
-        default="",
-        description="Name of the resource the user is currently viewing in Busola UI (navigation context)",
-    )
-    resource_api_version: str = Field(
-        default="",
-        description="API version of the resource currently viewed in Busola UI (navigation context)",
-    )
-    namespace: str = Field(
-        default="",
-        description="Namespace of the resource the user is currently viewing in Busola UI (navigation context)",
-    )
-
-
-class KymaAgentResponse(BaseModel):
-    """Response model for the Kyma ReAct agent endpoint."""
-
-    answer: str = Field(..., description="The agent's final answer")
 
 
 # ============================================================================

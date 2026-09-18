@@ -63,8 +63,9 @@ jobs:
 
       - name: Create config secret
         env:
-          DOC_INDEXER_CONFIG_BASE64: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
+          DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
         run: |
+          DOC_INDEXER_CONFIG_BASE64=$(echo "$DOC_INDEXER_TESTS_CONFIG" | base64 -w 0)
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: Secret
@@ -88,6 +89,12 @@ jobs:
           docker pull "${{ inputs.IMAGE_NAME }}"
           k3d image import "${{ inputs.IMAGE_NAME }}" -c doc-indexer-e2e
 
+      # The fetch task runs as an init container and the index task as the main
+      # container, each started in exec form, so the Job does not depend on a
+      # shell being present in the image (a "sh -c" command line chaining the
+      # two would). Both containers share an emptyDir at /app/data, where fetch
+      # writes the documents and index reads them. The env and volumeMounts are
+      # declared once and reused via YAML anchors.
       - name: Run fetch and index Job
         run: |
           cat <<EOF | kubectl apply -f -
@@ -101,12 +108,14 @@ jobs:
             template:
               spec:
                 restartPolicy: Never
-                containers:
-                - name: doc-indexer
+                securityContext:
+                  fsGroup: 0
+                initContainers:
+                - name: fetch
                   image: ${{ inputs.IMAGE_NAME }}
                   imagePullPolicy: Never
-                  command: ["sh", "-c", "python src/main.py fetch && python src/main.py index"]
-                  env:
+                  command: ["python", "src/main.py", "fetch"]
+                  env: &env
                   - name: LOG_LEVEL
                     value: "INFO"
                   - name: CONFIG_PATH
@@ -117,12 +126,21 @@ jobs:
                     value: "/app/data"
                   - name: DOCS_TABLE_NAME
                     value: "${{ inputs.DOCS_TABLE_NAME }}"
-                  volumeMounts:
+                  volumeMounts: &volumeMounts
                   - name: config
                     mountPath: /etc/config/config.json
                     subPath: config.json
                   - name: doc-sources
                     mountPath: /etc/doc-sources
+                  - name: data
+                    mountPath: /app/data
+                containers:
+                - name: index
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "index"]
+                  env: *env
+                  volumeMounts: *volumeMounts
                 volumes:
                 - name: config
                   secret:
@@ -130,6 +148,8 @@ jobs:
                 - name: doc-sources
                   configMap:
                     name: doc-indexer-sources
+                - name: data
+                  emptyDir: {}
           EOF
 
       - name: Wait for e2e Job to complete
@@ -157,7 +177,7 @@ jobs:
       - name: Print Job logs
         if: always()
         run: |
-          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-e2e --tail=200 || true
+          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-e2e --all-containers=true --tail=200 || true
 
       - name: Debug information on failure
         if: failure()

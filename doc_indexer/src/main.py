@@ -1,5 +1,5 @@
 import argparse
-import subprocess
+import os
 import time
 
 from fetcher.fetcher import DocumentsFetcher
@@ -44,10 +44,12 @@ def run_fetcher() -> None:
     )
     fetcher.run()
     logger.info(f"Fetch completed in {time.monotonic() - start:.1f}s")
-    try:
-        subprocess.run(["tree", DOCS_PATH])
-    except Exception:
-        logger.warning("Fetcher Completed but Failed to print the documents list")
+    for root, _dirs, files in os.walk(DOCS_PATH):
+        level = root.replace(DOCS_PATH, "").count(os.sep)
+        indent = "  " * level
+        logger.info(f"{indent}{os.path.basename(root)}/")
+        for fname in files:
+            logger.info(f"{indent}  {fname}")
 
 
 def run_indexer(

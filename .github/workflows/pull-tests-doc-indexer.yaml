@@ -41,7 +41,7 @@ jobs:
           echo "Got PYTHON_VERSION=${PYTHON_VERSION}"
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -73,7 +73,8 @@ jobs:
           DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
           DOCS_PATH: "/test-data"
           DOCS_TABLE_NAME: "kc_pr_${{ github.event.pull_request.number }}"
+          DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
         run: |
           export CONFIG_PATH=$GITHUB_WORKSPACE/config/config.json
-          echo "${{ secrets.DOC_INDEXER_TESTS_CONFIG }}" | base64 --decode | jq > "$CONFIG_PATH"
+          echo "$DOC_INDEXER_TESTS_CONFIG" > "$CONFIG_PATH"
           poetry run poe test-integration

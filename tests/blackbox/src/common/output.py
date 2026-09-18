@@ -1,10 +1,11 @@
 import json
+import os
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import github_action_utils as gha_utils
 from deepeval.evaluate.utils import print_test_result
 from deepeval.test_run.test_run import TestRunResultDisplay
-from evaluation.companion.response_models import ConversationResponseChunk
 from evaluation.scenario.enums import TestStatus
 from evaluation.scenario.scenario import Expectation, Query, Scenario, ScenarioList
 from prettytable import PrettyTable
@@ -54,6 +55,22 @@ def _print_agent_response(query: Query) -> None:
             print(line)
     else:
         print(colored("(No response received)", "red"))
+    print()
+
+
+def _print_query_metrics(query: Query) -> None:
+    """Prints the per-query performance metrics (latency, tokens, tool calls)."""
+    m = query.metrics
+    print_separator()
+    print(colored("Query Metrics:", "yellow"))
+    print_separator()
+    print(f"  - Latency: {m.latency_seconds}s (eval: {m.evaluation_latency_seconds}s)")
+    print(f"  - Tokens: {m.total_tokens} (input: {m.input_tokens}, output: {m.output_tokens})")
+    print(f"  - LLM calls: {m.llm_call_count} | Tool calls: {m.tool_call_count}")
+    if m.tool_call_counts:
+        tools = ", ".join(f"{name}×{count}" for name, count in m.tool_call_counts.items())
+        print(f"  - Tools used: {tools}")
+    print(f"  - Response size: {m.response_char_count} chars, {m.response_word_count} words")
     print()
 
 
@@ -152,6 +169,7 @@ def print_detailed_query_results(scenario: Scenario, query: Query) -> None:
     """Prints detailed results for a query including response and expectation breakdown."""
     _print_query_header(scenario, query)
     _print_agent_response(query)
+    _print_query_metrics(query)
 
     # Print expectation results
     if not (query.evaluation_result and query.evaluation_result.test_results):
@@ -237,31 +255,17 @@ def colored_status(status: TestStatus) -> str:
     return colored(status.upper(), "red")
 
 
-def print_test_results(scenario_list: ScenarioList, total_usage: int, time_taken: float) -> None:
+def print_test_results(scenario_list: ScenarioList, total_usage: dict[str, int], time_taken: float) -> None:
     """Prints the test results."""
     print_header("Test Results:")
     print_results_per_scenario(scenario_list)
     print_retry_summary(scenario_list)
     print_response_times_summary()
+    print_scenario_metrics(scenario_list)
     print_token_usage(total_usage)
     print_header(f"Total time taken by evaluation tests: {time_taken} minutes.")
     print_overall_results(scenario_list)
     print_failed_queries(scenario_list)
-
-
-def print_initial_questions(questions: list[str]) -> None:
-    """Prints the initial questions."""
-    for i, q in enumerate(questions):
-        print(f"\t{i + 1}: {q}")
-
-
-def print_response_chunks(chunks: list[ConversationResponseChunk]) -> None:
-    """Prints the response chunks."""
-    print(colored("==> Response chunks:", "yellow"))
-    if len(chunks) == 0:
-        return None
-    print(json.dumps([chunk.model_dump() for chunk in chunks], indent=4))
-    return None
 
 
 def print_results_per_scenario(scenario_list: ScenarioList) -> None:
@@ -277,16 +281,9 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
         ):
             print(colored(f"Description: {scenario.description}", "green"))
 
-            # print initial questions.
-            print_header(f"* Scenario ID: {scenario.id}, Initial Questions:")
-            print_initial_questions(scenario.initial_questions)
-
             # for each query print the evaluation results.
             for query in scenario.queries:
                 print_header(f"** Scenario ID: {scenario.id}, Query: {query.user_query}")
-
-                # print the response chunks.
-                print_response_chunks(query.response_chunks)
 
                 # print the evaluation results.
                 if query.evaluation_result is not None:
@@ -358,21 +355,110 @@ def print_response_times_summary() -> None:
 
     print_header("Response time per API Endpoint:")
     metrics = Metrics.get_instance()
-    table.add_row(
-        [
-            "Initial Conversation",
-            metrics.get_init_conversation_response_summary(),
-        ]
-    )
-    table.add_row(
-        [
-            "Conversation",
-            metrics.get_conversation_response_summary(),
-        ]
-    )
+    if metrics.conversation_response_times_sec:
+        table.add_row(
+            [
+                "POST /api/agent/kyma/chat",
+                metrics.get_conversation_response_summary(),
+            ]
+        )
     print(table)
 
 
-def print_token_usage(token_used: int) -> None:
-    """Prints the token usage summary."""
-    print_header(f"Total token used by evaluation tests: {token_used}")
+def print_token_usage(token_used: dict[str, int]) -> None:
+    """Prints the token usage summary, separated into input and output tokens."""
+    print_header("Token usage by evaluation tests:")
+    table = PrettyTable()
+    table.field_names = ["Token Type", "Count"]
+    table.add_row(["Input tokens", token_used.get("input", 0)])
+    table.add_row(["Output tokens", token_used.get("output", 0)])
+    table.add_row(["Total tokens", token_used.get("total", 0)])
+    print(table)
+
+
+def print_scenario_metrics(scenario_list: ScenarioList) -> None:
+    """Prints a per-scenario metrics table and a run-level metrics summary."""
+    report = scenario_list.build_metrics_report()
+
+    print_header("Per-scenario metrics:")
+    table = PrettyTable()
+    table.field_names = [
+        "Scenario ID",
+        "Queries",
+        "Total Tokens",
+        "Avg Tokens/Query",
+        "LLM Calls",
+        "Tool Calls",
+        "Total Latency (s)",
+        "Avg Latency (s)",
+    ]
+    for scenario in report["scenarios"]:
+        table.add_row(
+            [
+                scenario["scenario_id"],
+                scenario["num_queries"],
+                scenario["total_tokens"],
+                scenario["avg_tokens_per_query"],
+                scenario["llm_call_count"],
+                scenario["tool_call_count"],
+                scenario["total_latency_seconds"],
+                scenario["avg_latency_seconds"],
+            ]
+        )
+    print(table)
+
+    summary = report["summary"]
+    print_header("Run-level metrics summary:")
+    summary_table = PrettyTable()
+    summary_table.field_names = ["Metric", "Value"]
+    summary_table.add_row(["Scenarios", summary["num_scenarios"]])
+    summary_table.add_row(["Queries", summary["num_queries"]])
+    summary_table.add_row(["Total tokens", summary["total_tokens"]])
+    summary_table.add_row(["Avg tokens/query", summary["avg_tokens_per_query"]])
+    summary_table.add_row(["Total LLM calls", summary["total_llm_call_count"]])
+    summary_table.add_row(["Total tool calls", summary["total_tool_call_count"]])
+    summary_table.add_row(["Total latency (s)", summary["total_latency_seconds"]])
+    summary_table.add_row(["Avg latency/query (s)", summary["avg_latency_seconds"]])
+    print(summary_table)
+
+    if summary["tool_call_counts"]:
+        print_header("Tool usage across all scenarios:")
+        tool_table = PrettyTable()
+        tool_table.field_names = ["Tool", "Call Count"]
+        for name, count in sorted(summary["tool_call_counts"].items(), key=lambda kv: kv[1], reverse=True):
+            tool_table.add_row([name, count])
+        print(tool_table)
+
+
+def write_metrics_report(
+    scenario_list: ScenarioList,
+    time_taken_minutes: float,
+    path: str | None = None,
+    config: Any = None,
+) -> str:
+    """Write the complete, detailed run report to a JSON file and return its path.
+
+    Captures everything from the run for later analysis: summary, per-scenario metrics,
+    and for every query the response, pass/fail status, and per-expectation scores/reasons.
+    The output path can be overridden via the ``METRICS_REPORT_PATH`` env var.
+
+    Model and run details are taken from the passed ``config`` when available (robust), and
+    fall back to environment variables otherwise.
+    """
+    output_path: str = path or os.getenv("METRICS_REPORT_PATH") or "metrics.json"
+    report = scenario_list.build_full_report()
+    report["run"] = {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "total_time_minutes": time_taken_minutes,
+        "model_name": getattr(config, "model_name", None) or os.getenv("MODEL_NAME", ""),
+        "companion_api_url": getattr(config, "companion_api_url", None) or os.getenv("COMPANION_API_URL", ""),
+        "max_workers": getattr(config, "max_workers", None) if config is not None else os.getenv("MAX_WORKERS", ""),
+        "scenario_retries": getattr(config, "scenario_retries", None)
+        if config is not None
+        else os.getenv("KC_EVAL_RETRIES", ""),
+    }
+    report["summary"]["total_time_minutes"] = time_taken_minutes
+    with open(output_path, "w") as file:
+        json.dump(report, file, indent=2, default=str)
+    print_header(f"Metrics report written to: {output_path}")
+    return output_path

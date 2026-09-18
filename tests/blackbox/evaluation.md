@@ -42,5 +42,5 @@ To run the Evaluation tests, follow these steps:
 5. Run the Evaluation tests:
 
     ```bash
-   poetry run python src/run_evaluation.py
+   poetry run python src/run_a2a_evaluation.py
     ```

@@ -1,5 +1,5 @@
 import time
-from typing import Any, Protocol
+from typing import Any
 from uuid import UUID
 
 import pydantic
@@ -21,15 +21,6 @@ class UsageModel(BaseModel):
     output: int
     total: int
     epoch: float = time.time()
-
-
-class UsageExceedReport(BaseModel):
-    """Usage exceed report model."""
-
-    cluster_id: str
-    token_limit: int
-    total_tokens_used: int
-    reset_seconds_left: int
 
 
 class UsageTrackerCallback(AsyncCallbackHandler):
@@ -135,54 +126,70 @@ class UsageTrackerCallback(AsyncCallbackHandler):
         await CustomMetrics().record_langgraph_error(LangGraphErrorType.TOOL_ERROR)
 
 
-class IUsageTracker(Protocol):
-    """Interface for the UsageTracker."""
+class RequestMetricsCallback(AsyncCallbackHandler):
+    """LangChain callback that collects per-request metrics for a single agent run.
 
-    async def adelete_expired_records(self, cluster_id: str) -> None:
-        """Delete the expired records for the given cluster_id."""
+    Unlike ``UsageTrackerCallback`` (which persists cumulative usage per cluster in
+    Redis), this handler accumulates token usage, LLM call count and tool calls for
+    exactly one ``ainvoke`` so the values can be surfaced back to the caller (e.g. the
+    A2A response metadata).  Create a fresh instance for every request.
+    """
 
-    async def ais_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
-        """Check if the token limit is exceeded for the given cluster_id."""
+    def __init__(self) -> None:
+        """Initialize the per-request counters."""
+        self.input_tokens: int = 0
+        self.output_tokens: int = 0
+        self.total_tokens: int = 0
+        self.llm_call_count: int = 0
+        self.tool_calls: list[str] = []
 
+    async def on_llm_end(
+        self,
+        response: LLMResult,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Accumulate token usage and increment the LLM call count."""
+        self.llm_call_count += 1
+        usage = _parse_usage(response)
+        if usage:
+            self.input_tokens += int(usage.get("input", 0) or 0)
+            self.output_tokens += int(usage.get("output", 0) or 0)
+            self.total_tokens += int(usage.get("total", 0) or 0)
 
-class UsageTracker(IUsageTracker):
-    """Usage tracker to check the token usage."""
+    async def on_tool_start(
+        self,
+        serialized: dict[str, Any],
+        input_str: str,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Record the name of each tool invocation."""
+        name = ""
+        if isinstance(serialized, dict):
+            name = str(serialized.get("name", ""))
+        if not name:
+            name = str(kwargs.get("name", "") or "unknown_tool")
+        self.tool_calls.append(name)
 
-    def __init__(self, memory: IUsageMemory, token_limit: int, reset_interval_sec: int):
-        self.memory = memory
-        self.reset_interval_sec: int = reset_interval_sec
-        self.token_limit: int = token_limit
-
-    async def adelete_expired_records(self, cluster_id: str) -> None:
-        """Delete the expired records for the given cluster_id."""
-        await self.memory.adelete_expired_llm_usage_records(cluster_id, self.reset_interval_sec)
-
-    async def ais_usage_limit_exceeded(self, cluster_id: str) -> UsageExceedReport | None:
-        """Check if the token limit is exceeded for the given cluster_id."""
-        if self.token_limit == -1:
-            return None
-        records = await self.memory.alist_llm_usage_records(cluster_id, self.reset_interval_sec)
-        # parse the records as Pydantic model to verify the structure.
-        records = [UsageModel(**record) for record in records]
-        total_usage = sum(record.total for record in records)
-
-        # return if token usage limit is not exceeded.
-        if total_usage < self.token_limit:
-            return None
-
-        # find the latest record to calculate the reset_seconds_left
-        latest_record = max(records, key=lambda record: record.epoch)
-        reset_seconds_left = int(float(self.reset_interval_sec) - (time.time() - latest_record.epoch))
-
-        return UsageExceedReport(
-            cluster_id=cluster_id,
-            token_limit=self.token_limit,
-            total_tokens_used=total_usage,
-            reset_seconds_left=reset_seconds_left,
-        )
-
-
-# Helper methods
+    def as_dict(self) -> dict[str, Any]:
+        """Return the collected metrics as a JSON-serializable dictionary."""
+        tool_call_counts: dict[str, int] = {}
+        for name in self.tool_calls:
+            tool_call_counts[name] = tool_call_counts.get(name, 0) + 1
+        return {
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "total_tokens": self.total_tokens,
+            "llm_call_count": self.llm_call_count,
+            "tool_calls": self.tool_calls,
+            "tool_call_count": len(self.tool_calls),
+            "tool_call_counts": tool_call_counts,
+        }
 
 
 def _parse_usage(response: LLMResult) -> dict[str, Any] | None:

@@ -1,4 +1,3 @@
-import time
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
@@ -14,8 +13,7 @@ from services.metrics import (
     LangGraphErrorType,
 )
 from services.usage import (
-    UsageExceedReport,
-    UsageTracker,
+    RequestMetricsCallback,
     UsageTrackerCallback,
     _parse_usage,
     _parse_usage_model,
@@ -193,104 +191,6 @@ class TestUsageTrackerCallback:
         # the metric should be increased.
         after_metric_value = CustomMetrics().registry.get_sample_value(metric_name, labels)
         assert after_metric_value > before_metric_value
-
-
-class TestUsageTracker:
-    @pytest.mark.asyncio
-    async def test_adelete_expired_records(self):
-        # Given
-        mock_memory = Mock()
-        mock_memory.adelete_expired_llm_usage_records = AsyncMock()
-        usage_tracker = UsageTracker(memory=mock_memory, token_limit=1000, reset_interval_sec=3600)
-        cluster_id = "test_cluster"
-
-        # When
-        await usage_tracker.adelete_expired_records(cluster_id)
-
-        # Then
-        mock_memory.adelete_expired_llm_usage_records.assert_called_once_with(cluster_id, 3600)
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "test_description, token_limit, usage_records, expected_report",
-        [
-            (
-                "should return None when token limit is -1",
-                -1,
-                [],
-                None,
-            ),
-            (
-                "should return None when token usage is below the limit",
-                200,
-                [
-                    {
-                        "input": 100,
-                        "output": 50,
-                        "total": 150,
-                        "epoch": time.time(),
-                    }
-                ],
-                None,
-            ),
-            (
-                "should return report when token usage is above the limit",
-                400,
-                [
-                    {
-                        "input": 100,
-                        "output": 150,
-                        "total": 250,
-                        "epoch": time.time() - 20,  # 20 seconds old record
-                    },
-                    {
-                        "input": 100,
-                        "output": 150,
-                        "total": 250,
-                        "epoch": time.time() - 10,  # 10 seconds old record
-                    },
-                ],
-                UsageExceedReport(
-                    cluster_id="test_cluster",
-                    token_limit=400,
-                    total_tokens_used=500,
-                    reset_seconds_left=600,
-                ),
-            ),
-        ],
-    )
-    async def test_is_usage_limit_exceeded(self, test_description, token_limit, usage_records, expected_report):
-        # Given
-        reset_interval_sec = 600
-        mock_memory = Mock()
-        mock_memory.alist_llm_usage_records = AsyncMock()
-        mock_memory.alist_llm_usage_records.return_value = usage_records
-        usage_tracker = UsageTracker(
-            memory=mock_memory,
-            token_limit=token_limit,
-            reset_interval_sec=reset_interval_sec,
-        )
-
-        # When
-        report = await usage_tracker.ais_usage_limit_exceeded("test_cluster")
-
-        # Then
-        if token_limit == -1 or expected_report is None:
-            assert report is None
-            return
-
-        # for comparison, set the reset_seconds_left to the actual report.
-        # we will check the reset_seconds_left separately.
-        expected_report.reset_seconds_left = report.reset_seconds_left
-        assert report == expected_report
-        mock_memory.alist_llm_usage_records.assert_called_once_with("test_cluster", reset_interval_sec)
-
-        # check the reset_seconds_left.
-        latest_record = max(usage_records, key=lambda record: record["epoch"])
-        expected_reset_seconds_left = int(float(reset_interval_sec) - (time.time() - latest_record["epoch"]))
-        # reset_seconds_left can be off by 5 second due to dynamic time.time().
-        accepted_offset = 5
-        assert abs(report.reset_seconds_left - expected_reset_seconds_left) <= accepted_offset
 
 
 @pytest.mark.parametrize(
@@ -509,3 +409,81 @@ def test_parse_usage(test_description, llm_result, expected_output):
 
     # Then
     assert result == expected_output
+
+
+class TestRequestMetricsCallback:
+    @pytest.mark.asyncio
+    async def test_accumulates_token_usage_and_llm_calls(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = {"token_usage": {"input_tokens": 100, "output_tokens": 40, "total_tokens": 140}}
+        response.generations = []
+
+        # When
+        await callback.on_llm_end(response, run_id=uuid4())
+        await callback.on_llm_end(response, run_id=uuid4())
+
+        # Then
+        assert callback.as_dict() == {
+            "input_tokens": 200,
+            "output_tokens": 80,
+            "total_tokens": 280,
+            "llm_call_count": 2,
+            "tool_calls": [],
+            "tool_call_count": 0,
+            "tool_call_counts": {},
+        }
+
+    @pytest.mark.asyncio
+    async def test_llm_end_without_usage_does_not_raise(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = None
+        response.generations = []
+
+        # When
+        await callback.on_llm_end(response, run_id=uuid4())
+
+        # Then
+        assert callback.llm_call_count == 1
+        assert callback.total_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_records_tool_calls(self):
+        # Given
+        callback = RequestMetricsCallback()
+
+        # When
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({}, "input", run_id=uuid4(), name="search_kyma_doc")
+
+        # Then
+        assert callback.tool_calls == ["kyma_query_tool", "kyma_query_tool", "search_kyma_doc"]
+
+    @pytest.mark.asyncio
+    async def test_as_dict_reports_aggregated_metrics(self):
+        # Given
+        callback = RequestMetricsCallback()
+        response = Mock()
+        response.llm_output = {"token_usage": {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}}
+        response.generations = []
+        await callback.on_llm_end(response, run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+        await callback.on_tool_start({"name": "kyma_query_tool"}, "input", run_id=uuid4())
+
+        # When
+        result = callback.as_dict()
+
+        # Then
+        assert result == {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "total_tokens": 15,
+            "llm_call_count": 1,
+            "tool_calls": ["kyma_query_tool", "kyma_query_tool"],
+            "tool_call_count": 2,
+            "tool_call_counts": {"kyma_query_tool": 2},
+        }

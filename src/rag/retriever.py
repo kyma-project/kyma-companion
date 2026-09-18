@@ -1,5 +1,4 @@
 import time
-from typing import Protocol
 
 from hdbcli import dbapi
 from langchain_core.documents import Document
@@ -50,13 +49,6 @@ class HanaVectorDB(HanaDB):
             return result
         except Exception as e:
             raise e
-
-
-class IRetriever(Protocol):
-    """Retriever interface."""
-
-    async def aretrieve(self, query: str, top_k: int = 3) -> list[Document]:
-        """Retrieve relevant documents based on the query."""
 
 
 class HanaDBRetriever:
