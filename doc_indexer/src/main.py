@@ -44,12 +44,15 @@ def run_fetcher() -> None:
     )
     fetcher.run()
     logger.info(f"Fetch completed in {time.monotonic() - start:.1f}s")
+
+    # Log the number of Markdown files per source directory
+    md_counts: dict[str, int] = {}
     for root, _dirs, files in os.walk(DOCS_PATH):
-        level = root.replace(DOCS_PATH, "").count(os.sep)
-        indent = "  " * level
-        logger.info(f"{indent}{os.path.basename(root)}/")
-        for fname in files:
-            logger.info(f"{indent}  {fname}")
+        md_count = sum(1 for f in files if f.endswith(".md"))
+        if md_count:
+            md_counts[root] = md_count
+    for dir_path, count in md_counts.items():
+        logger.info(f"Found {count} Markdown file(s) in {dir_path}")
 
 
 def run_indexer(

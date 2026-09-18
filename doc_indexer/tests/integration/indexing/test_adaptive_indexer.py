@@ -42,7 +42,7 @@ DOCUMENTS = [
         ),
         metadata={"source": "serverless.md"},
     ),
-    # 6 tokens: below the minimum, must be dropped.
+    # 6 tokens: below the minimum, merged into adjacent chunk and preserved.
     Document(page_content="# Tiny\nToo short.", metadata={"source": "tiny.md"}),
     # 15 tokens, no header: stored unchanged.
     Document(
@@ -58,6 +58,7 @@ EXPECTED_CHUNKS = {
     "Functions can be written in Node.js or Python and are built into container images automatically.",
     "# Serverless - Function triggers\nA Function is exposed with an APIRule or invoked through an event Subscription.",
     "Plain text without any Markdown headers that still has enough words to be indexed.",
+    "# Tiny\nToo short.",
 }
 
 
@@ -108,7 +109,7 @@ def test_index_stores_adaptively_split_chunks(indexer, hana_conn, table_name):
 
 @pytest.mark.integration
 def test_index_replaces_previous_content(indexer, hana_conn, table_name):
-    # A second run must not duplicate chunks: index() deletes the existing content first.
+    # A second run must not duplicate chunks: index() swaps in a fresh staging table.
     with patch("indexing.adaptive_indexer.load_documents", return_value=DOCUMENTS):
         indexer.index()
         indexer.index()
