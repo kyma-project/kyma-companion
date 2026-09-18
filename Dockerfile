@@ -22,7 +22,7 @@
 # ADD below carries the SHA-256 of the tarball it downloads, so a version
 # bump means changing the ARG and the checksum together.
 
-ARG GARDENLINUX_VERSION=2150.9.0
+ARG GARDENLINUX_VERSION=2150.10.0
 
 # --- Stage 1: builder ---------------------------------------------------------
 FROM ghcr.io/gardenlinux/gardenlinux:${GARDENLINUX_VERSION} AS builder
