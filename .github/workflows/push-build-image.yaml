@@ -20,11 +20,18 @@ jobs:
         uses: actions/checkout@v7
       - name: Get the latest tag
         id: get_tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
           {
             echo 'TAGS<<EOF'
             echo "${{ github.sha }}"
-            echo "${{ github.ref_name}}"
+            echo "${REF_NAME}"
+            if [[ "${REF_NAME}" == "main" ]]; then
+              echo "latest"
+            elif [[ "${REF_NAME}" == release-* ]]; then
+              echo "rc"
+            fi
             echo EOF
           } >> "$GITHUB_OUTPUT"
   build:
