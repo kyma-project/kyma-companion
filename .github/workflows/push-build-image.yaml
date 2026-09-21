@@ -27,9 +27,7 @@ jobs:
             echo 'TAGS<<EOF'
             echo "${{ github.sha }}"
             echo "${REF_NAME}"
-            if [[ "${REF_NAME}" == "main" ]]; then
-              echo "latest"
-            elif [[ "${REF_NAME}" == release-* ]]; then
+            if [[ "${REF_NAME}" == release-* ]]; then
               echo "rc"
             fi
             echo EOF

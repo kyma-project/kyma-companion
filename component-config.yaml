@@ -1,5 +1,5 @@
 name: kyma-project.io/kyma-runtime/kcp-components/kyma-companion
 team: kyma/ai-force
 images:
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:latest
-  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:latest
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion:main
+  - europe-docker.pkg.dev/kyma-project/prod/kyma-companion-indexer:main
