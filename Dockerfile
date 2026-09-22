@@ -193,8 +193,6 @@ COPY pyproject.toml poetry.lock ./
 #                                   written later either
 #      pip, setuptools, wheel       installers, not needed to run
 #      docs                         package documentation
-#      rdflib berkeleydb backend    the storage plugin for Berkeley DB, and
-#                                   the mention of it in rdflib's METADATA
 #      _yaml*.so                    PyYAML's C accelerator; PyYAML falls
 #                                   back to its pure-Python implementation
 #      tests directories            bundled test suites (pandas/tests alone
@@ -222,11 +220,75 @@ RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && rm -rf /app/.venv/lib/python3.*/site-packages/wheel* \
   && rm -f /app/.venv/bin/pip* /app/.venv/bin/wheel /app/.venv/bin/easy_install* \
   && rm -rf /app/.venv/docs \
-  && find /app/.venv -path "*/rdflib/plugins/stores/berkeleydb.py" -delete \
-  && find /app/.venv -path "*/rdflib*.dist-info/METADATA" -exec sed -i '/berkeleydb/Id' {} \; \
   && find /app/.venv -name "_yaml*.so" -delete \
   && find /app/.venv -type d -name tests -prune -exec rm -rf {} + \
   && find /app/.venv -name "*.so*" -type f -exec strip {} + 2>/dev/null
+
+# Berkeley DB must leave no trace in the image (Oracle licence). CPython's
+# _dbm and _gdbm modules are disabled above and the dbm package is removed.
+# The one dependency that knows about it is rdflib: its berkeleydb store
+# adapter is pure Python but named after it, and rdflib/plugin.py imports
+# that adapter unconditionally, so deleting the file alone breaks
+# "import rdflib". The script removes the adapter, the rdflib.tools CLI
+# package (one docstring mentions the store) with its console scripts, the
+# import and the conditional register() block in plugin.py, and every
+# mention in the package metadata, then asserts that no file under rdflib
+# or in the venv's bin still contains the string. It fails if plugin.py no
+# longer has the layout it expects, so an rdflib upgrade that moves the
+# code is noticed. The import afterwards proves rdflib still initialises;
+# the rootfs stage re-checks the whole image.
+RUN python3 <<'EOF'
+import ast, glob, os, re, shutil
+
+site = glob.glob("/app/.venv/lib/python3.*/site-packages")[0]
+pkg = os.path.join(site, "rdflib")
+dist = glob.glob(os.path.join(site, "rdflib-*.dist-info"))[0]
+bindir = "/app/.venv/bin"
+
+for d in glob.glob(os.path.join(pkg, "**", "__pycache__"), recursive=True):
+    shutil.rmtree(d)
+
+os.remove(os.path.join(pkg, "plugins", "stores", "berkeleydb.py"))
+shutil.rmtree(os.path.join(pkg, "tools"))
+ep = os.path.join(dist, "entry_points.txt")
+if os.path.exists(ep):
+    for m in re.finditer(r"^(\w+)\s*=\s*rdflib\.tools\.", open(ep).read(), re.M):
+        script = os.path.join(bindir, m.group(1))
+        if os.path.exists(script):
+            os.remove(script)
+    os.remove(ep)
+
+path = os.path.join(pkg, "plugin.py")
+out, skipping, removed = [], False, 0
+for line in open(path):
+    if line.startswith("import rdflib.plugins.stores.berkeleydb"):
+        removed += 1
+        continue
+    if line.startswith("if rdflib.plugins.stores.berkeleydb.has_bsddb:"):
+        skipping = True
+        removed += 1
+        continue
+    if skipping:
+        if line.rstrip() == "    )":
+            skipping = False
+        continue
+    out.append(line)
+assert removed == 2 and not skipping, "rdflib/plugin.py layout changed; update this script"
+src = "".join(out)
+ast.parse(src)
+open(path, "w").write(src)
+
+for name in ("METADATA", "RECORD"):
+    p = os.path.join(dist, name)
+    lines = [l for l in open(p) if not re.search("berkeley|rdflib/tools/", l, re.I)]
+    open(p, "w").write("".join(lines))
+
+left = [p for p in glob.glob(os.path.join(site, "rdflib*", "**", "*"), recursive=True)
+        + glob.glob(os.path.join(bindir, "*"))
+        if os.path.isfile(p) and re.search(b"berkeley|rdflib\\.tools", open(p, "rb").read(), re.I)]
+assert not left, left
+EOF
+RUN PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c "import rdflib, rdflib.plugins.sparql"
 
 COPY src ./src
 COPY config ./config
@@ -330,6 +392,17 @@ RUN set -eu \
   && printf 'root:x:0:\nappuser:x:5678:\n' > /rootfs/etc/group \
   && printf 'passwd: files\ngroup: files\nhosts: files dns\n' > /rootfs/etc/nsswitch.conf \
   && install -d -m 1777 /rootfs/tmp
+
+# Berkeley DB check over the finished tree: no file named after it, no
+# shared object linked against libdb, and no mention of it in the
+# application, the interpreter tree, the package database or /etc. Two
+# stdlib files (shelve.py, http/cookiejar.py) name Python's old bsddb
+# module in a class name and a comment; they contain no Berkeley DB code,
+# which is why the text pattern is "berkeley" rather than "bsddb".
+RUN set -eu \
+  && ! find /rootfs \( -iname 'libdb*' -o -iname '*berkeley*' \) -print | grep . \
+  && ! find /rootfs -name '*.so*' -type f -exec readelf -dW {} + 2>/dev/null | grep -E 'NEEDED.*libdb' \
+  && ! grep -ril 'berkeley' /rootfs/app /rootfs/opt/python /rootfs/usr/lib/apk/db /rootfs/etc | grep .
 
 # --- Stage 3: runtime ---------------------------------------------------------
 # Starts from an empty filesystem; the single COPY makes /rootfs the whole
