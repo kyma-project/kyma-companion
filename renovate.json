@@ -8,6 +8,7 @@
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
+    "Dockerfile",
     "doc_indexer/Dockerfile",
     "tests/blackbox/pyproject.toml",
     ".github/workflows/**"
@@ -62,11 +63,11 @@
       "addLabels": ["dependencies"]
     },
     {
+      "description": "Both images build from the same wolfi-base digest (the free image has only a latest tag, so these are digest updates); one PR for both files so the digests never diverge.",
       "matchManagers": ["dockerfile"],
-      "matchFileNames": ["doc_indexer/Dockerfile"],
+      "matchFileNames": ["Dockerfile", "doc_indexer/Dockerfile"],
       "schedule": ["* 0-2 * * 2"],
-      "groupName": null,
-      "prTitle": "deps: doc_indexer/Dockerfile",
+      "groupName": "deps: Dockerfiles (wolfi-base digest)",
       "addLabels": ["dependencies"]
     }
   ]
