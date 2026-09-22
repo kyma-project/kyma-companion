@@ -340,8 +340,13 @@ COPY config ./config
 #    no apk database, so Trivy, Grype and Syft would report no OS packages
 #    and the Wolfi libraries copied in step 2 and 3 would go unscanned.
 #    Each copied library is mapped to the package that owns it with
-#    apk info -W (tried on the path the loader printed and on its
-#    symlink-resolved form); a library no package owns stops the build.
+#    apk info -W. apk knows a file only under the path its package
+#    recorded, with no symlink resolution, and some Wolfi packages install
+#    into /usr/lib64 (libffi does), which is a symlink to /usr/lib, while
+#    the loader prints the /usr/lib path. The lookup therefore tries the
+#    loader's path, its symlink-resolved form, and both with /usr/lib
+#    replaced by /usr/lib64. A library no package owns stops the build;
+#    the loop is not part of a pipeline so its exit status is the step's.
 #    The stanza of each package is copied from the builder's package
 #    database, /lib/apk/db/installed, into the same file under /rootfs; the
 #    file is at /usr/lib/apk/db/installed on disk, /lib being a symlink,
@@ -370,12 +375,19 @@ RUN set -eu \
      | sort -u > /tmp/libs.txt \
   && find /usr/lib -maxdepth 1 -name libgcc_s.so.1 -print -quit >> /tmp/libs.txt \
   && while read -r lib; do cp --parents -L "$lib" /rootfs; done < /tmp/libs.txt \
+  && : > /tmp/pkgs.raw \
   && while read -r lib; do \
-       pkg="$(apk info -W "$lib" 2>/dev/null | sed -n 's/.* is owned by //p')"; \
-       [ -n "$pkg" ] || pkg="$(apk info -W "$(readlink -f "$lib")" 2>/dev/null | sed -n 's/.* is owned by //p')"; \
+       pkg=""; \
+       for c in "$lib" "$(readlink -f "$lib")"; do \
+         for cand in "$c" "$(printf '%s' "$c" | sed 's|^/usr/lib/|/usr/lib64/|')"; do \
+           pkg="$(apk info -W "$cand" 2>/dev/null | sed -n 's/.* is owned by //p')"; \
+           [ -n "$pkg" ] && break 2; \
+         done; \
+       done; \
        [ -n "$pkg" ] || { echo "no package owns $lib" >&2; exit 1; }; \
-       echo "$pkg" | sed -E 's/-[^-]+-r[0-9]+$//'; \
-     done < /tmp/libs.txt | sort -u > /tmp/pkgs.txt \
+       echo "$pkg" | sed -E 's/-[^-]+-r[0-9]+$//' >> /tmp/pkgs.raw; \
+     done < /tmp/libs.txt \
+  && sort -u /tmp/pkgs.raw > /tmp/pkgs.txt \
   && test -s /tmp/pkgs.txt \
   && mkdir -p /rootfs/usr/lib/apk/db \
   && while read -r pkg; do \
@@ -394,15 +406,18 @@ RUN set -eu \
   && install -d -m 1777 /rootfs/tmp
 
 # Berkeley DB check over the finished tree: no file named after it, no
-# shared object linked against libdb, and no mention of it in the
-# application, the interpreter tree, the package database or /etc. Two
-# stdlib files (shelve.py, http/cookiejar.py) name Python's old bsddb
-# module in a class name and a comment; they contain no Berkeley DB code,
-# which is why the text pattern is "berkeley" rather than "bsddb".
+# shared object linked against libdb, and no mention of the product name
+# ("Berkeley DB", "BerkeleyDB", "berkeleydb", "berkeley_db") in the
+# application, the interpreter tree, the package database or /etc,
+# binaries included. The pattern is the product name, not the word: the
+# city and the university appear in licence texts (numpy), docstrings
+# (pandas) and geodata (phonenumbers). Two stdlib files (shelve.py,
+# http/cookiejar.py) name Python's old bsddb module in a class name and a
+# comment and contain no Berkeley DB code; they do not match either.
 RUN set -eu \
   && ! find /rootfs \( -iname 'libdb*' -o -iname '*berkeley*' \) -print | grep . \
   && ! find /rootfs -name '*.so*' -type f -exec readelf -dW {} + 2>/dev/null | grep -E 'NEEDED.*libdb' \
-  && ! grep -ril 'berkeley' /rootfs/app /rootfs/opt/python /rootfs/usr/lib/apk/db /rootfs/etc | grep .
+  && ! grep -rilE 'berkeley[ _-]?db' /rootfs/app /rootfs/opt/python /rootfs/usr/lib/apk/db /rootfs/etc | grep .
 
 # --- Stage 3: runtime ---------------------------------------------------------
 # Starts from an empty filesystem; the single COPY makes /rootfs the whole
