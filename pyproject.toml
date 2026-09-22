@@ -59,7 +59,7 @@ pyyaml = "^6.0.3"
 ragas = "^0.4.3"
 requests = "^2.33.0"
 termcolor = "^3.3.0"
-types-pyyaml = "^6.0.12.20260518"
+types-pyyaml = "^6.0.12.20260906"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.15.0"
