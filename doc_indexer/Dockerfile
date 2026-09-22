@@ -253,6 +253,10 @@ RUN install -d -o 10001 -g 0 -m 0775 /app/data /app/tmp
 #    A library the loader cannot find prints "=> not found"; the build stops
 #    there and shows the file that needs it, because a library missing from
 #    the closure would surface only when that extension is first imported.
+#    A file the loader cannot process at all, or a symbol-version mismatch
+#    ("version GLIBC_2.44 not found"), is reported on stderr with a
+#    non-zero exit instead; that also stops the build, with the loader's
+#    message.
 #    The awk picks the resolved paths out of both line shapes; paths inside
 #    /app and /opt/python are skipped because those trees are copied whole
 #    below. cp --parents -L copies each library to the same path under
@@ -296,7 +300,11 @@ RUN set -eu \
      done \
   && LD="$(find /usr/lib -maxdepth 1 -name 'ld-linux-*.so.*' -type f | head -1)" \
   && { echo /opt/python/bin/python3.14; find /opt/python /app/.venv -name '*.so*' -type f; } \
-     | while read -r f; do "$LD" --list "$f" 2>/dev/null || true; done > /tmp/ldd.out \
+     | while read -r f; do \
+         out="$("$LD" --list "$f" 2>&1)" \
+           || { echo "failed to trace $f:" >&2; echo "$out" >&2; exit 1; }; \
+         echo "$out"; \
+       done > /tmp/ldd.out \
   && if grep -B1 'not found' /tmp/ldd.out; then echo 'unresolved shared libraries'; exit 1; fi \
   && awk '$2 == "=>" && $3 ~ /^\// { print $3 } $1 ~ /^\// && $2 ~ /^\(0x/ { print $1 }' /tmp/ldd.out \
      | grep -vE '^/(app|opt/python)/' \
