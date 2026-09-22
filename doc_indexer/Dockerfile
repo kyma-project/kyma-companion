@@ -2,70 +2,77 @@
 
 # Three-stage build:
 #
-#   builder  Garden Linux + a C toolchain. Builds a static libffi and a
-#            CPython interpreter from source, installs the application's
-#            dependencies into a virtualenv with poetry, and trims both.
+#   builder  Wolfi + a C toolchain. Builds a CPython interpreter from source,
+#            installs the application's dependencies into a virtualenv with
+#            poetry, and trims both.
 #   rootfs   Same image as builder. Assembles, in /rootfs, the complete set
 #            of files the application needs at runtime: the interpreter, the
 #            virtualenv, the application source, and every shared library
-#            those load, found by running ldd over all of them. Also
-#            writes the package metadata vulnerability scanners read.
+#            those load, found by running the dynamic loader in trace mode
+#            over all of them. Also writes the package metadata vulnerability
+#            scanners read.
 #   runtime  FROM scratch, i.e. an empty filesystem, into which /rootfs is
 #            copied. Contains no shell, no package manager, no coreutils, no
 #            files other than the ones the rootfs stage selected. A final
 #            RUN imports the application inside this image to prove the
 #            file set is complete.
 #
-# Version pins: GARDENLINUX_VERSION picks the builder image and therefore the
-# glibc, OpenSSL, zlib, bzip2, xz and libstdc++ that end up in the runtime
-# image. PYTHON_VERSION and LIBFFI_VERSION pick the source tarballs; each
-# ADD below carries the SHA-256 of the tarball it downloads, so a version
-# bump means changing the ARG and the checksum together.
+# Base image: Wolfi (https://wolfi.dev), Chainguard's container-only glibc
+# distribution. It is chosen over Garden Linux because it rebuilds glibc,
+# OpenSSL and friends within days of an upstream release, so the runtime
+# image carries upstream versions that vulnerability scanners recognise as
+# fixed without needing distribution backport data (Garden Linux ships
+# glibc 2.42 with backports that scanners unaware of Garden Linux do not
+# credit). wolfi-base is free and needs no registry account.
+#
+# Version pins: Wolfi is a rolling distribution with only a "latest" tag, so
+# the base image is pinned by digest (WOLFI_BASE_DIGEST); the packages apk
+# installs on top are the newest in the Wolfi repository at build time, and
+# the glibc version check below fails the build if that ever regresses
+# below GLIBC_MIN. PYTHON_VERSION picks the source tarball; the ADD below
+# carries the SHA-256 of the tarball it downloads, so a version bump means
+# changing the ARG and the checksum together.
 
-ARG GARDENLINUX_VERSION=2150.10.0
+ARG WOLFI_BASE_DIGEST=sha256:1d95114038f76513a9ace6fca107d5582b08c65981f81f61cb56bf7fd2ef216d
 
 # --- Stage 1: builder ---------------------------------------------------------
-FROM ghcr.io/gardenlinux/gardenlinux:${GARDENLINUX_VERSION} AS builder
+FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
 
 ARG PYTHON_VERSION=3.14.7
-ARG LIBFFI_VERSION=3.8.0
+ARG GLIBC_MIN=2.44
 
 # Toolchain and development headers for the CPython build:
-#   gcc, libc6-dev, make   the compiler, C library headers, build driver
-#   libssl-dev             OpenSSL headers, for the ssl and hashlib modules
-#   zlib1g-dev             zlib headers, for the zlib module
-#   libbz2-dev, liblzma-dev  bzip2 / xz headers, for the bz2 and lzma modules
-#   ca-certificates, tzdata  copied into the runtime image later (TLS roots,
-#                          time zone database for the zoneinfo module)
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-       gcc libc6-dev make ca-certificates tzdata \
-       libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-# libffi, needed by CPython's _ctypes module. Garden Linux ships the runtime
-# library (libffi8) but not the headers, so libffi is built here from source
-# as a static library (libffi.a) and linked into _ctypes. Build output goes
-# to a log file and is printed only if a step fails.
-#   --disable-shared --enable-static   produce only libffi.a
-#   --with-pic                         position-independent code, required
-#                                      because the .a is linked into a .so
-#   --disable-docs                     skip the texinfo manual
-#   --disable-multi-os-directory       install to lib/, not lib64/
-# CPPFLAGS/CFLAGS compile libffi with the hardening Debian applies to its
-# packages (checked-buffer libc calls, stack canaries, stack-clash probes);
-# libffi ends up inside _ctypes, so it would otherwise be the one unhardened
-# part of that module. Setting CFLAGS replaces libffi's default optimisation
-# flags, hence the explicit -O2, which _FORTIFY_SOURCE also requires.
-ADD --checksum=sha256:7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4 \
-    https://github.com/libffi/libffi/releases/download/v${LIBFFI_VERSION}/libffi-${LIBFFI_VERSION}.tar.gz /src/
-RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VERSION} \
-  && CPPFLAGS="-D_FORTIFY_SOURCE=3" CFLAGS="-O2 -fstack-protector-strong -fstack-clash-protection" \
-     ./configure --prefix=/opt/libffi --disable-shared --enable-static --with-pic \
-       --disable-docs --disable-multi-os-directory > /tmp/libffi.log 2>&1 \
-  && make -j"$(nproc)" >> /tmp/libffi.log 2>&1 \
-  && make install >> /tmp/libffi.log 2>&1 \
-  || { tail -50 /tmp/libffi.log; exit 1; }
+#   build-base             gcc, binutils (strip, readelf), make, pkgconf and
+#                          the C library headers (glibc-dev)
+#   glibc-dev>=2.44        Wolfi carries several glibc streams side by side;
+#                          this makes apk pick the headers of the 2.44 stream
+#                          the base image runs on, not an older one
+#   linux-headers          kernel headers some stdlib modules probe for
+#   openssl-dev            OpenSSL headers, for the ssl and hashlib modules
+#   zlib-dev               zlib headers, for the zlib module
+#   bzip2-dev, xz-dev      bzip2 / xz headers, for the bz2 and lzma modules
+#   libffi-dev             libffi headers, for the _ctypes module. Unlike
+#                          Garden Linux, Wolfi ships them, so libffi is no
+#                          longer built from source here; the runtime gets
+#                          Wolfi's libffi.so.8 through the library closure
+#                          and it is tracked in the apk database like every
+#                          other library
+#   ca-certificates-bundle, tzdata   copied into the runtime image later
+#                          (TLS roots, time zone database for zoneinfo)
+#   coreutils, findutils, gawk   GNU versions of cp, find, xargs and awk;
+#                          the rootfs stage relies on GNU cp --parents and
+#                          the base image only has busybox
+# The last line asserts the glibc the image runs on: the dynamic loader
+# reports its version, which must be at least GLIBC_MIN.
+RUN apk add --no-cache \
+      build-base "glibc-dev>=${GLIBC_MIN}" linux-headers \
+      openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev \
+      ca-certificates-bundle tzdata \
+      coreutils findutils gawk \
+  && v="$(/usr/lib/ld-linux-*.so.* --version | sed -n '1s/.*version \([0-9.]*\).*/\1/p')" \
+  && echo "glibc ${v}" \
+  && [ "$(printf '%s\n%s\n' "${GLIBC_MIN}" "${v}" | sort -V | head -1)" = "${GLIBC_MIN}" ] \
+  || { echo "glibc ${v} is older than ${GLIBC_MIN}"; exit 1; }
 
 # CPython from source, installed to /opt/python.
 #
@@ -83,8 +90,7 @@ RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VER
 # deleted after the virtualenv exists (see the poetry step below).
 #
 # configure flags:
-#   LIBFFI_CFLAGS / LIBFFI_LIBS   point _ctypes at the static libffi above
-#   --with-openssl=/usr           use Garden Linux's OpenSSL
+#   --with-openssl=/usr           use Wolfi's OpenSSL
 #   --with-ensurepip=install      install pip, so poetry can be installed;
 #                                 pip is removed again after the venv build
 #   --disable-test-modules        skip the _testcapi etc. C test modules
@@ -97,9 +103,10 @@ RUN cd /src && tar xzf libffi-${LIBFFI_VERSION}.tar.gz && cd libffi-${LIBFFI_VER
 #   LDFLAGS                       -z relro -z now: full RELRO; all symbols are
 #                                 resolved at load time and the GOT is then
 #                                 mapped read-only
-# CPython's default build has none of these; the Garden Linux libraries in
-# the image have all of them. They apply to the interpreter and to every
-# stdlib extension module. The trim step below asserts the result.
+# libffi is found through pkg-config (pkgconf comes with build-base).
+# CPython's default build has none of these hardening flags; they apply to
+# the interpreter and to every stdlib extension module. The trim step below
+# asserts the result.
 # The interpreter binary is statically linked against libpython (there is
 # no libpython3.14.so); its only runtime library dependencies are libc and
 # libm.
@@ -108,8 +115,7 @@ ADD --checksum=sha256:62859805f6fdf25e2bcbf3fa3217801e1996887ca33e6a2af80674bdfa
 RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSION} \
   && printf '%s\n' '*disabled*' _dbm _gdbm _sqlite3 _tkinter readline _curses _curses_panel \
        > Modules/Setup.local \
-  && LIBFFI_CFLAGS="-I/opt/libffi/include" LIBFFI_LIBS="/opt/libffi/lib/libffi.a" \
-     CFLAGS="-fstack-clash-protection" LDFLAGS="-Wl,-z,relro -Wl,-z,now" \
+  && CFLAGS="-fstack-clash-protection" LDFLAGS="-Wl,-z,relro -Wl,-z,now" \
      ./configure --prefix=/opt/python --with-openssl=/usr --with-ensurepip=install \
        --disable-test-modules --without-static-libpython \
        --enable-safety --enable-slower-safety > /tmp/python.log 2>&1 \
@@ -139,12 +145,12 @@ RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSIO
 # ctypes, compression, hashing, zoneinfo with a real zone) work, and that
 # two disabled modules are indeed absent. pip is kept for the next step.
 # The readelf lines assert the hardening requested at configure time, on the
-# interpreter and on _ctypes (which contains libffi): a GNU_RELRO program
-# header together with BIND_NOW in the dynamic section means full RELRO (the
-# segment alone is partial RELRO, which leaves the GOT entries for library
-# functions writable); an undefined __stack_chk_fail means stack
-# canaries are compiled in; a __*_chk import (__memcpy_chk, __snprintf_chk,
-# ...) means _FORTIFY_SOURCE took effect.
+# interpreter and on _ctypes: a GNU_RELRO program header together with
+# BIND_NOW in the dynamic section means full RELRO (the segment alone is
+# partial RELRO, which leaves the GOT entries for library functions
+# writable); an undefined __stack_chk_fail means stack canaries are compiled
+# in; a __*_chk import (__memcpy_chk, __snprintf_chk, ...) means
+# _FORTIFY_SOURCE took effect.
 RUN cd /opt/python \
   && rm -rf lib/python3.*/test lib/python3.*/idlelib lib/python3.*/tkinter \
        lib/python3.*/turtledemo lib/python3.*/turtle.py lib/python3.*/__phello__ \
@@ -218,6 +224,72 @@ RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && find /app/.venv -type d -name tests -prune -exec rm -rf {} + \
   && find /app/.venv -name "*.so*" -type f -exec strip {} + 2>/dev/null
 
+# Berkeley DB must leave no trace in the image (Oracle licence). CPython's
+# _dbm and _gdbm modules are disabled above and the dbm package is removed.
+# The one dependency that knows about it is rdflib: its berkeleydb store
+# adapter is pure Python but named after it, and rdflib/plugin.py imports
+# that adapter unconditionally, so deleting the file alone breaks
+# "import rdflib". The script removes the adapter, the rdflib.tools CLI
+# package (one docstring mentions the store) with its console scripts, the
+# import and the conditional register() block in plugin.py, and every
+# mention in the package metadata, then asserts that no file under rdflib
+# or in the venv's bin still contains the string. It fails if plugin.py no
+# longer has the layout it expects, so an rdflib upgrade that moves the
+# code is noticed. The import afterwards proves rdflib still initialises;
+# the rootfs stage re-checks the whole image.
+RUN python3 <<'EOF'
+import ast, glob, os, re, shutil
+
+site = glob.glob("/app/.venv/lib/python3.*/site-packages")[0]
+pkg = os.path.join(site, "rdflib")
+dist = glob.glob(os.path.join(site, "rdflib-*.dist-info"))[0]
+bindir = "/app/.venv/bin"
+
+for d in glob.glob(os.path.join(pkg, "**", "__pycache__"), recursive=True):
+    shutil.rmtree(d)
+
+os.remove(os.path.join(pkg, "plugins", "stores", "berkeleydb.py"))
+shutil.rmtree(os.path.join(pkg, "tools"))
+ep = os.path.join(dist, "entry_points.txt")
+if os.path.exists(ep):
+    for m in re.finditer(r"^(\w+)\s*=\s*rdflib\.tools\.", open(ep).read(), re.M):
+        script = os.path.join(bindir, m.group(1))
+        if os.path.exists(script):
+            os.remove(script)
+    os.remove(ep)
+
+path = os.path.join(pkg, "plugin.py")
+out, skipping, removed = [], False, 0
+for line in open(path):
+    if line.startswith("import rdflib.plugins.stores.berkeleydb"):
+        removed += 1
+        continue
+    if line.startswith("if rdflib.plugins.stores.berkeleydb.has_bsddb:"):
+        skipping = True
+        removed += 1
+        continue
+    if skipping:
+        if line.rstrip() == "    )":
+            skipping = False
+        continue
+    out.append(line)
+assert removed == 2 and not skipping, "rdflib/plugin.py layout changed; update this script"
+src = "".join(out)
+ast.parse(src)
+open(path, "w").write(src)
+
+for name in ("METADATA", "RECORD"):
+    p = os.path.join(dist, name)
+    lines = [l for l in open(p) if not re.search("berkeley|rdflib/tools/", l, re.I)]
+    open(p, "w").write("".join(lines))
+
+left = [p for p in glob.glob(os.path.join(site, "rdflib*", "**", "*"), recursive=True)
+        + glob.glob(os.path.join(bindir, "*"))
+        if os.path.isfile(p) and re.search(b"berkeley|rdflib\\.tools", open(p, "rb").read(), re.I)]
+assert not left, left
+EOF
+RUN PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c "import rdflib, rdflib.plugins.sparql"
+
 COPY src ./src
 COPY docs_sources.json ./
 
@@ -230,84 +302,129 @@ RUN install -d -o 10001 -g 0 -m 0775 /app/data /app/tmp
 # --- Stage 2: rootfs ----------------------------------------------------------
 # Assembles /rootfs, the exact file tree the runtime image will consist of.
 #
-# 1. Directory skeleton with the merged-/usr layout of the builder: /lib,
-#    /lib64 and /bin are symlinks into /usr. The dynamic loader searches
-#    /lib/x86_64-linux-gnu and /usr/lib/x86_64-linux-gnu, and the interpreter
-#    binary names its loader as /lib64/ld-linux-x86-64.so.2, so both spellings
-#    must resolve to the same files.
-# 2. Shared-library closure. ldd is run over the interpreter binary and every
-#    .so under /opt/python and the venv. Its output lists, per file, the
+# 1. Directory skeleton with the merged-/usr layout of the builder. In Wolfi
+#    /lib, /lib64, /bin and /sbin are symlinks into /usr, and /usr/lib64 is
+#    a symlink to /usr/lib; every one of those symlinks is copied as is, so
+#    that the loader path the interpreter binary names,
+#    /lib64/ld-linux-x86-64.so.2, and the library directory the loader
+#    searches, /usr/lib, resolve to the same files as in the builder.
+# 2. Shared-library closure. The dynamic loader is run in trace mode
+#    (ld.so --list, which is what the ldd script does; Wolfi does not
+#    install ldd by default) over the interpreter binary and every .so
+#    under /opt/python and the venv. Its output lists, per file, the
 #    libraries the loader would map, as either
-#        libssl.so.3 => /usr/lib/x86_64-linux-gnu/libssl.so.3 (0x...)
+#        libssl.so.3 => /usr/lib/libssl.so.3 (0x...)
 #    or, for the loader itself,
 #        /lib64/ld-linux-x86-64.so.2 (0x...)
 #    A library the loader cannot find prints "=> not found"; the build stops
 #    there and shows the file that needs it, because a library missing from
 #    the closure would surface only when that extension is first imported.
+#    A file the loader cannot process at all, or a symbol-version mismatch
+#    ("version GLIBC_2.44 not found"), is reported on stderr with a
+#    non-zero exit instead; that also stops the build, with the loader's
+#    message.
 #    The awk picks the resolved paths out of both line shapes; paths inside
 #    /app and /opt/python are skipped because those trees are copied whole
 #    below. cp --parents -L copies each library to the same path under
 #    /rootfs, dereferencing symlinks so the runtime gets real files.
 # 3. libgcc_s.so.1 is added by hand: glibc loads it with dlopen for thread
-#    cancellation and C++ exception unwinding, so ldd never lists it.
+#    cancellation and C++ exception unwinding, so the trace never lists it.
 #    The list of copied libraries is kept in /tmp/libs.txt for step 7.
-# 4. Whole trees: the interpreter, /etc/ssl and /usr/lib/ssl (CA bundle and
-#    OpenSSL's default paths, which point into /etc/ssl), the time zone
-#    database, and /etc/nsswitch.conf (name-service order; the "files" and
-#    "dns" backends it names are compiled into this glibc, so no libnss_*
-#    files are needed). cp -a keeps symlinks as symlinks.
+# 4. Whole trees: the interpreter, /etc/ssl (CA bundle, and OpenSSL's
+#    compiled-in default directory on Wolfi) and the time zone database.
+#    cp -a keeps symlinks as symlinks.
 # 5. The venv, renamed from .venv to venv, the application source, the
 #    docs-sources file, and the writable data and tmp directories with their
 #    ownership. The venv's bin/python is a symlink to /opt/python/bin/python3.14,
 #    which resolves because /opt/python is copied to the same path.
 # 6. /etc/passwd and /etc/group with the root and appuser entries so uid
-#    10001 resolves to a name (gid 0, OpenShift arbitrary-uid idiom), and a
-#    world-writable /tmp for tempfile.
+#    10001 resolves to a name (gid 0, OpenShift arbitrary-uid idiom),
+#    /etc/nsswitch.conf naming the "files" and "dns" backends, which are
+#    compiled into glibc, so no libnss_* files are needed (Wolfi's own nsswitch.conf uses "compat" for passwd and
+#    group, a backend that lives in a separate libnss_compat.so.2 and is
+#    therefore not copied), and a world-writable /tmp for tempfile.
 # 7. Metadata for vulnerability scanners and SBOM tools. A scratch image has
-#    no dpkg database, so Trivy, Grype and Syft would report no OS packages
-#    and the Garden Linux libraries copied in step 2 and 3 would go unscanned.
-#    Each copied library is mapped to the package that owns it with dpkg -S
-#    (tried on the path ldd printed and on its symlink-resolved form, since
-#    dpkg records only one of them); a library no package owns stops the
-#    build. For glibc's loader dpkg -S also prints "diversion by libc6"
-#    lines, which name no package and are dropped. The status stanza of each
-#    package is written to
-#    /var/lib/dpkg/status.d/<package>, the per-package layout of Google's
-#    distroless images, which those tools read. /etc/os-release tells them
+#    no apk database, so Trivy, Grype and Syft would report no OS packages
+#    and the Wolfi libraries copied in step 2 and 3 would go unscanned.
+#    Each copied library is mapped to the package that owns it with
+#    apk info -W. apk knows a file only under the path its package
+#    recorded, with no symlink resolution, and some Wolfi packages install
+#    into /usr/lib64 (libffi does), which is a symlink to /usr/lib, while
+#    the loader prints the /usr/lib path. The lookup therefore tries the
+#    loader's path, its symlink-resolved form, and both with /usr/lib
+#    replaced by /usr/lib64. A library no package owns stops the build;
+#    the loop is not part of a pipeline so its exit status is the step's.
+#    The stanza of each package is copied from the builder's package
+#    database, /lib/apk/db/installed, into the same file under /rootfs; the
+#    file is at /usr/lib/apk/db/installed on disk, /lib being a symlink,
+#    which is where the scanners look on Wolfi. /etc/os-release tells them
 #    which distribution the versions belong to. A package is listed in full
 #    even if only one of its files is in the image, so findings can concern
-#    files that are not there; that errs on the safe side. CPython and libffi
-#    are compiled here, belong to no package and are not listed; they are
-#    tracked through PYTHON_VERSION and LIBFFI_VERSION above.
+#    files that are not there; that errs on the safe side. CPython is
+#    compiled here, belongs to no package and is not listed; it is tracked
+#    through PYTHON_VERSION above.
 FROM builder AS rootfs
 RUN set -eu \
-  && mkdir -p /rootfs/usr/lib /rootfs/usr/lib64 /rootfs/usr/bin /rootfs/etc /rootfs/app \
-  && ln -s usr/lib /rootfs/lib && ln -s usr/lib64 /rootfs/lib64 && ln -s usr/bin /rootfs/bin \
+  && mkdir -p /rootfs/usr/lib /rootfs/usr/bin /rootfs/etc /rootfs/app \
+  && for d in /lib /lib64 /bin /sbin /usr/lib64 /usr/sbin; do \
+       if [ -L "$d" ]; then cp -a "$d" "/rootfs$d"; fi; \
+     done \
+  && LD="$(find /usr/lib -maxdepth 1 -name 'ld-linux-*.so.*' -type f | head -1)" \
   && { echo /opt/python/bin/python3.14; find /opt/python /app/.venv -name '*.so*' -type f; } \
-     | xargs ldd 2>/dev/null > /tmp/ldd.out \
+     | while read -r f; do \
+         out="$("$LD" --list "$f" 2>&1)" \
+           || { echo "failed to trace $f:" >&2; echo "$out" >&2; exit 1; }; \
+         echo "$out"; \
+       done > /tmp/ldd.out \
   && if grep -B1 'not found' /tmp/ldd.out; then echo 'unresolved shared libraries'; exit 1; fi \
   && awk '$2 == "=>" && $3 ~ /^\// { print $3 } $1 ~ /^\// && $2 ~ /^\(0x/ { print $1 }' /tmp/ldd.out \
      | grep -vE '^/(app|opt/python)/' \
      | sort -u > /tmp/libs.txt \
-  && find /usr/lib -name libgcc_s.so.1 -print -quit >> /tmp/libs.txt \
+  && find /usr/lib -maxdepth 1 -name libgcc_s.so.1 -print -quit >> /tmp/libs.txt \
   && while read -r lib; do cp --parents -L "$lib" /rootfs; done < /tmp/libs.txt \
+  && : > /tmp/pkgs.raw \
   && while read -r lib; do \
-       dpkg -S "$lib" 2>/dev/null || dpkg -S "$(readlink -f "$lib")" 2>/dev/null \
-       || { echo "no package owns $lib" >&2; exit 1; }; \
-     done < /tmp/libs.txt > /tmp/owners.txt \
-  && grep -v '^diversion by ' /tmp/owners.txt | sed 's|: /.*||' | sort -u > /tmp/pkgs.txt \
+       pkg=""; \
+       for c in "$lib" "$(readlink -f "$lib")"; do \
+         for cand in "$c" "$(printf '%s' "$c" | sed 's|^/usr/lib/|/usr/lib64/|')"; do \
+           pkg="$(apk info -W "$cand" 2>/dev/null | sed -n 's/.* is owned by //p')"; \
+           [ -n "$pkg" ] && break 2; \
+         done; \
+       done; \
+       [ -n "$pkg" ] || { echo "no package owns $lib" >&2; exit 1; }; \
+       echo "$pkg" | sed -E 's/-[^-]+-r[0-9]+$//' >> /tmp/pkgs.raw; \
+     done < /tmp/libs.txt \
+  && sort -u /tmp/pkgs.raw > /tmp/pkgs.txt \
   && test -s /tmp/pkgs.txt \
-  && mkdir -p /rootfs/var/lib/dpkg/status.d \
+  && mkdir -p /rootfs/usr/lib/apk/db \
   && while read -r pkg; do \
-       dpkg-query -s "$pkg" > "/rootfs/var/lib/dpkg/status.d/${pkg%%:*}" || exit 1; \
+       awk -v RS= -v ORS='\n\n' -v p="$pkg" \
+         '{ n = split($0, L, "\n"); for (i = 1; i <= n; i++) if (L[i] == "P:" p) { print; break } }' \
+         /lib/apk/db/installed >> /rootfs/usr/lib/apk/db/installed; \
+       grep -q "^P:$pkg\$" /rootfs/usr/lib/apk/db/installed || { echo "no db stanza for $pkg" >&2; exit 1; }; \
      done < /tmp/pkgs.txt \
   && cp -L /etc/os-release /rootfs/etc/os-release \
-  && cp -a --parents /opt/python /etc/ssl /usr/lib/ssl /usr/share/zoneinfo /etc/nsswitch.conf /rootfs \
+  && cp -a --parents /opt/python /etc/ssl /usr/share/zoneinfo /rootfs \
   && cp -a /app/.venv /rootfs/app/venv \
   && cp -a /app/src /app/docs_sources.json /app/data /app/tmp /rootfs/app/ \
   && printf 'root:x:0:0:root:/root:/sbin/nologin\nappuser:x:10001:0::/nonexistent:/sbin/nologin\n' > /rootfs/etc/passwd \
   && printf 'root:x:0:\nappuser:x:10001:\n' > /rootfs/etc/group \
+  && printf 'passwd: files\ngroup: files\nhosts: files dns\n' > /rootfs/etc/nsswitch.conf \
   && install -d -m 1777 /rootfs/tmp
+
+# Berkeley DB check over the finished tree: no file named after it, no
+# shared object linked against libdb, and no mention of the product name
+# ("Berkeley DB", "BerkeleyDB", "berkeleydb", "berkeley_db") in the
+# application, the interpreter tree, the package database or /etc,
+# binaries included. The pattern is the product name, not the word: the
+# city and the university appear in licence texts (numpy), docstrings
+# (pandas) and geodata (phonenumbers). Two stdlib files (shelve.py,
+# http/cookiejar.py) name Python's old bsddb module in a class name and a
+# comment and contain no Berkeley DB code; they do not match either.
+RUN set -eu \
+  && ! find /rootfs \( -iname 'libdb*' -o -iname '*berkeley*' \) -print | grep . \
+  && ! find /rootfs -name '*.so*' -type f -exec readelf -dW {} + 2>/dev/null | grep -E 'NEEDED.*libdb' \
+  && ! grep -rilE 'berkeley[ _-]?db' /rootfs/app /rootfs/opt/python /rootfs/usr/lib/apk/db /rootfs/etc | grep .
 
 # --- Stage 3: runtime ---------------------------------------------------------
 # Starts from an empty filesystem; the single COPY makes /rootfs the whole
