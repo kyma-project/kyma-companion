@@ -37,7 +37,7 @@ pytest-mock = "^3.15.1"
 pytest-rerunfailures = "^16.7"
 pyyaml = "^6.0.3"
 termcolor = "^3.3.0"
-types-pyyaml = "^6.0.12.20260518"
+types-pyyaml = "^6.0.12.20260906"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.15.0"
