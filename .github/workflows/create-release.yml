@@ -82,6 +82,11 @@ jobs:
     name: Run unit tests
     needs: validate-input-params
     runs-on: ubuntu-latest
+    # The job checks out and executes code from the release branch in the
+    # context of the default branch. Gate it behind the same protected
+    # environment as the integration-test jobs so the checkout is approved
+    # by a reviewer before any release-branch code runs (CodeQL: cache poisoning).
+    environment: e2e
     permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
@@ -128,6 +133,8 @@ jobs:
     name: Run indexer unit tests
     needs: validate-input-params
     runs-on: ubuntu-latest
+    # See "Run unit tests" above.
+    environment: e2e
     permissions: read-all
     env:
       RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
