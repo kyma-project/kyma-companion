@@ -40,6 +40,7 @@ FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
 
 ARG PYTHON_VERSION=3.14.7
 ARG GLIBC_MIN=2.44
+ARG RUST_STREAM=1.98
 
 # Toolchain and development headers for the CPython build:
 #   build-base             gcc, binutils (strip, readelf), make, pkgconf and
@@ -51,6 +52,10 @@ ARG GLIBC_MIN=2.44
 #   openssl-dev            OpenSSL headers, for the ssl and hashlib modules
 #   zlib-dev               zlib headers, for the zlib module
 #   bzip2-dev, xz-dev      bzip2 / xz headers, for the bz2 and lzma modules
+#   rust-<RUST_STREAM>     rustc and cargo, to build the cryptography wheel
+#                          from source against the image's OpenSSL (see the
+#                          poetry step). Wolfi packages Rust per minor
+#                          version; cryptography needs 1.83 or newer
 #   libffi-dev             libffi headers, for the _ctypes module. Unlike
 #                          Garden Linux, Wolfi ships them, so libffi is no
 #                          longer built from source here; the runtime gets
@@ -67,6 +72,7 @@ ARG GLIBC_MIN=2.44
 RUN apk add --no-cache \
       build-base "glibc-dev>=${GLIBC_MIN}" linux-headers \
       openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev \
+      "rust-${RUST_STREAM}" \
       ca-certificates-bundle tzdata \
       coreutils findutils gawk \
   && v="$(/usr/lib/ld-linux-*.so.* --version | sed -n '1s/.*version \([0-9.]*\).*/\1/p')" \
@@ -179,7 +185,15 @@ COPY pyproject.toml poetry.lock ./
 #
 # 1. Install poetry into the interpreter's site-packages with the pip that
 #    ensurepip provided; poetry creates /app/.venv (in-project) and installs
-#    the locked main dependencies into it.
+#    the locked main dependencies into it. installer.no-binary makes it
+#    build cryptography from its source distribution instead of taking the
+#    PyPI wheel: that wheel carries its own statically linked OpenSSL, a
+#    second copy next to the one Python's ssl module and hdbcli use, with
+#    its own patch cadence and invisible to package-level scanners. Built
+#    here, the Rust openssl-sys crate links the image's libssl/libcrypto
+#    dynamically (found through pkg-config), so one OpenSSL serves
+#    everything and a base image bump patches it. The check step below
+#    asserts that. ~/.cargo is the crate cache of that build.
 # 2. Remove poetry, pip and ensurepip from /opt/python again, plus their
 #    caches. The interpreter tree that ships is then stdlib only.
 # 3. Delete the pyexpat and _elementtree extension modules that were only
@@ -203,8 +217,9 @@ COPY pyproject.toml poetry.lock ./
 #    wheels on PyPI ship unstripped.
 RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && poetry config virtualenvs.in-project true \
+  && poetry config installer.no-binary cryptography \
   && poetry install --only main --no-interaction --no-ansi \
-  && rm -rf ~/.config/pypoetry ~/.cache/pypoetry ~/.cache/pip \
+  && rm -rf ~/.config/pypoetry ~/.cache/pypoetry ~/.cache/pip ~/.cargo \
   && rm -rf /opt/python/lib/python3.*/site-packages/* /opt/python/lib/python3.*/ensurepip \
        /opt/python/bin/pip* /opt/python/bin/poetry \
   && rm -f /opt/python/lib/python3.*/lib-dynload/pyexpat* /opt/python/lib/python3.*/lib-dynload/_elementtree* \
@@ -223,6 +238,18 @@ RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && find /app/.venv -name "_yaml*.so" -delete \
   && find /app/.venv -type d -name tests -prune -exec rm -rf {} + \
   && find /app/.venv -name "*.so*" -type f -exec strip {} + 2>/dev/null
+
+# Assert that cryptography was built against the system OpenSSL and not
+# the copy the PyPI wheel bundles: its extension module must list libssl
+# among its dynamic dependencies, and the OpenSSL version it reports at
+# runtime must be the one pkg-config reports for the installed library.
+RUN so="$(find /app/.venv -path '*/cryptography/*' -name '_rust*.so' | head -1)" \
+  && test -n "$so" \
+  && readelf -dW "$so" | grep -qE 'NEEDED.*libssl\.so' \
+  && sys="$(pkgconf --modversion openssl)" \
+  && got="$(PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c 'from cryptography.hazmat.backends.openssl.backend import backend; print(backend.openssl_version_text())')" \
+  && echo "cryptography uses: $got (system openssl $sys)" \
+  && case "$got" in *"$sys"*) ;; *) echo "cryptography is not linked against the system OpenSSL" >&2; exit 1;; esac
 
 # Berkeley DB must leave no trace in the image (Oracle licence). CPython's
 # _dbm and _gdbm modules are disabled above and the dbm package is removed.
