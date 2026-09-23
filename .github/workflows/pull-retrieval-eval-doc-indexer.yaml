@@ -1,0 +1,70 @@
+name: "Retrieval Evaluation for Doc Indexer"
+run-name: "Retrieval Evaluation for Doc Indexer"
+
+on:
+  pull_request_target:
+    types: [labeled, opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+    paths:
+      - "doc_indexer/**"
+      - ".github/workflows/pull-retrieval-eval-doc-indexer.yaml"
+  schedule:
+    # Run every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+permissions: read-all
+
+env:
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  retrieval-eval:
+    name: Run retrieval evaluation
+    if: >
+      github.event_name == 'schedule' ||
+      contains(github.event.pull_request.labels.*.name, 'run-retrieval-eval')
+    runs-on: ubuntu-latest
+    environment: e2e
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install doc_indexer dependencies
+        working-directory: doc_indexer
+        run: |
+          pip install poetry
+          poetry install --no-root
+
+      - name: Write config from secret
+        env:
+          DOC_INDEXER_TESTS_CONFIG: ${{ secrets.DOC_INDEXER_TESTS_CONFIG }}
+        run: |
+          mkdir -p config
+          echo "$DOC_INDEXER_TESTS_CONFIG" > config/config.json
+
+      - name: Run retrieval evaluation
+        working-directory: doc_indexer
+        run: |
+          poetry run python evaluation/run_retrieval_eval.py \
+            --table kyma_docs \
+            --k 10 \
+            --mode vector \
+            --baseline evaluation/baseline.json \
+            --out evaluation/results.json
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-eval-results
+          path: doc_indexer/evaluation/results.json
+          retention-days: 30
