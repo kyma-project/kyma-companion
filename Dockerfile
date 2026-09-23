@@ -56,6 +56,9 @@ ARG RUST_STREAM=1.98
 #                          from source against the image's OpenSSL (see the
 #                          poetry step). Wolfi packages Rust per minor
 #                          version; cryptography needs 1.83 or newer
+#   llhttp-dev             headers and pkg-config file of llhttp, the HTTP/1
+#                          parser from Node.js, to build aiohttp against the
+#                          image's copy instead of the one its wheel bundles
 #   libffi-dev             libffi headers, for the _ctypes module. Unlike
 #                          Garden Linux, Wolfi ships them, so libffi is no
 #                          longer built from source here; the runtime gets
@@ -71,7 +74,7 @@ ARG RUST_STREAM=1.98
 # reports its version, which must be at least GLIBC_MIN.
 RUN apk add --no-cache \
       build-base "glibc-dev>=${GLIBC_MIN}" linux-headers \
-      openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev \
+      openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev llhttp-dev \
       "rust-${RUST_STREAM}" \
       ca-certificates-bundle tzdata \
       coreutils findutils gawk \
@@ -192,8 +195,12 @@ COPY pyproject.toml poetry.lock ./
 #    its own patch cadence and invisible to package-level scanners. Built
 #    here, the Rust openssl-sys crate links the image's libssl/libcrypto
 #    dynamically (found through pkg-config), so one OpenSSL serves
-#    everything and a base image bump patches it. The check step below
-#    asserts that. ~/.cargo is the crate cache of that build.
+#    everything and a base image bump patches it. aiohttp is built from
+#    source for the same reason: its wheel bundles llhttp, the HTTP parser
+#    whose bugs surface as aiohttp CVEs; with AIOHTTP_USE_SYSTEM_DEPS its
+#    build links the image's libllhttp (found through pkg-config) instead.
+#    The check steps below assert both. ~/.cargo is the crate cache of the
+#    cryptography build.
 # 2. Remove poetry, pip and ensurepip from /opt/python again, plus their
 #    caches. The interpreter tree that ships is then stdlib only.
 # 3. Delete the pyexpat and _elementtree extension modules that were only
@@ -218,8 +225,8 @@ COPY pyproject.toml poetry.lock ./
 #    wheels on PyPI ship unstripped.
 RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && poetry config virtualenvs.in-project true \
-  && poetry config installer.no-binary cryptography \
-  && poetry install --only main --no-interaction --no-ansi \
+  && poetry config installer.no-binary cryptography,aiohttp \
+  && AIOHTTP_USE_SYSTEM_DEPS=1 poetry install --only main --no-interaction --no-ansi \
   && rm -rf ~/.config/pypoetry ~/.cache/pypoetry ~/.cache/pip ~/.cargo \
   && rm -rf /opt/python/lib/python3.*/site-packages/* /opt/python/lib/python3.*/ensurepip \
        /opt/python/bin/pip* /opt/python/bin/poetry \
@@ -250,6 +257,14 @@ RUN so="$(find /app/.venv -path '*/cryptography/*' -name '_rust*.so' | head -1)"
   && got="$(PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c 'from cryptography.hazmat.backends.openssl.backend import backend; print(backend.openssl_version_text())')" \
   && echo "cryptography uses: $got (system openssl $sys)" \
   && case "$got" in *"$sys"*) ;; *) echo "cryptography is not linked against the system OpenSSL" >&2; exit 1;; esac
+
+# Assert that aiohttp's parser extension links the system llhttp rather
+# than a bundled copy.
+RUN so="$(find /app/.venv -path '*/aiohttp/*' -name '_http_parser*.so' | head -1)" \
+  && test -n "$so" \
+  && readelf -dW "$so" | grep -qE 'NEEDED.*libllhttp\.so' \
+  && PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c "import aiohttp.http_parser as p; assert p.HttpRequestParser.__module__ == 'aiohttp._http_parser', 'C parser not in use'" \
+  && echo "aiohttp uses the system llhttp"
 
 # Berkeley DB must leave no trace in the image (Oracle licence). CPython's
 # _dbm and _gdbm modules are disabled above and the dbm package is removed.
