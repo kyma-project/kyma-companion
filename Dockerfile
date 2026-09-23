@@ -199,8 +199,14 @@ COPY pyproject.toml poetry.lock ./
 #    source for the same reason: its wheel bundles llhttp, the HTTP parser
 #    whose bugs surface as aiohttp CVEs; with AIOHTTP_USE_SYSTEM_DEPS its
 #    build links the image's libllhttp (found through pkg-config) instead.
-#    The check steps below assert both. ~/.cargo is the crate cache of the
-#    cryptography build.
+#    httptools (uvicorn's HTTP parser) bundles llhttp too, but exposes the
+#    system-library choice only as a setup.py option, which poetry cannot
+#    pass; it is therefore reinstalled right after, at the version poetry
+#    locked, by pip building the source distribution with that option
+#    supplied through a distutils config file (DIST_EXTRA_CONFIG). pip
+#    runs from the interpreter's own copy (--python targets the venv).
+#    The check steps below assert all three. ~/.cargo is the crate cache
+#    of the cryptography build.
 # 2. Remove poetry, pip and ensurepip from /opt/python again, plus their
 #    caches. The interpreter tree that ships is then stdlib only.
 # 3. Delete the pyexpat and _elementtree extension modules that were only
@@ -227,6 +233,11 @@ RUN python3 -m pip install --no-cache-dir "poetry>=2.1" \
   && poetry config virtualenvs.in-project true \
   && poetry config installer.no-binary cryptography,aiohttp \
   && AIOHTTP_USE_SYSTEM_DEPS=1 poetry install --only main --no-interaction --no-ansi \
+  && v="$(/app/.venv/bin/python -c 'import importlib.metadata as m; print(m.version("httptools"))')" \
+  && printf '[build_ext]\nuse_system_llhttp = 1\n' > /tmp/httptools.cfg \
+  && DIST_EXTRA_CONFIG=/tmp/httptools.cfg python3 -m pip --python /app/.venv/bin/python install \
+       --no-cache-dir --no-deps --no-binary httptools --force-reinstall "httptools==$v" \
+  && rm -f /tmp/httptools.cfg \
   && rm -rf ~/.config/pypoetry ~/.cache/pypoetry ~/.cache/pip ~/.cargo \
   && rm -rf /opt/python/lib/python3.*/site-packages/* /opt/python/lib/python3.*/ensurepip \
        /opt/python/bin/pip* /opt/python/bin/poetry \
@@ -258,13 +269,17 @@ RUN so="$(find /app/.venv -path '*/cryptography/*' -name '_rust*.so' | head -1)"
   && echo "cryptography uses: $got (system openssl $sys)" \
   && case "$got" in *"$sys"*) ;; *) echo "cryptography is not linked against the system OpenSSL" >&2; exit 1;; esac
 
-# Assert that aiohttp's parser extension links the system llhttp rather
-# than a bundled copy.
+# Assert that the parser extensions of aiohttp and httptools link the
+# system llhttp rather than a bundled copy.
 RUN so="$(find /app/.venv -path '*/aiohttp/*' -name '_http_parser*.so' | head -1)" \
   && test -n "$so" \
   && readelf -dW "$so" | grep -qE 'NEEDED.*libllhttp\.so' \
   && PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c "import aiohttp.http_parser as p; assert p.HttpRequestParser.__module__ == 'aiohttp._http_parser', 'C parser not in use'" \
-  && echo "aiohttp uses the system llhttp"
+  && echo "aiohttp uses the system llhttp" \
+  && so="$(find /app/.venv -path '*/httptools/*' -name 'parser*.so' | head -1)" \
+  && test -n "$so" \
+  && readelf -dW "$so" | grep -qE 'NEEDED.*libllhttp\.so' \
+  && echo "httptools uses the system llhttp"
 
 # Berkeley DB must leave no trace in the image (Oracle licence). CPython's
 # _dbm and _gdbm modules are disabled above and the dbm package is removed.
