@@ -1,0 +1,67 @@
+# Dependency updates, one pull request per ecosystem, Monday nights.
+#
+# pip             the three Poetry projects (pyproject.toml + poetry.lock),
+#                 grouped into one PR across all three directories
+# github-actions  action versions in .github/workflows
+# docker          the wolfi-base digest in both Dockerfiles, grouped into one
+#                 PR so the two images always build from the same base. The
+#                 image has only a "latest" tag, so these are digest updates;
+#                 the digest must be written on the FROM line, Dependabot
+#                 does not resolve it from an ARG.
+#
+# PYTHON_VERSION and its tarball checksum in the Dockerfiles are not covered
+# and stay manual.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directories:
+      - "/"
+      - "/doc_indexer"
+      - "/tests/blackbox"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "01:00"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: deps
+    labels:
+      - dependencies
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "01:00"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: deps
+    labels:
+      - dependencies
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directories:
+      - "/"
+      - "/doc_indexer"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "01:00"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: deps
+    labels:
+      - dependencies
+    groups:
+      wolfi-base-digest:
+        patterns:
+          - "*"

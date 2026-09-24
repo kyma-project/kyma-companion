@@ -26,17 +26,17 @@
 # credit). wolfi-base is free and needs no registry account.
 #
 # Version pins: Wolfi is a rolling distribution with only a "latest" tag, so
-# the base image is pinned by digest (WOLFI_BASE_DIGEST); the packages apk
-# installs on top are the newest in the Wolfi repository at build time, and
-# the glibc version check below fails the build if that ever regresses
-# below GLIBC_MIN. PYTHON_VERSION picks the source tarball; the ADD below
-# carries the SHA-256 of the tarball it downloads, so a version bump means
-# changing the ARG and the checksum together.
-
-ARG WOLFI_BASE_DIGEST=sha256:1d95114038f76513a9ace6fca107d5582b08c65981f81f61cb56bf7fd2ef216d
+# the base image is pinned by digest, written directly on the FROM line so
+# that a dependency bot (Renovate or Dependabot; the latter does not read a
+# digest out of an ARG) can update it. The packages apk installs on top are
+# the newest in the Wolfi repository at build time, and the glibc version
+# check below fails the build if that ever regresses below GLIBC_MIN.
+# PYTHON_VERSION picks the source tarball; the ADD below carries the SHA-256
+# of the tarball it downloads, so a version bump means changing the ARG and
+# the checksum together.
 
 # --- Stage 1: builder ---------------------------------------------------------
-FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1d95114038f76513a9ace6fca107d5582b08c65981f81f61cb56bf7fd2ef216d AS builder
 
 ARG PYTHON_VERSION=3.14.7
 ARG GLIBC_MIN=2.44
