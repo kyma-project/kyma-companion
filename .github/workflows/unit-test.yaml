@@ -28,7 +28,6 @@ jobs:
             - doc_indexer/**
             - CODEOWNERS
             - LICENSE
-            - sec-scanners-config.yaml
             - renovate.json
 
       - name: Determine if tests should run

@@ -16,36 +16,36 @@ authors = [
 ]
 requires-python = "==3.14.*"
 dependencies = [
-  "cryptography (>=50.0.0,<51.0.0)",
+  "cryptography (>=50.0.1,<51.0.0)",
   "github-action-utils (>=1.1.0,<2.0.0)",
   "python-decouple (>=3.8,<4.0)",
   "redis (>=8.0.1,<9.0.0)",
   "requests (>=2.34.2,<3.0.0)",
-  "sap-ai-sdk-gen[all] (>=7.0.0,<8.0.0)"
+  "sap-ai-sdk-gen[all] (>=7.4.0,<8.0.0)"
 ]
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-deepeval = {version = "^4.1.0"}
-fakeredis = "^2.36.2"
+deepeval = "^4.2.3"
+fakeredis = "^2.38.0"
 prettytable = "^3.18.0"
 pytest = "^9.1.1"
 pytest-asyncio = "^1.4.0"
 pytest-dotenv = "^0.5.2"
 pytest-mock = "^3.15.1"
-pytest-rerunfailures = "^16.3"
+pytest-rerunfailures = "^16.7"
 pyyaml = "^6.0.3"
 termcolor = "^3.3.0"
-types-pyyaml = "^6.0.12.20260518"
+types-pyyaml = "^6.0.12.20260906"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^9.15.0"
-mypy = "^2.3.0"
+ipython = "^9.17.1"
+mypy = "^2.3.1"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.16.3"
-types-requests = "^2.33.0.20260712"
+ruff = "^0.16.8"
+types-requests = "^2.33.0.20260906"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
