@@ -52,8 +52,9 @@ def build_chunk_metadata(
 
     Returns:
         A dict with keys ``module``, ``path``, ``repo``, ``commit``, ``url``,
-        ``title`` (always ``None`` here -- the caller fills it in), and
-        ``doc_type`` (always ``None`` for now).
+        ``title`` (always ``None`` here -- the caller fills it in),
+        ``doc_type`` (always ``None`` for now), and ``audience`` (a list;
+        defaults to ``["public"]``).
     """
     # Derive the relative path from docs_path.
     rel = os.path.relpath(source_path, docs_path)
@@ -83,6 +84,7 @@ def build_chunk_metadata(
             "url": source_path,
             "title": None,
             "doc_type": None,
+            "audience": ["public"],
         }
 
     entry = manifest[module]
@@ -99,6 +101,7 @@ def build_chunk_metadata(
         "url": url,
         "title": None,
         "doc_type": None,
+        "audience": ["public"],
     }
 
 

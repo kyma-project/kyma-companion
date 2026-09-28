@@ -39,6 +39,7 @@ class TestBuildChunkMetadataSiteRepo:
         assert meta["url"] == "https://kyma-project.io/external-content/istio/docs/01-overview"
         assert meta["title"] is None
         assert meta["doc_type"] is None
+        assert meta["audience"] == ["public"]
 
     def test_url_strips_md_extension(self):
         manifest = _make_manifest("serverless", "https://github.com/kyma-project/serverless")
@@ -120,6 +121,7 @@ class TestBuildChunkMetadataMissingManifest:
         assert meta["url"] == source_path
         assert meta["title"] is None
         assert meta["doc_type"] is None
+        assert meta["audience"] == ["public"]
 
     def test_module_missing_from_manifest_falls_back(self):
         """Module not in manifest warns and falls back, even if manifest itself exists."""
