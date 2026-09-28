@@ -1,5 +1,5 @@
 import asyncio
-from typing import Protocol, cast
+from typing import cast
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -24,13 +24,6 @@ class Query(BaseModel):
     """A RAG system query."""
 
     text: str
-
-
-class IRAGSystem(Protocol):
-    """A protocol for a RAG system."""
-
-    async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
-        """Retrieve documents for a given query."""
 
 
 class RAGSystem:
