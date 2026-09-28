@@ -95,4 +95,5 @@ sort = "poetry sort"
 lock-check = "bash scripts/shell/lock-check.sh"
 lock-fix = "bash scripts/shell/lock-sync.sh"
 lint-workflows = "bash scripts/shell/lint-workflows.sh"
-pre-commit-check = ["sort", "lock-check", "code-fix", "codecheck", "test-local", "lint-workflows"]
+doc-indexer-check = "bash -c 'cd doc_indexer && poetry run poe codecheck'"
+pre-commit-check = ["sort", "lock-check", "code-fix", "codecheck", "doc-indexer-check", "test-local", "lint-workflows"]
