@@ -18,8 +18,10 @@ _CODELOAD_HOST = "codeload.github.com"
 _ALLOWED_REPO_HOSTS = {"github.com", "www.github.com"}
 _MIN_URL_PATH_PARTS = 2
 
-# Pattern for the top-level directory name in a codeload tarball: "<repo>-<sha>".
-_EXTRACTED_DIR_RE = re.compile(r"^.+-([0-9a-f]{40})$")
+# codeload tarballs are produced by `git archive`, which writes a pax global header
+# with `comment=<full commit sha>`. The top-level directory is named "<repo>-<ref>"
+# (e.g. "istio-HEAD", "istio-main"), so it only contains the sha when a sha was requested.
+_COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 @dataclass
@@ -46,12 +48,12 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
 
     Replaces `git clone`: fetches the codeload tarball for the given ref over
     anonymous HTTPS and extracts it so that repository files sit directly under
-    the returned path (the tarball's top-level `<repo>-<sha>/` wrapper is
+    the returned path (the tarball's top-level `<repo>-<ref>/` wrapper is
     stripped), matching the layout the Scroller expects.
 
-    The commit sha is parsed from the extracted directory name (codeload always
-    uses the resolved sha, not the symbolic ref). Raises RuntimeError if the
-    directory name does not match the expected ``<repo>-<40-hex-chars>`` pattern.
+    The commit sha is read from the tarball's pax global header (`comment`),
+    which `git archive` sets to the resolved commit. Raises RuntimeError if the
+    header is missing or is not a 40-char hex sha.
     """
     owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
@@ -77,22 +79,20 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
             raise RuntimeError(f"failed to download {tar_url}: {exc.reason}") from exc
 
         with tarfile.open(tar_path, "r:gz") as tf:
+            commit = tf.pax_headers.get("comment", "")
+            if not _COMMIT_SHA_RE.match(commit):
+                raise RuntimeError(
+                    f"cannot read commit sha from tarball pax header for {tar_url}: "
+                    f"comment={commit!r} (expected 40 hex chars)"
+                )
             tf.extractall(staging, filter="data")  # filter="data" blocks path traversal (py3.12+)
 
-        # The archive extracts to a single top-level dir named "<repo>-<sha>".
+        # The archive extracts to a single top-level dir named "<repo>-<ref>".
         extracted = [e for e in os.listdir(staging) if os.path.isdir(os.path.join(staging, e))]
         if len(extracted) != 1:
             raise RuntimeError(f"unexpected tarball layout for {tar_url}: {extracted}")
 
-        top_dir = extracted[0]
-        m = _EXTRACTED_DIR_RE.match(top_dir)
-        if not m:
-            raise RuntimeError(
-                f"cannot parse commit sha from extracted directory name '{top_dir}' (expected '<repo>-<40-hex-chars>')"
-            )
-        commit = m.group(1)
-
-        shutil.move(os.path.join(staging, top_dir), repo_path)
+        shutil.move(os.path.join(staging, extracted[0]), repo_path)
 
     logger.info("Repository downloaded successfully", extra={"url": tar_url, "dest": repo_path, "commit": commit})
     return DownloadResult(path=repo_path, commit=commit)
