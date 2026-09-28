@@ -8,6 +8,7 @@ from unit.rag.reranker.fixtures import doc1, doc2, doc3
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
+    RAG_NUM_QUERIES,
     RetrievalMode,
 )
 
@@ -36,7 +37,12 @@ def collaborators():
         query_generator.agenerate_queries = AsyncMock(return_value=Queries(queries=["alt query"]))
         reranker = reranker_cls.return_value
         reranker.arerank = AsyncMock(return_value=[doc1, doc2])
-        yield {"retriever": retriever, "query_generator": query_generator, "reranker": reranker}
+        yield {
+            "retriever": retriever,
+            "query_generator": query_generator,
+            "query_generator_cls": query_generator_cls,
+            "reranker": reranker,
+        }
 
 
 class TestRAGSystemMode:
@@ -51,6 +57,13 @@ class TestRAGSystemMode:
 
         # Then the mode is fixed on the instance
         assert rag_system.mode == RetrievalMode.FUSION
+
+    def test_query_generator_uses_configured_num_queries(self, mock_models, collaborators):
+        # When the RAG system is initialized
+        RAGSystem(mock_models)
+
+        # Then the query generator is built with the configured number of alternative queries
+        assert collaborators["query_generator_cls"].call_args.kwargs["num_queries"] == RAG_NUM_QUERIES
 
     @pytest.mark.asyncio
     async def test_reranker_mode(self, monkeypatch, mock_models, collaborators):

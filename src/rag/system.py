@@ -16,6 +16,7 @@ from utils.settings import (
     DOCS_TABLE_NAME,
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
+    RAG_NUM_QUERIES,
     RETRIEVAL_MODE,
     RetrievalMode,
 )
@@ -34,7 +35,10 @@ class RAGSystem:
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
-        self.query_generator = QueryGenerator(cast(IModel, cast(IModel, models[MAIN_MODEL_MINI_NAME])))
+        self.query_generator = QueryGenerator(
+            cast(IModel, models[MAIN_MODEL_MINI_NAME]),
+            num_queries=RAG_NUM_QUERIES,
+        )
         # setup retriever
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),

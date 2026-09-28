@@ -5,7 +5,13 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from utils.settings import RETRIEVAL_MODE, RetrievalMode, load_env_from_json
+from utils.settings import (
+    RAG_NUM_QUERIES,
+    RAG_TOP_K,
+    RETRIEVAL_MODE,
+    RetrievalMode,
+    load_env_from_json,
+)
 
 
 @pytest.mark.parametrize(
@@ -96,3 +102,11 @@ def test_retrieval_mode_rejects_invalid_value():
 def test_retrieval_mode_defaults_to_reranker():
     # With no RETRIEVAL_MODE configured, the setting resolves to reranker (no behavior change).
     assert RETRIEVAL_MODE == RetrievalMode.RERANKER
+
+
+def test_rag_pipeline_parameters_default():
+    # With nothing configured, the RAG pipeline keeps its previous hard-coded values.
+    expected_top_k = 5
+    expected_num_queries = 4
+    assert expected_top_k == RAG_TOP_K
+    assert expected_num_queries == RAG_NUM_QUERIES
