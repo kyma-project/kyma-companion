@@ -1,70 +1,38 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "schedule": [
-    "* 0-2 * * 1"
-  ],
+  "schedule": ["* 0-2 * * 1"],
   "timezone": "Europe/Berlin",
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
     "tests/blackbox/pyproject.toml",
+    "Dockerfile",
+    "doc_indexer/Dockerfile",
     ".github/workflows/**"
   ],
   "extends": [
     "config:recommended",
     ":semanticCommits",
-    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitTypeAll(deps)",
     ":semanticCommitScopeDisabled"
   ],
-  "enabledManagers": [
-    "poetry",
-    "github-actions"
-  ],
+  "enabledManagers": ["poetry", "github-actions", "dockerfile"],
+  "addLabels": ["dependencies"],
   "packageRules": [
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "pyproject.toml"
-      ],
-      "groupName": "Dependencies in pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
+      "description": "One PR per manager: all Python dependency bumps across the three pyproject files, each with its lock file.",
+      "matchManagers": ["poetry"],
+      "groupName": "python dependencies"
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "doc_indexer/pyproject.toml"
-      ],
-      "groupName": "Dependencies in doc_indexer/pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
+      "description": "One PR for every action version bump in the workflows.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
     },
     {
-      "matchManagers": [
-        "poetry"
-      ],
-      "matchFileNames": [
-        "tests/blackbox/pyproject.toml"
-      ],
-      "groupName": "Dependencies in tests/blackbox/pyproject.toml",
-      "addLabels": [
-        "dependencies"
-      ]
-    },
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "groupName": "GitHub Actions",
-      "addLabels": [
-        "dependencies"
-      ]
+      "description": "Both images build from the same wolfi-base digest (the free image has only a latest tag, so these are digest updates). One PR for both Dockerfiles so the digests never diverge.",
+      "matchManagers": ["dockerfile"],
+      "groupName": "wolfi-base digest"
     }
   ]
 }
