@@ -221,7 +221,20 @@ class AdaptiveSplitMarkdownIndexer:
         for doc in docs_to_chunk:
             source_path = doc.metadata.get("source", "")
             base_metadata = build_chunk_metadata(source_path, self.docs_path, self.manifest)
-            yield from self._process_doc(doc, base_metadata=base_metadata)
+            chunks = list(self._process_doc(doc, base_metadata=base_metadata))
+            total = len(chunks)
+            for idx, chunk in enumerate(chunks):
+                title: str = chunk.metadata.get("title") or ""
+                heading = title.rsplit(" - ", 1)[-1] if title else ""
+                yield Document(
+                    page_content=chunk.page_content,
+                    metadata={
+                        **chunk.metadata,
+                        "heading": heading,
+                        "chunk_index": idx,
+                        "total_chunks": total,
+                    },
+                )
 
     def process_document_titles(self, docs: list[Document]) -> Generator[Document]:
         """
