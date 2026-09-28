@@ -166,7 +166,7 @@ class AdaptiveSplitMarkdownIndexer:
         doc: Document,
         level: int = 0,
         parent_title: str = "",
-        base_metadata: dict[str, str | None] | None = None,
+        base_metadata: dict[str, str | list[str] | None] | None = None,
     ) -> Generator[Document]:
         tokens = len(encoding.encode(doc.page_content))
 

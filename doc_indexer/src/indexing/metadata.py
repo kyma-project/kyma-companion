@@ -37,7 +37,7 @@ def build_chunk_metadata(
     source_path: str,
     docs_path: str,
     manifest: dict[str, dict[str, str | None]] | None,
-) -> dict[str, str | None]:
+) -> dict[str, str | list[str] | None]:
     """Build metadata for a single chunk based on its source path and the fetch manifest.
 
     Args:
