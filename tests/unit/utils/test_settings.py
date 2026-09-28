@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from utils.settings import load_env_from_json
+from utils.settings import RETRIEVAL_MODE, RetrievalMode, load_env_from_json
 
 
 @pytest.mark.parametrize(
@@ -72,3 +72,27 @@ def test_load_env_from_json(json_content, expected_env_variables):
             # Clean up the environment variables
             for key in expected_env_variables:
                 os.environ.pop(key)
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("reranker", RetrievalMode.RERANKER),
+        ("vector", RetrievalMode.VECTOR),
+        ("fusion", RetrievalMode.FUSION),
+    ],
+)
+def test_retrieval_mode_accepts_valid_values(value, expected):
+    # The RETRIEVAL_MODE setting is cast through RetrievalMode; valid values map to enum members.
+    assert RetrievalMode(value) == expected
+
+
+def test_retrieval_mode_rejects_invalid_value():
+    # An unknown mode raises at config-cast time, surfacing a clear error before startup.
+    with pytest.raises(ValueError):
+        RetrievalMode("bogus")
+
+
+def test_retrieval_mode_defaults_to_reranker():
+    # With no RETRIEVAL_MODE configured, the setting resolves to reranker (no behavior change).
+    assert RETRIEVAL_MODE == RetrievalMode.RERANKER
