@@ -1,5 +1,7 @@
+import json
 import os.path
 import random
+import re
 import shutil
 import string
 from pathlib import Path
@@ -54,11 +56,22 @@ def test_fetcher(new_tmp_dir):
     assert os.path.exists(given_output_dir)
 
     # should have saved the files in the output directory.
-    # all the saved files should be markdown files.
+    # all the saved files should be markdown files, plus manifest.json at the root.
     file_count = 0
-    for _, _, files in os.walk(given_output_dir):
-        file_count += len(files)
+    for root, _, files in os.walk(given_output_dir):
         for file_name in files:
+            if root == given_output_dir and file_name == "manifest.json":
+                continue
+            file_count += 1
             assert file_name.endswith(".md")
     # should have saved at least one file.
     assert file_count > 0
+
+    # manifest.json should record every source with repo_url, a real 40-char commit sha, and fetched_at.
+    with open(os.path.join(given_output_dir, "manifest.json"), encoding="utf-8") as fh:
+        manifest = json.load(fh)
+    assert set(manifest) == {"eventing-manager", "nats-manager"}
+    for name, entry in manifest.items():
+        assert entry["repo_url"] == f"https://github.com/kyma-project/{name}"
+        assert re.fullmatch(r"[0-9a-f]{40}", entry["commit"]), entry
+        assert entry["fetched_at"]
