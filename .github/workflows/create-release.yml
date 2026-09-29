@@ -20,12 +20,10 @@ run-name: Create release ${{ inputs.name }}
 # 3. Check if the release branch `release-x.y` already exists. If not, fail the workflow.
 # 4. Check if release tag already exists. If yes, fail the workflow.
 # 5. Run unit tests and integration tests from the release branch.
-# 6. Create a PR to bump image in sec-scanners-config in release branch and wait until the PR is approved and merged.
-# 7. Create a git tag from the release branch.
-# 8. Build a container image against the git tag and push it to registry.
-# 9. Create a draft release against the git tag.
-# 10. Create a PR to bump image in sec-scanners-config in main branch and wait until the PR is approved and merged.
-# 11. Check if all the pre-requisites are met for publishing the release.
+# 6. Create a git tag from the release branch.
+# 7. Build a container image against the git tag and push it to registry.
+# 8. Create a draft release against the git tag.
+# 9. Check if all the pre-requisites are met for publishing the release.
 # NOTE: The draft release needs to be manually reviewed and published.
 
 on:
@@ -35,10 +33,6 @@ on:
         description: "Release tag (i.e. x.y.z). Make sure that branch with name release-x.y exists."
         default: ""
         required: true
-      sec-scanners-config:
-        type: boolean
-        description: "Create PR with sec-scanners-config bump"
-        default: true
 
 permissions: write-all
 
@@ -323,9 +317,8 @@ jobs:
       DOCS_TABLE_NAME: "kc_release_${{ inputs.name }}_e2e_pre"
       CHECKOUT_REF: ${{ needs.get-image-sha.outputs.sha }}
 
-  bump-sec-scanners-release-branch:
-    name: Bump image in sec-scanners-config on release branch
-    environment: e2e
+  create-git-tag:
+    name: Create git tag for release
     needs:
       [
         validate-input-params,
@@ -336,77 +329,6 @@ jobs:
         run-integration-tests-indexer,
         run-unit-tests-indexer,
       ]
-    runs-on: ubuntu-latest
-    env:
-      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with: # checkout the release branch.
-          ref: ${{ needs.validate-input-params.outputs.release_branch }}
-
-      - name: Check if the checked out branch is the release branch.
-        run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
-
-      - name: Update sec-scanners-config.yaml
-        if: ${{ inputs.sec-scanners-config }}
-        run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
-
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.AIFORCE_APP_ID }}
-          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
-
-      - name: Resolve GitHub App bot identity
-        id: bot-identity
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: |
-          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
-          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
-          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
-
-      - name: Create PR if anything changed
-        if: ${{ inputs.sec-scanners-config }}
-        env:
-          BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}-rb
-          RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
-          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
-          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          prs=$(gh pr list -A "${{ steps.bot-identity.outputs.name }}" --state open --json headRefName | jq -r '.[] | .headRefName')
-          if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
-            echo "PR already exists, no need to create a new one"
-            echo "PR_NUMBER=$(gh pr list --search "base:${{ env.RELEASE_BRANCH }} head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
-          elif [ -z "$(git status --porcelain)" ]; then
-            echo "Nothing changed, no need to create PR"
-            echo "PR_NUMBER=-1" >> "$GITHUB_ENV"
-          else
-            PR_STATUS=$(./scripts/shell/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}" "${RELEASE_BRANCH}")
-            echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> "$GITHUB_ENV"
-          fi
-
-      - name: Await PR merge (user input required)
-        if: ${{ inputs.sec-scanners-config }}
-        timeout-minutes: 45
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "$PR_NUMBER" -gt 0 ]; then
-            ./scripts/shell/await_pr_merge.sh
-          else
-            echo "Step skipped"
-          fi
-
-  create-git-tag:
-    name: Create git tag for release
-    needs: [validate-input-params, bump-sec-scanners-release-branch]
     runs-on: ubuntu-latest
     environment: e2e
     env:
@@ -511,73 +433,9 @@ jobs:
     outputs:
       release_id: ${{ steps.create-draft.outputs.release_id }}
 
-  bump-sec-scanners-main-branch:
-    name: Bump image in sec-scanners-config
-    needs: [validate-input-params, wait-for-build, create-draft]
-    runs-on: ubuntu-latest
-    environment: e2e
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          ref: main
-
-      - name: Update sec-scanners-config.yaml
-        if: ${{ inputs.sec-scanners-config }}
-        run: ./scripts/shell/create_scan_config.sh "sec-scanners-config.yaml" "${RELEASE_TAG}"
-
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.AIFORCE_APP_ID }}
-          private-key: ${{ secrets.AIFORCE_APP_PRIVATE_KEY }}
-
-      - name: Resolve GitHub App bot identity
-        id: bot-identity
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: |
-          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
-          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
-          echo "email=${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
-
-      - name: Create PR if anything changed
-        if: ${{ inputs.sec-scanners-config }}
-        env:
-          BUMP_SEC_SCANNERS_BRANCH_NAME: sec-scanners-config-${{ inputs.name }}
-          GIT_NAME: ${{ steps.bot-identity.outputs.name }}
-          GIT_EMAIL: ${{ steps.bot-identity.outputs.email }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          prs=$(gh pr list -A "${{ steps.bot-identity.outputs.name }}" --state open --json headRefName | jq -r '.[] | .headRefName')
-          if echo "$prs" | tr " " '\n' | grep -F -q -x "${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}"; then
-            echo "PR already exists, no need to create a new one"
-            echo "PR_NUMBER=$(gh pr list --search "base:main head:${{ env.BUMP_SEC_SCANNERS_BRANCH_NAME }}" --json number | jq -r '.[] | .number')" >> "$GITHUB_ENV"
-          elif [ -z "$(git status --porcelain)" ]; then
-            echo "Nothing changed, no need to create PR"
-            echo "PR_NUMBER=-1" >> "$GITHUB_ENV"
-          else
-            PR_STATUS=$(./scripts/shell/create_sec_scanner_bump_pr.sh "${RELEASE_TAG}")
-            echo "PR_NUMBER=$(echo "$PR_STATUS" | tail -n 1)" >> "$GITHUB_ENV"
-          fi
-
-      - name: Await PR merge (user input required)
-        if: ${{ inputs.sec-scanners-config }}
-        timeout-minutes: 45
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "$PR_NUMBER" -gt 0 ]; then
-            ./scripts/shell/await_pr_merge.sh
-          else
-            echo "Step skipped"
-          fi
-
   check-prerequisites:
     name: Check release pre-requisites
-    needs: [create-draft, wait-for-build, bump-sec-scanners-main-branch]
+    needs: [create-draft, wait-for-build]
     runs-on: ubuntu-latest
 
     steps:

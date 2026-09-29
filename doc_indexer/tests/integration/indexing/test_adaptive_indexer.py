@@ -44,7 +44,7 @@ DOCUMENTS = [
     ),
     # 6 tokens: below the minimum, must be dropped.
     Document(page_content="# Tiny\nToo short.", metadata={"source": "tiny.md"}),
-    # 15 tokens, no header: stored unchanged.
+    # 15 tokens, no header: preamble -- gets filename stem as title.
     Document(
         page_content="Plain text without any Markdown headers that still has enough words to be indexed.",
         metadata={"source": "plain.md"},
@@ -57,7 +57,7 @@ EXPECTED_CHUNKS = {
     "# Serverless - Function runtimes\n"
     "Functions can be written in Node.js or Python and are built into container images automatically.",
     "# Serverless - Function triggers\nA Function is exposed with an APIRule or invoked through an event Subscription.",
-    "Plain text without any Markdown headers that still has enough words to be indexed.",
+    "# unknown\n\nPlain text without any Markdown headers that still has enough words to be indexed.",
 }
 
 
