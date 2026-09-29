@@ -57,7 +57,7 @@ EXPECTED_CHUNKS = {
     "# Serverless - Function runtimes\n"
     "Functions can be written in Node.js or Python and are built into container images automatically.",
     "# Serverless - Function triggers\nA Function is exposed with an APIRule or invoked through an event Subscription.",
-    "# plain\n\nPlain text without any Markdown headers that still has enough words to be indexed.",
+    "# unknown\n\nPlain text without any Markdown headers that still has enough words to be indexed.",
 }
 
 
