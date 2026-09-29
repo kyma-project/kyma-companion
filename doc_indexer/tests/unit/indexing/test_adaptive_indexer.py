@@ -165,7 +165,9 @@ class TestAdaptiveSplitMarkdownIndexer:
     @pytest.mark.parametrize(
         "given_docs,wanted_results",
         [
-            # Test case 1: Document without title
+            # Test case 1: Document without title (preamble) -- filename used as title.
+            # source="test.md" is a bare path; build_chunk_metadata strips a module prefix
+            # so path becomes "" and the fallback title is "unknown".
             (
                 [
                     Document(
@@ -175,7 +177,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                 ],
                 [
                     {
-                        "content": "Some content without a title",
+                        "content": "# unknown\n\nSome content without a title",
                         "metadata": {"module": "test.md"},
                         "expected_chunks": 0,
                     }
@@ -903,3 +905,47 @@ class TestAdaptiveSplitMarkdownIndexer:
         # Then:
         # Compare the actual chunks with expected results
         assert chunks == wanted_results
+
+
+class TestPreambleChunk:
+    """Chunks without any Markdown heading (preamble) get a filename-derived title."""
+
+    def test_preamble_gets_filename_title(self, mock_embedding, mock_connection, mock_hana_db):
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+        # Content with no Markdown headings -- a pure preamble.
+        doc = Document(
+            page_content="This module manages eventing in Kyma. It handles subscriptions and event delivery.",
+            metadata={"source": "/app/docs/eventing-manager/README.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        assert len(chunks) == 1
+        assert chunks[0].metadata["title"] == "README"
+        assert chunks[0].metadata["heading"] == "README"
+
+    def test_preamble_title_is_filename_stem(self, mock_embedding, mock_connection, mock_hana_db):
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+        doc = Document(
+            page_content="Some content without any heading at all.",
+            metadata={"source": "/app/docs/eventing-manager/README.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        assert len(chunks) == 1
+        assert chunks[0].metadata["title"] == "README"

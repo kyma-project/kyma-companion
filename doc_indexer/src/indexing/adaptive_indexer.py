@@ -176,9 +176,16 @@ class AdaptiveSplitMarkdownIndexer:
         # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
         if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
             chunk_meta = dict(base_metadata) if base_metadata else {}
-            chunk_meta["title"] = doc.metadata.get("title") or extract_first_title(doc.page_content)
+            title = doc.metadata.get("title") or extract_first_title(doc.page_content)
+            if not title:
+                # Preamble chunk: content before the first heading has no title.
+                # Fall back to the filename (without extension) so the chunk is still indexable.
+                doc_path: str = (base_metadata or {}).get("path") or ""  # type: ignore[assignment]
+                title = os.path.splitext(os.path.basename(doc_path))[0] or "unknown"
+                logger.info("preamble chunk -- using filename as title", extra={"path": doc_path, "title": title})
+            chunk_meta["title"] = title
             # Carry the raw leaf header set by the caller; fall back to the full title.
-            chunk_meta["_leaf_header"] = doc.metadata.get("_leaf_header") or chunk_meta["title"] or ""
+            chunk_meta["_leaf_header"] = doc.metadata.get("_leaf_header") or title
             yield Document(
                 page_content=doc.page_content,
                 metadata=chunk_meta,
