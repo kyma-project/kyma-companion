@@ -949,3 +949,28 @@ class TestPreambleChunk:
 
         assert len(chunks) == 1
         assert chunks[0].metadata["title"] == "README"
+
+    def test_preamble_in_large_file_is_not_dropped(self, mock_embedding, mock_connection, mock_hana_db):
+        # A file large enough to be split (exceeds max_chunk_token_count=30) but with
+        # preamble text before the first heading. The preamble must not be silently dropped.
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=30,
+        )
+        doc = Document(
+            page_content=(
+                "This is the preamble before any heading. It contains important introductory text.\n\n"
+                "# Section One\n\nThis section has enough content to push the document over the token limit.\n\n"
+                "# Section Two\n\nMore content here to ensure splitting occurs at the header level.\n\n"
+            ),
+            metadata={"source": "/app/docs/eventing-manager/overview.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        titles = [c.metadata["title"] for c in chunks]
+        assert "overview" in titles, f"preamble chunk missing; got titles: {titles}"

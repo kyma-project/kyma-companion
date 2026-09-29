@@ -197,7 +197,9 @@ class AdaptiveSplitMarkdownIndexer:
 
         for sub_doc in splitted_docs:
             if not sub_doc.metadata:
-                logger.warning("skip chunk - no metadata")
+                # Preamble: content before the first heading has no header metadata.
+                # Recurse so the terminal branch applies the filename-derived title fallback.
+                yield from self._process_doc(sub_doc, level=len(HEADER_LEVELS), base_metadata=base_metadata)
                 continue
 
             title = self._build_title(sub_doc)
