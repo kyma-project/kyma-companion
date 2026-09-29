@@ -67,7 +67,7 @@ class TestRAGSystemMode:
 
     @pytest.mark.asyncio
     async def test_reranker_mode(self, monkeypatch, mock_models, collaborators):
-        # Given the default reranker mode
+        # Given the reranker mode
         monkeypatch.setattr("rag.system.RETRIEVAL_MODE", RetrievalMode.RERANKER)
         rag_system = RAGSystem(mock_models)
         top_k = 2
@@ -90,17 +90,19 @@ class TestRAGSystemMode:
         assert result == [doc1, doc2]
 
     @pytest.mark.asyncio
-    async def test_default_mode_is_reranker(self, mock_models, collaborators):
+    async def test_default_mode_is_fusion(self, mock_models, collaborators):
         # Given no override, the module default applies
         rag_system = RAGSystem(mock_models)
 
-        # When retrieving
-        result = await rag_system.aretrieve(Query(text="What is Kyma?"), top_k=2)
+        # When retrieving, with RRF stubbed to observe the call
+        with patch("rag.system.get_relevant_documents", return_value=[doc1]) as mock_rrf:
+            result = await rag_system.aretrieve(Query(text="What is Kyma?"), top_k=2)
 
-        # Then the default is reranker and the reranking pipeline runs
-        assert rag_system.mode == RetrievalMode.RERANKER
-        collaborators["reranker"].arerank.assert_awaited_once()
-        assert result == [doc1, doc2]
+        # Then the default is fusion: RRF fuses the candidates and the LLM reranker is not used
+        assert rag_system.mode == RetrievalMode.FUSION
+        mock_rrf.assert_called_once()
+        collaborators["reranker"].arerank.assert_not_awaited()
+        assert result == [doc1]
 
     @pytest.mark.asyncio
     async def test_vector_mode_skips_rewrite_and_rerank(self, monkeypatch, mock_models, collaborators):

@@ -20,9 +20,9 @@ class LangfuseMaskingModes(StrEnum):
 class RetrievalMode(StrEnum):
     """Document retrieval strategy used by the RAG system."""
 
-    RERANKER = "reranker"  # Query rewrite -> multi-query retrieval -> LLM reranking (default).
+    RERANKER = "reranker"  # Query rewrite -> multi-query retrieval -> LLM reranking.
     VECTOR = "vector"  # Single embedding similarity search; no query rewrite, no reranking.
-    FUSION = "fusion"  # Query rewrite -> multi-query retrieval -> Reciprocal Rank Fusion; no LLM reranking.
+    FUSION = "fusion"  # Query rewrite -> multi-query retrieval -> Reciprocal Rank Fusion; no LLM reranking (default).
 
 
 def load_env_from_json() -> Path:
@@ -114,8 +114,8 @@ LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
-# Document retrieval strategy: "reranker" (default), "vector", or "fusion". Set before starting the agent.
-RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode)
+# Document retrieval strategy: "fusion" (default), "vector", or "reranker". Set before starting the agent.
+RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.FUSION, cast=RetrievalMode)
 # Number of documents returned per RAG search.
 RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
 # Number of alternative queries the query generator rewrites per search (used by reranker and fusion modes).

@@ -97,10 +97,10 @@ def test_retrieval_mode_rejects_invalid_value():
         RetrievalMode("bogus")
 
 
-def test_retrieval_mode_defaults_to_reranker(monkeypatch):
-    # With no RETRIEVAL_MODE configured, the setting resolves to reranker (no behavior change).
+def test_retrieval_mode_defaults_to_fusion(monkeypatch):
+    # With no RETRIEVAL_MODE configured, the setting resolves to fusion.
     monkeypatch.delenv("RETRIEVAL_MODE", raising=False)
-    assert config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode) == RetrievalMode.RERANKER
+    assert config("RETRIEVAL_MODE", default=RetrievalMode.FUSION, cast=RetrievalMode) == RetrievalMode.FUSION
 
 
 def test_rag_pipeline_parameters_default(monkeypatch):
