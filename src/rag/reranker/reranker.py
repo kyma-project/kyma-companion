@@ -165,11 +165,13 @@ def format_documents(docs: list[Document]) -> str:
     formatted: list[dict] = []
     for doc in docs:
         metadata = doc.metadata or {}
+        # `url` is the current key; fall back to legacy `source` during transition.
+        url = metadata.get("url") or metadata.get("source", "") or ""
         formatted.append(
             {
                 "id": doc.id,
                 "title": metadata.get("title", ""),
-                "url": metadata.get("url", ""),
+                "url": url,
                 "module": metadata.get("module", ""),
                 "page_content": doc.page_content,
             }
