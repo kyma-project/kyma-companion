@@ -169,9 +169,8 @@ def format_documents(docs: list[Document]) -> str:
             {
                 "id": doc.id,
                 "title": metadata.get("title", ""),
-                "source": metadata.get("source", ""),
+                "url": metadata.get("url", ""),
                 "module": metadata.get("module", ""),
-                "version": metadata.get("version", ""),
                 "page_content": doc.page_content,
             }
         )

@@ -130,7 +130,11 @@ def _build_url(module: str, doc_rel_path: str, repo_url: str, commit: str | None
         elif path_no_ext.startswith(docs_prefix):
             site_file = path_no_ext[len(docs_prefix) :]
         else:
-            site_file = path_no_ext
+            # Not published to the site (deploy workflow only copies docs/).
+            # Use the commit-pinned blob URL instead.
+            if not repo_url or not commit:
+                return None
+            return f"{repo_url}/blob/{commit}/{doc_rel_path}"
         return f"https://kyma-project.io/external-content/{module}/docs/{site_file}"
 
     if module == _KYMA_MONO_REPO:

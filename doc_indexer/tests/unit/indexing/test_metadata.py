@@ -58,13 +58,21 @@ class TestBuildChunkMetadataSiteRepo:
         assert meta["url"] == "https://kyma-project.io/external-content/busola/docs/intro"
 
     def test_url_path_not_under_docs(self):
-        """Files not under docs/ at all fall back gracefully -- file name only."""
+        """Files not under docs/ in a site repo fall back to GitHub blob URL (not published to the site)."""
         manifest = _make_manifest("busola", "https://github.com/kyma-project/busola")
         source_path = f"{_DOCS_PATH}/busola/README.md"
         meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
 
-        # No docs/ prefix found -- file name used directly
-        assert meta["url"] == "https://kyma-project.io/external-content/busola/docs/README"
+        # Files outside docs/ are not deployed to kyma-project.io; use the blob URL instead.
+        assert meta["url"] == f"https://github.com/kyma-project/busola/blob/{_SHA}/README.md"
+
+    def test_root_readme_gets_blob_url(self):
+        """Files outside docs/ in a site repo are not published to the site -- use blob URL."""
+        manifest = _make_manifest("eventing-manager", "https://github.com/kyma-project/eventing-manager")
+        source_path = f"{_DOCS_PATH}/eventing-manager/README.md"
+        meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
+
+        assert meta["url"] == f"https://github.com/kyma-project/eventing-manager/blob/{_SHA}/README.md"
 
 
 class TestBuildChunkMetadataKymaMonoRepo:
