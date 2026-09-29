@@ -177,6 +177,8 @@ class AdaptiveSplitMarkdownIndexer:
         if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
             chunk_meta = dict(base_metadata) if base_metadata else {}
             chunk_meta["title"] = doc.metadata.get("title") or extract_first_title(doc.page_content)
+            # Carry the raw leaf header set by the caller; fall back to the full title.
+            chunk_meta["_leaf_header"] = doc.metadata.get("_leaf_header") or chunk_meta["title"] or ""
             yield Document(
                 page_content=doc.page_content,
                 metadata=chunk_meta,
@@ -196,11 +198,19 @@ class AdaptiveSplitMarkdownIndexer:
                 logger.warning("skip chunk - no title")
                 continue
 
+            # The deepest non-empty header on this sub_doc is the raw leaf heading.
+            leaf_header = (
+                remove_header_brackets(sub_doc.metadata.get("Header3", "")).strip()
+                or remove_header_brackets(sub_doc.metadata.get("Header2", "")).strip()
+                or remove_header_brackets(sub_doc.metadata.get("Header1", "")).strip()
+            )
+
             if parent_title != title and (parent_title + " - ") not in title:
                 title = parent_title + " - " + title if parent_title else title
 
             chunk_meta = dict(base_metadata) if base_metadata else {}
             chunk_meta["title"] = title
+            chunk_meta["_leaf_header"] = leaf_header
             chunk = Document(
                 page_content=sub_doc.page_content,
                 metadata=chunk_meta,
@@ -224,8 +234,7 @@ class AdaptiveSplitMarkdownIndexer:
             chunks = list(self._process_doc(doc, base_metadata=base_metadata))
             total = len(chunks)
             for idx, chunk in enumerate(chunks):
-                title: str = chunk.metadata.get("title") or ""
-                heading = title.rsplit(" - ", 1)[-1] if title else ""
+                heading: str = chunk.metadata.pop("_leaf_header", "") or ""
                 yield Document(
                     page_content=chunk.page_content,
                     metadata={
