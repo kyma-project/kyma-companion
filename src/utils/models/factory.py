@@ -1,4 +1,3 @@
-from enum import StrEnum
 from functools import lru_cache
 from typing import Protocol, cast, runtime_checkable
 
@@ -23,23 +22,6 @@ class ModelPrefix:
     GEMINI = "gemini"
     TEXT_EMBEDDING = "text-embedding"
     ANTHROPIC = "anthropic"
-
-
-class EmbeddingModelPrefix:
-    """Embedding Model Prefixes."""
-
-    OPENAI = "text-embedding"
-    GECKO = "textembedding-gecko"
-
-
-class ModelType(StrEnum):
-    """Enum for LLM model names."""
-
-    GPT41 = "gpt-4.1"
-    GPT41_MINI = "gpt-4.1-mini"
-    GPT5 = "gpt-5"
-    GPT5_MINI = "gpt-5-mini"
-    TEXT_EMBEDDING_3_LARGE = "text-embedding-3-large"
 
 
 @runtime_checkable
@@ -69,16 +51,6 @@ class IModel(Protocol):
 def init_proxy_client() -> BaseProxyClient:
     """Initialize the proxy client for the GenAI Hub only once."""
     return get_proxy_client("gen-ai-hub")
-
-
-class IModelFactory(Protocol):
-    """Model Factory Interface."""
-
-    def create_model(self, name: str) -> IModel | Embeddings:
-        """Create a model."""
-
-    def create_models(self) -> dict[str, IModel | Embeddings]:
-        """Create all models."""
 
 
 class ModelFactory:

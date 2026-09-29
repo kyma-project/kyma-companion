@@ -54,6 +54,18 @@ def create_test_file(sample_docs_dir):
             },
         ),
         (
+            "non-markdown files are skipped",
+            {
+                "files": [
+                    ("manifest.json", '{"istio": {"commit": "abc"}}'),
+                    ("istio/docs/user/README.md", "Istio docs"),
+                    ("istio/docs/user/diagram.svg", "<svg/>"),
+                ],
+                "expected_count": 1,
+                "expected_content": ["Istio docs"],
+            },
+        ),
+        (
             "empty directory",
             {
                 "files": [],

@@ -1,5 +1,5 @@
 from math import ceil
-from typing import Any, Protocol
+from typing import Any
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -13,19 +13,6 @@ from utils.models.factory import IModel
 from utils.settings import TOTAL_CHUNKS_LIMIT
 
 logger = get_logger(__name__)
-
-
-class IToolResponseSummarizer(Protocol):
-    """Protocol for IResponseConverter."""
-
-    async def summarize_tool_response(
-        self,
-        tool_response: list[Any],
-        user_query: str,
-        config: RunnableConfig,
-        nums_of_chunks: int,
-    ) -> str:
-        """summarize each chunk and return final summarized response."""
 
 
 class ToolResponseSummarizer:

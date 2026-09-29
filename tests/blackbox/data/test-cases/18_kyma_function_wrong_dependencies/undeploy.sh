@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "## Undeploy 18_kyma_function_wrong_dependencies scenario ##"
-kubectl delete --timeout=120s --wait=false -f resources.yaml
+kubectl delete --ignore-not-found --timeout=600s -f deployment.yml
