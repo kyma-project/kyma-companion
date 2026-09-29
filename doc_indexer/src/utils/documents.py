@@ -16,7 +16,8 @@ def load_documents(docs_path: str) -> list[Document]:
         raise ValueError("Provided path is empty")
 
     try:
-        loader = DirectoryLoader(docs_path, loader_cls=TextLoader, recursive=True)
+        # Only markdown is indexed; this also skips the fetcher's manifest.json in docs_path.
+        loader = DirectoryLoader(docs_path, glob="**/*.md", loader_cls=TextLoader, recursive=True)
         docs = loader.load()
         logger.info(f"Loaded {len(docs)} document(s)", extra={"path": docs_path})
         return docs

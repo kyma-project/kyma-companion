@@ -5,6 +5,7 @@ import tarfile
 import tempfile
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from utils.logging import get_logger
@@ -16,6 +17,19 @@ logger = get_logger(__name__)
 _CODELOAD_HOST = "codeload.github.com"
 _ALLOWED_REPO_HOSTS = {"github.com", "www.github.com"}
 _MIN_URL_PATH_PARTS = 2
+
+# codeload tarballs are produced by `git archive`, which writes a pax global header
+# with `comment=<full commit sha>`. The top-level directory is named "<repo>-<ref>"
+# (e.g. "istio-HEAD", "istio-main"), so it only contains the sha when a sha was requested.
+_COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+@dataclass
+class DownloadResult:
+    """Result of a repository download, bundling the local path and the resolved commit sha."""
+
+    path: str
+    commit: str
 
 
 def _parse_github_repo(repo_url: str) -> tuple[str, str]:
@@ -29,13 +43,17 @@ def _parse_github_repo(repo_url: str) -> tuple[str, str]:
     return parts[0], parts[1]
 
 
-def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> str:
-    """Download a GitHub repository tarball and extract it, returning the path.
+def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadResult:
+    """Download a GitHub repository tarball and extract it, returning path and commit sha.
 
     Replaces `git clone`: fetches the codeload tarball for the given ref over
     anonymous HTTPS and extracts it so that repository files sit directly under
     the returned path (the tarball's top-level `<repo>-<ref>/` wrapper is
     stripped), matching the layout the Scroller expects.
+
+    The commit sha is read from the tarball's pax global header (`comment`),
+    which `git archive` sets to the resolved commit. Raises RuntimeError if the
+    header is missing or is not a 40-char hex sha.
     """
     owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
@@ -61,16 +79,23 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> str:
             raise RuntimeError(f"failed to download {tar_url}: {exc.reason}") from exc
 
         with tarfile.open(tar_path, "r:gz") as tf:
+            commit = tf.pax_headers.get("comment", "")
+            if not _COMMIT_SHA_RE.match(commit):
+                raise RuntimeError(
+                    f"cannot read commit sha from tarball pax header for {tar_url}: "
+                    f"comment={commit!r} (expected 40 hex chars)"
+                )
             tf.extractall(staging, filter="data")  # filter="data" blocks path traversal (py3.12+)
 
-        # The archive extracts to a single top-level dir named "<repo>-<ref-or-sha>".
+        # The archive extracts to a single top-level dir named "<repo>-<ref>".
         extracted = [e for e in os.listdir(staging) if os.path.isdir(os.path.join(staging, e))]
         if len(extracted) != 1:
             raise RuntimeError(f"unexpected tarball layout for {tar_url}: {extracted}")
+
         shutil.move(os.path.join(staging, extracted[0]), repo_path)
 
-    logger.info("Repository downloaded successfully", extra={"url": tar_url, "dest": repo_path})
-    return repo_path
+    logger.info("Repository downloaded successfully", extra={"url": tar_url, "dest": repo_path, "commit": commit})
+    return DownloadResult(path=repo_path, commit=commit)
 
 
 def sanitize_table_name(name: str) -> str:

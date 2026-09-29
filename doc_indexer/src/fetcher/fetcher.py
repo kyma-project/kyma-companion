@@ -1,6 +1,8 @@
+import json
 import os
 import re
 import shutil
+from datetime import UTC, datetime
 
 from fetcher.scroller import Scroller
 from fetcher.source import DocumentsSource, SourceType, get_documents_sources
@@ -9,6 +11,8 @@ from utils.logging import get_logger
 from utils.utils import download_repo
 
 logger = get_logger(__name__)
+
+_MANIFEST_FILENAME = "manifest.json"
 
 
 def _empty_dir(path: str) -> None:
@@ -51,8 +55,12 @@ class DocumentsFetcher:
         # read the documents sources from the json file.
         self.sources = get_documents_sources(source_file)
 
-    def fetch_documents(self, source: DocumentsSource) -> None:
-        """Fetch the documents from the source."""
+    def fetch_documents(self, source: DocumentsSource) -> dict[str, str]:
+        """Fetch the documents from the source.
+
+        Returns a dict with keys ``name``, ``url``, and ``commit`` for use
+        by :meth:`run` when building the manifest.
+        """
         logger.info("Fetching documents", extra={"source": source.name, "url": source.url})
 
         if not re.fullmatch(r"[A-Za-z0-9_-]+", source.name):
@@ -61,7 +69,9 @@ class DocumentsFetcher:
         if source.source_type == SourceType.GITHUB:
             logger.debug("Downloading repository", extra={"url": source.url})
             # download and extract the repository tarball (no git required).
-            repo_dir = download_repo(source.url, self.tmp_dir)
+            result = download_repo(source.url, self.tmp_dir)
+            repo_dir = result.path
+            commit = result.commit
         else:
             raise ValueError(f"unsupported source_type: {source.source_type}")
 
@@ -81,11 +91,25 @@ class DocumentsFetcher:
             logger.debug(f"Deleting the temporary directory: {repo_dir}")
             shutil.rmtree(repo_dir, ignore_errors=False)
 
+        return {"name": source.name, "url": source.url, "commit": commit}
+
     def run(self) -> None:
-        """Fetch the documents from all the sources."""
+        """Fetch the documents from all the sources and write a manifest."""
+        fetched_at = datetime.now(tz=UTC).isoformat()
+        manifest: dict[str, dict[str, str | None]] = {}
         for source in self.sources:
-            self.fetch_documents(source)
+            result = self.fetch_documents(source)
+            manifest[result["name"]] = {
+                "repo_url": result["url"].removesuffix(".git"),
+                "commit": result["commit"],
+                "fetched_at": fetched_at,
+            }
         logger.info("Documents fetched successfully from all sources!")
+
+        manifest_path = os.path.join(self.output_dir, _MANIFEST_FILENAME)
+        with open(manifest_path, "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, indent=2)
+        logger.info("Manifest written", extra={"path": manifest_path})
 
         # clean the temporary files.
         self.clean()
