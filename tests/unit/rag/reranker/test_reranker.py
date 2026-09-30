@@ -334,9 +334,8 @@ def test_format_documents():
             page_content="this is a test content 1",
             metadata={
                 "title": "Kyma Overview",
-                "source": "docs/kyma/overview.md",
+                "url": "https://kyma-project.io/external-content/kyma/docs/overview",
                 "module": "kyma",
-                "version": "latest",
             },
         ),
         Document(
@@ -344,9 +343,8 @@ def test_format_documents():
             page_content="this is a test content 2",
             metadata={
                 "title": "APIRule",
-                "source": "docs/kyma/apirule.md",
+                "url": "https://kyma-project.io/external-content/api-gateway/docs/apirule",
                 "module": "api-gateway",
-                "version": "2.3",
             },
         ),
         Document(
@@ -359,9 +357,8 @@ def test_format_documents():
             page_content="this is a test content 4",
             metadata={
                 "title": "",
-                "source": "",
+                "url": "",
                 "module": "",
-                "version": "",
             },
         ),
     ]
@@ -371,13 +368,15 @@ def test_format_documents():
 
     # Then
     assert s == (
-        '[{"id":null,"title":"Kyma Overview","source":"docs/kyma/overview.md",'
-        '"module":"kyma","version":"latest","page_content":"this is a test content 1"},'
-        '{"id":null,"title":"APIRule","source":"docs/kyma/apirule.md",'
-        '"module":"api-gateway","version":"2.3","page_content":"this is a test content 2"},'
-        '{"id":null,"title":"","source":"","module":"","version":"",'
+        '[{"id":null,"title":"Kyma Overview",'
+        '"url":"https://kyma-project.io/external-content/kyma/docs/overview",'
+        '"module":"kyma","page_content":"this is a test content 1"},'
+        '{"id":null,"title":"APIRule",'
+        '"url":"https://kyma-project.io/external-content/api-gateway/docs/apirule",'
+        '"module":"api-gateway","page_content":"this is a test content 2"},'
+        '{"id":null,"title":"","url":"","module":"",'
         '"page_content":"this is a test content 3"},'
-        '{"id":null,"title":"","source":"","module":"","version":"",'
+        '{"id":null,"title":"","url":"","module":"",'
         '"page_content":"this is a test content 4"}]'
     )
 
