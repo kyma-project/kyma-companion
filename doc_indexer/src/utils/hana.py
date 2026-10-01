@@ -96,9 +96,10 @@ def verify_table(
         cursor.execute(f"SELECT COUNT(*) FROM {qualified}")  # noqa: S608
         (total_rows,) = cursor.fetchone()
 
-        # Rows per module
+        # Rows per module; HANA does not allow GROUP BY on a column alias.
         cursor.execute(
-            f"SELECT JSON_VALUE(VEC_META, '$.module') AS m, COUNT(*) FROM {qualified} GROUP BY m"  # noqa: S608
+            f"SELECT JSON_VALUE(VEC_META, '$.module'), COUNT(*) FROM {qualified} "  # noqa: S608
+            f"GROUP BY JSON_VALUE(VEC_META, '$.module')"
         )
         rows_per_module: dict[str, int] = {str(row[0]): int(row[1]) for row in cursor.fetchall()}
 
@@ -108,14 +109,15 @@ def verify_table(
         # Duplicate chunks (by SHA-256 of text)
         cursor.execute(
             f"SELECT COUNT(*) FROM ("  # noqa: S608
-            f"SELECT HASH_SHA256(TO_BINARY(VEC_TEXT)) h FROM {qualified} GROUP BY h HAVING COUNT(*) > 1"
+            f"SELECT HASH_SHA256(TO_BINARY(VEC_TEXT)) FROM {qualified} "
+            f"GROUP BY HASH_SHA256(TO_BINARY(VEC_TEXT)) HAVING COUNT(*) > 1"
             f")"
         )
         (duplicate_chunks,) = cursor.fetchone()
 
-        # Oversized chunks; CHAR_LENGTH (not LENGTH) measures NCLOB columns in characters, not bytes.
+        # Oversized chunks; LENGTH counts characters for NCLOB (HANA has no CHAR_LENGTH).
         cursor.execute(
-            f"SELECT COUNT(*) FROM {qualified} WHERE CHAR_LENGTH(VEC_TEXT) > {OVERSIZED_CHUNK_CHARS}"  # noqa: S608
+            f"SELECT COUNT(*) FROM {qualified} WHERE LENGTH(VEC_TEXT) > {OVERSIZED_CHUNK_CHARS}"  # noqa: S608
         )
         (oversized_chunks,) = cursor.fetchone()
 
