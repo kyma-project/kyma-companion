@@ -32,6 +32,12 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+5. Verify the indexed table:
+```bash
+poetry run python src/main.py verify
+```
+It prints the row count per module, duplicate and oversized chunks, and exits with code 1 when the table is empty, a module from the docs sources file has no rows, or rows are missing the `title` or `url` metadata.
+
 ## Testing
 
 The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).
@@ -70,6 +76,19 @@ poetry run poe test
 - **`tests/integration/test_main.py::test_run_indexer_embedding_model_creation`** — positive check: model creation via the exact production sequence produces a working embeddings model.
 - **`tests/integration/test_main.py::test_run_indexer_fails_when_deployment_id_passed_as_model_name`** — negative check: passing a deployment ID instead of a model name raises `ValueError`.
 - **`tests/integration/test_main.py::test_run_indexer_e2e`** — full end-to-end: indexes real documents into a temporary Hana DB table and verifies chunks were stored.
+
+### Chunk snapshot tests
+
+`tests/unit/indexing/test_chunk_snapshots.py` runs the chunking pipeline over the fixture documents in `tests/unit/fixtures/snapshot_docs/` and compares the chunks with the committed `tests/unit/fixtures/snapshots/chunks.json`.
+
+Any change to the chunking logic or the fixture files must update the snapshot. Review the diff before committing.
+
+To regenerate the snapshot:
+
+```bash
+cd doc_indexer
+UPDATE_SNAPSHOTS=1 poetry run pytest tests/unit/indexing/test_chunk_snapshots.py -v
+```
 
 ## Static Code Analysis
 ```bash
