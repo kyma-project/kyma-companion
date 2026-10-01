@@ -2,14 +2,14 @@
 
 [[package]]
 name = "a2a-sdk"
-version = "1.1.5"
+version = "1.2.1"
 description = "A2A Python SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "a2a_sdk-1.1.5-py3-none-any.whl", hash = "sha256:c1d63d36b79a097c62dd9be001fce21d5939f5a811a9c5afd0ba8082f13f68bf"},
-    {file = "a2a_sdk-1.1.5.tar.gz", hash = "sha256:f81837f86a9bbb3ed4909539be642d61e8539ce8300a6578fa71dc901ee65b97"},
+    {file = "a2a_sdk-1.2.1-py3-none-any.whl", hash = "sha256:5be3ed614f0dfb8f1e13c201dc603f7e01f364613951c1d492fddd1ffc010e29"},
+    {file = "a2a_sdk-1.2.1.tar.gz", hash = "sha256:05231ade9e05989a344414474440bf2ab04950312ded5519cf779fea1fb918d6"},
 ]
 
 [package.dependencies]
@@ -8580,4 +8580,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.14.*"
-content-hash = "a6ddaf494dc1d1f00f3addd478dafb7b5b2e2eae9641cb198603bbe88477de08"
+content-hash = "3ac37cc8c506dd010fdd448cb374c2696216356a89d1e4e259d9e5bc97bf040c"
