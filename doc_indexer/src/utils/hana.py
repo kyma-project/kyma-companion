@@ -106,10 +106,11 @@ def verify_table(
         # Modules with zero rows
         zero_row_modules = [m for m in configured_modules if rows_per_module.get(m, 0) == 0]
 
-        # Duplicate chunks (by SHA-256 of text)
+        # Duplicate chunks (by SHA-256 of text): rows beyond the first copy of each text,
+        # so three identical rows count as two duplicates.
         cursor.execute(
-            f"SELECT COUNT(*) FROM ("  # noqa: S608
-            f"SELECT HASH_SHA256(TO_BINARY(VEC_TEXT)) FROM {qualified} "
+            f"SELECT COALESCE(SUM(c - 1), 0) FROM ("  # noqa: S608
+            f"SELECT COUNT(*) AS c FROM {qualified} "
             f"GROUP BY HASH_SHA256(TO_BINARY(VEC_TEXT)) HAVING COUNT(*) > 1"
             f")"
         )
