@@ -230,15 +230,33 @@ jobs:
                   configMap:
                     name: doc-indexer-sources
           EOF
-          if kubectl wait --for=condition=complete job/doc-indexer-verify \
-            -n "${{ env.NAMESPACE }}" --timeout=120s; then
-            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
-          else
-            kubectl wait --for=condition=failed job/doc-indexer-verify \
-              -n "${{ env.NAMESPACE }}" --timeout=10s || true
-            kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
-            exit 1
-          fi
+
+      - name: Wait for verify Job to complete
+        run: |
+          echo "Waiting for job doc-indexer-verify to finish (timeout 120s)..."
+          deadline=$((SECONDS + 120))
+          while [ $SECONDS -lt $deadline ]; do
+            complete=$(kubectl get job doc-indexer-verify -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+            failed=$(kubectl get job doc-indexer-verify -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+            if [ "$complete" = "True" ]; then
+              echo "Verify passed."
+              exit 0
+            fi
+            if [ "$failed" = "True" ]; then
+              echo "Verify failed."
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for job."
+          exit 1
+
+      - name: Print verify Job logs
+        if: always()
+        run: |
+          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
 
       - name: Drop HANA table
         if: always()

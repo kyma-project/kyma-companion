@@ -274,19 +274,7 @@ class AdaptiveSplitMarkdownIndexer:
                 )
 
     def build_chunks(self, docs: list[Document]) -> list[Document]:
-        """Load, preprocess, chunk and title documents without touching HANA.
-
-        This method is the pure chunking pipeline: it takes already-loaded documents,
-        runs them through the adaptive splitter, and returns the final titled chunks.
-        It is used by :meth:`index` internally and exposed for unit/snapshot testing
-        without requiring a live HANA connection.
-
-        Args:
-            docs: Pre-loaded documents to chunk.
-
-        Returns:
-            List of titled, chunked :class:`~langchain_core.documents.Document` objects.
-        """
+        """Chunk and title the given documents. Does not touch HANA, so it is usable in tests."""
         return list(self.process_document_titles(docs))
 
     def index(self) -> None:

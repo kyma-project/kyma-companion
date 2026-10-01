@@ -7,6 +7,7 @@ from utils.logging import get_logger
 logger = get_logger(__name__)
 
 _ERR_SQL_INV_TABLE = 259  # HANA error code for invalid/missing table name
+OVERSIZED_CHUNK_CHARS = 6000  # about 1500 tokens
 
 
 @dataclass
@@ -112,10 +113,10 @@ def verify_table(
         )
         (duplicate_chunks,) = cursor.fetchone()
 
-        # Oversized chunks (character length > 6000)
-        # Use CHAR_LENGTH (not LENGTH) so that NCLOB columns are measured in characters,
-        # not bytes.
-        cursor.execute(f"SELECT COUNT(*) FROM {qualified} WHERE CHAR_LENGTH(VEC_TEXT) > 6000")  # noqa: S608
+        # Oversized chunks; CHAR_LENGTH (not LENGTH) measures NCLOB columns in characters, not bytes.
+        cursor.execute(
+            f"SELECT COUNT(*) FROM {qualified} WHERE CHAR_LENGTH(VEC_TEXT) > {OVERSIZED_CHUNK_CHARS}"  # noqa: S608
+        )
         (oversized_chunks,) = cursor.fetchone()
 
         # Rows missing title or url in metadata

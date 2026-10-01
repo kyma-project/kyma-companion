@@ -1,14 +1,21 @@
 import argparse
-import json
 import os
 import sys
 import time
 
 from fetcher.fetcher import DocumentsFetcher
+from fetcher.source import get_documents_sources
 from hdbcli import dbapi
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
 from langchain_core.embeddings import Embeddings
-from utils.hana import VerifyStats, create_hana_connection, drop_table, list_tables, verify_table
+from utils.hana import (
+    OVERSIZED_CHUNK_CHARS,
+    VerifyStats,
+    create_hana_connection,
+    drop_table,
+    list_tables,
+    verify_table,
+)
 
 from utils.logging import get_logger
 from utils.models import (
@@ -141,14 +148,13 @@ def run_verify(
 ) -> None:
     """Entry function to verify the indexed documentation table.
 
-    Queries the HANA table and prints a health report. Exits with code 1
-    when the table is empty, any configured module has zero rows, or rows
-    with missing metadata are found.
+    Prints a health report and exits with code 1 when the table is empty, a configured
+    module has zero rows, or rows are missing title/url metadata.
 
     Args:
         hana_conn: Hana DB connection to use. If None, created from config.
         table_name: Name of the table to verify. Defaults to DOCS_TABLE_NAME from config.
-        sources_file: Path to the docs-sources JSON file used to read configured module names.
+        sources_file: Docs sources file listing the modules expected in the table.
     """
     if hana_conn is None:
         hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
@@ -156,34 +162,18 @@ def run_verify(
             logger.error("Failed to connect to the database. Exiting.")
             raise RuntimeError("Failed to connect to the database.")
 
-    # Load configured module names from the sources file
-    configured_modules: list[str] = []
-    try:
-        with open(sources_file, encoding="utf-8") as f:
-            sources = json.load(f)
-        configured_modules = [entry["name"] for entry in sources if "name" in entry]
-    except FileNotFoundError:
-        logger.warning(f"Sources file not found: {sources_file}. Module zero-row check will be skipped.")
-    except Exception:
-        logger.exception(f"Failed to read sources file {sources_file}. Module zero-row check will be skipped.")
+    configured_modules = [source.name for source in get_documents_sources(sources_file)]
 
-    stats: VerifyStats = verify_table(hana_conn, DATABASE_USER, table_name, configured_modules)
-
+    stats = verify_table(hana_conn, DATABASE_USER, table_name, configured_modules)
     _print_verify_report(stats, table_name)
 
-    # Determine exit code: 1 if any hard failure, 0 otherwise
-    has_error = stats.total_rows == 0 or bool(stats.zero_row_modules) or stats.missing_metadata_rows > 0
-    if has_error:
+    # Duplicates and oversized chunks are reported as warnings only.
+    if stats.total_rows == 0 or stats.zero_row_modules or stats.missing_metadata_rows > 0:
         sys.exit(1)
 
 
 def _print_verify_report(stats: VerifyStats, table_name: str) -> None:
-    """Print the verification report to the logger.
-
-    Args:
-        stats: The collected :class:`~utils.hana.VerifyStats`.
-        table_name: Table name included in the report header.
-    """
+    """Log the verification report as a table."""
     col_w = 40
     val_w = 10
     header = f"{'METRIC':<{col_w}} {'VALUE':>{val_w}}"
@@ -200,7 +190,7 @@ def _print_verify_report(stats: VerifyStats, table_name: str) -> None:
     if stats.zero_row_modules:
         lines.append(_row("Modules with zero rows (ERROR)", ", ".join(sorted(stats.zero_row_modules))))
     lines.append(_row("Duplicate chunks (warning)", stats.duplicate_chunks))
-    lines.append(_row("Oversized chunks >6000 chars (warning)", stats.oversized_chunks))
+    lines.append(_row(f"Oversized chunks >{OVERSIZED_CHUNK_CHARS} chars (warning)", stats.oversized_chunks))
     lines.append(_row("Rows missing title/url (ERROR)", stats.missing_metadata_rows))
 
     logger.info("\n".join(lines))

@@ -32,6 +32,12 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+5. Verify the indexed table:
+```bash
+poetry run python src/main.py verify
+```
+It prints the row count per module, duplicate and oversized chunks, and exits with code 1 when the table is empty, a module from the docs sources file has no rows, or rows are missing the `title` or `url` metadata.
+
 ## Testing
 
 The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).
@@ -73,13 +79,9 @@ poetry run poe test
 
 ### Chunk snapshot tests
 
-`tests/unit/indexing/test_chunk_snapshots.py` runs the full chunking pipeline over a set of
-realistic fixture documents (under `tests/unit/fixtures/snapshot_docs/`) and compares the output
-against a committed JSON file (`tests/unit/fixtures/snapshots/chunks.json`).
+`tests/unit/indexing/test_chunk_snapshots.py` runs the chunking pipeline over the fixture documents in `tests/unit/fixtures/snapshot_docs/` and compares the chunks with the committed `tests/unit/fixtures/snapshots/chunks.json`.
 
-**Any change to the chunking logic or the fixture files must be followed by a snapshot update.**
-Review the diff carefully before committing -- the snapshot is the source of truth for what the
-indexer produces.
+Any change to the chunking logic or the fixture files must update the snapshot. Review the diff before committing.
 
 To regenerate the snapshot:
 
@@ -87,8 +89,6 @@ To regenerate the snapshot:
 cd doc_indexer
 UPDATE_SNAPSHOTS=1 poetry run pytest tests/unit/indexing/test_chunk_snapshots.py -v
 ```
-
-Then review and commit `tests/unit/fixtures/snapshots/chunks.json`.
 
 ## Static Code Analysis
 ```bash

@@ -1,4 +1,4 @@
-"""Snapshot tests for the AdaptiveSplitMarkdownIndexer chunking output.
+"""Snapshot test for the AdaptiveSplitMarkdownIndexer chunking output.
 
 Run with UPDATE_SNAPSHOTS=1 to regenerate the committed snapshot file:
 
@@ -6,8 +6,6 @@ Run with UPDATE_SNAPSHOTS=1 to regenerate the committed snapshot file:
 
 Review the diff in tests/unit/fixtures/snapshots/chunks.json before committing.
 """
-
-from __future__ import annotations
 
 import json
 import os
@@ -23,62 +21,33 @@ pytestmark = pytest.mark.unit
 _FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "snapshot_docs"
 _SNAPSHOT_FILE = Path(__file__).parent.parent / "fixtures" / "snapshots" / "chunks.json"
 
+# repo, commit and url are left out: the fixtures have no fetch manifest, so they
+# are either None or the machine-dependent local path.
+_SNAPSHOT_KEYS = ("module", "path", "chunk_index", "total_chunks", "title", "heading")
 
-@pytest.fixture(scope="module")
-def snapshot_indexer() -> AdaptiveSplitMarkdownIndexer:
-    """Return an indexer backed by mocked HanaDB for snapshot testing."""
-    mock_embedding = MagicMock()
-    mock_connection = MagicMock()
+
+def test_chunk_snapshot() -> None:
+    """Chunk output must match the committed snapshot."""
     with patch("indexing.adaptive_indexer.HanaDB"):
         indexer = AdaptiveSplitMarkdownIndexer(
             docs_path=str(_FIXTURES_DIR),
-            embedding=mock_embedding,
-            connection=mock_connection,
+            embedding=MagicMock(),
+            connection=MagicMock(),
             table_name="snapshot_test",
         )
-    return indexer
-
-
-def test_chunk_snapshot(snapshot_indexer: AdaptiveSplitMarkdownIndexer) -> None:
-    """Chunk output must match the committed snapshot.
-
-    When UPDATE_SNAPSHOTS=1 is set the snapshot file is regenerated instead of
-    compared, so that a single run both updates and passes.
-    """
-    docs = load_documents(str(_FIXTURES_DIR))
-    chunks = snapshot_indexer.build_chunks(docs)
-
-    def _rel_source(raw: str) -> str:
-        """Return path relative to the fixture root, using forward slashes."""
-        try:
-            return Path(raw).relative_to(_FIXTURES_DIR).as_posix()
-        except ValueError:
-            return raw
+    chunks = indexer.build_chunks(load_documents(str(_FIXTURES_DIR)))
 
     serialized = sorted(
-        [
-            {
-                "source": _rel_source(chunk.metadata.get("source", "")),
-                "title": chunk.metadata.get("title", ""),
-                "page_content": chunk.page_content,
-            }
+        (
+            {**{key: chunk.metadata[key] for key in _SNAPSHOT_KEYS}, "page_content": chunk.page_content}
             for chunk in chunks
-        ],
-        key=lambda c: (c["source"], c["title"]),
+        ),
+        key=lambda c: (c["module"], c["path"], c["chunk_index"]),
     )
 
     if os.environ.get("UPDATE_SNAPSHOTS"):
-        _SNAPSHOT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _SNAPSHOT_FILE.write_text(
-            json.dumps(serialized, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
+        _SNAPSHOT_FILE.write_text(json.dumps(serialized, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         pytest.skip("Snapshot updated -- re-run without UPDATE_SNAPSHOTS to verify.")
-        return
-
-    assert _SNAPSHOT_FILE.exists(), (
-        f"Snapshot file not found: {_SNAPSHOT_FILE}\nRun with UPDATE_SNAPSHOTS=1 to create it."
-    )
 
     committed = json.loads(_SNAPSHOT_FILE.read_text(encoding="utf-8"))
     assert serialized == committed, (
