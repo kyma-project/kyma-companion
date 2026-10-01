@@ -63,11 +63,11 @@ types-pyyaml = "^6.0.12.20260906"
 types-requests = "^2.33.0.20260906"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^9.15.0"
-mypy = "^2.3.0"
+ipython = "^9.17.1"
+mypy = "^2.3.1"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.16.3"
+ruff = "^0.16.9"
 types-requests = "^2.33.0.20260906"
 
 [tool.pytest.ini_options]
