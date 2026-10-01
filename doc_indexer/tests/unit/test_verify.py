@@ -76,6 +76,21 @@ def test_run_verify_passes_with_warnings_only(sources_file: str) -> None:
     mock_verify.assert_called_once_with(hana_conn, "test_user", "test_table", MODULES)
 
 
+def test_run_verify_sanitizes_table_name(sources_file: str) -> None:
+    """Release runs pass names with dots; verify must query the sanitized name the indexer wrote."""
+    from main import run_verify
+
+    hana_conn = MagicMock()
+
+    with (
+        patch("main.verify_table", return_value=_stats()) as mock_verify,
+        patch("main.DATABASE_USER", "test_user"),
+    ):
+        run_verify(hana_conn=hana_conn, table_name="kc_release_1.3.1_e2e", sources_file=sources_file)
+
+    mock_verify.assert_called_once_with(hana_conn, "test_user", "kc_release_1_3_1_e2e", MODULES)
+
+
 def test_run_verify_raises_when_connection_fails(sources_file: str) -> None:
     from main import run_verify
 

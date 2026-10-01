@@ -45,7 +45,7 @@ def test_chunk_snapshot() -> None:
         key=lambda c: (c["module"], c["path"], c["chunk_index"]),
     )
 
-    if os.environ.get("UPDATE_SNAPSHOTS"):
+    if os.environ.get("UPDATE_SNAPSHOTS") == "1":
         _SNAPSHOT_FILE.write_text(json.dumps(serialized, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         pytest.skip("Snapshot updated -- re-run without UPDATE_SNAPSHOTS to verify.")
 

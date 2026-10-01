@@ -34,6 +34,7 @@ from utils.settings import (
     TMP_DIR,
     get_embedding_model_config,
 )
+from utils.utils import sanitize_table_name
 
 TASK_FETCH = "fetch"
 TASK_INDEX = "index"
@@ -164,6 +165,9 @@ def run_verify(
 
     configured_modules = [source.name for source in get_documents_sources(sources_file)]
 
+    # The indexer sanitizes the table name (e.g. "kc_release_1.3.1_e2e" -> "kc_release_1_3_1_e2e"),
+    # so verify must look up the same sanitized name.
+    table_name = sanitize_table_name(table_name)
     stats = verify_table(hana_conn, DATABASE_USER, table_name, configured_modules)
     _print_verify_report(stats, table_name)
 

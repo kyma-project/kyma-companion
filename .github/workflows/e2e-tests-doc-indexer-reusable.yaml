@@ -179,16 +179,6 @@ jobs:
         run: |
           kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-e2e --all-containers=true --tail=200 || true
 
-      - name: Debug information on failure
-        if: failure()
-        run: |
-          echo "=== Jobs status ==="
-          kubectl get jobs -n "${{ env.NAMESPACE }}" -o wide || true
-          kubectl describe jobs -n "${{ env.NAMESPACE }}" || true
-          echo "=== Pod status ==="
-          kubectl get pods -n "${{ env.NAMESPACE }}" -o wide || true
-          kubectl describe pods -n "${{ env.NAMESPACE }}" || true
-
       - name: Run verify Job
         run: |
           cat <<EOF | kubectl apply -f -
@@ -257,6 +247,16 @@ jobs:
         if: always()
         run: |
           kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
+
+      - name: Debug information on failure
+        if: failure()
+        run: |
+          echo "=== Jobs status ==="
+          kubectl get jobs -n "${{ env.NAMESPACE }}" -o wide || true
+          kubectl describe jobs -n "${{ env.NAMESPACE }}" || true
+          echo "=== Pod status ==="
+          kubectl get pods -n "${{ env.NAMESPACE }}" -o wide || true
+          kubectl describe pods -n "${{ env.NAMESPACE }}" || true
 
       - name: Drop HANA table
         if: always()
