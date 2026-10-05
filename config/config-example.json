@@ -24,6 +24,9 @@
   "DATABASE_PASSWORD": "<VALUE>",
   "DATABASE_PORT": "443",
   "DOCS_TABLE_NAME": "<VALUE>",
+  "RETRIEVAL_MODE": "fusion",
+  "RAG_TOP_K": "5",
+  "RAG_NUM_QUERIES": "4",
 
   "LOG_LEVEL": "INFO",
   "LOG_FORMAT": "json",
