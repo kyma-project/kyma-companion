@@ -36,7 +36,7 @@ _KYMA_MONO_REPO = "kyma"
 def build_chunk_metadata(
     source_path: str,
     docs_path: str,
-    manifest: dict[str, dict[str, str | None]] | None,
+    manifest: dict[str, dict[str, str | list[str] | None]] | None,
 ) -> dict[str, str | list[str] | None]:
     """Build metadata for a single chunk based on its source path and the fetch manifest.
 
@@ -53,8 +53,8 @@ def build_chunk_metadata(
     Returns:
         A dict with keys ``module``, ``path``, ``repo``, ``commit``, ``url``,
         ``title`` (always ``None`` here -- the caller fills it in),
-        ``doc_type`` (always ``None`` for now), and ``audience`` (a list;
-        defaults to ``["public"]``).
+        ``doc_type`` (from the manifest, defaults to ``None``), and
+        ``audience`` (a list from the manifest; defaults to ``["public"]``).
     """
     # Derive the relative path from docs_path.
     rel = os.path.relpath(source_path, docs_path)
@@ -88,8 +88,13 @@ def build_chunk_metadata(
         }
 
     entry = manifest[module]
-    repo_url = entry.get("repo_url") or ""
-    commit = entry.get("commit")
+    repo_url = _as_str(entry.get("repo_url")) or ""
+    commit = _as_str(entry.get("commit"))
+    # audience/doc_type are data-driven from the sources file via the manifest.
+    # Fall back to the public defaults for manifests written before these fields
+    # existed, keeping the kyma_docs pipeline unchanged.
+    audience = entry.get("audience") or ["public"]
+    doc_type = _as_str(entry.get("doc_type"))
 
     url = _build_url(module, doc_rel_path, repo_url, commit)
 
@@ -100,9 +105,14 @@ def build_chunk_metadata(
         "commit": commit,
         "url": url,
         "title": None,
-        "doc_type": None,
-        "audience": ["public"],
+        "doc_type": doc_type,
+        "audience": audience,
     }
+
+
+def _as_str(value: str | list[str] | None) -> str | None:
+    """Narrow a manifest value to ``str | None`` for URL building."""
+    return value if isinstance(value, str) else None
 
 
 def _build_url(module: str, doc_rel_path: str, repo_url: str, commit: str | None) -> str | None:

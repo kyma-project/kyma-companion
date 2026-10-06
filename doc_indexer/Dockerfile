@@ -291,7 +291,7 @@ EOF
 RUN PYTHONDONTWRITEBYTECODE=1 /app/.venv/bin/python -c "import rdflib, rdflib.plugins.sparql"
 
 COPY src ./src
-COPY docs_sources.json ./
+COPY docs_sources.json ops_docs_sources.json ./
 
 # Writable working directories for the fetcher (downloaded docs, tarball
 # scratch space). Owned by the runtime uid with gid 0 and group write, the
@@ -406,7 +406,7 @@ RUN set -eu \
   && cp -L /etc/os-release /rootfs/etc/os-release \
   && cp -a --parents /opt/python /etc/ssl /usr/share/zoneinfo /rootfs \
   && cp -a /app/.venv /rootfs/app/venv \
-  && cp -a /app/src /app/docs_sources.json /app/data /app/tmp /rootfs/app/ \
+  && cp -a /app/src /app/docs_sources.json /app/ops_docs_sources.json /app/data /app/tmp /rootfs/app/ \
   && printf 'root:x:0:0:root:/root:/sbin/nologin\nappuser:x:10001:0::/nonexistent:/sbin/nologin\n' > /rootfs/etc/passwd \
   && printf 'root:x:0:\nappuser:x:10001:\n' > /rootfs/etc/group \
   && printf 'passwd: files\ngroup: files\nhosts: files dns\n' > /rootfs/etc/nsswitch.conf \
