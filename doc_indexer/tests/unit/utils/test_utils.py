@@ -1,11 +1,18 @@
 import io
 import os
 import tarfile
+import urllib.request
 from unittest.mock import patch
 
 import pytest
 
-from utils.utils import _archive_url, _parse_github_repo, _request_headers, download_repo
+from utils.utils import (
+    _archive_url,
+    _parse_github_repo,
+    _request_headers,
+    _StripAuthOnCrossHostRedirect,
+    download_repo,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -203,10 +210,11 @@ def test_download_repo_raises_on_missing_commit_header(tmp_path):
 
 
 def test_download_repo_falls_back_to_dir_name_sha(tmp_path):
-    """When the pax header is absent (GHE API tarball), the trailing sha in the
-    top-level dir name (``<owner>-<repo>-<sha>``) is used instead."""
+    """When the pax header is absent (GHE API tarball), the trailing (abbreviated)
+    sha in the top-level dir name (``<owner>-<repo>-<sha>``) is used instead."""
     repo_url = "https://github.com/kyma-project/eventing-manager.git"
-    sha = "c" * 40
+    # GHE/GitHub REST tarballs use an abbreviated (commonly 7-char) commit sha.
+    sha = "c1d2e3f"
     tar_bytes = _make_repo_tarball(f"kyma-eventing-manager-{sha}", {"README.md": "# hello"}, commit=None)
 
     with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
@@ -226,3 +234,32 @@ def test_download_repo_raises_on_malformed_commit_header(tmp_path):
         pytest.raises(RuntimeError, match="cannot read commit sha"),
     ):
         download_repo(repo_url, str(tmp_path))
+
+
+def _make_redirect_request(orig_url: str, new_url: str):
+    """Run the redirect handler for orig_url -> new_url and return the new Request."""
+    handler = _StripAuthOnCrossHostRedirect()
+    req = urllib.request.Request(orig_url, headers={"Authorization": "Bearer secret-token"})
+    return handler.redirect_request(req, io.BytesIO(), 302, "Found", {}, new_url)
+
+
+def test_redirect_strips_auth_on_cross_host():
+    """The enterprise token must not be forwarded when a redirect changes host."""
+    new_req = _make_redirect_request(
+        "https://github.tools.sap/api/v3/repos/kyma/svc/tarball/main",
+        "https://objectstore.example.com/signed/path?sig=abc",
+    )
+
+    assert new_req is not None
+    assert "authorization" not in {k.lower() for k in new_req.headers}
+
+
+def test_redirect_keeps_auth_on_same_host():
+    """A same-host redirect keeps the token (GHE storage may still require it)."""
+    new_req = _make_redirect_request(
+        "https://github.tools.sap/api/v3/repos/kyma/svc/tarball/main",
+        "https://github.tools.sap/storage/signed/path?sig=abc",
+    )
+
+    assert new_req is not None
+    assert new_req.headers.get("Authorization") == "Bearer secret-token"

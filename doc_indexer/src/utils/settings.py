@@ -19,12 +19,15 @@ def load_env_from_json() -> None:
         # Load the configuration from the given path and set the environment variables.
         with config_path.open() as file:
             config_file = json.load(file)
-            # Set environment variables for all keys except "models"
+            # Set environment variables for all keys except "models".
+            # Use setdefault so explicitly supplied environment variables (e.g.
+            # a shell `DOCS_TABLE_NAME=ops_docs`) take precedence over config.json
+            # instead of being silently overwritten by it.
             for key, value in config_file.items():
                 if key != "models":
-                    os.environ[key] = str(value)
+                    os.environ.setdefault(key, str(value))
                 else:
-                    os.environ[MODELS_CONFIGS_KEY] = json.dumps(value)
+                    os.environ.setdefault(MODELS_CONFIGS_KEY, json.dumps(value))
     except json.JSONDecodeError:
         logging.exception(f"Invalid JSON format in config file {config_path}")
         raise

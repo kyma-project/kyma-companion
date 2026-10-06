@@ -36,7 +36,10 @@ poetry run python src/main.py index
 
 The pipeline is fully driven by environment variables, so a second corpus can
 be indexed into its own HANA table without code changes by pointing the fetch
-and index tasks at a different sources file and table name.
+and index tasks at a different sources file and table name. Explicitly exported
+environment variables take precedence over `config.json` (the loader uses
+`setdefault`), so the inline overrides below reliably select the `ops_docs`
+table even though `config.json` defines `DOCS_TABLE_NAME`.
 
 The repository ships [`ops_docs_sources.json`](./ops_docs_sources.json), which
 indexes internal operations/SRE docs (SRE runbooks, on-call guides, Gardener,

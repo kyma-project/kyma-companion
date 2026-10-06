@@ -6,6 +6,8 @@ import tempfile
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from http.client import HTTPMessage
+from typing import IO
 from urllib.parse import urlparse
 
 from decouple import config
@@ -41,6 +43,45 @@ def _github_token() -> str:
 # with `comment=<full commit sha>`. The top-level directory is named "<repo>-<ref>"
 # (e.g. "istio-HEAD", "istio-main"), so it only contains the sha when a sha was requested.
 _COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+# GitHub/GHE REST API tarballs name the top-level dir "<owner>-<repo>-<short_sha>"
+# using an abbreviated (commonly 7-char) commit sha, so the directory-name
+# fallback must accept abbreviated hashes, not just the full 40-char form.
+_DIR_SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
+
+
+class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirect handler that drops the Authorization header on a host change.
+
+    urllib copies request headers (including a bearer token) onto the redirected
+    request. GHE/GitHub tarball endpoints redirect to a signed download URL that
+    does not need the token, so stripping it on a cross-host redirect prevents
+    leaking the enterprise token to a different (e.g. storage/CDN) host while
+    keeping it for same-host redirects that may still require it.
+    """
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: HTTPMessage,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        """Build the redirected request, stripping auth when the host differs."""
+        new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_req is not None:
+            orig_host = urlparse(req.full_url).netloc.lower()
+            new_host = urlparse(newurl).netloc.lower()
+            if orig_host != new_host:
+                new_req.headers.pop("Authorization", None)
+                new_req.headers.pop("authorization", None)
+        return new_req
+
+
+# Install a process-wide opener so urllib.request.urlopen strips the enterprise
+# token on cross-host redirects (see _StripAuthOnCrossHostRedirect).
+urllib.request.install_opener(urllib.request.build_opener(_StripAuthOnCrossHostRedirect))
 
 
 @dataclass
@@ -103,8 +144,9 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
     stripped), matching the layout the Scroller expects.
 
     The commit sha is read from the tarball's pax global header (`comment`),
-    which `git archive` sets to the resolved commit. Raises RuntimeError if the
-    header is missing or is not a 40-char hex sha.
+    which `git archive` sets to the resolved commit. When absent (e.g. GHE API
+    tarballs), it falls back to the trailing (possibly abbreviated) sha in the
+    top-level directory name. Raises RuntimeError if neither yields a hex sha.
     """
     host, owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
@@ -144,12 +186,12 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
         # top-level directory name before failing.
         if not _COMMIT_SHA_RE.match(commit):
             trailing = extracted[0].rsplit("-", 1)[-1]
-            if _COMMIT_SHA_RE.match(trailing):
+            if _DIR_SHA_RE.match(trailing):
                 commit = trailing
             else:
                 raise RuntimeError(
                     f"cannot read commit sha for {tar_url}: pax comment={commit!r}, "
-                    f"dir={extracted[0]!r} (expected 40 hex chars)"
+                    f"dir={extracted[0]!r} (expected 7-40 hex chars)"
                 )
 
         shutil.move(os.path.join(staging, extracted[0]), repo_path)
