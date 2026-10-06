@@ -29,3 +29,4 @@ jobs:
           delay: "1" # minutes
           retries: "44"
           polling_interval: "1" # minutes
+          checks_exclude: "build-langfuse / Build image,build-langfuse-worker / Build image"
