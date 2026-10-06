@@ -115,7 +115,6 @@ To use a configuration file from a different location, set the `CONFIG_PATH` env
 
 ### Tracing
 
-For tracing, Kyma Companion uses [Langfuse](https://langfuse.com/). For more information, see [Using Langfuse in Kyma Companion](/docs/langfuse.md).
 
 ## Code Checks
 
