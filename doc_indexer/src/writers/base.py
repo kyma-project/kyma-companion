@@ -19,10 +19,15 @@ class RunDescriptor:
     embedding_model: str
     dimensions: int
     sources: dict[str, Any] = field(default_factory=dict)  # fetch manifest.json content
+    # Optional additional keys that only the file writer stores (e.g. "exported_from"). Not written to Postgres.
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Return the descriptor as a plain dict."""
-        return asdict(self)
+        """Return the descriptor as a plain dict (extra keys merged at top level, only if present)."""
+        data = asdict(self)
+        data.pop("extra")
+        data.update(self.extra)
+        return data
 
 
 class Writer(Protocol):

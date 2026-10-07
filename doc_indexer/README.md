@@ -40,7 +40,9 @@ poetry run python src/main.py index
 |---|---|---|
 | `hana` (default) | `DATABASE_*` | Deletes all rows and adds the chunks; HanaDB embeds. Unchanged. |
 | `pgvector` | `DOCS_SEARCH_PG_DSN` | Embeds the chunks itself and writes one table `docs_chunks_<run_id>` per run, tracked in `docs_index_runs`. `commit()` flips `is_current`; the last 2 committed runs are kept. Layout: `kyma-docs-search/docs/poc-contract.md`. |
-| `file` | `INDEX_TO_FILE=true` (or `DOCS_WRITER=file`) | JSON file `{"run": ..., "chunks": [{content, metadata, embedding}]}`. |
+| `file` | `INDEX_TO_FILE=true` (or `DOCS_WRITER=file`) | JSON file `{"run": ..., "chunks": [{content, metadata, embedding}]}`. Path: `DOCS_FILE_PATH` (default `kyma_docs_{run_id}.json`, `{run_id}` is substituted). |
+
+`DOCS_WRITER` accepts a comma-separated list, e.g. `pgvector,file`: all writers get the same run and the chunks are embedded once. If one commit fails, the writers not yet committed are aborted and the error is raised (already committed ones stay).
 
 Demo (local Postgres with pgvector, see the contract):
 
@@ -50,6 +52,26 @@ export CONFIG_PATH=../config/config.json DOCS_SOURCES_FILE_PATH=./e2e_docs_sourc
 poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
+
+## Export and import
+
+Export is a convenience for developers: clone an existing index (for example the one on HANA) into a local Postgres without paying for the embeddings again.
+
+```bash
+# export the CURRENT index to a file (run object + chunks with vectors)
+export DOCS_SEARCH_PG_DSN=postgres://postgres:postgres@localhost:5433/docs
+poetry run python src/main.py export --from pgvector --file kyma_docs.json
+CONFIG_PATH=../config/config.json poetry run python src/main.py export --from hana --file kyma_docs.json  # DATABASE_*, DOCS_TABLE_NAME
+
+# import a file through the configured writer(s) as a NEW run (new run_id, stored vectors, no embedding, no sleep)
+DOCS_WRITER=pgvector poetry run python src/main.py import --file kyma_docs.json
+```
+
+Round trip pgvector -> file -> pgvector: run the first export command, then the import with `DOCS_WRITER=pgvector`; `docs_index_runs` then has a second run with the same `chunk_count`, which is current.
+
+HANA -> local pgvector: run the HANA export, then import with `DOCS_WRITER=pgvector DOCS_SEARCH_PG_DSN=postgres://postgres:postgres@localhost:5433/docs`. HANA has no manifest, so `sources` is `{}`; the file run object carries `exported_from`. The import fails early if any vector length differs from `dimensions`. Importing with `DOCS_WRITER=hana` deletes the table content first and writes the stored vectors (`HanaDB.add_texts(embeddings=...)`).
+
+Memory: the file writer and the import keep the whole file in memory (POC).
 
 ## Testing
 

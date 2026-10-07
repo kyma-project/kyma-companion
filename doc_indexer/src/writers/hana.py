@@ -8,7 +8,8 @@ logger = get_logger(__name__)
 
 
 class HanaWriter:
-    """Existing behaviour: delete all rows, then add documents. HanaDB embeds the chunks itself."""
+    """Existing behaviour: delete all rows, then add documents. HanaDB embeds the chunks itself
+    (unless vectors are passed to write(), see import task)."""
 
     needs_embeddings = False
 
@@ -27,7 +28,15 @@ class HanaWriter:
 
     def write(self, chunks: list[Document], vectors: list[list[float]]) -> None:
         """Write one batch of chunks (with vectors if the writer needs them)."""
-        self.db.add_documents(chunks)
+        if vectors:
+            # Precomputed vectors (import task): HanaDB.add_texts accepts them, so nothing is re-embedded.
+            self.db.add_texts(
+                [c.page_content for c in chunks],
+                [c.metadata for c in chunks],
+                embeddings=vectors,
+            )
+        else:
+            self.db.add_documents(chunks)
 
     def commit(self) -> None:
         """Make the written run visible."""

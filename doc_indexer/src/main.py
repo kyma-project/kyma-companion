@@ -6,10 +6,14 @@ from fetcher.fetcher import DocumentsFetcher
 from hdbcli import dbapi
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
 from langchain_core.embeddings import Embeddings
+from langchain_hana import HanaDB
+from transfer import export_hana, export_pgvector, run_import_file
 from utils.hana import create_hana_connection, drop_table, list_tables
 from writers.base import Writer
 from writers.file import FileWriter
+from writers.hana import HanaWriter
 from writers.pgvector import PgVectorWriter
+from writers.tee import TeeWriter
 
 from utils.logging import get_logger
 from utils.models import (
@@ -21,6 +25,7 @@ from utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
+    DOCS_FILE_PATH,
     DOCS_PATH,
     DOCS_SEARCH_PG_DSN,
     DOCS_SOURCES_FILE_PATH,
@@ -36,6 +41,8 @@ TASK_FETCH = "fetch"
 TASK_INDEX = "index"
 TASK_DROP = "drop"
 TASK_TABLES = "tables"
+TASK_IMPORT = "import"
+TASK_EXPORT = "export"
 logger = get_logger(__name__)
 
 
@@ -56,6 +63,54 @@ def run_fetcher() -> None:
         logger.info(f"{indent}{os.path.basename(root)}/")
         for fname in files:
             logger.info(f"{indent}  {fname}")
+
+
+class _NoEmbeddings(Embeddings):
+    """Placeholder for HanaDB when vectors are always passed in (import task)."""
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        raise RuntimeError("embedding is not available here")
+
+    def embed_query(self, text: str) -> list[float]:
+        raise RuntimeError("embedding is not available here")
+
+
+def _hana_connection(hana_conn: dbapi.Connection | None) -> dbapi.Connection:
+    if hana_conn is None:
+        hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
+        if not hana_conn:
+            logger.error("Failed to connect to the database. Exiting.")
+            raise RuntimeError("Failed to connect to the database.")
+    return hana_conn
+
+
+def build_writer(
+    embeddings_model: Embeddings,
+    hana_conn: dbapi.Connection | None,
+    table_name: str,
+    force_explicit_hana: bool = False,
+) -> Writer | None:
+    """Build the writer(s) from DOCS_WRITER (comma-separated). Returns None for plain "hana" (indexer default)."""
+    names = [n.strip() for n in DOCS_WRITER.split(",") if n.strip()]
+    if INDEX_TO_FILE and names == ["hana"]:
+        names = ["file"]
+    if names == ["hana"] and not force_explicit_hana:
+        # keep the existing path: the indexer builds its own HanaWriter from the connection
+        return None
+    writers: list[Writer] = []
+    for name in names:
+        if name == "pgvector":
+            if not DOCS_SEARCH_PG_DSN:
+                raise RuntimeError("DOCS_SEARCH_PG_DSN must be set for DOCS_WRITER=pgvector.")
+            writers.append(PgVectorWriter(DOCS_SEARCH_PG_DSN))
+        elif name == "file":
+            writers.append(FileWriter(DOCS_FILE_PATH))
+        elif name == "hana":
+            db = HanaDB(connection=_hana_connection(hana_conn), embedding=embeddings_model, table_name=table_name)
+            writers.append(HanaWriter(db))
+        else:
+            raise ValueError(f"Unknown DOCS_WRITER: {name}")
+    return writers[0] if len(writers) == 1 else TeeWriter(writers)
 
 
 def run_indexer(
@@ -80,22 +135,9 @@ def run_indexer(
         create_embedding = create_embedding_factory(openai_embedding_creator)
         embeddings_model = create_embedding(embedding_model.name)
 
-    writer_name = "file" if INDEX_TO_FILE and DOCS_WRITER == "hana" else DOCS_WRITER
-    writer: Writer | None = None
-    if writer_name == "pgvector":
-        if not DOCS_SEARCH_PG_DSN:
-            raise RuntimeError("DOCS_SEARCH_PG_DSN must be set for DOCS_WRITER=pgvector.")
-        writer = PgVectorWriter(DOCS_SEARCH_PG_DSN)
-    elif writer_name == "file":
-        writer = FileWriter(f"Kyma_Documentation_chunks_{time.strftime('%Y-%m-%d-%H-%M-%S')}.json")
-    elif writer_name == "hana":
-        if hana_conn is None:
-            hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
-            if not hana_conn:
-                logger.error("Failed to connect to the database. Exiting.")
-                raise RuntimeError("Failed to connect to the database.")
-    else:
-        raise ValueError(f"Unknown DOCS_WRITER: {writer_name}")
+    writer = build_writer(embeddings_model, hana_conn, table_name)
+    if writer is None:
+        hana_conn = _hana_connection(hana_conn)
 
     indexer = AdaptiveSplitMarkdownIndexer(
         docs_path,
@@ -107,6 +149,27 @@ def run_indexer(
     )
     indexer.index()
     logger.info(f"Index completed in {time.monotonic() - start:.1f}s")
+
+
+def run_import(path: str, table_name: str = DOCS_TABLE_NAME) -> None:
+    """Import a file-writer JSON through the configured writer(s) with a new run id; vectors are not recomputed."""
+    logger.info("Starting import task", extra={"file": path})
+    writer = build_writer(_NoEmbeddings(), None, table_name, force_explicit_hana=True)
+    assert writer is not None
+    run_import_file(path, writer)
+
+
+def run_export(source: str, path: str, table_name: str = DOCS_TABLE_NAME) -> None:
+    """Write the current index of the source store (hana | pgvector) to a file-writer JSON."""
+    logger.info("Starting export task", extra={"source": source, "file": path})
+    if source == "pgvector":
+        if not DOCS_SEARCH_PG_DSN:
+            raise RuntimeError("DOCS_SEARCH_PG_DSN must be set for --from pgvector.")
+        export_pgvector(DOCS_SEARCH_PG_DSN, path)
+    elif source == "hana":
+        export_hana(_hana_connection(None), DATABASE_USER, table_name, EMBEDDING_MODEL_NAME, path)
+    else:
+        raise ValueError(f"Unknown export source: {source}")
 
 
 def run_drop(
@@ -157,7 +220,9 @@ def run_list_tables(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
-    parser.add_argument("task", choices=["index", "fetch", "drop", "tables"])
+    parser.add_argument("task", choices=["index", "fetch", "drop", "tables", "import", "export"])
+    parser.add_argument("--file", help="import: file to read; export: file to write")
+    parser.add_argument("--from", dest="source", choices=["hana", "pgvector"], help="export: source store")
     args = parser.parse_args()
 
     logger.info("Indexer job starting", extra={"task": args.task})
@@ -170,5 +235,13 @@ if __name__ == "__main__":
         run_drop()
     elif args.task == TASK_TABLES:
         run_list_tables()
+    elif args.task == TASK_IMPORT:
+        if not args.file:
+            parser.error("import requires --file")
+        run_import(args.file)
+    elif args.task == TASK_EXPORT:
+        if not args.file or not args.source:
+            parser.error("export requires --from and --file")
+        run_export(args.source, args.file)
     else:
         print("Invalid task. Valid tasks are: index, fetch, drop, tables.")
