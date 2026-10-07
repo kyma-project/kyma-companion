@@ -32,6 +32,25 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+## Writers
+
+`DOCS_WRITER` selects where `index` writes (`src/writers/`):
+
+| Writer | Setting | Behaviour |
+|---|---|---|
+| `hana` (default) | `DATABASE_*` | Deletes all rows and adds the chunks; HanaDB embeds. Unchanged. |
+| `pgvector` | `DOCS_SEARCH_PG_DSN` | Embeds the chunks itself and writes one table `docs_chunks_<run_id>` per run, tracked in `docs_index_runs`. `commit()` flips `is_current`; the last 2 committed runs are kept. Layout: `kyma-docs-search/docs/poc-contract.md`. |
+| `file` | `INDEX_TO_FILE=true` (or `DOCS_WRITER=file`) | JSON file `{"run": ..., "chunks": [{content, metadata, embedding}]}`. |
+
+Demo (local Postgres with pgvector, see the contract):
+
+```bash
+export CONFIG_PATH=../config/config.json DOCS_SOURCES_FILE_PATH=./e2e_docs_sources.json DOCS_PATH=./data \
+  DOCS_WRITER=pgvector DOCS_SEARCH_PG_DSN=postgres://postgres:postgres@localhost:5433/docs
+poetry run python src/main.py fetch
+poetry run python src/main.py index
+```
+
 ## Testing
 
 The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).

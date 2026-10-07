@@ -69,6 +69,8 @@ DATABASE_USER = str(config("DATABASE_USER", ""))
 DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
+DOCS_WRITER = str(config("DOCS_WRITER", default="hana"))  # hana | pgvector | file
+DOCS_SEARCH_PG_DSN = str(config("DOCS_SEARCH_PG_DSN", default=""))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:

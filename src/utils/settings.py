@@ -96,6 +96,8 @@ DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)
 DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
 DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
+# Base URL of the remote kyma-docs-search service. When unset, the local HANA RAG pipeline is used.
+DOCS_SEARCH_URL: str | None = (config("DOCS_SEARCH_URL", default=None) or "").rstrip("/") or None
 HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
     "HANA_HEALTH_CHECK_CACHE_TTL_SECONDS", default=300, cast=int
 )  # Default 5 minutes
