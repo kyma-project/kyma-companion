@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kyma-project/kyma-docs-search/internal/mcpserver"
 	"github.com/kyma-project/kyma-docs-search/internal/pipeline"
 	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
@@ -28,6 +29,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /v1/status", s.status)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", s.readyz)
+	// Second door on the same pipeline; see internal/mcpserver.
+	mux.Handle("/mcp", mcpserver.Handler(s.Pipeline))
 	return logMiddleware(mux)
 }
 
@@ -47,6 +50,15 @@ type statusWriter struct {
 }
 
 func (w *statusWriter) WriteHeader(c int) { w.code = c; w.ResponseWriter.WriteHeader(c) }
+
+// Unwrap lets http.ResponseController reach Flush on the real writer (needed for MCP streaming).
+func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
 
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

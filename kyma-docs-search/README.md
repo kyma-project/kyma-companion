@@ -36,6 +36,34 @@ the first build is done.
 
 `score_type` is `cosine` (single dense query), `bm25` (single sparse query), `rrf` (several queries or hybrid) or `llm` (reranked).
 
+## MCP server
+
+The same process serves an MCP server (streamable HTTP) at `/mcp`, on the same port as the REST API.
+Design principle: the MCP server contains no retrieval logic. It maps a tool call to the in-process pipeline
+call that `POST /v1/search` uses (`internal/mcpserver`), so both doors always return the same results.
+
+Tool `search_kyma_docs` -- input: `query` (required), `top_k` (1-50, default 5), `mode` (`dense|sparse|hybrid`,
+default `hybrid`), `expand_queries` (default false), `rerank` (default false). Output: structured content
+`{"results":[{title, content, source_url, score, module}]}` plus the same JSON as a text content block for clients
+that ignore structured content. Pipeline errors come back as tool errors (`isError: true`), not transport errors.
+`source_url` is `metadata.url`; callers must cite it.
+
+Connect from an MCP client, e.g. Claude Code:
+
+```bash
+claude mcp add --transport http kyma-docs http://localhost:8081/mcp
+```
+
+Verify without curl, using the SDK client in `cmd/mcpcheck` (initializes, lists tools, calls the tool):
+
+```bash
+go run ./cmd/mcpcheck http://localhost:8081/mcp
+```
+
+Security: the POC has no auth. In production the MCP endpoint sits behind JWT (IAS/XSUAA on the ingress) and the
+service applies per-caller policy. In the POC the MCP tool is the only unauthenticated door and must not be exposed
+outside localhost.
+
 ## Docker
 
 ```bash
