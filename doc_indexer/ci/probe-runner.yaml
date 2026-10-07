@@ -1,0 +1,51 @@
+# DRAFT -- phase 0 check for github.tools.sap runners. Run once by hand, then delete.
+# Answers three questions the indexing workflow depends on:
+#   1. Is OIDC enabled for Actions? (prints the token issuer and subject, nothing secret)
+#   2. Can actions/setup-python install a 3.14 interpreter? (tool cache / GitHub Connect)
+#   3. Is PyPI reachable, directly or through a proxy? (pip download of one wheel)
+# Nothing here reads a secret or touches Vault; the Vault role can be requested after this passes.
+
+name: Probe runner (OIDC, Python, PyPI)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: OIDC token claims
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const token = await core.getIDToken('vault.tools.sap');
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+            core.summary.addHeading('OIDC').addTable([
+              [{data: 'claim', header: true}, {data: 'value', header: true}],
+              ['iss', claims.iss], ['sub', claims.sub], ['aud', String(claims.aud)], ['repository', claims.repository], ['ref', claims.ref],
+            ]);
+            await core.summary.write();
+            core.info(`iss=${claims.iss} sub=${claims.sub}`);
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Python and PyPI
+        run: |
+          python --version
+          pip --version
+          pip config list || true
+          pip download --no-deps --dest /tmp/probe hdbcli
+          ls -la /tmp/probe
+          {
+            echo "## Python"
+            echo "- interpreter: $(python --version)"
+            echo "- pip index: $(pip config get global.index-url 2>/dev/null || echo 'default (pypi.org)')"
+            echo "- hdbcli wheel download: ok"
+          } >> "$GITHUB_STEP_SUMMARY"

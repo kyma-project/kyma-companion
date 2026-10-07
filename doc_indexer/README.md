@@ -138,3 +138,7 @@ poetry run poe test
 ```bash
 poetry run poe codecheck
 ```
+
+## CI drafts
+
+`ci/index-docs.yaml` is a draft of the scheduled indexing workflow for an internal repo (Vault via OIDC, one landscape at a time, run summary and artifacts). `ci/probe-runner.yaml` is the one-off phase-0 check for OIDC, Python and PyPI on github.tools.sap runners. Neither runs from this repository.
