@@ -1,0 +1,6 @@
+.git
+**/*.md
+demo/
+docs/
+api/
+scripts/

@@ -1,0 +1,45 @@
+# DRAFT -- CI for the kyma-docs-search service once it has its own repo. Runs on every PR and weekly,
+# because the vulnerability databases change without a code change.
+name: Service security checks
+
+on:
+  pull_request:
+    paths: ["kyma-docs-search/**"]
+  schedule:
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kyma-docs-search
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: kyma-docs-search/go.mod
+      - name: Verify modules
+        run: go mod verify
+      - name: govulncheck (source)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+      - name: Build image
+        run: docker build -t kyma-docs-search:ci .
+      - name: Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: kyma-docs-search:ci
+          scanners: vuln,secret,misconfig
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: "1"
+          format: table
+      - name: govulncheck (shipped binary)
+        run: |
+          id=$(docker create kyma-docs-search:ci); docker cp "$id:/kyma-docs-search" ./shipped; docker rm "$id"
+          govulncheck -mode=binary ./shipped

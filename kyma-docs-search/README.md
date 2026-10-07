@@ -75,3 +75,17 @@ docker build -t kyma-docs-search .
 ## Dev seed
 
 `go run ./cmd/devseed up|down` creates/removes a throwaway 3-chunk run `00000000000000_seed00` for local testing.
+
+## Supply chain and image
+
+`scripts/security-check.sh` runs the whole set and fails on any finding; `../doc_indexer/ci/service-security.yaml` is the CI draft (every PR and daily, because the databases move without a code change).
+
+| check | what it proves | result 2026-10-07 |
+|---|---|---|
+| `go mod verify` | module contents match `go.sum` | all modules verified |
+| `govulncheck ./...` | Go vulnerability DB, only for code paths this binary calls | no vulnerabilities |
+| `docker build` | `CGO_ENABLED=0`, `-trimpath`, `-ldflags "-s -w"`: static, stripped, no build paths; `FROM scratch`; user 10001 | 13.6 MB, 4 layers |
+| `trivy image` | OS packages (there are none), the 14 Go modules read from the binary's build info, secrets, misconfiguration | 0 findings |
+| `govulncheck -mode=binary` | the shipped artifact, not the source tree | no vulnerabilities |
+
+Why the image is small to defend: no shell, no package manager, no libc, no interpreter. The only things in it are the binary, the CA bundle, the time zone database and a one-line `/etc/passwd`. Scanners still see every dependency because Go embeds the module list in the binary (`go version -m`). Dependencies are kept current with `go get -u ./... && go mod tidy`; the five modules `go list -m -u all` still reports as outdated are test-only dependencies of dependencies and are not in the binary.
