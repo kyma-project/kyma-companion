@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/kyma-project/kyma-docs-search/internal/aicore"
+	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
 	"github.com/kyma-project/kyma-docs-search/prompts"
 )
@@ -22,6 +23,11 @@ const (
 	ScoreCosine = "cosine"
 	ScoreRRF    = "rrf"
 	ScoreLLM    = "llm"
+	ScoreBM25   = "bm25"
+
+	ModeDense  = "dense"
+	ModeSparse = "sparse"
+	ModeHybrid = "hybrid"
 )
 
 type Embedder interface {
@@ -33,6 +39,7 @@ type Pipeline struct {
 	Store     store.Store
 	AI        Embedder
 	MiniModel string
+	Sparse    *sparse.Manager
 }
 
 type Request struct {
@@ -41,6 +48,7 @@ type Request struct {
 	ExpandQueries bool
 	Rerank        bool
 	Modules       []string
+	Mode          string // dense (default), sparse, hybrid
 }
 
 type Response struct {
@@ -70,9 +78,26 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 		candidateK = max(req.TopK*4, 10)
 	}
 
-	vecs, err := p.AI.Embeddings(ctx, queries)
-	if err != nil {
-		return Response{}, fmt.Errorf("embed queries: %w", err)
+	mode := req.Mode
+	if mode == "" {
+		mode = ModeDense
+	}
+	var sx *sparse.Index
+	if mode != ModeDense {
+		if p.Sparse == nil {
+			return Response{}, sparse.ErrNotReady
+		}
+		if sx, err = p.Sparse.Get(ctx); err != nil {
+			return Response{}, err
+		}
+	}
+
+	var vecs [][]float32
+	if mode != ModeSparse {
+		vecs, err = p.AI.Embeddings(ctx, queries)
+		if err != nil {
+			return Response{}, fmt.Errorf("embed queries: %w", err)
+		}
 	}
 
 	lists := make([][]store.Chunk, len(queries))
@@ -82,7 +107,18 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			lists[i], errs[i] = p.Store.Dense(ctx, run, vecs[i], candidateK, req.Modules)
+			switch mode {
+			case ModeSparse:
+				lists[i] = sx.Search(queries[i], candidateK, req.Modules)
+			case ModeHybrid:
+				var dense []store.Chunk
+				dense, errs[i] = p.Store.Dense(ctx, run, vecs[i], candidateK, req.Modules)
+				if errs[i] == nil {
+					lists[i] = RRF([][]store.Chunk{sx.Search(queries[i], candidateK, req.Modules), dense}, rrfK)
+				}
+			default:
+				lists[i], errs[i] = p.Store.Dense(ctx, run, vecs[i], candidateK, req.Modules)
+			}
 		}()
 	}
 	wg.Wait()
@@ -94,11 +130,18 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 
 	var results []store.Chunk
 	scoreType := ScoreCosine
-	if len(queries) > 1 {
+	switch {
+	case len(queries) > 1:
 		results = RRF(lists, rrfK)
 		scoreType = ScoreRRF
-	} else {
+	default:
 		results = lists[0]
+		switch mode {
+		case ModeSparse:
+			scoreType = ScoreBM25
+		case ModeHybrid:
+			scoreType = ScoreRRF
+		}
 	}
 
 	if req.Rerank && len(results) > 0 {

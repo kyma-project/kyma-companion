@@ -84,6 +84,14 @@ components:
           type: boolean
           default: false
           description: rerank the candidate set with an LLM
+        mode:
+          type: string
+          enum: [dense, sparse, hybrid]
+          default: dense
+          description: >
+            retrieval per query. dense = vector search; sparse = in-memory BM25 over chunk text
+            (good for exact identifiers); hybrid = BM25 and dense fused with reciprocal rank fusion.
+            sparse/hybrid return 503 while the BM25 index of the current run is still being built.
         filters:
           type: object
           properties:
@@ -105,10 +113,11 @@ components:
           description: the queries actually searched; the original first, generated alternatives after
         score_type:
           type: string
-          enum: [cosine, rrf, llm]
+          enum: [cosine, bm25, rrf, llm]
           description: >
             cosine = plain dense search, score is cosine similarity in [0,1];
-            rrf = reciprocal rank fusion over several queries, higher is better;
+            bm25 = pure sparse search, single query, no rerank, score is the BM25 score (unbounded, higher is better);
+            rrf = reciprocal rank fusion over several queries or over sparse+dense (mode=hybrid), higher is better;
             llm = reranker relevance in [0,1]
         index:
           $ref: '#/components/schemas/IndexRef'

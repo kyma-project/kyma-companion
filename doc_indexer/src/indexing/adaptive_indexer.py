@@ -13,11 +13,12 @@ from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from utils.documents import load_documents
+from utils.summary import build_report, emit_summary, github_step_summary_path, render_summary
 from writers.base import RunDescriptor, Writer, new_run_id
 from writers.hana import HanaWriter
 
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE
+from utils.settings import CHUNKS_BATCH_SIZE, DOCS_SUMMARY_PATH
 from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
@@ -97,6 +98,21 @@ def extract_first_title(text: str) -> str | None:
     if match:
         return match.group(1).strip()
     return None
+
+
+def _writer_names(writer: Writer) -> list[str]:
+    inner = getattr(writer, "writers", [writer])
+    return [type(w).__name__.removesuffix("Writer").lower() for w in inner]
+
+
+def _prepare_report(writer: Writer, run: RunDescriptor, module_counts: dict[str, int], seconds: float) -> dict:
+    """Build the run report (incl. the previous run, queried before the flip) and hand it to the writer."""
+    prev_fn = getattr(writer, "previous_stats", None)
+    report: dict = build_report(run, _writer_names(writer), module_counts, seconds, prev_fn() if prev_fn else None)
+    set_report = getattr(writer, "set_report", None)
+    if set_report:
+        set_report(report)
+    return report
 
 
 class AdaptiveSplitMarkdownIndexer:
@@ -300,6 +316,8 @@ class AdaptiveSplitMarkdownIndexer:
             sources=self.manifest or {},
         )
         begun = False
+        started = time.monotonic()
+        module_counts: dict[str, int] = {}
         batch_count = 0
         total_chunk_number = 0
         try:
@@ -315,6 +333,10 @@ class AdaptiveSplitMarkdownIndexer:
                 writer.write(batch, vectors)
                 batch_count += 1
                 total_chunk_number += len(batch)
+                for c in batch:
+                    module = str(c.metadata.get("module") or "")
+                    if module:
+                        module_counts[module] = module_counts.get(module, 0) + 1
                 logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
                 # Wait before processing next batch
                 logger.debug("Rate limiting: sleeping 3s before next batch")
@@ -324,6 +346,7 @@ class AdaptiveSplitMarkdownIndexer:
                 if writer.needs_embeddings:
                     raise ValueError("No chunks produced, refusing to write an empty index.")
                 writer.begin(run)  # hana: keep existing behaviour (delete all)
+            report = _prepare_report(writer, run, module_counts, time.monotonic() - started)
             writer.commit()
         except Exception:
             logger.exception(f"Error while indexing (batch {batch_count + 1})")
@@ -331,3 +354,4 @@ class AdaptiveSplitMarkdownIndexer:
             raise
 
         logger.info(f"Successfully indexed {total_chunk_number} chunks (run {run.run_id}).")
+        emit_summary(render_summary(report), DOCS_SUMMARY_PATH, github_step_summary_path())

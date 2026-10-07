@@ -36,7 +36,15 @@ type Chunk struct {
 	Metadata json.RawMessage `json:"metadata"`
 }
 
+// ChunkRef is a chunk without its embedding, used to build the in-memory sparse index.
+type ChunkRef struct {
+	ID       int64
+	Content  string
+	Metadata json.RawMessage
+}
+
 type Store interface {
+	AllChunks(ctx context.Context, run Run) ([]ChunkRef, error)
 	Current(ctx context.Context) (Run, error)
 	Dense(ctx context.Context, run Run, vector []float32, k int, moduleFilter []string) ([]Chunk, error)
 	Ping(ctx context.Context) error
@@ -130,6 +138,29 @@ func (p *PG) Dense(ctx context.Context, run Run, vector []float32, k int, module
 		var c Chunk
 		var meta []byte
 		if err := rows.Scan(&c.Content, &meta, &c.Score); err != nil {
+			return nil, err
+		}
+		c.Metadata = json.RawMessage(meta)
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// AllChunks streams id, content and metadata of every chunk of the run (no embeddings).
+func (p *PG) AllChunks(ctx context.Context, run Run) ([]ChunkRef, error) {
+	if !identRe.MatchString(run.TableName) {
+		return nil, fmt.Errorf("invalid table name %q", run.TableName)
+	}
+	rows, err := p.pool.Query(ctx, fmt.Sprintf(`SELECT id, content, metadata FROM %s ORDER BY id`, run.TableName))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]ChunkRef, 0, max(run.ChunkCount, 0))
+	for rows.Next() {
+		var c ChunkRef
+		var meta []byte
+		if err := rows.Scan(&c.ID, &c.Content, &meta); err != nil {
 			return nil, err
 		}
 		c.Metadata = json.RawMessage(meta)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/kyma-docs-search/internal/pipeline"
+	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
 )
 
@@ -61,6 +62,7 @@ type searchRequest struct {
 	TopK          *int   `json:"top_k"`
 	ExpandQueries bool   `json:"expand_queries"`
 	Rerank        bool   `json:"rerank"`
+	Mode          string `json:"mode"`
 	Filters       *struct {
 		Module []string `json:"module"`
 	} `json:"filters"`
@@ -84,7 +86,13 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "top_k must be between 1 and 50")
 		return
 	}
-	req := pipeline.Request{Query: in.Query, TopK: topK, ExpandQueries: in.ExpandQueries, Rerank: in.Rerank}
+	switch in.Mode {
+	case "", pipeline.ModeDense, pipeline.ModeSparse, pipeline.ModeHybrid:
+	default:
+		writeErr(w, http.StatusBadRequest, "mode must be one of dense, sparse, hybrid")
+		return
+	}
+	req := pipeline.Request{Query: in.Query, TopK: topK, ExpandQueries: in.ExpandQueries, Rerank: in.Rerank, Mode: in.Mode}
 	if in.Filters != nil {
 		req.Modules = in.Filters.Module
 	}
@@ -94,6 +102,10 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 		slog.Error("search failed", "error", err)
 		if errors.Is(err, store.ErrNoRun) {
 			writeErr(w, http.StatusServiceUnavailable, "no committed index")
+			return
+		}
+		if errors.Is(err, sparse.ErrNotReady) {
+			writeErr(w, http.StatusServiceUnavailable, "sparse index is still being built, retry shortly or use mode=dense")
 			return
 		}
 		writeErr(w, http.StatusServiceUnavailable, "upstream unavailable: "+err.Error())

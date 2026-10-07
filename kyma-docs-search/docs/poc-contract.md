@@ -70,15 +70,21 @@ The service passes metadata through unchanged. Consumers read `url`, `title`, `m
 
 ## Pipeline (service), mirrors kyma-companion `src/rag/system.py`
 
-Input: `query`, `top_k` (default 5), `expand_queries`, `rerank`, `filters.module`.
+Input: `query`, `top_k` (default 5), `expand_queries`, `rerank`, `mode` (`dense` default, `sparse`, `hybrid`), `filters.module`.
 
 1. `queries = [query]`. If `expand_queries`: one chat completion on the mini model with the query generator prompt
    (copy from `src/rag/prompts.py` QUERY_GENERATOR_PROMPT_TEMPLATE + FOLLOWUP, `num_queries` = 4), structured output
    via tool call `{"queries": [string]}`; append, strip, drop empty, dedupe.
 2. `candidate_k = max(top_k * 4, 10)` if more than one query or rerank, else `top_k`.
    Embed all queries in one embeddings call (input is a list). Dense search per query, concurrently.
+   Retrieval per query depends on `mode`: `dense` as described; `sparse` = in-memory BM25 (k1=1.2, b=0.75; tokens are
+   lowercase runs of letters, digits, `-`, `_`, `.`, min 2 chars) built from the current run's `id, content, metadata`
+   (no embeddings), module filter applied; `hybrid` = BM25 list and dense list fused with RRF (k=60, key = content).
+   The BM25 index is built at startup and rebuilt in the background when the current run changes (old index served
+   until the new one is ready). `sparse`/`hybrid` return 503 until the first build finishes; `dense` and `/readyz` are unaffected.
+   `sparse` does not call the embedding service.
 3. If more than one query: merge with reciprocal rank fusion, `k = 60`, key = chunk content. `score_type = rrf`.
-   If a single query and no rerank: `score_type = cosine`, scores are the cosine similarities.
+   If a single query and no rerank: `score_type = cosine` (dense), `bm25` (sparse) or `rrf` (hybrid).
 4. If `rerank`: take the top `top_k + 3` candidates (kc behaviour), one chat completion on the mini model with the
    reranker prompt (copy from `src/rag/reranker/prompt.py`), structured output via tool call
    `{"documents": [{"id": "doc_<n>", "score": number}]}` (0.00-1.00; ids are assigned by the service as doc_1..doc_N, matching the copied Python prompt, unknown ids are dropped), sort desc, cut to `top_k`. `score_type = llm`.

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS docs_index_runs (
   is_current      boolean NOT NULL DEFAULT false
 )
 """
+_ADD_REPORT_SQL = "ALTER TABLE docs_index_runs ADD COLUMN IF NOT EXISTS report jsonb"
 _CREATE_ONE_CURRENT_SQL = (
     "CREATE UNIQUE INDEX IF NOT EXISTS docs_index_runs_one_current ON docs_index_runs (is_current) WHERE is_current"
 )
@@ -45,6 +46,28 @@ class PgVectorWriter:
         self._run: RunDescriptor | None = None
         self._table: str = ""
         self._count = 0
+        self._report: dict | None = None
+
+    def previous_stats(self) -> dict | None:
+        """Return run_id, total and per-module chunk counts of the current run (call before commit)."""
+        assert self._conn is not None and self._run is not None
+        # own transaction: a bare SELECT would leave an implicit one open and turn commit()'s transaction into a
+        # savepoint that is rolled back on close
+        with self._conn.transaction():
+            row = self._conn.execute(
+                "SELECT run_id, table_name, chunk_count FROM docs_index_runs WHERE is_current AND run_id <> %s",
+                (self._run.run_id,),
+            ).fetchone()
+            if row is None or not _RUN_ID_RE.match(row[1]):
+                return None
+            counts = self._conn.execute(
+                f"SELECT coalesce(metadata->>'module', ''), count(*) FROM {row[1]} GROUP BY 1"  # noqa: S608
+            ).fetchall()
+        return {"run_id": row[0], "total_chunks": row[2], "modules": {m: int(n) for m, n in counts if m}}
+
+    def set_report(self, report: dict) -> None:
+        """Store the run statistics; written to docs_index_runs.report on commit."""
+        self._report = report
 
     def begin(self, run: RunDescriptor) -> None:
         """Prepare the output for a new run."""
@@ -57,6 +80,7 @@ class PgVectorWriter:
         with self._conn.transaction():
             self._conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
             self._conn.execute(_CREATE_RUNS_SQL)
+            self._conn.execute(_ADD_REPORT_SQL)
             self._conn.execute(_CREATE_ONE_CURRENT_SQL)
             self._conn.execute(
                 "INSERT INTO docs_index_runs (run_id, table_name, embedding_model, dimensions, sources, is_current) "
@@ -87,9 +111,9 @@ class PgVectorWriter:
         with self._conn.transaction():
             self._conn.execute("UPDATE docs_index_runs SET is_current = false WHERE is_current")
             self._conn.execute(
-                "UPDATE docs_index_runs SET is_current = true, committed_at = now(), chunk_count = %s "
-                "WHERE run_id = %s",
-                (self._count, self._run.run_id),
+                "UPDATE docs_index_runs SET is_current = true, committed_at = now(), chunk_count = %s, "
+                "report = %s::jsonb WHERE run_id = %s",
+                (self._count, json.dumps(self._report) if self._report is not None else None, self._run.run_id),
             )
         self._cleanup_old_runs()
         logger.info(f"Committed run {self._run.run_id} with {self._count} chunks in table {self._table}")

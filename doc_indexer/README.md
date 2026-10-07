@@ -53,6 +53,28 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+## Run summary
+
+After every `index` run a markdown summary is rendered (`src/utils/summary.py`): a header with run id, writer(s), embedding model and dimensions, total chunks and duration, a table per module (chunks, delta vs the previous run, commit linked to `<repo url>/commit/<sha>`), and a warnings line (modules with zero chunks, modules present in the previous run but missing now). Deltas are only known for the `pgvector` writer (the previous current run is read before the flip); otherwise they show `n/a`.
+
+| Output | Behaviour |
+|---|---|
+| log | Always, one multi-line INFO message at the end of `index`. |
+| `DOCS_SUMMARY_PATH` | If set (default empty), the summary is written to this file (overwritten). |
+| `GITHUB_STEP_SUMMARY` | If this environment variable is set (GitHub Actions does), the summary is appended to that file and shows as the job summary. |
+
+The pgvector writer also stores the statistics as JSON in the column `docs_index_runs.report jsonb` (added with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, NULL for older runs and runs written by other tools). Shape:
+
+```json
+{"run_id": "...", "writers": ["pgvector"], "embedding_model": "...", "dimensions": 3072,
+ "total_chunks": 11, "duration_seconds": 5.2,
+ "modules": {"<module>": <chunk count>},
+ "sources": {"<module>": {"repo_url": "...", "commit": "..."}},
+ "previous": {"run_id": "...", "total_chunks": 11, "modules": {"<module>": <count>}} }
+```
+
+`previous` is `null` when there was no current run before.
+
 ## Export and import
 
 Export is a convenience for developers: clone an existing index (for example the one on HANA) into a local Postgres without paying for the embeddings again.

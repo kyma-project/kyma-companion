@@ -14,6 +14,7 @@ import (
 	"github.com/kyma-project/kyma-docs-search/internal/api"
 	"github.com/kyma-project/kyma-docs-search/internal/config"
 	"github.com/kyma-project/kyma-docs-search/internal/pipeline"
+	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
 )
 
@@ -52,8 +53,11 @@ func run() error {
 	dims := len(vecs[0])
 	slog.Info("embedding model probed", "model", cfg.EmbeddingModel, "dimensions", dims)
 
+	sp := &sparse.Manager{Loader: pg}
+	sp.Start(ctx) // builds in the background; readiness does not depend on it
+
 	srv := &api.Server{
-		Pipeline:       &pipeline.Pipeline{Store: pg, AI: ai, MiniModel: cfg.MiniModel},
+		Pipeline:       &pipeline.Pipeline{Store: pg, AI: ai, MiniModel: cfg.MiniModel, Sparse: sp},
 		Store:          pg,
 		EmbeddingModel: cfg.EmbeddingModel,
 		Dimensions:     dims,

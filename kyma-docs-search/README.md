@@ -1,7 +1,7 @@
 # kyma-docs-search
 
 Search service over indexed Kyma documentation (pgvector). Pipeline: optional LLM query expansion,
-dense search, reciprocal rank fusion (k=60), optional LLM reranking. API: `api/openapi.yaml`.
+dense, sparse (in-memory BM25) or hybrid search, reciprocal rank fusion (k=60), optional LLM reranking. API: `api/openapi.yaml`.
 Shared POC contract: `docs/poc-contract.md`.
 
 ## Run
@@ -29,7 +29,12 @@ curl -s localhost:8081/v1/search -d '{"query":"How do I enable a Kyma module?","
 curl -s localhost:8081/v1/search -d '{"query":"How do I enable a Kyma module?","top_k":3,"expand_queries":true,"rerank":true,"filters":{"module":["telemetry-manager"]}}'
 ```
 
-`score_type` is `cosine` (single query), `rrf` (several queries) or `llm` (reranked).
+`mode` selects retrieval: `dense` (default), `sparse` (BM25) or `hybrid` (BM25 + dense via RRF), e.g.
+`curl -s localhost:8081/v1/search -d '{"query":"ScaledObject","top_k":3,"mode":"hybrid"}'`. The BM25 index is held in
+memory, built at startup and rebuilt in the background when the current run changes; sparse/hybrid return 503 until
+the first build is done.
+
+`score_type` is `cosine` (single dense query), `bm25` (single sparse query), `rrf` (several queries or hybrid) or `llm` (reranked).
 
 ## Docker
 

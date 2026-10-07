@@ -27,6 +27,22 @@ class TeeWriter:
         for w in self.writers:
             w.write(chunks, vectors)
 
+    def previous_stats(self) -> dict | None:
+        """Return the previous-run statistics of the first writer that knows them."""
+        for w in self.writers:
+            fn = getattr(w, "previous_stats", None)
+            stats: dict | None = fn() if fn is not None else None
+            if stats is not None:
+                return stats
+        return None
+
+    def set_report(self, report: dict) -> None:
+        """Hand the run report to every writer that stores it."""
+        for w in self.writers:
+            fn = getattr(w, "set_report", None)
+            if fn is not None:
+                fn(report)
+
     def commit(self) -> None:
         """Commit in order; if one fails, abort it and all remaining uncommitted writers, then re-raise."""
         for i, w in enumerate(self.writers):

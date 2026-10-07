@@ -74,6 +74,8 @@ DOCS_WRITER = str(config("DOCS_WRITER", default="hana"))
 # Target of the file writer; "{run_id}" is substituted.
 DOCS_FILE_PATH = str(config("DOCS_FILE_PATH", default="kyma_docs_{run_id}.json"))
 DOCS_SEARCH_PG_DSN = str(config("DOCS_SEARCH_PG_DSN", default=""))
+# If set, the markdown run summary is also written to this file (it is always logged).
+DOCS_SUMMARY_PATH = str(config("DOCS_SUMMARY_PATH", default=""))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:
