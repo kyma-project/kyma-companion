@@ -34,6 +34,8 @@ curl -s localhost:8081/v1/search -d '{"query":"How do I enable a Kyma module?","
 memory, built at startup and rebuilt in the background when the current run changes; sparse/hybrid return 503 until
 the first build is done.
 
+Filtering: `filters.module` (REST) and `modules` (MCP tool) restrict results to the given module names; the valid names are the keys of `sources` in `GET /v1/status`. An unknown module yields an empty result, not an error.
+
 `score_type` is `cosine` (single dense query), `bm25` (single sparse query), `rrf` (several queries or hybrid) or `llm` (reranked).
 
 ## MCP server

@@ -20,11 +20,12 @@ const toolDescription = "Semantic and keyword search over Kyma documentation (ky
 
 // SearchInput is the tool input.
 type SearchInput struct {
-	Query         string `json:"query" jsonschema:"natural-language question to search the Kyma docs for"`
-	TopK          int    `json:"top_k,omitempty" jsonschema:"maximum number of passages to return, 1-50 (default 5)"`
-	Mode          string `json:"mode,omitempty" jsonschema:"retrieval mode: dense, sparse or hybrid (default hybrid)"`
-	ExpandQueries bool   `json:"expand_queries,omitempty" jsonschema:"let an LLM expand the query into variants (default false)"`
-	Rerank        bool   `json:"rerank,omitempty" jsonschema:"let an LLM rerank the candidates (default false)"`
+	Query         string   `json:"query" jsonschema:"natural-language question to search the Kyma docs for"`
+	TopK          int      `json:"top_k,omitempty" jsonschema:"maximum number of passages to return, 1-50 (default 5)"`
+	Mode          string   `json:"mode,omitempty" jsonschema:"retrieval mode: dense, sparse or hybrid (default hybrid)"`
+	ExpandQueries bool     `json:"expand_queries,omitempty" jsonschema:"let an LLM expand the query into variants (default false)"`
+	Rerank        bool     `json:"rerank,omitempty" jsonschema:"let an LLM rerank the candidates (default false)"`
+	Modules       []string `json:"modules,omitempty" jsonschema:"restrict to these module names, e.g. [\"istio\",\"api-gateway\"]; the list of modules is the sources object of GET /v1/status (default: all)"`
 }
 
 // Hit is one passage.
@@ -73,7 +74,7 @@ func search(ctx context.Context, p *pipeline.Pipeline, in SearchInput) (SearchOu
 	default:
 		return SearchOutput{}, fmt.Errorf("mode must be one of dense, sparse, hybrid")
 	}
-	res, err := p.Search(ctx, pipeline.Request{Query: in.Query, TopK: in.TopK, ExpandQueries: in.ExpandQueries, Rerank: in.Rerank, Mode: in.Mode})
+	res, err := p.Search(ctx, pipeline.Request{Query: in.Query, TopK: in.TopK, ExpandQueries: in.ExpandQueries, Rerank: in.Rerank, Mode: in.Mode, Modules: in.Modules})
 	if err != nil {
 		return SearchOutput{}, fmt.Errorf("search failed: %w", err)
 	}

@@ -39,7 +39,7 @@ func run(url string) error {
 		fmt.Printf("tool: %s\n  %s\n", t.Name, t.Description)
 	}
 	res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "search_kyma_docs",
-		Arguments: map[string]any{"query": "kyma alpha module add", "top_k": 3, "mode": "hybrid"}})
+		Arguments: toolArgs()})
 	if err != nil {
 		return err
 	}
@@ -61,4 +61,16 @@ func run(url string) error {
 		fmt.Printf("%d. %s\n   module=%s score=%.4f\n   %s\n", i+1, r.T, r.M, r.S, r.U)
 	}
 	return nil
+}
+
+// toolArgs builds the tool call from the command line: mcpcheck <url> [query] [module ...].
+func toolArgs() map[string]any {
+	args := map[string]any{"query": "kyma alpha module add", "top_k": 3, "mode": "hybrid"}
+	if len(os.Args) > 2 {
+		args["query"] = os.Args[2]
+	}
+	if len(os.Args) > 3 {
+		args["modules"] = os.Args[3:]
+	}
+	return args
 }
