@@ -1,0 +1,272 @@
+[
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 0,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource",
+    "heading": "APIRule Custom Resource",
+    "page_content": "# APIRule Custom Resource\nThe `apirules.gateway.kyma-project.io` CustomResourceDefinition (CRD) describes the kind and the format of data used to configure an APIRule custom resource (CR). To get the up-to-date CRD in the yaml format, run the following command:\n```bash\nkubectl get crd apirules.gateway.kyma-project.io -o yaml\n```"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 1,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Sample Custom Resource",
+    "heading": "Sample Custom Resource",
+    "page_content": "# APIRule Custom Resource - Sample Custom Resource\nThis is a sample APIRule CR that exposes the `foo-service` on the host `foo.bar`.\n```yaml\napiVersion: gateway.kyma-project.io/v2\nkind: APIRule\nmetadata:\nname: service-exposed\nspec:\ngateway: kyma-system/kyma-gateway\nhosts:\n- foo.bar\nservice:\nname: foo-service\nnamespace: foo-namespace\nport: 8080\ntimeout: 360\nrules:\n- path: /*\nmethods: [ \"GET\" ]\nnoAuth: true\n```"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 2,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters",
+    "heading": "Custom Resource Parameters",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters\nThe following tables list all the possible parameters of a given resource together with their descriptions."
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 3,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - APIRule",
+    "heading": "APIRule",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - APIRule\nAPIRule is the schema for APIRule APIs.\n| Field | Description | Validation |\n| --- | --- | --- |\n| **apiVersion** <br /> string | `gateway.kyma-project.io/v2` | Optional |\n| **kind** <br /> string | `APIRule` | Optional |\n| **metadata** <br /> [ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#objectmeta-v1-meta) | For more information on the metadata fields, see Kubernetes API documentation. | Optional |\n| **spec** <br /> [APIRuleSpec](#apirulespec) | Defines the desired state of the APIRule. | Required <br /> |\n| **status** <br /> [APIRuleStatus](#apirulestatus) | Describes the observed status of the APIRule. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 4,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - APIRuleSpec",
+    "heading": "APIRuleSpec",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - APIRuleSpec\n**APIRuleSpec** defines the desired state of the APIRule.\nAppears in:\n- [APIRule](#apirule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **hosts** <br /> [Host](#host) array | Specifies the Service’s communication address for inbound external traffic.<br />The following formats are supported:<br />- A fully qualified domain name (FQDN) with at least two domain labels separated by dots. Each label must consist of lowercase alphanumeric characters or '-',<br />and must start and end with a lowercase alphanumeric character. For example, `my-example.domain.com`, or `example.com`.<br />- One lowercase RFC 1123 label (referred to as short host name) that must consist of lowercase alphanumeric characters or '-', and must start and end with a lowercase alphanumeric character. For example, `my-host`.<br />- A wildcard domain name prefixed with `*.` followed by a valid FQDN. For example, `*.example.com`.<br />If you define a single label, the domain name is taken from the Gateway referenced in the APIRule. In this case, the Gateway must provide the same single host for all Server definitions<br />and it must be prefixed with `*.`. Otherwise, the validation fails. | MaxItems: 1 <br />MaxLength: 255 <br />MinItems: 1 <br /> |\n| **service** <br /> [Service](#service) | Specifies the backend Service that receives traffic. The Service can be deployed inside the cluster.<br />If you don't define a Service at the **spec.service** level, each defined rule must<br />specify a Service at the **spec.rules.service** level. Otherwise, the validation fails. | Optional |\n| **gateway** <br /> string | Specifies the Istio Gateway. The field must reference an existing Gateway in the cluster.<br />Provide the Gateway in the format `namespace/gateway`.<br />Both the namespace and the Gateway name cannot be longer than 63 characters each.<br />Mutually exclusive with ExternalGateway. | MaxLength: 127 <br /> |\n| **externalGateway** <br /> string | Specifies the ExternalGateway. The field must reference an existing ExternalGateway in the cluster.<br />Provide the ExternalGateway in the format `namespace/externalgatewayname`.<br />Both the namespace and the ExternalGateway name cannot be longer than 63 characters each.<br />Mutually exclusive with Gateway. | MaxLength: 127 <br /> |\n| **corsPolicy** <br /> [CorsPolicy](#corspolicy) | Allows configuring CORS headers sent with the response. If **corsPolicy** is not defined, the CORS headers are removed from the response. | Optional |\n| **rules** <br /> [Rule](#rule) array | Defines an ordered list of access rules. Each rule is an atomic configuration that<br />defines how to access a specific HTTP path. A rule consists of a path<br />pattern, one or more allowed HTTP methods, exactly one access strategy (**jwt**, **extAuth**,<br />or **noAuth**), and other optional configuration fields. | MinItems: 1 <br /> |\n| **timeout** <br /> [Timeout](#timeout) | Specifies the timeout for HTTP requests in seconds for all rules.<br />You can override the value for each rule. If no timeout is specified, the default timeout of 180 seconds applies. | Maximum: 3900 <br />Minimum: 1 <br /> |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 5,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - APIRuleStatus",
+    "heading": "APIRuleStatus",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - APIRuleStatus\nDescribes the observed status of the APIRule.\nAppears in:\n- [APIRule](#apirule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **lastProcessedTime** <br /> [Time](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#time-v1-meta) | Represents the last time the APIRule status was processed. | Optional |\n| **state** <br /> [State](#state) | Defines the reconciliation state of the APIRule.<br />The possible states are `Ready`, `Warning`, or `Error`. | Enum: [Processing Deleting Ready Error Warning] <br />Required <br /> |\n| **description** <br /> string | Contains the description of the APIRule's status. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 6,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - CorsPolicy",
+    "heading": "CorsPolicy",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - CorsPolicy\nAllows configuring CORS headers sent with the response. If **corsPolicy** is not defined,\nthe CORS headers are removed from the response.\nAppears in:\n- [APIRuleSpec](#apirulespec)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **allowHeaders** <br /> string array | Indicates whether credentials are allowed in the **Access-Control-Allow-Credentials** CORS header. | Optional |\n| **allowMethods** <br /> string array | Lists headers allowed with the **Access-Control-Allow-Headers** CORS header. | Optional |\n| **allowOrigins** <br /> [StringMatch](#stringmatch) | Lists headers allowed with the **Access-Control-Allow-Methods** CORS header. | Optional |\n| **allowCredentials** <br /> boolean | Lists origins allowed with the **Access-Control-Allow-Origins** CORS header. | Optional |\n| **exposeHeaders** <br /> string array | Lists headers allowed with the **Access-Control-Expose-Headers** CORS header. | Optional |\n| **maxAge** <br /> integer | Specifies the maximum age of CORS policy cache. The value is provided in the **Access-Control-Max-Age** CORS header. | Minimum: 1 <br /> |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 7,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - ExtAuth",
+    "heading": "ExtAuth",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - ExtAuth\n**ExtAuth** contains configuration for paths that use external authorization.\nAppears in:\n- [Rule](#rule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **authorizers** <br /> string array | Specifies the name of the external authorization handler. | MinItems: 1 <br /> |\n| **restrictions** <br /> [JwtConfig](#jwtconfig) | Specifies JWT configuration for the external authorization handler. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 8,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - Host",
+    "heading": "Host",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - Host\nThe host is the URL of the exposed Service. Lowercase RFC 1123 labels, FQDN, and wildcard domain names (for example, `*.example.com`) are supported.\nUnderlying type: string\nValidation:\n- MaxLength: 255\nAppears in:\n- [APIRuleSpec](#apirulespec)"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 9,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - HttpMethod",
+    "heading": "HttpMethod",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - HttpMethod\nHttpMethod specifies the HTTP request method. The list of supported methods is defined in in\n[RFC 9910: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html) and [RFC 5789: PATCH Method for HTTP](https://www.rfc-editor.org/rfc/rfc5789.html).\nUnderlying type: string\nValidation:\n- Enum: [GET HEAD POST PUT DELETE CONNECT OPTIONS TRACE PATCH]\nAppears in:\n- [Rule](#rule)"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 10,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - JwtAuthentication",
+    "heading": "JwtAuthentication",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - JwtAuthentication\nSpecifies the list of Istio JWT authentication objects.\nAppears in:\n- [JwtConfig](#jwtconfig)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **issuer** <br /> string | Identifies the issuer that issued the JWT. The value must be a URL.<br />Although HTTP is allowed, it is recommended that you use only HTTPS endpoints. | Optional |\n| **jwksUri** <br /> string | Contains the URL of the provider’s public key set to validate the signature of the JWT.<br />The value must be a URL. Although HTTP is allowed, it is recommended that you use only HTTPS endpoints. | Optional |\n| **fromHeaders** <br /> [JwtHeader](#jwtheader) array | Specifies the list of headers from which the JWT token is extracted. | Optional |\n| **fromParams** <br /> string array | Specifies the list of parameters from which the JWT token is extracted. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 11,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - JwtAuthorization",
+    "heading": "JwtAuthorization",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - JwtAuthorization\nSpecifies the list of Istio JWT authorization objects.\nAppears in:\n- [JwtConfig](#jwtconfig)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **requiredScopes** <br /> string array | Specifies the list of required scope values for the JWT. | Optional |\n| **audiences** <br /> string array | Specifies the list of audiences required for the JWT. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 12,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - JwtConfig",
+    "heading": "JwtConfig",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - JwtConfig\nConfigures Istio JWT authentication and authorization.\nAppears in:\n- [ExtAuth](#extauth)\n- [Rule](#rule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **authentications** <br /> [JwtAuthentication](#jwtauthentication) array | Specifies the list of authentication objects. | Optional |\n| **authorizations** <br /> [JwtAuthorization](#jwtauthorization) array | Specifies the list of authorization objects. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 13,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - JwtHeader",
+    "heading": "JwtHeader",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - JwtHeader\nSpecifies the header from which the JWT token is extracted.\nAppears in:\n- [JwtAuthentication](#jwtauthentication)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **name** <br /> string | Specifies the name of the header from which the JWT token is extracted. | Optional |\n| **prefix** <br /> string | Specifies the prefix used before the JWT token. The default is `Bearer`. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 14,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - Request",
+    "heading": "Request",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - Request\nAppears in:\n- [Rule](#rule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **cookies** <br /> object (keys:string, values:string) | Specifies a list of cookie key-value pairs, that are forwarded inside the Cookie header. | Optional |\n| **headers** <br /> object (keys:string, values:string) | Specifies a list of header key-value pairs that are forwarded as header=value to the target workload. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 15,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - Rule",
+    "heading": "Rule",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - Rule\nDefines an ordered list of access rules. Each rule is an atomic access configuration that\ndefines how to access a specific HTTP path. A rule consists of a path pattern, one or more\nallowed HTTP methods, exactly one access strategy (`jwt`, `extAuth`, or `noAuth`),\nand other optional configuration fields. The order of rules in the APIRule CR is important.\nRules defined earlier in the list have a higher priority than those defined later.\nAppears in:\n- [APIRuleSpec](#apirulespec)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **path** <br /> string | Specifies the path on which the Service is exposed. The supported configurations are:<br /> - Exact path (e.g. /abc) - matches the specified path exactly.<br /> - The `{*}` operator (for example, `/foo/{*}` or `/foo/{*}/bar`) - matches<br />any request that matches the pattern with exactly one path segment in the operator's place.<br /> - The `{**}` operator (for example, `/foo/{**}` or `/foo/{**}/bar`) -<br /> matches any request that matches the pattern with zero or more path segments in the operator's place.<br /> The `{**}` operator must be the last operator in the path.<br /> - The wildcard path `/*` - matches all paths. Equivalent to the `/{**}` path.<br />The value might contain the operators `{*}` and/or `{**}`. It can also be a wildcard match `/*`.<br />For more information, see [Ordering Rules in APIRule v2](https://kyma-project.io/external-content/api-gateway/docs/user/expose-workloads/significance-of-rule-path-and-method-order.html). | Pattern: `^((\\/([A-Za-z0-9-._~!$&'()+,;=:@]\\|%[0-9a-fA-F]{2})*)\\|(\\/\\{\\*{1,2}\\}))+$\\|^\\/\\*$` <br /> |\n| **service** <br /> [Service](#service) | Specifies the backend Service that receives traffic. The Service must be deployed inside the cluster.<br />If you don't define a Service at the **spec.service** level, each defined rule must<br />specify a Service at the **spec.rules.service** level. Otherwise, the validation fails. | Optional |\n| **methods** <br /> [HttpMethod](#httpmethod) array | Specifies the list of HTTP request methods available for spec.rules.path.<br />The list of supported methods is defined in [RFC 9910: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)<br />and [RFC 5789: PATCH Method for HTTP](https://www.rfc-editor.org/rfc/rfc5789.html). | Enum: [GET HEAD POST PUT DELETE CONNECT OPTIONS TRACE PATCH] <br />MinItems: 1 <br /> |\n| **noAuth** <br /> boolean | Disables authorization when set to `true`. | Optional |\n| **jwt** <br /> [JwtConfig](#jwtconfig) | Specifies the Istio JWT configuration. | Optional |\n| **extAuth** <br /> [ExtAuth](#extauth) | Specifies the external authorization configuration. | Optional |\n| **timeout** <br /> [Timeout](#timeout) | Specifies the timeout, in seconds, for HTTP requests made to spec.rules.path.<br />Timeout definitions set at this level take precedence over any timeout defined<br />at the spec.timeout level. The maximum timeout is limited to 3900 seconds (65 minutes). | Maximum: 3900 <br />Minimum: 1 <br /> |\n| **request** <br /> [Request](#request) | Defines request modification rules, which are applied before forwarding the request to the target workload. | Optional |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 16,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - Service",
+    "heading": "Service",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - Service\nSpecifies the backend Service that receives traffic. The Service must be deployed inside the cluster.\nIf you don't define a Service at the **spec.service** level, each defined rule must\nspecify a Service at the **spec.rules.service** level. Otherwise, the validation fails.\nAppears in:\n- [APIRuleSpec](#apirulespec)\n- [Rule](#rule)\n| Field | Description | Validation |\n| --- | --- | --- |\n| **name** <br /> string | Specifies the name of the exposed Service. | Optional |\n| **namespace** <br /> string | Specifies the namespace of the exposed Service. | Pattern: `^[a-z0-9]([-a-z0-9]*[a-z0-9])?$` <br /> |\n| **port** <br /> integer | Specifies the communication port of the exposed Service. | Maximum: 65535 <br />Minimum: 1 <br /> |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 17,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - State",
+    "heading": "State",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - State\nDefines the reconciliation state of the APIRule.\nUnderlying type: string\nAppears in:\n- [APIRuleStatus](#apirulestatus)\n| Field | Description |\n| --- | --- |\n| **Ready** | The APIRule's reconciliation is finished.<br /> |\n| **Processing** | The APIRule is being created or updated.<br /> |\n| **Error** | An error occurred during reconciliation.<br /> |\n| **Deleting** | The APIRule is being deleted.<br /> |\n| **Warning** | The APIRule is misconfigured.<br /> |"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 18,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - StringMatch",
+    "heading": "StringMatch",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - StringMatch\nDescribes how to match a given string in HTTP headers. See [StringMatch](https://istio.io/latest/docs/reference/config/networking/virtual-service/#StringMatch).\nUnderlying type: map[string]string array\nAppears in:\n- [CorsPolicy](#corspolicy)"
+  },
+  {
+    "module": "api-gateway",
+    "path": "04-10-apirule-custom-resource.md",
+    "chunk_index": 19,
+    "total_chunks": 20,
+    "title": "APIRule Custom Resource - Custom Resource Parameters - Timeout",
+    "heading": "Timeout",
+    "page_content": "# APIRule Custom Resource - Custom Resource Parameters - Timeout\nSpecifies the timeout for HTTP requests in seconds for all rules.\nYou can override the value for each rule. If no timeout is specified, the default timeout of 180 seconds applies.\nUnderlying type: integer\nValidation:\n- Maximum: 3900\n- Minimum: 1\nAppears in:\n- [APIRuleSpec](#apirulespec)\n- [Rule](#rule)"
+  },
+  {
+    "module": "btp-cloud-platform",
+    "path": "configure-kyma-runtime.md",
+    "chunk_index": 0,
+    "total_chunks": 1,
+    "title": "Configure Kyma Runtime",
+    "heading": "Configure Kyma Runtime",
+    "page_content": "# Configure Kyma Runtime\n\n<!-- loio a91c6810ccf34cd0800b4a8bdf0e85b8 -->\n\n# Configure Kyma Runtime\n\nLearn how to configure your SAP BTP Kyma runtime, including scaling, networking, and access settings.\n\n<!-- loio -->\n\n## Overview\n\nAfter provisioning a Kyma runtime on SAP BTP, you can customize its configuration through the SAP BTP cockpit or the btp CLI. This guide covers the most frequently needed configuration tasks.\n\n<!-- loio 7a90e80826fd4a24b89f74f8e3ec52d8 -->\n\n## Prerequisites\n\n- An SAP BTP global account with the Kyma runtime entitlement.\n- **Account Administrator** or **Subaccount Administrator** role.\n- The btp CLI installed and authenticated.\n\n<!-- loio -->\n\n## Scale the Kyma Runtime\n\nKyma runtime auto-scales based on workload, but you can set minimum and maximum node counts per node pool.\n\n### View Current Node Pools\n\nNavigate to your subaccount in the SAP BTP cockpit, then choose **Kyma Environment** > **Node Pools** to view the configured pools and their current sizes.\n\n### Modify Node Counts via btp CLI\n\n```bash\nbtp update services/instance \\\n  --name <kyma-instance-name> \\\n  --subaccount <subaccount-id> \\\n  --parameters '{\n    \"autoscalerMin\": 3,\n    \"autoscalerMax\": 10\n  }'\n```\n\nReplace `<kyma-instance-name>` and `<subaccount-id>` with your values.\n\n<!-- loio 4c8d3e1a2b7f4e9c8d3e1a2b7f4e9c8d -->\n\n## Configure Custom Domains\n\nBy default, Kyma exposes services under `*.kyma.ondemand.com`. To use a custom domain:\n\n### Step 1 -- Add a Custom Domain in the BTP Cockpit\n\n1. Open your subaccount and choose **Kyma Environment**.\n2. Under **Custom Domains**, choose **Add**.\n3. Enter your domain and upload the TLS certificate and key.\n\n### Step 2 -- Create a DNS Entry\n\nPoint your custom domain to the Kyma Ingress Gateway's external IP:\n\n```bash\nkubectl get svc -n istio-system istio-ingressgateway \\\n  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'\n```\n\nCreate an `A` record in your DNS provider pointing `*.your-domain.com` to that IP.\n\n### Step 3 -- Reference the Custom Domain in APIRule\n\nUpdate your `APIRule` to use the custom host:\n\n```yaml\nspec:\n  hosts:\n    - my-service.your-domain.com\n  gateway: kyma-system/kyma-gateway\n```\n\n<!-- loio -->\n\n## Configure Network Policies\n\nBy default, all Pods in the Kyma cluster can communicate with each other. To restrict traffic:\n\n```yaml\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: deny-all-ingress\n  namespace: my-namespace\nspec:\n  podSelector: {}\n  policyTypes:\n    - Ingress\n```\n\nApply this policy to deny all inbound traffic within a namespace, then add explicit allow rules for the services that need to communicate.\n\n<!-- loio 9e1f5b2a3c6d4e7f8a0b1c2d3e4f5a6b -->\n\n## Manage Kyma Module Configuration\n\nKyma modules are installed as separate operators. You can configure them via the `Kyma` custom resource:\n\n```bash\nkubectl edit kyma default -n kyma-system\n```\n\nUnder `.spec.modules`, add or modify module entries:\n\n```yaml\nspec:\n  modules:\n    - name: istio\n      channel: regular\n    - name: api-gateway\n      channel: regular\n    - name: serverless\n      channel: fast\n```\n\n### Available Channels\n\n| Channel | Description |\n|---|---|\n| `regular` | Stable releases, updated on the standard cadence. |\n| `fast` | Latest releases; may include features not yet in `regular`. |\n\n<!-- loio -->\n\n## Related Information\n\n- [Kyma Runtime Overview](kyma-runtime-overview.md)\n- [Manage Entitlements](manage-entitlements.md)\n- [btp CLI Reference](btp-cli-reference.md)\n"
+  },
+  {
+    "module": "btp-foundation",
+    "path": "cp-kyma-redis-function.md",
+    "chunk_index": 0,
+    "total_chunks": 2,
+    "title": "cp-kyma-redis-function",
+    "heading": "cp-kyma-redis-function",
+    "page_content": "# cp-kyma-redis-function\n\n---\ntitle: Deploy a Kyma Application with Redis\ndescription: Learn how to deploy a sample application that uses Redis as a cache layer in a Kyma environment.\ntime: 30\nauto_validation: true\ntags: [ tutorial>beginner, products>sap-btp-kyma-runtime ]\nprimary_tag: products>sap-btp-kyma-runtime\n---"
+  },
+  {
+    "module": "btp-foundation",
+    "path": "cp-kyma-redis-function.md",
+    "chunk_index": 1,
+    "total_chunks": 2,
+    "title": "Deploy a Kyma Application with Redis",
+    "heading": "Deploy a Kyma Application with Redis",
+    "page_content": "# Deploy a Kyma Application with Redis\n## Prerequisites  \n- You have a Kyma environment provisioned on SAP BTP.\n- You have the Kyma CLI installed. See [Install Kyma CLI](../cp-kyma-download-cli/cp-kyma-download-cli.md).\n- `kubectl` is configured against your Kyma cluster.  \n## Overview  \nIn this tutorial, you deploy a simple Node.js application backed by a Redis cache into your Kyma runtime. You use a Kyma Function and a Redis StatefulSet, connected via a Kubernetes Service.  \n## Step 1 -- Create a Namespace  \nCreate a dedicated namespace for the tutorial:  \n```bash\nkubectl create namespace redis-demo\nkubectl label namespace redis-demo istio-injection=enabled\n```  \n## Step 2 -- Deploy Redis  \nApply the following manifest to deploy a single-node Redis instance:  \n```yaml\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\nname: redis\nnamespace: redis-demo\nspec:\nserviceName: redis\nreplicas: 1\nselector:\nmatchLabels:\napp: redis\ntemplate:\nmetadata:\nlabels:\napp: redis\nspec:\ncontainers:\n- name: redis\nimage: redis:7-alpine\nports:\n- containerPort: 6379\nresources:\nrequests:\nmemory: \"64Mi\"\ncpu: \"50m\"\nlimits:\nmemory: \"128Mi\"\ncpu: \"100m\"\n```  \nApply the manifest:  \n```bash\nkubectl apply -f redis.yaml\n```  \n## Step 3 -- Expose Redis as a Service  \n```yaml\napiVersion: v1\nkind: Service\nmetadata:\nname: redis\nnamespace: redis-demo\nspec:\nselector:\napp: redis\nports:\n- port: 6379\ntargetPort: 6379\n```  \n```bash\nkubectl apply -f redis-service.yaml\n```  \n## Step 4 -- Deploy the Kyma Function  \nCreate a Kyma Function that reads and writes to Redis:  \n```yaml\napiVersion: serverless.kyma-project.io/v1alpha2\nkind: Function\nmetadata:\nname: redis-counter\nnamespace: redis-demo\nspec:\nruntime: nodejs20\nsource:\ninline:\nsource: |\nconst redis = require('redis');\nconst client = redis.createClient({ url: 'redis://redis:6379' });\n\nmodule.exports = { main: async function(event, context) {\nawait client.connect();\nconst count = await client.incr('visits');\nawait client.disconnect();\nreturn { visits: count };\n}};\ndependencies: |\n{\n\"name\": \"redis-counter\",\n\"version\": \"1.0.0\",\n\"dependencies\": {\n\"redis\": \"^4.0.0\"\n}\n}\n```  \n```bash\nkubectl apply -f function.yaml\n```  \n## Step 5 -- Expose the Function  \nCreate an `APIRule` to expose the Function externally:  \n```yaml\napiVersion: gateway.kyma-project.io/v2\nkind: APIRule\nmetadata:\nname: redis-counter\nnamespace: redis-demo\nspec:\nhosts:\n- redis-counter.<your-cluster-domain>\ngateway: kyma-system/kyma-gateway\nrules:\n- path: /.*\nmethods: [GET]\nnoAuth: true\nservice:\nname: redis-counter\nport: 80\n```  \nReplace `<your-cluster-domain>` with your cluster's domain, then apply:  \n```bash\nkubectl apply -f apirule.yaml\n```  \n## Step 6 -- Test the Deployment  \nCall the exposed endpoint to verify the counter increments on each request:  \n```bash\ncurl https://redis-counter.<your-cluster-domain>\n```  \nExpected response:  \n```json\n{\"visits\": 1}\n```  \nCall it again and confirm the counter increments:  \n```json\n{\"visits\": 2}\n```  \n## Clean Up  \nRemove all resources when you are done:  \n```bash\nkubectl delete namespace redis-demo\n```  \n## Related Tutorials  \n- [Create a Kyma Function via CLI](../cp-kyma-create-function-cli/cp-kyma-create-function-cli.md)\n- [Expose a Service with APIRule](../cp-kyma-gateway-api/cp-kyma-gateway-api.md)"
+  },
+  {
+    "module": "busola",
+    "path": "01-40-deploy-access-kubernetes.md",
+    "chunk_index": 0,
+    "total_chunks": 4,
+    "title": "Deploying and Accessing Busola in a Kubernetes Cluster - Architecture",
+    "heading": "Architecture",
+    "page_content": "# Deploying and Accessing Busola in a Kubernetes Cluster - Architecture\n## Architecture\n![Busola Kubernetes architecture](assets/busola_kubernetes_3.svg)\nTo expose Busola, you can use [APIRule](https://github.com/kyma-project/busola/tree/main/resources/istio), [Ingress](https://github.com/kyma-project/busola/tree/main/resources/ingress), or create your own exposing mechanism.\nFor more details about environment configuration, see [Environment-Specific Settings](../user/technical-reference/configuration.md#environment-specific-settings).\n### Per-IP Rate Limiting\nFor self-hosted deployments, there is no edge-level protection (such as Cloud Armor) in front of Busola. The shipped Ingress configuration includes per-IP rate limiting as a default security measure, but you can configure a different approach or skip it entirely.\n#### ingress-nginx (default)\nThe shipped `resources/ingress/ingress.yaml` includes per-IP rate-limit annotations for `ingress-nginx`: 50 RPS sustained (~250 burst) and 50 concurrent connections per source IP. These defaults protect the instance out of the box. To tune them, edit the values directly in `resources/ingress/ingress.yaml`.\nIf `ingress-nginx` is installed in your cluster but is not the default IngressClass, the annotations will have no effect. In that case, add `ingressClassName: nginx` to the Ingress manifest so the controller picks them up.\n#### Other Ingress Controllers (Traefik, HAProxy, etc.)\nThe nginx-specific annotations are silently ignored by other controllers. If you use a different ingress controller, configure equivalent per-IP rate limits at your own edge.\n#### APIRule (Istio) Deployments\nPer-IP rate limiting is not configured by default for APIRule-based deployments. APIRule v2alpha1 has no native rate-limit field. To add per-IP throttling, configure an [`EnvoyFilter`](https://istio.io/latest/docs/reference/config/networking/envoy-filter/) at your Istio gateway, or rely on an upstream web application firewall (WAF)."
+  },
+  {
+    "module": "busola",
+    "path": "01-40-deploy-access-kubernetes.md",
+    "chunk_index": 1,
+    "total_chunks": 4,
+    "title": "Deploying and Accessing Busola in a Kubernetes Cluster - Deploying Busola in a Kubernetes Cluster",
+    "heading": "Deploying Busola in a Kubernetes Cluster",
+    "page_content": "# Deploying and Accessing Busola in a Kubernetes Cluster - Deploying Busola in a Kubernetes Cluster\nFollow these steps to deploy Busola in a Kubernetes cluster:\n1. Set the **NAMESPACE** shell environment variable and create your namespace:\n```bash\nexport NAMESPACE={YOUR_NAMESPACE_NAME}\nkubectl create namespace ${NAMESPACE}\n```\n2. Choose one of the following installation options that suit your case.\n<!-- tabs:start -->\n#### **Install Busola from a release**\n3. Go to the [Busola release page](https://github.com/kyma-project/busola/releases) and choose one of the available versions.\n4. Set the **VERSION** environment variable:\n```bash\nexport VERSION={YOUR_BUSOLA_VERSION}\n```\n5. Run the following command to install Busola from the release you've chosen:\n```bash\nkubectl apply --namespace \"${NAMESPACE}\" -f \"https://github.com/kyma-project/busola/releases/download/${VERSION}/busola.yaml\"\n```\n#### **Install Busola from the main branch**\n3. Clone the [Busola repository](https://github.com/kyma-project/busola).\n4. Go to the folder where you downloaded it and run:\n```bash\n(cd resources && kustomize build base/ | kubectl apply --namespace \"${NAMESPACE}\" -f- )\n```\n#### **Install Busola with a specific landscape configuration**\n3. Clone the [Busola repository](https://github.com/kyma-project/busola).\n4. Set the **ENVIRONMENT** environment variable:\n```bash\nexport ENVIRONMENT={YOUR_LANDSCAPE}\n```\n5. Run the following command from the Busola root folder:\n```bash\n(cd resources && kustomize build environments/${ENVIRONMENT} | kubectl apply --namespace \"${NAMESPACE}\" -f- )\n```\n#### **Install Busola from a pull request**\n3. Clone the [Busola repository](https://github.com/kyma-project/busola).\n4. Set your PR number as an environment variable:\n```bash\nexport PR_NUMBER={PR_NUMBER}\n```\n5. Run the following command from the Busola root folder:\n```bash\n(cd resources/base && kustomize edit set image busola=\"europe-docker.pkg.dev/kyma-project/dev/busola-web:PR-${PR_NUMBER}\" && cd ../ && kustomize build base/ | kubectl apply --namespace \"${NAMESPACE}\" -f- )\n```\n> [!NOTE]\n> If there are any changes in your PR, the image should be automatically updated in your cluster. If you don't see the latest changes, make sure that the image job has finished. Then, go to your namespace, and in **Deployments**, select the restart button next to the image you want to update.\n<!-- tabs:end -->"
+  },
+  {
+    "module": "busola",
+    "path": "01-40-deploy-access-kubernetes.md",
+    "chunk_index": 2,
+    "total_chunks": 4,
+    "title": "Deploying and Accessing Busola in a Kubernetes Cluster - Accessing Busola Installed in a Kubernetes Cluster",
+    "heading": "Accessing Busola Installed in a Kubernetes Cluster",
+    "page_content": "# Deploying and Accessing Busola in a Kubernetes Cluster - Accessing Busola Installed in a Kubernetes Cluster\nYou can access Busola using the `kubectl port forward` command or your Kubernetes cluster with Istio installed.\n### kubectl\nRun the following command:\n```bash\nkubectl port-forward --namespace \"${NAMESPACE}\" services/busola 3001:3001\n```\n### Kubernetes Cluster with Istio Installed\n#### Prerequisites\n- Sidecar Proxy injection for your namespace enabled; see [Enable Istio Sidecar Proxy Injection](https://kyma-project.io/#/istio/user/tutorials/01-40-enable-sidecar-injection?id=enable-istio-sidecar-proxy-injection).\n- The API Gateway and Istio modules installed, see [Quick Install](https://kyma-project.io/02-get-started/01-quick-install.html)\n#### Procedure\nFollow these steps to access your Busola page:\n1. To install the Istio required resources, run the following command from the Busola root folder:\n```bash\n(cd resources && kubectl apply --namespace \"${NAMESPACE}\" -k istio)\n```\n2. To get the Busola address, run:\n```bash\nkubectl get --namespace \"${NAMESPACE}\" virtualservices.networking.istio.io\n```\n> [!NOTE]\n> The VirtualService creation takes a few minutes.\nUnder `HOSTS`, you should see an address that you can use to access the Busola page."
+  },
+  {
+    "module": "busola",
+    "path": "01-40-deploy-access-kubernetes.md",
+    "chunk_index": 3,
+    "total_chunks": 4,
+    "title": "Deploying and Accessing Busola in a Kubernetes Cluster - Logging into Busola",
+    "heading": "Logging into Busola",
+    "page_content": "# Deploying and Accessing Busola in a Kubernetes Cluster - Logging into Busola\nAfter accessing Busola using one of the methods above, you need to provide your kubeconfig to connect to it.\n### Providing Kubeconfig\n1. Open your web browser and navigate to one of the following:\n- `http://localhost:3001`, if using kubectl port-forward\n- The address from the Istio VirtualService\n2. On the Busola login page, choose **Connect** to provide cluster connection details.\n3. Provide your kubeconfig, either by uploading the kubeconfig file or by pasting the kubeconfig content in the text area, and select **Next Step**.\n4. Choose your preferred storage configuration, and select **Next Step**.\n5. Choose **Connect Cluster** to establish connection to your cluster.\nAfter successful login, you should see the Busola dashboard with your cluster resources."
+  },
+  {
+    "module": "istio",
+    "path": "03-30-istio-no-sidecar.md",
+    "chunk_index": 0,
+    "total_chunks": 3,
+    "title": "Istio Sidecar Proxy Injection Issues - Symptom",
+    "heading": "Symptom",
+    "page_content": "# Istio Sidecar Proxy Injection Issues - Symptom\n## Symptom\nSome Pods don't have an Istio sidecar proxy injected."
+  },
+  {
+    "module": "istio",
+    "path": "03-30-istio-no-sidecar.md",
+    "chunk_index": 1,
+    "total_chunks": 3,
+    "title": "Istio Sidecar Proxy Injection Issues - Cause",
+    "heading": "Cause",
+    "page_content": "# Istio Sidecar Proxy Injection Issues - Cause\nBy default, the Istio module does not automatically inject an Istio sidecar proxy into any Pods you create. To inject a Pod with an Istio sidecar proxy, you must explicitly enable injection for the Pod's Deployment or for the entire namespace. If you have done this and the sidecar is still not installed, follow the remedy steps to identify which settings are preventing the injection.\nA Pod is not injected with an Istio sidecar proxy if:\n- Istio sidecar proxy injection is disabled at the namespace level\n- The **sidecar.istio.io/inject** label on the Pod is set to `false`\n- The Pod's `spec` contains `hostNetwork: true`"
+  },
+  {
+    "module": "istio",
+    "path": "03-30-istio-no-sidecar.md",
+    "chunk_index": 2,
+    "total_chunks": 3,
+    "title": "Istio Sidecar Proxy Injection Issues - Solution",
+    "heading": "Solution",
+    "page_content": "# Istio Sidecar Proxy Injection Issues - Solution\nFind out which Pods do not have Istio sidecar proxy injection enabled and why. You can either inspect Pods across all namespaces, focus on a specific namespace, or verify why a selective Pod is not injected.\n### Check Pods in All Namespaces\n1. Download the [script](https://github.com/kyma-project/istio/blob/main/docs/assets/sidecar-analysis.sh).\n2. Run the script.\n```bash\n./sidecar-analysis.sh\n```\n3. You get an output similar to this one:\n```bash\nSee all Pods that are not part of the Istio service mesh:\nPods in namespaces labeled with \"istio-injection=disabled\":\n- namespace/Pod\n...\nPods labeled with \"sidecar.istio.io/inject=false\" in namespaces labeled with \"istio-injection=enabled\":\n- namespace/Pod\n...\nPods not labeled with \"sidecar.istio.io/inject=true\" in unlabeled namespaces:\n- namespace/Pod\n...\n```\n4. To learn how to include a Pod into the Istio service mesh, see [Enabling Istio Sidecar Proxy Injection](https://kyma-project.io/#/istio/user/tutorials/01-40-enable-sidecar-injection).\n### Check Pods in a Selective Namespace\n1. Download the [script](https://github.com/kyma-project/istio/blob/main/docs/assets/sidecar-analysis.sh).\n2. Run the script passing the namespace name as a parameter.\n```bash\n./sidecar-analysis.sh {NAMESPACE}\n```\n3. You get an output similar to this one:\n```bash\nIn the namespace default, the following Pods are not part of the Istio service mesh:\n- Pod\n- Pod\n...\nReason: The namespace default has Istio sidecar proxy injection disabled, so none of its Pods have been injected with an Istio sidecar proxy.\n```\n4. To learn how to include a Pod into the Istio service mesh, see [Enabling Istio Sidecar Proxy Injection](https://kyma-project.io/#/istio/user/tutorials/01-40-enable-sidecar-injection).\n### Check a Selective Pod\n<!-- tabs:start -->\n#### **Kyma Dashboard**\n1. Go to the Pod's namespace.\n2. Check if Istio sidecar proxy injection is enabled at the namespace level.\nVerify if the `Labels` section contains the `istio-injection` label. If the label is set to `disabled` or it is not set at all, Istio sidecar proxy injection is disabled at the namespace level and none of its Pods are injected with an Istio sidecar proxy.\n3. Check if Istio sidecar proxy injection is enabled for the Pod's Deployment.\n1. In the **Workloads** section, choose **Deployments**\n2. Choose **Edit**.\n3. In the **UI Form** section, check if the `Enable Sidecar Injection` toggle is switched.\n4. Check if the label `sidecar.istio.io/inject: false` is set on a Pod.\n1. In the **Workloads** section, choose **Pods**.\n2. Search for `sidecar.istio.io/inject: false`.\nIf your Pod is displayed on the list, it has the label set.\n#### **kubectl**\n1. To check if Istio sidecar proxy injection is enabled at the namespace level, run the command:\n```bash\nkubectl get namespaces {POD_NAMESPACE} -o jsonpath='{ .metadata.labels.istio-injection }'\n```\n2. To check if Istio sidecar proxy injection is enabled for the Pod's Deployment, run the command:\n```bash\nkubectl get deployments {POD_DEPLOYMENT} -n {NAMESPACE} -o jsonpath='{ .spec.template.metadata.labels }'\n```\n3. Check if the label `sidecar.istio.io/inject: false` is set on a Pod:\n```bash\nkubectl get pod {POD} -n default -o=jsonpath='{.metadata.labels.sidecar\\.istio\\.io/inject}\n```\n4. To learn how to include a Pod into the Istio service mesh, see [Enabling Istio Sidecar Proxy Injection](https://kyma-project.io/#/istio/user/tutorials/01-40-enable-sidecar-injection).\n<!-- tabs:end -->"
+  }
+]
