@@ -88,6 +88,8 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (resp Response, err 
 		} else {
 			span.SetAttributes(attribute.Int("result.count", len(resp.Results)),
 				attribute.String("score_type", resp.ScoreType), attribute.String("index.run_id", resp.Run.RunID))
+			// With the content switch on: one line per result, "score [module] title", never the chunk text.
+			span.SetAttributes(telemetry.ContentStrings("results.summary", resultSummary(resp.Results))...)
 		}
 		span.End()
 	}()
@@ -427,5 +429,19 @@ func fuse(ctx context.Context, lists [][]store.Chunk) []store.Chunk {
 	defer span.End()
 	out := RRF(lists, rrfK)
 	span.SetAttributes(attribute.Int("candidates", len(out)))
+	return out
+}
+
+// resultSummary renders results as "score [module] title" lines for span attributes.
+func resultSummary(results []store.Chunk) []string {
+	out := make([]string, 0, len(results))
+	for _, c := range results {
+		var m struct{ Module, Title string }
+		_ = json.Unmarshal(c.Metadata, &struct {
+			Module *string `json:"module"`
+			Title  *string `json:"title"`
+		}{&m.Module, &m.Title})
+		out = append(out, fmt.Sprintf("%.3f [%s] %s", c.Score, m.Module, m.Title))
+	}
 	return out
 }
