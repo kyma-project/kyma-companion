@@ -263,3 +263,14 @@ def test_redirect_keeps_auth_on_same_host():
 
     assert new_req is not None
     assert new_req.headers.get("Authorization") == "Bearer secret-token"
+
+
+def test_redirect_strips_auth_on_https_to_http_downgrade():
+    """A same-host https->http downgrade must drop the token (no plaintext leak)."""
+    new_req = _make_redirect_request(
+        "https://github.tools.sap/api/v3/repos/kyma/svc/tarball/main",
+        "http://github.tools.sap/storage/signed/path?sig=abc",
+    )
+
+    assert new_req is not None
+    assert "authorization" not in {k.lower() for k in new_req.headers}

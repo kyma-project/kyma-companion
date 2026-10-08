@@ -50,13 +50,15 @@ _DIR_SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 
 
 class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
-    """Redirect handler that drops the Authorization header on a host change.
+    """Redirect handler that drops the Authorization header on an unsafe redirect.
 
     urllib copies request headers (including a bearer token) onto the redirected
     request. GHE/GitHub tarball endpoints redirect to a signed download URL that
-    does not need the token, so stripping it on a cross-host redirect prevents
-    leaking the enterprise token to a different (e.g. storage/CDN) host while
-    keeping it for same-host redirects that may still require it.
+    does not need the token, so the token is preserved only when the redirect
+    stays on the exact same secure origin (https scheme and identical host/port).
+    Any cross-host redirect or an https->http downgrade on the same host would
+    otherwise leak the enterprise token (e.g. to a storage/CDN host or over
+    plaintext), so the Authorization header is stripped in those cases.
     """
 
     def redirect_request(
@@ -68,12 +70,17 @@ class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
         headers: HTTPMessage,
         newurl: str,
     ) -> urllib.request.Request | None:
-        """Build the redirected request, stripping auth when the host differs."""
+        """Build the redirected request, stripping auth unless the origin is unchanged."""
         new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new_req is not None:
-            orig_host = urlparse(req.full_url).netloc.lower()
-            new_host = urlparse(newurl).netloc.lower()
-            if orig_host != new_host:
+            orig = urlparse(req.full_url)
+            new = urlparse(newurl)
+            same_secure_origin = (
+                orig.scheme == "https"
+                and new.scheme == "https"
+                and orig.netloc.lower() == new.netloc.lower()
+            )
+            if not same_secure_origin:
                 new_req.headers.pop("Authorization", None)
                 new_req.headers.pop("authorization", None)
         return new_req
