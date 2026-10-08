@@ -1,0 +1,36 @@
+# POC deployment of kyma-docs-search inside the k3d cluster, traced through the Kyma Telemetry module.
+# The database stays on the laptop (host.k3d.internal), the config secret is created from config.json.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kyma-docs-search, namespace: docs-search}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: kyma-docs-search}}
+  template:
+    metadata: {labels: {app: kyma-docs-search}}
+    spec:
+      containers:
+        - name: kyma-docs-search
+          image: kyma-docs-search:trace
+          imagePullPolicy: Never
+          ports: [{containerPort: 8081}]
+          env:
+            - {name: CONFIG_PATH, value: /config/config.json}
+            - {name: DOCS_SEARCH_PG_DSN, value: postgres://postgres:postgres@host.k3d.internal:5433/docs}
+            - {name: DOCS_SEARCH_PORT, value: "8081"}
+            # the same endpoint the control plane uses: the telemetry module's OTLP gateway
+            - {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: http://telemetry-otlp-traces.kyma-system:4318}
+            # demo only: query text and prompts in spans
+            - {name: DOCS_SEARCH_TRACE_CONTENT, value: "true"}
+          readinessProbe: {httpGet: {path: /readyz, port: 8081}, periodSeconds: 5}
+          volumeMounts: [{name: config, mountPath: /config, readOnly: true}]
+      volumes:
+        - name: config
+          secret: {secretName: docs-search-config}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: kyma-docs-search, namespace: docs-search}
+spec:
+  selector: {app: kyma-docs-search}
+  ports: [{port: 8081}]

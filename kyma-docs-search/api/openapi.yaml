@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: kyma-docs-search
+  version: 1.0.0
+  description: >
+    Search over indexed Kyma documentation. The API describes intent (question in,
+    ranked chunks out); storage, embedding model, chunking and ranking are internal.
+paths:
+  /v1/search:
+    post:
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: ranked chunks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: no committed index, or upstream (embedding/LLM/db) unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/status:
+    get:
+      operationId: status
+      responses:
+        '200':
+          description: the current (committed) index run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+        '503':
+          description: no committed index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /healthz:
+    get:
+      operationId: healthz
+      responses:
+        '200': {description: process is up}
+  /readyz:
+    get:
+      operationId: readyz
+      responses:
+        '200': {description: db reachable, a committed run exists, its embedding model and dimensions match the service config}
+        '503': {description: not ready}
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required: [query]
+      additionalProperties: false
+      description: optional properties may be null, which means not set
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        top_k:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 50
+          default: 5
+        expand_queries:
+          type: [boolean, 'null']
+          default: false
+          description: generate alternative queries with an LLM and search each; results merged with reciprocal rank fusion
+        rerank:
+          type: [boolean, 'null']
+          default: false
+          description: rerank the candidate set with an LLM
+        mode:
+          type: [string, 'null']
+          enum: [dense, sparse, hybrid, null]
+          default: dense
+          description: >
+            retrieval per query. dense = vector search; sparse = in-memory BM25 over chunk text
+            (good for exact identifiers); hybrid = BM25 and dense fused with reciprocal rank fusion.
+            sparse/hybrid return 503 while the BM25 index of the current run is still being built.
+        filters:
+          type: [object, 'null']
+          additionalProperties: false
+          properties:
+            module:
+              type: [array, 'null']
+              items: {type: string, minLength: 1}
+              description: restrict to chunks whose metadata.module is in the list
+    SearchResponse:
+      type: object
+      required: [results, queries, score_type, index]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chunk'
+        queries:
+          type: array
+          items: {type: string}
+          description: the queries actually searched; the original first, generated alternatives after
+        score_type:
+          type: string
+          x-extensible-enum: [cosine, bm25, rrf, llm]
+          description: >
+            cosine = plain dense search, score is cosine similarity in [0,1];
+            bm25 = pure sparse search, single query, no rerank, score is the BM25 score (unbounded, higher is better);
+            rrf = reciprocal rank fusion over several queries or over sparse+dense (mode=hybrid), higher is better;
+            llm = reranker relevance in [0,1]
+        index:
+          $ref: '#/components/schemas/IndexRef'
+    Chunk:
+      type: object
+      required: [content, score, metadata]
+      properties:
+        content: {type: string}
+        score: {type: number}
+        metadata:
+          $ref: '#/components/schemas/ChunkMetadata'
+    ChunkMetadata:
+      type: object
+      description: written by the indexer (doc_indexer/src/indexing/metadata.py); additional keys may appear and must be passed through
+      required: [module, title, url]
+      properties:
+        module: {type: string}
+        title: {type: string}
+        url: {type: string}
+        path: {type: string}
+        repo: {type: [string, 'null']}
+        commit: {type: [string, 'null']}
+        heading: {type: string}
+        doc_type: {type: [string, 'null']}
+        audience:
+          type: array
+          items: {type: string}
+        chunk_index: {type: integer}
+        total_chunks: {type: integer}
+      additionalProperties: true
+    IndexRef:
+      type: object
+      required: [run_id, embedding_model]
+      properties:
+        run_id: {type: string}
+        embedding_model: {type: string}
+        committed_at: {type: string, format: date-time}
+    IndexStatus:
+      type: object
+      required: [run_id, table_name, embedding_model, dimensions, chunk_count, sources, created_at, committed_at]
+      properties:
+        run_id: {type: string}
+        table_name: {type: string}
+        embedding_model: {type: string}
+        dimensions: {type: integer}
+        chunk_count: {type: integer}
+        sources:
+          type: object
+          description: the fetch manifest written by the indexer, keyed by module name
+          additionalProperties:
+            type: object
+            properties:
+              url: {type: string}
+              commit: {type: [string, 'null']}
+        created_at: {type: string, format: date-time}
+        committed_at: {type: string, format: date-time}
+        indexer_version: {type: string, description: which indexer code built the run (git commit or release tag)}
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}

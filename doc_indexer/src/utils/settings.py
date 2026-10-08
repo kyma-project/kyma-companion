@@ -69,6 +69,13 @@ DATABASE_USER = str(config("DATABASE_USER", ""))
 DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
+# comma-separated list of: hana | pgvector | file, e.g. "pgvector,file" (all receive the same run)
+DOCS_WRITER = str(config("DOCS_WRITER", default="hana"))
+# Target of the file writer; "{run_id}" is substituted.
+DOCS_FILE_PATH = str(config("DOCS_FILE_PATH", default="kyma_docs_{run_id}.json"))
+DOCS_SEARCH_PG_DSN = str(config("DOCS_SEARCH_PG_DSN", default=""))
+# If set, the markdown run summary is also written to this file (it is always logged).
+DOCS_SUMMARY_PATH = str(config("DOCS_SUMMARY_PATH", default=""))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:

@@ -6,6 +6,7 @@ from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
+from rag.remote import RemoteRAGSystem
 from routers.common import HealthModel, ReadinessModel
 from services.hana import get_hana
 from services.k8s_resource_discovery import K8sResourceDiscovery
@@ -16,6 +17,7 @@ from services.probes import (
 )
 from services.redis import get_redis
 from utils.logging import get_logger
+from utils.settings import DOCS_SEARCH_URL
 
 logger = get_logger(__name__)
 router = APIRouter(
@@ -113,6 +115,17 @@ class ILLMProbe(Protocol):
         """
 
 
+async def _remote_docs_search_ok() -> bool:
+    """Check the remote kyma-docs-search service. In remote mode this replaces the HANA checks."""
+    assert DOCS_SEARCH_URL
+    try:
+        await RemoteRAGSystem(DOCS_SEARCH_URL, timeout_seconds=5).status()
+        return True
+    except Exception:
+        logger.exception("Remote docs search status check failed.")
+        return False
+
+
 @router.get("/healthz")
 async def healthz(
     hana: IHana = Depends(get_hana),  # noqa: B008
@@ -126,7 +139,8 @@ async def healthz(
 
     logger.debug("Health probe called.")
     response = HealthModel(
-        is_hana_healthy=hana.is_connection_operational(),
+        # in remote mode is_hana_healthy reflects the kyma-docs-search service
+        is_hana_healthy=(await _remote_docs_search_ok()) if DOCS_SEARCH_URL else hana.is_connection_operational(),
         is_redis_healthy=await redis.is_connection_operational(),
         is_usage_tracker_healthy=usage_tracker_probe.is_healthy(),
         is_key_store_healthy=KeyStore().is_healthy(),
@@ -163,7 +177,8 @@ async def readyz(
 
     # Check all the required statuses.
     response = ReadinessModel(
-        is_hana_initialized=hana.has_connection(),
+        # in remote mode is_hana_initialized reflects the kyma-docs-search service
+        is_hana_initialized=(await _remote_docs_search_ok()) if DOCS_SEARCH_URL else hana.has_connection(),
         is_redis_initialized=redis.has_connection(),
         are_models_initialized=llm_probe.has_models(),
         is_key_store_initialized=KeyStore().is_healthy(),

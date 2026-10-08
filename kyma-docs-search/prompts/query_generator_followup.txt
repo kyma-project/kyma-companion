@@ -1,0 +1,4 @@
+Based on the original query, generate {num_queries} alternative queries that capture different aspects and variations of the search intent.
+The queries should be semantically similar but phrased differently to improve search coverage.
+The goal is to maximize the chance of retrieving any potentially relevant documentation, 
+even if it does not exactly match the original query.

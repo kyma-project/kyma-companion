@@ -2,8 +2,7 @@ import json
 import os
 import re
 import time
-import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Iterable, Iterator
 
 import tiktoken
 from hdbcli import dbapi
@@ -14,9 +13,12 @@ from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from utils.documents import load_documents
+from utils.summary import build_report, emit_summary, github_step_summary_path, render_summary
+from writers.base import RunDescriptor, Writer, new_run_id
+from writers.hana import HanaWriter
 
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
+from utils.settings import CHUNKS_BATCH_SIZE, DOCS_SUMMARY_PATH
 from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
@@ -98,6 +100,21 @@ def extract_first_title(text: str) -> str | None:
     return None
 
 
+def _writer_names(writer: Writer) -> list[str]:
+    inner = getattr(writer, "writers", [writer])
+    return [type(w).__name__.removesuffix("Writer").lower() for w in inner]
+
+
+def _prepare_report(writer: Writer, run: RunDescriptor, module_counts: dict[str, int], seconds: float) -> dict:
+    """Build the run report (incl. the previous run, queried before the flip) and hand it to the writer."""
+    prev_fn = getattr(writer, "previous_stats", None)
+    report: dict = build_report(run, _writer_names(writer), module_counts, seconds, prev_fn() if prev_fn else None)
+    set_report = getattr(writer, "set_report", None)
+    if set_report:
+        set_report(report)
+    return report
+
+
 class AdaptiveSplitMarkdownIndexer:
     """
     Markdown indexer that adaptively splits documents based on token size thresholds,
@@ -108,11 +125,13 @@ class AdaptiveSplitMarkdownIndexer:
         self,
         docs_path: str,
         embedding: Embeddings,
-        connection: dbapi.Connection,
+        connection: dbapi.Connection | None = None,
         table_name: str | None = None,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         min_chunk_token_count: int = 20,
         max_chunk_token_count: int = 1000,
+        writer: Writer | None = None,
+        embedding_model_name: str = "",
     ):
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
@@ -137,11 +156,12 @@ class AdaptiveSplitMarkdownIndexer:
             )
             self.manifest = None
 
-        self.db = HanaDB(
-            connection=connection,
-            embedding=embedding,
-            table_name=table_name,
-        )
+        self.embedding_model_name = embedding_model_name
+        if writer is None:
+            if connection is None:
+                raise ValueError("Either a writer or a HANA connection is required.")
+            writer = HanaWriter(HanaDB(connection=connection, embedding=embedding, table_name=table_name))
+        self.writer = writer
 
         self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
 
@@ -273,64 +293,65 @@ class AdaptiveSplitMarkdownIndexer:
                     metadata=chunk.metadata,
                 )
 
-    def index(self) -> None:
-        """Indexes the markdown files in the given directory."""
+    def _iter_batches(self, chunks: Iterable[Document]) -> Iterator[list[Document]]:
+        batch: list[Document] = []
+        for chunk in chunks:
+            batch.append(chunk)
+            if len(batch) >= CHUNKS_BATCH_SIZE:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
 
+    def index(self) -> None:
+        """Chunks the markdown files and hands the chunks (and vectors, if needed) to the writer."""
         docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
-        if INDEX_TO_FILE:
-            # write pretty to file
-            timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
-            uuid_str = str(uuid.uuid4())
-            output_file_path = f"Kyma_Documentation_chunks_{timestamp}_{uuid_str}.json"
-            with open(output_file_path, "w", encoding="utf-8") as out:
-                # Convert Documents to dictionaries
-                serializable_chunks = [
-                    {"page_content": chunk.page_content, "metadata": chunk.metadata} for chunk in all_chunks
-                ]
-                json.dump({"kyma_docs": serializable_chunks}, fp=out, indent=2)
-            logger.info(f"Indexed {len(serializable_chunks)} chunks.")
-            logger.info(f"Chunks are stored in the file: {output_file_path}")
-        else:
-            logger.info("Deleting existing index in HanaDB...")
-            try:
-                self.db.delete(filter={})
-            except Exception:
-                logger.exception("Error while deleting existing documents in HanaDB.")
-                raise
-            logger.info("Successfully deleted existing documents in HanaDB.")
+        writer = self.writer
+        run = RunDescriptor(
+            run_id=new_run_id(),
+            embedding_model=self.embedding_model_name,
+            dimensions=0,
+            sources=self.manifest or {},
+        )
+        begun = False
+        started = time.monotonic()
+        module_counts: dict[str, int] = {}
+        batch_count = 0
+        total_chunk_number = 0
+        try:
+            for batch in self._iter_batches(all_chunks):
+                vectors: list[list[float]] = []
+                if writer.needs_embeddings:
+                    vectors = self.embedding.embed_documents([c.page_content for c in batch])
+                    if not begun:
+                        run.dimensions = len(vectors[0])
+                if not begun:
+                    writer.begin(run)
+                    begun = True
+                writer.write(batch, vectors)
+                batch_count += 1
+                total_chunk_number += len(batch)
+                for c in batch:
+                    module = str(c.metadata.get("module") or "")
+                    if module:
+                        module_counts[module] = module_counts.get(module, 0) + 1
+                logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
+                # Wait before processing next batch
+                logger.debug("Rate limiting: sleeping 3s before next batch")
+                time.sleep(3)
 
-            logger.info("Indexing and storing indexes to HanaDB...")
-            batch = []
-            batch_count = 0
-            total_chunk_number = 0
-            try:
-                for chunk in all_chunks:
-                    batch.append(chunk)
-                    if len(batch) >= CHUNKS_BATCH_SIZE:
-                        # Process the current batch
-                        self.db.add_documents(batch)
-                        batch_count += 1
-                        total_chunk_number += len(batch)
-                        logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
+            if not begun:
+                if writer.needs_embeddings:
+                    raise ValueError("No chunks produced, refusing to write an empty index.")
+                writer.begin(run)  # hana: keep existing behaviour (delete all)
+            report = _prepare_report(writer, run, module_counts, time.monotonic() - started)
+            writer.commit()
+        except Exception:
+            logger.exception(f"Error while indexing (batch {batch_count + 1})")
+            writer.abort()
+            raise
 
-                        # Clear the batch
-                        batch = []
-
-                        # Wait before processing next batch
-                        logger.debug("Rate limiting: sleeping 3s before next batch")
-                        time.sleep(3)
-
-                # Process any remaining documents in the final batch
-                if batch:
-                    self.db.add_documents(batch)
-                    batch_count += 1
-                    total_chunk_number += len(batch)
-                    logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks")
-
-            except Exception:
-                logger.exception(f"Error while storing documents batch {batch_count + 1} in HanaDB")
-                raise
-
-            logger.info(f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}.")
+        logger.info(f"Successfully indexed {total_chunk_number} chunks (run {run.run_id}).")
+        emit_summary(render_summary(report), DOCS_SUMMARY_PATH, github_step_summary_path())

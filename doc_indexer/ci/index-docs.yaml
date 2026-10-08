@@ -1,0 +1,174 @@
+# DRAFT -- lives here for review. Target: an internal repo on github.tools.sap that owns the
+# scheduled indexing run. Nothing in this file runs from kyma-companion.
+#
+# What it does, per landscape:
+#   1. gets the HANA writer user and the AI Core client from Vault with the run's OIDC token
+#      (no stored secrets; rotation in Vault is picked up on the next run)
+#   2. fetches the sources, indexes them, writes the run summary to the job page
+#   3. uploads the chunks+vectors file and the summary as run artifacts
+#
+# Requirements before this can run (phase 0 of the task doc):
+#   - OIDC enabled for Actions on github.tools.sap (see probe-runner.yaml)
+#   - Vault JWT auth role `kyma-docs-indexer` in namespace `kyma`, bound to this repo and branch,
+#     with read on kcp-<env>/data/gcp
+#   - repository variables: AICORE_AUTH_URL, AICORE_BASE_URL, AICORE_RESOURCE_GROUP,
+#     HANA_HOST_<ENV>, EMBEDDING_DEPLOYMENT_ID_<ENV>, DOCS_TABLE_NAME
+#   - HANA Cloud allowlist entry for the runner egress
+
+name: Index Kyma docs
+
+on:
+  schedule:
+    # Monday 03:17 UTC, outside European working hours so indexing does not compete with users
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Landscape to index (all = dev, stage, prod)"
+        type: choice
+        options: [all, dev, stage, prod]
+        default: dev
+      sources_file:
+        description: "Sources file (relative to the indexer directory)"
+        type: string
+        default: docs_sources.json
+      writer:
+        description: "Writer(s), comma separated: hana | pgvector | file"
+        type: string
+        default: hana,file
+
+permissions:
+  id-token: write # OIDC token for Vault
+  contents: read
+
+concurrency:
+  group: index-docs-${{ github.event.inputs.environment || 'all' }}
+  cancel-in-progress: false
+
+env:
+  INDEXER_DIR: doc_indexer
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  plan:
+    name: Select landscapes
+    runs-on: ubuntu-latest
+    outputs:
+      envs: ${{ steps.pick.outputs.envs }}
+    steps:
+      - name: Pick landscapes
+        id: pick
+        env:
+          REQUESTED: ${{ github.event.inputs.environment || 'all' }}
+        run: |
+          if [ "$REQUESTED" = "all" ]; then
+            echo 'envs=["dev","stage","prod"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "envs=[\"$REQUESTED\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  index:
+    name: Index ${{ matrix.env }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1 # one landscape at a time keeps the embedding quota usage flat
+      matrix:
+        env: ${{ fromJson(needs.plan.outputs.envs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        working-directory: ${{ env.INDEXER_DIR }}
+        run: poetry install --only main --no-interaction
+
+      - name: Read credentials from Vault
+        id: vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: https://vault.tools.sap
+          namespace: kyma
+          method: jwt
+          role: kyma-docs-indexer
+          exportEnv: false
+          secrets: |
+            kcp-${{ matrix.env }}/data/gcp companion_hanadb_username | DATABASE_USER ;
+            kcp-${{ matrix.env }}/data/gcp companion_hanadb_password | DATABASE_PASSWORD ;
+            kcp-${{ matrix.env }}/data/gcp companion_aicore_client_id | AICORE_CLIENT_ID ;
+            kcp-${{ matrix.env }}/data/gcp companion_aicore_client_secret | AICORE_CLIENT_SECRET
+
+      - name: Write config.json
+        # Secrets come from the Vault step outputs (masked); the rest are repository variables.
+        env:
+          DATABASE_USER: ${{ steps.vault.outputs.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ steps.vault.outputs.DATABASE_PASSWORD }}
+          AICORE_CLIENT_ID: ${{ steps.vault.outputs.AICORE_CLIENT_ID }}
+          AICORE_CLIENT_SECRET: ${{ steps.vault.outputs.AICORE_CLIENT_SECRET }}
+          AICORE_AUTH_URL: ${{ vars.AICORE_AUTH_URL }}
+          AICORE_BASE_URL: ${{ vars.AICORE_BASE_URL }}
+          AICORE_RESOURCE_GROUP: ${{ vars.AICORE_RESOURCE_GROUP }}
+          DATABASE_URL: ${{ vars[format('HANA_HOST_{0}', matrix.env)] }}
+          EMBEDDING_DEPLOYMENT_ID: ${{ vars[format('EMBEDDING_DEPLOYMENT_ID_{0}', matrix.env)] }}
+          DOCS_TABLE_NAME: ${{ vars.DOCS_TABLE_NAME }}
+        run: |
+          mkdir -p config
+          jq -n \
+            --arg db_url "$DATABASE_URL" --arg db_user "$DATABASE_USER" --arg db_pw "$DATABASE_PASSWORD" \
+            --arg auth "$AICORE_AUTH_URL" --arg base "$AICORE_BASE_URL" --arg rg "$AICORE_RESOURCE_GROUP" \
+            --arg cid "$AICORE_CLIENT_ID" --arg cs "$AICORE_CLIENT_SECRET" \
+            --arg dep "$EMBEDDING_DEPLOYMENT_ID" --arg table "$DOCS_TABLE_NAME" \
+            '{
+              DATABASE_URL: $db_url, DATABASE_PORT: "443", DATABASE_USER: $db_user, DATABASE_PASSWORD: $db_pw,
+              DOCS_TABLE_NAME: $table,
+              AICORE_AUTH_URL: $auth, AICORE_BASE_URL: $base, AICORE_RESOURCE_GROUP: $rg,
+              AICORE_CLIENT_ID: $cid, AICORE_CLIENT_SECRET: $cs,
+              EMBEDDING_MODEL_NAME: "text-embedding-3-large",
+              models: [ { name: "text-embedding-3-large", deployment_id: $dep } ]
+            }' > config/config.json
+
+      - name: Fetch sources
+        working-directory: ${{ env.INDEXER_DIR }}
+        env:
+          CONFIG_PATH: ${{ github.workspace }}/config/config.json
+          DOCS_SOURCES_FILE_PATH: ./${{ github.event.inputs.sources_file || 'docs_sources.json' }}
+          DOCS_PATH: ./data
+        run: poetry run python src/main.py fetch
+
+      - name: Index
+        working-directory: ${{ env.INDEXER_DIR }}
+        env:
+          CONFIG_PATH: ${{ github.workspace }}/config/config.json
+          DOCS_PATH: ./data
+          DOCS_WRITER: ${{ github.event.inputs.writer || 'hana,file' }}
+          DOCS_FILE_PATH: ${{ github.workspace }}/out/kyma_docs_{run_id}.json
+          DOCS_SUMMARY_PATH: ${{ github.workspace }}/out/summary.md
+          # GITHUB_STEP_SUMMARY is set by the runner; the indexer appends the summary to it
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          poetry run python src/main.py index
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kyma-docs-index-${{ matrix.env }}-${{ github.run_id }}
+          path: out/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Remove config
+        if: always()
+        run: rm -f config/config.json

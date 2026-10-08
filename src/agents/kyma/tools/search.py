@@ -1,9 +1,16 @@
+from typing import Any
+
 from langchain_core.embeddings import Embeddings
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from rag.system import Query, RAGSystem
+from rag.remote import RemoteRAGSystem
+from rag.system import IRAGSystem, Query, RAGSystem
+from utils.logging import get_logger
 from utils.models.factory import IModel
+from utils.settings import DOCS_SEARCH_URL
+
+logger = get_logger(__name__)
 
 DEFAULT_TOP_K: int = 5
 SEARCH_KYMA_DOC_TOOL_NAME: str = "search_kyma_doc"
@@ -35,12 +42,19 @@ class SearchKymaDocTool(BaseTool):
     return_direct: bool = False  # Let the agent process the search results
 
     # the following fields are not part of the schema, but are used internally
-    rag_system: RAGSystem | None = Field(default=None, exclude=True)
+    rag_system: Any = Field(default=None, exclude=True)  # an IRAGSystem
     top_k: int | None = Field(default=DEFAULT_TOP_K, exclude=True)
 
     def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K):
         super().__init__()
-        self.rag_system = RAGSystem(models)
+        rag_system: IRAGSystem
+        if DOCS_SEARCH_URL:
+            logger.info(f"Kyma docs search backend: remote kyma-docs-search at {DOCS_SEARCH_URL}")
+            rag_system = RemoteRAGSystem(DOCS_SEARCH_URL)
+        else:
+            logger.info("Kyma docs search backend: local HANA RAG pipeline")
+            rag_system = RAGSystem(models)
+        self.rag_system = rag_system
         self.top_k = top_k
 
     def _run(

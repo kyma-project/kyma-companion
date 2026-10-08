@@ -1,0 +1,43 @@
+# Kyma Telemetry module in the k3d cluster with Jaeger as the TracePipeline backend (stand-in for SAP Cloud Logging).
+# Install order:
+#   kubectl create namespace kyma-system
+#   kubectl apply -f https://github.com/kyma-project/telemetry-manager/releases/download/1.73.0/telemetry-manager.yaml
+#   kubectl apply -n kyma-system -f https://github.com/kyma-project/telemetry-manager/releases/download/1.73.0/telemetry-default-cr.yaml
+#   kubectl apply -f deploy/k3d/telemetry.yaml
+# The gateway service telemetry-otlp-traces.kyma-system then accepts OTLP on 4317/4318, exactly as on the control plane.
+apiVersion: v1
+kind: Namespace
+metadata: {name: tracing}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: jaeger, namespace: tracing}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: jaeger}}
+  template:
+    metadata: {labels: {app: jaeger}}
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/jaeger:2.11.0
+          ports: [{containerPort: 4317}, {containerPort: 4318}, {containerPort: 16686}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: jaeger, namespace: tracing}
+spec:
+  selector: {app: jaeger}
+  ports:
+    - {name: otlp-grpc, port: 4317}
+    - {name: otlp-http, port: 4318}
+    - {name: ui, port: 16686}
+---
+apiVersion: telemetry.kyma-project.io/v1alpha1
+kind: TracePipeline
+metadata: {name: jaeger}
+spec:
+  output:
+    otlp:
+      protocol: http
+      endpoint: {value: http://jaeger.tracing.svc.cluster.local:4318}

@@ -9,6 +9,7 @@ from utils.settings import (
     DATABASE_PORT,
     DATABASE_URL,
     DATABASE_USER,
+    DOCS_SEARCH_URL,
     HANA_HEALTH_CHECK_CACHE_TTL_SECONDS,
 )
 from utils.singleton_meta import SingletonMeta
@@ -120,6 +121,16 @@ def _get_hana_connection() -> dbapi.Connection:
     )
 
 
+def _no_connection() -> dbapi.Connection:
+    raise dbapi.Error("HANA is not used in remote docs search mode.")
+
+
 def get_hana() -> Hana:
-    """Create a connection to the Hana database."""
+    """Create a connection to the Hana database.
+
+    In remote docs search mode (DOCS_SEARCH_URL set) no HANA connection is attempted; a disconnected
+    placeholder is returned and the probes check the remote service instead.
+    """
+    if DOCS_SEARCH_URL:
+        return Hana(connection_factory=_no_connection)
     return Hana()
