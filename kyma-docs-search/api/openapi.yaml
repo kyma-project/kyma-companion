@@ -66,6 +66,7 @@ components:
     SearchRequest:
       type: object
       required: [query]
+      additionalProperties: false
       properties:
         query:
           type: string
@@ -94,10 +95,11 @@ components:
             sparse/hybrid return 503 while the BM25 index of the current run is still being built.
         filters:
           type: object
+          additionalProperties: false
           properties:
             module:
-              type: array
-              items: {type: string}
+              type: [array, 'null']
+              items: {type: string, minLength: 1}
               description: restrict to chunks whose metadata.module is in the list
     SearchResponse:
       type: object
@@ -113,7 +115,7 @@ components:
           description: the queries actually searched; the original first, generated alternatives after
         score_type:
           type: string
-          enum: [cosine, bm25, rrf, llm]
+          x-extensible-enum: [cosine, bm25, rrf, llm]
           description: >
             cosine = plain dense search, score is cosine similarity in [0,1];
             bm25 = pure sparse search, single query, no rerank, score is the BM25 score (unbounded, higher is better);

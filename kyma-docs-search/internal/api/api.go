@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"time"
 
@@ -70,11 +71,12 @@ func logMiddleware(next http.Handler) http.Handler {
 }
 
 type searchRequest struct {
-	Query         string `json:"query"`
-	TopK          *int   `json:"top_k"`
-	ExpandQueries bool   `json:"expand_queries"`
-	Rerank        bool   `json:"rerank"`
-	Mode          string `json:"mode"`
+	Query string `json:"query"`
+	// float64 on purpose: JSON Schema treats 36.0 as an integer and so must we; validated below.
+	TopK          *float64 `json:"top_k"`
+	ExpandQueries bool     `json:"expand_queries"`
+	Rerank        bool     `json:"rerank"`
+	Mode          string   `json:"mode"`
 	Filters       *struct {
 		Module []string `json:"module"`
 	} `json:"filters"`
@@ -82,7 +84,9 @@ type searchRequest struct {
 
 func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	var in searchRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&in); err != nil {
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	dec.DisallowUnknownFields() // the contract declares additionalProperties: false
+	if err := dec.Decode(&in); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
@@ -92,7 +96,11 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	}
 	topK := 5
 	if in.TopK != nil {
-		topK = *in.TopK
+		if *in.TopK != math.Trunc(*in.TopK) {
+			writeErr(w, http.StatusBadRequest, "top_k must be an integer")
+			return
+		}
+		topK = int(*in.TopK)
 	}
 	if topK < 1 || topK > 50 {
 		writeErr(w, http.StatusBadRequest, "top_k must be between 1 and 50")
@@ -106,6 +114,12 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	}
 	req := pipeline.Request{Query: in.Query, TopK: topK, ExpandQueries: in.ExpandQueries, Rerank: in.Rerank, Mode: in.Mode}
 	if in.Filters != nil {
+		for _, m := range in.Filters.Module {
+			if m == "" {
+				writeErr(w, http.StatusBadRequest, "filters.module entries must be non-empty strings")
+				return
+			}
+		}
 		req.Modules = in.Filters.Module
 	}
 
