@@ -67,27 +67,28 @@ components:
       type: object
       required: [query]
       additionalProperties: false
+      description: optional properties may be null, which means not set
       properties:
         query:
           type: string
           minLength: 1
           maxLength: 4000
         top_k:
-          type: integer
+          type: [integer, 'null']
           minimum: 1
           maximum: 50
           default: 5
         expand_queries:
-          type: boolean
+          type: [boolean, 'null']
           default: false
           description: generate alternative queries with an LLM and search each; results merged with reciprocal rank fusion
         rerank:
-          type: boolean
+          type: [boolean, 'null']
           default: false
           description: rerank the candidate set with an LLM
         mode:
-          type: string
-          enum: [dense, sparse, hybrid]
+          type: [string, 'null']
+          enum: [dense, sparse, hybrid, null]
           default: dense
           description: >
             retrieval per query. dense = vector search; sparse = in-memory BM25 over chunk text
