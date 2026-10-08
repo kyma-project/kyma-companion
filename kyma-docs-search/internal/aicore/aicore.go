@@ -40,7 +40,9 @@ func New(authURL, baseURL, clientID, clientSecret, resourceGroup, embeddingModel
 func (c *Client) getToken(ctx context.Context) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.token != "" && time.Now().Before(c.tokenExp) {
+	// Round(0) strips the monotonic clock reading: on a sleeping laptop the monotonic clock
+	// stands still while the token's wall-clock expiry passes, so compare wall clock only.
+	if c.token != "" && time.Now().Round(0).Before(c.tokenExp) {
 		return c.token, nil
 	}
 	form := url.Values{"grant_type": {"client_credentials"}}
@@ -65,8 +67,15 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		return "", errors.New("token endpoint: bad response")
 	}
 	c.token = tr.AccessToken
-	c.tokenExp = time.Now().Add(time.Duration(tr.ExpiresIn-60) * time.Second)
+	c.tokenExp = time.Now().Round(0).Add(time.Duration(tr.ExpiresIn-60) * time.Second)
 	return c.token, nil
+}
+
+// invalidateToken drops the cached token so the next call fetches a fresh one.
+func (c *Client) invalidateToken() {
+	c.mu.Lock()
+	c.token = ""
+	c.mu.Unlock()
 }
 
 func (c *Client) do(req *http.Request) ([]byte, int, error) {
@@ -120,6 +129,10 @@ func trunc(b []byte) string {
 
 // post sends a JSON body to {deploymentUrl}/{path}?api-version=... for the given model.
 func (c *Client) post(ctx context.Context, model, path string, payload any) ([]byte, error) {
+	return c.postOnce(ctx, model, path, payload, false)
+}
+
+func (c *Client) postOnce(ctx context.Context, model, path string, payload any, retried bool) ([]byte, error) {
 	id := c.deployments[model]
 	if id == "" {
 		return nil, fmt.Errorf("no deployment configured for model %q", model)
@@ -147,6 +160,11 @@ func (c *Client) post(ctx context.Context, model, path string, payload any) ([]b
 	body, status, err := c.do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if status == http.StatusUnauthorized && !retried {
+		// The cached token was rejected (expired, or the client secret was rotated): fetch a new one and retry once.
+		c.invalidateToken()
+		return c.postOnce(ctx, model, path, payload, true)
 	}
 	if status != http.StatusOK {
 		return nil, fmt.Errorf("%s returned %d: %s", path, status, trunc(body))
