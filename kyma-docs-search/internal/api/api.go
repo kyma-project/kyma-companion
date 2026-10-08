@@ -31,7 +31,9 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	// Each route is wrapped separately so the server span is named after the route pattern.
 	handle := func(pattern string, h http.Handler) {
-		mux.Handle(pattern, otelhttp.NewHandler(traceIDHeader(h), pattern))
+		// health probes are not traced: they would be most of the spans and carry no information
+		mux.Handle(pattern, otelhttp.NewHandler(traceIDHeader(h), pattern,
+			otelhttp.WithFilter(func(r *http.Request) bool { return r.URL.Path != "/healthz" && r.URL.Path != "/readyz" })))
 	}
 	handle("POST /v1/search", http.HandlerFunc(s.search))
 	handle("GET /v1/status", http.HandlerFunc(s.status))
