@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from langchain_core.embeddings import Embeddings
+from utils.hana import verify_table
 
 from utils.models import create_embedding_factory, openai_embedding_creator
 from utils.settings import (
@@ -72,9 +73,10 @@ def test_run_indexer_e2e(hana_conn, e2e_table_name):
         3. factory(embedding_model.name) -> real embeddings model
         4. create_hana_connection() -> real DB connection
         5. AdaptiveSplitMarkdownIndexer(docs_path, ...).index() -> chunks stored in Hana
+        6. verify_table() -> verify SQL runs against the same table
 
-    Verifies that chunks from the test documents are stored in the table,
-    then drops the table on teardown.
+    Verifies that chunks from the test documents are stored in the table and that
+    the verify queries succeed on them, then drops the table on teardown.
     """
     from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
 
@@ -95,6 +97,13 @@ def test_run_indexer_e2e(hana_conn, e2e_table_name):
         cursor.close()
 
         assert count > 0, f"Expected chunks in table '{e2e_table_name}', but found none."
+
+        # Step 6: run the verify queries against the same table. Unit tests mock the
+        # cursor, so this is the only place the verify SQL is executed by real HANA.
+        stats = verify_table(hana_conn, DATABASE_USER, e2e_table_name, configured_modules=[])
+        assert stats.total_rows == count
+        assert sum(stats.rows_per_module.values()) == count
+        assert stats.missing_metadata_rows == 0
     finally:
         # Drop the test table regardless of test outcome.
         try:
