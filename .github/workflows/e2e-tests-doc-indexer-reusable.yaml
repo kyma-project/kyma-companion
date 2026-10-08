@@ -179,6 +179,75 @@ jobs:
         run: |
           kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-e2e --all-containers=true --tail=200 || true
 
+      - name: Run verify Job
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: doc-indexer-verify
+            namespace: ${{ env.NAMESPACE }}
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: doc-indexer
+                  image: ${{ inputs.IMAGE_NAME }}
+                  imagePullPolicy: Never
+                  command: ["python", "src/main.py", "verify"]
+                  env:
+                  - name: LOG_LEVEL
+                    value: "INFO"
+                  - name: CONFIG_PATH
+                    value: "/etc/config/config.json"
+                  - name: DOCS_SOURCES_FILE_PATH
+                    value: "/etc/doc-sources/e2e_docs_sources.json"
+                  - name: DOCS_TABLE_NAME
+                    value: "${{ inputs.DOCS_TABLE_NAME }}"
+                  volumeMounts:
+                  - name: config
+                    mountPath: /etc/config/config.json
+                    subPath: config.json
+                  - name: doc-sources
+                    mountPath: /etc/doc-sources
+                volumes:
+                - name: config
+                  secret:
+                    secretName: doc-indexer-config
+                - name: doc-sources
+                  configMap:
+                    name: doc-indexer-sources
+          EOF
+
+      - name: Wait for verify Job to complete
+        run: |
+          echo "Waiting for job doc-indexer-verify to finish (timeout 120s)..."
+          deadline=$((SECONDS + 120))
+          while [ $SECONDS -lt $deadline ]; do
+            complete=$(kubectl get job doc-indexer-verify -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+            failed=$(kubectl get job doc-indexer-verify -n "${{ env.NAMESPACE }}" \
+              -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+            if [ "$complete" = "True" ]; then
+              echo "Verify passed."
+              exit 0
+            fi
+            if [ "$failed" = "True" ]; then
+              echo "Verify failed."
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for job."
+          exit 1
+
+      - name: Print verify Job logs
+        if: always()
+        run: |
+          kubectl logs -n "${{ env.NAMESPACE }}" -l job-name=doc-indexer-verify --tail=100 || true
+
       - name: Debug information on failure
         if: failure()
         run: |

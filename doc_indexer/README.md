@@ -32,6 +32,12 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+5. Verify the indexed table:
+```bash
+poetry run python src/main.py verify
+```
+It prints the row count per module, duplicate and oversized chunks, and exits with code 1 when the table is empty, a module from the docs sources file has no rows, or rows are missing the `title` or `url` metadata.
+
 ## Testing
 
 The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).

@@ -1,12 +1,21 @@
 import argparse
 import os
+import sys
 import time
 
 from fetcher.fetcher import DocumentsFetcher
+from fetcher.source import get_documents_sources
 from hdbcli import dbapi
 from indexing.adaptive_indexer import AdaptiveSplitMarkdownIndexer
 from langchain_core.embeddings import Embeddings
-from utils.hana import create_hana_connection, drop_table, list_tables
+from utils.hana import (
+    OVERSIZED_CHUNK_CHARS,
+    VerifyStats,
+    create_hana_connection,
+    drop_table,
+    list_tables,
+    verify_table,
+)
 
 from utils.logging import get_logger
 from utils.models import (
@@ -25,11 +34,13 @@ from utils.settings import (
     TMP_DIR,
     get_embedding_model_config,
 )
+from utils.utils import sanitize_table_name
 
 TASK_FETCH = "fetch"
 TASK_INDEX = "index"
 TASK_DROP = "drop"
 TASK_TABLES = "tables"
+TASK_VERIFY = "verify"
 logger = get_logger(__name__)
 
 
@@ -131,9 +142,67 @@ def run_list_tables(
     logger.info(f"{len(rows)} table(s) total.")
 
 
+def run_verify(
+    hana_conn: dbapi.Connection | None = None,
+    table_name: str = DOCS_TABLE_NAME,
+    sources_file: str = DOCS_SOURCES_FILE_PATH,
+) -> None:
+    """Entry function to verify the indexed documentation table.
+
+    Prints a health report and exits with code 1 when the table is empty, a configured
+    module has zero rows, or rows are missing title/url metadata.
+
+    Args:
+        hana_conn: Hana DB connection to use. If None, created from config.
+        table_name: Name of the table to verify. Defaults to DOCS_TABLE_NAME from config.
+        sources_file: Docs sources file listing the modules expected in the table.
+    """
+    if hana_conn is None:
+        hana_conn = create_hana_connection(DATABASE_URL, DATABASE_PORT, DATABASE_USER, DATABASE_PASSWORD)
+        if not hana_conn:
+            logger.error("Failed to connect to the database. Exiting.")
+            raise RuntimeError("Failed to connect to the database.")
+
+    configured_modules = [source.name for source in get_documents_sources(sources_file)]
+
+    # The indexer sanitizes the table name (e.g. "kc_release_1.3.1_e2e" -> "kc_release_1_3_1_e2e"),
+    # so verify must look up the same sanitized name.
+    table_name = sanitize_table_name(table_name)
+    stats = verify_table(hana_conn, DATABASE_USER, table_name, configured_modules)
+    _print_verify_report(stats, table_name)
+
+    # Duplicates and oversized chunks are reported as warnings only.
+    if stats.total_rows == 0 or stats.zero_row_modules or stats.missing_metadata_rows > 0:
+        sys.exit(1)
+
+
+def _print_verify_report(stats: VerifyStats, table_name: str) -> None:
+    """Log the verification report as a table."""
+    col_w = 40
+    val_w = 10
+    header = f"{'METRIC':<{col_w}} {'VALUE':>{val_w}}"
+    separator = "-" * (col_w + val_w + 1)
+
+    lines = [f"Verify report for table: {table_name}", header, separator]
+
+    def _row(label: str, value: int | str) -> str:
+        return f"{label:<{col_w}} {str(value):>{val_w}}"
+
+    lines.append(_row("Total rows", stats.total_rows))
+    for module, count in sorted(stats.rows_per_module.items()):
+        lines.append(_row(f"  rows [{module}]", count))
+    if stats.zero_row_modules:
+        lines.append(_row("Modules with zero rows (ERROR)", ", ".join(sorted(stats.zero_row_modules))))
+    lines.append(_row("Duplicate chunks (warning)", stats.duplicate_chunks))
+    lines.append(_row(f"Oversized chunks >{OVERSIZED_CHUNK_CHARS} chars (warning)", stats.oversized_chunks))
+    lines.append(_row("Rows missing title/url (ERROR)", stats.missing_metadata_rows))
+
+    logger.info("\n".join(lines))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kyma Documentation Fetcher and Indexer.")
-    parser.add_argument("task", choices=["index", "fetch", "drop", "tables"])
+    parser.add_argument("task", choices=["index", "fetch", "drop", "tables", "verify"])
     args = parser.parse_args()
 
     logger.info("Indexer job starting", extra={"task": args.task})
@@ -146,5 +215,7 @@ if __name__ == "__main__":
         run_drop()
     elif args.task == TASK_TABLES:
         run_list_tables()
+    elif args.task == TASK_VERIFY:
+        run_verify()
     else:
-        print("Invalid task. Valid tasks are: index, fetch, drop, tables.")
+        print("Invalid task. Valid tasks are: index, fetch, drop, tables, verify.")
