@@ -4,8 +4,8 @@
     "source_type": "Github",
     "url": "https://github.tools.sap/kyma/docusaurus-docs.git",
     "include_files": [
-      "runbooks/*",
-      "runbooks/**/*"
+      "docs/kyma/runbooks/*",
+      "docs/kyma/runbooks/**/*"
     ],
     "exclude_files": [
       "*/_sidebar.md"
