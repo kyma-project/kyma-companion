@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS docs_index_runs (
 )
 """
 _ADD_REPORT_SQL = "ALTER TABLE docs_index_runs ADD COLUMN IF NOT EXISTS report jsonb"
+_ADD_VERSION_SQL = "ALTER TABLE docs_index_runs ADD COLUMN IF NOT EXISTS indexer_version text"
 _CREATE_ONE_CURRENT_SQL = (
     "CREATE UNIQUE INDEX IF NOT EXISTS docs_index_runs_one_current ON docs_index_runs (is_current) WHERE is_current"
 )
@@ -81,11 +82,20 @@ class PgVectorWriter:
             self._conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
             self._conn.execute(_CREATE_RUNS_SQL)
             self._conn.execute(_ADD_REPORT_SQL)
+            self._conn.execute(_ADD_VERSION_SQL)
             self._conn.execute(_CREATE_ONE_CURRENT_SQL)
             self._conn.execute(
-                "INSERT INTO docs_index_runs (run_id, table_name, embedding_model, dimensions, sources, is_current) "
-                "VALUES (%s, %s, %s, %s, %s, false)",
-                (run.run_id, self._table, run.embedding_model, run.dimensions, json.dumps(run.sources)),
+                "INSERT INTO docs_index_runs "
+                "(run_id, table_name, embedding_model, dimensions, sources, indexer_version, is_current) "
+                "VALUES (%s, %s, %s, %s, %s, %s, false)",
+                (
+                    run.run_id,
+                    self._table,
+                    run.embedding_model,
+                    run.dimensions,
+                    json.dumps(run.sources),
+                    run.indexer_version,
+                ),
             )
             self._conn.execute(
                 f"CREATE TABLE {self._table} (id bigserial PRIMARY KEY, content text NOT NULL, "

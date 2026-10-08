@@ -31,6 +31,7 @@ type Run struct {
 	Sources        map[string]json.RawMessage `json:"sources"`
 	CreatedAt      time.Time                  `json:"created_at"`
 	CommittedAt    *time.Time                 `json:"committed_at"`
+	IndexerVersion string                     `json:"indexer_version,omitempty"`
 }
 
 type Chunk struct {
@@ -89,8 +90,9 @@ func (p *PG) Current(ctx context.Context) (Run, error) {
 	var r Run
 	var sources []byte
 	err := p.pool.QueryRow(ctx, `SELECT run_id, table_name, embedding_model, dimensions, chunk_count,
-		sources, created_at, committed_at FROM docs_index_runs WHERE is_current`).
-		Scan(&r.RunID, &r.TableName, &r.EmbeddingModel, &r.Dimensions, &r.ChunkCount, &sources, &r.CreatedAt, &r.CommittedAt)
+		sources, created_at, committed_at, COALESCE(indexer_version, '') FROM docs_index_runs WHERE is_current`).
+		Scan(&r.RunID, &r.TableName, &r.EmbeddingModel, &r.Dimensions, &r.ChunkCount, &sources, &r.CreatedAt, &r.CommittedAt,
+			&r.IndexerVersion)
 	if errors.Is(err, pgx.ErrNoRows) {
 		telemetry.Fail(span, ErrNoRun)
 		return Run{}, ErrNoRun

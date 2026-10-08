@@ -177,6 +177,7 @@ components:
               commit: {type: [string, 'null']}
         created_at: {type: string, format: date-time}
         committed_at: {type: string, format: date-time}
+        indexer_version: {type: string, description: which indexer code built the run (git commit or release tag)}
     Error:
       type: object
       required: [error]

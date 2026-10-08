@@ -1,4 +1,6 @@
+import os
 import secrets
+import subprocess
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol
@@ -21,6 +23,8 @@ class RunDescriptor:
     sources: dict[str, Any] = field(default_factory=dict)  # fetch manifest.json content
     # Optional additional keys that only the file writer stores (e.g. "exported_from"). Not written to Postgres.
     extra: dict[str, Any] = field(default_factory=dict)
+    # Which indexer code built the run: INDEXER_VERSION or GITHUB_SHA from the environment, else the git commit.
+    indexer_version: str = field(default_factory=lambda: detect_indexer_version())
 
     def to_dict(self) -> dict[str, Any]:
         """Return the descriptor as a plain dict (extra keys merged at top level, only if present)."""
@@ -51,3 +55,25 @@ class Writer(Protocol):
     def abort(self) -> None:
         """Discard everything written by this run."""
         ...
+
+
+def detect_indexer_version() -> str:
+    """Return the indexer version: INDEXER_VERSION, else GITHUB_SHA, else the short git commit, else "unknown"."""
+    for key in ("INDEXER_VERSION", "GITHUB_SHA"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return value
+    try:
+        out = subprocess.run(  # noqa: S603, S607 - fixed argv, no shell
+            ["git", "rev-parse", "--short=12", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            check=False,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return "unknown"

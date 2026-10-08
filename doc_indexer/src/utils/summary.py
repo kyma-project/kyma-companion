@@ -29,6 +29,7 @@ def build_report(
         "run_id": run.run_id,
         "writers": writers,
         "embedding_model": run.embedding_model,
+        "indexer_version": getattr(run, "indexer_version", "unknown"),
         "dimensions": run.dimensions,
         "total_chunks": sum(module_counts.values()),
         "duration_seconds": round(duration_seconds, 1),
@@ -54,6 +55,7 @@ def render_summary(report: dict[str, Any]) -> str:
         "## Docs index run summary",
         "",
         f"Run `{report['run_id']}` | writer: {', '.join(report['writers'])} | "
+        f"indexer: `{report.get('indexer_version', 'unknown')}` | "
         f"embedding: {report['embedding_model']} ({report['dimensions']} dims) | "
         f"chunks: {total}{total_delta} | index duration: {report['duration_seconds']}s",
         "",
