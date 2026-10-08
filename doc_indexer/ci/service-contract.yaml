@@ -60,7 +60,7 @@ jobs:
         working-directory: kyma-docs-search
         run: |
           CONFIG_PATH=/tmp/config.json DOCS_SEARCH_PG_DSN=postgres://postgres:postgres@localhost:5433/docs DOCS_SEARCH_PORT=8081 go run ./cmd/server &
-          for i in $(seq 1 30); do curl -sf localhost:8081/readyz && break; sleep 2; done
+          for _ in $(seq 1 30); do curl -sf localhost:8081/readyz && break; sleep 2; done
       - name: schemathesis
         run: |
           pip install schemathesis
