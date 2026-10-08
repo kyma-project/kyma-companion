@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/kyma-project/kyma-docs-search/internal/telemetry"
 )
 
 // ErrNoRun means no committed (current) index run exists.
@@ -81,17 +84,22 @@ func (p *PG) Current(ctx context.Context) (Run, error) {
 	}
 	p.mu.Unlock()
 
+	ctx, span := telemetry.Tracer("kyma-docs-search/pipeline").Start(ctx, "store.current")
+	defer span.End()
 	var r Run
 	var sources []byte
 	err := p.pool.QueryRow(ctx, `SELECT run_id, table_name, embedding_model, dimensions, chunk_count,
 		sources, created_at, committed_at FROM docs_index_runs WHERE is_current`).
 		Scan(&r.RunID, &r.TableName, &r.EmbeddingModel, &r.Dimensions, &r.ChunkCount, &sources, &r.CreatedAt, &r.CommittedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
+		telemetry.Fail(span, ErrNoRun)
 		return Run{}, ErrNoRun
 	}
 	if err != nil {
+		telemetry.Fail(span, err)
 		return Run{}, err
 	}
+	span.SetAttributes(attribute.String("run_id", r.RunID))
 	if err := json.Unmarshal(sources, &r.Sources); err != nil {
 		r.Sources = map[string]json.RawMessage{}
 	}

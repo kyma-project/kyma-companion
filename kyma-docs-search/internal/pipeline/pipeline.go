@@ -10,9 +10,13 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/kyma-project/kyma-docs-search/internal/aicore"
 	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
+	"github.com/kyma-project/kyma-docs-search/internal/telemetry"
 	"github.com/kyma-project/kyma-docs-search/prompts"
 )
 
@@ -31,8 +35,8 @@ const (
 )
 
 type Embedder interface {
-	Embeddings(ctx context.Context, texts []string) ([][]float32, error)
-	ChatToolCall(ctx context.Context, model string, messages []aicore.Message, toolSchema map[string]any) (json.RawMessage, error)
+	Embeddings(ctx context.Context, texts []string) ([][]float32, aicore.Usage, error)
+	ChatToolCall(ctx context.Context, model string, messages []aicore.Message, toolSchema map[string]any) (json.RawMessage, aicore.Usage, error)
 }
 
 type Pipeline struct {
@@ -58,7 +62,38 @@ type Response struct {
 	Run       store.Run
 }
 
-func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
+var tracer = telemetry.Tracer("kyma-docs-search/pipeline")
+
+func llmAttrs(model string, u aicore.Usage) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("gen_ai.operation.name", "chat"),
+		attribute.String("gen_ai.request.model", model),
+		attribute.Int("gen_ai.usage.input_tokens", u.InputTokens),
+		attribute.Int("gen_ai.usage.output_tokens", u.OutputTokens),
+	}
+}
+
+func (p *Pipeline) Search(ctx context.Context, req Request) (resp Response, err error) {
+	mode := req.Mode
+	if mode == "" {
+		mode = ModeDense
+	}
+	ctx, span := tracer.Start(ctx, "search", trace.WithAttributes(
+		attribute.String("mode", mode), attribute.Int("top_k", req.TopK),
+		attribute.Bool("expand_queries", req.ExpandQueries), attribute.Bool("rerank", req.Rerank),
+		attribute.Int("filter.modules", len(req.Modules))))
+	defer func() {
+		if err != nil {
+			telemetry.Fail(span, err)
+		} else {
+			span.SetAttributes(attribute.Int("result.count", len(resp.Results)),
+				attribute.String("score_type", resp.ScoreType), attribute.String("index.run_id", resp.Run.RunID))
+		}
+		span.End()
+	}()
+	span.SetAttributes(telemetry.Content("query", req.Query)...)
+	span.SetAttributes(telemetry.ContentStrings("filter.modules.list", req.Modules)...)
+
 	run, err := p.Store.Current(ctx)
 	if err != nil {
 		return Response{}, err
@@ -78,10 +113,6 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 		candidateK = max(req.TopK*4, 10)
 	}
 
-	mode := req.Mode
-	if mode == "" {
-		mode = ModeDense
-	}
 	var sx *sparse.Index
 	if mode != ModeDense {
 		if p.Sparse == nil {
@@ -94,7 +125,7 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 
 	var vecs [][]float32
 	if mode != ModeSparse {
-		vecs, err = p.AI.Embeddings(ctx, queries)
+		vecs, err = p.embed(ctx, queries)
 		if err != nil {
 			return Response{}, fmt.Errorf("embed queries: %w", err)
 		}
@@ -109,15 +140,16 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 			defer wg.Done()
 			switch mode {
 			case ModeSparse:
-				lists[i] = sx.Search(queries[i], candidateK, req.Modules)
+				lists[i] = p.sparseSearch(ctx, sx, queries[i], candidateK, req.Modules)
 			case ModeHybrid:
 				var dense []store.Chunk
-				dense, errs[i] = p.Store.Dense(ctx, run, vecs[i], candidateK, req.Modules)
+				dense, errs[i] = p.dense(ctx, run, vecs[i], queries[i], candidateK, req.Modules)
 				if errs[i] == nil {
-					lists[i] = RRF([][]store.Chunk{sx.Search(queries[i], candidateK, req.Modules), dense}, rrfK)
+					sp := p.sparseSearch(ctx, sx, queries[i], candidateK, req.Modules)
+					lists[i] = fuse(ctx, [][]store.Chunk{sp, dense})
 				}
 			default:
-				lists[i], errs[i] = p.Store.Dense(ctx, run, vecs[i], candidateK, req.Modules)
+				lists[i], errs[i] = p.dense(ctx, run, vecs[i], queries[i], candidateK, req.Modules)
 			}
 		}()
 	}
@@ -132,7 +164,7 @@ func (p *Pipeline) Search(ctx context.Context, req Request) (Response, error) {
 	scoreType := ScoreCosine
 	switch {
 	case len(queries) > 1:
-		results = RRF(lists, rrfK)
+		results = fuse(ctx, lists)
 		scoreType = ScoreRRF
 	default:
 		results = lists[0]
@@ -176,9 +208,20 @@ func dedupe(in []string) []string {
 	return out
 }
 
-func (p *Pipeline) expand(ctx context.Context, query string) ([]string, error) {
+func (p *Pipeline) expand(ctx context.Context, query string) (out []string, err error) {
+	ctx, span := tracer.Start(ctx, "expand_queries")
+	defer func() {
+		if err != nil {
+			telemetry.Fail(span, err)
+		} else {
+			span.SetAttributes(attribute.Int("queries.generated", len(out)))
+			span.SetAttributes(telemetry.ContentStrings("queries.list", out)...)
+		}
+		span.End()
+	}()
 	followup := strings.ReplaceAll(prompts.QueryGeneratorFollowup, "{num_queries}", fmt.Sprint(numQueries))
-	raw, err := p.AI.ChatToolCall(ctx, p.MiniModel, []aicore.Message{
+	span.SetAttributes(telemetry.Content("prompt", prompts.QueryGeneratorSystem+"\nOriginal query: "+query)...)
+	raw, usage, err := p.AI.ChatToolCall(ctx, p.MiniModel, []aicore.Message{
 		{Role: "system", Content: prompts.QueryGeneratorSystem},
 		{Role: "user", Content: "Original query: " + query},
 		{Role: "system", Content: followup},
@@ -193,16 +236,17 @@ func (p *Pipeline) expand(ctx context.Context, query string) ([]string, error) {
 			"required": []string{"queries"},
 		},
 	})
+	span.SetAttributes(llmAttrs(p.MiniModel, usage)...)
 	if err != nil {
 		return nil, err
 	}
-	var out struct {
+	var dec struct {
 		Queries []string `json:"queries"`
 	}
-	if err := json.Unmarshal(raw, &out); err != nil {
+	if err := json.Unmarshal(raw, &dec); err != nil {
 		return nil, fmt.Errorf("decode queries: %w", err)
 	}
-	return out.Queries, nil
+	return dec.Queries, nil
 }
 
 // RRF merges ranked lists with reciprocal rank fusion, keyed by chunk content.
@@ -243,7 +287,17 @@ func metaString(raw json.RawMessage, keys ...string) string {
 	return ""
 }
 
-func (p *Pipeline) rerank(ctx context.Context, cands []store.Chunk, queries []string) ([]store.Chunk, error) {
+func (p *Pipeline) rerank(ctx context.Context, cands []store.Chunk, queries []string) (res []store.Chunk, err error) {
+	ctx, span := tracer.Start(ctx, "rerank", trace.WithAttributes(attribute.Int("input.count", len(cands))))
+	defer func() {
+		if err != nil {
+			telemetry.Fail(span, err)
+			span.SetAttributes(attribute.Bool("fallback", true))
+		} else {
+			span.SetAttributes(attribute.Int("output.count", len(res)), attribute.Bool("fallback", false))
+		}
+		span.End()
+	}()
 	type doc struct {
 		ID      string `json:"id"`
 		Title   string `json:"title"`
@@ -269,7 +323,8 @@ func (p *Pipeline) rerank(ctx context.Context, cands []store.Chunk, queries []st
 	}
 	prompt := strings.NewReplacer("{documents}", docsJSON, "{queries}", queriesJSON).Replace(prompts.Reranker)
 
-	raw, err := p.AI.ChatToolCall(ctx, p.MiniModel, []aicore.Message{{Role: "user", Content: prompt}}, map[string]any{
+	span.SetAttributes(telemetry.Content("prompt", prompt)...)
+	raw, usage, err := p.AI.ChatToolCall(ctx, p.MiniModel, []aicore.Message{{Role: "user", Content: prompt}}, map[string]any{
 		"name":        "rank_documents",
 		"description": "Return a relevancy score for each document",
 		"parameters": map[string]any{
@@ -290,6 +345,7 @@ func (p *Pipeline) rerank(ctx context.Context, cands []store.Chunk, queries []st
 			"required": []string{"documents"},
 		},
 	})
+	span.SetAttributes(llmAttrs(p.MiniModel, usage)...)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +358,6 @@ func (p *Pipeline) rerank(ctx context.Context, cands []store.Chunk, queries []st
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return nil, fmt.Errorf("decode scores: %w", err)
 	}
-	var res []store.Chunk
 	seen := map[string]bool{}
 	for _, d := range out.Documents {
 		c, ok := byID[d.ID]
@@ -328,4 +383,49 @@ func marshalCompact(v any) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(sb.String()), nil
+}
+
+func (p *Pipeline) embed(ctx context.Context, queries []string) ([][]float32, error) {
+	ctx, span := tracer.Start(ctx, "embed", trace.WithAttributes(attribute.Int("input.count", len(queries))))
+	defer span.End()
+	vecs, usage, err := p.AI.Embeddings(ctx, queries)
+	if err != nil {
+		telemetry.Fail(span, err)
+		return nil, err
+	}
+	span.SetAttributes(attribute.Int("dimensions", len(vecs[0])))
+	if usage.InputTokens > 0 {
+		span.SetAttributes(attribute.Int("gen_ai.usage.input_tokens", usage.InputTokens))
+	}
+	return vecs, nil
+}
+
+func (p *Pipeline) dense(ctx context.Context, run store.Run, vec []float32, query string, k int, modules []string) ([]store.Chunk, error) {
+	ctx, span := tracer.Start(ctx, "dense", trace.WithAttributes(attribute.Int("k", k), attribute.Bool("filtered", len(modules) > 0)))
+	defer span.End()
+	span.SetAttributes(telemetry.Content("query", query)...)
+	hits, err := p.Store.Dense(ctx, run, vec, k, modules)
+	if err != nil {
+		telemetry.Fail(span, err)
+		return nil, err
+	}
+	span.SetAttributes(attribute.Int("hits", len(hits)))
+	return hits, nil
+}
+
+func (p *Pipeline) sparseSearch(ctx context.Context, sx *sparse.Index, query string, k int, modules []string) []store.Chunk {
+	_, span := tracer.Start(ctx, "sparse", trace.WithAttributes(attribute.Int("k", k), attribute.String("index.run_id", sx.RunID)))
+	defer span.End()
+	span.SetAttributes(telemetry.Content("query", query)...)
+	hits := sx.Search(query, k, modules)
+	span.SetAttributes(attribute.Int("hits", len(hits)))
+	return hits
+}
+
+func fuse(ctx context.Context, lists [][]store.Chunk) []store.Chunk {
+	_, span := tracer.Start(ctx, "fuse", trace.WithAttributes(attribute.Int("inputs", len(lists))))
+	defer span.End()
+	out := RRF(lists, rrfK)
+	span.SetAttributes(attribute.Int("candidates", len(out)))
+	return out
 }

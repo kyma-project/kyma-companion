@@ -40,3 +40,23 @@ LOG_FORMAT=json poetry run python src/main.py
 ```bash
 lsof -ti:8000,8081 | xargs kill -9
 ```
+
+## Tracing through the Kyma Telemetry module (k3d)
+
+The service exports OTLP to `telemetry-otlp-traces.kyma-system:4318`, the gateway of the Kyma Telemetry module, the same endpoint the control plane's Istio chart names. A `TracePipeline` forwards to Jaeger here and to SAP Cloud Logging on the control plane.
+
+```bash
+k3d cluster create kyma-companion-test --agents 1 --wait
+kubectl create namespace kyma-system
+kubectl apply -f https://github.com/kyma-project/telemetry-manager/releases/download/1.73.0/telemetry-manager.yaml
+kubectl apply -n kyma-system -f https://github.com/kyma-project/telemetry-manager/releases/download/1.73.0/telemetry-default-cr.yaml
+kubectl apply -f deploy/k3d/telemetry.yaml
+docker build -t kyma-docs-search:trace . && k3d image import kyma-docs-search:trace -c kyma-companion-test
+kubectl create namespace docs-search
+kubectl -n docs-search create secret generic docs-search-config --from-file=config.json=../config/config.json
+kubectl apply -f deploy/k3d/service.yaml
+kubectl -n docs-search port-forward svc/kyma-docs-search 8083:8081 &
+kubectl -n tracing port-forward svc/jaeger 16686:16686 &
+```
+
+Then search on :8083, take `x-trace-id` from the response headers, open http://localhost:16686/trace/<id>. The gateway does not accept `kubectl port-forward` from the laptop (its collector binds the pod IP), which is why the service runs in the cluster for this part.

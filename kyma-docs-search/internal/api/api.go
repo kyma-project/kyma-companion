@@ -11,6 +11,9 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/kyma-project/kyma-docs-search/internal/mcpserver"
 	"github.com/kyma-project/kyma-docs-search/internal/pipeline"
 	"github.com/kyma-project/kyma-docs-search/internal/sparse"
@@ -26,13 +29,28 @@ type Server struct {
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/search", s.search)
-	mux.HandleFunc("GET /v1/status", s.status)
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
-	mux.HandleFunc("GET /readyz", s.readyz)
+	// Each route is wrapped separately so the server span is named after the route pattern.
+	handle := func(pattern string, h http.Handler) {
+		mux.Handle(pattern, otelhttp.NewHandler(traceIDHeader(h), pattern))
+	}
+	handle("POST /v1/search", http.HandlerFunc(s.search))
+	handle("GET /v1/status", http.HandlerFunc(s.status))
+	handle("GET /healthz", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) }))
+	handle("GET /readyz", http.HandlerFunc(s.readyz))
 	// Second door on the same pipeline; see internal/mcpserver.
-	mux.Handle("/mcp", mcpserver.Handler(s.Pipeline))
+	handle("/mcp", mcpserver.Handler(s.Pipeline))
 	return logMiddleware(mux)
+}
+
+// traceIDHeader sets x-trace-id from the active server span. It runs inside the span and before the
+// handler writes, and does not wrap the ResponseWriter, so Flush (MCP streaming) is unaffected.
+func traceIDHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if sc := trace.SpanContextFromContext(r.Context()); sc.IsValid() {
+			w.Header().Set("x-trace-id", sc.TraceID().String())
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

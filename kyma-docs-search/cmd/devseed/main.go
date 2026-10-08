@@ -42,7 +42,7 @@ func main() {
 		"# Serverless function\nA Serverless Function lets you run short code snippets in Kyma without managing containers. Create a Function resource with inline source and dependencies.",
 	}
 	mods := []string{"kyma-environment", "telemetry-manager", "serverless"}
-	vecs, err := ai.Embeddings(ctx, texts)
+	vecs, _, err := ai.Embeddings(ctx, texts)
 	if err != nil {
 		log.Fatal(err)
 	}

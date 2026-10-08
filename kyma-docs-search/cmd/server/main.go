@@ -16,6 +16,7 @@ import (
 	"github.com/kyma-project/kyma-docs-search/internal/pipeline"
 	"github.com/kyma-project/kyma-docs-search/internal/sparse"
 	"github.com/kyma-project/kyma-docs-search/internal/store"
+	"github.com/kyma-project/kyma-docs-search/internal/telemetry"
 )
 
 func main() {
@@ -34,6 +35,18 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	shutdownTracing, err := telemetry.Setup(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		sctx, c := context.WithTimeout(context.Background(), 5*time.Second)
+		defer c()
+		if err := shutdownTracing(sctx); err != nil {
+			slog.Warn("tracing shutdown", "error", err)
+		}
+	}()
+
 	pg, err := store.NewPG(ctx, cfg.PGDSN)
 	if err != nil {
 		return err
@@ -45,7 +58,7 @@ func run() error {
 
 	// Determine the embedding dimensions of the configured model.
 	probeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	vecs, err := ai.Embeddings(probeCtx, []string{"dimension probe"})
+	vecs, _, err := ai.Embeddings(probeCtx, []string{"dimension probe"})
 	cancel()
 	if err != nil {
 		return err

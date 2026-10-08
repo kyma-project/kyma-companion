@@ -66,6 +66,48 @@ Security: the POC has no auth. In production the MCP endpoint sits behind JWT (I
 service applies per-caller policy. In the POC the MCP tool is the only unauthenticated door and must not be exposed
 outside localhost.
 
+## Tracing
+
+OpenTelemetry tracing, off by default. Enable it by pointing the standard OTLP variable at a collector:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 go run ./cmd/server
+```
+
+Without the variable the service logs `tracing disabled (OTEL_EXPORTER_OTLP_ENDPOINT unset)` and exports nothing
+(spans still get ids, so the `x-trace-id` header works). All other standard `OTEL_*` variables (headers, timeouts,
+sampler, `OTEL_BSP_*`) are read by the SDK. If the collector is unreachable, export errors are logged and requests are unaffected.
+Exporter: OTLP over HTTP, batch processor, W3C `traceparent` propagation (incoming requests are continued; AI Core
+calls carry `traceparent`). Resource: `service.name=kyma-docs-search`, `service.version` (build with
+`-ldflags "-X github.com/kyma-project/kyma-docs-search/internal/telemetry.Version=1.2.3"`, default `dev`).
+
+Every response carries `x-trace-id: <trace id>`; use it to find the trace.
+
+Span tree (tracer `kyma-docs-search/pipeline`; REST and MCP share it, `/mcp` just has a different root name):
+
+```
+POST /v1/search | /mcp                 (otelhttp server span, named after the route pattern)
+  search                               mode, top_k, expand_queries, rerank, filter.modules (count),
+  |                                    result.count, score_type, index.run_id
+  +- store.current                     run_id (only on a DB fetch, not when served from the 30 s cache)
+  +- expand_queries                    gen_ai.operation.name=chat, gen_ai.request.model, gen_ai.usage.input_tokens,
+  |                                    gen_ai.usage.output_tokens, queries.generated
+  +- embed                             input.count, dimensions, gen_ai.usage.input_tokens
+  +- dense (one per query, concurrent) k, filtered, hits
+  +- sparse (one per query)            k, hits, index.run_id
+  +- fuse (RRF; also per query in hybrid) inputs, candidates
+  +- rerank                            gen_ai.* as above, input.count, output.count, fallback
+```
+
+Failing steps record the error and set the span status to error. A failed rerank sets `fallback=true` (the fused order is kept).
+
+Content switch: query text, generated queries and prompts are put into span attributes (`query`, `queries.list`,
+`prompt`, `filter.modules.list`) only with `DOCS_SEARCH_TRACE_CONTENT=true`. This is for local demos; keep it off in
+production, as user questions can contain sensitive data.
+
+In KCP the endpoint is the Kyma Telemetry module's gateway, `OTEL_EXPORTER_OTLP_ENDPOINT=http://telemetry-otlp-traces.kyma-system:4318`;
+a TracePipeline forwards the spans to SAP Cloud Logging.
+
 ## Docker
 
 ```bash

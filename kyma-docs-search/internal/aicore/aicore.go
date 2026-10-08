@@ -13,9 +13,23 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const apiVersion = "2025-03-01-preview"
+
+// Usage is the token usage reported by AI Core (zero values if absent).
+type Usage struct {
+	InputTokens, OutputTokens int
+}
+
+type usageJSON struct {
+	Prompt     int `json:"prompt_tokens"`
+	Completion int `json:"completion_tokens"`
+}
+
+func (u usageJSON) usage() Usage { return Usage{InputTokens: u.Prompt, OutputTokens: u.Completion} }
 
 type Client struct {
 	authURL, baseURL, clientID, clientSecret, resourceGroup string
@@ -33,7 +47,7 @@ func New(authURL, baseURL, clientID, clientSecret, resourceGroup, embeddingModel
 	return &Client{
 		authURL: authURL, baseURL: strings.TrimRight(baseURL, "/"), clientID: clientID,
 		clientSecret: clientSecret, resourceGroup: resourceGroup, embeddingModel: embeddingModel,
-		deployments: deployments, http: &http.Client{Timeout: 30 * time.Second}, urls: map[string]string{},
+		deployments: deployments, http: &http.Client{Timeout: 30 * time.Second, Transport: otelhttp.NewTransport(http.DefaultTransport)}, urls: map[string]string{},
 	}
 }
 
@@ -173,31 +187,32 @@ func (c *Client) postOnce(ctx context.Context, model, path string, payload any, 
 }
 
 // Embeddings embeds all texts in one call using the configured embedding model.
-func (c *Client) Embeddings(ctx context.Context, texts []string) ([][]float32, error) {
+func (c *Client) Embeddings(ctx context.Context, texts []string) ([][]float32, Usage, error) {
 	body, err := c.post(ctx, c.embeddingModel, "/embeddings", map[string]any{"input": texts})
 	if err != nil {
-		return nil, err
+		return nil, Usage{}, err
 	}
 	var r struct {
 		Data []struct {
 			Index     int       `json:"index"`
 			Embedding []float32 `json:"embedding"`
 		} `json:"data"`
+		Usage usageJSON `json:"usage"`
 	}
 	if err := json.Unmarshal(body, &r); err != nil {
-		return nil, fmt.Errorf("embeddings decode: %w", err)
+		return nil, Usage{}, fmt.Errorf("embeddings decode: %w", err)
 	}
 	if len(r.Data) != len(texts) {
-		return nil, fmt.Errorf("embeddings: got %d vectors for %d inputs", len(r.Data), len(texts))
+		return nil, Usage{}, fmt.Errorf("embeddings: got %d vectors for %d inputs", len(r.Data), len(texts))
 	}
 	out := make([][]float32, len(texts))
 	for _, d := range r.Data {
 		if d.Index < 0 || d.Index >= len(out) {
-			return nil, errors.New("embeddings: bad index")
+			return nil, Usage{}, errors.New("embeddings: bad index")
 		}
 		out[d.Index] = d.Embedding
 	}
-	return out, nil
+	return out, r.Usage.usage(), nil
 }
 
 // Message is a chat message.
@@ -208,7 +223,7 @@ type Message struct {
 
 // ChatToolCall forces a call of one function tool and returns its JSON arguments.
 // toolSchema is {"name":..., "description":..., "parameters": {...}} (the OpenAI function object).
-func (c *Client) ChatToolCall(ctx context.Context, model string, messages []Message, toolSchema map[string]any) (json.RawMessage, error) {
+func (c *Client) ChatToolCall(ctx context.Context, model string, messages []Message, toolSchema map[string]any) (json.RawMessage, Usage, error) {
 	name, _ := toolSchema["name"].(string)
 	body, err := c.post(ctx, model, "/chat/completions", map[string]any{
 		"messages":    messages,
@@ -216,7 +231,7 @@ func (c *Client) ChatToolCall(ctx context.Context, model string, messages []Mess
 		"tool_choice": map[string]any{"type": "function", "function": map[string]any{"name": name}},
 	})
 	if err != nil {
-		return nil, err
+		return nil, Usage{}, err
 	}
 	var r struct {
 		Choices []struct {
@@ -228,12 +243,13 @@ func (c *Client) ChatToolCall(ctx context.Context, model string, messages []Mess
 				} `json:"tool_calls"`
 			} `json:"message"`
 		} `json:"choices"`
+		Usage usageJSON `json:"usage"`
 	}
 	if err := json.Unmarshal(body, &r); err != nil {
-		return nil, fmt.Errorf("chat decode: %w", err)
+		return nil, Usage{}, fmt.Errorf("chat decode: %w", err)
 	}
 	if len(r.Choices) == 0 || len(r.Choices[0].Message.ToolCalls) == 0 {
-		return nil, errors.New("chat: no tool call in response")
+		return nil, Usage{}, errors.New("chat: no tool call in response")
 	}
-	return json.RawMessage(r.Choices[0].Message.ToolCalls[0].Function.Arguments), nil
+	return json.RawMessage(r.Choices[0].Message.ToolCalls[0].Function.Arguments), r.Usage.usage(), nil
 }
