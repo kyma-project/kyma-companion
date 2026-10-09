@@ -14,20 +14,6 @@
     "doc_type": "runbook"
   },
   {
-    "name": "on-call-guides",
-    "source_type": "Github",
-    "url": "https://github.tools.sap/kyma/documentation.git",
-    "include_files": [
-      "docs/kyma-internal/support/on-call-guides/*",
-      "docs/kyma-internal/support/on-call-guides/**/*"
-    ],
-    "exclude_files": [
-      "*/_sidebar.md"
-    ],
-    "audience": ["internal"],
-    "doc_type": "on-call-guide"
-  },
-  {
     "name": "gardener",
     "source_type": "Github",
     "url": "https://github.com/gardener/gardener.git",
