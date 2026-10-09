@@ -140,3 +140,38 @@ class TestBuildChunkMetadataMissingManifest:
         assert meta["repo"] is None
         assert meta["commit"] is None
         assert meta["url"] == source_path
+
+
+class TestBuildChunkMetadataAudienceDocType:
+    """Audience / doc_type are data-driven from the manifest (sources file)."""
+
+    @staticmethod
+    def _internal_manifest(module: str, repo_url: str) -> dict:
+        return {
+            module: {
+                "repo_url": repo_url,
+                "commit": _SHA,
+                "fetched_at": "2026-01-01T00:00:00+00:00",
+                "audience": ["internal"],
+                "doc_type": "runbook",
+            }
+        }
+
+    def test_internal_audience_and_doc_type_from_manifest(self):
+        manifest = self._internal_manifest("sre-runbooks", "https://github.tools.sap/kyma/docusaurus-docs")
+        source_path = f"{_DOCS_PATH}/sre-runbooks/runbooks/alert.md"
+        meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
+
+        assert meta["audience"] == ["internal"]
+        assert meta["doc_type"] == "runbook"
+        # Internal GHE repo is not on kyma-project.io -> GitHub blob URL (host preserved).
+        assert meta["url"] == f"https://github.tools.sap/kyma/docusaurus-docs/blob/{_SHA}/runbooks/alert.md"
+
+    def test_missing_audience_defaults_to_public(self):
+        """A manifest entry without audience/doc_type keeps the public defaults."""
+        manifest = _make_manifest("warden", "https://github.com/kyma-project/warden")
+        source_path = f"{_DOCS_PATH}/warden/docs/user/guide.md"
+        meta = build_chunk_metadata(source_path, _DOCS_PATH, manifest)
+
+        assert meta["audience"] == ["public"]
+        assert meta["doc_type"] is None

@@ -25,6 +25,9 @@
   "DATABASE_PORT": "443",
   "DOCS_TABLE_NAME": "<VALUE>",
 
+  "GITHUB_ENTERPRISE_HOST": "",
+  "GITHUB_TOKEN": "",
+
   "LOG_LEVEL": "INFO",
   "LOG_FORMAT": "json",
   "HOST": "0.0.0.0",

@@ -32,6 +32,54 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
+## Indexing a separate table (ops / SRE docs)
+
+The pipeline is fully driven by environment variables, so a second corpus can
+be indexed into its own HANA table without code changes by pointing the fetch
+and index tasks at a different sources file and table name. Explicitly exported
+environment variables take precedence over `config.json` (the loader uses
+`setdefault`), so the inline overrides below reliably select the `ops_docs`
+table even though `config.json` defines `DOCS_TABLE_NAME`.
+
+The repository ships [`ops_docs_sources.json`](./ops_docs_sources.json), which
+indexes internal operations/SRE docs (SRE runbooks, on-call guides, Gardener,
+orchestration-operator, kubeconfig-service) into the `ops_docs` table:
+
+```bash
+DOCS_SOURCES_FILE_PATH=./ops_docs_sources.json \
+DOCS_PATH=./data-ops \
+DOCS_TABLE_NAME=ops_docs \
+  poetry run python src/main.py fetch
+
+DOCS_SOURCES_FILE_PATH=./ops_docs_sources.json \
+DOCS_PATH=./data-ops \
+DOCS_TABLE_NAME=ops_docs \
+  poetry run python src/main.py index
+```
+
+Each source entry may set:
+
+- `audience` (list, default `["public"]`) — surfaced as chunk metadata so a
+  consumer can filter internal vs. public docs. Ops sources use `["internal"]`.
+- `doc_type` (string, optional) — free-form classification such as `runbook`,
+  `on-call-guide`, or `operator-docs`.
+
+### Private / GitHub Enterprise sources
+
+Most ops sources live on SAP's internal GitHub Enterprise
+(`github.tools.sap`). The fetcher is public-only by default; to reach the
+enterprise host set:
+
+- `GITHUB_ENTERPRISE_HOST` — e.g. `github.tools.sap`. Only this host (plus
+  public `github.com`) is allow-listed as a document source.
+- `GITHUB_TOKEN` — a token with read access to the private repos. It is sent
+  as a bearer token **only** to the configured enterprise host.
+
+Enterprise archives are fetched from the GHE REST API tarball endpoint
+(`/api/v3/repos/<owner>/<repo>/tarball/<ref>`). The commit sha is read from the
+archive's pax header when present, falling back to the trailing sha in the
+top-level directory name.
+
 ## Testing
 
 The `config.json` file must be present for integration tests (see [template](../config/config-example.json)).

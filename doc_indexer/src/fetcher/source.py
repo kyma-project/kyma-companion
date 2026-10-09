@@ -23,6 +23,12 @@ class DocumentsSource(BaseModel):
     include_files: list[str] | None = None
     exclude_files: list[str] | None = None
     filter_file_types: list[str] = ["md"]
+    # Audience the docs are intended for. Defaults to ["public"] so the existing
+    # public docs_sources.json keeps its behaviour; internal/ops sources set
+    # ["internal"]. Persisted to the manifest and surfaced as chunk metadata.
+    audience: list[str] = ["public"]
+    # Optional free-form classification (e.g. "runbook", "on-call-guide").
+    doc_type: str | None = None
 
 
 def get_documents_sources(path: str) -> list[DocumentsSource]:

@@ -6,7 +6,11 @@ import tempfile
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from http.client import HTTPMessage
+from typing import IO
 from urllib.parse import urlparse
+
+from decouple import config
 
 from utils.logging import get_logger
 
@@ -18,10 +22,73 @@ _CODELOAD_HOST = "codeload.github.com"
 _ALLOWED_REPO_HOSTS = {"github.com", "www.github.com"}
 _MIN_URL_PATH_PARTS = 2
 
+# GitHub Enterprise host for SAP-internal repos (e.g. kyma/docusaurus-docs).
+# Private repos require a token; the host is allow-listed via config so the
+# default (empty) keeps the fetcher public-only for the kyma_docs pipeline.
+# Read lazily (not at import) because settings.load_env_from_json populates the
+# environment from config.json only after this module is first imported.
+
+
+def _enterprise_host() -> str:
+    """Configured GitHub Enterprise host, lower-cased; empty if unset."""
+    return str(config("GITHUB_ENTERPRISE_HOST", default="")).strip().lower()
+
+
+def _github_token() -> str:
+    """Configured GitHub token for enterprise auth; empty if unset."""
+    return str(config("GITHUB_TOKEN", default="")).strip()
+
+
 # codeload tarballs are produced by `git archive`, which writes a pax global header
 # with `comment=<full commit sha>`. The top-level directory is named "<repo>-<ref>"
 # (e.g. "istio-HEAD", "istio-main"), so it only contains the sha when a sha was requested.
 _COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+# GitHub/GHE REST API tarballs name the top-level dir "<owner>-<repo>-<short_sha>"
+# using an abbreviated (commonly 7-char) commit sha, so the directory-name
+# fallback must accept abbreviated hashes, not just the full 40-char form.
+_DIR_SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
+
+
+class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirect handler that drops the Authorization header on an unsafe redirect.
+
+    urllib copies request headers (including a bearer token) onto the redirected
+    request. GHE/GitHub tarball endpoints redirect to a signed download URL that
+    does not need the token, so the token is preserved only when the redirect
+    stays on the exact same secure origin (https scheme and identical host/port).
+    Any cross-host redirect or an https->http downgrade on the same host would
+    otherwise leak the enterprise token (e.g. to a storage/CDN host or over
+    plaintext), so the Authorization header is stripped in those cases.
+    """
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: HTTPMessage,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        """Build the redirected request, stripping auth unless the origin is unchanged."""
+        new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_req is not None:
+            orig = urlparse(req.full_url)
+            new = urlparse(newurl)
+            same_secure_origin = (
+                orig.scheme == "https"
+                and new.scheme == "https"
+                and orig.netloc.lower() == new.netloc.lower()
+            )
+            if not same_secure_origin:
+                new_req.headers.pop("Authorization", None)
+                new_req.headers.pop("authorization", None)
+        return new_req
+
+
+# Install a process-wide opener so urllib.request.urlopen strips the enterprise
+# token on cross-host redirects (see _StripAuthOnCrossHostRedirect).
+urllib.request.install_opener(urllib.request.build_opener(_StripAuthOnCrossHostRedirect))
 
 
 @dataclass
@@ -32,15 +99,47 @@ class DownloadResult:
     commit: str
 
 
-def _parse_github_repo(repo_url: str) -> tuple[str, str]:
-    """Extract (owner, repo) from a GitHub URL, rejecting anything else."""
+def _parse_github_repo(repo_url: str) -> tuple[str, str, str]:
+    """Extract (host, owner, repo) from a GitHub URL, rejecting anything else.
+
+    Accepts public ``github.com`` and, when configured, the SAP GitHub
+    Enterprise host in ``GITHUB_ENTERPRISE_HOST``.
+    """
     parsed = urlparse(repo_url)
-    if parsed.scheme != "https" or parsed.netloc.lower() not in _ALLOWED_REPO_HOSTS:
-        raise ValueError(f"unsupported repository URL (only github.com is allowed): {repo_url}")
+    host = parsed.netloc.lower()
+    allowed = set(_ALLOWED_REPO_HOSTS)
+    enterprise_host = _enterprise_host()
+    if enterprise_host:
+        allowed.add(enterprise_host)
+    if parsed.scheme != "https" or host not in allowed:
+        raise ValueError(f"unsupported repository URL (allowed hosts: {sorted(allowed)}): {repo_url}")
     parts = parsed.path.removesuffix(".git").strip("/").split("/")
     if len(parts) != _MIN_URL_PATH_PARTS or not all(parts) or any(p == ".." for p in parts):
         raise ValueError(f"cannot parse owner/repo from URL: {repo_url}")
-    return parts[0], parts[1]
+    return host, parts[0], parts[1]
+
+
+def _archive_url(host: str, owner: str, repo: str, ref: str) -> str:
+    """Return the tarball URL for a ref.
+
+    Public github.com is served by codeload; GitHub Enterprise Server exposes
+    the archive through its REST API tarball endpoint, which honours the
+    Authorization header for private repos.
+    """
+    if host in _ALLOWED_REPO_HOSTS:
+        return f"https://{_CODELOAD_HOST}/{owner}/{repo}/tar.gz/{ref}"
+    # GitHub Enterprise Server API v3 tarball endpoint.
+    return f"https://{host}/api/v3/repos/{owner}/{repo}/tarball/{ref}"
+
+
+def _request_headers(host: str) -> dict[str, str]:
+    """Build request headers, adding bearer auth for the enterprise host."""
+    headers = {"User-Agent": "kyma-companion-doc-indexer"}
+    token = _github_token()
+    enterprise_host = _enterprise_host()
+    if token and enterprise_host and host == enterprise_host:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
 
 
 def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadResult:
@@ -52,10 +151,11 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
     stripped), matching the layout the Scroller expects.
 
     The commit sha is read from the tarball's pax global header (`comment`),
-    which `git archive` sets to the resolved commit. Raises RuntimeError if the
-    header is missing or is not a 40-char hex sha.
+    which `git archive` sets to the resolved commit. When absent (e.g. GHE API
+    tarballs), it falls back to the trailing (possibly abbreviated) sha in the
+    top-level directory name. Raises RuntimeError if neither yields a hex sha.
     """
-    owner, repo = _parse_github_repo(repo_url)
+    host, owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
     os.makedirs(dest_dir, exist_ok=True)
     if os.path.exists(repo_path):
@@ -64,12 +164,12 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
         # silently breaking the layout the Scroller expects.
         shutil.rmtree(repo_path)
 
-    tar_url = f"https://{_CODELOAD_HOST}/{owner}/{repo}/tar.gz/{ref}"
+    tar_url = _archive_url(host, owner, repo, ref)
     logger.info("Downloading repository", extra={"url": tar_url, "dest": repo_path})
 
     with tempfile.TemporaryDirectory(dir=dest_dir) as staging:
         tar_path = os.path.join(staging, "repo.tar.gz")
-        req = urllib.request.Request(tar_url, headers={"User-Agent": "kyma-companion-doc-indexer"})
+        req = urllib.request.Request(tar_url, headers=_request_headers(host))
         try:
             with urllib.request.urlopen(req, timeout=120) as resp, open(tar_path, "wb") as fh:  # noqa: S310
                 shutil.copyfileobj(resp, fh)
@@ -80,17 +180,26 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
 
         with tarfile.open(tar_path, "r:gz") as tf:
             commit = tf.pax_headers.get("comment", "")
-            if not _COMMIT_SHA_RE.match(commit):
-                raise RuntimeError(
-                    f"cannot read commit sha from tarball pax header for {tar_url}: "
-                    f"comment={commit!r} (expected 40 hex chars)"
-                )
             tf.extractall(staging, filter="data")  # filter="data" blocks path traversal (py3.12+)
 
-        # The archive extracts to a single top-level dir named "<repo>-<ref>".
+        # The archive extracts to a single top-level dir named "<repo>-<ref>"
+        # (public codeload) or "<owner>-<repo>-<sha>" (GHE API tarball).
         extracted = [e for e in os.listdir(staging) if os.path.isdir(os.path.join(staging, e))]
         if len(extracted) != 1:
             raise RuntimeError(f"unexpected tarball layout for {tar_url}: {extracted}")
+
+        # Prefer the pax global header sha (set by `git archive`). GHE API
+        # tarballs may omit it, so fall back to the trailing sha in the
+        # top-level directory name before failing.
+        if not _COMMIT_SHA_RE.match(commit):
+            trailing = extracted[0].rsplit("-", 1)[-1]
+            if _DIR_SHA_RE.match(trailing):
+                commit = trailing
+            else:
+                raise RuntimeError(
+                    f"cannot read commit sha for {tar_url}: pax comment={commit!r}, "
+                    f"dir={extracted[0]!r} (expected 7-40 hex chars)"
+                )
 
         shutil.move(os.path.join(staging, extracted[0]), repo_path)
 
