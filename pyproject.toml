@@ -20,7 +20,7 @@ dependencies = [
   "a2a-sdk[http-server] (>=1.2.1,<2.0.0)",
   "aiohttp (>=3.14.3,<4.0.0)",
   "cryptography (>=50.0.2,<51.0.0)",
-  "fastapi[standard] (>=0.142.2,<0.143.0)",
+  "fastapi[standard] (>=0.143.0,<0.144.0)",
   "hdbcli (>=2.30.27,<3.0.0)",
   "kubernetes (>=36.0.3,<37.0.0)",
   "langchain (>=1.4.3,<2.0.0)",
@@ -67,7 +67,7 @@ ipython = "^9.17.1"
 mypy = "^2.3.1"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
-ruff = "^0.16.9"
+ruff = "^0.17.0"
 types-requests = "^2.33.0.20260906"
 
 [tool.pytest.ini_options]
