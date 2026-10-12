@@ -34,28 +34,37 @@ poetry run python src/main.py index
 
 ## Indexing a separate table (ops / SRE docs)
 
-The pipeline is fully driven by environment variables, so a second corpus can
+The pipeline is driven by configuration values, so a second corpus can
 be indexed into its own HANA table without code changes by pointing the fetch
-and index tasks at a different sources file and table name. Explicitly exported
-environment variables take precedence over `config.json` (the loader uses
-`setdefault`), so the inline overrides below reliably select the `ops_docs`
-table even though `config.json` defines `DOCS_TABLE_NAME`.
+and index tasks at a different sources file and table name. Values defined in
+`config.json` take precedence over exported environment variables (the loader
+assigns them directly to `os.environ`), so to select the `ops_docs` table you
+must set these keys in `config.json` (or in a separate file referenced via
+`CONFIG_PATH`) rather than relying on inline env overrides — any key present in
+`config.json` will overwrite a shell-exported value of the same name.
 
 The repository ships [`ops_docs_sources.json`](./ops_docs_sources.json), which
 indexes internal operations/SRE docs (SRE runbooks, on-call guides, Gardener,
-orchestration-operator, kubeconfig-service) into the `ops_docs` table:
+orchestration-operator, kubeconfig-service) into the `ops_docs` table. Provide a
+dedicated config file (e.g. `config-ops.json`) that sets the ops values and
+point `CONFIG_PATH` at it:
+
+```json
+{
+  "DOCS_SOURCES_FILE_PATH": "./ops_docs_sources.json",
+  "DOCS_PATH": "./data-ops",
+  "DOCS_TABLE_NAME": "ops_docs"
+}
+```
 
 ```bash
-DOCS_SOURCES_FILE_PATH=./ops_docs_sources.json \
-DOCS_PATH=./data-ops \
-DOCS_TABLE_NAME=ops_docs \
-  poetry run python src/main.py fetch
+CONFIG_PATH=./config-ops.json poetry run python src/main.py fetch
 
-DOCS_SOURCES_FILE_PATH=./ops_docs_sources.json \
-DOCS_PATH=./data-ops \
-DOCS_TABLE_NAME=ops_docs \
-  poetry run python src/main.py index
+CONFIG_PATH=./config-ops.json poetry run python src/main.py index
 ```
+
+Any key not present in the config file still falls back to an exported
+environment variable (and then to the built-in default).
 
 Each source entry may set:
 
