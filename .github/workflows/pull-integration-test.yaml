@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: e2e
     strategy:
+      fail-fast: false
       matrix:
         domain: [agents, rag, services]
 
