@@ -57,7 +57,7 @@ def test_parse_github_repo_rejected(given_url):
 
 def test_parse_github_repo_enterprise_rejected_without_config():
     """Enterprise host is rejected unless GITHUB_ENTERPRISE_HOST is configured."""
-    with pytest.raises(ValueError):
+    with patch("utils.utils._enterprise_host", return_value=""), pytest.raises(ValueError):
         _parse_github_repo("https://github.tools.sap/kyma/docusaurus-docs.git")
 
 

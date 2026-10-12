@@ -55,12 +55,11 @@ def test_get_ops_documents_sources(root_tests_path):
     ops_path = os.path.join(root_tests_path, "..", "ops_docs_sources.json")
     result = get_documents_sources(ops_path)
 
-    expected_source_count = 5
+    expected_source_count = 4
     assert len(result) == expected_source_count
     names = {s.name for s in result}
     assert names == {
         "sre-runbooks",
-        "on-call-guides",
         "gardener",
         "orchestration-operator",
         "kubeconfig-service",
