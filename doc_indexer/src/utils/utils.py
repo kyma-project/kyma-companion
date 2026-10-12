@@ -39,14 +39,12 @@ def _github_token() -> str:
     return str(config("GITHUB_TOKEN", default="")).strip()
 
 
-# codeload tarballs are produced by `git archive`, which writes a pax global header
-# with `comment=<full commit sha>`. The top-level directory is named "<repo>-<ref>"
-# (e.g. "istio-HEAD", "istio-main"), so it only contains the sha when a sha was requested.
+# Both public codeload and the GHE REST API tarball endpoint produce archives via
+# `git archive` against a commit ref, which always writes a pax global header with
+# `comment=<full 40-char commit sha>` (see `git get-tar-commit-id`). We read the sha
+# from there; the top-level directory name only carries an (often abbreviated) sha and
+# is not a reliable source.
 _COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-# GitHub/GHE REST API tarballs name the top-level dir "<owner>-<repo>-<short_sha>"
-# using an abbreviated (commonly 7-char) commit sha, so the directory-name
-# fallback must accept abbreviated hashes, not just the full 40-char form.
-_DIR_SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 
 
 class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
@@ -149,9 +147,9 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
     stripped), matching the layout the Scroller expects.
 
     The commit sha is read from the tarball's pax global header (`comment`),
-    which `git archive` sets to the resolved commit. When absent (e.g. GHE API
-    tarballs), it falls back to the trailing (possibly abbreviated) sha in the
-    top-level directory name. Raises RuntimeError if neither yields a hex sha.
+    which `git archive` sets to the resolved 40-char commit sha for both public
+    codeload and GHE REST API tarballs. Raises RuntimeError if it is absent or
+    not a 40-char hex sha.
     """
     host, owner, repo = _parse_github_repo(repo_url)
     repo_path = os.path.join(dest_dir, repo)
@@ -186,18 +184,12 @@ def download_repo(repo_url: str, dest_dir: str, ref: str = "HEAD") -> DownloadRe
         if len(extracted) != 1:
             raise RuntimeError(f"unexpected tarball layout for {tar_url}: {extracted}")
 
-        # Prefer the pax global header sha (set by `git archive`). GHE API
-        # tarballs may omit it, so fall back to the trailing sha in the
-        # top-level directory name before failing.
+        # The sha comes from the pax global header (`comment`), set by `git
+        # archive` to the resolved 40-char commit sha for both codeload and GHE
+        # API tarballs. The top-level dir name only carries an (often
+        # abbreviated) sha, so it is not used.
         if not _COMMIT_SHA_RE.match(commit):
-            trailing = extracted[0].rsplit("-", 1)[-1]
-            if _DIR_SHA_RE.match(trailing):
-                commit = trailing
-            else:
-                raise RuntimeError(
-                    f"cannot read commit sha for {tar_url}: pax comment={commit!r}, "
-                    f"dir={extracted[0]!r} (expected 7-40 hex chars)"
-                )
+            raise RuntimeError(f"cannot read commit sha for {tar_url}: pax comment={commit!r} (expected 40 hex chars)")
 
         shutil.move(os.path.join(staging, extracted[0]), repo_path)
 

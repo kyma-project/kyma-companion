@@ -198,7 +198,7 @@ def test_download_repo_works_for_named_ref_dir(tmp_path):
 
 
 def test_download_repo_raises_on_missing_commit_header(tmp_path):
-    """download_repo raises RuntimeError when neither pax `comment` nor the dir name yields a sha."""
+    """download_repo raises RuntimeError when the pax `comment` header is absent."""
     repo_url = "https://github.com/kyma-project/eventing-manager.git"
     tar_bytes = _make_repo_tarball("eventing-manager-HEAD", {"README.md": "# hello"}, commit=None)
 
@@ -207,21 +207,6 @@ def test_download_repo_raises_on_missing_commit_header(tmp_path):
         pytest.raises(RuntimeError, match="cannot read commit sha"),
     ):
         download_repo(repo_url, str(tmp_path))
-
-
-def test_download_repo_falls_back_to_dir_name_sha(tmp_path):
-    """When the pax header is absent (GHE API tarball), the trailing (abbreviated)
-    sha in the top-level dir name (``<owner>-<repo>-<sha>``) is used instead."""
-    repo_url = "https://github.com/kyma-project/eventing-manager.git"
-    # GHE/GitHub REST tarballs use an abbreviated (commonly 7-char) commit sha.
-    sha = "c1d2e3f"
-    tar_bytes = _make_repo_tarball(f"kyma-eventing-manager-{sha}", {"README.md": "# hello"}, commit=None)
-
-    with patch("utils.utils.urllib.request.urlopen", return_value=_FakeResponse(tar_bytes)):
-        result = download_repo(repo_url, str(tmp_path))
-
-    assert result.commit == sha
-    assert os.path.isfile(os.path.join(result.path, "README.md"))
 
 
 def test_download_repo_raises_on_malformed_commit_header(tmp_path):
