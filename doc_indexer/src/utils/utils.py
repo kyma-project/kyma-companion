@@ -76,9 +76,7 @@ class _StripAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
             orig = urlparse(req.full_url)
             new = urlparse(newurl)
             same_secure_origin = (
-                orig.scheme == "https"
-                and new.scheme == "https"
-                and orig.netloc.lower() == new.netloc.lower()
+                orig.scheme == "https" and new.scheme == "https" and orig.netloc.lower() == new.netloc.lower()
             )
             if not same_secure_origin:
                 new_req.headers.pop("Authorization", None)
