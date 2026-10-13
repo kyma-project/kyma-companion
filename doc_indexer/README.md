@@ -32,22 +32,11 @@ poetry run python src/main.py fetch
 poetry run python src/main.py index
 ```
 
-## Indexing a separate table (ops / SRE docs)
+## Indexing a Separate Table (Ops / SRE Docs)
 
-The pipeline is driven by configuration values, so a second corpus can
-be indexed into its own HANA table without code changes by pointing the fetch
-and index tasks at a different sources file and table name. Values defined in
-`config.json` take precedence over exported environment variables (the loader
-assigns them directly to `os.environ`), so to select the `ops_docs` table you
-must set these keys in `config.json` (or in a separate file referenced via
-`CONFIG_PATH`) rather than relying on inline env overrides — any key present in
-`config.json` will overwrite a shell-exported value of the same name.
+Configuration values drive the pipeline, so that you can index a second corpus into its own HANA table without changing the code. Point the fetch and index tasks at a different source file and table name. Values defined in `config.json` take priority over exported environment variables (the loader assigns them directly to `os.environ`). To select the `ops_docs` table, set these keys in `config.json` (or in a separate file referenced via `CONFIG_PATH`) rather than relying on inline environment variable overrides – any key present in `config.json` overwrites a shell-exported value of the same name.
 
-The repository ships [`ops_docs_sources.json`](./ops_docs_sources.json), which
-indexes internal operations/SRE docs (SRE runbooks, on-call guides, Gardener,
-orchestration-operator, kubeconfig-service) into the `ops_docs` table. Provide a
-dedicated config file (e.g. `config-ops.json`) that sets the ops values and
-point `CONFIG_PATH` at it:
+The repository includes [`ops_docs_sources.json`](./ops_docs_sources.json), which indexes internal operations and Site Reliability Engineering (SRE) docs  - SRE runbooks, on-call guides, Gardener, orchestration-operator, and kubeconfig-service - into the `ops_docs` table. To configure this, create a dedicated config file, for example, `config-ops.json`,  that sets the operations values and sets `CONFIG_PATH` to the path of that file:
 
 ```json
 {
@@ -63,31 +52,21 @@ CONFIG_PATH=./config-ops.json poetry run python src/main.py fetch
 CONFIG_PATH=./config-ops.json poetry run python src/main.py index
 ```
 
-Any key not present in the config file still falls back to an exported
-environment variable (and then to the built-in default).
+Any key missing from the config file still falls back to an exported environment variable (and then to the built-in default).
 
 Each source entry may set:
 
-- `audience` (list, default `["public"]`) — surfaced as chunk metadata so a
-  consumer can filter internal vs. public docs. Ops sources use `["internal"]`.
-- `doc_type` (string, optional) — free-form classification such as `runbook`,
-  `on-call-guide`, or `operator-docs`.
+- `audience` (list, default `["public"]`) - surfaced as chunk metadata so a consumer can filter internal vs. public docs. Ops sources use `["internal"]`.
+- `doc_type` (string, optional) - free-form classification such as `runbook`,`on-call-guide`, or `operator-docs`.
 
-### Private / GitHub Enterprise sources
+### Private / GitHub Enterprise Sources
 
-Most ops sources live on SAP's internal GitHub Enterprise
-(`github.tools.sap`). The fetcher is public-only by default; to reach the
-enterprise host set:
+Most ops sources live on SAP's internal GitHub Enterprise (`github.tools.sap`). The fetcher is public-only by default; to reach the enterprise host, set:
 
-- `GITHUB_ENTERPRISE_HOST` — e.g. `github.tools.sap`. Only this host (plus
-  public `github.com`) is allow-listed as a document source.
-- `GITHUB_TOKEN` — a token with read access to the private repos. It is sent
-  as a bearer token **only** to the configured enterprise host.
+- `GITHUB_ENTERPRISE_HOST`- for example, `github.tools.sap`. Only this host (plus public `github.com`) is allow-listed as a document source.
+- `GITHUB_TOKEN` - a token with read access to the private repos. It is sent only to the configured enterprise host as a bearer token.
 
-Enterprise archives are fetched from the GHE REST API tarball endpoint
-(`/api/v3/repos/<owner>/<repo>/tarball/<ref>`). The commit sha is read from the
-archive's pax header when present, falling back to the trailing sha in the
-top-level directory name.
+Enterprise archives are fetched from the GHE REST API tarball endpoint (`/api/v3/repos/<owner>/<repo>/tarball/<ref>`). The commit SHA is read from the archive's pax header when present, falling back to the trailing SHA in the top-level directory name.
 
 ## Testing
 
