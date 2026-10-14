@@ -98,6 +98,9 @@ class TestDocumentsFetcher:
             assert entry["commit"] == _SHA
             assert not entry["repo_url"].endswith(".git")
             assert "fetched_at" in entry
+            # audience/doc_type are persisted; the public sources default to ["public"]/None.
+            assert entry["audience"] == ["public"]
+            assert entry["doc_type"] is None
 
     def test_run(self, docs_sources_file_path, tmp_path):
         # given

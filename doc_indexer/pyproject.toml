@@ -17,23 +17,24 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = "==3.14.*"
 dependencies = [
-  "hdbcli (>=2.29.25,<3.0.0)",
-  "langchain-hana (>=1.1.1,<2.0.0)",
+  "hdbcli (>=2.30.27,<3.0.0)",
+  "langchain-community (>=0.4.2,<0.5.0)",
+  "langchain-hana (>=1.2.0,<2.0.0)",
   "pydantic (>=2.13.5,<3.0.0)",
   "python-decouple (>=3.8,<4.0)",
   "python-json-logger (>=4.2.0,<5.0.0)",
-  "sap-ai-sdk-gen[all] (>=7.0,<8.0)"
+  "sap-ai-sdk-gen[all] (==7.4.1)"
 ]
 
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.group.test.dependencies]
-mypy = "^2.3.0"
+mypy = "^2.3.1"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
 pytest = "^9.1.1"
-ruff = "^0.16.3"
+ruff = "^0.16.9"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

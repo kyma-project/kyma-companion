@@ -96,13 +96,15 @@ class DocumentsFetcher:
     def run(self) -> None:
         """Fetch the documents from all the sources and write a manifest."""
         fetched_at = datetime.now(tz=UTC).isoformat()
-        manifest: dict[str, dict[str, str | None]] = {}
+        manifest: dict[str, dict[str, str | list[str] | None]] = {}
         for source in self.sources:
             result = self.fetch_documents(source)
             manifest[result["name"]] = {
                 "repo_url": result["url"].removesuffix(".git"),
                 "commit": result["commit"],
                 "fetched_at": fetched_at,
+                "audience": source.audience,
+                "doc_type": source.doc_type,
             }
         logger.info("Documents fetched successfully from all sources!")
 
