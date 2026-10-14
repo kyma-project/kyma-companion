@@ -129,7 +129,7 @@ class AdaptiveSplitMarkdownIndexer:
         manifest_path = os.path.join(docs_path, "manifest.json")
         if os.path.isfile(manifest_path):
             with open(manifest_path, encoding="utf-8") as fh:
-                self.manifest: dict[str, dict[str, str | None]] | None = json.load(fh)
+                self.manifest: dict[str, dict[str, str | list[str] | None]] | None = json.load(fh)
             logger.info("Loaded fetch manifest", extra={"path": manifest_path})
         else:
             logger.warning(

@@ -28,6 +28,9 @@
   "RAG_TOP_K": "5",
   "RAG_NUM_QUERIES": "4",
 
+  "GITHUB_ENTERPRISE_HOST": "",
+  "GITHUB_TOKEN": "",
+
   "LOG_LEVEL": "INFO",
   "LOG_FORMAT": "json",
   "HOST": "0.0.0.0",
