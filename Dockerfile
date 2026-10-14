@@ -48,7 +48,12 @@ ARG GLIBC_MIN=2.44
 #                          this makes apk pick the headers of the 2.44 stream
 #                          the base image runs on, not an older one
 #   linux-headers          kernel headers some stdlib modules probe for
-#   openssl-dev            OpenSSL headers, for the ssl and hashlib modules
+#   openssl-dev<4          OpenSSL headers, for the ssl and hashlib modules.
+#                          Held on the 3.x stream: Wolfi's openssl-dev now
+#                          resolves to OpenSSL 4.0, and Python 3.14 cannot
+#                          build _ssl against 4.0 (CPython added 4.0 support
+#                          in 3.15 only). OpenSSL 3.6 is EOL on 2026-11-01;
+#                          drop the pin with the move to Python 3.15
 #   zlib-dev               zlib headers, for the zlib module
 #   bzip2-dev, xz-dev      bzip2 / xz headers, for the bz2 and lzma modules
 #   libffi-dev             libffi headers, for the _ctypes module. Unlike
@@ -66,7 +71,7 @@ ARG GLIBC_MIN=2.44
 # reports its version, which must be at least GLIBC_MIN.
 RUN apk add --no-cache \
       build-base "glibc-dev>=${GLIBC_MIN}" linux-headers \
-      openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev \
+      "openssl-dev<4" zlib-dev bzip2-dev xz-dev libffi-dev \
       ca-certificates-bundle tzdata \
       coreutils findutils gawk \
   && v="$(/usr/lib/ld-linux-*.so.* --version | sed -n '1s/.*version \([0-9.]*\).*/\1/p')" \
