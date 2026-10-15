@@ -19,10 +19,11 @@ from routers.kyma_agent_a2a import build_kyma_a2a_app
 from routers.kyma_tools_api import router as kyma_tools_router
 from routers.probes import router as probes_router
 from routers.public_key import router as public_key_router
+from services.k8s import get_allowed_k8s_domains
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger, reconfigure_logging
-from utils.settings import ALLOWED_K8S_DOMAINS, HOST, KYMA_A2A_BASE_URL, PORT, validate_allowed_k8s_domains
+from utils.settings import HOST, KYMA_A2A_BASE_URL, PORT, validate_allowed_k8s_domains
 
 logger = get_logger(__name__)
 access_logger = get_logger("access")
@@ -36,13 +37,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     if "pytest" not in sys.modules:
         # Reconfigure logging after uvicorn has applied its config
         reconfigure_logging()
-        # Fail hard when the cluster URL allowlist is missing. Unit tests set the
-        # allowlist per test, so the check is skipped under pytest.
-        try:
-            validate_allowed_k8s_domains(ALLOWED_K8S_DOMAINS)
-        except RuntimeError:
-            logger.critical("Startup failed: ALLOWED_K8S_DOMAINS is missing or empty.")
-            raise
+    # Fail hard when the cluster URL allowlist is missing or invalid. This runs
+    # unconditionally so the production invariant is the same under any runner.
+    try:
+        validate_allowed_k8s_domains(get_allowed_k8s_domains())
+    except RuntimeError:
+        logger.critical("Startup failed: ALLOWED_K8S_DOMAINS is missing or invalid.")
+        raise
     yield
 
 
