@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-from utils.settings import load_env_from_json
+from utils.settings import load_env_from_json, validate_allowed_k8s_domains
 
 
 @pytest.mark.parametrize(
@@ -72,3 +72,21 @@ def test_load_env_from_json(json_content, expected_env_variables):
             # Clean up the environment variables
             for key in expected_env_variables:
                 os.environ.pop(key)
+
+
+@pytest.mark.parametrize(
+    "description, domains, should_raise",
+    [
+        ("empty list fails startup", [], True),
+        ("not a list fails startup", "kyma.ondemand.com", True),
+        ("blank entry fails startup", ["kyma.ondemand.com", " "], True),
+        ("non-string entry fails startup", [42], True),
+        ("non-empty list of domains is accepted", ["kyma.ondemand.com"], False),
+    ],
+)
+def test_validate_allowed_k8s_domains(description, domains, should_raise):
+    if should_raise:
+        with pytest.raises(RuntimeError, match="ALLOWED_K8S_DOMAINS must be a non-empty JSON list"):
+            validate_allowed_k8s_domains(domains)
+    else:
+        assert validate_allowed_k8s_domains(domains) is None, description
