@@ -13,6 +13,7 @@ from utils.models.factory import IModel
 
 
 class TestLLMReadinessProbe:
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_case, model_factory, expected_has_models, expected_are_llms_ready, expected_states",
         [
@@ -60,7 +61,7 @@ class TestLLMReadinessProbe:
             ),
         ],
     )
-    def test_llm_readiness_probe(
+    async def test_llm_readiness_probe(
         self,
         test_case,
         model_factory,
@@ -83,13 +84,14 @@ class TestLLMReadinessProbe:
 
         # Then:
         assert probe.has_models() == expected_has_models, test_case
-        assert probe.are_llms_ready() == expected_are_llms_ready, test_case
-        assert probe.get_llms_states() == expected_states, test_case
+        assert await probe.are_llms_ready() == expected_are_llms_ready, test_case
+        assert await probe.get_llms_states() == expected_states, test_case
 
         # Clean up by resetting the instance:
         LLMProbe()._reset_for_tests()
 
-    def test_llm_readiness_probe_model_tested_once(self):
+    @pytest.mark.asyncio
+    async def test_llm_readiness_probe_model_tested_once(self):
         """
         Test the readiness probe for LLMs ensures that models are tested only once, if they return readiness.
 
@@ -100,7 +102,6 @@ class TestLLMReadinessProbe:
         LLMProbe()._reset_for_tests()
 
         # Given:
-        # Create a mock model with a predefined state and a mock model factory to return it.
         model_name = "foo"
         model_state = True
         model = MagicMock(spec=IModel, invoke=MagicMock(return_value=model_state))
@@ -111,29 +112,20 @@ class TestLLMReadinessProbe:
         probe = LLMProbe(mock_model_factory)
 
         # When:
-        # Call `are_llms_ready` to evaluate the readiness of the models.
-        overall_state = probe.are_llms_ready()
+        overall_state = await probe.are_llms_ready()
 
         # Then:
-        # The overall state should match the model's state.
         assert overall_state == model_state
-        # The model should have a state recorded in the probe.
         assert model_name in probe._model_states, "The model should have a state"
-        # The recorded state should match the model's state.
         assert probe._model_states.get(model_name) == model_state, "The model state should be 'True'"
 
-        # When:
-        # Call `are_llms_ready` again.
-        overall_state = probe.are_llms_ready()
+        # When: call again
+        overall_state = await probe.are_llms_ready()
 
         # Then:
-        # The overall state should still match the model's state.
         assert overall_state == model_state
-        # The model's state should still be recorded in the probe.
         assert model_name in probe._model_states, "The model should have a state"
-        # The recorded state should still match the model's state.
         assert probe._model_states.get(model_name) == model_state, "The model state should be 'True'"
-        # The model's `invoke` method should have been called only once.
         model.invoke.assert_called_once()
 
         LLMProbe()._reset_for_tests()
@@ -150,42 +142,32 @@ class TestUsageTrackerProbe:
         """
         Test that the `increase_failure_count` method increments the failure count by 1.
         """
-        # Clean up before creating the instance:
         probe = get_usage_tracker_probe()
         probe._reset_for_tests()
 
-        # Given:
         expected_count = 1
         probe = get_usage_tracker_probe()
 
-        # When:
         probe.increase_failure_count()
 
-        # Then:
         assert probe.get_failure_count() == expected_count
 
-        # Clean up by resetting the instance:
         probe._reset_for_tests()
 
     def test_reset_failure_count(self):
         """
         Test that the `reset_failure_count` method resets the failure count to 0.
         """
-        # Clean up before creating the instance:
         probe = get_usage_tracker_probe()
         probe._reset_for_tests()
 
-        # Given:
         expected_count = 0
         probe = UsageTrackerProbe(100, 100)
 
-        # When:
         probe.reset_failure_count()
 
-        # Then:
         assert probe.get_failure_count() == expected_count
 
-        # Clean up by resetting the instance:
         probe._reset_for_tests()
 
     @pytest.mark.parametrize(
@@ -209,18 +191,13 @@ class TestUsageTrackerProbe:
         Verifies that the method correctly determines healthiness based on the
         failure count and threshold.
         """
-        # Clean up before creating the instance:
         probe = get_usage_tracker_probe()
         probe._reset_for_tests()
 
-        # Given:
         probe = UsageTrackerProbe(threshold, count)
 
-        # When:
         actual_healthiness = probe.is_healthy()
 
-        # Then:
         assert actual_healthiness == expected_healthiness, test_case
 
-        # Clean up by resetting the instance:
         probe._reset_for_tests()

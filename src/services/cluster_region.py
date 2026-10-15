@@ -6,6 +6,7 @@ Fetches the Runtime CR for a given shoot-id from the local Kubernetes cluster
 in Redis for 3 days.
 """
 
+import asyncio
 from http import HTTPStatus
 
 from kubernetes import client, config, dynamic
@@ -67,6 +68,19 @@ def _get_dynamic_client() -> dynamic.DynamicClient:
     return dynamic.DynamicClient(client.ApiClient(configuration=conf))
 
 
+def _fetch_runtime_cr(shoot_id: str) -> dynamic.ResourceInstance:
+    """Synchronous helper: load k8s config, fetch the Runtime CR for shoot_id."""
+    dynamic_client = _get_dynamic_client()
+    resource_api = dynamic_client.resources.get(
+        api_version=f"{_RUNTIME_GROUP}/{_RUNTIME_VERSION}",
+        kind="Runtime",
+    )
+    return resource_api.get(
+        namespace=_KCP_NAMESPACE,
+        label_selector=f"{_LABEL_SHOOT_NAME}={shoot_id}",
+    )
+
+
 async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
     """
     Return cluster region info for the given shoot-id.
@@ -95,15 +109,7 @@ async def get_cluster_region(shoot_id: str) -> ClusterRegionResponse:
     # --- Fetch from KCP ---
     logger.info(f"Cache miss for shoot_id={shoot_id}, fetching Runtime CR")
     try:
-        dynamic_client = _get_dynamic_client()
-        resource_api = dynamic_client.resources.get(
-            api_version=f"{_RUNTIME_GROUP}/{_RUNTIME_VERSION}",
-            kind="Runtime",
-        )
-        result = resource_api.get(
-            namespace=_KCP_NAMESPACE,
-            label_selector=f"{_LABEL_SHOOT_NAME}={shoot_id}",
-        )
+        result = await asyncio.to_thread(_fetch_runtime_cr, shoot_id)
     except ApiException as e:
         logger.exception(f"Kubernetes API error fetching Runtime CR for shoot_id={shoot_id}")
         raise HTTPException(

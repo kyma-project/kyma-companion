@@ -35,7 +35,7 @@ class TestProbesHana:
         app.dependency_overrides[get_usage_tracker_probe] = lambda: usage_tracker_probe
 
         mock_llm_probe = MagicMock(spec=ILLMProbe)
-        mock_llm_probe.get_llms_states.return_value = {"model1": True}
+        mock_llm_probe.get_llms_states = AsyncMock(return_value={"model1": True})
         app.dependency_overrides[get_llm_probe] = lambda: mock_llm_probe
 
         self._mock_key_store = MagicMock()

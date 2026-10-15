@@ -1,4 +1,4 @@
-# Linting configuration for Ruff
+# Linting configuration for Ruff.
 target-version = "py313"
 # Set the maximum line length to 120.
 line-length = 120
