@@ -64,7 +64,7 @@ types-requests = "^2.33.0.20261006"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.17.1"
-mypy = "^2.3.1"
+mypy = "^2.4.0"
 poethepoet = "^0.48.0"
 poetry-plugin-sort = "^0.3.0"
 ruff = "^0.16.9"
