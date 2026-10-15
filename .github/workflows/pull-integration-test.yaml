@@ -17,6 +17,10 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'run-integration-test')
     runs-on: ubuntu-latest
     environment: e2e
+    strategy:
+      fail-fast: false
+      matrix:
+        domain: [agents, rag, services]
 
     permissions:
       contents: read
@@ -46,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run integration tests
+      - name: Run integration tests (${{ matrix.domain }})
         env:
           LOG_LEVEL: "DEBUG"
           DEEPEVAL_DISABLE_TIMEOUTS: "true"
@@ -55,4 +59,4 @@ jobs:
         run: |
           echo "$COMPANION_TESTS_DEFAULT_CONFIG" \
             | jq --argjson override "${INTEGRATION_TEST_CONFIG:-"{}"}" '. * $override' > "$GITHUB_WORKSPACE/config/config.json"
-          poetry run poe test-integration
+          poetry run poe test-integration-${{ matrix.domain }}
