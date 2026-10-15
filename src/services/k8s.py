@@ -58,8 +58,10 @@ def get_allowed_k8s_domains() -> list[str]:
 
     The allowlist is server-side configuration only. It is read here and never
     stored on K8sAuthHeaders, so client-supplied data cannot change it.
+    Entries are normalized (stripped, lowercased) so that a value which passes
+    startup validation also matches at request time.
     """
-    return list(ALLOWED_K8S_DOMAINS)
+    return [domain.strip().lower() for domain in ALLOWED_K8S_DOMAINS]
 
 
 class K8sAuthHeaders(BaseModel):
@@ -116,8 +118,7 @@ class K8sAuthHeaders(BaseModel):
             domain = parsed_url.hostname.strip("/")
             # if hostname ends with any of the allowed domains, return True
             return any(
-                domain.endswith(f".{allowed_domain}") or domain == allowed_domain
-                for allowed_domain in (d.lower() for d in allowed_domains)
+                domain.endswith(f".{allowed_domain}") or domain == allowed_domain for allowed_domain in allowed_domains
             )
         except Exception as e:
             raise ValueError(f"Failed to check if cluster_url: {self.x_cluster_url}  is allowed") from e

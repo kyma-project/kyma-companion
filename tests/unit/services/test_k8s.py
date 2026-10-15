@@ -10,6 +10,7 @@ from services.k8s import (
     K8sAuthHeaders,
     K8sClient,
     K8sClientError,
+    get_allowed_k8s_domains,
     get_url_for_paged_request,
 )
 from services.k8s_models import PodLogsDiagnosticContext
@@ -3035,3 +3036,24 @@ class TestFormatInitContainerStatusesStructured:
             # Then: Returns status with unknown as name
             assert result is not None
             assert "unknown" in result
+
+
+class TestGetAllowedK8sDomains:
+    def test_entries_are_stripped_and_lowercased(self, monkeypatch):
+        # given: a value that passes startup validation but is not normalized
+        monkeypatch.setattr("services.k8s.ALLOWED_K8S_DOMAINS", [" Example.COM ", "kyma.ondemand.com"])
+
+        # when / then
+        assert get_allowed_k8s_domains() == ["example.com", "kyma.ondemand.com"]
+
+    def test_unnormalized_entry_still_matches_cluster_url(self, monkeypatch):
+        # given
+        monkeypatch.setattr("services.k8s.ALLOWED_K8S_DOMAINS", [" Example.COM "])
+        headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data="dGVzdA==",
+            x_k8s_authorization="token",
+        )
+
+        # when / then
+        assert headers.is_cluster_url_allowed() is True
