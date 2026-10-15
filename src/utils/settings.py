@@ -107,12 +107,15 @@ REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
-# Document retrieval strategy: "fusion" (default), "vector", or "reranker". Set before starting the agent.
-RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.FUSION, cast=RetrievalMode)
+# Document retrieval strategy: "reranker" (default), "vector", or "fusion". Set before starting the agent.
+RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode)
 # Number of documents returned per RAG search.
 RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
 # Number of alternative queries the query generator rewrites per search (used by reranker and fusion modes).
 RAG_NUM_QUERIES = config("RAG_NUM_QUERIES", default=4, cast=int)
+
+assert RAG_TOP_K > 0, f"RAG_TOP_K must be positive, got {RAG_TOP_K}"
+assert RAG_NUM_QUERIES > 0, f"RAG_NUM_QUERIES must be positive, got {RAG_NUM_QUERIES}"
 
 # Database
 DATABASE_URL = config("DATABASE_URL", None)

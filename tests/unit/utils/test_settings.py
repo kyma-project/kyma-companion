@@ -4,9 +4,11 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
-from decouple import config
 
 from utils.settings import (
+    RAG_NUM_QUERIES,
+    RAG_TOP_K,
+    RETRIEVAL_MODE,
     RetrievalMode,
     load_env_from_json,
 )
@@ -97,17 +99,16 @@ def test_retrieval_mode_rejects_invalid_value():
         RetrievalMode("bogus")
 
 
-def test_retrieval_mode_defaults_to_fusion(monkeypatch):
-    # With no RETRIEVAL_MODE configured, the setting resolves to fusion.
-    monkeypatch.delenv("RETRIEVAL_MODE", raising=False)
-    assert config("RETRIEVAL_MODE", default=RetrievalMode.FUSION, cast=RetrievalMode) == RetrievalMode.FUSION
+_EXPECTED_RAG_TOP_K = 5
+_EXPECTED_RAG_NUM_QUERIES = 4
 
 
-def test_rag_pipeline_parameters_default(monkeypatch):
-    # With nothing configured, the RAG pipeline keeps its previous hard-coded values.
-    monkeypatch.delenv("RAG_TOP_K", raising=False)
-    monkeypatch.delenv("RAG_NUM_QUERIES", raising=False)
-    expected_top_k = 5
-    expected_num_queries = 4
-    assert config("RAG_TOP_K", default=expected_top_k, cast=int) == expected_top_k
-    assert config("RAG_NUM_QUERIES", default=expected_num_queries, cast=int) == expected_num_queries
+def test_retrieval_mode_defaults_to_reranker():
+    # With no RETRIEVAL_MODE override, the exported constant is reranker.
+    assert RETRIEVAL_MODE == RetrievalMode.RERANKER
+
+
+def test_rag_pipeline_parameters_default():
+    # Verify the exported constants match the intended defaults.
+    assert RAG_TOP_K == _EXPECTED_RAG_TOP_K
+    assert RAG_NUM_QUERIES == _EXPECTED_RAG_NUM_QUERIES

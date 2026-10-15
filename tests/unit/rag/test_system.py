@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from rag.query_generator import Queries
-from rag.system import Query, RAGSystem
+from rag.system import _RERANKER_INPUT_LIMIT, Query, RAGSystem
 from unit.rag.reranker.fixtures import doc1, doc2, doc3
 from utils.settings import (
     MAIN_EMBEDDING_MODEL_NAME,
@@ -73,7 +73,6 @@ class TestRAGSystemMode:
         top_k = 2
         candidate_k = 10  # max(top_k * 4, 10)
         expected_query_count = 2  # original query + one alternative
-        expected_input_limit = 1000
 
         # When retrieving
         result = await rag_system.aretrieve(Query(text="What is Kyma?"), top_k=top_k)
@@ -85,24 +84,24 @@ class TestRAGSystemMode:
         assert all(call.kwargs["top_k"] == candidate_k for call in retrieve_calls)
         collaborators["reranker"].arerank.assert_awaited_once()
         rerank_kwargs = collaborators["reranker"].arerank.await_args.kwargs
-        assert rerank_kwargs["input_limit"] == expected_input_limit
+        assert rerank_kwargs["input_limit"] == _RERANKER_INPUT_LIMIT
         assert rerank_kwargs["output_limit"] == top_k
         assert result == [doc1, doc2]
 
     @pytest.mark.asyncio
-    async def test_default_mode_is_fusion(self, mock_models, collaborators):
-        # Given no override, the module default applies
+    async def test_default_mode_is_reranker(self, monkeypatch, mock_models, collaborators):
+        # Given the default mode (reranker) is explicitly set for isolation
+        monkeypatch.setattr("rag.system.RETRIEVAL_MODE", RetrievalMode.RERANKER)
         rag_system = RAGSystem(mock_models)
 
-        # When retrieving, with RRF stubbed to observe the call
-        with patch("rag.system.get_relevant_documents", return_value=[doc1]) as mock_rrf:
-            result = await rag_system.aretrieve(Query(text="What is Kyma?"), top_k=2)
+        # When retrieving
+        result = await rag_system.aretrieve(Query(text="What is Kyma?"), top_k=2)
 
-        # Then the default is fusion: RRF fuses the candidates and the LLM reranker is not used
-        assert rag_system.mode == RetrievalMode.FUSION
-        mock_rrf.assert_called_once()
-        collaborators["reranker"].arerank.assert_not_awaited()
-        assert result == [doc1]
+        # Then the default is reranker: query rewrite -> multi-query retrieve -> LLM rerank
+        assert rag_system.mode == RetrievalMode.RERANKER
+        collaborators["query_generator"].agenerate_queries.assert_awaited_once()
+        collaborators["reranker"].arerank.assert_awaited_once()
+        assert result == [doc1, doc2]
 
     @pytest.mark.asyncio
     async def test_vector_mode_skips_rewrite_and_rerank(self, monkeypatch, mock_models, collaborators):

@@ -6,7 +6,6 @@ from rag.system import Query, RAGSystem
 from utils.models.factory import IModel
 from utils.settings import RAG_TOP_K
 
-DEFAULT_TOP_K: int = RAG_TOP_K
 SEARCH_KYMA_DOC_TOOL_NAME: str = "search_kyma_doc"
 
 
@@ -37,9 +36,9 @@ class SearchKymaDocTool(BaseTool):
 
     # the following fields are not part of the schema, but are used internally
     rag_system: RAGSystem | None = Field(default=None, exclude=True)
-    top_k: int | None = Field(default=DEFAULT_TOP_K, exclude=True)
+    top_k: int | None = Field(default=RAG_TOP_K, exclude=True)
 
-    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = DEFAULT_TOP_K):
+    def __init__(self, models: dict[str, IModel | Embeddings], top_k: int = RAG_TOP_K):
         super().__init__()
         self.rag_system = RAGSystem(models)
         self.top_k = top_k
@@ -64,6 +63,6 @@ class SearchKymaDocTool(BaseTool):
         query_obj = Query(text=query)
         relevant_docs = await self.rag_system.aretrieve(
             query_obj,
-            top_k=top_k if top_k is not None else (self.top_k or DEFAULT_TOP_K),
+            top_k=top_k if top_k is not None else (self.top_k or RAG_TOP_K),
         )
         return [doc.page_content for doc in relevant_docs if doc.page_content.strip()]

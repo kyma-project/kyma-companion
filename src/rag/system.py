@@ -23,6 +23,8 @@ from utils.settings import (
 
 logger = get_logger(__name__)
 
+_RERANKER_INPUT_LIMIT = 1000  # max candidate docs passed to the LLM reranker
+
 
 class Query(BaseModel):
     """A RAG system query."""
@@ -31,7 +33,10 @@ class Query(BaseModel):
 
 
 class RAGSystem:
-    """A system that can be used to generate queries and retrieve documents."""
+    """A system that can be used to generate queries and retrieve documents.
+
+    The retrieval strategy is fixed at construction time via the RETRIEVAL_MODE setting.
+    """
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         # setup query generator
@@ -50,7 +55,7 @@ class RAGSystem:
         self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
 
         # retrieval strategy is fixed at startup via the RETRIEVAL_MODE setting
-        self.mode = RetrievalMode(RETRIEVAL_MODE)
+        self.mode = RETRIEVAL_MODE
 
         logger.info(f"RAG system initialized with retrieval mode: {self.mode}.")
         logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
@@ -63,7 +68,9 @@ class RAGSystem:
             return await self._aretrieve_vector(query, top_k)
         if self.mode == RetrievalMode.FUSION:
             return await self._aretrieve_fusion(query, top_k)
-        return await self._aretrieve_reranker(query, top_k)
+        if self.mode == RetrievalMode.RERANKER:
+            return await self._aretrieve_reranker(query, top_k)
+        raise ValueError(f"Unknown retrieval mode: {self.mode}")
 
     async def _aretrieve_vector(self, query: Query, top_k: int) -> list[Document]:
         """Single embedding similarity search: no query rewrite, no reranking."""
@@ -84,7 +91,7 @@ class RAGSystem:
         reranked_docs = await self.reranker.arerank(
             all_docs,
             all_queries,
-            input_limit=1000,
+            input_limit=_RERANKER_INPUT_LIMIT,
             output_limit=top_k,
         )
         logger.info(f"Retrieved {len(reranked_docs)} documents (reranker).")
