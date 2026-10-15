@@ -18,7 +18,7 @@ on:
         description: "Git ref to checkout for test assets (e.g. release branch SHA). Defaults to main."
 
 env:
-  K3D_VERSION: "v5.8.3"
+  K3D_VERSION: "v5.9.0"
   NAMESPACE: "doc-indexer"
 
 jobs:
