@@ -22,7 +22,7 @@ from routers.public_key import router as public_key_router
 from services.metrics import CustomMetrics
 from utils.exceptions import K8sClientError
 from utils.logging import get_logger, reconfigure_logging
-from utils.settings import HOST, KYMA_A2A_BASE_URL, PORT
+from utils.settings import ALLOWED_K8S_DOMAINS, HOST, KYMA_A2A_BASE_URL, PORT, validate_allowed_k8s_domains
 
 logger = get_logger(__name__)
 access_logger = get_logger("access")
@@ -30,12 +30,19 @@ access_logger = get_logger("access")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    """Lifespan event handler to reconfigure logging after uvicorn starts."""
+    """Lifespan event handler: reconfigure logging and check required settings at startup."""
     # Only reconfigure logging when NOT running tests
     # During tests, logging is already configured by utils.logging on import
     if "pytest" not in sys.modules:
         # Reconfigure logging after uvicorn has applied its config
         reconfigure_logging()
+        # Fail hard when the cluster URL allowlist is missing. Unit tests set the
+        # allowlist per test, so the check is skipped under pytest.
+        try:
+            validate_allowed_k8s_domains(ALLOWED_K8S_DOMAINS)
+        except RuntimeError:
+            logger.critical("Startup failed: ALLOWED_K8S_DOMAINS is missing or empty.")
+            raise
     yield
 
 

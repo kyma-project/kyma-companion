@@ -59,6 +59,11 @@ def sample_k8s_pod():
 
 
 class TestK8sAuthHeaders:
+    @pytest.fixture(autouse=True)
+    def configured_allowlist(self, monkeypatch):
+        # The allowlist is server-side configuration, injected here instead of via the model.
+        monkeypatch.setattr("services.k8s.ALLOWED_K8S_DOMAINS", ["example.com"])
+
     @pytest.mark.parametrize(
         "given_ca_data, expected_result",
         [
@@ -276,18 +281,6 @@ class TestK8sAuthHeaders:
                 + "x-client-certificate-data and x-client-key-data headers are required.",
             ),
             (
-                "all domains allowed for x_cluster_url",
-                K8sAuthHeaders(
-                    x_cluster_url="https://api.example.com",
-                    x_cluster_certificate_authority_data="abc",
-                    x_k8s_authorization="abc",
-                    x_client_certificate_data="abc",
-                    x_client_key_data=None,
-                    allowed_domains=[],  # No domains specified, should allow all
-                ),
-                None,
-            ),
-            (
                 "allowed x_cluster_url domain",
                 K8sAuthHeaders(
                     x_cluster_url="https://api.example.com",
@@ -295,7 +288,6 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data=None,
-                    allowed_domains=["example.com"],
                 ),
                 None,
             ),
@@ -307,9 +299,26 @@ class TestK8sAuthHeaders:
                     x_k8s_authorization="abc",
                     x_client_certificate_data="abc",
                     x_client_key_data=None,
-                    allowed_domains=["example.com"],
                 ),
                 "Cluster URL https://api.custom.com is not allowed.",
+            ),
+            (
+                "http scheme is rejected even for an allowed domain",
+                K8sAuthHeaders(
+                    x_cluster_url="http://api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                ),
+                "x-cluster-url must use the https scheme.",
+            ),
+            (
+                "scheme-less x_cluster_url is rejected",
+                K8sAuthHeaders(
+                    x_cluster_url="api.example.com",
+                    x_cluster_certificate_authority_data="abc",
+                    x_k8s_authorization="abc",
+                ),
+                "x-cluster-url must use the https scheme.",
             ),
         ],
     )
@@ -348,10 +357,24 @@ class TestK8sAuthHeaders:
                 None,
             ),
             (
-                "No allowed domains (should skip validation and allow)",
+                "No allowed domains (should fail closed and reject)",
                 "https://api.anything.com",
                 [],
-                True,
+                False,
+                None,
+            ),
+            (
+                "http scheme is rejected for an allowed domain",
+                "http://api.example.com",
+                ["example.com"],
+                False,
+                None,
+            ),
+            (
+                "Link-local address is rejected",
+                "https://169.254.169.254/",
+                ["example.com"],
+                False,
                 None,
             ),
             (
@@ -387,19 +410,20 @@ class TestK8sAuthHeaders:
     )
     def test_is_cluster_url_allowed(
         self,
+        monkeypatch,
         description,
         x_cluster_url,
         allowed_domains,
         expected_result,
         expected_error,
     ):
+        monkeypatch.setattr("services.k8s.ALLOWED_K8S_DOMAINS", allowed_domains)
         headers = K8sAuthHeaders(
             x_cluster_url=x_cluster_url,
             x_cluster_certificate_authority_data="dGVzdA==",
             x_k8s_authorization="token",
             x_client_certificate_data=None,
             x_client_key_data=None,
-            allowed_domains=allowed_domains,
         )
 
         # when/then
@@ -408,6 +432,68 @@ class TestK8sAuthHeaders:
                 headers.is_cluster_url_allowed()
         else:
             assert headers.is_cluster_url_allowed() == expected_result, description
+
+    @pytest.mark.parametrize(
+        "description, injected_domains, x_cluster_url",
+        [
+            ("empty list in payload does not disable the allowlist", [], "https://api.notallowed.com"),
+            (
+                "custom list in payload does not replace the allowlist",
+                ["169.254.169.254"],
+                "https://169.254.169.254/",
+            ),
+        ],
+    )
+    def test_client_payload_cannot_override_allowlist(self, description, injected_domains, x_cluster_url):
+        # given: a decrypted client payload (keys as sent by the client) that tries to set the allowlist
+        payload = {
+            "x-cluster-url": x_cluster_url,
+            "x-cluster-certificate-authority-data": "dGVzdA==",
+            "x-k8s-authorization": "token",
+            "allowed_domains": injected_domains,
+            "unknown-key": "ignored",
+        }
+
+        # when
+        headers = K8sAuthHeaders.model_validate(payload)
+
+        # then: unknown keys are not stored and the configured allowlist (example.com) still applies
+        assert "allowed_domains" not in headers.model_dump(), description
+        assert "unknown-key" not in headers.model_dump(), description
+        assert headers.is_cluster_url_allowed() is False, description
+        with pytest.raises(ValueError, match="is not allowed"):
+            headers.validate_headers()
+
+    def test_constructor_cannot_set_allowlist(self):
+        # given / when
+        headers = K8sAuthHeaders(
+            x_cluster_url="https://api.notallowed.com",
+            x_cluster_certificate_authority_data="dGVzdA==",
+            x_k8s_authorization="token",
+            allowed_domains=["notallowed.com"],
+        )
+
+        # then
+        assert not hasattr(headers, "allowed_domains")
+        assert headers.is_cluster_url_allowed() is False
+
+    def test_empty_allowlist_rejects_and_logs_error(self, monkeypatch):
+        # given
+        monkeypatch.setattr("services.k8s.ALLOWED_K8S_DOMAINS", [])
+        mock_logger = Mock()
+        monkeypatch.setattr("services.k8s.logger", mock_logger)
+        headers = K8sAuthHeaders(
+            x_cluster_url="https://api.example.com",
+            x_cluster_certificate_authority_data="dGVzdA==",
+            x_k8s_authorization="token",
+        )
+
+        # when / then
+        assert headers.is_cluster_url_allowed() is False
+        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_not_called()
+        with pytest.raises(ValueError, match="is not allowed"):
+            headers.validate_headers()
 
 
 class TestK8sClient:
