@@ -1,6 +1,5 @@
 import copy
 import json
-from typing import Protocol
 
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
@@ -30,20 +29,7 @@ class DocumentRelevancyScores(BaseModel):
     documents: list[DocumentRelevancyScore]
 
 
-class IReranker(Protocol):
-    """Interface for RAG rerankers."""
-
-    async def arerank(
-        self,
-        docs_list: list[list[Document]],
-        queries: list[str],
-        input_limit: int = 10,
-        output_limit: int = 4,
-    ) -> list[Document]:
-        """Rerank the documents based on which documents are most relevant to the given queries."""
-
-
-class LLMReranker(IReranker):
+class LLMReranker:
     """Reranker based on a language model."""
 
     def __init__(self, model: IModel):
@@ -76,8 +62,6 @@ class LLMReranker(IReranker):
         try:
             # Use RRF to get relevant documents with limit output_limit + 3.
             docs = get_relevant_documents(docs_list, input_limit, output_limit + 3)
-            if not docs:
-                docs = flatten_unique(docs_list, output_limit)
             # Use the LLM model to rerank the documents with limit output_limit.
             return await self._chain_ainvoke(docs, queries, output_limit)
         except Exception:
@@ -133,27 +117,6 @@ class LLMReranker(IReranker):
                 original_doc.id = None if original_doc.id.startswith(TMP_DOC_ID_PREFIX) else original_doc.id
                 reranked_docs.append(original_doc)
         return reranked_docs[:limit]
-
-
-def flatten_unique(docs_list: list[list[Document]], limit: int = -1) -> list[Document]:
-    """
-    Flatten the list of lists of documents and return the first unique documents up to the limit.
-    :param docs_list: A list of lists of documents.
-    :param limit: The maximum number of documents to return. If -1, return all unique documents.
-    :return: A list of unique documents.
-    """
-    if limit == 0:
-        return []
-    documents: list[Document] = []
-    for docs in docs_list:
-        for doc in docs:
-            if doc not in documents:
-                documents.append(doc)
-            if len(documents) == limit:
-                break
-        if len(documents) == limit:
-            break
-    return documents
 
 
 def format_documents(docs: list[Document]) -> str:

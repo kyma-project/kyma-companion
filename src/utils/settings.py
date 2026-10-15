@@ -74,15 +74,10 @@ MAIN_EMBEDDING_MODEL_NAME = config("MAIN_EMBEDDING_MODEL_NAME", default="text-em
 LLM_REQUEST_TIMEOUT_SECONDS = config("LLM_REQUEST_TIMEOUT_SECONDS", default=120, cast=int)
 
 # Redis
-# A Redis URL has the format "redis://<username>:<password>@<host>:<port>/<db_number>
 REDIS_HOST = config("REDIS_HOST", default="localhost")
 REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
-REDIS_USER = config("REDIS_USER", default="")  # optional
 REDIS_PASSWORD = config("REDIS_PASSWORD", default="")  # optional
 REDIS_DB_NUMBER = config("REDIS_DB_NUMBER", default=0, cast=int)  # optional
-user_part = f"{REDIS_USER}" if REDIS_USER else ""
-auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD else ""
-REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
@@ -126,10 +121,6 @@ CHAT_HISTORY_KEEP_MESSAGES = config("CHAT_HISTORY_KEEP_MESSAGES", 10, cast=int)
 K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",
     default=f"{Path(__file__).parent.parent.parent}/config/api_resources.json",
-)
-K8S_RESOURCE_RELATIONS_JSON_FILE = config(
-    "K8S_RESOURCE_RELATIONS_JSON_FILE",
-    default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
 # set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.

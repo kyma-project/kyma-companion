@@ -68,10 +68,10 @@ If you are a PyCharm user and want to use the virtual environment created by Poe
 ### Redis Server
 
 Before running the application, you must provide the Redis server. It stores the conversation with a large language model (LLM).
-Therefore, provide **REDIS_URL** as an environment variable.
+Therefore, provide **REDIS_HOST** and **REDIS_PORT** as environment variables, plus **REDIS_PASSWORD** if the server requires one.
 
 For details on how to create a Redis server, read [Create Redis](https://github.tools.sap/kyma/ai-force/blob/main/docs/infrastructure/setup.md#15-redis). <!--the link must be replaced when the OS documentation is available -->
-For example, `REDIS_URL="redis://{host or ip}:6379"`
+For example, `REDIS_HOST="{host or ip}"` and `REDIS_PORT="6379"`
 
 ### Running Kyma Companion Locally
 
