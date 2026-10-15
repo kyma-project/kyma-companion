@@ -909,14 +909,14 @@ dev = ["black", "coveralls", "mypy", "pre-commit", "pylint", "pytest (>=5)", "py
 
 [[package]]
 name = "deepeval"
-version = "4.2.7"
+version = "4.3.0"
 description = "The LLM Evaluation Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["test"]
 files = [
-    {file = "deepeval-4.2.7-py3-none-any.whl", hash = "sha256:8e325bac5a63cd90264a69ab91dd9ea0376f045d16b820193139dd56da2886bd"},
-    {file = "deepeval-4.2.7.tar.gz", hash = "sha256:5a5d7001ef67b78c76edc13e36f4b2602d10188c398dc0dca6426bb47d1e0002"},
+    {file = "deepeval-4.3.0-py3-none-any.whl", hash = "sha256:523bb1c8f20d4a1d4a8717c7919e0a6e954892c5514f217877a543b401066080"},
+    {file = "deepeval-4.3.0.tar.gz", hash = "sha256:d9d89e00361a08a335cd5e2aa4bb10577e9a711ead8119aff0574b92fcce27b7"},
 ]
 
 [package.dependencies]
@@ -6455,4 +6455,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.14.*"
-content-hash = "fb0dee9785f845fc2e5c6e02e9522e58b0a1f2d51da9614d92a1b2c428eb4f47"
+content-hash = "4547f26ed867daf5a2339a042ba9f18d754430c1e118be211ed1857efdab1a63"
