@@ -1,5 +1,3 @@
-import ast
-import json
 from http import HTTPStatus
 from typing import Any
 
@@ -112,17 +110,3 @@ async def get_relevant_context_from_k8s_cluster(message: Message, k8s_client: IK
         context = str(data_sanitizer.sanitize(context))
 
     return context
-
-
-def convert_string_to_object(input_string: str) -> Any:
-    """Try to convert string to object."""
-    # First, try using json.loads (works for proper JSON strings)
-    try:
-        return json.loads(input_string)
-    except Exception:
-        # If JSON parsing fails
-        try:
-            return ast.literal_eval(input_string)
-        except (SyntaxError, ValueError):
-            # If it's not valid JSON or a Python literal, return the string itself
-            return input_string

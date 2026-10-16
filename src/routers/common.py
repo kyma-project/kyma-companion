@@ -389,8 +389,6 @@ async def get_k8s_auth_headers_from_encrypted_payload(
         # convert all keys to lowercase to match the K8sAuthHeaders model
         auth_headers = {k.lower(): v for k, v in payload.items()}
         return K8sAuthHeaders.model_validate(auth_headers)
-    except HTTPException:
-        raise
     except ValueError as e:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,

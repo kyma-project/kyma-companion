@@ -2,7 +2,6 @@ from typing import Protocol
 
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
-from redis.typing import ResponseT
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
@@ -36,22 +35,10 @@ class IUsageTrackerProbe(Protocol):
         """Checks if the failure count is equal or greater than the threshold."""
 
 
-class IHanaConnection(Protocol):
-    """Protocol for the Hana database connection."""
-
-    def isconnected(self) -> bool:
-        """Verifies if a connection to a Hana database is ready."""
-
-
 class IHana(Protocol):
     """
     Protocol for defining an IHana service.
-
-    Attributes:
-        connection (IHanaConnection): Represents the connection to the Hana database.
     """
-
-    connection: IHanaConnection
 
     def is_connection_operational(self) -> bool:
         """
@@ -62,24 +49,10 @@ class IHana(Protocol):
         """Check if a connection exists."""
 
 
-class IRedisConnection(Protocol):
-    """
-    Protocol to ensure the Redis connection has a `ping` method.
-    """
-
-    def ping(self, **kwargs) -> ResponseT:  # noqa
-        """Ping the Redis server."""
-
-
 class IRedis(Protocol):
     """
     Protocol for defining an IRedis service.
-
-    Attributes:
-        connection (IRedisConnection): Represents the connection to the Redis database.
     """
-
-    connection: IRedisConnection
 
     async def is_connection_operational(self) -> bool:
         """

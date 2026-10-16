@@ -147,10 +147,6 @@ class UsageTrackerProbe(metaclass=SingletonMeta):
         """Checks if the failure count is snaller than the threshold."""
         return self._failure_count < self._failure_threshold
 
-    def get_failure_count(self) -> int:
-        """Returns the current value of the failure count."""
-        return self._failure_count
-
     @classmethod
     def _reset_for_tests(cls) -> None:
         """Reset the singleton instance. Only use for testing purpose."""

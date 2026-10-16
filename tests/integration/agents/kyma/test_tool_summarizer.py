@@ -18,13 +18,14 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langchain_core.runnables import RunnableConfig
 
 from agents.common.chunk_summarizer import ToolResponseSummarizer
-from agents.common.utils import compute_string_token_count, convert_string_to_object
+from agents.common.utils import compute_string_token_count
 from agents.kyma.react_agent import CHUNK_LIMIT_EXCEEDED_RESPONSE, _tool_summarizer
 from integration.agents.fixtures.k8_query_tool_response import (
     sample_deployment_tool_response,
     sample_pods_tool_response,
     sample_services_tool_response,
 )
+from integration.agents.utils import convert_string_to_object
 from utils.settings import (
     MAIN_MODEL_NAME,
     TOOL_RESPONSE_TOKEN_COUNT_LIMIT,

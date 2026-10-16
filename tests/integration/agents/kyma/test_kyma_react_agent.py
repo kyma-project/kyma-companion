@@ -114,7 +114,7 @@ def create_k8s_client() -> IK8sClient:
         x_client_certificate_data=TEST_CLUSTER_CLIENT_CERTIFICATE_DATA,
         x_client_key_data=TEST_CLUSTER_CLIENT_KEY_DATA,
     )
-    return K8sClient.new(
+    return K8sClient(
         k8s_auth_headers=k8s_auth_headers,
         data_sanitizer=data_sanitizer,
     )
