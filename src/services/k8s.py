@@ -38,9 +38,6 @@ from utils.settings import (
 
 logger = logging.get_logger(__name__)
 
-GROUP_VERSION_SEPARATOR = "/"
-GROUP_VERSION_PARTS_COUNT = 2
-
 
 class AuthType(StrEnum):
     """Status of the sub-task."""
@@ -200,9 +197,6 @@ class IK8sClient(Protocol):
         Raises:
             ValueError: If the namespace is not found or the API call fails.
         """
-
-    async def get_group_version(self, group_version: str) -> dict:
-        """Get the group version of the Kubernetes API."""
 
     def get_data_sanitizer(self) -> IDataSanitizer | None:
         """Return the data sanitizer instance"""
@@ -999,27 +993,6 @@ class K8sClient:
         result = await self.execute_get_api_request(uri)
         if not isinstance(result, dict):
             raise ValueError(f"Failed to fetch namespace '{name}'.")
-        return result
-
-    async def get_group_version(self, group_version: str) -> dict:
-        """Get the group version of the Kubernetes API."""
-        parts_count = len(group_version.split(GROUP_VERSION_SEPARATOR))
-
-        if group_version == "" or parts_count > GROUP_VERSION_PARTS_COUNT:
-            raise ValueError(f"Invalid groupVersion: {group_version}. Expected format: v1 or <group>/<version>.")
-
-        # for Core API group, the endpoint is "api/v1", for others "apis/<group>/<version>".
-        uri = f"api/{group_version}"
-        if parts_count == GROUP_VERSION_PARTS_COUNT:
-            uri = f"apis/{group_version}"
-
-        # fetch the result.
-        result = await self.execute_get_api_request(uri)
-        if not isinstance(result, dict):
-            raise ValueError(
-                f"Invalid response from Kubernetes API for group version {group_version}. "
-                f"Expected a dictionary, but got {type(result)}."
-            )
         return result
 
     def get_data_sanitizer(self) -> IDataSanitizer | None:

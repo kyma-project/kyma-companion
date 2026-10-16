@@ -1086,36 +1086,6 @@ class TestK8sClient:
             data_sanitizer.sanitize.assert_called_once_with(raw_data)
         assert result == expected_result
 
-    @patch("services.k8s.K8sClient.__init__", return_value=None)
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "test_description, group_version, expected_uri",
-        [
-            (
-                "should call api/v1 when group_version is CoreV1",
-                "v1",
-                "api/v1",
-            ),
-            (
-                "should call apis/<groupVersion> when group_version is different",
-                "apps/v1",
-                "apis/apps/v1",
-            ),
-        ],
-    )
-    async def test_get_group_version(self, mock_init, test_description, group_version, expected_uri):
-        # given
-        k8s_client = K8sClient(k8s_auth_headers=None, data_sanitizer=None)
-        with patch("services.k8s.K8sClient.execute_get_api_request") as mock_execute_get_api_request:
-            mock_execute_get_api_request.return_value = {}
-
-            # when
-            result = await k8s_client.get_group_version(group_version)
-
-            # then
-            assert result == {}
-            mock_execute_get_api_request.assert_called_once_with(expected_uri), test_description
-
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "mock_response_lines, expected_sanitized_logs",
