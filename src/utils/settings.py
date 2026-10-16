@@ -127,10 +127,6 @@ K8S_API_RESOURCES_JSON_FILE = config(
     "K8S_API_RESOURCES_JSON_FILE",
     default=f"{Path(__file__).parent.parent.parent}/config/api_resources.json",
 )
-K8S_RESOURCE_RELATIONS_JSON_FILE = config(
-    "K8S_RESOURCE_RELATIONS_JSON_FILE",
-    default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
-)
 
 # set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
