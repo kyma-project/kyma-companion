@@ -8,15 +8,6 @@ from pathlib import Path
 from decouple import config
 
 
-class LangfuseMaskingModes(StrEnum):
-    """Enumeration for Langfuse masking modes."""
-
-    DISABLED = "DISABLED"  # No masking, return data as is.
-    PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
-    FILTERED = "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
-    REDACTED = "REDACTED"  # Everything is redacted.
-
-
 class RetrievalMode(StrEnum):
     """Document retrieval strategy used by the RAG system."""
 
