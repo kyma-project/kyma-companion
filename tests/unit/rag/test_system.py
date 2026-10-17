@@ -217,5 +217,6 @@ async def test_rag_system_fails_fast_without_current_run(fake_db, caplog, mode):
         await system.aretrieve(Query(text="q"))
 
     assert system.query_generator.calls == 0  # type: ignore[attr-defined]
-    assert any("has no current run" in r.getMessage() for r in caplog.records)
+    expected = "No usable current run of corpus ops_docs in run table docs_index_runs; cannot search."
+    assert any(r.getMessage() == expected for r in caplog.records)
     assert all(r.exc_info is None for r in caplog.records)

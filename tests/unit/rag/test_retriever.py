@@ -114,7 +114,9 @@ async def test_retriever_retries_only_once(fake_db, caplog):
     errors = [r for r in caplog.records if r.levelno == logging.ERROR]
     assert len(errors) == 1
     assert errors[0].exc_info is None
-    assert "does not exist" in errors[0].getMessage()
+    assert errors[0].getMessage() == (
+        "No usable current run of corpus ops_docs in run table docs_index_runs; cannot retrieve documents."
+    )
 
 
 @pytest.mark.asyncio
@@ -160,9 +162,15 @@ def test_vector_db_does_not_create_missing_table(monkeypatch):
         db._initialize_table()
 
 
-def test_hana_db_logger_is_silenced():
-    # Its ERROR lines carry the full query vector; a dropped table is expected and retried.
-    assert logging.getLogger("langchain_hana.vectorstores.hana_db").level == logging.CRITICAL
+def test_hana_db_logger_drops_only_failed_statement_records(caplog):
+    # Its "SQL Statement:" and "Parameters:" lines carry the full query vector; other errors stay.
+    hana_logger = logging.getLogger("langchain_hana.vectorstores.hana_db")
+    with caplog.at_level(logging.DEBUG, logger=hana_logger.name):
+        hana_logger.error("SQL Statement: SELECT TOP 5 * FROM T")
+        hana_logger.error("Parameters: [[0.1, 0.2, 0.3]]")
+        hana_logger.error("Connection to HANA lost")
+
+    assert [r.getMessage() for r in caplog.records] == ["Connection to HANA lost"]
 
 
 def _latency_count(is_success: bool) -> float:

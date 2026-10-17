@@ -93,7 +93,7 @@ class HanaDBRetriever:
             if self.current_run.invalidate(table):
                 logger.warning(
                     f"Table {table} of the current run of corpus {self.current_run.corpus} is "
-                    f"gone ({e}), resolving the current run again."
+                    "gone; resolving the current run again."
                 )
             else:
                 logger.debug(f"Table {table} is gone, retrying with the current run.")
@@ -113,9 +113,12 @@ class HanaDBRetriever:
         start_time = time.perf_counter()
         try:
             docs = await run_in_executor(None, self._search, query, top_k)
-        except RunTableError as e:
-            # A state of the run table, not a bug: no traceback.
-            logger.error(f"Error retrieving documents for query: {query}: {e}")
+        except RunTableError:
+            # A state of the run table, not a bug: no traceback, no exception text.
+            logger.error(
+                f"No usable current run of corpus {self.current_run.corpus} in run table "
+                f"{self.current_run.runs_table}; cannot retrieve documents."
+            )
             await CustomMetrics().record_hanadb_latency(time.perf_counter() - start_time, False)
             raise
         except Exception:

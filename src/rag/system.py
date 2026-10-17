@@ -83,8 +83,12 @@ class RAGSystem:
         # Fail fast without the LLM call if the corpus has no usable current run.
         try:
             await run_in_executor(None, self.retriever.current_run.resolve)
-        except RunTableError as e:
-            logger.error(f"Cannot search: {e}")
+        except RunTableError:
+            # A state of the run table, not a bug: no traceback, no exception text.
+            logger.error(
+                f"No usable current run of corpus {self.retriever.current_run.corpus} in run table "
+                f"{self.retriever.current_run.runs_table}; cannot search."
+            )
             raise
 
         if self.mode == RetrievalMode.VECTOR:
