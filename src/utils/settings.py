@@ -113,7 +113,15 @@ DATABASE_URL = config("DATABASE_URL", None)
 DATABASE_PORT = config("DATABASE_PORT", cast=int, default=443)
 DATABASE_USER = config("DATABASE_USER", None)
 DATABASE_PASSWORD = config("DATABASE_PASSWORD", None)
-DOCS_TABLE_NAME = config("DOCS_TABLE_NAME", default="kyma_docs")
+# The docs table is the one of the current run of DOCS_CORPUS in the run table
+# DOCS_RUNS_TABLE written by the kyma-docs-indexer; a resolved table is cached for
+# DOCS_RUN_CACHE_TTL_SECONDS.
+DOCS_CORPUS = config("DOCS_CORPUS", default="kyma_docs")
+DOCS_RUNS_TABLE = config("DOCS_RUNS_TABLE", default="docs_index_runs")
+DOCS_RUN_CACHE_TTL_SECONDS = config("DOCS_RUN_CACHE_TTL_SECONDS", default=60, cast=float)
+# The fixed table name is no longer read: the table comes from the run table.
+if os.getenv("DOCS_TABLE_NAME"):
+    logging.warning("DOCS_TABLE_NAME is no longer used; the table comes from DOCS_RUNS_TABLE.")
 HANA_HEALTH_CHECK_CACHE_TTL_SECONDS = config(
     "HANA_HEALTH_CHECK_CACHE_TTL_SECONDS", default=300, cast=int
 )  # Default 5 minutes

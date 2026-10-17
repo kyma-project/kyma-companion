@@ -108,6 +108,10 @@ def _configure_logging() -> None:
         uvicorn_logger.handlers = [console_handler]
         uvicorn_logger.propagate = False
 
+    # langchain_hana logs every failed search SQL at ERROR, with the full query vector
+    # (~64 KB per line). A dropped run table is expected and retried; the retriever logs it.
+    getLogger("langchain_hana.vectorstores.hana_db").setLevel(CRITICAL)
+
 
 # Initialize logging when module is imported
 _configure_logging()
