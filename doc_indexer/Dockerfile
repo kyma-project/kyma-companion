@@ -33,12 +33,12 @@
 # carries the SHA-256 of the tarball it downloads, so a version bump means
 # changing the ARG and the checksum together.
 
-ARG WOLFI_BASE_DIGEST=sha256:d59fd2d1d21e913b12a8d56064e9aaf61f818289bd18b17132a0c4fde2358cea
+ARG WOLFI_BASE_DIGEST=sha256:256c88bb066424045021090932d50be93c8e3f2ce3586707702a401b146f3e43
 
 # --- Stage 1: builder ---------------------------------------------------------
 FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
 
-ARG PYTHON_VERSION=3.14.7
+ARG PYTHON_VERSION=3.14.8
 ARG GLIBC_MIN=2.44
 
 # Toolchain and development headers for the CPython build:
@@ -115,7 +115,7 @@ RUN apk add --no-cache \
 # The interpreter binary is statically linked against libpython (there is
 # no libpython3.14.so); its only runtime library dependencies are libc and
 # libm.
-ADD --checksum=sha256:62859805f6fdf25e2bcbf3fa3217801e1996887ca33e6a2af80674bdfa2dbe07 \
+ADD --checksum=sha256:a65b20a728f169f4e66ae143f40b1bd3d33c38d770251663f627c9767b79b210 \
     https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz /src/
 RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSION} \
   && printf '%s\n' '*disabled*' _dbm _gdbm _sqlite3 _tkinter readline _curses _curses_panel \
