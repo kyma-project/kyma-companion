@@ -1,144 +1,201 @@
-from unittest.mock import AsyncMock, Mock, patch
+"""Tests for the retriever over the table of the current run (no live HANA)."""
+
+import logging
+import threading
 
 import pytest
 from hdbcli import dbapi
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
 
-from rag.retriever import HanaDBRetriever
+import rag.retriever as retriever_module
+from rag.current_run import CurrentRunTableMissingError, NoCurrentRunError
+from rag.retriever import TableNotFoundError
 from services.metrics import HANADB_LATENCY_METRIC_KEY, CustomMetrics
+from unit.rag.fakes import RUN_A, RUN_B, FakeClock, FakeConnection, FakeVectorDB, make_retriever
+
+# Two lookups (or log lines, or warnings): the first one and the one after a change.
+TWICE = 2
 
 
-@pytest.fixture
-def mock_embeddings():
-    """Create a mock embeddings model."""
-    return Mock(spec=Embeddings)
+@pytest.mark.asyncio
+async def test_retriever_reuses_db_and_rebuilds_on_new_run(fake_db):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+
+    assert (await retriever.aretrieve("q"))[0].page_content == f"{RUN_A}:q"
+    await retriever.aretrieve("q")
+    assert fake_db.created == [RUN_A]
+
+    conn.current = RUN_B
+    clock.now = 61
+    assert (await retriever.aretrieve("q"))[0].page_content == f"{RUN_B}:q"
+    assert fake_db.created == [RUN_A, RUN_B]
 
 
-@pytest.fixture
-def mock_connection():
-    """Create a mock HANA DB connection."""
-    return Mock(spec=dbapi.Connection)
+@pytest.mark.asyncio
+async def test_retriever_retries_once_on_dropped_table(fake_db):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+    await retriever.aretrieve("q")
+
+    # The pointer flipped and the old table was dropped, all within the TTL.
+    conn.current = RUN_B
+    fake_db.missing = {RUN_A}
+
+    assert (await retriever.aretrieve("q"))[0].page_content == f"{RUN_B}:q"
+    assert len(conn.queries) == TWICE
 
 
-@pytest.fixture
-def mock_hanavectordb():
-    """Create a mock HanaVectorDB instance."""
-    with patch("rag.retriever.HanaVectorDB") as mock:
-        # Set up the async method
-        mock.return_value.asimilarity_search = AsyncMock()
-        yield mock
+@pytest.mark.asyncio
+async def test_retriever_retries_when_table_is_gone_before_build(fake_db):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+    fake_db.missing = {RUN_A}
+    retriever.current_run.resolve()  # cached before the flip
+    conn.current = RUN_B
+
+    assert (await retriever.aretrieve("q"))[0].page_content == f"{RUN_B}:q"
+    assert fake_db.created == [RUN_B]
 
 
-@pytest.fixture
-def mock_logger():
-    """Create a mock logger."""
-    with patch("rag.retriever.logger") as mock:
-        yield mock
+def test_concurrent_retries_resolve_once(fake_db, caplog):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+    retriever.current_run.resolve()
+    conn.current = RUN_B
+    fake_db.missing = {RUN_A}
+    # All searches use the cached old table before any of them retries.
+    barrier = threading.Barrier(5)
+    resolve = retriever.current_run.resolve
+
+    def resolve_together() -> str:
+        table = resolve()
+        if table == RUN_A:
+            barrier.wait(timeout=5)
+        return table
+
+    retriever.current_run.resolve = resolve_together  # type: ignore[method-assign]
+    results: list[str] = []
+
+    def search() -> None:
+        results.append(retriever._search("q", 5)[0].page_content)
+
+    threads = [threading.Thread(target=search) for _ in range(5)]
+    with caplog.at_level(logging.DEBUG, logger="rag.retriever"):
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results == [f"{RUN_B}:q"] * 5
+    assert len(conn.queries) == TWICE
+    # One dropped table, one warning: not one per parallel search.
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    expected = f"Table {RUN_A} of the current run of corpus ops_docs is gone"
+    assert expected in warnings[0].getMessage()
 
 
-class TestHanaDBRetriever:
-    """Test suite for HanaDBRetriever class."""
+@pytest.mark.asyncio
+async def test_retriever_retries_only_once(fake_db, caplog):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+    fake_db.missing = {RUN_A}
 
-    def test_init(self, mock_embeddings, mock_connection, mock_hanavectordb):
-        """Test HanaDBRetriever initialization."""
-        # Given
-        table_name = "test_table"
-
-        # When
-        retriever = HanaDBRetriever(
-            embedding=mock_embeddings,
-            connection=mock_connection,
-            table_name=table_name,
-        )
-
-        # Then
-        mock_hanavectordb.assert_called_once_with(
-            connection=mock_connection,
-            embedding=mock_embeddings,
-            table_name=table_name,
-        )
-        assert retriever.db == mock_hanavectordb.return_value
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "query, top_k, expected_docs, expected_error",
-        [
-            # Test case: Successful retrieval
-            (
-                "test query",
-                3,
-                [
-                    Document(page_content="doc1"),
-                    Document(page_content="doc2"),
-                    Document(page_content="doc3"),
-                ],
-                None,
-            ),
-            # Test case: Empty result
-            (
-                "no results query",
-                5,
-                [],
-                None,
-            ),
-            # Test case: Error during retrieval
-            (
-                "error query",
-                3,
-                None,
-                Exception("Database error"),
-            ),
-        ],
-    )
-    async def test_aretrieve(
-        self,
-        mock_embeddings,
-        mock_connection,
-        mock_hanavectordb,
-        mock_logger,
-        query,
-        top_k,
-        expected_docs,
-        expected_error,
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(
+            CurrentRunTableMissingError,
+            match=(f"the run table docs_index_runs of corpus ops_docs points at table {RUN_A}, which does not exist"),
+        ),
     ):
-        """Test aretrieve method."""
-        # Given
-        retriever = HanaDBRetriever(
-            embedding=mock_embeddings,
-            connection=mock_connection,
-            table_name="test_table",
-        )
+        await retriever.aretrieve("q")
+    assert len(conn.queries) == TWICE
+    # A state of the run table: logged once as an error, without traceback.
+    errors = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert len(errors) == 1
+    assert errors[0].exc_info is None
+    assert errors[0].getMessage() == (
+        "No usable current run of corpus ops_docs in run table docs_index_runs; cannot retrieve documents."
+    )
 
-        metric_name = f"{HANADB_LATENCY_METRIC_KEY}_count"
 
-        if expected_error:
-            before_failure_metric_value = CustomMetrics().registry.get_sample_value(
-                metric_name, {"is_success": "False"}
-            )
-            if before_failure_metric_value is None:
-                before_failure_metric_value = 0
-            # Setup mock to raise exception
-            mock_hanavectordb.return_value.asimilarity_search.side_effect = expected_error
-            # When/Then
-            with pytest.raises(type(expected_error)) as exc_info:
-                await retriever.aretrieve(query, top_k)
-            assert str(exc_info.value) == str(expected_error)
-            mock_logger.exception.assert_called_once_with(f"Error retrieving documents for query: {query}")
-            # check metric.
-            after_failure_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "False"})
-            assert after_failure_metric_value > before_failure_metric_value
-        else:
-            before_success_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "True"})
-            if before_success_metric_value is None:
-                before_success_metric_value = 0
-            # Setup mock to return expected documents
-            mock_hanavectordb.return_value.asimilarity_search.return_value = expected_docs
-            # When
-            result = await retriever.aretrieve(query, top_k)
-            # Then
-            assert result == expected_docs
-            mock_hanavectordb.return_value.asimilarity_search.assert_called_once_with(query, k=top_k)
-            # check metric.
-            after_success_metric_value = CustomMetrics().registry.get_sample_value(metric_name, {"is_success": "True"})
-            assert after_success_metric_value > before_success_metric_value
+@pytest.mark.asyncio
+async def test_retriever_reports_missing_table_after_retry_from_similarity_search(fake_db):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+    await retriever.aretrieve("q")  # the vector store exists, then the table is dropped
+    fake_db.missing = {RUN_A}
+
+    with pytest.raises(CurrentRunTableMissingError):
+        await retriever.aretrieve("q")
+
+
+@pytest.mark.asyncio
+async def test_retriever_does_not_retry_other_errors(fake_db, monkeypatch):
+    conn, clock = FakeConnection(RUN_A), FakeClock()
+    retriever = make_retriever(conn, clock)
+
+    def fail(self, query, k=4):
+        raise dbapi.Error(10, "authentication failed")
+
+    monkeypatch.setattr(FakeVectorDB, "similarity_search", fail)
+    with pytest.raises(dbapi.Error):
+        await retriever.aretrieve("q")
+    assert len(conn.queries) == 1
+
+
+@pytest.mark.asyncio
+async def test_retriever_reports_no_current_run(fake_db):
+    retriever = make_retriever(FakeConnection(None), FakeClock())
+
+    with pytest.raises(NoCurrentRunError):
+        await retriever.aretrieve("q")
+    assert fake_db.created == []
+
+
+def test_vector_db_does_not_create_missing_table(monkeypatch):
+    monkeypatch.setattr(retriever_module.HanaDB, "_table_exists", lambda self, name: False)
+    db = object.__new__(retriever_module.HanaVectorDB)
+    db.table_name = RUN_A
+
+    with pytest.raises(TableNotFoundError):
+        db._initialize_table()
+
+
+def test_hana_db_logger_drops_only_failed_statement_records(caplog):
+    # Its "SQL Statement:" and "Parameters:" lines carry the full query vector; other errors stay.
+    hana_logger = logging.getLogger("langchain_hana.vectorstores.hana_db")
+    with caplog.at_level(logging.DEBUG, logger=hana_logger.name):
+        hana_logger.error("SQL Statement: SELECT TOP 5 * FROM T")
+        hana_logger.error("Parameters: [[0.1, 0.2, 0.3]]")
+        hana_logger.error("Connection to HANA lost")
+
+    assert [r.getMessage() for r in caplog.records] == ["Connection to HANA lost"]
+
+
+def _latency_count(is_success: bool) -> float:
+    value = CustomMetrics().registry.get_sample_value(
+        f"{HANADB_LATENCY_METRIC_KEY}_count", {"is_success": str(is_success)}
+    )
+    return value or 0
+
+
+@pytest.mark.asyncio
+async def test_retriever_records_success_latency(fake_db):
+    retriever = make_retriever(FakeConnection(RUN_A), FakeClock())
+    before = _latency_count(True)
+
+    await retriever.aretrieve("q")
+
+    assert _latency_count(True) > before
+
+
+@pytest.mark.asyncio
+async def test_retriever_records_failure_latency(fake_db):
+    retriever = make_retriever(FakeConnection(None), FakeClock())
+    before = _latency_count(False)
+
+    with pytest.raises(NoCurrentRunError):
+        await retriever.aretrieve("q")
+
+    assert _latency_count(False) > before

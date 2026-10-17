@@ -1,11 +1,17 @@
+import logging
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from rag.current_run import NoCurrentRunError
 from rag.query_generator import Queries
 from rag.system import _RERANKER_INPUT_LIMIT, Query, RAGSystem
+from unit.rag.fakes import FakeClock, FakeConnection, make_retriever
 from unit.rag.reranker.fixtures import doc1, doc2, doc3
 from utils.settings import (
+    DOCS_CORPUS,
+    DOCS_RUN_CACHE_TTL_SECONDS,
+    DOCS_RUNS_TABLE,
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     RAG_NUM_QUERIES,
@@ -26,7 +32,8 @@ def mock_models():
 def collaborators():
     """Patch RAGSystem's collaborators so no real DB/LLM is touched."""
     with (
-        patch("rag.system.Hana"),
+        patch("rag.system.Hana") as hana_cls,
+        patch("rag.system.CurrentRunTable") as current_run_cls,
         patch("rag.system.HanaDBRetriever") as retriever_cls,
         patch("rag.system.QueryGenerator") as query_generator_cls,
         patch("rag.system.LLMReranker") as reranker_cls,
@@ -38,6 +45,9 @@ def collaborators():
         reranker = reranker_cls.return_value
         reranker.arerank = AsyncMock(return_value=[doc1, doc2])
         yield {
+            "connection": hana_cls.return_value.get_connction.return_value,
+            "current_run_cls": current_run_cls,
+            "retriever_cls": retriever_cls,
             "retriever": retriever,
             "query_generator": query_generator,
             "query_generator_cls": query_generator_cls,
@@ -142,3 +152,71 @@ class TestRAGSystemMode:
         assert len(mock_rrf.call_args.args[0]) == expected_query_count
         assert mock_rrf.call_args.kwargs["limit"] == top_k
         assert result == [doc1]
+
+
+class TestRAGSystemCurrentRun:
+    """RAGSystem reads the table of the current run of the corpus, never a fixed table."""
+
+    def test_init_uses_run_table_of_corpus(self, mock_models, collaborators):
+        # When the RAG system is initialized
+        RAGSystem(mock_models)
+
+        # Then the retriever resolves the current run of the configured corpus in the run table
+        collaborators["current_run_cls"].assert_called_once_with(
+            collaborators["connection"],
+            corpus=DOCS_CORPUS,
+            runs_table=DOCS_RUNS_TABLE,
+            ttl_seconds=DOCS_RUN_CACHE_TTL_SECONDS,
+        )
+        retriever_kwargs = collaborators["retriever_cls"].call_args.kwargs
+        assert retriever_kwargs["current_run"] == collaborators["current_run_cls"].return_value
+        assert "table_name" not in retriever_kwargs
+
+    def test_init_resolves_current_run_once(self, mock_models, collaborators):
+        # When the RAG system is initialized
+        rag_system = RAGSystem(mock_models)
+
+        # Then the current run is resolved at startup
+        rag_system.retriever.current_run.resolve.assert_called_once_with()
+
+    def test_init_fails_without_current_run(self, mock_models, collaborators):
+        # Given the corpus has no current run
+        collaborators["retriever"].current_run.resolve.side_effect = NoCurrentRunError(
+            "corpus kyma_docs has no current run in docs_index_runs"
+        )
+
+        # When/Then the RAG system cannot start
+        with pytest.raises(NoCurrentRunError, match="corpus kyma_docs has no current run in docs_index_runs"):
+            RAGSystem(mock_models)
+
+
+class FakeQueryGenerator:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def agenerate_queries(self, query: str):
+        self.calls += 1
+        raise AssertionError("query generation must not run without a current run")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", list(RetrievalMode))
+async def test_rag_system_fails_fast_without_current_run(fake_db, caplog, mode):
+    # Given a RAG system whose corpus lost its current run after startup
+    system = object.__new__(RAGSystem)
+    system.corpus = "ops_docs"
+    system.mode = mode
+    system.query_generator = FakeQueryGenerator()  # type: ignore[assignment]
+    system.retriever = make_retriever(FakeConnection(None), FakeClock())
+
+    # When/Then retrieval fails before any LLM call, logged without traceback
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(NoCurrentRunError, match="corpus ops_docs has no current run in docs_index_runs"),
+    ):
+        await system.aretrieve(Query(text="q"))
+
+    assert system.query_generator.calls == 0  # type: ignore[attr-defined]
+    expected = "No usable current run of corpus ops_docs in run table docs_index_runs; cannot search."
+    assert any(r.getMessage() == expected for r in caplog.records)
+    assert all(r.exc_info is None for r in caplog.records)

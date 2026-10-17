@@ -2,6 +2,7 @@ import json
 import sys
 from logging import (
     CRITICAL,
+    Filter,
     Formatter,
     Logger,
     LogRecord,
@@ -12,6 +13,21 @@ from logging import (
 from tenacity import RetryCallState
 
 from utils.settings import LOG_FORMAT, LOG_LEVEL
+
+
+class DropFailedStatementFilter(Filter):
+    """Drop the two records langchain_hana logs at ERROR for every failed SQL statement.
+
+    ``SQL Statement: ...`` and ``Parameters: ...`` carry the full statement and its
+    parameters, the query vector included (~64 KB per line). The caller handles the
+    error itself. All other records of the logger pass through.
+    """
+
+    DROPPED_PREFIXES = ("SQL Statement:", "Parameters:")
+
+    def filter(self, record: LogRecord) -> bool:
+        """Return False for a failed-statement record, True for any other."""
+        return not str(record.msg).startswith(self.DROPPED_PREFIXES)
 
 
 class PrettyJSONFormatter(Formatter):
@@ -107,6 +123,13 @@ def _configure_logging() -> None:
         uvicorn_logger = getLogger(logger_name)
         uvicorn_logger.handlers = [console_handler]
         uvicorn_logger.propagate = False
+
+    # langchain_hana logs the SQL and parameters of every failed statement at ERROR, the
+    # parameters with the full query vector (~64 KB per line). Drop only those two records;
+    # the retriever logs the failure itself. Other library errors stay visible.
+    hana_db_logger = getLogger("langchain_hana.vectorstores.hana_db")
+    if not any(isinstance(f, DropFailedStatementFilter) for f in hana_db_logger.filters):
+        hana_db_logger.addFilter(DropFailedStatementFilter())
 
 
 # Initialize logging when module is imported

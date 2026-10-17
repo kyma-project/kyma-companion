@@ -3,8 +3,10 @@ from typing import cast
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from langchain_core.runnables import run_in_executor
 from pydantic import BaseModel
 
+from rag.current_run import CurrentRunTable, RunTableError
 from rag.query_generator import QueryGenerator
 from rag.reranker.reranker import LLMReranker
 from rag.reranker.rrf import get_relevant_documents
@@ -13,7 +15,9 @@ from services.hana import Hana
 from utils.logging import get_logger
 from utils.models.factory import IModel
 from utils.settings import (
-    DOCS_TABLE_NAME,
+    DOCS_CORPUS,
+    DOCS_RUN_CACHE_TTL_SECONDS,
+    DOCS_RUNS_TABLE,
     MAIN_EMBEDDING_MODEL_NAME,
     MAIN_MODEL_MINI_NAME,
     RAG_NUM_QUERIES,
@@ -36,20 +40,32 @@ class RAGSystem:
     """A system that can be used to generate queries and retrieve documents.
 
     The retrieval strategy is fixed at construction time via the RETRIEVAL_MODE setting.
+    The docs table is the one of the current run of ``corpus`` in the run table
+    DOCS_RUNS_TABLE, resolved per request (cached for DOCS_RUN_CACHE_TTL_SECONDS).
     """
 
-    def __init__(self, models: dict[str, IModel | Embeddings]):
+    def __init__(self, models: dict[str, IModel | Embeddings], corpus: str = DOCS_CORPUS):
+        self.corpus = corpus
         # setup query generator
         self.query_generator = QueryGenerator(
             cast(IModel, models[MAIN_MODEL_MINI_NAME]),
             num_queries=RAG_NUM_QUERIES,
         )
-        # setup retriever
+        # setup retriever over the table of the current run of the corpus
+        connection = Hana().get_connction()
         self.retriever = HanaDBRetriever(
             embedding=cast(Embeddings, models[MAIN_EMBEDDING_MODEL_NAME]),
-            connection=Hana().get_connction(),
-            table_name=DOCS_TABLE_NAME,
+            connection=connection,
+            current_run=CurrentRunTable(
+                connection,
+                corpus=corpus,
+                runs_table=DOCS_RUNS_TABLE,
+                ttl_seconds=DOCS_RUN_CACHE_TTL_SECONDS,
+            ),
         )
+        # Fail at startup when the corpus has no usable current run: the error names
+        # the corpus and the run table. There is no fallback to a fixed table.
+        self.retriever.current_run.resolve()
 
         # setup reranker
         self.reranker = LLMReranker(cast(IModel, models[MAIN_MODEL_MINI_NAME]))
@@ -58,11 +74,22 @@ class RAGSystem:
         self.mode = RETRIEVAL_MODE
 
         logger.info(f"RAG system initialized with retrieval mode: {self.mode}.")
-        logger.debug(f"Hana DB table name: {DOCS_TABLE_NAME}")
+        logger.debug(f"Corpus: {corpus}, run table: {DOCS_RUNS_TABLE}")
 
     async def aretrieve(self, query: Query, top_k: int = 5) -> list[Document]:
         """Retrieve documents for a given query using the configured retrieval mode."""
         logger.info(f"Retrieving documents for query: {query.text} (mode: {self.mode})")
+
+        # Fail fast without the LLM call if the corpus has no usable current run.
+        try:
+            await run_in_executor(None, self.retriever.current_run.resolve)
+        except RunTableError:
+            # A state of the run table, not a bug: no traceback, no exception text.
+            logger.error(
+                f"No usable current run of corpus {self.retriever.current_run.corpus} in run table "
+                f"{self.retriever.current_run.runs_table}; cannot search."
+            )
+            raise
 
         if self.mode == RetrievalMode.VECTOR:
             return await self._aretrieve_vector(query, top_k)
