@@ -276,10 +276,14 @@ def print_results_per_scenario(scenario_list: ScenarioList) -> None:
         if scenario.attempt_number > 1:
             attempt_info = f" (Attempt {scenario.attempt_number})"
 
-        with gha_utils.group(
-            f"Scenario ID: {scenario.id} (Test Status: {colored_status(scenario.test_status)}){attempt_info}"
-        ):
+        status_text = colored_status(scenario.test_status)
+        if scenario.optional:
+            status_text = f"{colored('OPTIONAL', 'blue')}, {status_text}"
+
+        with gha_utils.group(f"Scenario ID: {scenario.id} (Test Status: {status_text}){attempt_info}"):
             print(colored(f"Description: {scenario.description}", "green"))
+            if scenario.optional:
+                print(colored(f"Optional (does not fail the run): {scenario.optional_reason}", "blue"))
 
             # for each query print the evaluation results.
             for query in scenario.queries:
@@ -326,17 +330,25 @@ def print_retry_summary(scenario_list: ScenarioList) -> None:
 def print_failed_queries(scenario_list: ScenarioList) -> None:
     """Prints the failed queries."""
     failed_queries = []
+    optional_failed_queries = []
     for scenario in scenario_list.items:
         for query in scenario.queries:
             if query.test_status == TestStatus.FAILED:
-                failed_queries.append(f"Scenario ID: {scenario.id}, Query: {query.user_query}")
+                entry = f"Scenario ID: {scenario.id}, Query: {query.user_query}"
+                if scenario.optional:
+                    optional_failed_queries.append(f"{entry} (optional, failed: {scenario.optional_reason})")
+                else:
+                    failed_queries.append(entry)
 
-    if len(failed_queries) == 0:
-        return None
+    if failed_queries:
+        print_header("List of failed test case:")
+        for failed_query in failed_queries:
+            print(colored(f"- {failed_query}", "red"))
 
-    print_header("List of failed test case:")
-    for failed_query in failed_queries:
-        print(colored(f"- {failed_query}", "red"))
+    if optional_failed_queries:
+        print_header("List of failed optional test case (do not fail the run):")
+        for failed_query in optional_failed_queries:
+            print(colored(f"- {failed_query}", "yellow"))
     return None
 
 

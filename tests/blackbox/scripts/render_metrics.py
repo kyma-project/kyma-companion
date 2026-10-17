@@ -387,7 +387,7 @@ function renderTable(){
       `<td>${fmt(val,d)}${b ? deltaHTML(val, b[key], d, lowerIsBetter) : ''}</td>`;
     const main = `<tr class="main-row" data-toggle="${rid}">
       <td><span class="expand-btn" id="ind-${rid}">▸</span> ${esc(s.scenario_id)}</td>
-      <td>${statusBadge(s.status, s.passed)}</td>
+      <td>${statusBadge(s.status, s.passed)}${s.optional ? ' <span class="badge b-pending" title="does not fail the run">optional</span>' : ''}</td>
       ${cell(s.num_queries, 'num_queries', 0, true)}
       ${cell(s.attempts, 'attempts', 0, true)}
       ${cell(s.total_tokens, 'total_tokens', 0, true)}
@@ -414,6 +414,7 @@ function renderScenarioDetail(s){
   let html = '';
   if (s.description) html += `<div class="kv" style="margin:4px 0 10px">${esc(s.description)}</div>`;
   if (s.status_reason) html += `<div class="kv" style="margin:4px 0 10px"><b>reason:</b> ${esc(s.status_reason)}</div>`;
+  if (s.optional) html += `<div class="kv" style="margin:4px 0 10px"><b>optional (does not fail the run):</b> ${esc(s.optional_reason||'')}</div>`;
   const queries = s.queries || [];
   if (!queries.length) return html + '<div class="empty">No queries recorded (scenario pending).</div>';
 

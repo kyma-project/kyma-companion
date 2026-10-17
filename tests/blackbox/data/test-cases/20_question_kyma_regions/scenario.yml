@@ -1,5 +1,8 @@
 id: test-question-20 # format: test-<resource_kind>-<test_id>
 description: Unrelated to existing cluster resources, ask at which regions kyma is available.
+# optional: the scenario still runs and is reported, but a failure does not fail the run.
+optional: true
+optional_reason: "RAG retrieval does not surface the hyperscaler regions pages, see https://github.com/kyma-project/kyma-companion/issues/1492"
 queries:
   - user_query: at which regions is kyma available?
     # should be answered by this doc:

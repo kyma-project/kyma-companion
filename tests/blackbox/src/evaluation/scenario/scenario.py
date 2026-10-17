@@ -4,7 +4,7 @@ from logging import Logger
 
 import yaml
 from deepeval.evaluate.types import EvaluationResult, TestResult
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from evaluation.scenario.enums import (
     TestStatus,
@@ -183,12 +183,30 @@ class Scenario(BaseModel):
     id: str
     description: str
     queries: list[Query] = []
+    # an optional scenario still runs and is reported with its scores, but a failure
+    # does not fail the evaluation run. `optional_reason` must say why (e.g. a known issue).
+    optional: bool = False
+    optional_reason: str = ""
     # evaluation
     test_status: TestStatus = TestStatus.PENDING
     test_status_reason: str = ""
     # retry tracking
     attempt_number: int = 0
     attempt_history: list[dict] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _check_optional_reason(self) -> "Scenario":
+        if self.optional and not self.optional_reason.strip():
+            raise ValueError(f"scenario {self.id} is optional but has no optional_reason")
+        return self
+
+    def is_failed(self) -> bool:
+        """Return True when the scenario failed (regardless of whether it is optional)."""
+        return self.test_status == TestStatus.FAILED
+
+    def is_blocking_failure(self) -> bool:
+        """Return True when the scenario failed and is not optional, so it fails the run."""
+        return self.is_failed() and not self.optional
 
     def reset(self) -> None:
         """Reset scenario state for retry attempts."""
@@ -268,6 +286,8 @@ class Scenario(BaseModel):
                 "description": self.description,
                 "status_reason": self.test_status_reason,
                 "passed": self.test_status != TestStatus.FAILED,
+                "optional": self.optional,
+                "optional_reason": self.optional_reason,
                 "attempt_history": self.attempt_history,
                 "queries": [query.to_report_dict() for query in self.queries],
             }
@@ -336,8 +356,12 @@ class ScenarioList(BaseModel):
         return round(float((score / total) * 100), 2)
 
     def is_test_passed(self) -> bool:
-        """Get the overall success across all scenarios."""
-        return all(scenario.test_status != TestStatus.FAILED for scenario in self.items)
+        """Get the overall success across all scenarios. Failed optional scenarios do not count."""
+        return not any(scenario.is_blocking_failure() for scenario in self.items)
+
+    def optional_failed_scenarios(self) -> list[Scenario]:
+        """Return the optional scenarios that failed (reported, but not blocking)."""
+        return [scenario for scenario in self.items if scenario.optional and scenario.is_failed()]
 
     def build_metrics_report(self) -> dict:
         """Build a machine-readable metrics report across all scenarios and queries."""
@@ -385,8 +409,13 @@ class ScenarioList(BaseModel):
                     query_pending += 1
                 else:
                     query_passed += 1
+        scenario_optional_failed = len(self.optional_failed_scenarios())
         return {
-            "scenarios": {"passed": scenario_passed, "failed": scenario_failed},
+            "scenarios": {
+                "passed": scenario_passed,
+                "failed": scenario_failed,
+                "optional_failed": scenario_optional_failed,
+            },
             "queries": {"passed": query_passed, "failed": query_failed, "pending": query_pending},
         }
 
