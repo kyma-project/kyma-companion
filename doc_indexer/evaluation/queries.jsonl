@@ -1,0 +1,40 @@
+{"id": "concept-what-is-kyma", "kind": "concept", "query": "What is Kyma and what does it offer?", "expected": ["kyma/docs/01-overview"]}
+{"id": "concept-kyma-modules", "kind": "concept", "query": "What modules does Kyma provide and how are they managed?", "expected": ["kyma/docs/06-modules"]}
+{"id": "concept-kyma-vs-hyperscalers", "kind": "concept", "query": "What is the difference between Kyma and Kubernetes environments from hyperscalers?", "expected": ["kyma/docs/01-overview"]}
+{"id": "concept-kyma-vs-cloudfoundry", "kind": "concept", "query": "What is the difference between Kyma and Cloud Foundry?", "expected": ["kyma/docs/01-overview"]}
+{"id": "concept-istio-overview", "kind": "concept", "query": "What is Istio and how does it work in Kyma?", "expected": ["istio/docs/user"]}
+{"id": "concept-eventing-nats", "kind": "concept", "query": "How does Kyma eventing work with NATS?", "expected": ["eventing-manager/docs/user", "nats-manager/docs/user"]}
+{"id": "concept-serverless-overview", "kind": "concept", "query": "What is Kyma Serverless and how do Functions work?", "expected": ["serverless/docs/user"]}
+{"id": "concept-apirule-overview", "kind": "concept", "query": "What is an APIRule in Kyma and how does it expose services?", "expected": ["api-gateway/docs/user"]}
+{"id": "concept-telemetry-overview", "kind": "concept", "query": "What is the Kyma Telemetry module and what does it support?", "expected": ["telemetry-manager/docs/user"]}
+{"id": "concept-btp-service-binding", "kind": "concept", "query": "What is a BTP service binding and how does it work in Kyma?", "expected": ["btp-manager/docs/user"]}
+{"id": "concept-busola-overview", "kind": "concept", "query": "What is Busola and what features does the Kyma dashboard provide?", "expected": ["busola/docs/user"]}
+{"id": "concept-kyma-regions", "kind": "concept", "query": "In which regions and hyperscalers is Kyma available?", "expected": ["kyma/docs/01-overview"]}
+{"id": "howto-add-module", "kind": "howto", "query": "How do I add a Kyma module to my cluster?", "expected": ["kyma/docs/04-operation-guides"]}
+{"id": "howto-expose-endpoint-apirule", "kind": "howto", "query": "How do I expose my service endpoint using an APIRule?", "expected": ["api-gateway/docs/user"]}
+{"id": "howto-apirule-v2-migration", "kind": "howto", "query": "How do I migrate an APIRule from v1beta1 to v2?", "expected": ["api-gateway/docs/user/apirule-migration"]}
+{"id": "howto-enable-istio-sidecar", "kind": "howto", "query": "How do I enable Istio sidecar injection for my namespace or workload?", "expected": ["istio/docs/user"]}
+{"id": "howto-create-serverless-function", "kind": "howto", "query": "How do I create a Kyma serverless function?", "expected": ["serverless/docs/user"]}
+{"id": "howto-subscribe-to-events", "kind": "howto", "query": "How do I subscribe to events using a Kyma Subscription resource?", "expected": ["eventing-manager/docs/user"]}
+{"id": "howto-create-btp-service-binding", "kind": "howto", "query": "How do I create a BTP service instance and binding in Kyma?", "expected": ["btp-manager/docs/user"]}
+{"id": "howto-configure-telemetry-tracing", "kind": "howto", "query": "How do I configure distributed tracing with the Kyma Telemetry module?", "expected": ["telemetry-manager/docs/user"]}
+{"id": "howto-kyma-cli-install", "kind": "howto", "query": "How do I install and use the Kyma CLI?", "expected": ["cli/docs/user"]}
+{"id": "howto-configure-mtls", "kind": "howto", "query": "How do I configure mTLS for egress traffic in Kyma using Istio?", "expected": ["istio/docs/user"]}
+{"id": "howto-busola-custom-resource", "kind": "howto", "query": "How do I add a custom resource extension in Busola?", "expected": ["busola/docs/custom-extensions"]}
+{"id": "howto-setup-log-pipeline", "kind": "howto", "query": "How do I set up a log pipeline for shipping logs to an external backend?", "expected": ["telemetry-manager/docs/user"]}
+{"id": "howto-keda-scaling", "kind": "howto", "query": "How do I configure event-driven autoscaling using KEDA in Kyma?", "expected": ["keda-manager/docs/user"]}
+{"id": "howto-docker-registry", "kind": "howto", "query": "How do I use an internal Docker registry with Kyma Serverless?", "expected": ["docker-registry/docs/user"]}
+{"id": "ts-apirule-accessstrategies", "kind": "troubleshooting", "query": "APIRule status Error: accessStrategies handler allow is deprecated in v1beta1, migrate to v2", "expected": ["api-gateway/docs/user/apirule-migration/01-82-migrate-allow-noop-no_auth-v1beta1-to-v2.md"]}
+{"id": "ts-istio-sidecar-not-injected", "kind": "troubleshooting", "query": "Pod missing istio-proxy container, sidecar injection not working, namespace label istio-injection=enabled has no effect", "expected": ["istio/docs/user"]}
+{"id": "ts-serverless-function-error", "kind": "troubleshooting", "query": "Function status Error: Failed to build function image, BuildJob failed with non-zero exit code", "expected": ["serverless/docs/user"]}
+{"id": "ts-subscription-invalid-sink", "kind": "troubleshooting", "query": "Subscription status NotReady: invalid sink URL, sink must be a valid cluster-local service URL", "expected": ["eventing-manager/docs/user"]}
+{"id": "ts-eventing-cr-not-ready", "kind": "troubleshooting", "query": "EventingCR status Warning: NATS server not ready, eventing module health check failed", "expected": ["eventing-manager/docs/user", "nats-manager/docs/user"]}
+{"id": "ts-btp-binding-secret-missing", "kind": "troubleshooting", "query": "ServiceBinding status CreateFailed: secret not created, BTP operator failed to provision credentials", "expected": ["btp-manager/docs/user"]}
+{"id": "ts-apirule-ory-deprecated", "kind": "troubleshooting", "query": "APIRule status Error: ory handler is no longer supported, migrate accessStrategies to noop or jwt", "expected": ["api-gateway/docs/user/apirule-migration"]}
+{"id": "ts-telemetry-pipeline-not-running", "kind": "troubleshooting", "query": "LogPipeline status AllDataDropped: backend endpoint not reachable, output plugin connection refused", "expected": ["telemetry-manager/docs/user"]}
+{"id": "ts-istio-peer-authentication", "kind": "troubleshooting", "query": "Service request rejected: PeerAuthentication policy requires mTLS but client sends plain HTTP, RBAC access denied", "expected": ["istio/docs/user"]}
+{"id": "ts-serverless-function-no-replicas", "kind": "troubleshooting", "query": "Function status Error: minReplicas is 0 and no HPA configured, function does not scale up from zero", "expected": ["serverless/docs/user"]}
+{"id": "ts-kyma-module-install-failed", "kind": "troubleshooting", "query": "Kyma CR status Error: module installation failed, manifest reconciliation error, resource apply conflict", "expected": ["lifecycle-manager/docs/user"]}
+{"id": "ts-apirule-jwt-invalid-issuer", "kind": "troubleshooting", "query": "APIRule status Error: jwt issuer URL is not reachable or JWKS endpoint returns invalid response", "expected": ["api-gateway/docs/user"]}
+{"id": "ts-btp-operator-not-ready", "kind": "troubleshooting", "query": "BTPOperator status Warning: secret sap-btp-manager not found in kyma-system, BTP manager cannot authenticate", "expected": ["btp-manager/docs/user"]}
+{"id": "ts-nats-not-ready", "kind": "troubleshooting", "query": "NATS status NotReady: StatefulSet nats replicas unavailable, PVC provisioning failed", "expected": ["nats-manager/docs/user"]}
