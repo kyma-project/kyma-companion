@@ -45,11 +45,6 @@ class TestModelFactory:
             yield mock
 
     @pytest.fixture
-    def mock_gemini_model(self):
-        with patch("utils.models.factory.GeminiModel") as mock:
-            yield mock
-
-    @pytest.fixture
     def mock_anthropic_model(self):
         with patch("utils.models.factory.AnthropicModel") as mock:
             yield mock
@@ -86,7 +81,6 @@ class TestModelFactory:
     def test_create_model(
         self,
         mock_openai_model,
-        mock_gemini_model,
         mock_anthropic_model,
         model_factory,
         test_case,
@@ -106,6 +100,3 @@ class TestModelFactory:
             elif expected_model_class == AnthropicModel:
                 mock_anthropic_model.assert_called_once()
                 assert model == mock_anthropic_model.return_value
-            else:
-                mock_gemini_model.assert_called_once()
-                assert model == mock_gemini_model.return_value
