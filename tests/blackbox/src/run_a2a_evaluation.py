@@ -122,7 +122,10 @@ def main() -> None:
     print_test_results(scenario_list, total_usage, time_taken)
     write_metrics_report(scenario_list, time_taken, config=config)
 
-    print_header("NOTE: The A2A evaluation tests fail only when critical (required) expectations are not met.")
+    print_header(
+        "NOTE: The A2A evaluation tests fail only when critical (required) expectations "
+        "of non-optional scenarios are not met."
+    )
 
     flush_logs(logger)
 

@@ -45,3 +45,7 @@ jobs:
         run: |
           ls
           poetry run poe codecheck
+
+      - name: Run unit tests of the evaluation framework
+        working-directory: ./tests/blackbox
+        run: poetry run pytest tests -v
