@@ -353,19 +353,6 @@ class TestInitSearchTool:
             None,
             id="decrypt_raises_exception",
         ),
-        pytest.param(
-            "re-raises HTTPException from decryption unchanged",
-            _MOCK_PRIVATE_KEY,
-            "enc-key",
-            "iv",
-            "enc-data",
-            HTTPException(status_code=HTTPStatus.SERVICE_UNAVAILABLE, detail="upstream error"),
-            None,
-            HTTPStatus.SERVICE_UNAVAILABLE,
-            "upstream error",
-            None,
-            id="decrypt_raises_http_exception",
-        ),
     ],
 )
 async def test_get_k8s_auth_headers_from_encrypted_payload(

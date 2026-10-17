@@ -9,7 +9,6 @@ from rag.reranker.reranker import (
     DocumentRelevancyScore,
     DocumentRelevancyScores,
     LLMReranker,
-    flatten_unique,
     format_documents,
     format_queries,
 )
@@ -251,79 +250,6 @@ class TestLLMReranker:
         for doc in got_docs:
             if doc.id:
                 assert not doc.id.startswith(TMP_DOC_ID_PREFIX), "Temporary Document ID should have been removed."
-
-
-@pytest.mark.parametrize(
-    "name, given_docs_list, given_limit, expected_docs",
-    [
-        (
-            "given (empty documents), return empty list",
-            [],
-            10,
-            [],
-        ),
-        (
-            "given (one document), return list with one document",
-            [
-                [doc1],
-            ],
-            10,
-            [doc1],
-        ),
-        (
-            "given (same order duplicate documents and zero limit), return empty documents",
-            [
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-            ],
-            0,
-            [],
-        ),
-        (
-            "given (same order duplicate documents and negative limit), return all unique documents",
-            [
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-            ],
-            -1,
-            [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-        ),
-        (
-            "given (same order duplicate documents and positive limit), return unique documents up to limit",
-            [
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-            ],
-            3,
-            [doc1, doc2, doc3],
-        ),
-        (
-            "given (unordered duplicate documents and positive limit),"
-            "return unique documents up to limit in order of first occurrence",
-            [
-                [doc9, doc8, doc7, doc6, doc5, doc4, doc3, doc2, doc1],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-                [doc1, doc2, doc3, doc4, doc5, doc6, doc7, doc8, doc9],
-            ],
-            3,
-            [doc9, doc8, doc7],
-        ),
-    ],
-)
-def test_flatten_unique(
-    name: str,
-    given_docs_list: list[list[Document]],
-    given_limit: int,
-    expected_docs: list[Document],
-):
-    # When
-    actual_docs = flatten_unique(given_docs_list, given_limit)
-
-    # Then
-    assert actual_docs == expected_docs
 
 
 def test_format_documents():

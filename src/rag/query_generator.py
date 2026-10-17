@@ -30,7 +30,6 @@ class QueryGenerator:
         num_queries: int = 4,
     ):
         self.model = model
-        # self.queries_parser = PydanticOutputParser(pydantic_object=Queries)
         self.prompt = prompt or ChatPromptTemplate.from_messages(
             [
                 ("system", QUERY_GENERATOR_PROMPT_TEMPLATE),

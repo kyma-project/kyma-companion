@@ -24,7 +24,6 @@ from pydantic import BaseModel, Field
 from agents.common.chunk_summarizer import ToolResponseSummarizer
 from agents.common.conversation_summarizer import ConversationSummarizer
 from agents.common.data import Message
-from agents.common.exceptions import TotalChunksLimitExceededError
 from agents.common.utils import (
     compute_messages_token_count,
     compute_string_token_count,
@@ -115,8 +114,6 @@ async def _tool_summarizer(
             config=config or RunnableConfig(),
             nums_of_chunks=num_chunks,
         )
-    except TotalChunksLimitExceededError:
-        return CHUNK_LIMIT_EXCEEDED_RESPONSE
     except Exception:
         logger.exception("Tool response summarization failed; returning original text")
         return text

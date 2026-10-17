@@ -12,10 +12,7 @@ class PodPhase(StrEnum):
     Reference: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
     """
 
-    PENDING = "Pending"
     RUNNING = "Running"
-    SUCCEEDED = "Succeeded"
-    FAILED = "Failed"
     UNKNOWN = "Unknown"
 
 
@@ -53,7 +50,6 @@ class K8sApiFields:
 
     # Event fields
     COUNT: str = "count"
-    TYPE: str = "type"
     INVOLVED_OBJECT: str = "involvedObject"
     KIND: str = "kind"
 

@@ -162,7 +162,7 @@ class TestUsageTrackerProbe:
         probe.increase_failure_count()
 
         # Then:
-        assert probe.get_failure_count() == expected_count
+        assert probe._failure_count == expected_count
 
         # Clean up by resetting the instance:
         probe._reset_for_tests()
@@ -183,7 +183,7 @@ class TestUsageTrackerProbe:
         probe.reset_failure_count()
 
         # Then:
-        assert probe.get_failure_count() == expected_count
+        assert probe._failure_count == expected_count
 
         # Clean up by resetting the instance:
         probe._reset_for_tests()
