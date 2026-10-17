@@ -12,11 +12,12 @@ from indexing.metadata import build_chunk_metadata
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from utils.documents import load_documents
+from utils.hana import drop_table, rename_table
 
 from utils.logging import get_logger
-from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
+from utils.settings import CHUNKS_BATCH_SIZE, DATABASE_USER, INDEX_TO_FILE
 from utils.utils import sanitize_table_name
 
 encoding = tiktoken.encoding_for_model("gpt-4o")
@@ -24,6 +25,38 @@ encoding = tiktoken.encoding_for_model("gpt-4o")
 logger = get_logger(__name__)
 
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
+
+_RETRY_WAIT_SECONDS = [2, 4, 8, 16, 32]
+_MAX_RETRIES = len(_RETRY_WAIT_SECONDS)
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """Return True if the exception looks like a rate-limit error."""
+    return "RateLimit" in type(exc).__name__ or "429" in str(exc)
+
+
+def _add_documents_with_retry(db: HanaDB, batch: list[Document], batch_number: int) -> None:
+    """Add a batch of documents to HanaDB, retrying on rate-limit errors.
+
+    Args:
+        db: The HanaDB instance to add documents to.
+        batch: The list of documents to add.
+        batch_number: The batch number (used for log messages only).
+    """
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            db.add_documents(batch)
+            return
+        except Exception as exc:
+            if not _is_rate_limit_error(exc):
+                raise
+            if attempt >= _MAX_RETRIES:
+                raise
+            wait = _RETRY_WAIT_SECONDS[attempt]
+            logger.warning(
+                f"Rate-limit error on batch {batch_number} (attempt {attempt + 1}/{_MAX_RETRIES}): retrying in {wait}s"
+            )
+            time.sleep(wait)
 
 
 def remove_parentheses(text: str) -> str:
@@ -98,6 +131,91 @@ def extract_first_title(text: str) -> str | None:
     return None
 
 
+def split_preserving_code_fences(
+    text: str,
+    max_chunk_token_count: int,
+    chunk_overlap_tokens: int,
+    title: str,
+) -> list[str]:
+    """Split a text into chunks while preserving fenced code blocks as atomic units.
+
+    Fenced code blocks (``` ... ```) are treated as indivisible -- if a block
+    alone exceeds max_chunk_token_count, it is kept whole and a warning is
+    emitted.  Non-code segments are split with RecursiveCharacterTextSplitter.
+
+    Args:
+        text: The markdown text to split.
+        max_chunk_token_count: Maximum token count per chunk.
+        chunk_overlap_tokens: Token overlap between consecutive chunks.
+        title: Base title used to generate part titles.
+
+    Returns:
+        A list of text strings.  The caller is responsible for wrapping them in
+        Document objects with the right metadata.
+    """
+    # Split the text into alternating non-code / fenced-code segments.
+    # Pattern explanation:
+    #   - Opening fence: ``` followed by optional info string and a newline.
+    #   - Body: any content including lines that happen to start with ``` (e.g.
+    #     documentation showing how to write a code fence).
+    #   - Closing fence: a ``` that is at the beginning of a line (after \n)
+    #     and is followed only by optional whitespace and a newline or end-of-string.
+    #   Using a capturing group so re.split keeps the fence in the output list;
+    #   odd-indexed segments are the fenced blocks, even-indexed are plain text.
+    fence_pattern = re.compile(r"(```[^\n]*\n.*?\n```[ \t]*(?:\n|$))", re.DOTALL)
+    segments = fence_pattern.split(text)  # odd indices are fenced blocks, even are plain text
+
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        encoding_name="cl100k_base",
+        chunk_size=max_chunk_token_count,
+        chunk_overlap=min(chunk_overlap_tokens, max(0, max_chunk_token_count - 1)),
+        separators=["\n#### ", "\n\n", "\n", " "],
+    )
+
+    parts: list[str] = []
+
+    for i, segment in enumerate(segments):
+        if not segment:
+            continue
+        if i % 2 == 1:
+            # Fenced code block -- keep atomic.
+            seg_tokens = len(encoding.encode(segment))
+            if seg_tokens > max_chunk_token_count:
+                logger.warning(
+                    "Fenced code block in '%s' has %d tokens (limit %d); keeping whole.",
+                    title,
+                    seg_tokens,
+                    max_chunk_token_count,
+                )
+            parts.append(segment)
+        else:
+            sub_parts = splitter.split_text(segment)
+            parts.extend(sub_parts)
+
+    if not parts:
+        return []
+
+    # Merge the parts back into chunks that respect max_chunk_token_count
+    # (code blocks may bust the limit, but that is intentional per spec).
+    chunks: list[str] = []
+    current: list[str] = []
+    current_tokens = 0
+
+    for part in parts:
+        part_tokens = len(encoding.encode(part))
+        if current and current_tokens + part_tokens > max_chunk_token_count:
+            chunks.append("\n".join(current))
+            current = []
+            current_tokens = 0
+        current.append(part)
+        current_tokens += part_tokens
+
+    if current:
+        chunks.append("\n".join(current))
+
+    return chunks
+
+
 class AdaptiveSplitMarkdownIndexer:
     """
     Markdown indexer that adaptively splits documents based on token size thresholds,
@@ -113,7 +231,20 @@ class AdaptiveSplitMarkdownIndexer:
         headers_to_split_on: list[tuple[str, str]] | None = None,
         min_chunk_token_count: int = 20,
         max_chunk_token_count: int = 1000,
+        chunk_overlap_tokens: int = 100,
     ):
+        """Initialize the AdaptiveSplitMarkdownIndexer.
+
+        Args:
+            docs_path: Path to the directory containing markdown files.
+            embedding: Embedding model to use for indexing.
+            connection: HANA database connection.
+            table_name: Name of the HANA table to store the index.
+            headers_to_split_on: List of header tuples to split on.
+            min_chunk_token_count: Chunks with fewer tokens are merged into neighbours.
+            max_chunk_token_count: Chunks larger than this are split further.
+            chunk_overlap_tokens: Token overlap used when splitting oversized sections.
+        """
         self.headers_to_split_on = headers_to_split_on or [HEADER1, HEADER2, HEADER3]
         if not table_name:
             table_name = docs_path.split("/")[-1]
@@ -121,9 +252,11 @@ class AdaptiveSplitMarkdownIndexer:
 
         self.docs_path = docs_path
         self.table_name = table_name
+        self.connection = connection
         self.embedding = embedding
         self.min_chunk_token_count = min_chunk_token_count
         self.max_chunk_token_count = max_chunk_token_count
+        self.chunk_overlap_tokens = chunk_overlap_tokens
 
         # Load the fetch manifest if present; fall back gracefully when absent.
         manifest_path = os.path.join(docs_path, "manifest.json")
@@ -137,11 +270,10 @@ class AdaptiveSplitMarkdownIndexer:
             )
             self.manifest = None
 
-        self.db = HanaDB(
-            connection=connection,
-            embedding=embedding,
-            table_name=table_name,
-        )
+        # staging_table_name and db are set fresh on each index() call so that
+        # repeated invocations don't collide on the same staging table name.
+        self.staging_table_name: str = ""
+        self.db: HanaDB = HanaDB(connection=connection, embedding=embedding, table_name=table_name)
 
         self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
 
@@ -150,6 +282,7 @@ class AdaptiveSplitMarkdownIndexer:
         self.markdown_splitter_h3 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2, HEADER3])
 
     def _build_title(self, doc: Document) -> str:
+        """Build a combined title from the headers H1, H2, H3 in the document metadata."""
         # the following lines build the combined title from the headers H1, H2, H3
         header1 = remove_header_brackets(doc.metadata.get("Header1", "")).strip()
         header2 = remove_header_brackets(doc.metadata.get("Header2", "")).strip()
@@ -168,12 +301,21 @@ class AdaptiveSplitMarkdownIndexer:
         parent_title: str = "",
         base_metadata: dict[str, str | list[str] | None] | None = None,
     ) -> Generator[Document]:
+        """Recursively split a document into chunks based on token count and header levels.
+
+        Args:
+            doc: The document to process.
+            level: The current header level index into HEADER_LEVELS.
+            parent_title: The title of the parent chunk.
+            base_metadata: Per-document metadata (module, repo, commit, url, path, ...) copied into every chunk.
+
+        Yields:
+            Documents representing individual chunks.
+        """
         tokens = len(encoding.encode(doc.page_content))
 
-        if tokens <= self.min_chunk_token_count:
-            return
-
-        # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
+        # If the document is smaller than the max chunk token count or the H3 level is
+        # reached, yield the document (possibly after splitting oversized sections).
         if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
             chunk_meta = dict(base_metadata) if base_metadata else {}
             title = doc.metadata.get("title") or extract_first_title(doc.page_content)
@@ -183,21 +325,39 @@ class AdaptiveSplitMarkdownIndexer:
                 doc_path: str = (base_metadata or {}).get("path") or ""  # type: ignore[assignment]
                 title = os.path.splitext(os.path.basename(doc_path))[0] or "unknown"
                 logger.info("preamble chunk -- using filename as title", extra={"path": doc_path, "title": title})
-            chunk_meta["title"] = title
             # Carry the raw leaf header set by the caller; fall back to the full title.
             chunk_meta["_leaf_header"] = doc.metadata.get("_leaf_header") or title
-            yield Document(
-                page_content=doc.page_content,
-                metadata=chunk_meta,
-            )
+
+            if level >= len(HEADER_LEVELS) and tokens > self.max_chunk_token_count:
+                # Oversized section at last header level -- split it.
+                parts = split_preserving_code_fences(
+                    doc.page_content,
+                    self.max_chunk_token_count,
+                    self.chunk_overlap_tokens,
+                    title,
+                )
+                n = len(parts)
+                for i, part in enumerate(parts, start=1):
+                    part_title = f"{title} (part {i}/{n})" if n > 1 else title
+                    yield Document(
+                        page_content=part,
+                        metadata={**chunk_meta, "title": part_title},
+                    )
+            else:
+                chunk_meta["title"] = title
+                yield Document(
+                    page_content=doc.page_content,
+                    metadata=chunk_meta,
+                )
             return
+
         # Split document using current header level
         markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADER_LEVELS[level], strip_headers=False)
         splitted_docs = markdown_splitter.split_text(doc.page_content)
 
         for sub_doc in splitted_docs:
             if not sub_doc.metadata:
-                # Preamble: content before the first heading has no header metadata.
+                # Preamble: content before the first heading has no header metadata -- keep it, don't skip.
                 # Recurse so the terminal branch applies the filename-derived title fallback.
                 yield from self._process_doc(sub_doc, level=len(HEADER_LEVELS), base_metadata=base_metadata)
                 continue
@@ -230,17 +390,94 @@ class AdaptiveSplitMarkdownIndexer:
                 chunk, level + 1, parent_title=title if level == 0 else parent_title, base_metadata=base_metadata
             )
 
-    def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
+    def _merge_tiny_chunks(self, chunks: list[Document]) -> list[Document]:
+        """Merge chunks with too few tokens into their neighbours within the same document.
+
+        A chunk with tokens <= min_chunk_token_count is appended to the previous chunk
+        of the same source document (or to the next one if it is the first chunk of that
+        document).  A document that consists of a single tiny chunk is kept as is.
+
+        Args:
+            chunks: All chunks produced by _process_doc for a single source document.
+
+        Returns:
+            A new list where tiny chunks have been merged into adjacent chunks.
         """
-        Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
+        if not chunks:
+            return chunks
+
+        result: list[Document] = []
+
+        for chunk in chunks:
+            tokens = len(encoding.encode(chunk.page_content))
+            if tokens <= self.min_chunk_token_count and result:
+                # Append to previous chunk -- preserve its heading line.
+                prev = result[-1]
+                merged_content = prev.page_content + "\n\n" + chunk.page_content
+                result[-1] = Document(
+                    page_content=merged_content,
+                    metadata=prev.metadata,
+                )
+            else:
+                result.append(chunk)
+
+        # Second pass: if the very first chunk is still tiny and there is a second chunk,
+        # prepend it to the second chunk.
+        min_two_chunks = 2
+        if len(result) >= min_two_chunks:
+            first_tokens = len(encoding.encode(result[0].page_content))
+            if first_tokens <= self.min_chunk_token_count:
+                merged_content = result[0].page_content + "\n\n" + result[1].page_content
+                result[1] = Document(
+                    page_content=merged_content,
+                    metadata=result[1].metadata,
+                )
+                result.pop(0)
+
+        return result
+
+    def get_document_chunks(self, docs_to_chunk: list[Document]) -> Generator[Document]:
+        """Recursively chunk documents based on the maximal token count with the headers H1, H2, H3.
+
         It splits the documents recursively if larger than given token number.
         It stops if the header level H3 is reached despite the token count.
+        After splitting, tiny chunks are merged into their neighbours, chunk position
+        metadata (heading, chunk_index, total_chunks) is added and statistics are
+        logged at INFO level.
+
+        Args:
+            docs_to_chunk: List of documents to chunk.
+
+        Yields:
+            Chunked documents.
         """
+        total_preamble_kept = 0
+        total_tiny_merged = 0
+        total_oversized_split = 0
 
         for doc in docs_to_chunk:
             source_path = doc.metadata.get("source", "")
             base_metadata = build_chunk_metadata(source_path, self.docs_path, self.manifest)
-            chunks = list(self._process_doc(doc, base_metadata=base_metadata))
+            raw_chunks = list(self._process_doc(doc, base_metadata=base_metadata))
+
+            # Count preamble chunks: a chunk without any markdown header in its content
+            # came from the preamble branch of _process_doc (a filename-derived title),
+            # unless it is a later part of an oversized section split.
+            # The exact count is not critical -- it is informational.
+            for chunk in raw_chunks:
+                chunk_title = chunk.metadata.get("title") or ""
+                if extract_first_title(chunk.page_content) is None and " (part " not in chunk_title:
+                    total_preamble_kept += 1
+
+            # Count oversized-split chunks (titles containing " (part ").
+            for chunk in raw_chunks:
+                if " (part " in (chunk.metadata.get("title") or ""):
+                    total_oversized_split += 1
+
+            # Merge tiny chunks.
+            chunks = self._merge_tiny_chunks(raw_chunks)
+            total_tiny_merged += len(raw_chunks) - len(chunks)
+
             total = len(chunks)
             for idx, chunk in enumerate(chunks):
                 heading: str = chunk.metadata.pop("_leaf_header", "") or ""
@@ -254,11 +491,24 @@ class AdaptiveSplitMarkdownIndexer:
                     },
                 )
 
+        logger.info(
+            "Chunking complete: preamble_kept=%d, tiny_merged=%d, oversized_split=%d",
+            total_preamble_kept,
+            total_tiny_merged,
+            total_oversized_split,
+        )
+
     def process_document_titles(self, docs: list[Document]) -> Generator[Document]:
-        """
-        Add a combined title to the document if the title is not already set.
+        """Add a combined title to the document if the title is not already set.
+
         Clear the header from the document if it starts with the header.
         Yields documents one at a time instead of creating a full list.
+
+        Args:
+            docs: List of documents to process.
+
+        Yields:
+            Documents with updated titles.
         """
         for chunk in self.get_document_chunks(docs):
             if chunk.metadata.get("title") is None:
@@ -273,14 +523,101 @@ class AdaptiveSplitMarkdownIndexer:
                     metadata=chunk.metadata,
                 )
 
-    def index(self) -> None:
-        """Indexes the markdown files in the given directory."""
+    def _insert_chunks_to_staging(self, all_chunks: Generator[Document]) -> int:
+        """Insert all chunks into the staging table in batches.
 
+        Returns the total number of chunks inserted.
+
+        Raises RuntimeError if no chunks were produced (guards against overwriting
+        the live table with an empty index) or if the DB row count does not match
+        the number of chunks written (guards against partial writes).
+
+        On any exception the staging table is dropped and the exception is re-raised.
+        """
+        batch: list[Document] = []
+        batch_count = 0
+        total = 0
+        try:
+            for chunk in all_chunks:
+                batch.append(chunk)
+                if len(batch) >= CHUNKS_BATCH_SIZE:
+                    _add_documents_with_retry(self.db, batch, batch_count + 1)
+                    batch_count += 1
+                    total += len(batch)
+                    logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks into staging table")
+                    batch = []
+                    logger.debug("Rate limiting: sleeping 3s before next batch")
+                    time.sleep(3)
+
+            if batch:
+                _add_documents_with_retry(self.db, batch, batch_count + 1)
+                batch_count += 1
+                total += len(batch)
+                logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks into staging table")
+
+            with self.connection.cursor() as cursor:
+                cursor.execute(f'SELECT COUNT(*) FROM "{DATABASE_USER}"."{self.staging_table_name}"')
+                row = cursor.fetchone()
+            staged_count = row[0] if row else 0
+            logger.info(f"Staging table '{self.staging_table_name}' has {staged_count} rows (expected {total}).")
+            if total == 0:
+                raise RuntimeError(
+                    f"No chunks were produced for staging table '{self.staging_table_name}'. "
+                    "Aborting swap to avoid overwriting the live table with an empty index."
+                )
+            if staged_count != total:
+                raise RuntimeError(
+                    f"Staging table row count mismatch: expected {total}, got {staged_count}. Aborting swap."
+                )
+        except Exception:
+            logger.exception("Error during indexing into staging table. Dropping staging table.")
+            drop_table(self.connection, DATABASE_USER, self.staging_table_name)
+            raise
+
+        return total
+
+    def _swap_staging_to_live(self, old_table_name: str) -> None:
+        """Atomic swap: rename live -> old, staging -> live, drop old.
+
+        If the staging -> live rename fails, old is renamed back to live and the
+        exception is re-raised.
+        """
+        rename_table(self.connection, DATABASE_USER, self.table_name, old_table_name, ignore_missing=True)
+        try:
+            rename_table(self.connection, DATABASE_USER, self.staging_table_name, self.table_name)
+        except Exception:
+            logger.exception(
+                f"Failed to rename staging table '{self.staging_table_name}' to '{self.table_name}'. "
+                f"Attempting to restore live table from '{old_table_name}'."
+            )
+            rename_table(self.connection, DATABASE_USER, old_table_name, self.table_name, ignore_missing=True)
+            raise
+        drop_table(self.connection, DATABASE_USER, old_table_name)
+
+    def index(self) -> None:
+        """Indexes the markdown files in the given directory.
+
+        Uses a staging-table rename swap for atomicity:
+        1. All chunks are inserted into a staging table.
+        2. The row count is verified.
+        3. The live table is renamed to a temporary name, the staging table is
+           renamed to the live name, then the old live table is dropped.
+
+        On any error before or during the swap the staging table is dropped and
+        the live table is left untouched.
+        """
+        self.staging_table_name = sanitize_table_name(
+            f"{self.table_name}_staging_{int(time.time())}_{uuid.uuid4().hex}"
+        )
+        self.db = HanaDB(
+            connection=self.connection,
+            embedding=self.embedding,
+            table_name=self.staging_table_name,
+        )
         docs = load_documents(self.docs_path)
         all_chunks = self.process_document_titles(docs)
 
-        if INDEX_TO_FILE:
-            # write pretty to file
+        if INDEX_TO_FILE:  # write pretty to file
             timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
             uuid_str = str(uuid.uuid4())
             output_file_path = f"Kyma_Documentation_chunks_{timestamp}_{uuid_str}.json"
@@ -293,44 +630,16 @@ class AdaptiveSplitMarkdownIndexer:
             logger.info(f"Indexed {len(serializable_chunks)} chunks.")
             logger.info(f"Chunks are stored in the file: {output_file_path}")
         else:
-            logger.info("Deleting existing index in HanaDB...")
-            try:
-                self.db.delete(filter={})
-            except Exception:
-                logger.exception("Error while deleting existing documents in HanaDB.")
-                raise
-            logger.info("Successfully deleted existing documents in HanaDB.")
-
-            logger.info("Indexing and storing indexes to HanaDB...")
-            batch = []
-            batch_count = 0
-            total_chunk_number = 0
-            try:
-                for chunk in all_chunks:
-                    batch.append(chunk)
-                    if len(batch) >= CHUNKS_BATCH_SIZE:
-                        # Process the current batch
-                        self.db.add_documents(batch)
-                        batch_count += 1
-                        total_chunk_number += len(batch)
-                        logger.info(f"Indexed batch {batch_count} with {len(batch)} chunks")
-
-                        # Clear the batch
-                        batch = []
-
-                        # Wait before processing next batch
-                        logger.debug("Rate limiting: sleeping 3s before next batch")
-                        time.sleep(3)
-
-                # Process any remaining documents in the final batch
-                if batch:
-                    self.db.add_documents(batch)
-                    batch_count += 1
-                    total_chunk_number += len(batch)
-                    logger.info(f"Indexed final batch {batch_count} with {len(batch)} chunks")
-
-            except Exception:
-                logger.exception(f"Error while storing documents batch {batch_count + 1} in HanaDB")
-                raise
-
-            logger.info(f"Successfully indexed {total_chunk_number} markdown files chunks in table {self.table_name}.")
+            old_table_name = f"{self.table_name}_old_{int(time.time())}"
+            logger.info(
+                f"Indexing into staging table '{self.staging_table_name}'; "
+                f"live table is '{self.table_name}'; "
+                f"old table will be '{old_table_name}'."
+            )
+            total = self._insert_chunks_to_staging(all_chunks)
+            logger.info("Swapping staging table into live position...")
+            self._swap_staging_to_live(old_table_name)
+            logger.info(
+                f"Successfully indexed {total} chunks into table '{self.table_name}' "
+                f"(via staging table '{self.staging_table_name}')."
+            )
