@@ -8,94 +8,53 @@ from collections.abc import Generator
 import tiktoken
 from hdbcli import dbapi
 from indexing.constants import HEADER1, HEADER2, HEADER3
+from indexing.html_table_splitter import HtmlTableParser
 from indexing.metadata import build_chunk_metadata
+from indexing.text_utils import extract_first_title, remove_header_brackets
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_hana import HanaDB
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from utils.documents import load_documents
 
 from utils.logging import get_logger
 from utils.settings import CHUNKS_BATCH_SIZE, INDEX_TO_FILE
 from utils.utils import sanitize_table_name
 
-encoding = tiktoken.encoding_for_model("gpt-4o")
+# gpt-4o encoding is used as a stable proxy for token counting.
+# The actual deployed model (gpt-4.1) uses a compatible tokenizer.
+# Update this if switching to a model family with a different vocabulary.
+_TOKENIZER_MODEL = "gpt-4o"
+encoding = tiktoken.encoding_for_model(_TOKENIZER_MODEL)
 
-logger = get_logger(__name__)
+_MARKDOWN_SEPARATORS = [r"\n#{1,6} ", "```\n", "\n\n", "\n", " ", ""]
+
+_HTML_TABLE_LINE_RATIO_THRESHOLD = 0.2
+# Fenced code blocks are stripped before counting HTML tag lines to avoid
+# treating code examples (e.g. XML/HTML snippets in docs) as real HTML tables.
+_FENCED_CODE_BLOCK_RE = re.compile(r"```.*?```", re.DOTALL)
 
 HEADER_LEVELS = [[HEADER1], [HEADER1, HEADER2], [HEADER1, HEADER2, HEADER3]]
 
 
-def remove_parentheses(text: str) -> str:
-    """Remove text within parentheses () from a string.
-    Example: 'Hello (world)' -> 'Hello '
-    Example: 'React (JavaScript library)' -> 'React '"""
-    return re.compile(r"\([^\[\]\(\)\{\}]+?\)").sub("", text)
+def _is_html_table_content(content: str, threshold: float) -> bool:
+    """Return True if HTML table tags constitute more than *threshold* of lines.
 
-
-def remove_brackets(text: str) -> str:
-    """Remove text within square brackets [] from a string.
-    Example: 'Python [programming language]' -> 'Python '
-    Example: 'TypeScript [4.0.3]' -> 'TypeScript '"""
-    return re.compile(r"\[[^\[\]\(\)\{\}]+?\]").sub("", text)
-
-
-def remove_braces(text: str) -> str:
-    """Remove text within curly braces {} from a string.
-    Example: 'Hello {name}' -> 'Hello '
-    Example: 'CSS {color: blue}' -> 'CSS '"""
-    return re.compile(r"\{[^\[\]\(\)\{\}]+?\}").sub("", text)
-
-
-def remove_header_brackets(input_text: str) -> str:
+    Fenced code blocks are excluded so that documentation examples containing
+    HTML markup are not misclassified as HTML table content.
     """
-    Some headers have vitepress markups and hooks.
-    These usually appear in curly braces, but some images have other braces.
-    However, if the header is a function name, it has empty brackets.
-
-    Therefore all brackets (), {}, [] shall be removed, if not empty.
-
-    This will only be applied to the header texts.
-    """
-    temp_text = input_text
-    current_length = len(temp_text)
-    while True:
-        temp_text = remove_parentheses(temp_text)
-        temp_text = remove_brackets(temp_text)
-        temp_text = remove_braces(temp_text)
-        ## check of something was removed
-        if len(temp_text) < current_length:
-            current_length = len(temp_text)
-        else:
-            break
-    return temp_text
+    stripped = _FENCED_CODE_BLOCK_RE.sub("", content)
+    lines = stripped.splitlines()
+    total_lines = len(lines) or 1
+    html_tag_lines = sum(
+        1
+        for line in lines
+        if line.strip().startswith(("<table", "<tr", "<td", "<th", "</table", "</tr", "</td", "</th"))
+    )
+    return html_tag_lines / total_lines > threshold
 
 
-def extract_first_title(text: str) -> str | None:
-    """Extract the first markdown header title from the text.
-
-    Args:
-        text: The markdown text to extract the title from.
-
-    Returns:
-        The title text without the header markers (#), or None if no title is found.
-
-    Examples:
-        >>> extract_first_title("# Title 1\\nContent")
-        'Title 1'
-        >>> extract_first_title("## Subtitle\\nContent")
-        'Subtitle'
-        >>> extract_first_title("No title here")
-        None
-        >>> extract_first_title("  # Title with spaces\\nContent")
-        'Title with spaces'
-    """
-    # Match any header level (# to ######) with optional leading whitespace
-    header_pattern = re.compile(r"^\s*#{1,6}\s+(.+?)(?:\n|$)", re.MULTILINE)
-    match = header_pattern.search(text)
-    if match:
-        return match.group(1).strip()
-    return None
+logger = get_logger(__name__)
 
 
 class AdaptiveSplitMarkdownIndexer:
@@ -143,14 +102,15 @@ class AdaptiveSplitMarkdownIndexer:
             table_name=table_name,
         )
 
-        self.markdown_splitter_h1 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1])
-
-        self.markdown_splitter_h2 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2])
-
-        self.markdown_splitter_h3 = MarkdownHeaderTextSplitter(headers_to_split_on=[HEADER1, HEADER2, HEADER3])
+        self._markdown_splitter = RecursiveCharacterTextSplitter(
+            separators=_MARKDOWN_SEPARATORS,
+            chunk_size=max_chunk_token_count,
+            chunk_overlap=0,
+            length_function=lambda t: len(encoding.encode(t)),
+            is_separator_regex=True,
+        )
 
     def _build_title(self, doc: Document) -> str:
-        # the following lines build the combined title from the headers H1, H2, H3
         header1 = remove_header_brackets(doc.metadata.get("Header1", "")).strip()
         header2 = remove_header_brackets(doc.metadata.get("Header2", "")).strip()
         header3 = remove_header_brackets(doc.metadata.get("Header3", "")).strip()
@@ -160,6 +120,157 @@ class AdaptiveSplitMarkdownIndexer:
         title = " - ".join(title_parts)
 
         return title
+
+    def _make_chunk_meta(
+        self,
+        doc: Document,
+        base_metadata: dict[str, str | list[str] | None] | None,
+    ) -> dict[str, str | list[str] | None]:
+        """Build chunk metadata from base_metadata, inheriting title and leaf header from doc."""
+        title = doc.metadata.get("title", "")
+        leaf_header = doc.metadata.get("_leaf_header", "") or title
+        meta = dict(base_metadata) if base_metadata else {}
+        meta["title"] = title
+        meta["_leaf_header"] = leaf_header
+        return meta
+
+    def _split_oversized(
+        self,
+        doc: Document,
+        base_metadata: dict[str, str | list[str] | None] | None,
+    ) -> Generator[Document]:
+        """Route an oversized terminal chunk to the appropriate sub-splitter."""
+        if _is_html_table_content(doc.page_content, _HTML_TABLE_LINE_RATIO_THRESHOLD):
+            yield from self._split_html_table(doc, base_metadata)
+        else:
+            yield from self._split_markdown(doc, base_metadata)
+
+    def _split_markdown(
+        self,
+        doc: Document,
+        base_metadata: dict[str, str | list[str] | None] | None,
+    ) -> Generator[Document]:
+        """Split oversized plain-Markdown content using paragraph/heading boundaries."""
+        chunk_meta = self._make_chunk_meta(doc, base_metadata)
+        for text in self._markdown_splitter.split_text(doc.page_content):
+            yield Document(page_content=text, metadata=dict(chunk_meta))
+
+    def _split_html_table(
+        self,
+        doc: Document,
+        base_metadata: dict[str, str | list[str] | None] | None,
+    ) -> Generator[Document]:
+        """Split a chunk whose content is dominated by an HTML table.
+
+        Repeats intro_text, header_row, and outro_text in every emitted chunk.
+        Falls through to _split_markdown if no <table> is found.
+        """
+        parser = HtmlTableParser()
+        parser.feed(doc.page_content)
+        parser.close()
+
+        if not parser.tables:
+            yield from self._split_markdown(doc, base_metadata)
+            return
+
+        chunk_meta = self._make_chunk_meta(doc, base_metadata)
+        title = chunk_meta["title"]
+
+        last_idx = len(parser.tables) - 1
+
+        for table_idx, (intro, header_cells, data_rows) in enumerate(parser.tables):
+            outro = parser.outro_text if table_idx == last_idx else ""
+            header_row = " | ".join(header_cells) if header_cells else ""
+
+            # Compute fixed overhead (intro + header row + outro) once per table so
+            # the row budget stays constant regardless of how many rows we pack.
+            fixed_parts = [p for p in [intro, header_row, outro] if p]
+            fixed_text = "\n\n".join(fixed_parts)
+            fixed_tokens = len(encoding.encode(fixed_text))
+            row_budget = max(1, self.max_chunk_token_count - fixed_tokens)
+
+            if not data_rows:
+                # Table has a header but no data rows — emit the context as a single chunk
+                # so intro, column headers, and outro are not silently dropped.
+                yield self._assemble_table_chunk(intro, header_row, [], outro, chunk_meta, fixed_tokens)
+                continue
+
+            current_rows: list[str] = []
+            current_tokens = 0
+
+            for row_cells in data_rows:
+                row_text = " | ".join(cell for cell in row_cells)
+                row_tokens = len(encoding.encode(row_text))
+
+                if current_rows and current_tokens + row_tokens > row_budget:
+                    yield self._assemble_table_chunk(
+                        intro,
+                        header_row,
+                        current_rows,
+                        outro,
+                        chunk_meta,
+                        fixed_tokens + current_tokens,
+                    )
+                    current_rows = []
+                    current_tokens = 0
+
+                current_rows.append(row_text)
+                current_tokens += row_tokens
+
+                if row_tokens > row_budget:
+                    logger.warning(
+                        "html_table_splitter: single row exceeds token budget",
+                        extra={
+                            "title": title,
+                            "path": (base_metadata or {}).get("path", ""),
+                            "row_tokens": row_tokens,
+                            "budget": row_budget,
+                        },
+                    )
+                    yield self._assemble_table_chunk(
+                        intro,
+                        header_row,
+                        current_rows,
+                        outro,
+                        chunk_meta,
+                        fixed_tokens + current_tokens,
+                    )
+                    current_rows = []
+                    current_tokens = 0
+
+            if current_rows:
+                yield self._assemble_table_chunk(
+                    intro,
+                    header_row,
+                    current_rows,
+                    outro,
+                    chunk_meta,
+                    fixed_tokens + current_tokens,
+                )
+
+    def _assemble_table_chunk(
+        self,
+        intro: str,
+        header_row: str,
+        row_texts: list[str],
+        outro: str,
+        chunk_meta: dict[str, str | list[str] | None],
+        total_tokens: int,
+    ) -> Document:
+        """Assemble the page_content for one table chunk and log if oversized."""
+        table_section = "\n".join(p for p in [header_row, "\n".join(row_texts)] if p)
+        parts = [p for p in [intro, table_section, outro] if p]
+        content = "\n\n".join(parts)
+        if total_tokens > self.max_chunk_token_count:
+            logger.warning(
+                "html_table_splitter: chunk exceeds token limit",
+                extra={
+                    "title": chunk_meta.get("title", ""),
+                    "tokens": total_tokens,
+                    "limit": self.max_chunk_token_count,
+                },
+            )
+        return Document(page_content=content, metadata=dict(chunk_meta))
 
     def _process_doc(
         self,
@@ -173,8 +284,7 @@ class AdaptiveSplitMarkdownIndexer:
         if tokens <= self.min_chunk_token_count:
             return
 
-        # If the document is smaller than the max chunk token count or the H3 level is reached, yield the document
-        if tokens <= self.max_chunk_token_count or level >= len(HEADER_LEVELS):
+        if tokens <= self.max_chunk_token_count:
             chunk_meta = dict(base_metadata) if base_metadata else {}
             title = doc.metadata.get("title") or extract_first_title(doc.page_content)
             if not title:
@@ -190,6 +300,25 @@ class AdaptiveSplitMarkdownIndexer:
                 page_content=doc.page_content,
                 metadata=chunk_meta,
             )
+            return
+
+        elif level >= len(HEADER_LEVELS):
+            # All header levels exhausted — can't split further by heading.
+            # Apply the same title fallback as the fits-in-budget branch so that
+            # oversized preamble chunks don't reach _split_oversized with an empty title.
+            if not doc.metadata.get("title"):
+                preamble_path: str = (base_metadata or {}).get("path") or ""  # type: ignore[assignment]
+                fallback_title = os.path.splitext(os.path.basename(preamble_path))[0] or "unknown"
+                logger.info(
+                    "preamble chunk -- using filename as title",
+                    extra={"path": preamble_path, "title": fallback_title},
+                )
+                doc = Document(
+                    page_content=doc.page_content,
+                    metadata={**doc.metadata, "title": fallback_title, "_leaf_header": fallback_title},
+                )
+            # Route to the appropriate sub-splitter based on content type.
+            yield from self._split_oversized(doc, base_metadata)
             return
         # Split document using current header level
         markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADER_LEVELS[level], strip_headers=False)
@@ -215,6 +344,9 @@ class AdaptiveSplitMarkdownIndexer:
             )
 
             if parent_title != title and (parent_title + " - ") not in title:
+                # Prepend the H1 parent title so every chunk carries the full breadcrumb
+                # (e.g. "Kyma Modules - Enable a Module"), but avoid doubling it when
+                # the splitter has already embedded it (e.g. after a recursive call).
                 title = parent_title + " - " + title if parent_title else title
 
             chunk_meta = dict(base_metadata) if base_metadata else {}
@@ -236,21 +368,16 @@ class AdaptiveSplitMarkdownIndexer:
         It splits the documents recursively if larger than given token number.
         It stops if the header level H3 is reached despite the token count.
         """
-
         for doc in docs_to_chunk:
             source_path = doc.metadata.get("source", "")
             base_metadata = build_chunk_metadata(source_path, self.docs_path, self.manifest)
-            chunks = list(self._process_doc(doc, base_metadata=base_metadata))
-            total = len(chunks)
-            for idx, chunk in enumerate(chunks):
+            for chunk in self._process_doc(doc, base_metadata=base_metadata):
                 heading: str = chunk.metadata.pop("_leaf_header", "") or ""
                 yield Document(
                     page_content=chunk.page_content,
                     metadata={
                         **chunk.metadata,
                         "heading": heading,
-                        "chunk_index": idx,
-                        "total_chunks": total,
                     },
                 )
 
@@ -264,14 +391,14 @@ class AdaptiveSplitMarkdownIndexer:
             if chunk.metadata.get("title") is None:
                 yield chunk
             else:
-                yield Document(
-                    page_content=(
-                        f"# {chunk.metadata['title']}\n{chunk.page_content.split('\n', 1)[-1]}"
-                        if chunk.page_content.strip().startswith(("#", "##", "###"))
-                        else f"# {chunk.metadata['title']}\n\n{chunk.page_content}"
-                    ),
-                    metadata=chunk.metadata,
-                )
+                title = chunk.metadata["title"]
+                first_line, _, rest = chunk.page_content.partition("\n")
+                if first_line.strip().lstrip("#").strip() == title:
+                    # First line is exactly the title heading — don't duplicate it.
+                    page_content = f"# {title}\n{rest}"
+                else:
+                    page_content = f"# {title}\n\n{chunk.page_content}"
+                yield Document(page_content=page_content, metadata=chunk.metadata)
 
     def index(self) -> None:
         """Indexes the markdown files in the given directory."""
