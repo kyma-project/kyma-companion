@@ -22,6 +22,7 @@ from utils.settings import (
     DOCS_SOURCES_FILE_PATH,
     DOCS_TABLE_NAME,
     EMBEDDING_MODEL_NAME,
+    MAX_CHUNK_TOKEN_COUNT,
     TMP_DIR,
     get_embedding_model_config,
 )
@@ -80,7 +81,9 @@ def run_indexer(
             logger.error("Failed to connect to the database. Exiting.")
             raise RuntimeError("Failed to connect to the database.")
 
-    indexer = AdaptiveSplitMarkdownIndexer(docs_path, embeddings_model, hana_conn, table_name)
+    indexer = AdaptiveSplitMarkdownIndexer(
+        docs_path, embeddings_model, hana_conn, table_name, max_chunk_token_count=MAX_CHUNK_TOKEN_COUNT
+    )
     indexer.index()
     logger.info(f"Index completed in {time.monotonic() - start:.1f}s")
 

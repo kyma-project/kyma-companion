@@ -392,9 +392,12 @@ class AdaptiveSplitMarkdownIndexer:
                 yield chunk
             else:
                 title = chunk.metadata["title"]
+                heading = chunk.metadata.get("heading", "")
                 first_line, _, rest = chunk.page_content.partition("\n")
-                if first_line.strip().lstrip("#").strip() == title:
-                    # First line is exactly the title heading — don't duplicate it.
+                first_line_text = first_line.strip().lstrip("#").strip()
+                if first_line_text in (title, heading):
+                    # First line is the title or the leaf heading — replace it with
+                    # the canonical combined title and drop the original heading line.
                     page_content = f"# {title}\n{rest}"
                 else:
                     page_content = f"# {title}\n\n{chunk.page_content}"
