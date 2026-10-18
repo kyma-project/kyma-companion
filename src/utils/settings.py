@@ -8,13 +8,12 @@ from pathlib import Path
 from decouple import config
 
 
-class LangfuseMaskingModes(StrEnum):
-    """Enumeration for Langfuse masking modes."""
+class RetrievalMode(StrEnum):
+    """Document retrieval strategy used by the RAG system."""
 
-    DISABLED = "DISABLED"  # No masking, return data as is.
-    PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
-    FILTERED = "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
-    REDACTED = "REDACTED"  # Everything is redacted.
+    RERANKER = "reranker"  # Query rewrite -> multi-query retrieval -> LLM reranking.
+    VECTOR = "vector"  # Single embedding similarity search; no query rewrite, no reranking.
+    FUSION = "fusion"  # Query rewrite -> multi-query retrieval -> Reciprocal Rank Fusion; no LLM reranking (default).
 
 
 def load_env_from_json() -> Path:
@@ -97,15 +96,17 @@ REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 
-# Langfuse
-LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
-LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
-LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
-LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
-LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
-
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
+# Document retrieval strategy: "reranker" (default), "vector", or "fusion". Set before starting the agent.
+RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode)
+# Number of documents returned per RAG search.
+RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
+# Number of alternative queries the query generator rewrites per search (used by reranker and fusion modes).
+RAG_NUM_QUERIES = config("RAG_NUM_QUERIES", default=4, cast=int)
+
+assert RAG_TOP_K > 0, f"RAG_TOP_K must be positive, got {RAG_TOP_K}"
+assert RAG_NUM_QUERIES > 0, f"RAG_NUM_QUERIES must be positive, got {RAG_NUM_QUERIES}"
 
 # Database
 DATABASE_URL = config("DATABASE_URL", None)
