@@ -219,7 +219,7 @@ class TestInitSearchTool:
 
     def test_init_search_tool_caches_result(self, mock_models):
         """Test that init_search_tool caches the tool instance (singleton behavior)."""
-        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+        with patch("agents.kyma.tools.search.SearchKymaDocTool") as mock_tool_class:
             mock_tool = Mock()
             mock_tool_class.return_value = mock_tool
 
@@ -231,7 +231,7 @@ class TestInitSearchTool:
 
     def test_init_search_tool_raises_http_exception_on_error(self, mock_models):
         """Test that init_search_tool raises HTTPException when tool creation fails."""
-        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+        with patch("agents.kyma.tools.search.SearchKymaDocTool") as mock_tool_class:
             mock_tool_class.side_effect = Exception("RAG initialization failed")
 
             with pytest.raises(HTTPException) as exc_info:
@@ -241,12 +241,12 @@ class TestInitSearchTool:
 
     def test_init_search_tool_allows_retry_after_error(self, mock_models):
         """Test that a failed init does not permanently cache a broken instance."""
-        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+        with patch("agents.kyma.tools.search.SearchKymaDocTool") as mock_tool_class:
             mock_tool_class.side_effect = Exception("transient error")
             with pytest.raises(HTTPException):
                 init_search_tool(models=mock_models)
 
-        with patch("routers.common.SearchKymaDocTool") as mock_tool_class:
+        with patch("agents.kyma.tools.search.SearchKymaDocTool") as mock_tool_class:
             mock_tool = Mock()
             mock_tool_class.return_value = mock_tool
 

@@ -9,9 +9,10 @@ from typing import Annotated
 from fastapi import Depends, Header, HTTPException
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from agents.kyma.tools.search import SearchKymaDocTool
+from agents.kyma.tools.search import DocSearchMode, create_doc_search_tool
 from services.data_sanitizer import DataSanitizer, IDataSanitizer
 from services.encryption import Encryption
 from services.encryption_cache import EncryptionCache, get_encryption_cache
@@ -22,7 +23,7 @@ from services.redis import Redis
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
-from utils.settings import KYMA_AGENT_CONVERSATION_TTL
+from utils.settings import DOC_SEARCH_MODE, EKX_API_TOKEN, KYMA_AGENT_CONVERSATION_TTL
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -259,11 +260,20 @@ class _ModelsRegistry(metaclass=SingletonMeta):
 
 
 class _SearchToolRegistry(metaclass=SingletonMeta):
-    """Singleton registry for SearchKymaDocTool to avoid reinitializing RAGSystem on every request."""
+    """Singleton registry for the doc search tool.
+
+    Delegates construction to create_doc_search_tool() based on DOC_SEARCH_MODE.
+    """
 
     def __init__(self, models: dict[str, IModel | Embeddings]):
         try:
-            self.tool = SearchKymaDocTool(models)
+            mode = DocSearchMode(DOC_SEARCH_MODE)
+            if mode != DocSearchMode.RAG:
+                logger.warning(
+                    "EXPERIMENTAL: DOC_SEARCH_MODE=%s — not for production use.",
+                    mode,
+                )
+            self.tool: BaseTool = create_doc_search_tool(mode, models, EKX_API_TOKEN)
         except Exception as e:
             logger.exception("Failed to initialize search tool")
             SingletonMeta.reset_instance(_SearchToolRegistry)
@@ -288,13 +298,8 @@ def init_models_dict(
 
 def init_search_tool(
     models: Annotated[dict[str, IModel | Embeddings], Depends(init_models_dict)],
-) -> SearchKymaDocTool:
-    """
-    Initialize SearchKymaDocTool singleton.
-
-    Instantiates SearchKymaDocTool (and therefore RAGSystem) once and caches it.
-    Uses SingletonMeta to avoid reinitializing RAGSystem on every request.
-    """
+) -> BaseTool:
+    """Initialize doc search tool singleton (implementation selected by DOC_SEARCH_MODE)."""
     return _SearchToolRegistry(models).tool
 
 
