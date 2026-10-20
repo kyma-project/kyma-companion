@@ -9,12 +9,12 @@ from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from langchain_core.tools import BaseTool
 
 from agents.kyma.tools.query import (
     fetch_kyma_resource_version,
     kyma_query_tool,
 )
-from agents.kyma.tools.search import SearchKymaDocTool
 from routers.common import (
     API_PREFIX,
     KymaQueryRequest,
@@ -125,7 +125,7 @@ async def get_resource_version(
 @router.post("/search", response_model=SearchKymaDocResponse)
 async def search_kyma_documentation(
     request: Annotated[SearchKymaDocRequest, Body()],
-    search_tool: Annotated[SearchKymaDocTool, Depends(init_search_tool)],
+    search_tool: Annotated[BaseTool, Depends(init_search_tool)],
 ) -> SearchKymaDocResponse:
     """
     Search Kyma documentation using semantic search.
@@ -133,7 +133,10 @@ async def search_kyma_documentation(
     logger.info(f"Search request: query={request.query}")
 
     try:
-        results = await search_tool.arun_list(query=request.query, top_k=request.top_k)
+        result = await search_tool.arun(request.query)
+        results = [r for r in result.split("\n\n -- next document -- \n\n") if r.strip()]
+        if not results:
+            results = [result] if result.strip() else []
         logger.info(f"Search completed successfully, returned {len(results)} documents")
         return SearchKymaDocResponse(
             results=results,

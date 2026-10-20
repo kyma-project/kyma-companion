@@ -259,7 +259,7 @@ class KymaReActAgent:
         self,
         models: dict[str, IModel | Embeddings],
         k8s_client: IK8sClient,
-        search_tool: SearchKymaDocTool | None = None,
+        search_tool: BaseTool | None = None,
     ) -> None:
         """Initialize the agent with the given models, k8s_client, and search_tool."""
         main_model = cast(IModel, models[MAIN_MODEL_NAME])
