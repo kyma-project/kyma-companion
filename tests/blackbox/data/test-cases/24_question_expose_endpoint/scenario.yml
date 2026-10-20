@@ -1,16 +1,20 @@
-id: test-question-24 # format: test-<resource_kind>-<test_id>
-description: Unrelated to existing cluster resources, ask how to expose an endpoint in a Kyma cluster.
+id: test-question-24
+description: Unrelated to existing cluster resources, ask how to expose an endpoint
+  in a Kyma cluster.
 queries:
-  - user_query: How can I expose my endpoint using Kyma?
-    resource:
-      kind: Cluster
-      api_version: ""
-      name: ""
-      namespace: "" # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: mentions_kyewords
-        statement: propose to use the APIRule custom resource and mentions accessStrategies 
-        threshold: 0.5
-        required: true
-
-
+- user_query: How can I expose my endpoint using Kyma?
+  resource:
+    kind: Cluster
+    api_version: ''
+    name: ''
+    namespace: ''
+  expectations:
+  - name: mentions_kyewords
+    statement: propose to use the APIRule custom resource and mentions accessStrategies
+    threshold: 0.5
+    required: true
+  - name: busola_ui_navigation
+    threshold: 0.5
+    required: false
+    statement: describes how to navigate in Kyma Dashboard (Busola) to create or manage
+      an APIRule resource via the UI

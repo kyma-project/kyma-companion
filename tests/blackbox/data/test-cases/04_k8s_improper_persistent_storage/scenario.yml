@@ -1,65 +1,72 @@
-id: k8s-test-deployment-4 # format: test-<resource_kind>-<test_id>
-description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to remain unbound, leading to issues with the deployment.
+id: k8s-test-deployment-4
+description: The PersistentVolumeClaim requests ReadWriteMany access mode, but the
+  PersistentVolume only supports ReadWriteOnce. This mismatch can cause the PVC to
+  remain unbound, leading to issues with the deployment.
 queries:
-  - user_query: Why is the deployment not getting ready?
-    resource:
-      kind: Deployment
-      api_version: apps/v1
-      name: nginx-deployment
-      namespace: test-deployment-4 # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: deployment_error
-        statement: points out that the Deployment is in an error state
-        threshold: 0.5
-        required: true
-      - name: potential_pvc_issue
-        statement: points out that the issue may be due to PersistentVolumeClaim
-        threshold: 0.5
-        required: true
-      - name: wrong_pvc_access_mode
-        statement: points out that the access mode configured in PersistentVolumeClaim do not match with access mode supported by PersistentVolume
-        threshold: 0.5
-        required: false
-      - name: pvc_provide_explanation
-        statement: provides an explanation on why the deployment is not getting ready
-        threshold: 0.5
-        required: false
-      - name: step_by_step_guide
-        statement: provides a step-by-step guide on how to fix the issue
-        threshold: 0.5
-        required: false
-      - name: partial_yaml
-        statement: provides a partial yaml with correct access mode for PersistentVolumeClaim
-        threshold: 0.5
-        required: false
-  - user_query: Can you check the PVC?
-    resource:
-      kind: Deployment
-      api_version: apps/v1
-      name: nginx-deployment
-      namespace: test-deployment-4 # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: pvc_pending
-        statement: points out that the PersistentVolumeClaim (PVC) is in an pending state
-        threshold: 0.5
-        required: true
-      - name: potential_pvc_issue
-        statement: points out that the issue may be related to PersistentVolume (PV)
-        threshold: 0.5
-        required: true
-  - user_query: Can you check the PV?
-    resource:
-      kind: Deployment
-      api_version: apps/v1
-      name: nginx-deployment
-      namespace: test-deployment-4 # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: potential_pvc_issue
-        statement: points out that the PersistentVolume (PV) do not support ReadWriteMany
-        threshold: 0.5
-        required: false
-      - name: step_by_step_guide
-        statement: provides a step-by-step guide on how to fix the issue
-        threshold: 0.5
-        required: false
-
+- user_query: Why is the deployment not getting ready?
+  resource:
+    kind: Deployment
+    api_version: apps/v1
+    name: nginx-deployment
+    namespace: test-deployment-4
+  expectations:
+  - name: deployment_error
+    statement: points out that the Deployment is in an error state
+    threshold: 0.5
+    required: true
+  - name: potential_pvc_issue
+    statement: points out that the issue may be due to PersistentVolumeClaim
+    threshold: 0.5
+    required: true
+  - name: wrong_pvc_access_mode
+    statement: points out that the access mode configured in PersistentVolumeClaim
+      do not match with access mode supported by PersistentVolume
+    threshold: 0.5
+    required: false
+  - name: pvc_provide_explanation
+    statement: provides an explanation on why the deployment is not getting ready
+    threshold: 0.5
+    required: false
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    threshold: 0.5
+    required: false
+  - name: partial_yaml
+    statement: provides a partial yaml with correct access mode for PersistentVolumeClaim
+    threshold: 0.5
+    required: false
+  - name: busola_ui_navigation
+    threshold: 0.5
+    required: false
+    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads or
+      Storage section to inspect or fix the PersistentVolumeClaim via the UI
+- user_query: Can you check the PVC?
+  resource:
+    kind: Deployment
+    api_version: apps/v1
+    name: nginx-deployment
+    namespace: test-deployment-4
+  expectations:
+  - name: pvc_pending
+    statement: points out that the PersistentVolumeClaim (PVC) is in an pending state
+    threshold: 0.5
+    required: true
+  - name: potential_pvc_issue
+    statement: points out that the issue may be related to PersistentVolume (PV)
+    threshold: 0.5
+    required: true
+- user_query: Can you check the PV?
+  resource:
+    kind: Deployment
+    api_version: apps/v1
+    name: nginx-deployment
+    namespace: test-deployment-4
+  expectations:
+  - name: potential_pvc_issue
+    statement: points out that the PersistentVolume (PV) do not support ReadWriteMany
+    threshold: 0.5
+    required: false
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    threshold: 0.5
+    required: false

@@ -1,14 +1,19 @@
-id: test-question-21 # format: test-<resource_kind>-<test_id>
+id: test-question-21
 description: Unrelated to existing cluster resources, ask how to add a module.
 queries:
-  - user_query: How to add a module?
-    resource:
-      kind: Cluster
-      api_version: ""
-      name: ""
-      namespace: "" # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: dashboard
-        statement: provides instructions on how to add modules via the Kyma dashboard
-        threshold: 0.5
-        required: true
+- user_query: How to add a module?
+  resource:
+    kind: Cluster
+    api_version: ''
+    name: ''
+    namespace: ''
+  expectations:
+  - name: dashboard
+    statement: provides instructions on how to add modules via the Kyma dashboard
+    threshold: 0.5
+    required: true
+  - name: busola_ui_navigation
+    threshold: 0.5
+    required: false
+    statement: describes how to navigate in Kyma Dashboard (Busola) to the Kyma Modules
+      section to add or enable a module via the UI
