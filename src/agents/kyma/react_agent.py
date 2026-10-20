@@ -291,6 +291,7 @@ class KymaReActAgent:
         invoke_ctx: dict[str, Any] = {"query": query, "config": run_config}
         tools: list[BaseTool] = [
             *_make_bound_tools(self._k8s_client, self._summarizer, invoke_ctx),
+            self._search_tool,
         ]
         graph = create_agent(
             model=self._llm,
