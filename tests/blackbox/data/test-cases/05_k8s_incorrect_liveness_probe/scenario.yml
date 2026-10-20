@@ -35,5 +35,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads →
-      Deployments to edit the liveness probe configuration via the UI
+    statement: describes navigation via Workloads → Deployments → [deployment name]
+      → Edit to fix the liveness probe configuration in Kyma Dashboard

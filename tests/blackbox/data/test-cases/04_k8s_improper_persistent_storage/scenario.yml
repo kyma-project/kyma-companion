@@ -38,8 +38,8 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads or
-      Storage section to inspect or fix the PersistentVolumeClaim via the UI
+    statement: describes navigation via Workloads or Storage section to inspect or
+      fix the PersistentVolumeClaim in Kyma Dashboard
 - user_query: Can you check the PVC?
   resource:
     kind: Deployment

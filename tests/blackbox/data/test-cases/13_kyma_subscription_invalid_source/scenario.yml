@@ -38,5 +38,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to the Eventing
-      section to inspect or fix the Subscription event source via the UI
+    statement: describes navigation via Configuration → Subscriptions → [subscription
+      name] → Edit to fix the event source in Kyma Dashboard

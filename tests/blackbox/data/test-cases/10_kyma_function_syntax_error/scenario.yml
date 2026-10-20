@@ -39,5 +39,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads →
-      Functions to inspect or edit the Function source code via the UI
+    statement: describes navigation via Workloads → Functions → [function name] →
+      Edit to fix the Function source code in Kyma Dashboard

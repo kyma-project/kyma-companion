@@ -36,5 +36,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads →
-      Pods to inspect the Pod or edit the Deployment via the UI
+    statement: describes navigation via Workloads → Pods or Workloads → Deployments
+      → Edit to inspect or fix the container image in Kyma Dashboard

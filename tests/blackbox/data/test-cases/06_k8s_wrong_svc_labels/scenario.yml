@@ -30,5 +30,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Discovery and
-      Network → Services to inspect or fix the Service selector labels via the UI
+    statement: describes navigation via Discovery and Network → Services → [service
+      name] → Edit to fix the Service selector labels in Kyma Dashboard

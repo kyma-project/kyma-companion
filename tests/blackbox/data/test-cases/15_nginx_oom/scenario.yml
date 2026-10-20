@@ -47,5 +47,5 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to navigate in Kyma Dashboard (Busola) to Workloads →
-      Deployments to edit the memory limits or requests via the UI
+    statement: describes navigation via Workloads → Deployments → [deployment name]
+      → Edit to increase the memory limit or request in Kyma Dashboard
