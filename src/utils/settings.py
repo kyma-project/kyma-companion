@@ -152,6 +152,14 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
 # set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
 
+# EXPERIMENTAL: doc search backend selection.
+# DOC_SEARCH_MODE selects the search_kyma_doc implementation:
+#   "rag"  — default, HANA Cloud vector store over Kyma GitHub docs
+#   "ekx"  — SAP Enterprise Knowledge Exploration (requires EKX_API_TOKEN)
+#   "null" — no-op, always returns empty string (baseline measurement)
+DOC_SEARCH_MODE = config("DOC_SEARCH_MODE", default="rag")
+EKX_API_TOKEN = config("EKX_API_TOKEN", default="")
+
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
     TEST_CLUSTER_CA_DATA = config("TEST_CLUSTER_CA_DATA", default="")

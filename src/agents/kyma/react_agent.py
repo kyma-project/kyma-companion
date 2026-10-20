@@ -259,7 +259,7 @@ class KymaReActAgent:
         self,
         models: dict[str, IModel | Embeddings],
         k8s_client: IK8sClient,
-        search_tool: SearchKymaDocTool | None = None,
+        search_tool: BaseTool | None = None,
     ) -> None:
         """Initialize the agent with the given models, k8s_client, and search_tool."""
         main_model = cast(IModel, models[MAIN_MODEL_NAME])
@@ -291,7 +291,6 @@ class KymaReActAgent:
         invoke_ctx: dict[str, Any] = {"query": query, "config": run_config}
         tools: list[BaseTool] = [
             *_make_bound_tools(self._k8s_client, self._summarizer, invoke_ctx),
-            self._search_tool,
         ]
         graph = create_agent(
             model=self._llm,

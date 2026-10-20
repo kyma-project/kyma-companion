@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 from langchain_core.embeddings import Embeddings
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -7,6 +9,34 @@ from utils.models.factory import IModel
 
 DEFAULT_TOP_K: int = 5
 SEARCH_KYMA_DOC_TOOL_NAME: str = "search_kyma_doc"
+
+
+class DocSearchMode(StrEnum):
+    """Selects the doc search backend for the search_kyma_doc tool."""
+
+    RAG = "rag"  # default: HANA Cloud vector store over Kyma GitHub docs
+    EKX = "ekx"  # experimental: SAP Enterprise Knowledge Exploration
+    NULL = "null"  # experimental: no-op, always returns empty (baseline measurement)
+
+
+def create_doc_search_tool(
+    mode: DocSearchMode,
+    models: dict[str, IModel | Embeddings],
+    ekx_api_token: str = "",
+) -> BaseTool:
+    """Return the search_kyma_doc tool for the given mode.
+
+    Raises ValueError when mode=ekx and ekx_api_token is empty.
+    """
+    from agents.kyma.tools.ekx_search import EKXSearchTool, NullSearchTool  # avoid circular import
+
+    if mode == DocSearchMode.EKX:
+        if not ekx_api_token:
+            raise ValueError("EKX_API_TOKEN must be set when DOC_SEARCH_MODE=ekx")
+        return EKXSearchTool(ekx_api_token=ekx_api_token)
+    if mode == DocSearchMode.NULL:
+        return NullSearchTool()
+    return SearchKymaDocTool(models)
 
 
 class SearchKymaDocArgs(BaseModel):
