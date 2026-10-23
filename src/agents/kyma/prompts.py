@@ -100,7 +100,7 @@ If the answer already exists in the message history, answer directly. No tool ca
 5. Do NOT call `search_kyma_doc` when:
    - The resource status has no issue.
    - The problem is code-related, not Kyma-resource related.
-6. Prefer answering from history over making new tool calls, except of `search_kyma_doc` for providing dashboard navigation steps.
+6. Prefer answering from history over making new tool calls, except for `search_kyma_doc` for providing dashboard navigation steps.
 
 {TOOL_CALLING_ERROR_HANDLING}
 """
