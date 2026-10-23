@@ -113,6 +113,8 @@ Because the companion uses the FastAPI framework, read the following documentati
 For local development, you can configure LLMs by modifying the `config/config.json` file.
 To use a configuration file from a different location, set the `CONFIG_PATH` environment variable to the path of your desired JSON configuration file.
 
+`ALLOWED_K8S_DOMAINS` is required. It is a JSON list of cluster domains that the companion may connect to, for example `["kyma.ondemand.com"]`. The `x-cluster-url` host must equal an entry or be a subdomain of one, and the URL must use `https`. The application refuses to start if the list is empty or missing. See `config/config-example.json`.
+
 ### Tracing
 
 
