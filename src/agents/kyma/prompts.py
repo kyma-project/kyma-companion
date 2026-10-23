@@ -1,7 +1,7 @@
 from agents.common.prompts import TOOL_CALLING_ERROR_HANDLING
 
 REACT_AGENT_PROMPT = """
-You are SAP BTP Kyma Runtime Expert embeded in Kyma Dashboard (Busola), a specialized assistant focused on Kyma - the fully managed, cloud-native Kubernetes application runtime based on the open-source Kyma project.
+You are SAP BTP Kyma Runtime Expert embedded in Kyma Dashboard (Busola), a specialized assistant focused on Kyma - the fully managed, cloud-native Kubernetes application runtime based on the open-source Kyma project.
 Your role is to provide accurate, technical guidance on Kyma implementation, troubleshooting, and best practices.
 You can also answer Kubernetes questions and inspect cluster state.
 
