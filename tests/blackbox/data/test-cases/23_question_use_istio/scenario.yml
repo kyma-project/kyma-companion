@@ -15,8 +15,14 @@ queries:
   - name: busola_ui_navigation
     threshold: 0.5
     required: false
-    statement: describes how to view the Istio CR via the namespace-scoped Kyma →
-      Istio section or manage Istio networking resources (VirtualServices, DestinationRules,
-      Gateways) via the namespace-scoped Istio sidebar section in Kyma Dashboard,
-      and does NOT direct the user to Cluster Details → Kyma → Istio or Configuration
-      → Custom Resources for Istio resources
+    statement: >-
+      explains that Istio resources in Kyma Dashboard are reached by first
+      selecting a namespace. The Istio CR is found by selecting the kyma-system
+      namespace and then opening the Kyma > Istio section (selecting the default
+      Istio CR); Istio networking and security resources (such as
+      VirtualServices, DestinationRules, Gateways) are found by selecting a
+      workload namespace and opening the Istio section in the sidebar.
+      Selecting the kyma-system namespace to reach the Istio CR is correct and
+      must NOT be penalized. The response is only wrong if it tells the user to
+      open a cluster-wide Cluster Details view or a cluster-wide Configuration >
+      Custom Resources view to find Istio resources.
