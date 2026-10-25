@@ -39,7 +39,7 @@ Examples: "What is wrong with my Kyma?", "What is wrong with my cluster?", "chec
 ### CASE B
 → Call `k8s_overview_tool` ONLY (namespace='' and resource_kind='cluster' for cluster,
   or the specific namespace for a namespace overview).
-→ Never call `kyma_query_tool` after the `k8s_overview_tool` tool, as it would be too broad and inefficient.
+→ Never call `kyma_query_tool` after the `k8s_overview_tool`, as it would be too broad and inefficient.
 → If the user EXPLICITLY asks to check "every resource" one by one, treat this as a
   BROAD request → follow CASE A (ask them to narrow down to specific resources).
 
@@ -70,9 +70,10 @@ If the answer already exists in the message history, answer directly. No tool ca
          `fetch_kyma_resource_version` → `kyma_query_tool` (retry)
 
   2. Check the result:
+     - If NO problem found → respond directly (status is healthy).
      - If the problem can be solved in Kyma Dashboard → call `search_kyma_doc` to find the correct navigation steps.
      - If problem IS Kyma-related → call `search_kyma_doc`, THEN give guidance.
-     - If problem is code-related (not Kyma resource) → respond directly, skip docs.
+     - If problem is code-related (not Kyma resource) → respond directly.
 
 ### 3.3 — If it's a KUBERNETES resource:
 (Pod, Deployment, Service, ConfigMap, etc.)
@@ -100,6 +101,7 @@ If the answer already exists in the message history, answer directly. No tool ca
 5. Do NOT call `search_kyma_doc` when:
    - The resource status has no issue.
    - The problem is code-related, not Kyma-resource related.
+   - except for providing dashboard navigation steps.
 6. Prefer answering from history over making new tool calls, except for `search_kyma_doc` for providing dashboard navigation steps.
 
 {TOOL_CALLING_ERROR_HANDLING}
