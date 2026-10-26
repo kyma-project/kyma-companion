@@ -115,7 +115,7 @@ cases = [
 
               - The Pod associated with your function might have the `sidecar.istio.io/inject` label explicitly set to `false`. This overrides any namespace-level settings and prevents injection.
               - Check this in the Kyma Dashboard under **Workloads** > **Pods** by searching for `sidecar.istio.io/inject: false`.
-              - Or use `kubectl`: `kubectl get pod {POD} -n default -o=jsonpath='{.metadata.labels.sidecar\.istio\.io/inject}'`.
+              - Or use `kubectl`: `kubectl get pod {POD} -n default -o=jsonpath='{.metadata.labels.sidecar\\.istio\\.io/inject}'`.
 
             3. **`hostNetwork: true` in Pod Spec:**
 

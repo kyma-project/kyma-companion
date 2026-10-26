@@ -2,9 +2,18 @@ import json
 import logging
 import os
 import sys
+from enum import StrEnum
 from pathlib import Path
 
 from decouple import config
+
+
+class RetrievalMode(StrEnum):
+    """Document retrieval strategy used by the RAG system."""
+
+    RERANKER = "reranker"  # Query rewrite -> multi-query retrieval -> LLM reranking.
+    VECTOR = "vector"  # Single embedding similarity search; no query rewrite, no reranking.
+    FUSION = "fusion"  # Query rewrite -> multi-query retrieval -> Reciprocal Rank Fusion; no LLM reranking (default).
 
 
 def load_env_from_json() -> Path:
@@ -89,6 +98,15 @@ REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
+# Document retrieval strategy: "reranker" (default), "vector", or "fusion". Set before starting the agent.
+RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode)
+# Number of documents returned per RAG search.
+RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
+# Number of alternative queries the query generator rewrites per search (used by reranker and fusion modes).
+RAG_NUM_QUERIES = config("RAG_NUM_QUERIES", default=4, cast=int)
+
+assert RAG_TOP_K > 0, f"RAG_TOP_K must be positive, got {RAG_TOP_K}"
+assert RAG_NUM_QUERIES > 0, f"RAG_NUM_QUERIES must be positive, got {RAG_NUM_QUERIES}"
 
 # Database
 DATABASE_URL = config("DATABASE_URL", None)
@@ -132,8 +150,19 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
-# set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
+# JSON list of allowed cluster domains (exact host or parent domain), e.g. ["kyma.ondemand.com"].
+# Required: an empty list rejects every cluster URL, and the app refuses to start without it.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
+
+
+def validate_allowed_k8s_domains(domains: object) -> None:
+    """Raise RuntimeError unless domains is a non-empty list of non-empty strings."""
+    if not isinstance(domains, list) or len(domains) == 0 or not all(isinstance(d, str) and d.strip() for d in domains):
+        raise RuntimeError(
+            "ALLOWED_K8S_DOMAINS must be a non-empty JSON list of cluster domains, "
+            'for example ["kyma.ondemand.com"]. Refusing to start.'
+        )
+
 
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
