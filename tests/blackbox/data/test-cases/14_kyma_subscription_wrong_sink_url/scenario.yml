@@ -1,34 +1,43 @@
-id: test-subscription-14 # format: test-<resource_kind>-<test_id>
-description: The Subscription is set-up to forward events to redis svc instead of func1 service.
+id: test-subscription-14
+description: The Subscription is set-up to forward events to redis svc instead of
+  func1 service.
 queries:
-  - user_query: Why the events are not being received by my function func1?
-    resource:
-      kind: Subscription
-      api_version: eventing.kyma-project.io/v1alpha2
-      name: sub1
-      namespace: test-subscription-14 # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: subscription_wrong_sink_url
-        statement: points out that the sink configured in the Subscription is incorrect
-        threshold: 0.5
-        required: true
-      - name: subscription_wrong_sink_url_reason
-        statement: provides the reason that the Subscription is set-up to forward events to redis svc instead of func1 service
-        threshold: 0.5
-        required: false
-      - name: subscription_explanation
-        statement: explains the use of Subscriptions and how to configure them
-        threshold: 0.5
-        required: false
-      - name: step_by_step_guide
-        statement: provides a step-by-step guide on how to fix the issue
-        threshold: 0.5
-        required: false
-      - name: partial_yaml
-        statement: provides a partial yaml with the correct event type "increase.counter.v1"
-        threshold: 0.5
-        required: false
-      - name: deployable_yaml
-        statement: provides a complete yaml for the Subscription, with the namespace set to 'test-subscription-14' and the event type set to "increase.counter.v1"
-        threshold: 0.5
-        required: false
+- user_query: Why the events are not being received by my function func1?
+  resource:
+    kind: Subscription
+    api_version: eventing.kyma-project.io/v1alpha2
+    name: sub1
+    namespace: test-subscription-14
+  expectations:
+  - name: subscription_wrong_sink_url
+    statement: points out that the sink configured in the Subscription is incorrect
+    threshold: 0.5
+    required: true
+  - name: subscription_wrong_sink_url_reason
+    statement: provides the reason that the Subscription is set-up to forward events
+      to redis svc instead of func1 service
+    threshold: 0.5
+    required: false
+  - name: subscription_explanation
+    statement: explains the use of Subscriptions and how to configure them
+    threshold: 0.5
+    required: false
+  - name: step_by_step_guide
+    statement: provides a step-by-step guide on how to fix the issue
+    threshold: 0.5
+    required: false
+  - name: partial_yaml
+    statement: provides a partial yaml with the correct event type "increase.counter.v1"
+    threshold: 0.5
+    required: false
+  - name: deployable_yaml
+    statement: provides a complete yaml for the Subscription, with the namespace set
+      to 'test-subscription-14' and the event type set to "increase.counter.v1"
+    threshold: 0.5
+    required: false
+  - name: busola_ui_navigation
+    threshold: 0.5
+    required: false
+    statement: describes navigation via Configuration → Subscriptions → [subscription
+      name] → Edit to update the sink URL to point to the correct function service
+      in Kyma Dashboard
