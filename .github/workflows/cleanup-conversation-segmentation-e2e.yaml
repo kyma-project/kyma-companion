@@ -1,0 +1,56 @@
+name: "Cleanup Conversation Segmentation E2E Tables"
+run-name: "Cleanup Conversation Segmentation E2E Tables"
+
+on:
+  workflow_dispatch:
+    inputs:
+      TABLE_PREFIX:
+        description: "Exact KC_SEG_PR_* or KC_SEG_MANUAL_* prefix from an interrupted run"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Drop four abandoned run-scoped HANA tables
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: e2e
+    steps:
+      - name: Checkout trusted cleanup utility
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+
+      - name: Install pinned HANA client
+        run: python -m pip install --disable-pip-version-check "hdbcli==2.30.27"
+
+      - name: Drop all four tables for the exact prefix
+        env:
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
+        run: |
+          set -euo pipefail
+          umask 077
+          base_config="$(mktemp)"
+          override_config="$(mktemp)"
+          trap 'rm -f "$base_config" "$override_config"' EXIT
+          printf '%s' "$COMPANION_TESTS_DEFAULT_CONFIG" > "$base_config"
+          if [[ -n "$EVALUATION_TESTS_CONFIG" ]]; then
+            printf '%s' "$EVALUATION_TESTS_CONFIG" > "$override_config"
+          else
+            printf '{}' > "$override_config"
+          fi
+          python scripts/python/conversation_segmentation_e2e_ci.py drop-tables \
+            --base-config "$base_config" \
+            --override-config "$override_config" \
+            --table-prefix "$TABLE_PREFIX"

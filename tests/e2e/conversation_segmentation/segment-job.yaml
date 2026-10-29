@@ -5,9 +5,10 @@ metadata:
   namespace: segmentation-e2e
 spec:
   backoffLimit: 0
-  activeDeadlineSeconds: 1200
+  activeDeadlineSeconds: 420
   template:
     spec:
+      automountServiceAccountToken: false
       restartPolicy: Never
       containers:
         - name: segmentation
