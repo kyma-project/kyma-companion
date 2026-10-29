@@ -28,9 +28,14 @@ on:
         type: string
         description: "Unique prefix for the four temporary HANA tables"
     secrets:
-      COMPANION_TESTS_DEFAULT_CONFIG:
-        required: true
-      EVALUATION_TESTS_CONFIG:
+      # These declarations make the names explicit for reusable-workflow validation.
+      # Callers do not pass them: each called job receives only the secrets of its
+      # own GitHub environment.
+      SEGMENTATION_E2E_MODEL_CONFIG:
+        required: false
+      SEGMENTATION_E2E_HANA_CONFIG:
+        required: false
+      SEGMENTATION_E2E_HANA_CLEANUP_CONFIG:
         required: false
 
 permissions:
@@ -145,25 +150,21 @@ jobs:
 
       - name: Create allowlisted runtime configuration Secret
         env:
-          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          SEGMENTATION_E2E_MODEL_CONFIG: ${{ secrets.SEGMENTATION_E2E_MODEL_CONFIG }}
+          SEGMENTATION_E2E_HANA_CONFIG: ${{ secrets.SEGMENTATION_E2E_HANA_CONFIG }}
           TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
         run: |
           set -euo pipefail
           umask 077
-          base_config="$(mktemp)"
-          override_config="$(mktemp)"
+          model_config="$(mktemp)"
+          hana_config="$(mktemp)"
           runtime_config="$(mktemp)"
-          trap 'rm -f "$base_config" "$override_config" "$runtime_config"' EXIT
-          printf '%s' "$COMPANION_TESTS_DEFAULT_CONFIG" > "$base_config"
-          if [[ -n "$EVALUATION_TESTS_CONFIG" ]]; then
-            printf '%s' "$EVALUATION_TESTS_CONFIG" > "$override_config"
-          else
-            printf '{}' > "$override_config"
-          fi
+          trap 'rm -f "$model_config" "$hana_config" "$runtime_config"' EXIT
+          printf '%s' "$SEGMENTATION_E2E_MODEL_CONFIG" > "$model_config"
+          printf '%s' "$SEGMENTATION_E2E_HANA_CONFIG" > "$hana_config"
           python3 "$CI_HELPER" build-config \
-            --base-config "$base_config" \
-            --override-config "$override_config" \
+            --model-config "$model_config" \
+            --hana-config "$hana_config" \
             --table-prefix "$TABLE_PREFIX" \
             --output "$runtime_config"
           kubectl create secret generic segmentation-e2e-config \
@@ -194,15 +195,8 @@ jobs:
           pinned_image="$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_TAG")"
           [[ "$pinned_image" =~ ^europe-docker\.pkg\.dev/kyma-project/dev/kyma-companion@sha256:[0-9a-f]{64}$ ]]
           revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE_TAG")"
-          if [[ -n "$revision" && "$revision" != "<no value>" ]]; then
-            [[ "$revision" == "$EXPECTED_COMMIT_SHA" ]]
-            echo "image_commit_linkage=verified revision_labels=1"
-          else
-            # The shared builder currently does not guarantee a revision label. The
-            # trusted build check binds the PR SHA to the mutable tag; pinning this
-            # resolved digest prevents any later tag mutation during the test.
-            echo "image_commit_linkage=build-check-only revision_labels=0"
-          fi
+          [[ "$revision" == "$EXPECTED_COMMIT_SHA" ]]
+          echo "image_commit_linkage=verified revision_labels=1"
           echo "IMAGE_NAME=$pinned_image" >> "$GITHUB_ENV"
           k3d image import "$pinned_image" --cluster "${K3D_CLUSTER}" >/dev/null
 
@@ -213,13 +207,13 @@ jobs:
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
-            segmentation-e2e-seed-0 120
+            segmentation-e2e-seed-0 120 seed
 
       - name: Run initial segmentation
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
-            segmentation-e2e-segment 420
+            segmentation-e2e-segment 420 segment-initial
 
       - name: Validate initial run
         env:
@@ -228,7 +222,7 @@ jobs:
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
-            segmentation-e2e-validate-1 120
+            segmentation-e2e-validate-1 120 validate-1
 
       - name: Append one complete synthetic turn
         env:
@@ -237,14 +231,14 @@ jobs:
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
-            segmentation-e2e-append-0 120
+            segmentation-e2e-append-0 120 append
 
       - name: Run incremental segmentation
         run: |
           kubectl delete job segmentation-e2e-segment -n "${NAMESPACE}" --wait=true >/dev/null
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
-            segmentation-e2e-segment 240
+            segmentation-e2e-segment 240 segment-incremental
 
       - name: Validate exactly one incremental turn
         env:
@@ -253,14 +247,14 @@ jobs:
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
-            segmentation-e2e-validate-2 120
+            segmentation-e2e-validate-2 120 validate-2
 
       - name: Run no-op segmentation
         run: |
           kubectl delete job segmentation-e2e-segment -n "${NAMESPACE}" --wait=true >/dev/null
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
-            segmentation-e2e-segment 120
+            segmentation-e2e-segment 120 segment-noop
 
       - name: Validate idempotent no-op run
         env:
@@ -269,7 +263,7 @@ jobs:
         run: |
           trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
             "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
-            segmentation-e2e-validate-3 120
+            segmentation-e2e-validate-3 120 validate-3
 
   cleanup:
     name: Drop temporary segmentation HANA tables
@@ -277,7 +271,9 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: e2e
+    # This environment must have no required reviewers so cleanup starts
+    # automatically. It contains only SEGMENTATION_E2E_HANA_CLEANUP_CONFIG.
+    environment: segmentation-e2e-cleanup
     steps:
       # Independent of the PR checkout, PR image, K3d, and segmentation helper.
       - name: Checkout trusted cleanup utility
@@ -292,26 +288,20 @@ jobs:
           python-version: "3.14"
 
       - name: Install pinned HANA client
-        run: python -m pip install --disable-pip-version-check "hdbcli==2.30.27"
+        run: |
+          python -m pip install --disable-pip-version-check --require-hashes \
+            -r scripts/requirements/conversation-segmentation-e2e-cleanup.txt
 
       - name: Drop all four run-scoped tables
         env:
-          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
-          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          SEGMENTATION_E2E_HANA_CLEANUP_CONFIG: ${{ secrets.SEGMENTATION_E2E_HANA_CLEANUP_CONFIG }}
           TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
         run: |
           set -euo pipefail
           umask 077
-          base_config="$(mktemp)"
-          override_config="$(mktemp)"
-          trap 'rm -f "$base_config" "$override_config"' EXIT
-          printf '%s' "$COMPANION_TESTS_DEFAULT_CONFIG" > "$base_config"
-          if [[ -n "$EVALUATION_TESTS_CONFIG" ]]; then
-            printf '%s' "$EVALUATION_TESTS_CONFIG" > "$override_config"
-          else
-            printf '{}' > "$override_config"
-          fi
+          cleanup_config="$(mktemp)"
+          trap 'rm -f "$cleanup_config"' EXIT
+          printf '%s' "$SEGMENTATION_E2E_HANA_CLEANUP_CONFIG" > "$cleanup_config"
           python scripts/python/conversation_segmentation_e2e_ci.py drop-tables \
-            --base-config "$base_config" \
-            --override-config "$override_config" \
+            --cleanup-config "$cleanup_config" \
             --table-prefix "$TABLE_PREFIX"

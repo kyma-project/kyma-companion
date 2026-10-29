@@ -16,7 +16,10 @@ from typing import Any
 TABLE_SUFFIXES = ("RUN", "ASSIGNMENT", "AGGREGATE", "WATERMARK")
 MAX_HANA_IDENTIFIER_LENGTH = 127
 TABLE_PREFIX_PATTERN = re.compile(r"^KC_SEG_(?:PR|MANUAL)_[0-9]+(?:_[0-9]+){1,2}$")
-IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
+E2E_SCHEMA_PATTERN = re.compile(r"^KC_SEG_E2E_[A-Z0-9_]+$")
+MODEL_CONFIG_PURPOSE = "conversation-segmentation-e2e-model"
+HANA_CONFIG_PURPOSE = "conversation-segmentation-e2e-hana"
+CLEANUP_CONFIG_PURPOSE = "conversation-segmentation-e2e-cleanup"
 
 CANARIES = (
     "seg-e2e-session-alpha",
@@ -54,16 +57,40 @@ _SAFE_LOG_PATTERNS = (
     re.compile(r"Wrote run: turns=[0-9]+ failed=[0-9]+ conversations=[0-9]+ topics=[0-9]+"),
 )
 
-_CONFIG_STRING_FIELDS = (
+_MODEL_STRING_FIELDS = (
     "AICORE_AUTH_URL",
     "AICORE_BASE_URL",
     "AICORE_CLIENT_ID",
     "AICORE_CLIENT_SECRET",
     "AICORE_RESOURCE_GROUP",
+    "MODEL_NAME",
+    "MODEL_DEPLOYMENT_ID",
+)
+_HANA_STRING_FIELDS = (
     "DATABASE_URL",
     "DATABASE_USER",
     "DATABASE_PASSWORD",
+    "SEGMENTATION_E2E_SCHEMA",
 )
+_EXPECTED_LOG_MARKERS = {
+    "seed": re.compile(r"^seeded_conversations=2 seeded_complete_turns=3$"),
+    "append": re.compile(r"^appended_conversations=1 appended_complete_turns=1$"),
+    "segment-initial": re.compile(r"^Wrote run: turns=3 failed=0 conversations=2 topics=[0-9]+$"),
+    "segment-incremental": re.compile(r"^Wrote run: turns=1 failed=0 conversations=2 topics=[0-9]+$"),
+    "segment-noop": re.compile(r"^Wrote run: turns=0 failed=0 conversations=2 topics=[0-9]+$"),
+    "validate-1": re.compile(
+        r"^validated_runs=1 assignments=[0-9]+ aggregates=[0-9]+ watermarks=2 "
+        r"conversations=2 turns=3 failed_turns=0$"
+    ),
+    "validate-2": re.compile(
+        r"^validated_runs=2 assignments=[0-9]+ aggregates=[0-9]+ watermarks=2 "
+        r"conversations=2 turns=4 failed_turns=0$"
+    ),
+    "validate-3": re.compile(
+        r"^validated_runs=3 assignments=[0-9]+ aggregates=[0-9]+ watermarks=2 "
+        r"conversations=2 turns=4 failed_turns=0$"
+    ),
+}
 
 
 class CIInvariantError(RuntimeError):
@@ -103,30 +130,42 @@ def _load_object(path: Path, invariant: str) -> dict[str, Any]:
     return value
 
 
-def build_minimal_config(base_path: Path, override_path: Path, table_prefix: str) -> dict[str, Any]:
+def _require_purpose(config: dict[str, Any], purpose: str, invariant: str) -> None:
+    _require(config.get("SEGMENTATION_E2E_PURPOSE") == purpose, invariant)
+
+
+def _require_string_fields(config: dict[str, Any], fields: tuple[str, ...]) -> None:
+    for field in fields:
+        _require(isinstance(config.get(field), str) and bool(config[field]), f"CONFIG_{field}")
+
+
+def build_minimal_config(model_path: Path, hana_path: Path, table_prefix: str) -> dict[str, Any]:
     """Build the allowlisted config exposed to the untrusted PR image."""
     prefix = validate_table_prefix(table_prefix)
-    source = _load_object(base_path, "BASE_CONFIG_JSON") | _load_object(override_path, "OVERRIDE_CONFIG_JSON")
-    for field in _CONFIG_STRING_FIELDS:
-        _require(isinstance(source.get(field), str) and bool(source[field]), f"CONFIG_{field}")
+    model = _load_object(model_path, "MODEL_CONFIG_JSON")
+    hana = _load_object(hana_path, "HANA_CONFIG_JSON")
+    _require_purpose(model, MODEL_CONFIG_PURPOSE, "MODEL_CONFIG_PURPOSE")
+    _require_purpose(hana, HANA_CONFIG_PURPOSE, "HANA_CONFIG_PURPOSE")
+    _require_string_fields(model, _MODEL_STRING_FIELDS)
+    _require_string_fields(hana, _HANA_STRING_FIELDS)
+    schema = str(hana["SEGMENTATION_E2E_SCHEMA"])
+    _require(bool(E2E_SCHEMA_PATTERN.fullmatch(schema)), "HANA_E2E_SCHEMA_MARKER")
+    _require(hana["DATABASE_USER"] == schema, "HANA_RUNTIME_SCHEMA_OWNERSHIP")
 
-    model_name = source.get("MAIN_MODEL_NAME")
-    _require(isinstance(model_name, str) and bool(model_name), "CONFIG_MAIN_MODEL_NAME")
-    source_models = source.get("models")
-    _require(isinstance(source_models, list), "CONFIG_MODELS")
-    selected_models = [
-        {key: model[key] for key in ("name", "deployment_id", "temperature") if key in model}
-        for model in source_models
-        if isinstance(model, dict) and model.get("name") == model_name
-    ]
-    _require(len(selected_models) == 1, "CONFIG_SEGMENTATION_MODEL")
-    _require(bool(selected_models[0].get("deployment_id")), "CONFIG_MODEL_DEPLOYMENT")
-
-    config = {field: source[field] for field in _CONFIG_STRING_FIELDS}
+    model_name = str(model["MODEL_NAME"])
+    selected_model = {
+        "name": model_name,
+        "deployment_id": model["MODEL_DEPLOYMENT_ID"],
+        "temperature": float(model.get("MODEL_TEMPERATURE", 0)),
+    }
+    config = {field: model[field] for field in _MODEL_STRING_FIELDS if field.startswith("AICORE_")}
+    config.update({field: hana[field] for field in ("DATABASE_URL", "DATABASE_USER", "DATABASE_PASSWORD")})
     config.update(
         {
-            "DATABASE_PORT": int(source.get("DATABASE_PORT", 443)),
-            "models": selected_models,
+            "SEGMENTATION_E2E_PURPOSE": HANA_CONFIG_PURPOSE,
+            "SEGMENTATION_E2E_SCHEMA": schema,
+            "DATABASE_PORT": int(hana.get("DATABASE_PORT", 443)),
+            "models": [selected_model],
             "MAIN_MODEL_NAME": model_name,
             "SEGMENTATION_MODEL_NAME": model_name,
             "REDIS_HOST": "redis-stack.redis.svc.cluster.local",
@@ -149,34 +188,40 @@ def build_minimal_config(base_path: Path, override_path: Path, table_prefix: str
     return config
 
 
-def sanitize_log_text(raw_log: str) -> list[str]:
+def sanitize_log_text(raw_log: str, expected_kind: str) -> list[str]:
     """Reject canaries and return only explicitly allowlisted count/status messages."""
+    _require(expected_kind in _EXPECTED_LOG_MARKERS, "LOG_EXPECTATION_KIND")
     normalized_log = normalize_sensitive_text(raw_log)
     for canary in CANARIES:
         _require(normalize_sensitive_text(canary) not in normalized_log, "LOG_PRIVACY_CANARY")
-    return [
+    safe_lines = [
         match.group(0)
         for line in raw_log.splitlines()
         for pattern in _SAFE_LOG_PATTERNS
         for match in pattern.finditer(line)
     ]
+    _require(any(_EXPECTED_LOG_MARKERS[expected_kind].fullmatch(line) for line in safe_lines), "LOG_EXPECTED_MARKER")
+    return safe_lines
 
 
-def _drop_tables(base_path: Path, override_path: Path, table_prefix: str) -> None:
+def _drop_tables(cleanup_config_path: Path, table_prefix: str) -> None:
     from hdbcli import dbapi  # noqa: PLC0415
 
     prefix = validate_table_prefix(table_prefix)
-    source = _load_object(base_path, "BASE_CONFIG_JSON") | _load_object(override_path, "OVERRIDE_CONFIG_JSON")
-    for field in ("DATABASE_URL", "DATABASE_USER", "DATABASE_PASSWORD"):
-        _require(isinstance(source.get(field), str) and bool(source[field]), f"CONFIG_{field}")
-    schema = str(source["DATABASE_USER"])
-    _require(bool(IDENTIFIER_PATTERN.fullmatch(schema)), "HANA_SCHEMA_IDENTIFIER")
+    source = _load_object(cleanup_config_path, "CLEANUP_CONFIG_JSON")
+    _require_purpose(source, CLEANUP_CONFIG_PURPOSE, "CLEANUP_CONFIG_PURPOSE")
+    _require_string_fields(source, _HANA_STRING_FIELDS)
+    schema = str(source["SEGMENTATION_E2E_SCHEMA"])
+    cleanup_user = str(source["DATABASE_USER"])
+    _require(bool(E2E_SCHEMA_PATTERN.fullmatch(schema)), "HANA_E2E_SCHEMA_MARKER")
+    _require(bool(E2E_SCHEMA_PATTERN.fullmatch(cleanup_user)), "HANA_CLEANUP_USER_MARKER")
+    _require(cleanup_user != schema, "HANA_CLEANUP_PRINCIPAL_SEPARATION")
     tables = tuple(f"{prefix}_{suffix}" for suffix in TABLE_SUFFIXES)
 
     connection = dbapi.Connection(
         address=str(source["DATABASE_URL"]),
         port=int(source.get("DATABASE_PORT", 443)),
-        user=schema,
+        user=cleanup_user,
         password=str(source["DATABASE_PASSWORD"]),
     )
     found = 0
@@ -214,7 +259,7 @@ def _drop_tables(base_path: Path, override_path: Path, table_prefix: str) -> Non
 
 
 def _write_minimal_config(args: argparse.Namespace) -> None:
-    config = build_minimal_config(Path(args.base_config), Path(args.override_config), args.table_prefix)
+    config = build_minimal_config(Path(args.model_config), Path(args.hana_config), args.table_prefix)
     output = Path(args.output)
     output.write_text(json.dumps(config, separators=(",", ":")))
     output.chmod(0o600)
@@ -223,7 +268,7 @@ def _write_minimal_config(args: argparse.Namespace) -> None:
 
 def _sanitize_logs(args: argparse.Namespace) -> None:
     raw_log = Path(args.input).read_text(errors="replace")
-    safe_lines = sanitize_log_text(raw_log)
+    safe_lines = sanitize_log_text(raw_log, args.expected_kind)
     for line in safe_lines:
         print(line)
     print(f"log_privacy_status=passed safe_log_lines={len(safe_lines)}")
@@ -234,18 +279,18 @@ def _parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="action", required=True)
 
     build = subparsers.add_parser("build-config")
-    build.add_argument("--base-config", required=True)
-    build.add_argument("--override-config", required=True)
+    build.add_argument("--model-config", required=True)
+    build.add_argument("--hana-config", required=True)
     build.add_argument("--table-prefix", required=True)
     build.add_argument("--output", required=True)
 
     drop = subparsers.add_parser("drop-tables")
-    drop.add_argument("--base-config", required=True)
-    drop.add_argument("--override-config", required=True)
+    drop.add_argument("--cleanup-config", required=True)
     drop.add_argument("--table-prefix", required=True)
 
     sanitize = subparsers.add_parser("sanitize-logs")
     sanitize.add_argument("--input", required=True)
+    sanitize.add_argument("--expected-kind", choices=sorted(_EXPECTED_LOG_MARKERS), required=True)
     return parser
 
 
@@ -256,7 +301,7 @@ def main() -> None:
         if args.action == "build-config":
             _write_minimal_config(args)
         elif args.action == "drop-tables":
-            _drop_tables(Path(args.base_config), Path(args.override_config), args.table_prefix)
+            _drop_tables(Path(args.cleanup_config), args.table_prefix)
         else:
             _sanitize_logs(args)
     except CIInvariantError as error:

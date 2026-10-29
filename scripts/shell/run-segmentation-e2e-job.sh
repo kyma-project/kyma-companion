@@ -7,6 +7,7 @@ namespace="$1"
 manifest="$2"
 job="$3"
 timeout_seconds="$4"
+expected_log_kind="$5"
 
 : "${KUBECONFIG:?KUBECONFIG must point to the isolated E2E kubeconfig}"
 : "${EXPECTED_K3D_CONTEXT:?EXPECTED_K3D_CONTEXT is required}"
@@ -42,8 +43,11 @@ while ((SECONDS < deadline)); do
   sleep 10
 done
 
-kubectl logs -n "$namespace" "job/$job" > "$raw_log" 2>/dev/null || true
-python3 "$CI_HELPER" sanitize-logs --input "$raw_log"
+if ! kubectl logs -n "$namespace" "job/$job" > "$raw_log" 2>/dev/null; then
+  echo "job_status=log-retrieval-failed completed_jobs=0 failed_jobs=1"
+  exit 1
+fi
+python3 "$CI_HELPER" sanitize-logs --input "$raw_log" --expected-kind "$expected_log_kind"
 
 if [[ "$job_status" == "complete" ]]; then
   echo "job_status=complete completed_jobs=1 failed_jobs=0"

@@ -20,7 +20,6 @@ jobs:
     name: Resolve current PR head and wait for its image
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: e2e
     outputs:
       head_sha: ${{ steps.pr.outputs.head_sha }}
       head_repo: ${{ steps.pr.outputs.head_repo }}
@@ -70,9 +69,6 @@ jobs:
   e2e-tests:
     needs: resolve-pr
     uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-conversation-segmentation-reusable.yaml@main
-    secrets:
-      COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
-      EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
     with:
       IMAGE_TAG: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ inputs.PR_NUMBER }}"
       EXPECTED_COMMIT_SHA: ${{ needs.resolve-pr.outputs.head_sha }}

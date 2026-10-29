@@ -18,6 +18,7 @@ on:
       - "tests/e2e/conversation_segmentation/**"
       - "tests/unit/scripts/test_conversation_segmentation_e2e_ci.py"
       - "scripts/python/conversation_segmentation_e2e_ci.py"
+      - "scripts/requirements/conversation-segmentation-e2e-cleanup.txt"
       - "scripts/shell/run-segmentation-e2e-job.sh"
       - "Dockerfile"
       - "pyproject.toml"
@@ -41,9 +42,8 @@ jobs:
   wait-for-build:
     name: Wait for Companion image build
     runs-on: ubuntu-latest
-    environment: e2e
     steps:
-      # Only trusted main code runs before the e2e environment/codeowner gate passes.
+      # Only trusted main code runs before the called workflow's e2e gate passes.
       - name: Checkout trusted workflow helpers
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -74,9 +74,6 @@ jobs:
     # Bootstrap limitation: reusable workflows are loaded from the base branch.
     # This workflow starts covering subsequent PRs only after its first merge.
     uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-conversation-segmentation-reusable.yaml@main
-    secrets:
-      COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
-      EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
     with:
       IMAGE_TAG: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
       EXPECTED_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
