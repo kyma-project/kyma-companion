@@ -441,7 +441,7 @@ cases = [
                           main: function (event, context) {
                               envs = ["env1", "env2", "env3"]
                               envs.forEach(function(key){
-                                  console.log(\`${key}:${readEnv(key)}\`)
+                                  console.log(`${key}:${readEnv(key)}`)
                               });
                               return 'Hello Serverless'
                           }

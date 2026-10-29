@@ -150,8 +150,19 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
-# set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
+# JSON list of allowed cluster domains (exact host or parent domain), e.g. ["kyma.ondemand.com"].
+# Required: an empty list rejects every cluster URL, and the app refuses to start without it.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
+
+
+def validate_allowed_k8s_domains(domains: object) -> None:
+    """Raise RuntimeError unless domains is a non-empty list of non-empty strings."""
+    if not isinstance(domains, list) or len(domains) == 0 or not all(isinstance(d, str) and d.strip() for d in domains):
+        raise RuntimeError(
+            "ALLOWED_K8S_DOMAINS must be a non-empty JSON list of cluster domains, "
+            'for example ["kyma.ondemand.com"]. Refusing to start.'
+        )
+
 
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
