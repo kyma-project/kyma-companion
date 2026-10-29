@@ -345,8 +345,11 @@ class K8sClient:
             conf.cert_file = self.client_cert_temp_filename
             conf.key_file = self.client_key_temp_filename
         elif self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN:
+            token = self.k8s_auth_headers.x_k8s_authorization
+            if token is None:
+                raise ValueError("Kubernetes authorization token is not available.")
             conf.api_key_prefix["BearerToken"] = "Bearer"
-            conf.api_key["BearerToken"] = self.k8s_auth_headers.x_k8s_authorization
+            conf.api_key["BearerToken"] = token
         else:
             raise ValueError("Unknown authentication type.")
 
