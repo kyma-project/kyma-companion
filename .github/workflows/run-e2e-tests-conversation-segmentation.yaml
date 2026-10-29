@@ -1,0 +1,28 @@
+name: "Run Conversation Segmentation E2E"
+run-name: "Run Conversation Segmentation E2E"
+
+on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_NAME:
+        description: "Full Companion image name to test"
+        required: true
+        type: string
+      TEST_REF:
+        description: "Repository ref containing the E2E assets"
+        required: false
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-conversation-segmentation-reusable.yaml@main
+    secrets: inherit
+    with:
+      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+      TEST_REPO_FULLNAME: ${{ github.repository }}
+      TEST_REF: ${{ inputs.TEST_REF }}
+      TABLE_PREFIX: "KC_SEG_MANUAL_${{ github.run_id }}_${{ github.run_attempt }}"

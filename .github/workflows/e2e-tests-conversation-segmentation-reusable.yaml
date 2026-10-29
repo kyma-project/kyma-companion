@@ -1,0 +1,226 @@
+name: "E2E Tests for Conversation Segmentation (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: "Full Companion image name to run"
+      TEST_REPO_FULLNAME:
+        required: true
+        type: string
+        description: "Repository containing the E2E assets"
+      TEST_REF:
+        required: true
+        type: string
+        description: "Immutable ref containing the E2E assets"
+      TABLE_PREFIX:
+        required: true
+        type: string
+        description: "Unique prefix for the four temporary HANA tables"
+
+env:
+  K3D_VERSION: "v5.8.3"
+  K3D_CLUSTER: "segmentation-e2e"
+  K3D_CONTEXT: "k3d-segmentation-e2e"
+  NAMESPACE: "segmentation-e2e"
+
+jobs:
+  e2e-tests:
+    name: Run conversation segmentation E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: e2e
+    steps:
+      - name: Checkout gated test assets
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.TEST_REPO_FULLNAME }}
+          ref: ${{ inputs.TEST_REF }}
+          # The e2e environment requires codeowner approval before fork code or
+          # secrets are available to this pull_request_target-triggered job.
+          allow-unsafe-pr-checkout: true
+
+      - name: Install kubectl
+        run: |
+          curl -sSLo kubectl "https://storage.googleapis.com/kubernetes-release/release/$(curl -sS https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/kubectl
+          kubectl version --client
+
+      - name: Install K3d
+        run: |
+          curl -sS https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG="${K3D_VERSION}" bash
+          installed_version="$(k3d --version | awk 'NR == 1 {print $3}')"
+          test "$installed_version" = "${K3D_VERSION}"
+
+      - name: Create ephemeral K3d cluster
+        run: k3d cluster create "${K3D_CLUSTER}" --agents=1
+
+      - name: Verify isolated K3d context
+        run: |
+          context_name="$(kubectl config current-context)"
+          if [[ "$context_name" != "${K3D_CONTEXT}" ]]; then
+            echo "context_guard=failed expected_contexts=1 matching_contexts=0"
+            exit 1
+          fi
+          echo "context_guard=passed expected_contexts=1 matching_contexts=1"
+
+      - name: Create namespaces
+        run: |
+          kubectl create namespace "${NAMESPACE}"
+          kubectl create namespace redis
+
+      - name: Deploy isolated Redis
+        run: |
+          helm repo add redis-stack https://redis-stack.github.io/helm-redis-stack/
+          helm install --wait --timeout 5m redis-stack redis-stack/redis-stack \
+            --set auth.enabled=false \
+            --namespace redis
+
+      - name: Create runtime configuration Secret
+        env:
+          COMPANION_TESTS_DEFAULT_CONFIG: ${{ secrets.COMPANION_TESTS_DEFAULT_CONFIG }}
+          EVALUATION_TESTS_CONFIG: ${{ secrets.EVALUATION_TESTS_CONFIG }}
+          RUN_TABLE: ${{ inputs.TABLE_PREFIX }}_RUN
+          ASSIGNMENT_TABLE: ${{ inputs.TABLE_PREFIX }}_ASSIGNMENT
+          AGGREGATE_TABLE: ${{ inputs.TABLE_PREFIX }}_AGGREGATE
+          WATERMARK_TABLE: ${{ inputs.TABLE_PREFIX }}_WATERMARK
+        run: |
+          set -euo pipefail
+          umask 077
+          config_file="$(mktemp)"
+          trap 'rm -f "$config_file"' EXIT
+          jq --argjson override "${EVALUATION_TESTS_CONFIG:-{}}" \
+            --arg run_table "$RUN_TABLE" \
+            --arg assignment_table "$ASSIGNMENT_TABLE" \
+            --arg aggregate_table "$AGGREGATE_TABLE" \
+            --arg watermark_table "$WATERMARK_TABLE" \
+            '(. * $override) | . + {
+              REDIS_HOST: "redis-stack.redis.svc.cluster.local",
+              REDIS_PORT: "6379",
+              REDIS_USER: "",
+              REDIS_PASSWORD: "",
+              REDIS_DB_NUMBER: "0",
+              LOG_LEVEL: "INFO",
+              SEGMENTATION_MODEL_NAME: .MAIN_MODEL_NAME,
+              SEGMENTATION_RUN_TABLE: $run_table,
+              SEGMENTATION_ASSIGNMENT_TABLE: $assignment_table,
+              SEGMENTATION_AGGREGATE_TABLE: $aggregate_table,
+              SEGMENTATION_WATERMARK_TABLE: $watermark_table,
+              SEGMENTATION_MAX_CONVERSATIONS: "0",
+              SEGMENTATION_PROGRESS_LOG_INTERVAL: "1",
+              SEGMENTATION_BATCH_SIZE: "2"
+            } | del(.REDIS_URL, .REDIS_SSL_ENABLED)' \
+            <<<"$COMPANION_TESTS_DEFAULT_CONFIG" > "$config_file"
+          jq -e '
+            type == "object" and
+            (.DATABASE_URL | type == "string" and length > 0) and
+            (.DATABASE_USER | type == "string" and length > 0) and
+            (.DATABASE_PASSWORD | type == "string" and length > 0) and
+            (.MAIN_MODEL_NAME | type == "string" and length > 0) and
+            (.models | type == "array" and length > 0)
+          ' "$config_file" >/dev/null
+          kubectl create secret generic segmentation-e2e-config \
+            --namespace "${NAMESPACE}" \
+            --from-file=config.json="$config_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create E2E helper ConfigMap
+        run: |
+          kubectl create configmap segmentation-e2e-helper \
+            --namespace "${NAMESPACE}" \
+            --from-file=segmentation_e2e.py=tests/e2e/conversation_segmentation/segmentation_e2e.py
+
+      - name: Import PR Companion image into K3d
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+        run: |
+          docker pull "$IMAGE_NAME"
+          k3d image import "$IMAGE_NAME" --cluster "${K3D_CLUSTER}"
+
+      - name: Seed synthetic conversations
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+          HELPER_ACTION: seed
+          EXPECTED_RUNS: "0"
+        run: |
+          envsubst "\${IMAGE_NAME} \${HELPER_ACTION} \${EXPECTED_RUNS}" \
+            < tests/e2e/conversation_segmentation/helper-job.yaml | kubectl apply -f -
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-seed-0 180
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-seed-0
+
+      - name: Run segmentation
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+        run: |
+          envsubst "\${IMAGE_NAME}" \
+            < tests/e2e/conversation_segmentation/segment-job.yaml | kubectl apply -f -
+          status=0
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-segment 1200 || status=$?
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-segment \
+            | grep -Eo 'Starting topic analysis: limit=[0-9]+ batch_size=[0-9]+ taxonomy=[A-Za-z0-9._-]+|Conversation [0-9]+: complete_turns=[0-9]+ new_turns=[0-9]+|Progress: conversations=[0-9]+ processed_turns=[0-9]+ failed_turns=[0-9]+|Wrote run: turns=[0-9]+ failed=[0-9]+ conversations=[0-9]+ topics=[0-9]+' \
+            || true
+          exit "$status"
+
+      - name: Validate first run
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+          HELPER_ACTION: validate
+          EXPECTED_RUNS: "1"
+        run: |
+          envsubst "\${IMAGE_NAME} \${HELPER_ACTION} \${EXPECTED_RUNS}" \
+            < tests/e2e/conversation_segmentation/helper-job.yaml | kubectl apply -f -
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-validate-1 180
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-validate-1
+
+      - name: Run segmentation again without Redis changes
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+        run: |
+          kubectl delete job segmentation-e2e-segment -n "${NAMESPACE}" --wait=true
+          envsubst "\${IMAGE_NAME}" \
+            < tests/e2e/conversation_segmentation/segment-job.yaml | kubectl apply -f -
+          status=0
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-segment 1200 || status=$?
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-segment \
+            | grep -Eo 'Starting topic analysis: limit=[0-9]+ batch_size=[0-9]+ taxonomy=[A-Za-z0-9._-]+|Conversation [0-9]+: complete_turns=[0-9]+ new_turns=[0-9]+|Progress: conversations=[0-9]+ processed_turns=[0-9]+ failed_turns=[0-9]+|Wrote run: turns=[0-9]+ failed=[0-9]+ conversations=[0-9]+ topics=[0-9]+' \
+            || true
+          exit "$status"
+
+      - name: Validate incremental second run
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+          HELPER_ACTION: validate
+          EXPECTED_RUNS: "2"
+        run: |
+          envsubst "\${IMAGE_NAME} \${HELPER_ACTION} \${EXPECTED_RUNS}" \
+            < tests/e2e/conversation_segmentation/helper-job.yaml | kubectl apply -f -
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-validate-2 180
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-validate-2
+
+      - name: Drop temporary HANA tables
+        if: always()
+        env:
+          IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+          HELPER_ACTION: drop
+          EXPECTED_RUNS: "0"
+        run: |
+          context_name="$(kubectl config current-context 2>/dev/null || true)"
+          if [[ "$context_name" != "${K3D_CONTEXT}" ]]; then
+            echo "context_guard=failed expected_contexts=1 matching_contexts=0"
+            exit 1
+          fi
+          envsubst "\${IMAGE_NAME} \${HELPER_ACTION} \${EXPECTED_RUNS}" \
+            < tests/e2e/conversation_segmentation/helper-job.yaml | kubectl apply -f -
+          status=0
+          tests/e2e/conversation_segmentation/wait_for_job.sh \
+            "${NAMESPACE}" segmentation-e2e-drop-0 180 || status=$?
+          kubectl logs -n "${NAMESPACE}" job/segmentation-e2e-drop-0 || true
+          exit "$status"
