@@ -11,7 +11,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 TABLE_SUFFIXES = ("RUN", "ASSIGNMENT", "AGGREGATE", "WATERMARK")
 MAX_HANA_IDENTIFIER_LENGTH = 127
@@ -50,7 +50,7 @@ _SAFE_LOG_PATTERNS = (
         r"validated_runs=[0-9]+ assignments=[0-9]+ aggregates=[0-9]+ watermarks=[0-9]+ "
         r"conversations=[0-9]+ turns=[0-9]+ failed_turns=[0-9]+"
     ),
-    re.compile(r"helper_status=failed invariant=[A-Z0-9_]+ error_count=[0-9]+"),
+    re.compile(r"helper_status=failed invariant=[A-Z0-9_]+ exception=[A-Za-z0-9_]+ error_count=[0-9]+"),
     re.compile(r"Starting topic analysis: limit=[0-9]+ batch_size=[0-9]+ taxonomy=[A-Za-z0-9._-]+"),
     re.compile(r"Conversation [0-9]+: complete_turns=[0-9]+ new_turns=[0-9]+"),
     re.compile(r"Progress: conversations=[0-9]+ processed_turns=[0-9]+ failed_turns=[0-9]+"),
@@ -127,7 +127,7 @@ def _load_object(path: Path, invariant: str) -> dict[str, Any]:
     except (OSError, json.JSONDecodeError) as error:
         raise CIInvariantError(invariant) from error
     _require(isinstance(value, dict), invariant)
-    return value
+    return cast(dict[str, Any], value)
 
 
 def _require_purpose(config: dict[str, Any], purpose: str, invariant: str) -> None:
@@ -305,10 +305,10 @@ def main() -> None:
         else:
             _sanitize_logs(args)
     except CIInvariantError as error:
-        print(f"ci_helper_status=failed invariant={error.invariant} error_count=1")
+        print(f"ci_helper_status=failed invariant={error.invariant} exception={type(error).__name__} error_count=1")
         raise SystemExit(1) from None
-    except Exception:
-        print("ci_helper_status=failed invariant=CI_HELPER_UNEXPECTED error_count=1")
+    except Exception as error:
+        print(f"ci_helper_status=failed invariant=CI_HELPER_UNEXPECTED exception={type(error).__name__} error_count=1")
         raise SystemExit(1) from None
 
 

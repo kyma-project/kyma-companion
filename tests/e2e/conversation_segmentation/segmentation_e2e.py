@@ -124,6 +124,10 @@ def _head_fingerprint(session_id: str) -> str:
     return hashlib.sha256(first_query.encode()).hexdigest()
 
 
+def _conversation_hash(session_id: str) -> str:
+    return hashlib.sha256(f"{session_id}\0{_head_fingerprint(session_id)}".encode()).hexdigest()
+
+
 def _table_names() -> tuple[str, str, str, str]:
     from conversation_segmentation import config  # noqa: PLC0415
 
@@ -206,7 +210,12 @@ async def _append_turn() -> None:
     try:
         key = f"kyma_agent_conversation:{_SESSION_BETA}"
         raw = await connection.get(key)
-        _require(raw is not None, "REDIS_APPEND_SOURCE")
+        if raw is None:
+            raise E2EValidationError("REDIS_APPEND_SOURCE")
+        if isinstance(raw, bytes):
+            raw = raw.decode()
+        if not isinstance(raw, str):
+            raise E2EValidationError("REDIS_APPEND_TYPE")
         messages = json.loads(raw)
         _require(isinstance(messages, list), "REDIS_APPEND_JSON")
         marker = _APPENDED_TURN[0]["content"]
@@ -272,7 +281,7 @@ def _validate(expected_runs: int) -> None:  # noqa: PLR0915
     if expected_runs > EXPECTED_FIRST_RUNS:
         _require(runs[-1][1] is not None, "RUN_WINDOW_START")
 
-    expected_hashes = {_session_hash(_SESSION_ALPHA), _session_hash(_SESSION_BETA)}
+    expected_hashes = {_conversation_hash(_SESSION_ALPHA), _conversation_hash(_SESSION_BETA)}
     _require(bool(assignments), "ASSIGNMENT_ROWS_PRESENT")
     _require({str(row[0]) for row in assignments} == expected_hashes, "ASSIGNMENT_CONVERSATION_COUNTS")
     _require(sum(int(row[3]) for row in assignments) == expected_total_turns, "ASSIGNMENT_TURN_COUNT")
@@ -328,10 +337,10 @@ def main() -> None:
         elif args.action == "validate":
             _validate(args.expected_runs)
     except E2EValidationError as error:
-        print(f"helper_status=failed invariant={error} error_count=1")
+        print(f"helper_status=failed invariant={error} exception={type(error).__name__} error_count=1")
         raise SystemExit(1) from None
-    except Exception:
-        print("helper_status=failed invariant=HELPER_UNEXPECTED error_count=1")
+    except Exception as error:
+        print(f"helper_status=failed invariant=HELPER_UNEXPECTED exception={type(error).__name__} error_count=1")
         raise SystemExit(1) from None
 
 
