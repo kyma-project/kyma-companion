@@ -18,6 +18,7 @@ concurrency:
 jobs:
   resolve-pr:
     name: Resolve current PR head and wait for its image
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: e2e
     outputs:
