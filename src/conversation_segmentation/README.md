@@ -12,7 +12,7 @@ python3.14 -m conversation_segmentation.main segment
 
 1. Scan `kyma_agent_conversation:*` keys without blocking Redis; deduplicate and sort session IDs before applying an optional limit.
 2. Pair each human message with its final AI answer, skipping intermediate tool-call messages and incomplete turns.
-3. Compare each conversation with its HANA watermark and classify only new turns. Classification uses bounded exponential
+3. Compare each conversation with its HANA watermark and classify only new turns. Classification uses bounded exponential backoff. A final failure stops that conversation's contiguous prefix while other conversations continue. After persistence, the process exits with a nonzero, so the scheduled Job controller can retry it.
    backoff. A final failure stops that conversation's contiguous prefix while other conversations continue. After
    persistence, the process exits nonzero so the scheduled Job controller can retry it.
 4. Canonicalize each model proposal into `area/intent/capability-slug` and merge it into the durable
