@@ -1,7 +1,6 @@
 # Conversation Segmentation
 
 `conversation_segmentation` is the batch entrypoint that turns recent Companion conversations into conversation-level topic analytics. It reads the conversation history from Redis, classifies only newly completed turns, and writes durable assignments and a current aggregate snapshot to HANA.
-topic analytics. It reads conversation history from Redis, classifies only new completed turns, and writes durable
 
 Run it from the Companion image:
 
