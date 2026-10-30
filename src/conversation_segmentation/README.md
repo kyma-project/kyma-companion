@@ -36,7 +36,7 @@ The connecting `DATABASE_USER` owns four configurable tables:
 |---|---|
 | `CONVERSATION_ANALYSIS_RUN` | Completed-run history, token usage, turn and failure counts. |
 | `CONVERSATION_TOPIC_ASSIGNMENT` | Cumulative `(conversation_hash, topic_key)` assignments. |
-| `CONVERSATION_TOPIC_AGGREGATE` | Current reporting snapshot by topic. |
+| `CONVERSATION_TOPIC_AGGREGATE` | Cumulative reporting snapshot by topic, replaced after each run. |
 | `CONVERSATION_TOPIC_WATERMARK` | Retained processed-turn count and first-turn fingerprint per session. |
 
 Raw Redis session IDs are stored only as SHA-256 hashes. Complete prompts, responses, tool payloads, and model reasoning
@@ -64,6 +64,13 @@ Redis, HANA, and model credentials use the normal Companion settings. The job in
 
 `TAXONOMY_VERSION` is a persistence compatibility boundary. A run fails before processing when existing run history or
 assignments use another version; changing taxonomy requires an explicit migration, table reset, or versioned table set.
+
+Existing tables are checked for required column names; startup does not migrate them or validate every type, constraint,
+or grant. Earlier session-only assignment hashes require an explicit migration/reset before using conversation-instance
+hashes. The current taxonomy check alone does not detect that older identity scheme.
+
+Retrying a failed turn still requires its conversation to be available in Redis. The rolling Redis TTL does not extend
+when analytics runs; retention and retry scheduling must account for conversations expiring before the next attempt.
 
 ## Scaling
 
